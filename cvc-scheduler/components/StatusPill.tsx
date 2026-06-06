@@ -1,5 +1,7 @@
+import type { AssignmentStatus } from "@/lib/mockData";
+
 type StatusPillProps = {
-  status: "Confirmed" | "Pending" | "Needs reply" | "Complete" | "Open";
+  status: AssignmentStatus;
 };
 
 const statusStyles: Record<StatusPillProps["status"], string> = {

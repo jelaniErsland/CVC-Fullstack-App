@@ -3,17 +3,12 @@ import { Button } from "@/components/Button";
 import { Field } from "@/components/Field";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
+import { ProjectCombobox } from "@/components/ProjectCombobox";
+import { projects } from "@/lib/mockData";
 
 export default function Home() {
-  const projects = [
-    "Belgrade Major Remodel 2026",
-    "Bozeman Kingdom Hall Refresh",
-    "Helena Roofing Support",
-    "Billings Landscape Weekend",
-  ];
-
   return (
-    <PageShell className="flex flex-col">
+    <PageShell className="flex flex-col px-3 py-4 sm:px-6 sm:py-5">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-end">
         <Link
           href="/admin/login"
@@ -23,33 +18,22 @@ export default function Home() {
         </Link>
       </header>
 
-      <section className="flex flex-1 items-center justify-center py-12 sm:py-20">
-        <GlassCard className="w-full max-w-md p-6 sm:p-8">
+      <section className="flex flex-1 items-center justify-center py-8 sm:py-20">
+        <GlassCard className="w-full max-w-[430px] p-5 sm:p-8">
           <div className="text-center">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-sm">
               Volunteer Portal
             </p>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+            <h1 className="mt-4 text-[2.45rem] font-semibold leading-none tracking-tight text-slate-950 sm:text-5xl">
               CVC Scheduler
             </h1>
-            <p className="mt-3 text-base leading-7 text-slate-600">
+            <p className="mt-4 text-base leading-7 text-slate-600">
               Find your volunteer schedule
             </p>
           </div>
 
-          <div className="mt-8 space-y-5">
-            <Field
-              id="project"
-              label="Project"
-              list="project-options"
-              placeholder="Search projects"
-              defaultValue={projects[0]}
-            />
-            <datalist id="project-options">
-              {projects.map((project) => (
-                <option key={project} value={project} />
-              ))}
-            </datalist>
+          <div className="mt-7 space-y-4 sm:mt-8 sm:space-y-5">
+            <ProjectCombobox projects={projects} />
 
             <Field
               id="congregation"
@@ -59,15 +43,15 @@ export default function Home() {
             <Field
               id="identity"
               label="Name or email"
-              placeholder="e.g. alex@example.com"
+              placeholder="alex@example.com"
             />
 
-            <Button href="/v/demo" className="w-full">
+            <Button href="/v/demo" className="mt-1 w-full">
               View My Schedule
             </Button>
           </div>
 
-          <p className="mt-6 text-center text-sm leading-6 text-slate-500">
+          <p className="mt-6 text-center text-[0.84rem] leading-6 text-slate-500 sm:text-sm">
             Schedule links sent by email will be able to open a volunteer portal
             directly. This lookup is a placeholder for the MVP shell.
           </p>

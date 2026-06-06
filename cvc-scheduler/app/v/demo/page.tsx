@@ -1,42 +1,20 @@
 import Link from "next/link";
 import { AssignmentCard } from "@/components/AssignmentCard";
 import { Button } from "@/components/Button";
+import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
-
-const assignments = [
-  {
-    date: "Monday, Jan 12",
-    time: "7:30 AM - 3:30 PM",
-    role: "Interior framing support",
-    crew: "Crew B with Marcus L.",
-    location: "Main hall, north wing",
-    status: "Confirmed" as const,
-  },
-  {
-    date: "Wednesday, Jan 14",
-    time: "8:00 AM - 2:00 PM",
-    role: "Material staging",
-    crew: "Logistics team",
-    location: "West entrance",
-    status: "Pending" as const,
-  },
-  {
-    date: "Saturday, Jan 17",
-    time: "9:00 AM - 1:00 PM",
-    role: "Final cleanup",
-    crew: "Family volunteer group",
-    location: "Fellowship area",
-    status: "Needs reply" as const,
-  },
-];
+import { getVolunteerSchedule } from "@/lib/mockData";
 
 export default function VolunteerDemoPage() {
+  const schedule = getVolunteerSchedule();
+  const projectName = schedule.project?.name ?? "Volunteer Schedule";
+
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-6xl">
-        <header className="flex flex-col gap-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <header className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
             CVC Scheduler
           </Link>
@@ -44,15 +22,15 @@ export default function VolunteerDemoPage() {
         </header>
 
         <section className="py-8 sm:py-12">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Belgrade Major Remodel 2026
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-sm">
+            {projectName}
           </p>
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
                 Hi, Alex.
               </h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
                 Here is your upcoming volunteer schedule and the latest project
                 notes from the coordination team.
               </p>
@@ -62,9 +40,18 @@ export default function VolunteerDemoPage() {
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">
-          {assignments.map((assignment) => (
-            <AssignmentCard key={`${assignment.date}-${assignment.role}`} {...assignment} />
-          ))}
+          {schedule.assignments.length > 0 ? (
+            schedule.assignments.map((assignment) => (
+              <AssignmentCard key={assignment.id} {...assignment} />
+            ))
+          ) : (
+            <div className="md:col-span-3">
+              <EmptyState
+                title="No assignments yet"
+                message="When the coordination team publishes assignments, they will appear here."
+              />
+            </div>
+          )}
         </section>
 
         <section className="grid gap-4 py-6 lg:grid-cols-3">
@@ -72,33 +59,54 @@ export default function VolunteerDemoPage() {
             <h2 className="text-lg font-semibold tracking-tight text-slate-950">
               Lunch Schedule
             </h2>
-            <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
-              <p>Monday: Sandwich bar at 12:00 PM in the break area.</p>
-              <p>Wednesday: Soup and salad from 11:45 AM to 12:30 PM.</p>
-              <p>Saturday: Light lunch after cleanup for all volunteers.</p>
-            </div>
+            {schedule.lunches.length > 0 ? (
+              <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
+                {schedule.lunches.map((lunch) => (
+                  <p key={lunch.id}>
+                    <span className="font-medium text-slate-700">{lunch.day}:</span>{" "}
+                    {lunch.details}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-slate-500">
+                Lunch details have not been posted yet.
+              </p>
+            )}
           </GlassCard>
 
           <GlassCard className="p-5">
             <h2 className="text-lg font-semibold tracking-tight text-slate-950">
               Announcements
             </h2>
-            <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
-              <p>Parking has moved to the east lot for weekday crews.</p>
-              <p>Please bring gloves and closed-toe shoes for staging shifts.</p>
-              <p>Check in with the front desk before entering work areas.</p>
-            </div>
+            {schedule.announcements.length > 0 ? (
+              <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
+                {schedule.announcements.map((announcement) => (
+                  <p key={announcement.id}>{announcement.message}</p>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-slate-500">
+                There are no announcements right now.
+              </p>
+            )}
           </GlassCard>
 
           <GlassCard className="p-5">
             <h2 className="text-lg font-semibold tracking-tight text-slate-950">
               Project Info
             </h2>
-            <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
-              <p>Coordinator: Jordan M.</p>
-              <p>Site address: 1290 Frontage Road, Belgrade, MT</p>
-              <p>Emergency contact: posted at the volunteer check-in desk.</p>
-            </div>
+            {schedule.projectInfo ? (
+              <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
+                <p>Coordinator: {schedule.projectInfo.coordinator}</p>
+                <p>Site address: {schedule.projectInfo.address}</p>
+                <p>Emergency contact: {schedule.projectInfo.emergencyContact}</p>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm leading-6 text-slate-500">
+                Project details will be added soon.
+              </p>
+            )}
           </GlassCard>
         </section>
       </div>
