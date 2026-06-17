@@ -1,0 +1,81 @@
+# Current State
+
+## 1. App Overview
+
+CVC Scheduler is the full-stack successor to the Belgrade Remodel Sheets/App Script tool. It is being built as a project-centered workspace system where each workspace is centered around one real-world CVC project.
+
+The main admin mental model is:
+
+Admin user/account -> assigned project workspace -> one real-world project -> enabled modules inside that workspace.
+
+Modules inside a workspace may include Volunteers, Schedule, Food, Security, Announcements, Emails, Needs Attention, Conflicts, and Settings.
+
+Belgrade Major Remodel 2026 is the current blueprint and case study. The current app is a mock/prototype foundation only; it does not use real production data yet.
+
+## 2. Product Principles
+
+- Preserve the "easy feeling" of the current Belgrade app.
+- Keep the volunteer experience simple.
+- Make the admin UI calm, premium, and Apple-clean.
+- Design for older and low-tech congregation contacts.
+- Be role-aware without feeling overwhelming.
+- Use color meaningfully for status, warnings, roles, and module accents, not as decoration.
+- Volunteer intake should feel like a simple questionnaire, not profile creation.
+- Never punish someone for wanting to help.
+- Belgrade is the research/testing blueprint; the target is readiness for the next project.
+
+## 3. Mental Model
+
+Admin user/account
+-> assigned project workspace
+-> one real-world project
+-> enabled modules inside that workspace
+
+"Projects" should not feel like a peer feature beside Volunteers, Schedule, Food, Security, or other modules. The selection layer should generally use visible language such as Workspace, Workspaces, or Project Workspaces.
+
+"Project" is still acceptable when referring to the actual real-world project, such as Belgrade Major Remodel 2026, project contacts, project dates, or project type.
+
+The `/admin/projects` route can remain for now, but visible UI language should stay workspace-centered.
+
+## 4. Current Implemented Areas
+
+- Volunteer foundation with mock volunteer questionnaire/profile data.
+- Project/workspace admin foundation.
+- Project-aware and module-aware `AdminNav`.
+- Workspace setup wizard.
+- Project settings panel with client-only module toggles.
+- Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
+
+## 5. Current Routes
+
+- `/admin`: Redirects to the default active Belgrade workspace dashboard.
+- `/admin/dashboard`: Admin overview inside Belgrade Major Remodel 2026.
+- `/admin/projects`: Workspace selection/list page, visibly presented as Project Workspaces.
+- `/admin/projects/new`: Mock project workspace setup wizard.
+- `/admin/projects/[projectId]`: Workspace detail/read-only setup overview for specific mock workspaces.
+- `/admin/settings`: Settings for the selected Belgrade workspace.
+- `/admin/volunteers`: Volunteer review directory for the selected Belgrade workspace.
+- `/admin/volunteers/[volunteerId]`: Volunteer questionnaire/profile detail page.
+
+## 6. Current Mock Workspaces
+
+- Belgrade Major Remodel 2026: active workspace and current blueprint/case study.
+- Bozeman sample/draft project: draft workspace with limited modules.
+- Helena sample/archive project: archived workspace for reference.
+
+## 7. Current Limitations
+
+- No real auth.
+- No real database.
+- No Supabase yet.
+- No real persistence.
+- No email sending.
+- No real questionnaire submissions yet.
+- No scheduling engine yet.
+- No public volunteer portal yet.
+- Current data is mock-only.
+- Belgrade remains the production workflow in Sheets/App Script for now.
+
+## 8. Next Recommended Step
+
+05B.1 Questionnaire data model/helpers.
