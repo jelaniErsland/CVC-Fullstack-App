@@ -337,6 +337,43 @@ Limitations:
 Next recommended step:
 - 05B.7 Intake flow stabilization / visual QA.
 
+## Iteration 05B.7 - Intake Flow Stabilization / Visual QA
+
+Summary:
+- Reviewed the public questionnaire, admin questionnaire queue, questionnaire detail pages, volunteer profile preview, and linked volunteer profile route.
+- Cleaned up public questionnaire copy so it reads as a simple volunteer intake flow rather than account creation or mock data entry.
+- Softened placeholder action labels so disabled admin workflow actions read as intentional coming-next affordances.
+- Increased admin sidebar row tap targets for more comfortable mobile navigation.
+- Expanded the preview screenshot workflow to include the admin questionnaire queue and a questionnaire detail review page.
+- Confirmed mobile checks for the public questionnaire, queue, detail pages, and linked volunteer profile did not show horizontal overflow.
+
+Changed files:
+- `components/AdminNav.tsx`
+- `components/PublicQuestionnaireForm.tsx`
+- `app/admin/questionnaires/[submissionId]/page.tsx`
+- `lib/mockData.ts`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks passed for `/questionnaire/belgrade-remodel-2026`, `/admin/questionnaires`, ready, needs-follow-up, missing-info, and already-linked questionnaire detail pages, and `/admin/volunteers/alex-rivera`.
+- Browser visual/layout checks passed for desktop public questionnaire and mobile public questionnaire, queue, detail pages, and linked volunteer profile.
+- `npm run preview:screenshots` passed and refreshed intake-related previews.
+
+Limitations:
+- Intake remains mock-only.
+- No real persistence.
+- No real approve / needs-follow-up workflow actions.
+- No role-scoped review views yet.
+- No scheduling integration yet.
+
+Next recommended step:
+- 06 Scheduling foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

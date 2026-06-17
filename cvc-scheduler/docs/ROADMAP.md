@@ -25,7 +25,8 @@ Rough phases:
 - 05B.4 Questionnaire detail/review page. Completed.
 - 05B.5 Questionnaire-to-volunteer profile readiness. Completed.
 - 05B.6 Questionnaire review workflow states. Completed.
-- 05B.7 Intake flow stabilization / visual QA. Next recommended step.
+- 05B.7 Intake flow stabilization / visual QA. Completed.
+- 06 Scheduling foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -88,6 +89,10 @@ It does not create records or mutate state.
 05B.6 added mock-only workflow state helpers and detail-page guidance for new
 submissions, needs-review items, needs-follow-up items, missing required info,
 ready-for-profile submissions, and already linked/reviewed questionnaires.
+
+05B.7 stabilized the intake surfaces with copy cleanup, mobile tap-target polish,
+route checks, visual QA, and expanded preview screenshot coverage for the admin
+questionnaire queue and detail review page.
 
 Future questionnaire iterations still need:
 

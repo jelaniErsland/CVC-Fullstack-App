@@ -67,7 +67,7 @@ const steps: FormStep[] = [
     key: "availability",
     label: "Availability",
     eyebrow: "Step 2",
-    title: "When could usually work?",
+    title: "When could you usually work?",
     description:
       "Pick the days and times that are generally possible. You will still be contacted before any assignment.",
   },
@@ -101,7 +101,7 @@ const steps: FormStep[] = [
     eyebrow: "Review",
     title: "Review your answers.",
     description:
-      "This is a prototype, so submitting will only show a mock confirmation. Nothing will be saved yet.",
+      "This preview will only show a confirmation. In the real app, your answers would go to the project team.",
   },
 ];
 
@@ -295,18 +295,18 @@ export function PublicQuestionnaireForm({ project }: { project: Project }) {
     return (
       <GlassCard className="mx-auto w-full max-w-2xl p-6 text-center sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
-          Mock questionnaire received
+          Questionnaire preview received
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
           Thank you for offering to help.
         </h1>
         <p className="mt-4 text-base leading-7 text-slate-600">
-          In the real app, this would be sent to the project team for review.
-          For now, this is only a prototype confirmation and your answers were not saved.
+          In the real app, this would be sent to the project team for review. For now,
+          this preview does not save your answers.
         </p>
         <div className="mt-7 flex justify-center">
           <Button type="button" variant="secondary" onClick={() => setSubmitted(false)}>
-            Back to Review
+            Back to review
           </Button>
         </div>
       </GlassCard>
@@ -627,7 +627,7 @@ export function PublicQuestionnaireForm({ project }: { project: Project }) {
             >
               Back
             </Button>
-            <p className="text-center text-sm leading-6 text-slate-500 sm:text-left">
+            <p className="text-center text-sm leading-6 text-slate-500 sm:max-w-sm sm:text-left">
               You can move ahead and come back. The team can follow up if anything is unclear.
             </p>
             {stepIndex < steps.length - 1 ? (
@@ -639,7 +639,7 @@ export function PublicQuestionnaireForm({ project }: { project: Project }) {
               </Button>
             ) : (
               <Button type="button" onClick={() => setSubmitted(true)}>
-                Submit Mock Questionnaire
+                Submit questionnaire preview
               </Button>
             )}
           </div>

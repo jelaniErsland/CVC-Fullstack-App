@@ -457,7 +457,11 @@ export default async function AdminQuestionnaireDetailPage({
                 />
                 <AnswerRow
                   label="Emergency contact"
-                  value={volunteerProfilePreview.emergencyContactComplete ? "Complete" : "Needs detail"}
+                  value={
+                    volunteerProfilePreview.emergencyContactComplete
+                      ? "Complete"
+                      : "Needs detail"
+                  }
                   missing={!volunteerProfilePreview.emergencyContactComplete}
                 />
               </div>
@@ -504,7 +508,7 @@ export default async function AdminQuestionnaireDetailPage({
                     disabled
                     className="cursor-not-allowed opacity-60"
                   >
-                    Create profile - workflow coming next
+                    Create profile (coming next)
                   </Button>
                 )}
                 <Button
@@ -513,7 +517,7 @@ export default async function AdminQuestionnaireDetailPage({
                   disabled
                   className="cursor-not-allowed opacity-60"
                 >
-                  Mark needs follow-up - workflow coming next
+                  Mark needs follow-up (coming next)
                 </Button>
               </div>
             </GlassCard>

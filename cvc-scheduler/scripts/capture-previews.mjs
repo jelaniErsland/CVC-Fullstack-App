@@ -24,6 +24,12 @@ const captures = [
   ],
   ["/admin/settings", "settings.jpg", desktopViewport],
   ["/admin/volunteers", "volunteers.jpg", desktopViewport],
+  ["/admin/questionnaires", "questionnaire-review-queue.jpg", desktopViewport],
+  [
+    "/admin/questionnaires/questionnaire-jonah-price-paper",
+    "questionnaire-detail-ready.jpg",
+    desktopViewport,
+  ],
   [
     "/admin/volunteers/alex-rivera",
     "volunteer-profile-alex-rivera.jpg",

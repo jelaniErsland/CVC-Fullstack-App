@@ -52,6 +52,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Admin questionnaire detail review pages at `/admin/questionnaires/[submissionId]` with full mock answers, section completion cues, review flags/notes, linked volunteer context, and placeholder-only review actions.
 - Mock questionnaire-to-volunteer profile preview/readiness layer showing what a volunteer record would look like before real conversion exists.
 - Mock questionnaire workflow guidance for new, needs-review, needs-follow-up, missing-info, ready-for-profile, and already-linked submissions.
+- Intake flow stabilization pass completed across public questionnaire, admin queue, questionnaire details, linked volunteer profiles, mobile tap targets, and preview screenshot coverage.
 
 ## 5. Current Routes
 
@@ -71,7 +72,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
 
-The script captures key admin routes and the Belgrade public questionnaire from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, the admin questionnaire queue, a questionnaire detail page, and the Belgrade public questionnaire from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -97,9 +98,10 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No scheduling integration from questionnaire readiness yet.
 - No scheduling engine yet.
 - No public volunteer portal yet.
+- Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
 - Belgrade remains the production workflow in Sheets/App Script for now.
 
 ## 9. Next Recommended Step
 
-05B.7 Intake flow stabilization / visual QA.
+06 Scheduling foundation.

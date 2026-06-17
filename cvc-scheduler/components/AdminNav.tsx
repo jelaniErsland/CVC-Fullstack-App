@@ -89,7 +89,10 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
           </p>
           <div className="mt-3 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
             <span className="capitalize">{project.status}</span>
-            <Link href="/admin/projects" className="hover:text-slate-950">
+            <Link
+              href="/admin/projects"
+              className="rounded-full px-2 py-1.5 hover:bg-white/56 hover:text-slate-950"
+            >
               Switch
             </Link>
           </div>
@@ -99,7 +102,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
       <Link
         href="/admin/projects"
         className={[
-          "mt-3 flex rounded-lg border px-3 py-2 text-sm font-medium transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
+          "mt-3 flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm font-medium transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
           active === "projects"
             ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
             : "border-transparent text-slate-600",
@@ -113,7 +116,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
           <Link
             key={item.id}
             className={[
-              "rounded-lg border px-3 py-2 transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
+              "flex min-h-11 items-center rounded-lg border px-3 py-2 transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
               active === item.id
                 ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
                 : "border-transparent",

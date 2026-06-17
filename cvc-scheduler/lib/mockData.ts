@@ -2077,12 +2077,12 @@ export function getQuestionnaireWorkflowStateFromSubmission(
       nextStepSummary: "Review missing details",
       actions: [
         {
-          label: "Mark needs follow-up - coming next",
+          label: "Mark needs follow-up (coming next)",
           description: "Later this will record that the project team needs to contact the volunteer.",
           enabled: false,
         },
         {
-          label: "Create volunteer profile - coming next",
+          label: "Create volunteer profile (coming next)",
           description: "Profile creation stays disabled until required information is complete.",
           enabled: false,
         },
@@ -2102,12 +2102,12 @@ export function getQuestionnaireWorkflowStateFromSubmission(
       nextStepSummary: "Follow up with volunteer",
       actions: [
         {
-          label: "Mark needs follow-up - coming next",
+          label: "Mark needs follow-up (coming next)",
           description: "Later this will save the follow-up state and notes.",
           enabled: false,
         },
         {
-          label: "Mark reviewed - coming next",
+          label: "Mark reviewed (coming next)",
           description: "Later this will move the submission forward after the follow-up is resolved.",
           enabled: false,
         },
@@ -2124,12 +2124,12 @@ export function getQuestionnaireWorkflowStateFromSubmission(
       nextStepSummary: "Create volunteer profile when enabled",
       actions: [
         {
-          label: "Create volunteer profile - coming next",
+          label: "Create volunteer profile (coming next)",
           description: "Later this will create the project volunteer record.",
           enabled: false,
         },
         {
-          label: "Mark needs follow-up - coming next",
+          label: "Mark needs follow-up (coming next)",
           description: "Later this will hold the submission if the team wants one more conversation.",
           enabled: false,
         },
@@ -2146,12 +2146,12 @@ export function getQuestionnaireWorkflowStateFromSubmission(
       nextStepSummary: "Review questionnaire answers",
       actions: [
         {
-          label: "Mark reviewed - coming next",
+          label: "Mark reviewed (coming next)",
           description: "Later this will record that the first review is complete.",
           enabled: false,
         },
         {
-          label: "Mark needs follow-up - coming next",
+          label: "Mark needs follow-up (coming next)",
           description: "Later this will record a follow-up request.",
           enabled: false,
         },
@@ -2167,12 +2167,12 @@ export function getQuestionnaireWorkflowStateFromSubmission(
     nextStepSummary: "Finish questionnaire review",
     actions: [
       {
-        label: "Mark reviewed - coming next",
+        label: "Mark reviewed (coming next)",
         description: "Later this will record review completion.",
         enabled: false,
       },
       {
-        label: "Mark needs follow-up - coming next",
+        label: "Mark needs follow-up (coming next)",
         description: "Later this will record that the volunteer should be contacted.",
         enabled: false,
       },
