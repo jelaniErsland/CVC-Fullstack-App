@@ -312,6 +312,29 @@ export type VolunteerProfilePreview = {
   blockersBeforeScheduling: string[];
 };
 
+export type QuestionnaireWorkflowStatus =
+  | "New submission"
+  | "Needs review"
+  | "Needs follow-up"
+  | "Missing required info"
+  | "Ready for volunteer profile"
+  | "Already linked / reviewed";
+
+export type QuestionnaireWorkflowAction = {
+  label: string;
+  description: string;
+  enabled: boolean;
+  href?: string;
+};
+
+export type QuestionnaireWorkflowState = {
+  status: QuestionnaireWorkflowStatus;
+  title: string;
+  guidance: string;
+  nextStepSummary: string;
+  actions: QuestionnaireWorkflowAction[];
+};
+
 export type LunchItem = {
   id: string;
   projectId: string;
@@ -2016,6 +2039,151 @@ export function getVolunteerProfilePreviewBySubmissionId(submissionId: string) {
   const submission = getQuestionnaireSubmissionById(submissionId);
 
   return submission ? getVolunteerProfilePreviewFromSubmission(submission) : undefined;
+}
+
+export function getQuestionnaireWorkflowStateFromSubmission(
+  submission: VolunteerQuestionnaireSubmission,
+): QuestionnaireWorkflowState {
+  const preview = getVolunteerProfilePreviewFromSubmission(submission);
+  const linkedVolunteer = getLinkedVolunteerForSubmission(submission);
+  const firstBlocker = preview.blockersBeforeScheduling[0];
+  const hasReviewNotes = Boolean(submission.review.summary || submission.review.notes.length);
+
+  if (linkedVolunteer) {
+    return {
+      status: "Already linked / reviewed",
+      title: "Already connected to a volunteer profile",
+      guidance:
+        "This questionnaire is already tied to an existing volunteer record. Use the volunteer profile for scheduling readiness and avoid creating a duplicate.",
+      nextStepSummary: "View existing volunteer profile",
+      actions: [
+        {
+          label: "View existing volunteer profile",
+          description: "Open the linked volunteer record.",
+          enabled: true,
+          href: `/admin/volunteers/${linkedVolunteer.id}`,
+        },
+      ],
+    };
+  }
+
+  if (preview.readinessStatus === "Missing required info") {
+    return {
+      status: "Missing required info",
+      title: "Complete required information first",
+      guidance: firstBlocker
+        ? `${firstBlocker} Once the missing information is clear, the team can finish review.`
+        : "Complete the missing questionnaire details before creating a volunteer profile.",
+      nextStepSummary: "Review missing details",
+      actions: [
+        {
+          label: "Mark needs follow-up - coming next",
+          description: "Later this will record that the project team needs to contact the volunteer.",
+          enabled: false,
+        },
+        {
+          label: "Create volunteer profile - coming next",
+          description: "Profile creation stays disabled until required information is complete.",
+          enabled: false,
+        },
+      ],
+    };
+  }
+
+  if (
+    preview.readinessStatus === "Needs follow-up first" ||
+    submission.status === "needsFollowUp"
+  ) {
+    return {
+      status: "Needs follow-up",
+      title: "Follow up before creating a profile",
+      guidance:
+        "A coordinator should resolve the review note before this questionnaire becomes a volunteer profile.",
+      nextStepSummary: "Follow up with volunteer",
+      actions: [
+        {
+          label: "Mark needs follow-up - coming next",
+          description: "Later this will save the follow-up state and notes.",
+          enabled: false,
+        },
+        {
+          label: "Mark reviewed - coming next",
+          description: "Later this will move the submission forward after the follow-up is resolved.",
+          enabled: false,
+        },
+      ],
+    };
+  }
+
+  if (preview.readinessStatus === "Ready for volunteer profile") {
+    return {
+      status: "Ready for volunteer profile",
+      title: "Ready to create a volunteer profile",
+      guidance:
+        "The required intake details are present. Once real workflow actions exist, this can become a volunteer profile for scheduling review.",
+      nextStepSummary: "Create volunteer profile when enabled",
+      actions: [
+        {
+          label: "Create volunteer profile - coming next",
+          description: "Later this will create the project volunteer record.",
+          enabled: false,
+        },
+        {
+          label: "Mark needs follow-up - coming next",
+          description: "Later this will hold the submission if the team wants one more conversation.",
+          enabled: false,
+        },
+      ],
+    };
+  }
+
+  if (submission.status === "submitted" && !hasReviewNotes) {
+    return {
+      status: "New submission",
+      title: "New questionnaire is ready for review",
+      guidance:
+        "Start by reading the full answers, then decide whether it can move toward a volunteer profile or needs a kind follow-up.",
+      nextStepSummary: "Review questionnaire answers",
+      actions: [
+        {
+          label: "Mark reviewed - coming next",
+          description: "Later this will record that the first review is complete.",
+          enabled: false,
+        },
+        {
+          label: "Mark needs follow-up - coming next",
+          description: "Later this will record a follow-up request.",
+          enabled: false,
+        },
+      ],
+    };
+  }
+
+  return {
+    status: "Needs review",
+    title: "Review before moving forward",
+    guidance:
+      "This questionnaire has enough shape to inspect, but the team should finish review before creating a volunteer profile.",
+    nextStepSummary: "Finish questionnaire review",
+    actions: [
+      {
+        label: "Mark reviewed - coming next",
+        description: "Later this will record review completion.",
+        enabled: false,
+      },
+      {
+        label: "Mark needs follow-up - coming next",
+        description: "Later this will record that the volunteer should be contacted.",
+        enabled: false,
+      },
+    ],
+  };
+}
+
+export function getQuestionnaireWorkflowStateBySubmissionId(submissionId: string) {
+  const submission = getQuestionnaireSubmissionById(submissionId);
+
+  return submission ? getQuestionnaireWorkflowStateFromSubmission(submission) : undefined;
 }
 
 export function getQuestionnaireStatusLabel(status: QuestionnaireStatus) {

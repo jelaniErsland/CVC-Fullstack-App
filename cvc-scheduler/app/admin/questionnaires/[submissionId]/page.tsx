@@ -11,12 +11,14 @@ import {
   getQuestionnaireSectionProgress,
   getQuestionnaireStatusLabel,
   getQuestionnaireSubmissionById,
+  getQuestionnaireWorkflowStateFromSubmission,
   getVolunteerProfilePreviewFromSubmission,
   questionnaireSectionLabels,
   questionnaireSubmissions,
 } from "@/lib/mockData";
 import type {
   OtherWaysToHelpResponses,
+  QuestionnaireWorkflowAction,
   QuestionnaireSectionKey,
   VolunteerQuestionnaireSubmission,
 } from "@/lib/mockData";
@@ -48,6 +50,15 @@ const readinessStyles = {
   "Needs follow-up first": "border-amber-200 bg-amber-50 text-amber-700",
   "Missing required info": "border-slate-200 bg-slate-50 text-slate-600",
   "Already linked to volunteer profile": "border-sky-200 bg-sky-50 text-sky-700",
+};
+
+const workflowStyles = {
+  "New submission": "border-sky-200 bg-sky-50 text-sky-700",
+  "Needs review": "border-amber-200 bg-amber-50 text-amber-700",
+  "Needs follow-up": "border-amber-200 bg-amber-50 text-amber-700",
+  "Missing required info": "border-slate-200 bg-slate-50 text-slate-600",
+  "Ready for volunteer profile": "border-emerald-200 bg-emerald-50 text-emerald-700",
+  "Already linked / reviewed": "border-sky-200 bg-sky-50 text-sky-700",
 };
 
 function yesNo(value: boolean | undefined) {
@@ -103,6 +114,43 @@ function ReadinessBadge({ status }: { status: keyof typeof readinessStyles }) {
     >
       {status}
     </span>
+  );
+}
+
+function WorkflowBadge({ status }: { status: keyof typeof workflowStyles }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${workflowStyles[status]}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function WorkflowActionButton({ action }: { action: QuestionnaireWorkflowAction }) {
+  if (action.enabled && action.href) {
+    return (
+      <div>
+        <Button href={action.href} variant="secondary" className="w-full">
+          {action.label}
+        </Button>
+        <p className="mt-2 text-xs leading-5 text-slate-500">{action.description}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled
+        className="w-full cursor-not-allowed opacity-60"
+      >
+        {action.label}
+      </Button>
+      <p className="mt-2 text-xs leading-5 text-slate-500">{action.description}</p>
+    </div>
   );
 }
 
@@ -235,6 +283,7 @@ export default async function AdminQuestionnaireDetailPage({
   const flaggedSections = submission.review.flaggedSectionKeys;
   const statusLabel = getQuestionnaireStatusLabel(submission.status);
   const volunteerProfilePreview = getVolunteerProfilePreviewFromSubmission(submission);
+  const workflowState = getQuestionnaireWorkflowStateFromSubmission(submission);
 
   return (
     <PageShell>
@@ -272,23 +321,10 @@ export default async function AdminQuestionnaireDetailPage({
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <Button type="button" disabled className="cursor-not-allowed opacity-60">
-                Mark reviewed - workflow coming next
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled
-                className="cursor-not-allowed opacity-60"
-              >
-                Needs follow-up - workflow coming next
-              </Button>
-              {linkedVolunteer ? (
-                <Button href={`/admin/volunteers/${linkedVolunteer.id}`} variant="secondary">
-                  View linked volunteer
-                </Button>
-              ) : null}
+            <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[18rem] xl:grid-cols-1">
+              {workflowState.actions.map((action) => (
+                <WorkflowActionButton key={action.label} action={action} />
+              ))}
             </div>
           </header>
 
@@ -334,6 +370,33 @@ export default async function AdminQuestionnaireDetailPage({
                   This questionnaire is not linked to a volunteer profile yet.
                 </p>
               )}
+            </GlassCard>
+          </section>
+
+          <section className="mt-4">
+            <GlassCard className="p-5 sm:p-6">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Workflow Guidance
+                  </p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                    {workflowState.title}
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                    {workflowState.guidance}
+                  </p>
+                </div>
+                <WorkflowBadge status={workflowState.status} />
+              </div>
+              <div className="mt-4 rounded-lg border border-white/70 bg-white/46 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Suggested next step
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-800">
+                  {workflowState.nextStepSummary}
+                </p>
+              </div>
             </GlassCard>
           </section>
 

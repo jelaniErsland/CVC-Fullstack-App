@@ -306,6 +306,37 @@ Limitations:
 Next recommended step:
 - 05B.6 Questionnaire review workflow states.
 
+## Iteration 05B.6 - Questionnaire Review Workflow States
+
+Summary:
+- Added mock workflow state helpers for new submissions, needs-review items, needs-follow-up items, missing required info, ready-for-profile submissions, and already linked/reviewed questionnaires.
+- Added workflow guidance to questionnaire detail pages with a calm suggested next step.
+- Reworked the detail-page review action area so actions come from the derived workflow state.
+- Kept future mutation actions disabled and labeled as coming next.
+- Preserved real links only for existing linked volunteer profiles.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/questionnaires/[submissionId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks passed for `/admin/questionnaires`, one ready questionnaire detail page, one needs-follow-up questionnaire detail page, one missing-info questionnaire detail page, and one already-linked questionnaire detail page.
+
+Limitations:
+- Workflow states are preview/mock-only.
+- No real persistence.
+- No real approve / needs-follow-up workflow actions.
+- No role-scoped review views yet.
+- No scheduling integration yet.
+
+Next recommended step:
+- 05B.7 Intake flow stabilization / visual QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

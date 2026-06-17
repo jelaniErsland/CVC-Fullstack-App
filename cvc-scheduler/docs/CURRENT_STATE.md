@@ -51,6 +51,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Admin questionnaire review queue at `/admin/questionnaires` with mock submissions across Belgrade, Bozeman, and Helena, calm filtering, review flags, and linked volunteer profile actions where available.
 - Admin questionnaire detail review pages at `/admin/questionnaires/[submissionId]` with full mock answers, section completion cues, review flags/notes, linked volunteer context, and placeholder-only review actions.
 - Mock questionnaire-to-volunteer profile preview/readiness layer showing what a volunteer record would look like before real conversion exists.
+- Mock questionnaire workflow guidance for new, needs-review, needs-follow-up, missing-info, ready-for-profile, and already-linked submissions.
 
 ## 5. Current Routes
 
@@ -88,6 +89,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real persistence.
 - No email sending.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
+- Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
 - Questionnaire-to-volunteer conversion is preview/mock-only and does not create records.
 - No role-scoped questionnaire review views yet.
@@ -100,4 +102,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-05B.6 Questionnaire review workflow states.
+05B.7 Intake flow stabilization / visual QA.

@@ -24,7 +24,8 @@ Rough phases:
 - 05B.3 Admin questionnaire review queue. Completed.
 - 05B.4 Questionnaire detail/review page. Completed.
 - 05B.5 Questionnaire-to-volunteer profile readiness. Completed.
-- 05B.6 Questionnaire review workflow states. Next recommended step.
+- 05B.6 Questionnaire review workflow states. Completed.
+- 05B.7 Intake flow stabilization / visual QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -84,9 +85,13 @@ placeholder-only review actions.
 how a reviewed questionnaire could become a schedule-ready volunteer record.
 It does not create records or mutate state.
 
+05B.6 added mock-only workflow state helpers and detail-page guidance for new
+submissions, needs-review items, needs-follow-up items, missing required info,
+ready-for-profile submissions, and already linked/reviewed questionnaires.
+
 Future questionnaire iterations still need:
 
-- Approve / needs-follow-up workflow.
+- Real approve / needs-follow-up workflow actions.
 - Real persistence.
 - Role-scoped review views.
 - Converting approved questionnaire submissions into schedule-ready volunteer records.
