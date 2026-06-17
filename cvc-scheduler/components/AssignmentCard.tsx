@@ -35,6 +35,22 @@ export function AssignmentCard({
         <p>{crew}</p>
         <p>{location}</p>
       </div>
+      {status === "Pending" || status === "Needs Reply" ? (
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white"
+          >
+            Confirm
+          </button>
+          <button
+            type="button"
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/80 bg-white/64 px-4 text-sm font-semibold text-slate-700"
+          >
+            I need help
+          </button>
+        </div>
+      ) : null}
     </GlassCard>
   );
 }

@@ -25,10 +25,10 @@ export default function Home() {
               Volunteer Portal
             </p>
             <h1 className="mt-4 text-[2.45rem] font-semibold leading-none tracking-tight text-slate-950 sm:text-5xl">
-              CVC Scheduler
+              CVC Project Portal
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Find your volunteer schedule
+              Project volunteer coordination
             </p>
           </div>
 
@@ -52,9 +52,15 @@ export default function Home() {
           </div>
 
           <p className="mt-6 text-center text-[0.84rem] leading-6 text-slate-500 sm:text-sm">
-            Schedule links sent by email will be able to open a volunteer portal
-            directly. This lookup is a placeholder for the MVP shell.
+            Schedule links sent by email will be able to open this project portal
+            directly when that feature is active.
           </p>
+          <Link
+            href="/q/demo"
+            className="mt-4 block text-center text-sm font-medium text-slate-500 hover:text-slate-950"
+          >
+            Sample volunteer questionnaire
+          </Link>
         </GlassCard>
       </section>
     </PageShell>

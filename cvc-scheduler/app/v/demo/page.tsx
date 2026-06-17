@@ -4,7 +4,6 @@ import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
-import { StatusPill } from "@/components/StatusPill";
 import { getVolunteerSchedule } from "@/lib/mockData";
 
 export default function VolunteerDemoPage() {
@@ -15,9 +14,14 @@ export default function VolunteerDemoPage() {
     <PageShell>
       <div className="mx-auto w-full max-w-6xl">
         <header className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
-            CVC Scheduler
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
+              CVC Scheduler
+            </Link>
+            <Link href="/q/demo" className="text-sm font-medium text-slate-500 hover:text-slate-950">
+              Sample volunteer questionnaire
+            </Link>
+          </div>
           <Button variant="secondary">Add all to calendar</Button>
         </header>
 
@@ -25,7 +29,7 @@ export default function VolunteerDemoPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-sm">
             {projectName}
           </p>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mt-4">
             <div>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
                 Hi, Alex.
@@ -35,7 +39,6 @@ export default function VolunteerDemoPage() {
                 notes from the coordination team.
               </p>
             </div>
-            <StatusPill status="Confirmed" />
           </div>
         </section>
 

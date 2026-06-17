@@ -1,78 +1,76 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
-import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
-import {
-  getProjectById,
-  getUpcomingVolunteerAssignments,
-  getVolunteerById,
-  getVolunteerAssignments,
-  volunteers,
-} from "@/lib/mockData";
-import type { VolunteerAssignment } from "@/lib/mockData";
+import { getVolunteerById, projectVolunteers } from "@/lib/mockData";
+import type { ProjectVolunteer } from "@/lib/mockData";
 
-type AdminVolunteerProfilePageProps = {
+type AdminVolunteerDetailPageProps = {
   params: Promise<{
     volunteerId: string;
   }>;
 };
 
-function TagList({ items }: { items: string[] }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span
-          key={item}
-          className="rounded-full border border-white/80 bg-white/64 px-3 py-1 text-xs font-semibold text-slate-600"
-        >
-          {item}
-        </span>
-      ))}
-    </div>
-  );
+function yesNo(value: boolean) {
+  return value ? "Yes" : "No";
 }
 
-function UpcomingAssignmentCard({
-  assignment,
+function DetailCard({
+  title,
+  children,
 }: {
-  assignment: VolunteerAssignment;
+  title: string;
+  children: React.ReactNode;
 }) {
-  const project = getProjectById(assignment.projectId);
-
   return (
     <GlassCard className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{assignment.date}</p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-            {assignment.role}
-          </h3>
-        </div>
-        <StatusPill status={assignment.status} />
-      </div>
-      <div className="mt-5 grid gap-2 text-sm leading-6 text-slate-600">
-        <p>{assignment.time}</p>
-        <p>{project?.name ?? "Project TBD"}</p>
-        <p>
-          {assignment.crew} - {assignment.location}
-        </p>
-      </div>
+      <h2 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h2>
+      <div className="mt-5 grid gap-3 text-sm leading-6 text-slate-600">{children}</div>
     </GlassCard>
   );
 }
 
+function OtherHelpList({ volunteer }: { volunteer: ProjectVolunteer }) {
+  const helpItems = [
+    ["Housing", volunteer.otherWaysToHelp.housing],
+    ["Transportation", volunteer.otherWaysToHelp.transportation],
+    ["Laundry / dry cleaning", volunteer.otherWaysToHelp.laundryDryCleaning],
+    ["Housekeeping", volunteer.otherWaysToHelp.housekeeping],
+    ["Hair care", volunteer.otherWaysToHelp.hairCare],
+    ["Medical support", volunteer.otherWaysToHelp.medicalSupport],
+    ["Food service", volunteer.otherWaysToHelp.foodService],
+  ].filter(([, enabled]) => enabled);
+
+  return (
+    <>
+      <p>{helpItems.map(([label]) => label).join(", ") || "No other categories selected."}</p>
+      {volunteer.otherWaysToHelp.medicalSupportDetails ? (
+        <p>Medical support details: {volunteer.otherWaysToHelp.medicalSupportDetails}</p>
+      ) : null}
+      {volunteer.otherWaysToHelp.other ? <p>Other: {volunteer.otherWaysToHelp.other}</p> : null}
+      {volunteer.otherWaysToHelp.otherHelpDetails ? (
+        <p>Other details: {volunteer.otherWaysToHelp.otherHelpDetails}</p>
+      ) : null}
+      <p>{volunteer.otherWaysToHelp.details || "No extra details provided."}</p>
+      {volunteer.otherWaysToHelp.otherWaysDetails ? (
+        <p>Additional details: {volunteer.otherWaysToHelp.otherWaysDetails}</p>
+      ) : null}
+    </>
+  );
+}
+
 export function generateStaticParams() {
-  return volunteers.map((volunteer) => ({
+  return projectVolunteers.map((volunteer) => ({
     volunteerId: volunteer.id,
   }));
 }
 
-export default async function AdminVolunteerProfilePage({
+export default async function AdminVolunteerDetailPage({
   params,
-}: AdminVolunteerProfilePageProps) {
+}: AdminVolunteerDetailPageProps) {
   const { volunteerId } = await params;
   const volunteer = getVolunteerById(volunteerId);
 
@@ -80,14 +78,14 @@ export default async function AdminVolunteerProfilePage({
     notFound();
   }
 
-  const upcomingAssignments = getUpcomingVolunteerAssignments(volunteer.id);
-  const assignmentTotal = getVolunteerAssignments(volunteer.id).length;
-  const stats = [
-    { label: "Confirmed", value: volunteer.assignmentCounts.confirmed },
-    { label: "Pending", value: volunteer.assignmentCounts.pending },
-    { label: "Denied", value: volunteer.assignmentCounts.denied },
-    { label: "Records", value: assignmentTotal },
-  ];
+  const primaryAction =
+    volunteer.status === "Approved"
+      ? "Edit Review"
+      : volunteer.status === "Needs Info"
+        ? "Mark Reviewed"
+        : volunteer.status === "Not Approved"
+          ? "Edit Review"
+          : "Approve Volunteer";
 
   return (
     <PageShell>
@@ -102,114 +100,118 @@ export default async function AdminVolunteerProfilePage({
         </aside>
 
         <div className="py-4">
-          <header>
-            <Link
-              href="/admin/volunteers"
-              className="text-sm font-medium text-slate-500 hover:text-slate-950"
-            >
-              Volunteers
-            </Link>
-            <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Volunteer Profile
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              {volunteer.name}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              {volunteer.congregation} congregation volunteer with mock contact,
-              skills, and assignment context.
-            </p>
+          <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <Link
+                href="/admin/volunteers"
+                className="text-sm font-medium text-slate-500 hover:text-slate-950"
+              >
+                Project Volunteers
+              </Link>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Submitted Questionnaire
+              </p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                  {volunteer.name}
+                </h1>
+                <StatusPill status={volunteer.status} />
+              </div>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+                Review this submitted questionnaire and choose the next kind step
+                for the project team.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <Button type="button">{primaryAction}</Button>
+              <Button type="button" variant="secondary">
+                Mark Needs Info
+              </Button>
+              <Button type="button" variant="secondary">
+                Add Note
+              </Button>
+              <Button type="button" variant="ghost">
+                Export Questionnaire PDF
+              </Button>
+            </div>
           </header>
 
-          <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <GlassCard key={stat.label} className="p-5">
-                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                <p className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-                  {stat.value}
+          <section className="mt-8 grid gap-4 lg:grid-cols-2">
+            <DetailCard title="Contact Information">
+              <p>{volunteer.congregation} Congregation</p>
+              <a className="break-words hover:text-slate-950" href={`mailto:${volunteer.email}`}>
+                {volunteer.email}
+              </a>
+              <a className="hover:text-slate-950" href={`tel:${volunteer.phone}`}>
+                {volunteer.phone}
+              </a>
+              <p>Date of birth: {volunteer.dateOfBirth}</p>
+            </DetailCard>
+
+            <DetailCard title="Emergency Contact">
+              <p>{volunteer.emergencyContact.name}</p>
+              <a className="hover:text-slate-950" href={`tel:${volunteer.emergencyContact.phone}`}>
+                {volunteer.emergencyContact.phone}
+              </a>
+              <p>Relationship: {volunteer.emergencyContact.relationship}</p>
+            </DetailCard>
+
+            <DetailCard title="Availability">
+              <p>Available days: {volunteer.availability.weekdays.join(", ")}</p>
+              <p>Two or more days per week: {yesNo(volunteer.availability.twoOrMoreDays)}</p>
+              {volunteer.availability.twoOrMoreDaysDetails ? (
+                <p>Details: {volunteer.availability.twoOrMoreDaysDetails}</p>
+              ) : null}
+              <p>After-hours security: {yesNo(volunteer.availability.afterHoursSecurity)}</p>
+              {volunteer.availability.afterHoursSecurityDetails ? (
+                <p>Security details: {volunteer.availability.afterHoursSecurityDetails}</p>
+              ) : null}
+            </DetailCard>
+
+            <DetailCard title="Skills & Experience">
+              <p>
+                Construction skills:{" "}
+                {volunteer.skillsExperience.construction.join(", ") || "None listed"}
+              </p>
+              <p>
+                Maintenance task cards: {yesNo(volunteer.skillsExperience.maintenanceTaskCards)}
+              </p>
+              <p>
+                Task cards: {volunteer.skillsExperience.taskCards || "No task cards listed"}
+              </p>
+              {volunteer.skillsExperience.taskCardAdditionalDetails ? (
+                <p>Task card details: {volunteer.skillsExperience.taskCardAdditionalDetails}</p>
+              ) : null}
+              <p>
+                Physical work in hot/cold conditions:{" "}
+                {yesNo(volunteer.skillsExperience.physicalWorkConditions)}
+              </p>
+              {volunteer.skillsExperience.physicalWorkConditionsDetails ? (
+                <p>
+                  Physical work details:{" "}
+                  {volunteer.skillsExperience.physicalWorkConditionsDetails}
                 </p>
-              </GlassCard>
-            ))}
-          </section>
+              ) : null}
+            </DetailCard>
 
-          <section className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-            <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                Contact Info
-              </h2>
-              <div className="mt-5 grid gap-3 text-sm leading-6 text-slate-600">
-                <a className="break-words hover:text-slate-950" href={`mailto:${volunteer.email}`}>
-                  {volunteer.email}
-                </a>
-                <a className="hover:text-slate-950" href={`tel:${volunteer.phone}`}>
-                  {volunteer.phone}
-                </a>
-                <p>{volunteer.congregation} Congregation</p>
-              </div>
-            </GlassCard>
+            <DetailCard title="Other Ways They Can Help">
+              <OtherHelpList volunteer={volunteer} />
+            </DetailCard>
 
-            <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                Skills and Tags
-              </h2>
-              <div className="mt-5 grid gap-4">
-                <TagList items={volunteer.roles} />
-                <TagList items={volunteer.skills} />
-                <TagList items={volunteer.tags} />
-              </div>
-            </GlassCard>
-          </section>
+            <DetailCard title="Questionnaire Status">
+              <p>Status: {volunteer.status}</p>
+              <p>Submitted: {volunteer.submittedAt}</p>
+              <p>Export as PDF is coming soon.</p>
+            </DetailCard>
 
-          <section className="mt-8">
-            <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-              Upcoming Assignments
-            </h2>
-            {upcomingAssignments.length > 0 ? (
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {upcomingAssignments.map((assignment) => (
-                  <UpcomingAssignmentCard
-                    key={assignment.id}
-                    assignment={assignment}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-5">
-                <EmptyState
-                  title="No upcoming assignments"
-                  message="This volunteer has no upcoming mock assignments yet."
-                />
-              </div>
-            )}
-          </section>
-
-          <section className="mt-8 grid gap-4 lg:grid-cols-3">
-            <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                Past and Denied History
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Placeholder for completed, declined, and denied assignment history.
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                Notes
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Placeholder for private admin notes and volunteer preferences.
-              </p>
-            </GlassCard>
-
-            <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-                Communication Log
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-slate-600">
-                Placeholder for future calls, texts, emails, and reminder activity.
-              </p>
-            </GlassCard>
+            <DetailCard title="Notes">
+              {volunteer.notes.length > 0 ? (
+                volunteer.notes.map((note) => <p key={note}>{note}</p>)
+              ) : (
+                <p>No notes yet.</p>
+              )}
+            </DetailCard>
           </section>
         </div>
       </div>

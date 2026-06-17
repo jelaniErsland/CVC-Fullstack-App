@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
             Sign in
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Mock login only. Authentication will be connected later.
+            Access your project volunteer coordination workspace.
           </p>
         </div>
 
@@ -33,6 +33,13 @@ export default function AdminLoginPage() {
           className="mt-6 block text-center text-sm font-medium text-slate-500 hover:text-slate-950"
         >
           Back to volunteer lookup
+        </Link>
+
+        <Link
+          href="/admin/onboarding"
+          className="mt-4 block text-center text-sm font-semibold text-slate-700 hover:text-slate-950"
+        >
+          Create project workspace
         </Link>
       </GlassCard>
     </PageShell>
