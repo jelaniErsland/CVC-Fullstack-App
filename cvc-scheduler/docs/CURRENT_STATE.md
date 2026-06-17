@@ -45,6 +45,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Workspace setup wizard.
 - Project settings panel with client-only module toggles.
 - Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
+- Lightweight preview screenshot workflow via `npm run preview:screenshots`.
 
 ## 5. Current Routes
 
@@ -57,13 +58,21 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - `/admin/volunteers`: Volunteer review directory for the selected Belgrade workspace.
 - `/admin/volunteers/[volunteerId]`: Volunteer questionnaire/profile detail page.
 
-## 6. Current Mock Workspaces
+## 6. Preview Screenshot Workflow
+
+Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
+
+The script captures key admin routes from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+
+Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
+
+## 7. Current Mock Workspaces
 
 - Belgrade Major Remodel 2026: active workspace and current blueprint/case study.
 - Bozeman sample/draft project: draft workspace with limited modules.
 - Helena sample/archive project: archived workspace for reference.
 
-## 7. Current Limitations
+## 8. Current Limitations
 
 - No real auth.
 - No real database.
@@ -76,6 +85,6 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Current data is mock-only.
 - Belgrade remains the production workflow in Sheets/App Script for now.
 
-## 8. Next Recommended Step
+## 9. Next Recommended Step
 
 05B.1 Questionnaire data model/helpers.

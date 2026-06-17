@@ -112,6 +112,35 @@ Verification:
 - `npm run build` passed.
 - Manual route check passed with no console errors.
 
+## Preview Screenshot Workflow
+
+Summary:
+- Added a lightweight Playwright-based screenshot capture workflow.
+- Added `npm run preview:screenshots`.
+- Script clears and recreates `docs/previews/latest/` before saving new previews.
+- Captures desktop screenshots for key admin routes and one mobile dashboard screenshot.
+- Updated current-state docs with usage notes.
+
+Changed files:
+- `package.json`
+- `package-lock.json`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run preview:screenshots` passed with the local app running at `http://127.0.0.1:3000`.
+- Generated nine JPG screenshots in `docs/previews/latest/`.
+- `npm run lint` passed.
+
+Limitations:
+- Requires the app to be running before capture.
+- Requires Playwright browser binaries to be available in the local environment.
+
+Next recommended step:
+- 05B.1 Questionnaire data model/helpers.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
