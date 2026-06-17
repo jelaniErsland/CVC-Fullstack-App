@@ -29,7 +29,17 @@ const captures = [
     "volunteer-profile-alex-rivera.jpg",
     desktopViewport,
   ],
+  [
+    "/questionnaire/belgrade-remodel-2026",
+    "questionnaire-belgrade.jpg",
+    desktopViewport,
+  ],
   ["/admin/dashboard", "mobile-dashboard.jpg", mobileViewport],
+  [
+    "/questionnaire/belgrade-remodel-2026",
+    "mobile-questionnaire-belgrade.jpg",
+    mobileViewport,
+  ],
 ];
 
 function previewUrl(route) {

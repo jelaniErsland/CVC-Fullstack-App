@@ -27,7 +27,16 @@ export type ProjectVolunteerStatus =
   | "Approved"
   | "Needs Info"
   | "Not Approved";
-export type PillStatus = AssignmentStatus | ProjectStatus | ProjectVolunteerStatus;
+export type QuestionnaireReviewQueueStatus =
+  | "New"
+  | "Needs Review"
+  | "Incomplete"
+  | "Reviewed";
+export type PillStatus =
+  | AssignmentStatus
+  | ProjectStatus
+  | ProjectVolunteerStatus
+  | QuestionnaireReviewQueueStatus;
 
 export type Project = {
   id: string;
@@ -146,6 +155,136 @@ export type ProjectVolunteer = {
     details: string;
     otherWaysDetails?: string;
   };
+  notes: string[];
+};
+
+export type QuestionnaireStatus =
+  | "notStarted"
+  | "inProgress"
+  | "submitted"
+  | "needsReview"
+  | "approved"
+  | "needsFollowUp";
+
+export type QuestionnaireSectionKey =
+  | "aboutYou"
+  | "availability"
+  | "skillsExperience"
+  | "emergencyContact"
+  | "otherWaysToHelp";
+
+export type QuestionnaireSourceType = "online" | "paper" | "manualEntry";
+
+export type QuestionnaireStatusTone =
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "attention";
+
+export type VolunteerAvailabilityDetails = {
+  weekdays: string[];
+  preferredTimes: string[];
+  canServeMultipleDays: boolean;
+  canServeMultipleDaysDetails?: string;
+  availableForAfterHoursSecurity: boolean;
+  afterHoursSecurityDetails?: string;
+  limitations?: string;
+};
+
+export type SkillExperienceResponses = {
+  construction: string[];
+  maintenanceTaskCards: boolean;
+  taskCards?: string;
+  taskCardAdditionalDetails?: string;
+  comfortableWithPhysicalWork: boolean;
+  physicalWorkDetails?: string;
+  notes?: string;
+};
+
+export type QuestionnaireEmergencyContact = {
+  name: string;
+  phone: string;
+  relationship: string;
+};
+
+export type OtherWaysToHelpResponses = {
+  housing: boolean;
+  transportation: boolean;
+  laundryDryCleaning: boolean;
+  housekeeping: boolean;
+  hairCare: boolean;
+  medicalSupport: boolean;
+  medicalSupportDetails?: string;
+  foodService: boolean;
+  other?: string;
+  details?: string;
+};
+
+export type QuestionnaireReviewNote = {
+  id: string;
+  author: string;
+  createdAt: string;
+  message: string;
+};
+
+export type QuestionnaireReviewFlag =
+  | "missingEmergencyContact"
+  | "paperQuestionnaire"
+  | "limitedAvailability"
+  | "needsFollowUp";
+
+export type VolunteerQuestionnaireSubmission = {
+  id: string;
+  projectId: string;
+  linkedVolunteerId?: string;
+  status: QuestionnaireStatus;
+  sourceType: QuestionnaireSourceType;
+  startedAt: string;
+  submittedAt?: string;
+  updatedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  aboutYou: {
+    name: string;
+    congregation: string;
+    email?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    preferredContactMethod?: "email" | "phone" | "text";
+  };
+  availability: VolunteerAvailabilityDetails;
+  skillsExperience: SkillExperienceResponses;
+  emergencyContact?: QuestionnaireEmergencyContact;
+  otherWaysToHelp: OtherWaysToHelpResponses;
+  review: {
+    status: QuestionnaireStatus;
+    flaggedSectionKeys: QuestionnaireSectionKey[];
+    flags?: QuestionnaireReviewFlag[];
+    summary?: string;
+    notes: QuestionnaireReviewNote[];
+  };
+};
+
+export type QuestionnaireReviewItem = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectLocation: string;
+  linkedVolunteerId?: string;
+  volunteerName: string;
+  congregation: string;
+  email?: string;
+  submittedDate: string;
+  updatedDate: string;
+  status: QuestionnaireReviewQueueStatus;
+  rawStatus: QuestionnaireStatus;
+  sourceType: QuestionnaireSourceType;
+  availabilitySummary: string;
+  skillsSummary: string;
+  otherWaysToHelpSummary: string;
+  flags: QuestionnaireReviewFlag[];
+  flagLabels: string[];
   notes: string[];
 };
 
@@ -998,7 +1137,651 @@ export const projectContacts: ProjectContacts[] = [
   },
 ];
 
+export const questionnaireSubmissions: VolunteerQuestionnaireSubmission[] = [
+  {
+    id: "questionnaire-mia-thompson-2026",
+    projectId: "belgrade-remodel-2026",
+    status: "needsReview",
+    sourceType: "online",
+    startedAt: "2025-11-18T16:25:00.000Z",
+    submittedAt: "2025-11-18T17:05:00.000Z",
+    updatedAt: "2025-11-18T17:05:00.000Z",
+    aboutYou: {
+      name: "Mia Thompson",
+      congregation: "Bozeman",
+      email: "mia.thompson@example.com",
+      phone: "(406) 555-0174",
+      dateOfBirth: "1988-04-22",
+      preferredContactMethod: "text",
+    },
+    availability: {
+      weekdays: ["Monday", "Tuesday", "Wednesday", "Thursday"],
+      preferredTimes: ["Morning", "Afternoon"],
+      canServeMultipleDays: true,
+      canServeMultipleDaysDetails: "Can do two or three consecutive weekdays if assigned early.",
+      availableForAfterHoursSecurity: false,
+      limitations: "Avoid heavy overhead work because of a shoulder injury.",
+    },
+    skillsExperience: {
+      construction: ["Painting", "Finish work", "General cleanup"],
+      maintenanceTaskCards: true,
+      taskCards: "Painting and general maintenance",
+      comfortableWithPhysicalWork: true,
+      physicalWorkDetails: "Comfortable with ladders under 8 feet.",
+    },
+    emergencyContact: {
+      name: "Daniel Thompson",
+      phone: "(406) 555-0175",
+      relationship: "Spouse",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: true,
+      laundryDryCleaning: false,
+      housekeeping: true,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: true,
+      details: "Happy to help with cleanup or food prep if the crew is full.",
+    },
+    review: {
+      status: "needsReview",
+      flaggedSectionKeys: ["availability"],
+      flags: ["limitedAvailability"],
+      summary: "Strong fit for weekday finish work; confirm shoulder limitation before assigning.",
+      notes: [
+        {
+          id: "note-mia-review",
+          author: "Jordan Miller",
+          createdAt: "2025-11-19T15:20:00.000Z",
+          message: "Looks ready for review. Ask about ladder comfort before approving.",
+        },
+      ],
+    },
+  },
+  {
+    id: "questionnaire-nora-bennett-draft",
+    projectId: "belgrade-remodel-2026",
+    status: "inProgress",
+    sourceType: "online",
+    startedAt: "2025-11-20T03:12:00.000Z",
+    updatedAt: "2025-11-20T03:28:00.000Z",
+    aboutYou: {
+      name: "Nora Bennett",
+      congregation: "Belgrade",
+      email: "nora.bennett@example.com",
+      phone: "(406) 555-0190",
+      preferredContactMethod: "email",
+    },
+    availability: {
+      weekdays: ["Saturday"],
+      preferredTimes: ["Morning"],
+      canServeMultipleDays: false,
+      availableForAfterHoursSecurity: false,
+    },
+    skillsExperience: {
+      construction: [],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: false,
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: false,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+    },
+    review: {
+      status: "inProgress",
+      flaggedSectionKeys: [],
+      flags: ["missingEmergencyContact", "limitedAvailability"],
+      notes: [],
+    },
+  },
+  {
+    id: "questionnaire-jonah-price-paper",
+    projectId: "belgrade-remodel-2026",
+    status: "submitted",
+    sourceType: "paper",
+    startedAt: "2025-11-21T18:00:00.000Z",
+    submittedAt: "2025-11-21T18:00:00.000Z",
+    updatedAt: "2025-11-22T02:30:00.000Z",
+    aboutYou: {
+      name: "Jonah Price",
+      congregation: "Manhattan",
+      phone: "(406) 555-0161",
+      preferredContactMethod: "phone",
+    },
+    availability: {
+      weekdays: ["Friday", "Saturday"],
+      preferredTimes: ["Afternoon"],
+      canServeMultipleDays: true,
+      canServeMultipleDaysDetails: "Can come after work Friday and most of Saturday.",
+      availableForAfterHoursSecurity: true,
+      afterHoursSecurityDetails: "Could help with an early evening watch if paired with someone.",
+    },
+    skillsExperience: {
+      construction: ["Demo", "General cleanup", "Material moving"],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: true,
+      notes: "Paper form noted previous remodel cleanup experience.",
+    },
+    emergencyContact: {
+      name: "Rebecca Price",
+      phone: "(406) 555-0162",
+      relationship: "Sister",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: true,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+      details: "Can bring a pickup for hauling small supplies.",
+    },
+    review: {
+      status: "submitted",
+      flaggedSectionKeys: ["aboutYou"],
+      flags: ["paperQuestionnaire"],
+      summary: "Paper form entered by hand; missing email is acceptable but phone should be confirmed.",
+      notes: [
+        {
+          id: "note-jonah-entry",
+          author: "Morgan Lee",
+          createdAt: "2025-11-22T02:32:00.000Z",
+          message: "Entered from a paper questionnaire after midweek meeting.",
+        },
+      ],
+    },
+  },
+  {
+    id: "questionnaire-alex-rivera-approved",
+    projectId: "belgrade-remodel-2026",
+    linkedVolunteerId: "alex-rivera",
+    status: "approved",
+    sourceType: "online",
+    startedAt: "2025-11-15T22:18:00.000Z",
+    submittedAt: "2025-11-15T22:42:00.000Z",
+    updatedAt: "2025-11-16T16:10:00.000Z",
+    reviewedAt: "2025-11-16T16:10:00.000Z",
+    reviewedBy: "Jordan Miller",
+    aboutYou: {
+      name: "Alex Rivera",
+      congregation: "Belgrade",
+      email: "alex.rivera@example.com",
+      phone: "(406) 555-0142",
+      dateOfBirth: "1981-09-03",
+      preferredContactMethod: "text",
+    },
+    availability: {
+      weekdays: ["Monday", "Tuesday", "Saturday"],
+      preferredTimes: ["Morning", "Afternoon"],
+      canServeMultipleDays: true,
+      canServeMultipleDaysDetails: "Can take two full days if needed.",
+      availableForAfterHoursSecurity: false,
+    },
+    skillsExperience: {
+      construction: ["Framing", "Demo", "Material handling"],
+      maintenanceTaskCards: true,
+      taskCards: "Carpentry, basic electrical assist",
+      comfortableWithPhysicalWork: true,
+    },
+    emergencyContact: {
+      name: "Elena Rivera",
+      phone: "(406) 555-0143",
+      relationship: "Spouse",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: true,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+      details: "Can bring a trailer if supplies need to move locally.",
+    },
+    review: {
+      status: "approved",
+      flaggedSectionKeys: [],
+      flags: [],
+      summary: "Approved and linked to the project volunteer profile.",
+      notes: [
+        {
+          id: "note-alex-approved",
+          author: "Jordan Miller",
+          createdAt: "2025-11-16T16:10:00.000Z",
+          message: "Approved for construction and material movement shifts.",
+        },
+      ],
+    },
+  },
+  {
+    id: "questionnaire-caleb-ross-follow-up",
+    projectId: "belgrade-remodel-2026",
+    linkedVolunteerId: "caleb-ross",
+    status: "needsFollowUp",
+    sourceType: "manualEntry",
+    startedAt: "2025-11-17T20:00:00.000Z",
+    submittedAt: "2025-11-17T20:00:00.000Z",
+    updatedAt: "2025-11-18T18:45:00.000Z",
+    reviewedAt: "2025-11-18T18:45:00.000Z",
+    reviewedBy: "Morgan Lee",
+    aboutYou: {
+      name: "Caleb Ross",
+      congregation: "Livingston",
+      email: "caleb.ross@example.com",
+      phone: "(406) 555-0182",
+      preferredContactMethod: "phone",
+    },
+    availability: {
+      weekdays: ["Thursday", "Friday"],
+      preferredTimes: ["Evening"],
+      canServeMultipleDays: true,
+      availableForAfterHoursSecurity: true,
+      afterHoursSecurityDetails: "Willing to coordinate security but needs exact building access details.",
+    },
+    skillsExperience: {
+      construction: ["Security", "Check-in desk"],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: true,
+      notes: "Experienced with after-hours monitoring for prior RBC projects.",
+    },
+    emergencyContact: {
+      name: "Avery Ross",
+      phone: "(406) 555-0183",
+      relationship: "Sibling",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: false,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+      details: "Can help train a second person for evening lockup.",
+    },
+    review: {
+      status: "needsFollowUp",
+      flaggedSectionKeys: ["availability", "skillsExperience"],
+      flags: ["needsFollowUp"],
+      summary: "Confirm security schedule, building access, and whether he should lead the team.",
+      notes: [
+        {
+          id: "note-caleb-follow-up",
+          author: "Morgan Lee",
+          createdAt: "2025-11-18T18:45:00.000Z",
+          message: "Needs a quick call before assigning him as primary security lead.",
+        },
+      ],
+    },
+  },
+  {
+    id: "questionnaire-leah-johnson-bozeman-new",
+    projectId: "bozeman-sample-draft",
+    linkedVolunteerId: "leah-johnson",
+    status: "submitted",
+    sourceType: "online",
+    startedAt: "2025-12-02T19:10:00.000Z",
+    submittedAt: "2025-12-02T19:34:00.000Z",
+    updatedAt: "2025-12-02T19:34:00.000Z",
+    aboutYou: {
+      name: "Leah Johnson",
+      congregation: "Bozeman",
+      email: "leah.johnson@example.com",
+      phone: "(406) 555-0151",
+      preferredContactMethod: "email",
+    },
+    availability: {
+      weekdays: ["Friday", "Saturday"],
+      preferredTimes: ["Morning", "Afternoon"],
+      canServeMultipleDays: true,
+      canServeMultipleDaysDetails: "Can take a full Saturday and one setup shift if needed.",
+      availableForAfterHoursSecurity: false,
+      limitations: "Prefers check-in, desk, or runner work instead of ladders.",
+    },
+    skillsExperience: {
+      construction: ["Check-in desk", "Data entry", "Announcements"],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: false,
+      physicalWorkDetails: "Can stand for short periods but should avoid ladder work.",
+    },
+    emergencyContact: {
+      name: "Grace Johnson",
+      phone: "(406) 555-0152",
+      relationship: "Mother",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: false,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: true,
+      details: "Can help with sign-in, volunteer messages, or lunch count updates.",
+    },
+    review: {
+      status: "submitted",
+      flaggedSectionKeys: ["availability"],
+      flags: ["limitedAvailability"],
+      summary: "New Bozeman questionnaire; likely a good admin support fit.",
+      notes: [],
+    },
+  },
+  {
+    id: "questionnaire-owen-clark-bozeman-incomplete",
+    projectId: "bozeman-sample-draft",
+    status: "inProgress",
+    sourceType: "online",
+    startedAt: "2025-12-04T02:05:00.000Z",
+    updatedAt: "2025-12-04T02:18:00.000Z",
+    aboutYou: {
+      name: "Owen Clark",
+      congregation: "Belgrade",
+      email: "owen.clark@example.com",
+      preferredContactMethod: "email",
+    },
+    availability: {
+      weekdays: ["Saturday"],
+      preferredTimes: ["Morning"],
+      canServeMultipleDays: false,
+      availableForAfterHoursSecurity: false,
+    },
+    skillsExperience: {
+      construction: ["General cleanup"],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: true,
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: false,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+    },
+    review: {
+      status: "inProgress",
+      flaggedSectionKeys: ["emergencyContact"],
+      flags: ["missingEmergencyContact", "limitedAvailability"],
+      summary: "Started but not complete; missing phone and emergency contact.",
+      notes: [],
+    },
+  },
+  {
+    id: "questionnaire-sarah-wilson-helena-paper",
+    projectId: "helena-archived-sample",
+    status: "needsReview",
+    sourceType: "paper",
+    startedAt: "2025-09-24T18:00:00.000Z",
+    submittedAt: "2025-09-24T18:00:00.000Z",
+    updatedAt: "2025-09-25T01:20:00.000Z",
+    aboutYou: {
+      name: "Sarah Wilson",
+      congregation: "Helena",
+      phone: "(406) 555-0124",
+      preferredContactMethod: "phone",
+    },
+    availability: {
+      weekdays: ["Friday", "Saturday", "Sunday"],
+      preferredTimes: ["Afternoon", "Evening"],
+      canServeMultipleDays: true,
+      canServeMultipleDaysDetails: "Available for the whole support weekend.",
+      availableForAfterHoursSecurity: false,
+    },
+    skillsExperience: {
+      construction: ["Food service", "Housekeeping", "Volunteer care"],
+      maintenanceTaskCards: false,
+      comfortableWithPhysicalWork: true,
+      notes: "Paper form mentions prior hospitality support for assemblies.",
+    },
+    emergencyContact: {
+      name: "Mark Wilson",
+      phone: "(406) 555-0125",
+      relationship: "Husband",
+    },
+    otherWaysToHelp: {
+      housing: true,
+      transportation: false,
+      laundryDryCleaning: true,
+      housekeeping: true,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: true,
+      details: "Can host two sisters and help with lunches if needed.",
+    },
+    review: {
+      status: "needsReview",
+      flaggedSectionKeys: ["aboutYou", "otherWaysToHelp"],
+      flags: ["paperQuestionnaire"],
+      summary: "Paper questionnaire needs a quick contact check before archived reference is final.",
+      notes: [
+        {
+          id: "note-sarah-paper",
+          author: "Elena Ward",
+          createdAt: "2025-09-25T01:22:00.000Z",
+          message: "Entered from a paper questionnaire after service meeting.",
+        },
+      ],
+    },
+  },
+  {
+    id: "questionnaire-david-kim-helena-reviewed",
+    projectId: "helena-archived-sample",
+    status: "approved",
+    sourceType: "online",
+    startedAt: "2025-09-20T23:12:00.000Z",
+    submittedAt: "2025-09-20T23:41:00.000Z",
+    updatedAt: "2025-09-21T17:30:00.000Z",
+    reviewedAt: "2025-09-21T17:30:00.000Z",
+    reviewedBy: "Elena Ward",
+    aboutYou: {
+      name: "David Kim",
+      congregation: "Great Falls",
+      email: "david.kim@example.com",
+      phone: "(406) 555-0186",
+      preferredContactMethod: "text",
+    },
+    availability: {
+      weekdays: ["Friday", "Saturday"],
+      preferredTimes: ["Morning", "Afternoon"],
+      canServeMultipleDays: true,
+      availableForAfterHoursSecurity: true,
+      afterHoursSecurityDetails: "Can help with evening lockup on Friday.",
+    },
+    skillsExperience: {
+      construction: ["Security", "Material moving", "General cleanup"],
+      maintenanceTaskCards: true,
+      taskCards: "Safety checks and exterior maintenance",
+      comfortableWithPhysicalWork: true,
+    },
+    emergencyContact: {
+      name: "Hannah Kim",
+      phone: "(406) 555-0187",
+      relationship: "Wife",
+    },
+    otherWaysToHelp: {
+      housing: false,
+      transportation: true,
+      laundryDryCleaning: false,
+      housekeeping: false,
+      hairCare: false,
+      medicalSupport: false,
+      foodService: false,
+      details: "Can drive supplies between the hall and storage.",
+    },
+    review: {
+      status: "approved",
+      flaggedSectionKeys: [],
+      flags: [],
+      summary: "Reviewed for Helena support project and ready for reference.",
+      notes: [
+        {
+          id: "note-david-reviewed",
+          author: "Elena Ward",
+          createdAt: "2025-09-21T17:30:00.000Z",
+          message: "Approved for security and logistics support.",
+        },
+      ],
+    },
+  },
+];
+
 export const demoProjectId = "belgrade-remodel-2026";
+
+export const questionnaireStatusLabels: Record<QuestionnaireStatus, string> = {
+  notStarted: "Not started",
+  inProgress: "In progress",
+  submitted: "Submitted",
+  needsReview: "Needs review",
+  approved: "Approved",
+  needsFollowUp: "Needs follow-up",
+};
+
+export const questionnaireReviewQueueStatuses: QuestionnaireReviewQueueStatus[] = [
+  "New",
+  "Needs Review",
+  "Incomplete",
+  "Reviewed",
+];
+
+export const questionnaireReviewFlagLabels: Record<QuestionnaireReviewFlag, string> = {
+  missingEmergencyContact: "Missing emergency contact",
+  paperQuestionnaire: "Paper questionnaire",
+  limitedAvailability: "Limited availability",
+  needsFollowUp: "Needs follow-up",
+};
+
+export const questionnaireSectionLabels: Record<QuestionnaireSectionKey, string> = {
+  aboutYou: "About you",
+  availability: "Availability",
+  skillsExperience: "Skills and experience",
+  emergencyContact: "Emergency contact",
+  otherWaysToHelp: "Other ways to help",
+};
+
+export const questionnaireSectionKeys: QuestionnaireSectionKey[] = [
+  "aboutYou",
+  "availability",
+  "skillsExperience",
+  "emergencyContact",
+  "otherWaysToHelp",
+];
+
+const otherWaysToHelpLabels: Array<[keyof OtherWaysToHelpResponses, string]> = [
+  ["housing", "Housing"],
+  ["transportation", "Transportation"],
+  ["laundryDryCleaning", "Laundry / dry cleaning"],
+  ["housekeeping", "Housekeeping"],
+  ["hairCare", "Hair care"],
+  ["medicalSupport", "Medical support"],
+  ["foodService", "Food service"],
+];
+
+function formatMockDate(value?: string) {
+  if (!value) {
+    return "Not submitted yet";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function getQueueStatusFromQuestionnaireStatus(
+  status: QuestionnaireStatus,
+): QuestionnaireReviewQueueStatus {
+  if (status === "submitted") {
+    return "New";
+  }
+
+  if (status === "inProgress" || status === "notStarted") {
+    return "Incomplete";
+  }
+
+  if (status === "approved") {
+    return "Reviewed";
+  }
+
+  return "Needs Review";
+}
+
+function summarizeQuestionnaireAvailability(submission: VolunteerQuestionnaireSubmission) {
+  const days = submission.availability.weekdays.join(", ") || "No days selected";
+  const times = submission.availability.preferredTimes.join(", ") || "No time preference";
+  const notes = [
+    submission.availability.canServeMultipleDays ? "can serve multiple days" : undefined,
+    submission.availability.availableForAfterHoursSecurity
+      ? "available for after-hours security"
+      : undefined,
+    submission.availability.limitations,
+  ].filter(Boolean);
+
+  return notes.length ? `${days}; ${times}; ${notes.join("; ")}` : `${days}; ${times}`;
+}
+
+function summarizeQuestionnaireSkills(submission: VolunteerQuestionnaireSubmission) {
+  const skills =
+    submission.skillsExperience.construction.join(", ") ||
+    submission.skillsExperience.taskCards ||
+    submission.skillsExperience.notes ||
+    "No skills listed yet";
+  const extras = [
+    submission.skillsExperience.maintenanceTaskCards ? "maintenance task cards" : undefined,
+    submission.skillsExperience.comfortableWithPhysicalWork === false
+      ? "physical work limits noted"
+      : undefined,
+  ].filter(Boolean);
+
+  return extras.length ? `${skills}; ${extras.join("; ")}` : skills;
+}
+
+function summarizeOtherWaysToHelp(submission: VolunteerQuestionnaireSubmission) {
+  const selected = otherWaysToHelpLabels
+    .filter(([key]) => Boolean(submission.otherWaysToHelp[key]))
+    .map(([, label]) => label);
+  const other = submission.otherWaysToHelp.other;
+  const details = submission.otherWaysToHelp.details;
+
+  return [...selected, other, details].filter(Boolean).join("; ") || "No other help listed";
+}
+
+function getGeneratedQuestionnaireReviewFlags(
+  submission: VolunteerQuestionnaireSubmission,
+): QuestionnaireReviewFlag[] {
+  const flags = new Set<QuestionnaireReviewFlag>(submission.review.flags ?? []);
+
+  if (!submission.emergencyContact?.name || !submission.emergencyContact.phone) {
+    flags.add("missingEmergencyContact");
+  }
+
+  if (submission.sourceType === "paper") {
+    flags.add("paperQuestionnaire");
+  }
+
+  if (
+    submission.availability.weekdays.length <= 1 ||
+    Boolean(submission.availability.limitations) ||
+    !submission.availability.canServeMultipleDays
+  ) {
+    flags.add("limitedAvailability");
+  }
+
+  if (submission.status === "needsFollowUp") {
+    flags.add("needsFollowUp");
+  }
+
+  return Array.from(flags);
+}
 
 export function getVolunteerSchedule(projectId = demoProjectId) {
   return {
@@ -1018,6 +1801,165 @@ export function getProjectById(projectId: string) {
 
 export function getProjectContacts(projectId = demoProjectId) {
   return projectContacts.find((contacts) => contacts.projectId === projectId);
+}
+
+export function getQuestionnaireSubmissionsForProject(projectId = demoProjectId) {
+  return questionnaireSubmissions.filter((submission) => submission.projectId === projectId);
+}
+
+export function getQuestionnaireSubmissionById(submissionId: string) {
+  return questionnaireSubmissions.find((submission) => submission.id === submissionId);
+}
+
+export function getQuestionnaireSubmissionsByStatus(
+  projectId: string,
+  status: QuestionnaireStatus,
+) {
+  return getQuestionnaireSubmissionsForProject(projectId).filter(
+    (submission) => submission.status === status,
+  );
+}
+
+export function getQuestionnaireReviewCounts(projectId = demoProjectId) {
+  const counts: Record<QuestionnaireStatus, number> = {
+    notStarted: 0,
+    inProgress: 0,
+    submitted: 0,
+    needsReview: 0,
+    approved: 0,
+    needsFollowUp: 0,
+  };
+
+  const submissions = getQuestionnaireSubmissionsForProject(projectId);
+
+  submissions.forEach((submission) => {
+    counts[submission.status] += 1;
+  });
+
+  return {
+    ...counts,
+    total: submissions.length,
+    readyForReview: counts.submitted + counts.needsReview,
+    needsAction: counts.needsReview + counts.needsFollowUp,
+  };
+}
+
+export function getQuestionnaireReviewItems(projectId?: string): QuestionnaireReviewItem[] {
+  return questionnaireSubmissions
+    .filter((submission) => (projectId ? submission.projectId === projectId : true))
+    .map((submission) => {
+      const project = projects.find((item) => item.id === submission.projectId);
+      const flags = getGeneratedQuestionnaireReviewFlags(submission);
+
+      return {
+        id: submission.id,
+        projectId: submission.projectId,
+        projectName: project?.name ?? "Unknown project",
+        projectLocation: project?.location ?? "Unknown location",
+        linkedVolunteerId: submission.linkedVolunteerId,
+        volunteerName: submission.aboutYou.name,
+        congregation: submission.aboutYou.congregation,
+        email: submission.aboutYou.email,
+        submittedDate: formatMockDate(submission.submittedAt),
+        updatedDate: formatMockDate(submission.updatedAt),
+        status: getQueueStatusFromQuestionnaireStatus(submission.status),
+        rawStatus: submission.status,
+        sourceType: submission.sourceType,
+        availabilitySummary: summarizeQuestionnaireAvailability(submission),
+        skillsSummary: summarizeQuestionnaireSkills(submission),
+        otherWaysToHelpSummary: summarizeOtherWaysToHelp(submission),
+        flags,
+        flagLabels: flags.map((flag) => questionnaireReviewFlagLabels[flag]),
+        notes: [
+          submission.review.summary,
+          ...submission.review.notes.map((note) => note.message),
+        ].filter((note): note is string => Boolean(note)),
+      };
+    })
+    .sort((first, second) => {
+      const firstSubmitted = questionnaireSubmissions.find(
+        (submission) => submission.id === first.id,
+      )?.submittedAt;
+      const secondSubmitted = questionnaireSubmissions.find(
+        (submission) => submission.id === second.id,
+      )?.submittedAt;
+
+      return (
+        new Date(secondSubmitted ?? second.updatedDate).getTime() -
+        new Date(firstSubmitted ?? first.updatedDate).getTime()
+      );
+    });
+}
+
+export function getQuestionnaireStatusLabel(status: QuestionnaireStatus) {
+  return questionnaireStatusLabels[status];
+}
+
+export function getQuestionnaireStatusTone(
+  status: QuestionnaireStatus,
+): QuestionnaireStatusTone {
+  const tones: Record<QuestionnaireStatus, QuestionnaireStatusTone> = {
+    notStarted: "neutral",
+    inProgress: "info",
+    submitted: "info",
+    needsReview: "warning",
+    approved: "success",
+    needsFollowUp: "attention",
+  };
+
+  return tones[status];
+}
+
+export function getQuestionnaireSectionProgress(
+  submission: VolunteerQuestionnaireSubmission,
+) {
+  const hasOtherWaysToHelp =
+    submission.otherWaysToHelp.housing ||
+    submission.otherWaysToHelp.transportation ||
+    submission.otherWaysToHelp.laundryDryCleaning ||
+    submission.otherWaysToHelp.housekeeping ||
+    submission.otherWaysToHelp.hairCare ||
+    submission.otherWaysToHelp.medicalSupport ||
+    submission.otherWaysToHelp.foodService ||
+    Boolean(submission.otherWaysToHelp.other || submission.otherWaysToHelp.details);
+
+  const sections: Record<QuestionnaireSectionKey, boolean> = {
+    aboutYou: Boolean(
+      submission.aboutYou.name &&
+        submission.aboutYou.congregation &&
+        (submission.aboutYou.email || submission.aboutYou.phone),
+    ),
+    availability: Boolean(
+      submission.availability.weekdays.length && submission.availability.preferredTimes.length,
+    ),
+    skillsExperience: Boolean(
+      submission.skillsExperience.construction.length ||
+        submission.skillsExperience.taskCards ||
+        submission.skillsExperience.notes,
+    ),
+    emergencyContact: Boolean(
+      submission.emergencyContact?.name && submission.emergencyContact.phone,
+    ),
+    otherWaysToHelp: hasOtherWaysToHelp,
+  };
+
+  const completed = questionnaireSectionKeys.filter((key) => sections[key]).length;
+  const total = questionnaireSectionKeys.length;
+
+  return {
+    completed,
+    total,
+    percent: Math.round((completed / total) * 100),
+    sections,
+  };
+}
+
+export function getLinkedVolunteerForSubmission(
+  submission: VolunteerQuestionnaireSubmission,
+) {
+  return submission.linkedVolunteerId
+    ? getVolunteerById(submission.linkedVolunteerId)
+    : undefined;
 }
 
 export function getModuleLabel(module: ProjectModule) {

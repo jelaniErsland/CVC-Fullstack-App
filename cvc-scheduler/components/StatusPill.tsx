@@ -17,6 +17,9 @@ const statusStyles: Record<StatusPillProps["status"], string> = {
   Approved: "border-emerald-200 bg-emerald-50 text-emerald-700",
   "Needs Info": "border-sky-200 bg-sky-50 text-sky-700",
   "Not Approved": "border-rose-200 bg-rose-50 text-rose-700",
+  New: "border-sky-200 bg-sky-50 text-sky-700",
+  Incomplete: "border-slate-200 bg-slate-50 text-slate-600",
+  Reviewed: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 export function StatusPill({ status }: StatusPillProps) {

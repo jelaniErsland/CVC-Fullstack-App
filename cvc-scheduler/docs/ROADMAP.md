@@ -19,10 +19,10 @@ Rough phases:
 
 ## 3. Near-Term Roadmap
 
-- 05B.1 Questionnaire data model/helpers.
-- 05B.2 Public questionnaire form shell.
-- 05B.3 Admin questionnaire review queue.
-- 05B.4 Questionnaire detail/review page.
+- 05B.1 Questionnaire data model/helpers. Completed.
+- 05B.2 Public questionnaire form shell. Completed.
+- 05B.3 Admin questionnaire review queue. Completed.
+- 05B.4 Questionnaire detail/review page. Next recommended step.
 - 05B.5 Convert questionnaire into volunteer profile.
 
 ## 4. Mid-Term Roadmap
@@ -67,3 +67,17 @@ For the next project, the app should eventually support:
 - Keep mock flow feeling right before database work.
 - Do not connect Supabase too early if the user flow is still changing.
 - Every future iteration should update the docs.
+
+## 8. Questionnaire Intake Notes
+
+05B.3 added a mock admin questionnaire review queue at `/admin/questionnaires`.
+It uses existing questionnaire submission data plus review helpers to show new,
+needs-review, incomplete, and reviewed submissions with calm card-first filtering.
+
+Future questionnaire iterations still need:
+
+- Questionnaire detail review.
+- Approve / needs-follow-up workflow.
+- Real persistence.
+- Role-scoped review views.
+- Converting approved questionnaire submissions into schedule-ready volunteer records.

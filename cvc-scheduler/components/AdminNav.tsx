@@ -6,6 +6,7 @@ type AdminNavActive =
   | "projects"
   | "overview"
   | "volunteers"
+  | "questionnaires"
   | "schedule"
   | "food"
   | "security"
@@ -29,6 +30,12 @@ const navItems: Array<{
 }> = [
   { id: "overview", label: "Overview", href: "/admin/dashboard", always: true },
   { id: "volunteers", label: "Volunteers", href: "/admin/volunteers", always: true },
+  {
+    id: "questionnaires",
+    label: "Questionnaires",
+    href: "/admin/questionnaires",
+    always: true,
+  },
   {
     id: "schedule",
     label: "Schedule",

@@ -141,6 +141,105 @@ Limitations:
 Next recommended step:
 - 05B.1 Questionnaire data model/helpers.
 
+## Iteration 05B.1 - Questionnaire Data Model + Mock Review Helpers
+
+Summary:
+- Added questionnaire submission types for status, source type, sections, availability, skills, emergency contact, other ways to help, and review notes.
+- Added Belgrade mock questionnaire submissions covering needs review, in progress, paper entry, approved-linked, and needs follow-up examples.
+- Added questionnaire helper functions for project/status filtering, review counts, status labels/tones, section progress, and linked volunteer lookup.
+- Kept this as a data/helper pass with no new questionnaire UI.
+- Updated current-state docs so the next recommended step is the public questionnaire form shell.
+
+Changed files:
+- `lib/mockData.ts`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Limitations:
+- Mock-only.
+- No Supabase/auth/persistence.
+- No public questionnaire form yet.
+- No admin review queue or review detail page yet.
+- No real volunteer conversion logic yet.
+
+Next recommended step:
+- 05B.2 Public questionnaire form shell.
+
+## Iteration 05B.2 - Public Questionnaire Form Shell
+
+Summary:
+- Added `/questionnaire/[projectId]` as the first project-specific public questionnaire route.
+- Added a reusable client-only `PublicQuestionnaireForm` with welcome, about you, availability, skills, emergency contact, other help, and review steps.
+- Added local-only mock submit confirmation with no persistence.
+- Added a calm unavailable questionnaire state for unknown, draft, archived, or volunteer-disabled workspaces.
+- Expanded the preview screenshot workflow to capture the Belgrade public questionnaire.
+- Updated current-state and roadmap docs so 05B.3 is the next recommended step.
+
+Changed files:
+- `app/questionnaire/[projectId]/page.tsx`
+- `components/PublicQuestionnaireForm.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed with the local app running at `http://127.0.0.1:3000`.
+
+Limitations:
+- Mock-only.
+- No Supabase/auth/persistence.
+- Public questionnaire answers are not saved.
+- No admin review queue or review detail page yet.
+- No real volunteer conversion logic yet.
+
+Next recommended step:
+- 05B.3 Admin questionnaire review queue.
+
+## Iteration 05B.3 - Admin Questionnaire Review Queue
+
+Summary:
+- Added mock questionnaire review data across Belgrade, Bozeman, and Helena.
+- Added review flags for missing emergency contact, paper questionnaire, limited availability, and needs follow-up.
+- Added review queue helpers that translate storage statuses into admin-facing New, Needs Review, Incomplete, and Reviewed labels.
+- Added `/admin/questionnaires` with a calm card-first review queue, search, status filter, congregation filter, counts, and helpful empty states.
+- Linked queue items to existing volunteer profiles where a linked volunteer exists.
+- Added Questionnaires to the admin navigation without changing the single-workspace admin shell.
+- Kept the pass mock-only with no database writes, auth, email, approval logic, or volunteer login.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `components/StatusPill.tsx`
+- `components/QuestionnaireReviewQueue.tsx`
+- `app/admin/questionnaires/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks passed for `/admin/questionnaires`, `/admin/volunteers`, and a linked volunteer profile from the queue.
+
+Limitations:
+- Mock-only.
+- No questionnaire detail review page yet.
+- No approve / needs-follow-up workflow yet.
+- No real persistence.
+- No role-scoped review views yet.
+- No conversion from approved questionnaire submission to a schedule-ready volunteer record yet.
+
+Next recommended step:
+- 05B.4 Questionnaire detail/review page.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
