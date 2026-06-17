@@ -28,7 +28,9 @@ Rough phases:
 - 05B.7 Intake flow stabilization / visual QA. Completed.
 - 06.1 Scheduling data model + mock schedule view. Completed.
 - 06.5 Role Landing Page UX Alignment. Completed.
-- 06.6 Role-home visual QA/stabilization. Next recommended step.
+- 06.6 Role-home visual QA/stabilization. Completed.
+- 07.1 Needs Attention data model + calm overview. Completed.
+- 07.2 Conflict/coverage detail patterns. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -36,6 +38,7 @@ Rough phases:
 - 06.5 Role Landing Page UX Alignment for Primary CVC, Assistant CVC, Primary Food Contact, Primary Security Contact, and possible On-site Contact homes.
 - 06.6 Role-home visual QA/stabilization.
 - 07 Needs Attention / Conflicts.
+- 07.2 Conflict/coverage detail patterns.
 - 08 Emails and announcements.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
@@ -131,6 +134,10 @@ best action, a week snapshot, coordinator focus rows, recent updates, and
 expandable preview patterns for Assistant CVC, Primary Food Contact, Primary
 Security Contact, and On-site Contact.
 
+06.6 stabilized the role home visually with tighter dashboard hierarchy, a
+lighter project context panel, more prominent next-action treatment, clearer
+preview-only language, and mobile/desktop checks for overflow and tap targets.
+
 Role homes are preview/mock-only. Future role work still needs:
 
 - Real role permissions and scoped data.
@@ -138,3 +145,20 @@ Role homes are preview/mock-only. Future role work still needs:
 - Full Food and Security module surfaces.
 - On-site contact workflows.
 - Platform owner/admin homes.
+
+## 11. Needs Attention / Conflicts Notes
+
+07.1 added a mock Needs Attention foundation with follow-up items across
+questionnaires, schedule, volunteers, food, security, and setup. The new
+`/admin/needs-attention` route uses compact grouped rows, expandable details,
+soft priority labels, related links, and calm next-step language. The Primary
+CVC dashboard now derives its top next action from the Needs Attention helper.
+
+Needs Attention is mock-only. Future work still needs:
+
+- Real conflict detection.
+- Coverage detail patterns.
+- Real resolution actions.
+- Notification logic.
+- Role-scoped follow-up views.
+- Real persistence.

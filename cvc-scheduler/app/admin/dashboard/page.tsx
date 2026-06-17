@@ -13,21 +13,21 @@ import type { RoleHomeData, RoleHomeFocus, RoleHomeUpdate } from "@/lib/mockData
 
 function RoleHomeHeader({ home }: { home: RoleHomeData }) {
   return (
-    <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
+    <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-4 backdrop-blur-xl sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
             {home.eyebrow}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
             {home.title}
           </h1>
         </div>
-        <span className="inline-flex w-fit rounded-full border border-white/80 bg-white/62 px-3 py-1.5 text-xs font-semibold text-slate-600">
+        <span className="inline-flex min-h-9 w-fit items-center rounded-full border border-white/80 bg-white/62 px-3 py-1 text-xs font-semibold text-slate-600">
           {home.role}
         </span>
       </div>
-      <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
         {home.subtitle}
       </p>
       {home.congregationScope ? (
@@ -62,7 +62,7 @@ function MetricStrip({ home }: { home: RoleHomeData }) {
 
 function NextBestAction({ action }: { action: RoleHomeFocus }) {
   const content = (
-    <div className="rounded-lg border border-white/72 bg-white/58 px-4 py-4 transition hover:bg-white/78">
+    <div className="rounded-lg border border-slate-200/70 bg-white/72 px-4 py-4 shadow-sm transition hover:bg-white/88 sm:px-5">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
         {action.label}
       </p>
@@ -74,7 +74,9 @@ function NextBestAction({ action }: { action: RoleHomeFocus }) {
           <p className="mt-2 text-sm leading-6 text-slate-600">{action.detail}</p>
         </div>
         {action.href ? (
-          <span className="shrink-0 text-sm font-semibold text-slate-700">Open</span>
+          <span className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
+            Open
+          </span>
         ) : null}
       </div>
     </div>
@@ -98,7 +100,7 @@ function CompactUpdateList({
       <div>
         {items.map((item) => {
           const row = (
-            <div className="grid gap-1 border-b border-white/72 px-4 py-3 last:border-b-0 transition hover:bg-white/46 sm:grid-cols-[120px_1fr] sm:px-5">
+            <div className="grid min-h-14 gap-1 border-b border-white/72 px-4 py-3 last:border-b-0 transition hover:bg-white/46 sm:grid-cols-[120px_1fr] sm:items-center sm:px-5">
               <p className="text-sm font-semibold text-slate-700">{item.label}</p>
               <p className="text-sm leading-6 text-slate-600">{item.detail}</p>
             </div>
@@ -128,7 +130,7 @@ function FocusList({ items }: { items: RoleHomeFocus[] }) {
       <div>
         {items.map((item) => {
           const row = (
-            <div className="border-b border-white/72 px-4 py-3 last:border-b-0 transition hover:bg-white/46 sm:px-5">
+            <div className="min-h-16 border-b border-white/72 px-4 py-3 last:border-b-0 transition hover:bg-white/46 sm:px-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -138,7 +140,9 @@ function FocusList({ items }: { items: RoleHomeFocus[] }) {
                   <p className="mt-1 text-sm leading-6 text-slate-600">{item.detail}</p>
                 </div>
                 {item.href ? (
-                  <span className="text-sm font-semibold text-slate-600">Open</span>
+                  <span className="inline-flex min-h-10 items-center text-sm font-semibold text-slate-600">
+                    Open
+                  </span>
                 ) : null}
               </div>
             </div>
@@ -170,13 +174,13 @@ function RolePatternPreview({ homes }: { homes: RoleHomeData[] }) {
               Preview patterns
             </h2>
           </div>
-          <p className="text-sm text-slate-500">Mock-only, no permissions yet</p>
+          <p className="text-sm text-slate-500">Preview only</p>
         </div>
       </div>
       <div className="divide-y divide-white/72">
         {homes.map((home) => (
           <details className="group" key={home.role}>
-            <summary className="grid cursor-pointer list-none gap-2 px-4 py-3 transition hover:bg-white/46 sm:grid-cols-[180px_1fr_auto] sm:items-center sm:px-5">
+            <summary className="grid min-h-14 cursor-pointer list-none gap-2 px-4 py-3 transition hover:bg-white/46 sm:grid-cols-[180px_1fr_auto] sm:items-center sm:px-5">
               <p className="text-sm font-semibold text-slate-950">{home.role}</p>
               <p className="text-sm leading-6 text-slate-600">{home.nextBestAction.title}</p>
               <span className="text-xs font-semibold text-slate-400 group-open:hidden">
@@ -242,7 +246,10 @@ export default function AdminDashboardPage() {
       <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
         <aside className="lg:py-4">
           <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
+            <Link
+              href="/"
+              className="flex min-h-10 items-center text-lg font-semibold tracking-tight text-slate-950"
+            >
               CVC Scheduler
             </Link>
             <AdminNav active="overview" />
@@ -256,31 +263,17 @@ export default function AdminDashboardPage() {
               <MetricStrip home={activeHome} />
             </div>
 
-            <GlassCard className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Workspace
-                  </p>
-                  <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">
-                    {project.location}
-                  </h2>
-                </div>
+            <GlassCard className="p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Project
+                </p>
                 <StatusPill status={project.status} />
               </div>
-              <div className="mt-4 grid gap-3 text-sm leading-6 text-slate-600">
-                <p>
-                  <span className="font-medium text-slate-800">Dates:</span>{" "}
-                  {project.dateRange}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-800">Your roles:</span>{" "}
-                  {roles.join(", ")}
-                </p>
-                <p>
-                  <span className="font-medium text-slate-800">Model:</span> Role-aware mock
-                  home, no real permissions yet.
-                </p>
+              <div className="mt-3 grid gap-2 text-sm leading-6 text-slate-600">
+                <p className="font-semibold text-slate-950">{project.location}</p>
+                <p>{project.dateRange}</p>
+                <p>{roles.join(", ")}</p>
               </div>
             </GlassCard>
           </div>

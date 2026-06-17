@@ -59,7 +59,7 @@ const navItems: Array<{
   {
     id: "needs-attention",
     label: "Needs Attention",
-    href: "/admin/dashboard#needs-attention",
+    href: "/admin/needs-attention",
     module: "needsAttention",
   },
   {
@@ -91,7 +91,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
             <span className="capitalize">{project.status}</span>
             <Link
               href="/admin/projects"
-              className="rounded-full px-2 py-1.5 hover:bg-white/56 hover:text-slate-950"
+              className="inline-flex min-h-10 items-center rounded-full px-3 py-1.5 hover:bg-white/56 hover:text-slate-950"
             >
               Switch
             </Link>

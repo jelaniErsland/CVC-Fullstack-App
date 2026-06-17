@@ -253,6 +253,44 @@ export type RoleHomeData = {
   previewOnly?: boolean;
 };
 
+export type NeedsAttentionArea =
+  | "Questionnaires"
+  | "Schedule"
+  | "Volunteers"
+  | "Food"
+  | "Security"
+  | "Setup";
+
+export type NeedsAttentionPriority = "low" | "normal" | "important";
+export type NeedsAttentionStatus = "open" | "inReview" | "resolved";
+
+export type NeedsAttentionItem = {
+  id: string;
+  projectId: string;
+  area: NeedsAttentionArea;
+  title: string;
+  summary: string;
+  suggestedNextStep: string;
+  priority: NeedsAttentionPriority;
+  status: NeedsAttentionStatus;
+  relatedRoute?: string;
+  relatedDate?: string;
+  detail?: string;
+};
+
+export type NeedsAttentionGroup = {
+  area: NeedsAttentionArea;
+  items: NeedsAttentionItem[];
+};
+
+export type NeedsAttentionCounts = {
+  total: number;
+  open: number;
+  important: number;
+  inReview: number;
+  resolved: number;
+};
+
 export type QuestionnaireStatus =
   | "notStarted"
   | "inProgress"
@@ -1417,6 +1455,133 @@ export const announcements: Announcement[] = [
     id: "check-in",
     projectId: "belgrade-remodel-2026",
     message: "Check in with the front desk before entering work areas.",
+  },
+];
+
+export const needsAttentionAreaOrder: NeedsAttentionArea[] = [
+  "Questionnaires",
+  "Schedule",
+  "Security",
+  "Food",
+  "Volunteers",
+  "Setup",
+];
+
+export const needsAttentionItems: NeedsAttentionItem[] = [
+  {
+    id: "needs-jonah-emergency-contact",
+    projectId: "belgrade-remodel-2026",
+    area: "Questionnaires",
+    title: "Emergency contact missing",
+    summary: "Jonah Price's paper questionnaire is nearly usable, but the emergency contact is blank.",
+    suggestedNextStep: "Call or text Jonah before moving this toward scheduling.",
+    priority: "important",
+    status: "open",
+    relatedRoute: "/admin/questionnaires/questionnaire-jonah-price-paper",
+    relatedDate: "Jan 5, 2026",
+    detail:
+      "This is a paper intake item, so the follow-up can stay simple: confirm the contact name, phone, and relationship.",
+  },
+  {
+    id: "needs-caleb-site-access",
+    projectId: "belgrade-remodel-2026",
+    area: "Questionnaires",
+    title: "Follow up on site access details",
+    summary: "Caleb Ross can help with security, but the questionnaire notes ask for clearer building access details.",
+    suggestedNextStep: "Review the note and decide whether Caleb needs one more conversation.",
+    priority: "normal",
+    status: "inReview",
+    relatedRoute: "/admin/questionnaires/questionnaire-caleb-ross-follow-up",
+    relatedDate: "Jan 6, 2026",
+  },
+  {
+    id: "needs-cleanup-open-jan-12",
+    projectId: "belgrade-remodel-2026",
+    area: "Schedule",
+    title: "Monday cleanup is still open",
+    summary: "The end-of-day cleanup shift has not been assigned yet.",
+    suggestedNextStep: "Choose a small cleanup group or leave it open until volunteer profile conversion is ready.",
+    priority: "normal",
+    status: "open",
+    relatedRoute: "/admin/schedule",
+    relatedDate: "Jan 12, 2026",
+    detail: "This is a good fit for newer volunteers, family groups, or helpers with lighter availability.",
+  },
+  {
+    id: "needs-supply-run-denied",
+    projectId: "belgrade-remodel-2026",
+    area: "Schedule",
+    title: "Supply return needs another helper",
+    summary: "The latest assigned volunteer response was denied for the Saturday supply run.",
+    suggestedNextStep: "Pick another approved volunteer when real assignment editing exists.",
+    priority: "normal",
+    status: "open",
+    relatedRoute: "/admin/schedule",
+    relatedDate: "Jan 17, 2026",
+  },
+  {
+    id: "needs-lunch-jan-14-details",
+    projectId: "belgrade-remodel-2026",
+    area: "Food",
+    title: "Wednesday lunch helper details",
+    summary: "The lunch shift has an open coverage note and needs two food volunteers.",
+    suggestedNextStep: "Ask the food contact to confirm helpers and final headcount.",
+    priority: "normal",
+    status: "open",
+    relatedRoute: "/admin/schedule",
+    relatedDate: "Jan 14, 2026",
+    detail:
+      "Food module workflows are not built yet, so this stays as a calm coordination note for now.",
+  },
+  {
+    id: "needs-security-evening-pair",
+    projectId: "belgrade-remodel-2026",
+    area: "Security",
+    title: "Evening site check needs a pair",
+    summary: "Monday night watch has one assigned volunteer and should be paired before confirmation.",
+    suggestedNextStep: "Find one more approved helper for the evening check.",
+    priority: "important",
+    status: "open",
+    relatedRoute: "/admin/schedule",
+    relatedDate: "Jan 12, 2026",
+    detail:
+      "Keep this as a coverage note until conflict detection and security-specific workflow exist.",
+  },
+  {
+    id: "needs-nora-questionnaire-incomplete",
+    projectId: "belgrade-remodel-2026",
+    area: "Volunteers",
+    title: "Incomplete volunteer readiness",
+    summary: "Nora Bennett has useful help listed, but the questionnaire is still incomplete.",
+    suggestedNextStep: "Review the questionnaire before treating the volunteer profile as schedule-ready.",
+    priority: "low",
+    status: "open",
+    relatedRoute: "/admin/questionnaires/questionnaire-nora-bennett-draft",
+    relatedDate: "Jan 4, 2026",
+  },
+  {
+    id: "needs-bozeman-draft-setup",
+    projectId: "bozeman-sample-draft",
+    area: "Setup",
+    title: "Draft workspace can be reviewed later",
+    summary: "The Bozeman sample workspace has not been used recently.",
+    suggestedNextStep: "Review setup details before using it as a live project template.",
+    priority: "low",
+    status: "open",
+    relatedRoute: "/admin/projects/bozeman-sample-draft",
+    relatedDate: "Feb 9, 2026",
+  },
+  {
+    id: "needs-parking-note-resolved",
+    projectId: "belgrade-remodel-2026",
+    area: "Setup",
+    title: "Parking note reviewed",
+    summary: "The weekday parking note is already reflected in the announcement list.",
+    suggestedNextStep: "No action needed in the mock flow.",
+    priority: "low",
+    status: "resolved",
+    relatedRoute: "/admin/dashboard",
+    relatedDate: "Jan 12, 2026",
   },
 ];
 
@@ -2722,9 +2887,135 @@ export function getScheduleAssignmentCounts(
   );
 }
 
+function getNeedsAttentionPriorityRank(priority: NeedsAttentionPriority) {
+  const ranks: Record<NeedsAttentionPriority, number> = {
+    important: 0,
+    normal: 1,
+    low: 2,
+  };
+
+  return ranks[priority];
+}
+
+function getNeedsAttentionStatusRank(status: NeedsAttentionStatus) {
+  const ranks: Record<NeedsAttentionStatus, number> = {
+    open: 0,
+    inReview: 1,
+    resolved: 2,
+  };
+
+  return ranks[status];
+}
+
+export function getNeedsAttentionItemsForProject(projectId = demoProjectId) {
+  return needsAttentionItems
+    .filter((item) => item.projectId === projectId)
+    .sort((first, second) => {
+      const statusDiff =
+        getNeedsAttentionStatusRank(first.status) -
+        getNeedsAttentionStatusRank(second.status);
+
+      if (statusDiff !== 0) {
+        return statusDiff;
+      }
+
+      const priorityDiff =
+        getNeedsAttentionPriorityRank(first.priority) -
+        getNeedsAttentionPriorityRank(second.priority);
+
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
+      return needsAttentionAreaOrder.indexOf(first.area) -
+        needsAttentionAreaOrder.indexOf(second.area);
+    });
+}
+
+export function getActiveWorkspaceNeedsAttentionItems() {
+  return getNeedsAttentionItemsForProject(demoProjectId);
+}
+
+export function groupNeedsAttentionItemsByArea(
+  items = getActiveWorkspaceNeedsAttentionItems(),
+): NeedsAttentionGroup[] {
+  return needsAttentionAreaOrder
+    .map((area) => ({
+      area,
+      items: items.filter((item) => item.area === area),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function getNeedsAttentionCounts(projectId = demoProjectId): NeedsAttentionCounts {
+  return getNeedsAttentionItemsForProject(projectId).reduce<NeedsAttentionCounts>(
+    (counts, item) => {
+      counts.total += 1;
+
+      if (item.status === "open") {
+        counts.open += 1;
+      }
+
+      if (item.status === "inReview") {
+        counts.inReview += 1;
+      }
+
+      if (item.status === "resolved") {
+        counts.resolved += 1;
+      }
+
+      if (item.priority === "important" && item.status !== "resolved") {
+        counts.important += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      open: 0,
+      important: 0,
+      inReview: 0,
+      resolved: 0,
+    },
+  );
+}
+
+export function getOpenNeedsAttentionCount(projectId = demoProjectId) {
+  return getNeedsAttentionCounts(projectId).open;
+}
+
+export function getImportantNeedsAttentionCount(projectId = demoProjectId) {
+  return getNeedsAttentionCounts(projectId).important;
+}
+
+export function getTopNeedsAttentionAction(projectId = demoProjectId) {
+  return getNeedsAttentionItemsForProject(projectId).find(
+    (item) => item.status !== "resolved",
+  );
+}
+
+export function getNeedsAttentionRelatedHref(item: NeedsAttentionItem) {
+  if (item.relatedRoute) {
+    return item.relatedRoute;
+  }
+
+  const fallbackRoutes: Record<NeedsAttentionArea, string> = {
+    Questionnaires: "/admin/questionnaires",
+    Schedule: "/admin/schedule",
+    Volunteers: "/admin/volunteers",
+    Food: "/admin/dashboard#food",
+    Security: "/admin/dashboard#security",
+    Setup: "/admin/settings",
+  };
+
+  return fallbackRoutes[item.area];
+}
+
 function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
   const counts = getScheduleAssignmentCounts(project.id);
   const questionnaireSummary = getQuestionnaireReviewCounts(project.id);
+  const needsAttentionCounts = getNeedsAttentionCounts(project.id);
+  const topNeedsAttentionAction = getTopNeedsAttentionAction(project.id);
   const weekGroups = getScheduleDayGroups(project.id);
   const attentionAssignments = getScheduleAssignmentsForProject(project.id).filter(
     (assignment) =>
@@ -2739,11 +3030,20 @@ function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
     subtitle: "Start with the project week, then review the few items that need a coordinator.",
     nextBestAction: {
       label: "Next best action",
-      title: "Review open coverage for this week",
-      detail: `${counts.open + counts.needsAttention} schedule items need a coordinator look before they are ready.`,
-      href: "/admin/schedule",
+      title: topNeedsAttentionAction?.title ?? "Review open coverage for this week",
+      detail:
+        topNeedsAttentionAction?.suggestedNextStep ??
+        `${counts.open + counts.needsAttention} schedule items need a coordinator look before they are ready.`,
+      href: topNeedsAttentionAction
+        ? getNeedsAttentionRelatedHref(topNeedsAttentionAction)
+        : "/admin/schedule",
     },
     metrics: [
+      {
+        label: "Needs",
+        value: needsAttentionCounts.open,
+        helper: "Open follow-ups",
+      },
       {
         label: "Open",
         value: counts.open,
@@ -2755,14 +3055,14 @@ function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
         helper: "Waiting on confirmations",
       },
       {
-        label: "Confirmed",
-        value: counts.confirmed,
-        helper: "Covered shifts",
-      },
-      {
         label: "Review",
         value: questionnaireSummary.readyForReview,
         helper: "Questionnaires to read",
+      },
+      {
+        label: "Confirmed",
+        value: counts.confirmed,
+        helper: "Covered shifts",
       },
     ],
     weekSnapshot: weekGroups.slice(0, 4).map((group) => ({
@@ -2775,10 +3075,10 @@ function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
     })),
     focusItems: [
       {
-        label: "Questionnaires",
-        title: `${questionnaireSummary.needsAction} need follow-up or review`,
-        detail: "Incoming volunteers are still handled as intake, not account setup.",
-        href: "/admin/questionnaires",
+        label: "Needs attention",
+        title: `${needsAttentionCounts.open} open follow-ups`,
+        detail: `${needsAttentionCounts.important} important items need a coordinator look.`,
+        href: "/admin/needs-attention",
       },
       {
         label: "Schedule gaps",

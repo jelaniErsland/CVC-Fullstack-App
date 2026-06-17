@@ -54,12 +54,14 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock questionnaire workflow guidance for new, needs-review, needs-follow-up, missing-info, ready-for-profile, and already-linked submissions.
 - Intake flow stabilization pass completed across public questionnaire, admin queue, questionnaire details, linked volunteer profiles, mobile tap targets, and preview screenshot coverage.
 - Mock scheduling foundation with assignment data, grouping/count helpers, and a compact admin schedule view.
-- Mock role-home foundation for `/admin/dashboard`, currently showing a Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
+- Mock role-home foundation for `/admin/dashboard`, currently showing a stabilized Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
+- Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
+- `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
 - `/admin/projects`: Workspace selection/list page, visibly presented as Project Workspaces.
 - `/admin/projects/new`: Mock project workspace setup wizard.
@@ -102,6 +104,9 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - Scheduling is mock-only; there is no scheduling engine yet.
 - No assignment creation/editing workflow yet.
 - No schedule conflict logic yet.
+- Needs Attention is mock-only and does not resolve or save follow-up items yet.
+- No real conflict detection yet.
+- No notification logic yet.
 - No volunteer confirmation / denial persistence yet.
 - Role homes are preview/mock-only and do not enforce permissions yet.
 - Food, Security, and On-site role homes are compact preview patterns, not full modules.
@@ -113,4 +118,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-06.6 Role-home visual QA/stabilization, unless the role home direction already feels stable enough to move into 07 Needs Attention / Conflicts.
+07.2 Conflict/coverage detail patterns.

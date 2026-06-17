@@ -441,6 +441,74 @@ Limitations:
 Next recommended step:
 - 06.6 Role-home visual QA/stabilization, unless the role home direction feels stable enough to move into 07 Needs Attention / Conflicts.
 
+## Iteration 06.6 - Role-home Visual QA / Stabilization
+
+Summary:
+- Reviewed `/admin/dashboard` on desktop and mobile for role-home hierarchy, scroll length, tap targets, and horizontal overflow.
+- Tightened the Primary CVC header sizing and subtitle treatment so the page feels more glanceable.
+- Made the next best action visually clearer without turning it into a warning panel.
+- Reduced repeated mock/permissions copy in the project context area.
+- Kept role previews compact and labeled as preview-only.
+- Improved dashboard/sidebar tap targets found during mobile QA.
+
+Changed files:
+- `app/admin/dashboard/page.tsx`
+- `components/AdminNav.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/dashboard`, `/admin/schedule`, `/admin/questionnaires`, `/admin/volunteers`, and `/admin/settings`.
+- Browser QA checked desktop and 390px mobile dashboard layouts: no horizontal overflow and no undersized dashboard interactive targets after fixes.
+
+Limitations:
+- Role homes remain preview/mock-only.
+- No real role permissions or scoped data enforcement yet.
+- No real persistence.
+- Food, Security, and On-site homes are still compact preview patterns, not full modules.
+- Preview screenshots were not regenerated in this pass.
+
+Next recommended step:
+- 07 Needs Attention / Conflicts.
+
+## Iteration 07.1 - Needs Attention Data Model + Calm Overview
+
+Summary:
+- Added mock Needs Attention types, data, and helpers for active workspace follow-up items.
+- Included calm follow-up examples across questionnaires, schedule, volunteers, food, security, and setup.
+- Added helper functions for active workspace items, grouped area rows, open/important counts, top next action, and related links.
+- Created `/admin/needs-attention` with compact summary counts, grouped rows, expandable details, soft priority labels, and related action links.
+- Updated `AdminNav` so Needs Attention opens the dedicated route when the module is enabled.
+- Connected the Primary CVC dashboard next action to the Needs Attention helper without making the dashboard louder.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `components/NeedsAttentionOverview.tsx`
+- `app/admin/needs-attention/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/needs-attention`, `/admin/dashboard`, `/admin/schedule`, `/admin/questionnaires`, and `/admin/volunteers`.
+
+Limitations:
+- Needs Attention is mock-only.
+- No real conflict detection yet.
+- No real resolution actions or persistence.
+- No notification logic.
+- No role-scoped follow-up views yet.
+- No scheduling engine logic was added.
+
+Next recommended step:
+- 07.2 Conflict/coverage detail patterns.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
