@@ -240,6 +240,72 @@ Limitations:
 Next recommended step:
 - 05B.4 Questionnaire detail/review page.
 
+## Iteration 05B.4 - Questionnaire Detail / Review Page
+
+Summary:
+- Added `/admin/questionnaires/[submissionId]` for focused mock questionnaire review.
+- Updated queue cards so the primary action opens the questionnaire detail page.
+- Added a review item lookup helper for detail routes.
+- Showed volunteer name, congregation, submitted date, status, source type, review flags, review notes, and linked volunteer status where available.
+- Added calm section cards for About You, Availability, Skills / Experience, Emergency Contact, Other Ways You Can Help, and Review Notes.
+- Added a helpful in-app not-found state for unknown submission ids.
+- Kept review actions disabled and clearly labeled as workflow placeholders.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/QuestionnaireReviewQueue.tsx`
+- `app/admin/questionnaires/[submissionId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks passed for `/admin/questionnaires`, one valid questionnaire detail route, `/admin/questionnaires/not-real`, and one linked volunteer profile from the detail page.
+
+Limitations:
+- Mock-only.
+- Review actions do not mutate state.
+- No real persistence.
+- No role-scoped review views yet.
+- No conversion from approved questionnaire submission to a schedule-ready volunteer record yet.
+
+Next recommended step:
+- 05B.5 Convert questionnaire into volunteer profile.
+
+## Iteration 05B.5 - Questionnaire-to-Volunteer Profile Readiness
+
+Summary:
+- Added mock helper logic to derive a volunteer profile preview from a questionnaire submission.
+- Added readiness states for Ready for volunteer profile, Needs follow-up first, Missing required info, and Already linked to volunteer profile.
+- Derived blockers before scheduling from contact info, emergency contact, availability, skills/help, review status, and linked volunteer state.
+- Added a Volunteer Profile Preview section to questionnaire detail pages.
+- Clearly shows linked volunteer profiles and avoids implying duplicate profile creation.
+- Kept Create volunteer profile and Mark needs follow-up as disabled workflow placeholders.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/questionnaires/[submissionId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks passed for `/admin/questionnaires`, one linked questionnaire detail page, one unlinked questionnaire detail page, one incomplete questionnaire detail page, and one linked volunteer profile.
+
+Limitations:
+- Conversion is preview/mock-only.
+- No real persistence.
+- No real approve / needs-follow-up workflow actions.
+- No role-scoped review views yet.
+- No scheduling integration yet.
+
+Next recommended step:
+- 05B.6 Questionnaire review workflow states.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -288,6 +288,30 @@ export type QuestionnaireReviewItem = {
   notes: string[];
 };
 
+export type VolunteerProfileReadinessStatus =
+  | "Ready for volunteer profile"
+  | "Needs follow-up first"
+  | "Missing required info"
+  | "Already linked to volunteer profile";
+
+export type VolunteerProfilePreview = {
+  sourceSubmissionId: string;
+  projectId: string;
+  linkedVolunteerId?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  congregation: string;
+  availabilitySummary: string;
+  skillsExperienceSummary: string;
+  emergencyContactComplete: boolean;
+  otherWaysToHelpSummary: string;
+  reviewStatus: QuestionnaireReviewQueueStatus;
+  readinessStatus: VolunteerProfileReadinessStatus;
+  suggestedVolunteerStatus: ProjectVolunteerStatus;
+  blockersBeforeScheduling: string[];
+};
+
 export type LunchItem = {
   id: string;
   projectId: string;
@@ -1889,6 +1913,109 @@ export function getQuestionnaireReviewItems(projectId?: string): QuestionnaireRe
         new Date(firstSubmitted ?? first.updatedDate).getTime()
       );
     });
+}
+
+export function getQuestionnaireReviewItemById(submissionId: string) {
+  return getQuestionnaireReviewItems().find((item) => item.id === submissionId);
+}
+
+export function getVolunteerProfilePreviewFromSubmission(
+  submission: VolunteerQuestionnaireSubmission,
+): VolunteerProfilePreview {
+  const reviewItem = getQuestionnaireReviewItemById(submission.id);
+  const linkedVolunteer = getLinkedVolunteerForSubmission(submission);
+  const emergencyContactComplete = Boolean(
+    submission.emergencyContact?.name && submission.emergencyContact.phone,
+  );
+  const hasContactMethod = Boolean(submission.aboutYou.email || submission.aboutYou.phone);
+  const hasAvailability = Boolean(
+    submission.availability.weekdays.length && submission.availability.preferredTimes.length,
+  );
+  const hasSkillsOrHelp = Boolean(
+    submission.skillsExperience.construction.length ||
+      submission.skillsExperience.taskCards ||
+      submission.skillsExperience.notes ||
+      summarizeOtherWaysToHelp(submission) !== "No other help listed",
+  );
+  const blockersBeforeScheduling: string[] = [];
+
+  if (linkedVolunteer) {
+    blockersBeforeScheduling.push("Existing volunteer profile is already linked.");
+  }
+
+  if (!hasContactMethod) {
+    blockersBeforeScheduling.push("Add at least one contact method before scheduling.");
+  }
+
+  if (!emergencyContactComplete) {
+    blockersBeforeScheduling.push("Complete the emergency contact.");
+  }
+
+  if (!hasAvailability) {
+    blockersBeforeScheduling.push("Confirm available days and times.");
+  }
+
+  if (!hasSkillsOrHelp) {
+    blockersBeforeScheduling.push("Confirm skills or another way they can help.");
+  }
+
+  if (submission.status === "inProgress" || submission.status === "notStarted") {
+    blockersBeforeScheduling.push("Questionnaire has not been submitted.");
+  }
+
+  if (submission.status === "needsFollowUp") {
+    blockersBeforeScheduling.push("Resolve the follow-up note before creating a profile.");
+  }
+
+  if (submission.status === "needsReview") {
+    blockersBeforeScheduling.push("Review the questionnaire before creating a profile.");
+  }
+
+  const missingRequiredInfo =
+    !hasContactMethod ||
+    !emergencyContactComplete ||
+    !hasAvailability ||
+    !hasSkillsOrHelp ||
+    submission.status === "inProgress" ||
+    submission.status === "notStarted";
+
+  const readinessStatus: VolunteerProfileReadinessStatus = linkedVolunteer
+    ? "Already linked to volunteer profile"
+    : missingRequiredInfo
+      ? "Missing required info"
+      : submission.status === "needsFollowUp" || submission.status === "needsReview"
+        ? "Needs follow-up first"
+        : "Ready for volunteer profile";
+
+  const suggestedVolunteerStatus: ProjectVolunteerStatus =
+    readinessStatus === "Ready for volunteer profile" ? "Submitted" : "Needs Review";
+
+  return {
+    sourceSubmissionId: submission.id,
+    projectId: submission.projectId,
+    linkedVolunteerId: linkedVolunteer?.id,
+    name: submission.aboutYou.name,
+    email: submission.aboutYou.email,
+    phone: submission.aboutYou.phone,
+    congregation: submission.aboutYou.congregation,
+    availabilitySummary: summarizeQuestionnaireAvailability(submission),
+    skillsExperienceSummary: summarizeQuestionnaireSkills(submission),
+    emergencyContactComplete,
+    otherWaysToHelpSummary: summarizeOtherWaysToHelp(submission),
+    reviewStatus: reviewItem?.status ?? getQueueStatusFromQuestionnaireStatus(submission.status),
+    readinessStatus,
+    suggestedVolunteerStatus,
+    blockersBeforeScheduling:
+      blockersBeforeScheduling.length > 0
+        ? blockersBeforeScheduling
+        : ["No blockers in the mock preview."],
+  };
+}
+
+export function getVolunteerProfilePreviewBySubmissionId(submissionId: string) {
+  const submission = getQuestionnaireSubmissionById(submissionId);
+
+  return submission ? getVolunteerProfilePreviewFromSubmission(submission) : undefined;
 }
 
 export function getQuestionnaireStatusLabel(status: QuestionnaireStatus) {

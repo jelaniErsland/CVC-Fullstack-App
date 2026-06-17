@@ -52,7 +52,7 @@ function ReviewCard({ item }: { item: QuestionnaireReviewItem }) {
             {item.volunteerName}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {item.projectLocation} · {sourceLabels[item.sourceType]}
+            {item.projectLocation} - {sourceLabels[item.sourceType]}
           </p>
         </div>
         <StatusPill status={item.status} />
@@ -106,26 +106,9 @@ function ReviewCard({ item }: { item: QuestionnaireReviewItem }) {
         </div>
       ) : null}
 
-      <div className="mt-6">
-        {item.linkedVolunteerId ? (
-          <Button
-            href={`/admin/volunteers/${item.linkedVolunteerId}`}
-            variant="secondary"
-            className="w-full"
-          >
-            View volunteer
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled
-            className="w-full cursor-not-allowed opacity-60"
-          >
-            Full review workflow coming next
-          </Button>
-        )}
-      </div>
+      <Button href={`/admin/questionnaires/${item.id}`} variant="secondary" className="mt-6 w-full">
+        Review details
+      </Button>
     </GlassCard>
   );
 }

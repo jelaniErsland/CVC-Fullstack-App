@@ -22,8 +22,9 @@ Rough phases:
 - 05B.1 Questionnaire data model/helpers. Completed.
 - 05B.2 Public questionnaire form shell. Completed.
 - 05B.3 Admin questionnaire review queue. Completed.
-- 05B.4 Questionnaire detail/review page. Next recommended step.
-- 05B.5 Convert questionnaire into volunteer profile.
+- 05B.4 Questionnaire detail/review page. Completed.
+- 05B.5 Questionnaire-to-volunteer profile readiness. Completed.
+- 05B.6 Questionnaire review workflow states. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -74,10 +75,19 @@ For the next project, the app should eventually support:
 It uses existing questionnaire submission data plus review helpers to show new,
 needs-review, incomplete, and reviewed submissions with calm card-first filtering.
 
+05B.4 added a focused mock detail review page at
+`/admin/questionnaires/[submissionId]` with full questionnaire answers,
+review flags, section completion cues, linked volunteer context, and
+placeholder-only review actions.
+
+05B.5 added a mock-only volunteer profile preview/readiness layer that shows
+how a reviewed questionnaire could become a schedule-ready volunteer record.
+It does not create records or mutate state.
+
 Future questionnaire iterations still need:
 
-- Questionnaire detail review.
 - Approve / needs-follow-up workflow.
 - Real persistence.
 - Role-scoped review views.
 - Converting approved questionnaire submissions into schedule-ready volunteer records.
+- Scheduling integration after conversion.

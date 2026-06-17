@@ -49,6 +49,8 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Questionnaire data model, Belgrade mock submissions, and review helper functions.
 - Public project questionnaire shell at `/questionnaire/[projectId]` with local-only mock submission confirmation.
 - Admin questionnaire review queue at `/admin/questionnaires` with mock submissions across Belgrade, Bozeman, and Helena, calm filtering, review flags, and linked volunteer profile actions where available.
+- Admin questionnaire detail review pages at `/admin/questionnaires/[submissionId]` with full mock answers, section completion cues, review flags/notes, linked volunteer context, and placeholder-only review actions.
+- Mock questionnaire-to-volunteer profile preview/readiness layer showing what a volunteer record would look like before real conversion exists.
 
 ## 5. Current Routes
 
@@ -59,6 +61,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - `/admin/projects/[projectId]`: Workspace detail/read-only setup overview for specific mock workspaces.
 - `/admin/settings`: Settings for the selected Belgrade workspace.
 - `/admin/questionnaires`: Admin questionnaire review queue for incoming volunteer intake submissions.
+- `/admin/questionnaires/[submissionId]`: Mock questionnaire detail review page with a helpful not-found state for unknown submission ids.
 - `/admin/volunteers`: Volunteer review directory for the selected Belgrade workspace.
 - `/admin/volunteers/[volunteerId]`: Volunteer questionnaire/profile detail page.
 - `/questionnaire/[projectId]`: Public volunteer questionnaire shell for active volunteer-enabled workspaces, currently mock-only.
@@ -85,10 +88,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real persistence.
 - No email sending.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
-- No questionnaire detail review workflow yet.
 - No approve / needs-follow-up mutation workflow yet.
+- Questionnaire-to-volunteer conversion is preview/mock-only and does not create records.
 - No role-scoped questionnaire review views yet.
 - No conversion from approved questionnaire submission to schedule-ready volunteer record yet.
+- No scheduling integration from questionnaire readiness yet.
 - No scheduling engine yet.
 - No public volunteer portal yet.
 - Current data is mock-only.
@@ -96,4 +100,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-05B.4 Questionnaire detail/review page.
+05B.6 Questionnaire review workflow states.
