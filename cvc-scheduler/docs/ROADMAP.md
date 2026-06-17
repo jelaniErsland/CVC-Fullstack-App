@@ -27,12 +27,14 @@ Rough phases:
 - 05B.6 Questionnaire review workflow states. Completed.
 - 05B.7 Intake flow stabilization / visual QA. Completed.
 - 06.1 Scheduling data model + mock schedule view. Completed.
-- 06.5 Role Landing Page UX Alignment. Upcoming.
+- 06.5 Role Landing Page UX Alignment. Completed.
+- 06.6 Role-home visual QA/stabilization. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
 - 06 Scheduling foundation.
 - 06.5 Role Landing Page UX Alignment for Primary CVC, Assistant CVC, Primary Food Contact, Primary Security Contact, and possible On-site Contact homes.
+- 06.6 Role-home visual QA/stabilization.
 - 07 Needs Attention / Conflicts.
 - 08 Emails and announcements.
 - 09 Food and Security modules.
@@ -120,3 +122,19 @@ Scheduling is still mock-only. Future scheduling work still needs:
 - Volunteer confirmation / denial workflow.
 - Real persistence.
 - Role-specific schedule landing pages.
+
+## 10. Role Home Notes
+
+06.5 reshaped `/admin/dashboard` into a mock role-aware landing page. The
+current admin sees a Primary CVC home first, with compact metrics, one next
+best action, a week snapshot, coordinator focus rows, recent updates, and
+expandable preview patterns for Assistant CVC, Primary Food Contact, Primary
+Security Contact, and On-site Contact.
+
+Role homes are preview/mock-only. Future role work still needs:
+
+- Real role permissions and scoped data.
+- Real persistence.
+- Full Food and Security module surfaces.
+- On-site contact workflows.
+- Platform owner/admin homes.

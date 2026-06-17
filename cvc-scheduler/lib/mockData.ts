@@ -211,6 +211,48 @@ export type ScheduleAssignmentCounts = {
   needsAttention: number;
 };
 
+export type RoleHomeKind =
+  | "Primary CVC"
+  | "Assistant CVC"
+  | "Primary Food Contact"
+  | "Primary Security Contact"
+  | "On-site Contact";
+
+export type RoleHomeSummaryMetric = {
+  label: string;
+  value: string | number;
+  helper: string;
+};
+
+export type RoleHomeUpdate = {
+  id: string;
+  label: string;
+  detail: string;
+  href?: string;
+};
+
+export type RoleHomeFocus = {
+  label: string;
+  title: string;
+  detail: string;
+  href?: string;
+};
+
+export type RoleHomeData = {
+  role: RoleHomeKind;
+  projectId: string;
+  congregationScope?: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  nextBestAction: RoleHomeFocus;
+  metrics: RoleHomeSummaryMetric[];
+  weekSnapshot: RoleHomeUpdate[];
+  focusItems: RoleHomeFocus[];
+  recentUpdates: RoleHomeUpdate[];
+  previewOnly?: boolean;
+};
+
 export type QuestionnaireStatus =
   | "notStarted"
   | "inProgress"
@@ -2677,6 +2719,417 @@ export function getScheduleAssignmentCounts(
       denied: 0,
       needsAttention: 0,
     },
+  );
+}
+
+function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
+  const counts = getScheduleAssignmentCounts(project.id);
+  const questionnaireSummary = getQuestionnaireReviewCounts(project.id);
+  const weekGroups = getScheduleDayGroups(project.id);
+  const attentionAssignments = getScheduleAssignmentsForProject(project.id).filter(
+    (assignment) =>
+      assignment.status === "Open" || assignment.status === "Needs Attention",
+  );
+
+  return {
+    role: "Primary CVC",
+    projectId: project.id,
+    eyebrow: "Primary CVC home",
+    title: project.name,
+    subtitle: "Start with the project week, then review the few items that need a coordinator.",
+    nextBestAction: {
+      label: "Next best action",
+      title: "Review open coverage for this week",
+      detail: `${counts.open + counts.needsAttention} schedule items need a coordinator look before they are ready.`,
+      href: "/admin/schedule",
+    },
+    metrics: [
+      {
+        label: "Open",
+        value: counts.open,
+        helper: "Schedule spots ready to fill",
+      },
+      {
+        label: "Assigned",
+        value: counts.assigned,
+        helper: "Waiting on confirmations",
+      },
+      {
+        label: "Confirmed",
+        value: counts.confirmed,
+        helper: "Covered shifts",
+      },
+      {
+        label: "Review",
+        value: questionnaireSummary.readyForReview,
+        helper: "Questionnaires to read",
+      },
+    ],
+    weekSnapshot: weekGroups.slice(0, 4).map((group) => ({
+      id: group.date,
+      label: group.dayLabel,
+      detail: `${group.assignments.length} assignments - ${
+        group.assignments.filter((assignment) => assignment.status === "Open").length
+      } open`,
+      href: "/admin/schedule",
+    })),
+    focusItems: [
+      {
+        label: "Questionnaires",
+        title: `${questionnaireSummary.needsAction} need follow-up or review`,
+        detail: "Incoming volunteers are still handled as intake, not account setup.",
+        href: "/admin/questionnaires",
+      },
+      {
+        label: "Schedule gaps",
+        title: `${attentionAssignments.length} assignments need attention`,
+        detail: "Open or partial coverage appears here before deeper conflict tools exist.",
+        href: "/admin/schedule",
+      },
+      {
+        label: "Volunteers",
+        title: `${project.stats.volunteers} volunteer records`,
+        detail: "Use the volunteer directory for profile details and schedule readiness.",
+        href: "/admin/volunteers",
+      },
+    ],
+    recentUpdates: [
+      {
+        id: "primary-update-framing",
+        label: "Confirmed",
+        detail: "Alex Rivera and Marcus Lee are confirmed for Monday demo prep.",
+        href: "/admin/schedule",
+      },
+      {
+        id: "primary-update-intake",
+        label: "Intake",
+        detail: "Jonah Price's paper questionnaire still needs emergency contact details.",
+        href: "/admin/questionnaires/questionnaire-jonah-price-paper",
+      },
+      {
+        id: "primary-update-security",
+        label: "Security",
+        detail: "Monday evening site check needs one more approved helper.",
+        href: "/admin/schedule",
+      },
+    ],
+  };
+}
+
+function getAssistantCvcRoleHome(project: Project): RoleHomeData {
+  const congregationScope = "Belgrade";
+  const volunteersInScope = projectVolunteers.filter(
+    (volunteer) =>
+      volunteer.projectId === project.id && volunteer.congregation === congregationScope,
+  );
+  const incompleteQuestionnaires = getQuestionnaireSubmissionsForProject(project.id).filter(
+    (submission) =>
+      submission.aboutYou.congregation === congregationScope &&
+      (submission.status === "inProgress" || submission.status === "needsReview"),
+  );
+  const scopedAssignments = getScheduleAssignmentsWithVolunteers(project.id).filter(
+    (assignment) =>
+      assignment.congregation === congregationScope ||
+      assignment.volunteers.some(
+        (volunteer) => volunteer.congregation === congregationScope,
+      ),
+  );
+
+  return {
+    role: "Assistant CVC",
+    projectId: project.id,
+    congregationScope,
+    eyebrow: "Assistant CVC preview",
+    title: `${congregationScope} congregation check-in`,
+    subtitle:
+      "A lighter home for helping one congregation keep volunteer details and reminders current.",
+    nextBestAction: {
+      label: "Next best action",
+      title: "Check incomplete questionnaires",
+      detail: `${incompleteQuestionnaires.length} ${congregationScope} intake items need a quick look.`,
+      href: "/admin/questionnaires",
+    },
+    metrics: [
+      {
+        label: "Volunteers",
+        value: volunteersInScope.length,
+        helper: "In this congregation",
+      },
+      {
+        label: "This week",
+        value: scopedAssignments.length,
+        helper: "Related assignments",
+      },
+      {
+        label: "Incomplete",
+        value: incompleteQuestionnaires.length,
+        helper: "Questionnaires",
+      },
+    ],
+    weekSnapshot: scopedAssignments.slice(0, 4).map((assignment) => ({
+      id: assignment.id,
+      label: assignment.date,
+      detail: `${assignment.title} - ${assignment.status}`,
+      href: "/admin/schedule",
+    })),
+    focusItems: [
+      {
+        label: "Reminder",
+        title: "Share parking and check-in notes",
+        detail: "Use announcements later; for now this is a mock reminder pattern.",
+      },
+      {
+        label: "Questionnaires",
+        title: "Review missing details kindly",
+        detail: "Assistant CVC views can later be scoped by congregation.",
+        href: "/admin/questionnaires",
+      },
+    ],
+    recentUpdates: [
+      {
+        id: "assistant-update-mia",
+        label: "Volunteer",
+        detail: "Mia Thompson is assigned to lunch and final cleanup.",
+        href: "/admin/volunteers/mia-thompson",
+      },
+      {
+        id: "assistant-update-cleanup",
+        label: "Open",
+        detail: "Monday cleanup can use newer volunteers or a family group.",
+        href: "/admin/schedule",
+      },
+    ],
+    previewOnly: true,
+  };
+}
+
+function getFoodRoleHome(project: Project): RoleHomeData {
+  const foodAssignments = getScheduleAssignmentsWithVolunteers(project.id).filter(
+    (assignment) => assignment.category === "Food",
+  );
+  const projectLunches = lunches.filter((lunch) => lunch.projectId === project.id);
+
+  return {
+    role: "Primary Food Contact",
+    projectId: project.id,
+    eyebrow: "Food contact preview",
+    title: "Food coverage",
+    subtitle: "A compact pattern for meals, helpers, and counts once the food module is built.",
+    nextBestAction: {
+      label: "Next best action",
+      title: "Confirm Wednesday lunch helpers",
+      detail: "One lunch shift is still open in the mock schedule.",
+      href: "/admin/schedule",
+    },
+    metrics: [
+      {
+        label: "Meals",
+        value: projectLunches.length,
+        helper: "Planned lunches",
+      },
+      {
+        label: "Coverage",
+        value: foodAssignments.length,
+        helper: "Food assignments",
+      },
+      {
+        label: "Open",
+        value: foodAssignments.filter((assignment) => assignment.status === "Open").length,
+        helper: "Need helpers",
+      },
+    ],
+    weekSnapshot: projectLunches.map((lunch) => ({
+      id: lunch.id,
+      label: lunch.day,
+      detail: lunch.details,
+    })),
+    focusItems: [
+      {
+        label: "Needs details",
+        title: "Final headcount not stored yet",
+        detail: "Food counts will become a real workflow in a later module pass.",
+      },
+      {
+        label: "Upcoming coverage",
+        title: "Lunch setup and service",
+        detail: "Assigned volunteers can be reviewed in the schedule preview.",
+        href: "/admin/schedule",
+      },
+    ],
+    recentUpdates: [
+      {
+        id: "food-update-soup",
+        label: "Lunch",
+        detail: "Wednesday lunch is soup and salad from 11:45 AM to 12:30 PM.",
+      },
+      {
+        id: "food-update-supplies",
+        label: "Note",
+        detail: "Keep food service notes calm and short for future helpers.",
+      },
+    ],
+    previewOnly: true,
+  };
+}
+
+function getSecurityRoleHome(project: Project): RoleHomeData {
+  const securityAssignments = getScheduleAssignmentsWithVolunteers(project.id).filter(
+    (assignment) => assignment.category === "Security",
+  );
+
+  return {
+    role: "Primary Security Contact",
+    projectId: project.id,
+    eyebrow: "Security contact preview",
+    title: "Security coverage",
+    subtitle: "A focused pattern for after-hours checks without turning the page into alarms.",
+    nextBestAction: {
+      label: "Next best action",
+      title: "Pair Monday evening site check",
+      detail: "One additional approved helper is needed before confirmation.",
+      href: "/admin/schedule",
+    },
+    metrics: [
+      {
+        label: "This week",
+        value: securityAssignments.length,
+        helper: "Security shifts",
+      },
+      {
+        label: "Needs detail",
+        value: securityAssignments.filter(
+          (assignment) => assignment.status === "Needs Attention",
+        ).length,
+        helper: "Quiet follow-up",
+      },
+      {
+        label: "Assigned",
+        value: securityAssignments.filter(
+          (assignment) => assignment.status === "Assigned",
+        ).length,
+        helper: "Awaiting confirmation",
+      },
+    ],
+    weekSnapshot: securityAssignments.map((assignment) => ({
+      id: assignment.id,
+      label: assignment.date,
+      detail: `${assignment.title} - ${assignment.status}`,
+      href: "/admin/schedule",
+    })),
+    focusItems: [
+      {
+        label: "Coverage",
+        title: "Evening checks should be paired",
+        detail: "The future workflow can enforce pairing rules without showing every rule here.",
+      },
+      {
+        label: "Contacts",
+        title: "Security contact: Caleb Ross",
+        detail: "Assistant security contact: Marcus Lee.",
+        href: "/admin/settings",
+      },
+    ],
+    recentUpdates: [
+      {
+        id: "security-update-friday",
+        label: "Friday",
+        detail: "Friday site security has two assigned volunteers, pending confirmation.",
+        href: "/admin/schedule",
+      },
+      {
+        id: "security-update-monday",
+        label: "Monday",
+        detail: "Monday evening needs one more approved volunteer.",
+        href: "/admin/schedule",
+      },
+    ],
+    previewOnly: true,
+  };
+}
+
+function getOnSiteRoleHome(project: Project): RoleHomeData {
+  const todayAssignments = getScheduleAssignmentsWithVolunteers(project.id).filter(
+    (assignment) => isScheduleDateToday(assignment.date),
+  );
+
+  return {
+    role: "On-site Contact",
+    projectId: project.id,
+    eyebrow: "On-site preview",
+    title: "Today on site",
+    subtitle: "A future lightweight home for the person helping volunteers find the next step.",
+    nextBestAction: {
+      label: "Next best action",
+      title: "Check the morning crew in",
+      detail: "Use the schedule preview as the source of truth until on-site tools exist.",
+      href: "/admin/schedule",
+    },
+    metrics: [
+      {
+        label: "Today",
+        value: todayAssignments.length,
+        helper: "Assignments",
+      },
+      {
+        label: "Open",
+        value: todayAssignments.filter((assignment) => assignment.status === "Open").length,
+        helper: "Needs coverage",
+      },
+      {
+        label: "Attention",
+        value: todayAssignments.filter(
+          (assignment) => assignment.status === "Needs Attention",
+        ).length,
+        helper: "Coordinator look",
+      },
+    ],
+    weekSnapshot: todayAssignments.map((assignment) => ({
+      id: assignment.id,
+      label: assignment.shiftLabel,
+      detail: `${assignment.title} - ${assignment.location ?? "Location to confirm"}`,
+      href: "/admin/schedule",
+    })),
+    focusItems: [
+      {
+        label: "Check-in",
+        title: "Keep instructions short",
+        detail: "Future on-site views should show only what helpers need next.",
+      },
+    ],
+    recentUpdates: [
+      {
+        id: "onsite-update-parking",
+        label: "Note",
+        detail: "Parking has moved to the east lot for weekday crews.",
+      },
+    ],
+    previewOnly: true,
+  };
+}
+
+export function getRoleHomeOptions(projectId = demoProjectId): RoleHomeData[] {
+  const project = getProjectById(projectId);
+
+  if (!project) {
+    return [];
+  }
+
+  return [
+    getPrimaryCvcRoleHome(project),
+    getAssistantCvcRoleHome(project),
+    getFoodRoleHome(project),
+    getSecurityRoleHome(project),
+    getOnSiteRoleHome(project),
+  ];
+}
+
+export function getCurrentAdminRoleHome(projectId = demoProjectId) {
+  const roles = getCurrentAdminRolesForProject(projectId);
+  const homes = getRoleHomeOptions(projectId);
+
+  return (
+    homes.find((home) => roles.includes(home.role as AdminProjectRole)) ??
+    homes.find((home) => home.role === "Primary CVC")
   );
 }
 

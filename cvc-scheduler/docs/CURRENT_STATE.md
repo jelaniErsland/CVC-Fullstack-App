@@ -54,11 +54,12 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock questionnaire workflow guidance for new, needs-review, needs-follow-up, missing-info, ready-for-profile, and already-linked submissions.
 - Intake flow stabilization pass completed across public questionnaire, admin queue, questionnaire details, linked volunteer profiles, mobile tap targets, and preview screenshot coverage.
 - Mock scheduling foundation with assignment data, grouping/count helpers, and a compact admin schedule view.
+- Mock role-home foundation for `/admin/dashboard`, currently showing a Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
-- `/admin/dashboard`: Admin overview inside Belgrade Major Remodel 2026.
+- `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
 - `/admin/projects`: Workspace selection/list page, visibly presented as Project Workspaces.
 - `/admin/projects/new`: Mock project workspace setup wizard.
@@ -102,7 +103,9 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No assignment creation/editing workflow yet.
 - No schedule conflict logic yet.
 - No volunteer confirmation / denial persistence yet.
-- No role-specific schedule landing pages yet.
+- Role homes are preview/mock-only and do not enforce permissions yet.
+- Food, Security, and On-site role homes are compact preview patterns, not full modules.
+- No platform owner/admin home yet.
 - No public volunteer portal yet.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -110,4 +113,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-06.5 Role Landing Page UX Alignment, unless a smaller schedule detail stabilization pass is needed first.
+06.6 Role-home visual QA/stabilization, unless the role home direction already feels stable enough to move into 07 Needs Attention / Conflicts.

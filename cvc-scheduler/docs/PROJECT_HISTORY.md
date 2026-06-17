@@ -410,6 +410,37 @@ Limitations:
 Next recommended step:
 - 06.5 Role Landing Page UX Alignment, unless a smaller schedule detail stabilization pass is needed first.
 
+## Iteration 06.5 - Role Landing Page UX Alignment
+
+Summary:
+- Added a mock role-home data/helper layer for Primary CVC, Assistant CVC, Primary Food Contact, Primary Security Contact, and On-site Contact patterns.
+- Refactored `/admin/dashboard` from a generic stacked dashboard into a Primary CVC role home for the current mock admin user.
+- Added reusable dashboard sections for role header, compact metrics, next best action, week snapshot rows, coordinator focus rows, recent updates, and expandable role pattern previews.
+- Kept Assistant CVC conceptually congregation-scoped without implementing real permissions.
+- Represented Food, Security, and On-site homes as compact preview/mock-only patterns instead of full dashboards.
+- Preserved existing admin navigation and the existing schedule, questionnaire, volunteer, and settings routes.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/dashboard/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+
+Limitations:
+- Role homes are preview/mock-only.
+- No real role permissions or scoped data enforcement yet.
+- No real persistence.
+- Food, Security, and On-site homes are not full modules yet.
+- No platform owner/admin home yet.
+
+Next recommended step:
+- 06.6 Role-home visual QA/stabilization, unless the role home direction feels stable enough to move into 07 Needs Attention / Conflicts.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
