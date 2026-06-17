@@ -374,6 +374,42 @@ Limitations:
 Next recommended step:
 - 06 Scheduling foundation.
 
+## Iteration 06.1 - Scheduling Data Model + Mock Schedule View
+
+Summary:
+- Added mock schedule assignment types, data, and helpers for the active Belgrade workspace.
+- Added status/count helpers for open, assigned, confirmed, denied, draft, and needs-attention assignments.
+- Added linked volunteer resolution for assigned schedule rows.
+- Created `/admin/schedule` with a compact project-week schedule view, summary strip, day grouping, expandable assignment details, and a helpful empty/module-disabled state.
+- Updated `AdminNav` so Schedule opens the dedicated schedule route when the scheduling module is enabled.
+- Kept all schedule actions as preview-only and avoided drag/drop, editing, confirmation, or persistence logic.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/StatusPill.tsx`
+- `components/ScheduleWeekView.tsx`
+- `components/AdminNav.tsx`
+- `app/admin/schedule/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/schedule`, `/admin/dashboard`, `/admin/questionnaires`, and `/admin/volunteers`.
+
+Limitations:
+- Scheduling is mock-only.
+- No assignment creation/editing workflow yet.
+- No real scheduling engine.
+- No conflict logic.
+- No volunteer confirmation / denial persistence.
+- No role-specific schedule landing pages yet.
+
+Next recommended step:
+- 06.5 Role Landing Page UX Alignment, unless a smaller schedule detail stabilization pass is needed first.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

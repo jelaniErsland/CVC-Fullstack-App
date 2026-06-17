@@ -32,11 +32,25 @@ export type QuestionnaireReviewQueueStatus =
   | "Needs Review"
   | "Incomplete"
   | "Reviewed";
+export type ScheduleAssignmentCategory =
+  | "Construction"
+  | "Food"
+  | "Security"
+  | "Cleaning"
+  | "Other";
+export type ScheduleAssignmentStatus =
+  | "Draft"
+  | "Open"
+  | "Assigned"
+  | "Confirmed"
+  | "Denied"
+  | "Needs Attention";
 export type PillStatus =
   | AssignmentStatus
   | ProjectStatus
   | ProjectVolunteerStatus
-  | QuestionnaireReviewQueueStatus;
+  | QuestionnaireReviewQueueStatus
+  | ScheduleAssignmentStatus;
 
 export type Project = {
   id: string;
@@ -80,6 +94,23 @@ export type Assignment = {
   crew: string;
   location: string;
   status: AssignmentStatus;
+};
+
+export type ScheduleAssignment = {
+  id: string;
+  projectId: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  shiftLabel: string;
+  category: ScheduleAssignmentCategory;
+  title: string;
+  assignedVolunteerIds: string[];
+  congregation?: string;
+  status: ScheduleAssignmentStatus;
+  location?: string;
+  notes?: string;
+  statusExplanation?: string;
 };
 
 export type VolunteerAssignment = {
@@ -156,6 +187,28 @@ export type ProjectVolunteer = {
     otherWaysDetails?: string;
   };
   notes: string[];
+};
+
+export type ScheduleAssignmentWithVolunteers = ScheduleAssignment & {
+  volunteers: ProjectVolunteer[];
+};
+
+export type ScheduleDayGroup = {
+  date: string;
+  dayLabel: string;
+  isToday: boolean;
+  isThisWeek: boolean;
+  assignments: ScheduleAssignmentWithVolunteers[];
+};
+
+export type ScheduleAssignmentCounts = {
+  total: number;
+  draft: number;
+  open: number;
+  assigned: number;
+  confirmed: number;
+  denied: number;
+  needsAttention: number;
 };
 
 export type QuestionnaireStatus =
@@ -545,6 +598,187 @@ export const assignments: Assignment[] = [
     crew: "Family volunteer group",
     location: "Fellowship area",
     status: "Needs Reply",
+  },
+];
+
+export const scheduleReferenceDate = "2026-01-12";
+
+export const scheduleAssignments: ScheduleAssignment[] = [
+  {
+    id: "schedule-demo-prep-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    startTime: "7:30 AM",
+    endTime: "11:30 AM",
+    shiftLabel: "Morning",
+    category: "Construction",
+    title: "Demo prep and interior protection",
+    assignedVolunteerIds: ["alex-rivera", "marcus-lee"],
+    congregation: "Belgrade",
+    status: "Confirmed",
+    location: "Main hall, north wing",
+    notes: "Keep dust barriers in place before the second crew arrives.",
+    statusExplanation: "Both assigned volunteers are approved and have confirmed this shift.",
+  },
+  {
+    id: "schedule-lunch-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    startTime: "10:30 AM",
+    endTime: "1:30 PM",
+    shiftLabel: "Lunch",
+    category: "Food",
+    title: "Lunch setup and service",
+    assignedVolunteerIds: ["mia-thompson", "priya-santos"],
+    congregation: "Bozeman",
+    status: "Assigned",
+    location: "Fellowship area",
+    notes: "Confirm final headcount by Sunday evening.",
+    statusExplanation: "Volunteers are assigned, but the shift is waiting on confirmation.",
+  },
+  {
+    id: "schedule-cleanup-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    startTime: "3:00 PM",
+    endTime: "5:00 PM",
+    shiftLabel: "End of day",
+    category: "Cleaning",
+    title: "Sweep, trash, and tool reset",
+    assignedVolunteerIds: [],
+    congregation: "Belgrade",
+    status: "Open",
+    location: "Main hall and west entrance",
+    notes: "Good fit for newer volunteers or family groups.",
+    statusExplanation: "This shift is ready to fill once volunteer profile creation is enabled.",
+  },
+  {
+    id: "schedule-security-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    startTime: "6:00 PM",
+    endTime: "10:00 PM",
+    shiftLabel: "Evening",
+    category: "Security",
+    title: "Evening site check",
+    assignedVolunteerIds: ["caleb-ross"],
+    congregation: "Helena",
+    status: "Needs Attention",
+    location: "Exterior doors and tool storage",
+    notes: "Pair with one additional approved brother before confirming.",
+    statusExplanation: "One person is assigned, but the shift needs a second approved volunteer.",
+  },
+  {
+    id: "schedule-framing-jan-13",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-13",
+    startTime: "8:00 AM",
+    endTime: "2:00 PM",
+    shiftLabel: "Day shift",
+    category: "Construction",
+    title: "Interior framing support",
+    assignedVolunteerIds: ["alex-rivera", "marcus-lee", "evan-brooks"],
+    congregation: "Belgrade",
+    status: "Assigned",
+    location: "North classroom wall",
+    notes: "Crew lead should review material staging before work starts.",
+    statusExplanation: "The crew is selected; confirmation is the next workflow step.",
+  },
+  {
+    id: "schedule-materials-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    startTime: "8:00 AM",
+    endTime: "12:00 PM",
+    shiftLabel: "Morning",
+    category: "Construction",
+    title: "Material staging",
+    assignedVolunteerIds: ["marcus-lee"],
+    congregation: "Bozeman",
+    status: "Confirmed",
+    location: "West entrance",
+    notes: "Leave a clear path for lunch delivery.",
+    statusExplanation: "Assigned volunteer is confirmed and qualified for staging work.",
+  },
+  {
+    id: "schedule-lunch-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    startTime: "11:00 AM",
+    endTime: "1:30 PM",
+    shiftLabel: "Lunch",
+    category: "Food",
+    title: "Simple lunch coverage",
+    assignedVolunteerIds: [],
+    congregation: "Bozeman",
+    status: "Open",
+    location: "Fellowship area",
+    notes: "Need two food volunteers and one cleanup helper.",
+    statusExplanation: "This shift has not been assigned yet.",
+  },
+  {
+    id: "schedule-security-jan-16",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-16",
+    startTime: "6:00 PM",
+    endTime: "10:00 PM",
+    shiftLabel: "Evening",
+    category: "Security",
+    title: "Friday site security",
+    assignedVolunteerIds: ["marcus-lee", "caleb-ross"],
+    congregation: "Belgrade",
+    status: "Assigned",
+    location: "Exterior doors and parking lot",
+    notes: "Confirm that both volunteers can stay through lockup.",
+    statusExplanation: "Coverage looks right; confirmations are not recorded yet.",
+  },
+  {
+    id: "schedule-paint-touchup-jan-17",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-17",
+    startTime: "8:30 AM",
+    endTime: "11:30 AM",
+    shiftLabel: "Morning",
+    category: "Construction",
+    title: "Paint touch-up draft",
+    assignedVolunteerIds: [],
+    congregation: "Helena",
+    status: "Draft",
+    location: "Classrooms",
+    notes: "Hold until the construction lead confirms whether this work is needed.",
+    statusExplanation: "This is a planning placeholder and is not ready for volunteers.",
+  },
+  {
+    id: "schedule-cleanup-jan-17",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-17",
+    startTime: "9:00 AM",
+    endTime: "1:00 PM",
+    shiftLabel: "Saturday",
+    category: "Cleaning",
+    title: "Final cleanup",
+    assignedVolunteerIds: ["mia-thompson", "leah-johnson"],
+    congregation: "Belgrade",
+    status: "Confirmed",
+    location: "Fellowship area",
+    notes: "Bring extra trash bags and label any remaining supplies.",
+    statusExplanation: "Coverage is confirmed for the cleanup shift.",
+  },
+  {
+    id: "schedule-supply-run-jan-17",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-17",
+    startTime: "1:00 PM",
+    endTime: "2:30 PM",
+    shiftLabel: "Afternoon",
+    category: "Other",
+    title: "Return borrowed supplies",
+    assignedVolunteerIds: ["nora-bennett"],
+    congregation: "Helena",
+    status: "Denied",
+    location: "Supply closet and hardware store",
+    notes: "Nora declined this window; choose another approved volunteer later.",
+    statusExplanation: "The latest assigned volunteer response was denied.",
   },
 ];
 
@@ -2313,6 +2547,137 @@ export function getCongregations() {
 
 export function getVolunteerById(volunteerId: string) {
   return projectVolunteers.find((volunteer) => volunteer.id === volunteerId);
+}
+
+function parseScheduleDate(date: string) {
+  return new Date(`${date}T12:00:00`);
+}
+
+function getScheduleWeekStart(referenceDate = scheduleReferenceDate) {
+  const date = parseScheduleDate(referenceDate);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date;
+}
+
+export function isScheduleDateToday(
+  date: string,
+  referenceDate = scheduleReferenceDate,
+) {
+  return date === referenceDate;
+}
+
+export function isScheduleDateInReferenceWeek(
+  date: string,
+  referenceDate = scheduleReferenceDate,
+) {
+  const start = getScheduleWeekStart(referenceDate);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  const target = parseScheduleDate(date);
+
+  return target >= start && target <= end;
+}
+
+export function getScheduleAssignmentsForProject(projectId = demoProjectId) {
+  return scheduleAssignments
+    .filter((assignment) => assignment.projectId === projectId)
+    .sort((first, second) => {
+      const dateDiff =
+        parseScheduleDate(first.date).getTime() - parseScheduleDate(second.date).getTime();
+
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+
+      return (first.startTime ?? first.shiftLabel).localeCompare(
+        second.startTime ?? second.shiftLabel,
+      );
+    });
+}
+
+export function getScheduleAssignmentVolunteers(assignment: ScheduleAssignment) {
+  return assignment.assignedVolunteerIds
+    .map((volunteerId) => getVolunteerById(volunteerId))
+    .filter((volunteer): volunteer is ProjectVolunteer => Boolean(volunteer));
+}
+
+export function getScheduleAssignmentsWithVolunteers(projectId = demoProjectId) {
+  return getScheduleAssignmentsForProject(projectId).map((assignment) => ({
+    ...assignment,
+    volunteers: getScheduleAssignmentVolunteers(assignment),
+  }));
+}
+
+export function getScheduleDayGroups(projectId = demoProjectId): ScheduleDayGroup[] {
+  const groups = getScheduleAssignmentsWithVolunteers(projectId).reduce<
+    Record<string, ScheduleAssignmentWithVolunteers[]>
+  >((grouped, assignment) => {
+    grouped[assignment.date] = [...(grouped[assignment.date] ?? []), assignment];
+    return grouped;
+  }, {});
+
+  return Object.entries(groups)
+    .sort(([firstDate], [secondDate]) =>
+      parseScheduleDate(firstDate).getTime() - parseScheduleDate(secondDate).getTime(),
+    )
+    .map(([date, dayAssignments]) => ({
+      date,
+      dayLabel: new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }).format(parseScheduleDate(date)),
+      isToday: isScheduleDateToday(date),
+      isThisWeek: isScheduleDateInReferenceWeek(date),
+      assignments: dayAssignments,
+    }));
+}
+
+export function getScheduleAssignmentCounts(
+  projectId = demoProjectId,
+): ScheduleAssignmentCounts {
+  return getScheduleAssignmentsForProject(projectId).reduce<ScheduleAssignmentCounts>(
+    (counts, assignment) => {
+      counts.total += 1;
+
+      if (assignment.status === "Draft") {
+        counts.draft += 1;
+      }
+
+      if (assignment.status === "Open") {
+        counts.open += 1;
+      }
+
+      if (assignment.status === "Assigned") {
+        counts.assigned += 1;
+      }
+
+      if (assignment.status === "Confirmed") {
+        counts.confirmed += 1;
+      }
+
+      if (assignment.status === "Denied") {
+        counts.denied += 1;
+      }
+
+      if (assignment.status === "Needs Attention") {
+        counts.needsAttention += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      draft: 0,
+      open: 0,
+      assigned: 0,
+      confirmed: 0,
+      denied: 0,
+      needsAttention: 0,
+    },
+  );
 }
 
 export function getVolunteerAssignments(volunteerId: string) {

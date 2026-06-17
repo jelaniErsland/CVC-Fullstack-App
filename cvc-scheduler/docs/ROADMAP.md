@@ -26,11 +26,13 @@ Rough phases:
 - 05B.5 Questionnaire-to-volunteer profile readiness. Completed.
 - 05B.6 Questionnaire review workflow states. Completed.
 - 05B.7 Intake flow stabilization / visual QA. Completed.
-- 06 Scheduling foundation. Next recommended step.
+- 06.1 Scheduling data model + mock schedule view. Completed.
+- 06.5 Role Landing Page UX Alignment. Upcoming.
 
 ## 4. Mid-Term Roadmap
 
 - 06 Scheduling foundation.
+- 06.5 Role Landing Page UX Alignment for Primary CVC, Assistant CVC, Primary Food Contact, Primary Security Contact, and possible On-site Contact homes.
 - 07 Needs Attention / Conflicts.
 - 08 Emails and announcements.
 - 09 Food and Security modules.
@@ -101,3 +103,20 @@ Future questionnaire iterations still need:
 - Role-scoped review views.
 - Converting approved questionnaire submissions into schedule-ready volunteer records.
 - Scheduling integration after conversion.
+
+## 9. Scheduling Notes
+
+06.1 added mock schedule assignment data, grouping/count helpers, and a first
+admin schedule view at `/admin/schedule`. The page shows the active Belgrade
+project week as compact day groups with expandable assignment rows, soft
+coverage counts, status explanations, and linked volunteer details where
+available.
+
+Scheduling is still mock-only. Future scheduling work still needs:
+
+- Real scheduling engine.
+- Assignment creation and editing.
+- Conflict and coverage logic.
+- Volunteer confirmation / denial workflow.
+- Real persistence.
+- Role-specific schedule landing pages.
