@@ -2,7 +2,9 @@ import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
 import {
+  getConflictCoverageDetailById,
   getNeedsAttentionRelatedHref,
+  getNeedsAttentionReviewHref,
   groupNeedsAttentionItemsByArea,
 } from "@/lib/mockData";
 import type {
@@ -67,7 +69,9 @@ function PriorityPill({ priority }: { priority: NeedsAttentionPriority }) {
 }
 
 function NeedsAttentionRow({ item }: { item: NeedsAttentionItem }) {
-  const href = getNeedsAttentionRelatedHref(item);
+  const reviewHref = getNeedsAttentionReviewHref(item);
+  const relatedHref = getNeedsAttentionRelatedHref(item);
+  const hasDetail = Boolean(getConflictCoverageDetailById(item.id));
 
   return (
     <details className="group border-t border-white/72 first:border-t-0">
@@ -110,10 +114,18 @@ function NeedsAttentionRow({ item }: { item: NeedsAttentionItem }) {
         </div>
         <Link
           className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-slate-950"
-          href={href}
+          href={reviewHref}
         >
-          Open related
+          {hasDetail ? "Review details" : "Open related"}
         </Link>
+        {hasDetail && relatedHref !== reviewHref ? (
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-slate-500 transition hover:bg-white/50 hover:text-slate-900 sm:col-start-2"
+            href={relatedHref}
+          >
+            Open related
+          </Link>
+        ) : null}
       </div>
     </details>
   );

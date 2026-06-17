@@ -509,6 +509,40 @@ Limitations:
 Next recommended step:
 - 07.2 Conflict/coverage detail patterns.
 
+## Iteration 07.2 - Conflict / Coverage Detail Patterns
+
+Summary:
+- Extended the Needs Attention mock layer with conflict/coverage detail types, records, and helpers.
+- Added detail patterns for open assignments, denied assignments, possible overlapping assignments, missing contact information, food coverage/detail gaps, and security/night-watch coverage.
+- Added helper functions to find Needs Attention items by id, find detail patterns by id, derive related assignment/volunteer context, and label issue types calmly.
+- Added `/admin/needs-attention/[itemId]` with a calm detail page, suggested next step, affected date/time/module, related assignments, related volunteers, related links, placeholder-only actions, and a helpful not-found state.
+- Updated the Needs Attention overview so primary row actions open detail pages when a detail pattern exists.
+- Kept dashboard integration light by continuing to use the existing top next action helper.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/NeedsAttentionOverview.tsx`
+- `app/admin/needs-attention/[itemId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/needs-attention`, one valid detail page, `/admin/needs-attention/not-real`, `/admin/dashboard`, and `/admin/schedule`.
+
+Limitations:
+- Conflict/coverage details are mock-only patterns.
+- No real conflict detection.
+- No real resolution actions or persistence.
+- No notification logic.
+- No role-scoped follow-up views yet.
+- No scheduling engine logic was added.
+
+Next recommended step:
+- 07.3 Needs Attention visual QA/stabilization.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

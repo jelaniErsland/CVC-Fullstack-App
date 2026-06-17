@@ -30,7 +30,8 @@ Rough phases:
 - 06.5 Role Landing Page UX Alignment. Completed.
 - 06.6 Role-home visual QA/stabilization. Completed.
 - 07.1 Needs Attention data model + calm overview. Completed.
-- 07.2 Conflict/coverage detail patterns. Next recommended step.
+- 07.2 Conflict/coverage detail patterns. Completed.
+- 07.3 Needs Attention visual QA/stabilization. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -39,6 +40,7 @@ Rough phases:
 - 06.6 Role-home visual QA/stabilization.
 - 07 Needs Attention / Conflicts.
 - 07.2 Conflict/coverage detail patterns.
+- 07.3 Needs Attention visual QA/stabilization.
 - 08 Emails and announcements.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
@@ -154,10 +156,16 @@ questionnaires, schedule, volunteers, food, security, and setup. The new
 soft priority labels, related links, and calm next-step language. The Primary
 CVC dashboard now derives its top next action from the Needs Attention helper.
 
+07.2 added mock conflict and coverage detail patterns at
+`/admin/needs-attention/[itemId]`, including coverage gaps, denied assignments,
+possible overlaps, missing information before scheduling, food detail gaps, and
+security/night-watch coverage. These detail pages show calm explanations,
+related assignments/people, suggested next steps, related links, and
+placeholder-only actions.
+
 Needs Attention is mock-only. Future work still needs:
 
 - Real conflict detection.
-- Coverage detail patterns.
 - Real resolution actions.
 - Notification logic.
 - Role-scoped follow-up views.

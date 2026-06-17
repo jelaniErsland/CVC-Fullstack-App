@@ -291,6 +291,44 @@ export type NeedsAttentionCounts = {
   resolved: number;
 };
 
+export type ConflictCoverageIssueType =
+  | "coverageGap"
+  | "needsDecision"
+  | "followUp"
+  | "missingInfo"
+  | "possibleOverlap";
+
+export type ConflictCoverageAction = {
+  label: string;
+  description: string;
+};
+
+export type ConflictCoverageDetail = {
+  id: string;
+  itemId: string;
+  issueType: ConflictCoverageIssueType;
+  title: string;
+  explanation: string;
+  affectedDate?: string;
+  affectedTime?: string;
+  module: NeedsAttentionArea;
+  relatedAssignmentIds: string[];
+  relatedVolunteerIds: string[];
+  suggestedNextStep: string;
+  placeholderActions: ConflictCoverageAction[];
+  relatedRoutes: Array<{
+    label: string;
+    href: string;
+  }>;
+};
+
+export type ConflictCoverageContext = {
+  item?: NeedsAttentionItem;
+  detail?: ConflictCoverageDetail;
+  assignments: ScheduleAssignmentWithVolunteers[];
+  volunteers: ProjectVolunteer[];
+};
+
 export type QuestionnaireStatus =
   | "notStarted"
   | "inProgress"
@@ -795,6 +833,22 @@ export const scheduleAssignments: ScheduleAssignment[] = [
     location: "Fellowship area",
     notes: "Need two food volunteers and one cleanup helper.",
     statusExplanation: "This shift has not been assigned yet.",
+  },
+  {
+    id: "schedule-security-lockup-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    startTime: "10:00 AM",
+    endTime: "12:00 PM",
+    shiftLabel: "Late morning",
+    category: "Security",
+    title: "Tool-room lockup handoff",
+    assignedVolunteerIds: ["marcus-lee"],
+    congregation: "Bozeman",
+    status: "Assigned",
+    location: "Tool storage",
+    notes: "Mock overlap pattern: Marcus is also assigned to material staging during this window.",
+    statusExplanation: "This needs a coordinator decision before confirmations are treated as final.",
   },
   {
     id: "schedule-security-jan-16",
@@ -1534,6 +1588,20 @@ export const needsAttentionItems: NeedsAttentionItem[] = [
       "Food module workflows are not built yet, so this stays as a calm coordination note for now.",
   },
   {
+    id: "needs-marcus-overlap-jan-14",
+    projectId: "belgrade-remodel-2026",
+    area: "Schedule",
+    title: "Marcus may have overlapping assignments",
+    summary: "Marcus Lee is listed for material staging and a lockup handoff during the same window.",
+    suggestedNextStep: "Decide whether to move the handoff or assign a different approved helper.",
+    priority: "important",
+    status: "open",
+    relatedRoute: "/admin/schedule",
+    relatedDate: "Jan 14, 2026",
+    detail:
+      "This is a mock overlap pattern for the future conflict engine. It does not block or change assignments yet.",
+  },
+  {
     id: "needs-security-evening-pair",
     projectId: "belgrade-remodel-2026",
     area: "Security",
@@ -1582,6 +1650,200 @@ export const needsAttentionItems: NeedsAttentionItem[] = [
     status: "resolved",
     relatedRoute: "/admin/dashboard",
     relatedDate: "Jan 12, 2026",
+  },
+];
+
+export const conflictCoverageDetails: ConflictCoverageDetail[] = [
+  {
+    id: "detail-jonah-emergency-contact",
+    itemId: "needs-jonah-emergency-contact",
+    issueType: "missingInfo",
+    title: "Emergency contact needed before scheduling",
+    explanation:
+      "The questionnaire has enough detail to review, but the emergency contact is missing. Scheduling should wait until that practical safety detail is filled in.",
+    affectedDate: "Jan 5, 2026",
+    module: "Questionnaires",
+    relatedAssignmentIds: [],
+    relatedVolunteerIds: [],
+    suggestedNextStep: "Contact Jonah and add the emergency contact before treating this intake as schedule-ready.",
+    placeholderActions: [
+      {
+        label: "Contact volunteer (coming next)",
+        description: "Later this can start a follow-up note or message.",
+      },
+      {
+        label: "Mark reviewed (coming next)",
+        description: "Later this can record that the missing detail was handled.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open questionnaire",
+        href: "/admin/questionnaires/questionnaire-jonah-price-paper",
+      },
+    ],
+  },
+  {
+    id: "detail-cleanup-open-jan-12",
+    itemId: "needs-cleanup-open-jan-12",
+    issueType: "coverageGap",
+    title: "Coverage gap for Monday cleanup",
+    explanation:
+      "The cleanup row is open. It can stay open for now, but a coordinator should know it has no assigned volunteer yet.",
+    affectedDate: "Jan 12, 2026",
+    affectedTime: "3:00 PM - 5:00 PM",
+    module: "Schedule",
+    relatedAssignmentIds: ["schedule-cleanup-jan-12"],
+    relatedVolunteerIds: [],
+    suggestedNextStep: "Choose a small cleanup group or leave this visible until volunteer profile conversion is enabled.",
+    placeholderActions: [
+      {
+        label: "Find helper (coming next)",
+        description: "Later this can open a filtered volunteer list.",
+      },
+      {
+        label: "Mark reviewed (coming next)",
+        description: "Later this can keep the item from appearing first.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open schedule",
+        href: "/admin/schedule",
+      },
+    ],
+  },
+  {
+    id: "detail-supply-run-denied",
+    itemId: "needs-supply-run-denied",
+    issueType: "needsDecision",
+    title: "Replacement needed for supply return",
+    explanation:
+      "The latest volunteer response for the supply return was denied. The item needs a replacement decision, not an urgent escalation.",
+    affectedDate: "Jan 17, 2026",
+    affectedTime: "1:00 PM - 2:30 PM",
+    module: "Schedule",
+    relatedAssignmentIds: ["schedule-supply-run-jan-17"],
+    relatedVolunteerIds: ["nora-bennett"],
+    suggestedNextStep: "Pick another approved volunteer when assignment editing is available.",
+    placeholderActions: [
+      {
+        label: "Find replacement (coming next)",
+        description: "Later this can suggest volunteers who match the timing and task.",
+      },
+      {
+        label: "Contact volunteer (coming next)",
+        description: "Later this can record a follow-up conversation.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open schedule",
+        href: "/admin/schedule",
+      },
+      {
+        label: "Open volunteer",
+        href: "/admin/volunteers/nora-bennett",
+      },
+    ],
+  },
+  {
+    id: "detail-lunch-jan-14",
+    itemId: "needs-lunch-jan-14-details",
+    issueType: "coverageGap",
+    title: "Food coverage details needed",
+    explanation:
+      "The Wednesday lunch row has no assigned helpers yet and the food contact still needs a final headcount.",
+    affectedDate: "Jan 14, 2026",
+    affectedTime: "11:00 AM - 1:30 PM",
+    module: "Food",
+    relatedAssignmentIds: ["schedule-lunch-jan-14"],
+    relatedVolunteerIds: [],
+    suggestedNextStep: "Ask the food contact to confirm helpers and headcount before the project week.",
+    placeholderActions: [
+      {
+        label: "Ask food contact (coming next)",
+        description: "Later this can create a food-module follow-up.",
+      },
+      {
+        label: "Add helper (coming next)",
+        description: "Later this can assign approved food volunteers.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open schedule",
+        href: "/admin/schedule",
+      },
+    ],
+  },
+  {
+    id: "detail-marcus-overlap-jan-14",
+    itemId: "needs-marcus-overlap-jan-14",
+    issueType: "possibleOverlap",
+    title: "Possible overlap for Marcus Lee",
+    explanation:
+      "Marcus is listed for material staging and a tool-room handoff during the same late-morning window. A coordinator should choose which assignment needs him most.",
+    affectedDate: "Jan 14, 2026",
+    affectedTime: "10:00 AM - 12:00 PM",
+    module: "Schedule",
+    relatedAssignmentIds: ["schedule-materials-jan-14", "schedule-security-lockup-jan-14"],
+    relatedVolunteerIds: ["marcus-lee"],
+    suggestedNextStep: "Move the handoff or assign a different helper before confirmations are treated as final.",
+    placeholderActions: [
+      {
+        label: "Move assignment (coming next)",
+        description: "Later this can open assignment editing.",
+      },
+      {
+        label: "Find alternate helper (coming next)",
+        description: "Later this can suggest approved helpers for the handoff.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open schedule",
+        href: "/admin/schedule",
+      },
+      {
+        label: "Open volunteer",
+        href: "/admin/volunteers/marcus-lee",
+      },
+    ],
+  },
+  {
+    id: "detail-security-evening-pair",
+    itemId: "needs-security-evening-pair",
+    issueType: "coverageGap",
+    title: "Night watch should be paired",
+    explanation:
+      "The Monday evening site check has one assigned volunteer. The future security workflow should keep this visible until a second approved helper is added.",
+    affectedDate: "Jan 12, 2026",
+    affectedTime: "6:00 PM - 10:00 PM",
+    module: "Security",
+    relatedAssignmentIds: ["schedule-security-jan-12"],
+    relatedVolunteerIds: ["caleb-ross"],
+    suggestedNextStep: "Find one more approved helper for the evening site check.",
+    placeholderActions: [
+      {
+        label: "Find second helper (coming next)",
+        description: "Later this can filter for security-ready volunteers.",
+      },
+      {
+        label: "Contact security lead (coming next)",
+        description: "Later this can record a security contact follow-up.",
+      },
+    ],
+    relatedRoutes: [
+      {
+        label: "Open schedule",
+        href: "/admin/schedule",
+      },
+      {
+        label: "Open volunteer",
+        href: "/admin/volunteers/caleb-ross",
+      },
+    ],
   },
 ];
 
@@ -2936,6 +3198,10 @@ export function getActiveWorkspaceNeedsAttentionItems() {
   return getNeedsAttentionItemsForProject(demoProjectId);
 }
 
+export function getNeedsAttentionItemById(itemId: string) {
+  return needsAttentionItems.find((item) => item.id === itemId);
+}
+
 export function groupNeedsAttentionItemsByArea(
   items = getActiveWorkspaceNeedsAttentionItems(),
 ): NeedsAttentionGroup[] {
@@ -2994,6 +3260,58 @@ export function getTopNeedsAttentionAction(projectId = demoProjectId) {
   );
 }
 
+export function getConflictCoverageDetailById(itemId: string) {
+  return conflictCoverageDetails.find(
+    (detail) => detail.itemId === itemId || detail.id === itemId,
+  );
+}
+
+export function getConflictCoverageIssueTypeLabel(type: ConflictCoverageIssueType) {
+  const labels: Record<ConflictCoverageIssueType, string> = {
+    coverageGap: "Coverage gap",
+    needsDecision: "Needs a decision",
+    followUp: "Follow up",
+    missingInfo: "Missing information",
+    possibleOverlap: "Possible overlap",
+  };
+
+  return labels[type];
+}
+
+export function getConflictCoverageContextById(
+  itemId: string,
+): ConflictCoverageContext {
+  const item = getNeedsAttentionItemById(itemId);
+  const detail = getConflictCoverageDetailById(itemId);
+  const assignments = detail
+    ? detail.relatedAssignmentIds
+        .map((assignmentId) =>
+          getScheduleAssignmentsWithVolunteers(item?.projectId ?? demoProjectId).find(
+            (assignment) => assignment.id === assignmentId,
+          ),
+        )
+        .filter(
+          (
+            assignment,
+          ): assignment is ScheduleAssignmentWithVolunteers => Boolean(assignment),
+        )
+    : [];
+  const volunteerIds = new Set<string>([
+    ...(detail?.relatedVolunteerIds ?? []),
+    ...assignments.flatMap((assignment) => assignment.assignedVolunteerIds),
+  ]);
+  const volunteers = Array.from(volunteerIds)
+    .map((volunteerId) => getVolunteerById(volunteerId))
+    .filter((volunteer): volunteer is ProjectVolunteer => Boolean(volunteer));
+
+  return {
+    item,
+    detail,
+    assignments,
+    volunteers,
+  };
+}
+
 export function getNeedsAttentionRelatedHref(item: NeedsAttentionItem) {
   if (item.relatedRoute) {
     return item.relatedRoute;
@@ -3009,6 +3327,12 @@ export function getNeedsAttentionRelatedHref(item: NeedsAttentionItem) {
   };
 
   return fallbackRoutes[item.area];
+}
+
+export function getNeedsAttentionReviewHref(item: NeedsAttentionItem) {
+  return getConflictCoverageDetailById(item.id)
+    ? `/admin/needs-attention/${item.id}`
+    : getNeedsAttentionRelatedHref(item);
 }
 
 function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
@@ -3035,7 +3359,7 @@ function getPrimaryCvcRoleHome(project: Project): RoleHomeData {
         topNeedsAttentionAction?.suggestedNextStep ??
         `${counts.open + counts.needsAttention} schedule items need a coordinator look before they are ready.`,
       href: topNeedsAttentionAction
-        ? getNeedsAttentionRelatedHref(topNeedsAttentionAction)
+        ? getNeedsAttentionReviewHref(topNeedsAttentionAction)
         : "/admin/schedule",
     },
     metrics: [

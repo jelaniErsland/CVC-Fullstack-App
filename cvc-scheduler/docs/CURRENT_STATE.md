@@ -56,12 +56,14 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock scheduling foundation with assignment data, grouping/count helpers, and a compact admin schedule view.
 - Mock role-home foundation for `/admin/dashboard`, currently showing a stabilized Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
 - Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
+- Mock conflict/coverage detail patterns for Needs Attention items, including coverage gaps, possible overlaps, denied assignments, and missing information before scheduling.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
 - `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
+- `/admin/needs-attention/[itemId]`: Mock conflict/coverage detail page with suggested next step, related assignments/people, and placeholder-only actions.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
 - `/admin/projects`: Workspace selection/list page, visibly presented as Project Workspaces.
 - `/admin/projects/new`: Mock project workspace setup wizard.
@@ -103,7 +105,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No scheduling integration from questionnaire readiness yet.
 - Scheduling is mock-only; there is no scheduling engine yet.
 - No assignment creation/editing workflow yet.
-- No schedule conflict logic yet.
+- Conflict/coverage detail pages are mock patterns only; there is no real detection logic yet.
 - Needs Attention is mock-only and does not resolve or save follow-up items yet.
 - No real conflict detection yet.
 - No notification logic yet.
@@ -118,4 +120,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-07.2 Conflict/coverage detail patterns.
+07.3 Needs Attention visual QA/stabilization.
