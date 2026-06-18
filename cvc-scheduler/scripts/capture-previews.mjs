@@ -26,17 +26,17 @@ const captures = [
   { route: "/admin/dashboard", fileName: "dashboard.jpg", viewport: desktopViewport },
   {
     route: "/admin/announcements",
-    fileName: "announcements.jpg",
+    fileName: "communications.jpg",
     viewport: desktopViewport,
   },
   {
     route: "/admin/announcements/templates",
-    fileName: "announcement-templates.jpg",
+    fileName: "communications-templates.jpg",
     viewport: desktopViewport,
   },
   {
     route: "/admin/announcements/comm-belgrade-ppe-ready",
-    fileName: "announcement-detail-ready.jpg",
+    fileName: "communications-detail-ready.jpg",
     viewport: desktopViewport,
   },
   {
@@ -103,12 +103,12 @@ const captures = [
   { route: "/admin/dashboard", fileName: "mobile-dashboard.jpg", viewport: mobileViewport },
   {
     route: "/admin/announcements",
-    fileName: "mobile-announcements.jpg",
+    fileName: "mobile-communications.jpg",
     viewport: mobileViewport,
   },
   {
     route: "/admin/announcements/templates",
-    fileName: "mobile-announcement-templates.jpg",
+    fileName: "mobile-communications-templates.jpg",
     viewport: mobileViewport,
   },
   { route: "/admin/tasks", fileName: "mobile-tasks.jpg", viewport: mobileViewport },

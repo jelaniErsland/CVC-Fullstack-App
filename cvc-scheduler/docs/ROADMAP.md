@@ -55,7 +55,8 @@ Rough phases:
 - 09.15 Overview realignment. Completed.
 - 09.16 Admin navigation simplification + Communications alignment. Completed.
 - 09.17 Communications detail/template copy alignment. Completed.
-- 09.18 Overview/navigation/Communications visual QA + preview refresh. Next recommended step.
+- 09.18 Overview/navigation/Communications visual QA + preview refresh. Completed.
+- 09.19 Calendar minimal grid visual direction pass. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -90,6 +91,7 @@ Rough phases:
 - 09.16 Admin navigation simplification + Communications alignment.
 - 09.17 Communications detail/template copy alignment.
 - 09.18 Overview/navigation/Communications visual QA + preview refresh.
+- 09.19 Calendar minimal grid visual direction pass.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

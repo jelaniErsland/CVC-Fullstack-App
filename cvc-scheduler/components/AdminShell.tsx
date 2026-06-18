@@ -201,30 +201,25 @@ function MobileMoreSheet({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <div
-      className={[
-        "fixed inset-0 z-50 lg:hidden",
-        isOpen ? "pointer-events-auto" : "pointer-events-none",
-      ].join(" ")}
+      className="fixed inset-0 z-50 lg:hidden"
     >
       <button
         aria-label="Close more navigation backdrop"
-        className={[
-          "absolute inset-0 h-full w-full bg-slate-950/22 transition-opacity",
-          isOpen ? "opacity-100" : "opacity-0",
-        ].join(" ")}
+        className="absolute inset-0 h-full w-full bg-slate-950/22"
         onClick={onClose}
         type="button"
       />
       <section
         aria-label="More admin navigation"
-        className={[
-          "absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+96px)] transition-transform duration-200 ease-out",
-          isOpen ? "translate-y-0" : "translate-y-full",
-        ].join(" ")}
+        className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+96px)]"
       >
-        <GlassCard className="mx-auto max-h-[70vh] max-w-md overflow-y-auto rounded-2xl p-4 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
+        <GlassCard className="mx-auto max-h-[calc(100vh-126px)] max-w-md overflow-y-auto rounded-2xl p-4 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
           <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
           <div className="flex items-center justify-between gap-3">
             <div>

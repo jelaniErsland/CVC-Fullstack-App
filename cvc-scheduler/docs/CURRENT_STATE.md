@@ -185,6 +185,7 @@ Upcoming UI direction:
 - Project-aware and module-aware `AdminNav`.
 - Shared admin shell with simplified desktop primary navigation for Overview, Calendar, Tasks, Volunteers, Communications, and Settings; mobile keeps the 5-tab bottom navigation with a grouped More sheet for secondary destinations.
 - Mobile bottom navigation is shared across the checked admin routes, including Dashboard, Calendar, Tasks, Volunteers, Volunteer detail, Settings, Communications, Reminder templates, Questionnaires, Needs Attention, Workspaces, Food/Security prototypes, and the legacy Schedule route.
+- Overview/navigation/Communications visual QA completed with refreshed preview screenshots, renamed Communications preview filenames, and mobile More screenshot stabilization so the closed sheet does not appear in default full-page captures.
 - Workspace setup wizard.
 - Project settings panel with client-only module toggles.
 - Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
@@ -254,7 +255,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures key admin routes, Calendar, Calendar filters open, Calendar create open, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Calendar filters open, Calendar create open, Tasks, Volunteers, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, Overview, Calendar, Calendar filters open, Calendar create open, Tasks, Communications overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for Overview, Calendar, Calendar filters open, Calendar create open, Tasks, Volunteers, Communications, Communications templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots include the bottom tab navigation. The screenshot workflow also captures the legacy mobile drawer open state and the new mobile More sheet open state.
 
@@ -308,4 +309,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.18 Overview/navigation/Communications visual QA + preview refresh.
+09.19 Calendar minimal grid visual direction pass.

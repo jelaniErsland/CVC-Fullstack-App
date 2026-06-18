@@ -1384,6 +1384,40 @@ Limitations:
 Next recommended step:
 - 09.18 Overview/navigation/Communications visual QA + preview refresh.
 
+## Iteration 09.18 - Overview/Navigation/Communications Visual QA + Preview Refresh
+
+Summary:
+- Performed focused visual QA on the realigned Overview, simplified desktop navigation, grouped mobile More sheet, and Communications overview/detail/template surfaces.
+- Confirmed desktop navigation shows only Overview, Calendar, Tasks, Volunteers, Communications, and Settings.
+- Confirmed mobile bottom tabs remain Overview, Tasks, Calendar, Volunteers, and More.
+- Confirmed mobile More grouping is readable for Communications, Follow-up, Workspace, and Prototype / legacy.
+- Fixed mobile More full-page screenshot leakage by rendering the sheet only while open.
+- Increased mobile More sheet usable height so all grouped links are easier to see at the checked mobile size.
+- Renamed preview screenshot outputs from Announcements language to Communications language.
+- Refreshed the latest preview screenshots.
+
+Changed files:
+- `components/AdminShell.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- Browser QA checked `/admin/dashboard`, `/admin/announcements`, `/admin/announcements/comm-belgrade-ppe-ready`, `/admin/announcements/templates`, `/admin/announcements/not-real`, and mobile More at desktop and mobile widths.
+- Checked mobile pages for horizontal overflow at 390px.
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview:screenshots` passed with `PREVIEW_BASE_URL=http://127.0.0.1:3022`.
+
+Limitations:
+- Visual QA and screenshot workflow refresh only.
+- No route renames, redirects, real sending, persistence, Supabase, auth, scheduling, assignment workflow, or mutation logic was added.
+
+Next recommended step:
+- 09.19 Calendar minimal grid visual direction pass.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
