@@ -48,7 +48,7 @@ Rough phases:
 - 09.9 Calendar visual/stability pass. Completed.
 - 09.10 Calendar item inspector drawer. Completed.
 - 09.11 Mobile 5-tab navigation direction. Completed.
-- 09.12 Calendar view controls / day-month foundation. Next recommended step.
+- 09.12 Calendar view controls + filter drawer / day-month foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -75,7 +75,7 @@ Rough phases:
 - 09.9 Calendar visual/stability pass.
 - 09.10 Calendar item inspector drawer.
 - 09.11 Mobile 5-tab navigation direction.
-- 09.12 Calendar view controls / day-month foundation.
+- 09.12 Calendar view controls + filter drawer / day-month foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -336,9 +336,19 @@ time/window, assigned volunteers/helpers, filled count such as 0/3, notes,
 repeat rule, copy/paste/bulk creation metadata, and optional one-off custom
 task data.
 
-Future Calendar work should support day/week/month views, filters by task
-category/visibility, drag/drop placement, copy/paste, repeatable tasks, bulk
-creation, simple edit mode, and custom one-day tasks.
+Future Calendar work should support day/week/month views, a Filter button with
+a drawer/sheet, filters by task name and helper coverage state, drag/drop
+placement, copy/paste, repeatable tasks, bulk creation, simple edit mode, and
+custom one-day tasks.
+
+The next Calendar pass should add the Filter button and drawer/sheet before
+deeper scheduling behavior. Calendar filters should eventually support search
+by task name, unfilled tasks, filled tasks, tasks waiting on some
+confirmations, tasks with all helpers confirmed, and tasks with some/all
+helpers denied. Task type filtering should stay high-level: General Volunteers,
+Food, and Security. Construction, cleanup, gate attendant, drywall, concrete,
+and similar work should roll up under General Volunteers rather than becoming
+top-level filter types.
 
 Target desktop sidebar:
 

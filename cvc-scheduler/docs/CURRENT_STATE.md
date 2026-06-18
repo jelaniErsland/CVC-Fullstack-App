@@ -93,9 +93,18 @@ Calendar items may include:
 - Copy/paste/bulk creation metadata.
 - Optional one-off custom task data when the user drops in a task that does not need to become a reusable preset.
 
-Future Calendar work should support day/week/month views, filters by task
-type/category/visibility, drag/drop placement, copy/paste, repeatable tasks,
-bulk creation, simple edit mode, and custom one-day tasks.
+Future Calendar work should support day/week/month views, a Filter button with
+a drawer/sheet, task search, helper coverage filters, drag/drop placement,
+copy/paste, repeatable tasks, bulk creation, simple edit mode, and custom
+one-day tasks.
+
+Future Calendar filters should support search by task name, unfilled tasks,
+filled tasks, tasks waiting on some confirmations, tasks with all helpers
+confirmed, and tasks with some/all helpers denied. Task type filters should use
+only three high-level types: General Volunteers, Food, and Security.
+Construction, cleanup, gate attendant, drywall, concrete, and similar work
+should roll up under General Volunteers rather than becoming top-level filter
+types.
 
 ## 3B. Navigation Direction
 
@@ -243,7 +252,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real security persistence, helper assignment mutations, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
 - No real task preset creation/edit/duplicate mutations, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
 - Calendar scheduling is mock-data/UI only. Calendar item creation, saving, real placement edits, volunteer assignment mutations, drag/drop, calendar libraries, production scheduling logic, scheduled jobs, and email sending are not implemented.
-- Calendar remains week-first/mock-only. True Day/Month behavior, view-control placement, and richer Calendar view controls should be handled in a later Calendar view-controls pass.
+- Calendar remains week-first/mock-only. True Day/Month behavior, view-control placement, a Filter button with a drawer/sheet, task search, and coverage/type filters should be handled in a later Calendar view-controls pass.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -270,4 +279,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.12 Calendar view controls / day-month foundation.
+09.12 Calendar view controls + filter drawer / day-month foundation.

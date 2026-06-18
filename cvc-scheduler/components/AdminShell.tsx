@@ -316,7 +316,10 @@ export function AdminShell({
             </GlassCard>
           </aside>
 
-          <main className="min-w-0 pb-28 pt-4 lg:py-4">{children}</main>
+          <main className="min-w-0 py-4 lg:py-4">
+            {children}
+            <div aria-hidden="true" className="h-28 lg:hidden" />
+          </main>
         </div>
       </div>
 

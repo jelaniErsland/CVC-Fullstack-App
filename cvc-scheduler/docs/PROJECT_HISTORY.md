@@ -1138,9 +1138,10 @@ Limitations:
 - No auth, persistence, route permissions, role enforcement, Supabase, database logic, real scheduling behavior, drag/drop, calendar libraries, production workflows, or Calendar day/month functionality.
 - The mobile hamburger drawer remains temporarily as a fallback.
 - Calendar Day/Week/Month controls are still visual/mock-only and need a later Calendar view-controls pass.
+- The next Calendar pass should add a Filter button and drawer/sheet. Future filters should include task-name search, helper coverage states, and only three high-level task type filters: General Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall, concrete, and similar work should roll up under General Volunteers.
 
 Next recommended step:
-- 09.12 Calendar view controls / day-month foundation.
+- 09.12 Calendar view controls + filter drawer / day-month foundation.
 
 ## Documentation Maintenance Rules
 
