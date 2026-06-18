@@ -282,6 +282,13 @@ export default async function AnnouncementDetailPage({
                       Open related project area
                     </Button>
                   ) : null}
+                  <Button
+                    className="mt-3"
+                    href="/admin/announcements/templates"
+                    variant="ghost"
+                  >
+                    View reminder templates
+                  </Button>
                 </GlassCard>
               </section>
             </div>

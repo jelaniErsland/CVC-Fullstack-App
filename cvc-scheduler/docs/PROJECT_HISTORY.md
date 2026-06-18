@@ -640,6 +640,37 @@ Limitations:
 Next recommended step:
 - 08.3 Reminder templates.
 
+## Iteration 08.3 - Reminder Templates
+
+Summary:
+- Added mock reminder-template types, data, labels, and helpers for active workspace/module context.
+- Included starting points for schedule reminders, pending confirmations, questionnaire follow-up, food service notes, security/night-watch reminders, project updates, plan changes, and thank-you/wrap-up notes.
+- Added `/admin/announcements/templates` with grouped template rows, suggested audience, suggested timing, subject suggestions, body previews, placeholders, expandable previews, and placeholder-only actions.
+- Lightly linked reminder templates from the announcements overview and announcement detail pages.
+- Kept templates as helpful starting points only; they do not create drafts, schedule delivery, resolve recipients, or send anything.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/announcements/page.tsx`
+- `app/admin/announcements/[communicationId]/page.tsx`
+- `app/admin/announcements/templates/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/announcements`, `/admin/announcements/templates`, one valid announcement detail route, `/admin/dashboard`, and `/admin/settings`.
+
+Limitations:
+- Reminder templates are mock-only.
+- No Resend, SMTP, Supabase, auth, real persistence, real sending, background jobs, cron reminders, notification delivery, unsubscribe logic, suppression logic, delivery tracking, or mutation actions.
+- Template actions do not create drafts or save changes.
+
+Next recommended step:
+- 08.4 Emails/Announcements visual QA and stabilization.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

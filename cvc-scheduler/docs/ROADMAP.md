@@ -34,7 +34,8 @@ Rough phases:
 - 07.3 Needs Attention visual QA/stabilization. Completed.
 - 08.1 Emails and Announcements data model + admin overview. Completed.
 - 08.2 Announcement detail/preview page. Completed.
-- 08.3 Reminder templates. Next recommended step.
+- 08.3 Reminder templates. Completed.
+- 08.4 Emails/Announcements visual QA and stabilization. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -48,6 +49,7 @@ Rough phases:
 - 08.1 Emails and Announcements data model + admin overview.
 - 08.2 Announcement detail/preview page.
 - 08.3 Reminder templates.
+- 08.4 Emails/Announcements visual QA and stabilization.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -190,9 +192,16 @@ copy that sending is not active yet.
 recipient explanation, dates, author/role, reminder plan where present,
 related links, placeholder-only actions, and a helpful not-found state.
 
+08.3 added a mock reminder-template foundation at
+`/admin/announcements/templates`. Templates provide calm starting points for
+schedule reminders, pending confirmations, questionnaire follow-up, food
+service notes, security/night-watch reminders, project updates, plan changes,
+and thank-you/wrap-up notes. They are grouped by module and show suggested
+audience, timing, subject suggestions, body previews, and placeholders.
+
 Announcements and emails are mock-only. Future work still needs:
 
-- Reminder templates.
+- Visual QA and stabilization for the communication surfaces.
 - Real email sending.
 - Recipient resolution.
 - Scheduled reminders and background jobs.

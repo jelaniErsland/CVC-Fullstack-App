@@ -210,9 +210,17 @@ export default function AdminAnnouncementsPage() {
                         {nextAction.detail}
                       </p>
                     </div>
-                    <span className="inline-flex min-h-10 w-fit items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700">
-                      Preview only
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        className="inline-flex min-h-10 w-fit items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700"
+                        href="/admin/announcements/templates"
+                      >
+                        Reminder templates
+                      </Link>
+                      <span className="inline-flex min-h-10 w-fit items-center rounded-full border border-slate-200 bg-white/60 px-4 text-sm font-semibold text-slate-500">
+                        Preview only
+                      </span>
+                    </div>
                   </div>
                 </GlassCard>
 

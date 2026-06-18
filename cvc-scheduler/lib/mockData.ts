@@ -540,6 +540,31 @@ export type CommunicationStatusTone =
   | "success"
   | "info";
 
+export type ReminderTemplateCategory =
+  | "scheduleReminder"
+  | "pendingConfirmation"
+  | "questionnaireFollowUp"
+  | "foodService"
+  | "securityNightWatch"
+  | "projectUpdate"
+  | "planChange"
+  | "thankYou";
+
+export type ReminderTemplateAudience =
+  | "allVolunteers"
+  | "assignedVolunteers"
+  | "pendingVolunteers"
+  | "congregationContacts"
+  | "foodContacts"
+  | "securityContacts";
+
+export type ReminderTemplateModule =
+  | "schedule"
+  | "questionnaire"
+  | "food"
+  | "security"
+  | "general";
+
 export type Communication = {
   id: string;
   projectId: string;
@@ -568,6 +593,25 @@ export type CommunicationCounts = {
 };
 
 export type RecommendedCommunicationAction = {
+  title: string;
+  detail: string;
+  href: string;
+};
+
+export type ReminderTemplate = {
+  id: string;
+  title: string;
+  category: ReminderTemplateCategory;
+  suggestedAudience: ReminderTemplateAudience;
+  suggestedTiming: string;
+  description: string;
+  subjectSuggestion: string;
+  bodyPreview: string;
+  variables?: string[];
+  suggestedModule: ReminderTemplateModule;
+};
+
+export type RecommendedTemplateAction = {
   title: string;
   detail: string;
   href: string;
@@ -1670,6 +1714,121 @@ export const announcements: Announcement[] = [
   },
 ];
 
+export const reminderTemplates: ReminderTemplate[] = [
+  {
+    id: "template-schedule-reminder",
+    title: "Schedule reminder",
+    category: "scheduleReminder",
+    suggestedAudience: "assignedVolunteers",
+    suggestedTiming: "One or two days before an assigned shift",
+    description:
+      "A simple reminder for volunteers who already have an assignment on the project schedule.",
+    subjectSuggestion: "{projectName}: reminder for your {assignmentDate} shift",
+    bodyPreview:
+      "Hi {volunteerName}, thank you for helping with {projectName}. This is a quick reminder that you are scheduled for {assignmentDate} from {shiftTime}. Please check in with the project contact when you arrive.",
+    variables: ["volunteerName", "projectName", "assignmentDate", "shiftTime"],
+    suggestedModule: "schedule",
+  },
+  {
+    id: "template-pending-confirmation",
+    title: "Pending confirmation reminder",
+    category: "pendingConfirmation",
+    suggestedAudience: "pendingVolunteers",
+    suggestedTiming: "After an assignment has been waiting for a reply",
+    description:
+      "A gentle follow-up for volunteers who have not confirmed or declined an assignment yet.",
+    subjectSuggestion: "Can you confirm your {assignmentDate} assignment?",
+    bodyPreview:
+      "Hi {volunteerName}, we are checking whether you are still available for {assignmentDate} at {shiftTime}. A quick reply helps the CVC team keep the schedule steady.",
+    variables: ["volunteerName", "assignmentDate", "shiftTime"],
+    suggestedModule: "schedule",
+  },
+  {
+    id: "template-questionnaire-follow-up",
+    title: "Questionnaire follow-up",
+    category: "questionnaireFollowUp",
+    suggestedAudience: "congregationContacts",
+    suggestedTiming: "When volunteer intake details are incomplete",
+    description:
+      "A calm note for gathering missing questionnaire details before scheduling a volunteer.",
+    subjectSuggestion: "A quick follow-up for {volunteerName}",
+    bodyPreview:
+      "Hi {congregation}, we are almost ready to use {volunteerName}'s volunteer information. Could you help confirm the missing details so the project team can plan safely?",
+    variables: ["congregation", "volunteerName"],
+    suggestedModule: "questionnaire",
+  },
+  {
+    id: "template-food-service-note",
+    title: "Food service note",
+    category: "foodService",
+    suggestedAudience: "foodContacts",
+    suggestedTiming: "Before lunch counts or meal helpers need review",
+    description:
+      "A practical starting point for food contacts coordinating counts, helpers, or serving notes.",
+    subjectSuggestion: "{projectName}: food service note for {assignmentDate}",
+    bodyPreview:
+      "Hi food team, please review the meal plan for {assignmentDate}. Current notes: {foodNote}. Thank you for helping keep lunch simple and ready for the volunteers.",
+    variables: ["projectName", "assignmentDate", "foodNote"],
+    suggestedModule: "food",
+  },
+  {
+    id: "template-security-night-watch",
+    title: "Security / night watch reminder",
+    category: "securityNightWatch",
+    suggestedAudience: "securityContacts",
+    suggestedTiming: "Before an evening or night watch assignment",
+    description:
+      "A focused reminder for security contacts without making the communication feel urgent or alarming.",
+    subjectSuggestion: "{projectName}: site check reminder for {assignmentDate}",
+    bodyPreview:
+      "Hi security team, this is a reminder for the site check on {assignmentDate} at {shiftTime}. Please review the paired coverage plan and contact the project CVC if anything has changed.",
+    variables: ["projectName", "assignmentDate", "shiftTime"],
+    suggestedModule: "security",
+  },
+  {
+    id: "template-project-update",
+    title: "Project update",
+    category: "projectUpdate",
+    suggestedAudience: "allVolunteers",
+    suggestedTiming: "When the project team has a general update",
+    description:
+      "A short update pattern for sharing practical project notes with volunteers and contacts.",
+    subjectSuggestion: "{projectName}: project update",
+    bodyPreview:
+      "Thank you for supporting {projectName}. Here is the latest project update: {projectUpdate}. Please review your schedule before arriving and reach out if you have a question.",
+    variables: ["projectName", "projectUpdate"],
+    suggestedModule: "general",
+  },
+  {
+    id: "template-weather-plan-change",
+    title: "Weather or plan-change update",
+    category: "planChange",
+    suggestedAudience: "allVolunteers",
+    suggestedTiming: "When weather, parking, or site plans change",
+    description:
+      "A steady pattern for sharing a plan change without making it feel like an emergency alert.",
+    subjectSuggestion: "{projectName}: plan update for {assignmentDate}",
+    bodyPreview:
+      "Hi everyone, there is a project plan update for {assignmentDate}: {planChange}. Please use the updated instructions when you arrive. Thank you for staying flexible.",
+    variables: ["projectName", "assignmentDate", "planChange"],
+    suggestedModule: "general",
+  },
+  {
+    id: "template-thank-you-wrap-up",
+    title: "Thank-you / project wrap-up note",
+    category: "thankYou",
+    suggestedAudience: "allVolunteers",
+    suggestedTiming: "After a project day or at project wrap-up",
+    description:
+      "A warm closing note for thanking volunteers and sharing any final wrap-up information.",
+    subjectSuggestion: "Thank you for helping with {projectName}",
+    bodyPreview:
+      "Thank you for giving your time to {projectName}. Your help made a real difference. The project team will share any final notes or follow-up needs as they are ready.",
+    variables: ["projectName"],
+    suggestedModule: "general",
+  },
+];
+
 export const needsAttentionAreaOrder: NeedsAttentionArea[] = [
   "Questionnaires",
   "Schedule",
@@ -2719,6 +2878,14 @@ const communicationTypeOrder: CommunicationMessageType[] = [
   "securityNote",
 ];
 
+const reminderTemplateModuleOrder: ReminderTemplateModule[] = [
+  "schedule",
+  "questionnaire",
+  "food",
+  "security",
+  "general",
+];
+
 export const communicationTypeLabels: Record<CommunicationMessageType, string> = {
   announcement: "Announcement",
   reminder: "Reminder",
@@ -2752,6 +2919,40 @@ export const communicationStatusTones: Record<
   ready: "success",
   scheduledMock: "info",
   sentMock: "neutral",
+};
+
+export const reminderTemplateCategoryLabels: Record<
+  ReminderTemplateCategory,
+  string
+> = {
+  scheduleReminder: "Schedule reminder",
+  pendingConfirmation: "Pending confirmation",
+  questionnaireFollowUp: "Questionnaire follow-up",
+  foodService: "Food service note",
+  securityNightWatch: "Security / night watch",
+  projectUpdate: "Project update",
+  planChange: "Weather or plan-change",
+  thankYou: "Thank-you / wrap-up",
+};
+
+export const reminderTemplateAudienceLabels: Record<
+  ReminderTemplateAudience,
+  string
+> = {
+  allVolunteers: "All volunteers",
+  assignedVolunteers: "Assigned volunteers",
+  pendingVolunteers: "Pending volunteers",
+  congregationContacts: "Congregation contacts",
+  foodContacts: "Food contacts",
+  securityContacts: "Security contacts",
+};
+
+export const reminderTemplateModuleLabels: Record<ReminderTemplateModule, string> = {
+  schedule: "Schedule",
+  questionnaire: "Questionnaire",
+  food: "Food",
+  security: "Security",
+  general: "General",
 };
 
 function compareCommunicationDates(first: Communication, second: Communication) {
@@ -2929,6 +3130,99 @@ export function getRecommendedCommunicationActionForItem(
     detail:
       "This is labeled sent/mock for preview history only. No email was sent from this app.",
     href,
+  };
+}
+
+function workspaceSupportsTemplateModule(
+  project: Project | undefined,
+  module: ReminderTemplateModule,
+) {
+  if (module === "general") {
+    return true;
+  }
+
+  if (module === "questionnaire") {
+    return projectHasModule(project, "volunteers");
+  }
+
+  if (module === "schedule") {
+    return projectHasModule(project, "scheduling");
+  }
+
+  return projectHasModule(project, module);
+}
+
+export function getReminderTemplatesForProject(projectId = demoProjectId) {
+  const project = getProjectById(projectId);
+
+  return reminderTemplates.filter((template) =>
+    workspaceSupportsTemplateModule(project, template.suggestedModule),
+  );
+}
+
+export function getReminderTemplatesForActiveWorkspace() {
+  return getReminderTemplatesForProject(demoProjectId);
+}
+
+export function getReminderTemplateById(templateId: string) {
+  return reminderTemplates.find((template) => template.id === templateId);
+}
+
+export function groupReminderTemplatesByModule(
+  templates = getReminderTemplatesForActiveWorkspace(),
+) {
+  return reminderTemplateModuleOrder
+    .map((module) => ({
+      module,
+      label: reminderTemplateModuleLabels[module],
+      templates: templates.filter((template) => template.suggestedModule === module),
+    }))
+    .filter((group) => group.templates.length > 0);
+}
+
+export function groupReminderTemplatesByCategory(
+  templates = getReminderTemplatesForActiveWorkspace(),
+) {
+  return Object.entries(reminderTemplateCategoryLabels)
+    .map(([category, label]) => ({
+      category: category as ReminderTemplateCategory,
+      label,
+      templates: templates.filter((template) => template.category === category),
+    }))
+    .filter((group) => group.templates.length > 0);
+}
+
+export function getReminderTemplateAudienceLabel(template: ReminderTemplate) {
+  return reminderTemplateAudienceLabels[template.suggestedAudience];
+}
+
+export function getReminderTemplateTimingLabel(template: ReminderTemplate) {
+  return template.suggestedTiming;
+}
+
+export function getRecommendedReminderTemplateAction(
+  projectId = demoProjectId,
+): RecommendedTemplateAction {
+  const templates = getReminderTemplatesForProject(projectId);
+  const scheduleTemplate = templates.find(
+    (template) => template.category === "scheduleReminder",
+  );
+  const firstTemplate = scheduleTemplate ?? templates[0];
+
+  if (!firstTemplate) {
+    return {
+      title: "No reminder templates available",
+      detail:
+        "This workspace does not have reminder template starting points for the enabled modules yet.",
+      href: "/admin/announcements/templates",
+    };
+  }
+
+  return {
+    title: `Start with "${firstTemplate.title}" later`,
+    detail:
+      "Templates are starting points only. Preview the wording and adjust it when real draft creation exists.",
+    href: "/admin/announcements/templates",
   };
 }
 
