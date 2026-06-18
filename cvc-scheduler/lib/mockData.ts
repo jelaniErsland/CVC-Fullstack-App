@@ -152,6 +152,19 @@ export type TaskPreset = {
   duplicateIndex?: number;
 };
 
+export type TaskPresetCategoryGroup = {
+  category: TaskPresetCategory;
+  label: string;
+  presets: TaskPreset[];
+};
+
+export type TaskPresetCounts = {
+  total: number;
+  system: number;
+  custom: number;
+  byCategory: Record<TaskPresetCategory, number>;
+};
+
 export type CalendarItem = {
   id: string;
   projectId: string;
@@ -1767,6 +1780,177 @@ export const lunches: LunchItem[] = [
     projectId: "belgrade-remodel-2026",
     day: "Saturday",
     details: "Light lunch after cleanup for all volunteers.",
+  },
+];
+
+export const taskPresets: TaskPreset[] = [
+  {
+    id: "task-belgrade-lunch",
+    projectId: "belgrade-remodel-2026",
+    name: "Lunch",
+    category: "lunch",
+    neededCount: 3,
+    visibility: "allContacts",
+    isSystemPreset: true,
+    customFields: [
+      {
+        id: "field-lunch-menu",
+        name: "menu",
+        label: "Menu",
+        type: "longText",
+        required: true,
+      },
+      {
+        id: "field-lunch-diet-note",
+        name: "dietNote",
+        label: "Diet note",
+        type: "shortText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-night-watch",
+    projectId: "belgrade-remodel-2026",
+    name: "Night watch",
+    category: "security",
+    neededCount: 2,
+    visibility: "mainContacts",
+    isSystemPreset: true,
+    customFields: [
+      {
+        id: "field-night-watch-access-note",
+        name: "accessNote",
+        label: "Access note",
+        type: "longText",
+      },
+      {
+        id: "field-night-watch-pairing",
+        name: "pairingNote",
+        label: "Pairing note",
+        type: "shortText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-night-watch-copy",
+    projectId: "belgrade-remodel-2026",
+    name: "Night watch (1)",
+    category: "security",
+    neededCount: 2,
+    visibility: "mainContacts",
+    sourcePresetId: "task-belgrade-night-watch",
+    duplicateIndex: 1,
+    customFields: [
+      {
+        id: "field-night-watch-copy-access-note",
+        name: "accessNote",
+        label: "Access note",
+        type: "longText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-gate-attendant",
+    projectId: "belgrade-remodel-2026",
+    name: "Gate attendant",
+    category: "security",
+    neededCount: 1,
+    visibility: "mainContacts",
+    customFields: [
+      {
+        id: "field-gate-contact-note",
+        name: "contactNote",
+        label: "Contact note",
+        type: "shortText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-drywall-crew",
+    projectId: "belgrade-remodel-2026",
+    name: "Drywall crew",
+    category: "construction",
+    neededCount: 6,
+    visibility: "allContacts",
+    customFields: [
+      {
+        id: "field-drywall-skill-note",
+        name: "skillNote",
+        label: "Skill note",
+        type: "longText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-cleanup-help",
+    projectId: "belgrade-remodel-2026",
+    name: "Cleanup help",
+    category: "cleanup",
+    neededCount: 5,
+    visibility: "volunteers",
+    customFields: [
+      {
+        id: "field-cleanup-area",
+        name: "cleanupArea",
+        label: "Cleanup area",
+        type: "select",
+        options: ["Sanctuary", "Fellowship area", "Exterior", "Tool room"],
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-water-coffee",
+    projectId: "belgrade-remodel-2026",
+    name: "Water / coffee station",
+    category: "lunch",
+    neededCount: 1,
+    visibility: "allContacts",
+    customFields: [
+      {
+        id: "field-water-coffee-supply-note",
+        name: "supplyNote",
+        label: "Supply note",
+        type: "shortText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-morning-unlock",
+    projectId: "belgrade-remodel-2026",
+    name: "Morning unlock / check-in",
+    category: "security",
+    neededCount: 1,
+    visibility: "mainContacts",
+    customFields: [
+      {
+        id: "field-morning-unlock-note",
+        name: "unlockNote",
+        label: "Unlock note",
+        type: "longText",
+      },
+    ],
+  },
+  {
+    id: "task-belgrade-custom-special",
+    projectId: "belgrade-remodel-2026",
+    name: "Custom project help",
+    category: "custom",
+    neededCount: 2,
+    visibility: "allContacts",
+    customFields: [
+      {
+        id: "field-custom-purpose",
+        name: "purpose",
+        label: "Purpose",
+        type: "longText",
+      },
+      {
+        id: "field-custom-contact",
+        name: "contact",
+        label: "Contact",
+        type: "shortText",
+      },
+    ],
   },
 ];
 
@@ -3587,6 +3771,170 @@ export function getRecommendedReminderTemplateAction(
       "Templates are starting points only. Preview the wording and adjust it when real draft creation exists.",
     href: "/admin/announcements/templates",
   };
+}
+
+export const taskPresetCategoryLabels: Record<TaskPresetCategory, string> = {
+  general: "General",
+  lunch: "Lunch",
+  security: "Security",
+  cleanup: "Cleanup",
+  construction: "Construction",
+  custom: "Custom",
+};
+
+export const taskPresetVisibilityLabels: Record<TaskPresetVisibility, string> = {
+  mainContacts: "Main contacts",
+  allContacts: "All contacts",
+  volunteers: "Volunteers",
+};
+
+export const taskPresetFieldTypeLabels: Record<
+  TaskPresetCustomFieldType,
+  string
+> = {
+  shortText: "Short text",
+  longText: "Long text",
+  number: "Number",
+  select: "Choice",
+  checkbox: "Checkbox",
+};
+
+const taskPresetCategoryOrder: TaskPresetCategory[] = [
+  "lunch",
+  "security",
+  "construction",
+  "cleanup",
+  "general",
+  "custom",
+];
+
+export function getTaskPresetsForProject(projectId = demoProjectId) {
+  return taskPresets
+    .filter((preset) => preset.projectId === projectId)
+    .sort((first, second) => {
+      const categoryDifference =
+        taskPresetCategoryOrder.indexOf(first.category) -
+        taskPresetCategoryOrder.indexOf(second.category);
+
+      if (categoryDifference !== 0) {
+        return categoryDifference;
+      }
+
+      return first.name.localeCompare(second.name);
+    });
+}
+
+export function getTaskPresetsForActiveWorkspace() {
+  return getTaskPresetsForProject(demoProjectId);
+}
+
+export function getTaskPresetById(taskPresetId: string) {
+  return taskPresets.find((preset) => preset.id === taskPresetId);
+}
+
+export function groupTaskPresetsByCategory(
+  presets = getTaskPresetsForActiveWorkspace(),
+): TaskPresetCategoryGroup[] {
+  return taskPresetCategoryOrder
+    .map((category) => ({
+      category,
+      label: taskPresetCategoryLabels[category],
+      presets: presets.filter((preset) => preset.category === category),
+    }))
+    .filter((group) => group.presets.length > 0);
+}
+
+export function filterTaskPresetsByCategory(
+  category: TaskPresetCategory,
+  presets = getTaskPresetsForActiveWorkspace(),
+) {
+  return presets.filter((preset) => preset.category === category);
+}
+
+export function getTaskPresetCounts(projectId = demoProjectId): TaskPresetCounts {
+  return getTaskPresetsForProject(projectId).reduce<TaskPresetCounts>(
+    (counts, preset) => {
+      counts.total += 1;
+      counts.byCategory[preset.category] += 1;
+
+      if (preset.isSystemPreset) {
+        counts.system += 1;
+      } else {
+        counts.custom += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      system: 0,
+      custom: 0,
+      byCategory: {
+        general: 0,
+        lunch: 0,
+        security: 0,
+        cleanup: 0,
+        construction: 0,
+        custom: 0,
+      },
+    },
+  );
+}
+
+export function getTaskPresetCategoryLabel(category: TaskPresetCategory) {
+  return taskPresetCategoryLabels[category];
+}
+
+export function getTaskPresetVisibilityLabel(visibility: TaskPresetVisibility) {
+  return taskPresetVisibilityLabels[visibility];
+}
+
+export function getTaskPresetFieldTypeLabel(type: TaskPresetCustomFieldType) {
+  return taskPresetFieldTypeLabels[type];
+}
+
+function escapeTaskNameForRegExp(name: string) {
+  return name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function getNextTaskPresetDuplicateName(
+  originalName: string,
+  presets = getTaskPresetsForActiveWorkspace(),
+) {
+  const escapedName = escapeTaskNameForRegExp(originalName);
+  const matcher = new RegExp(`^${escapedName}(?: \\((\\d+)\\))?$`);
+  const usedNumbers = presets
+    .map((preset) => preset.name.match(matcher)?.[1])
+    .filter((value): value is string => Boolean(value))
+    .map((value) => Number(value));
+
+  if (!presets.some((preset) => preset.name === originalName)) {
+    return originalName;
+  }
+
+  let nextNumber = 1;
+
+  while (usedNumbers.includes(nextNumber)) {
+    nextNumber += 1;
+  }
+
+  return `${originalName} (${nextNumber})`;
+}
+
+export function isSystemTaskPreset(preset: TaskPreset) {
+  return Boolean(preset.isSystemPreset);
+}
+
+export function isLunchTaskPreset(preset: TaskPreset) {
+  return preset.category === "lunch" && preset.name.toLowerCase() === "lunch";
+}
+
+export function getRequiredSystemFieldsForTaskPreset(preset: TaskPreset) {
+  if (!isLunchTaskPreset(preset)) {
+    return [];
+  }
+
+  return preset.customFields.filter((field) => field.name === "menu" && field.required);
 }
 
 export const foodServiceTypeLabels: Record<FoodServiceType, string> = {

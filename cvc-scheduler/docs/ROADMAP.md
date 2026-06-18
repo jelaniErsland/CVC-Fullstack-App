@@ -43,8 +43,8 @@ Rough phases:
 - 09.4 Security module foundation. Completed.
 - 09.5 Security detail/day view. Completed.
 - 09.6 Unified Tasks + Calendar + Navigation Realignment. Completed.
-- 09.7 Task presets foundation. Next recommended step.
-- 09.8 Calendar scheduling foundation. Planned.
+- 09.7 Task presets foundation. Completed.
+- 09.8 Calendar scheduling foundation. Next recommended step.
 - 09.9 Mobile 5-tab navigation direction. Planned UI pass.
 
 ## 4. Mid-Term Roadmap
@@ -289,6 +289,12 @@ Security is mock-only. Future work still needs:
 
 09.6 realigned the product model away from permanent Food/Security top-level
 modules and toward a simpler Tasks + Calendar structure.
+
+09.7 added the first mock task preset foundation at `/admin/tasks`. The page
+shows reusable task presets only, grouped by category with compact counts,
+icon-supported metadata, a focused Lunch system preset panel, duplicate-name
+guidance, placeholder-only actions, and explicit copy that dates, times, and
+assignments belong on Calendar items later.
 
 Core model:
 

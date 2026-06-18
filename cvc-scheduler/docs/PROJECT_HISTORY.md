@@ -951,6 +951,43 @@ Limitations:
 Next recommended step:
 - 09.7 Task presets foundation.
 
+## Iteration 09.7 - Task Presets Foundation
+
+Summary:
+- Added mock task preset data for the active Belgrade workspace, including Lunch, Night watch, Gate attendant, Drywall crew, Cleanup help, Water / coffee station, Morning unlock / check-in, and a custom preset example.
+- Kept task presets free of dates, times, assigned volunteers, scheduled status, and calendar placement.
+- Added task preset helpers for active-workspace lookup, lookup by id, category grouping/filtering, counts, readable labels, duplicate-name derivation, system preset detection, Lunch detection, and required Lunch Menu field detection.
+- Added `/admin/tasks` using the shared `AdminShell` with compact summary counts, grouped preset rows, icon-supported metadata, a focused Lunch system preset panel, duplicate-name guidance, and placeholder-only actions.
+- Added Tasks to the admin navigation and relabeled the existing Schedule link as Calendar while keeping existing routes intact.
+- Added desktop and mobile Tasks screenshots to the preview workflow.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `app/admin/tasks/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- `npm run preview` was checked and is not defined in `package.json`.
+- Local route checks returned 200 for `/admin/tasks`, `/admin/dashboard`, `/admin/settings`, `/admin/volunteers`, `/admin/food`, and `/admin/security`.
+- Mobile browser check around 390px confirmed `/admin/tasks` has no horizontal overflow and the drawer opens/closes from the hamburger icon.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Mock-data/UI only.
+- No Calendar UI, scheduled instances, real task creation/edit/duplicate mutations, persistence, drag/drop libraries, calendar libraries, scheduled jobs, email sending, assignment workflows, Supabase, auth, or production scheduling behavior.
+- Existing Food and Security prototype pages remain in place for research/reference.
+
+Next recommended step:
+- 09.8 Calendar scheduling foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
