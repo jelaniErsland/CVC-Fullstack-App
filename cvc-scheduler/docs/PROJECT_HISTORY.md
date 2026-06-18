@@ -882,6 +882,43 @@ Limitations:
 Next recommended step:
 - 09.5 Security detail/day view.
 
+## Iteration 09.5 - Security Detail / Day View
+
+Summary:
+- Added helper support for Security detail pages, including same-day lookup, related items, detail/not-found hrefs, and single-item next action guidance.
+- Added `/admin/security/[securityItemId]` using the shared `AdminShell`.
+- The detail page shows date/day, type, status, time window, assigned security contact, assigned helpers, congregation, site/access notes, coverage/helper notes, related schedule/announcement/follow-up links, same-day security items, and placeholder-only actions.
+- Updated `/admin/security` so each compact security row opens the detail/day view.
+- Added a helpful not-found state for unknown security item ids.
+- Added desktop and mobile Security detail screenshots to the preview workflow.
+- Kept Security mock-only with no persistence, helper assignment mutations, sending, recipient resolution, scheduled jobs, live alerts, tracking, camera systems, access control, incident reporting workflows, or production workflows.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/security/page.tsx`
+- `app/admin/security/[securityItemId]/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- Local route checks returned 200 for `/admin/security`, one valid Security detail route, `/admin/security/not-real`, `/admin/food`, `/admin/dashboard`, and `/admin/settings`.
+- Mobile browser checks around 390px confirmed `/admin/security` and one Security detail page have no horizontal overflow and the mobile drawer opens/closes from the hamburger icon.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Security detail/day views are mock-only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
+- Placeholder actions do not save changes or assign helpers.
+
+Next recommended step:
+- 09.6 Food/Security role-home alignment.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

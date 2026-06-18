@@ -3807,6 +3807,24 @@ export function getSecurityItemById(itemId: string) {
   return securityCoordinationItems.find((item) => item.id === itemId);
 }
 
+export function getSecurityItemsByDate(date: string, projectId = demoProjectId) {
+  return getSecurityItemsForProject(projectId).filter((item) => item.date === date);
+}
+
+export function getRelatedSecurityItemsForSameDay(item: SecurityCoordinationItem) {
+  return getSecurityItemsByDate(item.date, item.projectId).filter(
+    (relatedItem) => relatedItem.id !== item.id,
+  );
+}
+
+export function getSecurityDetailHref(item: SecurityCoordinationItem) {
+  return `/admin/security/${item.id}`;
+}
+
+export function getSecurityNotFoundHref() {
+  return "/admin/security";
+}
+
 export function groupSecurityItemsByDate(
   items = getSecurityItemsForActiveWorkspace(),
 ): SecurityCoordinationGroup[] {
@@ -3930,6 +3948,57 @@ export function getNextSecurityAction(
     title: "Review upcoming security coverage",
     detail: "Security coverage looks steady in the current mock data.",
     href: "/admin/security",
+  };
+}
+
+export function getNextSecurityActionForItem(
+  item: SecurityCoordinationItem,
+): RecommendedSecurityAction {
+  const href = getSecurityDetailHref(item);
+
+  if (item.status === "needsHelper") {
+    return {
+      title: "Review coverage",
+      detail:
+        item.coverageNotes ??
+        "This security item needs a calm helper review before it is treated as covered.",
+      href,
+    };
+  }
+
+  if (item.status === "needsReview") {
+    return {
+      title: "Review notes",
+      detail:
+        item.siteNotes ??
+        "Check the access or site notes with the security contact before the project day.",
+      href,
+    };
+  }
+
+  if (item.status === "draftMock") {
+    return {
+      title: "Review draft note",
+      detail:
+        "This is a draft/mock security item. Review the notes before using it as a planning reference.",
+      href,
+    };
+  }
+
+  if (item.status === "covered") {
+    return {
+      title: "Keep this marked covered",
+      detail:
+        "This security item has contact and helper coverage in the mock plan.",
+      href,
+    };
+  }
+
+  return {
+    title: "Review security notes",
+    detail:
+      "This item has been reviewed in mock data. Check the site and coverage notes if anything changes.",
+    href,
   };
 }
 

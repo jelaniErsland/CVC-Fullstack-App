@@ -41,7 +41,8 @@ Rough phases:
 - 09.2 Food detail/day view. Completed.
 - 09.3 Food visual/icon density stabilization. Completed.
 - 09.4 Security module foundation. Completed.
-- 09.5 Security detail/day view. Next recommended step.
+- 09.5 Security detail/day view. Completed.
+- 09.6 Food/Security role-home alignment. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -62,6 +63,7 @@ Rough phases:
 - 09.3 Food visual/icon density stabilization.
 - 09.4 Security module foundation.
 - 09.5 Security detail/day view.
+- 09.6 Food/Security role-home alignment.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -262,9 +264,14 @@ unlock/check-in, and access notes for the active Belgrade workspace with
 compact counts, a next suggested security action, date-grouped rows,
 icon-supported metadata, related links, and placeholder-only actions.
 
+09.5 added focused mock Security detail/day pages at
+`/admin/security/[securityItemId]`. The detail page shows one security item
+with date/day, type, status, time window, assigned contact/helpers,
+congregation, site/access notes, coverage/helper notes, related links,
+same-day security items, and placeholder-only actions.
+
 Security is mock-only. Future work still needs:
 
-- Security detail/day views.
 - Real helper assignment actions.
 - Real persistence.
 - Security-role scoped views.

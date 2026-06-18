@@ -51,6 +51,11 @@ const captures = [
     viewport: desktopViewport,
   },
   { route: "/admin/security", fileName: "security.jpg", viewport: desktopViewport },
+  {
+    route: "/admin/security/security-belgrade-evening-jan-12",
+    fileName: "security-detail-evening-jan-12.jpg",
+    viewport: desktopViewport,
+  },
   { route: "/admin/schedule", fileName: "schedule.jpg", viewport: desktopViewport },
   { route: "/admin/settings", fileName: "settings.jpg", viewport: desktopViewport },
   {
@@ -99,6 +104,11 @@ const captures = [
     viewport: mobileViewport,
   },
   { route: "/admin/security", fileName: "mobile-security.jpg", viewport: mobileViewport },
+  {
+    route: "/admin/security/security-belgrade-evening-jan-12",
+    fileName: "mobile-security-detail-evening-jan-12.jpg",
+    viewport: mobileViewport,
+  },
   {
     route: "/admin/announcements",
     fileName: "mobile-admin-drawer-open.jpg",

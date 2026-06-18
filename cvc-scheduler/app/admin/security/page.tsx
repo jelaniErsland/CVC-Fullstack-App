@@ -21,6 +21,7 @@ import {
   getSecurityCoordinationCounts,
   getSecurityCoverageStatusLabel,
   getSecurityCoverageStatusTone,
+  getSecurityDetailHref,
   getSecurityItemsForActiveWorkspace,
   getSecurityServiceTypeLabel,
   groupSecurityItemsByDate,
@@ -94,71 +95,6 @@ function SummaryStrip() {
   );
 }
 
-function RelatedLinks({ item }: { item: SecurityCoordinationItem }) {
-  const links = [
-    item.relatedScheduleId
-      ? {
-          href: "/admin/schedule",
-          label: "Schedule",
-        }
-      : undefined,
-    item.relatedAnnouncementId
-      ? {
-          href: `/admin/announcements/${item.relatedAnnouncementId}`,
-          label: "Security note",
-        }
-      : undefined,
-    item.relatedNeedsAttentionId
-      ? {
-          href: `/admin/needs-attention/${item.relatedNeedsAttentionId}`,
-          label: "Follow-up",
-        }
-      : undefined,
-  ].filter((link): link is { href: string; label: string } => Boolean(link));
-
-  if (links.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {links.map((link) => (
-        <Link
-          className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700"
-          href={link.href}
-          key={link.href}
-        >
-          {link.label}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-function PlaceholderActions({ item }: { item: SecurityCoordinationItem }) {
-  const actions =
-    item.status === "needsHelper"
-      ? ["Review coverage", "Add helper later"]
-      : item.status === "needsReview"
-        ? ["Review notes", "Prepare reminder"]
-        : ["Open details", "Prepare reminder"];
-
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {actions.map((action) => (
-        <button
-          className="inline-flex min-h-10 cursor-not-allowed items-center rounded-full border border-slate-200 bg-white/72 px-3 text-xs font-semibold text-slate-500 opacity-75"
-          disabled
-          key={action}
-          type="button"
-        >
-          {action}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function SecurityRow({ item }: { item: SecurityCoordinationItem }) {
   const helpers =
     item.assignedHelpers.length > 0
@@ -166,7 +102,10 @@ function SecurityRow({ item }: { item: SecurityCoordinationItem }) {
       : "Helper to add";
 
   return (
-    <div className="border-b border-white/72 px-4 py-4 last:border-b-0 sm:px-5">
+    <Link
+      className="block border-b border-white/72 px-4 py-4 transition hover:bg-white/46 last:border-b-0 sm:px-5"
+      href={getSecurityDetailHref(item)}
+    >
       <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -189,20 +128,12 @@ function SecurityRow({ item }: { item: SecurityCoordinationItem }) {
         </div>
       </div>
 
-      <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-600 xl:grid-cols-2">
-        <p>
-          <span className="font-semibold text-slate-700">Notes:</span>{" "}
-          {item.siteNotes ?? "No site notes yet."}
+      {item.coverageNotes ? (
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+          {item.coverageNotes}
         </p>
-        <p>
-          <span className="font-semibold text-slate-700">Coverage:</span>{" "}
-          {item.coverageNotes ?? item.helperNotes ?? "No coverage note yet."}
-        </p>
-      </div>
-
-      <RelatedLinks item={item} />
-      <PlaceholderActions item={item} />
-    </div>
+      ) : null}
+    </Link>
   );
 }
 
