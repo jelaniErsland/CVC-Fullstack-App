@@ -3,7 +3,6 @@
 import {
   CalendarDays,
   Check,
-  ChevronDown,
   Clock,
   Copy,
   Pencil,
@@ -16,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
@@ -56,7 +55,9 @@ import type {
 } from "@/lib/mockData";
 
 type CalendarViewMode = "day" | "week" | "month";
+type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
 type CreationMode = "preset" | "oneOff";
+const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 
 type CreationSlot = {
   date: string;
@@ -1509,11 +1510,9 @@ export default function AdminCalendarPage() {
   const weekRange = deriveCalendarWeekRange("2026-01-12");
   const [activeView, setActiveView] = useState<CalendarViewMode>("week");
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
   const [selectedId, setSelectedId] = useState<string | undefined>();
-  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [creationDraft, setCreationDraft] = useState<CreationDraft | undefined>();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const filteredItems = useMemo(
     () => filterCalendarItems(allItems, filters),
@@ -1530,25 +1529,51 @@ export default function AdminCalendarPage() {
     ? groupedItems.find((item) => item.id === selectedId)
     : undefined;
 
+  const closeCalendarSurface = () => {
+    setActiveSurface("none");
+    setSelectedId(undefined);
+    setCreationDraft(undefined);
+  };
+
+  const closeMobileNavigation = () => {
+    window.dispatchEvent(new Event(closeMobileNavigationEvent));
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && activeSurface !== "none") {
+        setActiveSurface("none");
+        setSelectedId(undefined);
+        setCreationDraft(undefined);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeSurface]);
+
   const handleSelectCalendarItem = (item: CalendarItemWithPreset) => {
-    setIsCreateOpen(false);
-    setIsFilterOpen(false);
+    closeMobileNavigation();
+    setCreationDraft(undefined);
     setSelectedId(item.id);
-    setIsInspectorOpen(true);
+    setActiveSurface("inspect");
   };
 
   const handleOpenFilters = () => {
-    setIsCreateOpen(false);
-    setIsInspectorOpen(false);
-    setIsFilterOpen(true);
+    closeMobileNavigation();
+    setSelectedId(undefined);
+    setCreationDraft(undefined);
+    setActiveSurface("filter");
   };
 
   const handleCreateFromSlot = (slot: CreationSlot) => {
     const defaultPreset = creationPresets[0];
 
+    closeMobileNavigation();
     setSelectedId(undefined);
-    setIsInspectorOpen(false);
-    setIsFilterOpen(false);
     setCreationDraft({
       slot,
       mode: "preset",
@@ -1558,7 +1583,7 @@ export default function AdminCalendarPage() {
       customName: "Custom one-day task",
       customTaskType: "generalVolunteers",
     });
-    setIsCreateOpen(true);
+    setActiveSurface("create");
   };
 
   const clearFilters = () => {
@@ -1566,7 +1591,15 @@ export default function AdminCalendarPage() {
   };
 
   return (
-    <AdminShell active="calendar">
+    <AdminShell
+      active="calendar"
+      onMobileMoreClose={closeCalendarSurface}
+      onMobileMoreOpen={() => {
+        setSelectedId(undefined);
+        setCreationDraft(undefined);
+        setActiveSurface("more");
+      }}
+    >
       <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -1641,33 +1674,23 @@ export default function AdminCalendarPage() {
             </div>
             <CalendarFilterPanel
               filters={filters}
-              isOpen={isFilterOpen}
+              isOpen={activeSurface === "filter"}
               onChange={setFilters}
               onClear={clearFilters}
-              onClose={() => setIsFilterOpen(false)}
+              onClose={closeCalendarSurface}
             />
             <CalendarCreatePanel
               creationDraft={creationDraft}
-              isOpen={isCreateOpen}
-              onClose={() => setIsCreateOpen(false)}
+              isOpen={activeSurface === "create"}
+              onClose={closeCalendarSurface}
               onDraftChange={setCreationDraft}
               presets={creationPresets}
             />
             <CalendarInspector
-              isOpen={isInspectorOpen}
+              isOpen={activeSurface === "inspect"}
               item={selectedItem}
-              onClose={() => setIsInspectorOpen(false)}
+              onClose={closeCalendarSurface}
             />
-            {selectedItem && !isInspectorOpen ? (
-              <button
-                className="fixed bottom-4 right-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-white/88 px-4 text-sm font-semibold text-slate-700 shadow-[0_16px_50px_rgba(15,23,42,0.18)] backdrop-blur-xl transition hover:bg-white"
-                onClick={() => setIsInspectorOpen(true)}
-                type="button"
-              >
-                <ChevronDown aria-hidden="true" className="h-4 w-4 rotate-180" />
-                Open inspector
-              </button>
-            ) : null}
           </>
         ) : (
           <EmptyState

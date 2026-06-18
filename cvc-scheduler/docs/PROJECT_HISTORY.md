@@ -1266,7 +1266,35 @@ Limitations:
 - Helper assignment remains placeholder-only.
 
 Next recommended step:
-- 09.14 Overview realignment.
+- 09.14 Calendar Overlay + Mobile Interaction Stabilization.
+
+## Iteration 09.14 - Calendar Overlay + Mobile Interaction Stabilization
+
+Summary:
+- Stabilized Calendar overlay behavior without changing routes or adding real scheduling mutations.
+- Calendar now uses a single active surface model: none, filter, more, create, or inspect.
+- Opening Filter, empty-slot Create, existing-item Inspect, or mobile More now closes competing Calendar/admin surfaces.
+- Calendar actions close the mobile More sheet or drawer before opening their own panel.
+- Escape closes the active Calendar surface.
+- Closing a surface resets selected item and create draft state.
+- Removed the old floating "Open inspector" affordance to avoid stacked mobile controls.
+- Preserved empty-slot creation preview, existing item inspection, filters, and mobile More access.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `components/AdminShell.tsx`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm run lint` was blocked by local PowerShell script policy for `npm.ps1`, so `npm.cmd` was used instead.
+
+Limitations:
+- Mock-data/UI only.
+- No persistence, Supabase, real scheduling mutations, drag/drop, calendar item creation persistence, task preset mutations, volunteer assignment workflow, or production scheduling behavior was added.
+
+Next recommended step:
+- 09.15 Overview realignment.
 
 ## Documentation Maintenance Rules
 

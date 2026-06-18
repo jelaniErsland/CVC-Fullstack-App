@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { GlassCard } from "@/components/GlassCard";
@@ -29,8 +29,12 @@ import { demoProjectId, getProjectById } from "@/lib/mockData";
 type AdminShellProps = {
   active: AdminNavActive;
   children: ReactNode;
+  onMobileMoreClose?: () => void;
+  onMobileMoreOpen?: () => void;
   projectId?: string;
 };
+
+const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 
 function AdminBrand() {
   return (
@@ -271,11 +275,36 @@ function getActiveIdForMoreHref(href: string): AdminNavActive | undefined {
 export function AdminShell({
   active,
   children,
+  onMobileMoreClose,
+  onMobileMoreOpen,
   projectId = demoProjectId,
 }: AdminShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const project = getProjectById(projectId);
+
+  useEffect(() => {
+    const closeMobileNavigation = () => {
+      setIsDrawerOpen(false);
+      setIsMoreOpen(false);
+    };
+
+    window.addEventListener(closeMobileNavigationEvent, closeMobileNavigation);
+
+    return () => {
+      window.removeEventListener(closeMobileNavigationEvent, closeMobileNavigation);
+    };
+  }, []);
+
+  const closeMobileMore = () => {
+    setIsMoreOpen(false);
+    onMobileMoreClose?.();
+  };
+
+  const openMobileMore = () => {
+    onMobileMoreOpen?.();
+    setIsMoreOpen(true);
+  };
 
   return (
     <PageShell>
@@ -358,12 +387,12 @@ export function AdminShell({
       <MobileBottomNav
         active={active}
         isMoreOpen={isMoreOpen}
-        onMoreClick={() => setIsMoreOpen(true)}
+        onMoreClick={openMobileMore}
       />
       <MobileMoreSheet
         active={active}
         isOpen={isMoreOpen}
-        onClose={() => setIsMoreOpen(false)}
+        onClose={closeMobileMore}
       />
     </PageShell>
   );

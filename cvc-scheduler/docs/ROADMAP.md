@@ -51,7 +51,8 @@ Rough phases:
 - 09.11.1 Mobile nav coverage stabilization. Completed.
 - 09.12 Calendar view controls + filter drawer / day-month foundation. Completed.
 - 09.13 Calendar empty-slot creation mock. Completed.
-- 09.14 Overview realignment. Next recommended step.
+- 09.14 Calendar Overlay + Mobile Interaction Stabilization. Completed.
+- 09.15 Overview realignment. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -81,7 +82,8 @@ Rough phases:
 - 09.11.1 Mobile nav coverage stabilization.
 - 09.12 Calendar view controls + filter drawer / day-month foundation.
 - 09.13 Calendar empty-slot creation mock.
-- 09.14 Overview realignment.
+- 09.14 Calendar Overlay + Mobile Interaction Stabilization.
+- 09.15 Overview realignment.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -350,6 +352,23 @@ open a bottom sheet. The creation flow should choose a reusable task preset,
 confirm date/time, use or adjust needed count, add notes, and optionally assign
 helpers later.
 
+The Calendar should eventually feel closer to a minimal time-grid interaction
+model. Empty areas should stay clean, with subtle separating time/day lines
+rather than repeated visible "Add task" buttons everywhere. Clicking or
+tapping an empty area may suggest a date or starting context, but should not
+force a predefined time window. The creation flow should let the admin choose
+or adjust start time, end time/time window, task preset, helper count, and
+notes. The "New scheduled task" surface should become lighter and less
+intrusive over time, especially on desktop.
+
+Future desktop Calendar should support drag/drop scheduling and moving
+scheduled tasks. It may also support dragging task presets onto the calendar
+and resizing scheduled blocks to adjust time. Mobile drag/drop should be
+considered carefully; prefer tap/hold, edit mode, or simpler bottom-sheet
+controls if direct drag/drop is too fiddly. Keep the Calendar powerful but
+visually quiet: the grid should not look cluttered before the user takes
+action.
+
 Calendar now has mock Day/Week/Month view switching and a mock Filter
 drawer/sheet. Calendar filters support task-name search, unfilled tasks, filled
 tasks, tasks waiting on some confirmations, tasks with all helpers confirmed,
@@ -357,6 +376,11 @@ tasks with some/all helpers denied, and high-level task type filters: General
 Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall,
 concrete, room signage, water/coffee, and similar work roll up under General
 Volunteers rather than becoming top-level filter types.
+
+Calendar overlays now use a single active-surface interaction model. Filters,
+mobile More, empty-slot creation, and existing-item inspection are mutually
+exclusive, and mobile Calendar actions close More/drawer controls before
+opening their own panel. This remains UI-only and mock-only.
 
 Target desktop sidebar:
 

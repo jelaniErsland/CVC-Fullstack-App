@@ -98,6 +98,22 @@ a drawer/sheet, task search, helper coverage filters, drag/drop placement,
 copy/paste, repeatable tasks, bulk creation, simple edit mode, and custom
 one-day tasks.
 
+Future Calendar UX should move closer to a minimal time-grid interaction model:
+clean empty areas, subtle time/day separators, and no repeated visible "Add
+task" buttons throughout the grid. Clicking or tapping empty space may suggest
+a date or starting context, but it should not force a predefined time window.
+The creation flow should let admins choose or adjust start time, end
+time/time window, task preset, helper count, and notes. The "New scheduled
+task" surface should become lighter and less intrusive over time, especially
+on desktop.
+
+Future desktop Calendar should support drag/drop scheduling, moving scheduled
+tasks, possibly dragging task presets onto the calendar, and possibly resizing
+scheduled blocks to adjust time. Mobile drag/drop should be considered
+carefully; prefer tap/hold, edit mode, or simpler bottom-sheet controls if
+direct drag/drop is too fiddly. The Calendar should stay powerful but visually
+quiet so the grid does not look cluttered before the user takes action.
+
 Future Calendar filters should support search by task name, unfilled tasks,
 filled tasks, tasks waiting on some confirmations, tasks with all helpers
 confirmed, and tasks with some/all helpers denied. Task type filters should use
@@ -202,6 +218,8 @@ Upcoming UI direction:
 - Calendar task type filtering rolls construction, cleanup, gate attendant, drywall, concrete, room signage, water/coffee, and similar project work into General Volunteers. Food covers Lunch and food-related calendar items. Security covers night watch, site checks, unlock/check-in, and security-related items.
 - Calendar empty date/time areas now open a mock scheduled-task creation surface. Desktop uses a right-side creation inspector; mobile uses a bottom sheet. The mock flow can choose a reusable task preset, preview task type/default needed count/custom fields, adjust needed count, add notes, switch to a one-off custom task, and see disabled preview-only actions.
 - Existing scheduled Calendar items still open the Calendar item inspector. Empty slots open the separate creation surface. Neither path saves data.
+- Calendar overlays are mutually exclusive through a single active surface model. Opening filters, mobile More, empty-slot creation, or an existing-item inspector closes the other Calendar surfaces, and Escape/close controls return the Calendar to a clean base state.
+- Mobile More coordinates with Calendar surfaces so More, Filter, Create, and Inspect do not stack on narrow layouts. Calendar actions also close the mobile More sheet or drawer before opening their own panel.
 - Calendar interaction direction remains Google Calendar-inspired without visual cloning: empty date/time areas begin scheduling from the clicked/tapped slot, while the CVC-specific display emphasizes task name, filled count, coverage/confirmation state, and task type.
 - Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More. Calendar is the center action, and secondary admin destinations live in More.
 
@@ -209,7 +227,7 @@ Upcoming UI direction:
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
-- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month mock views, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets.
+- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month mock views, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets. Calendar overlays are mutually exclusive, including coordination with mobile More.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
@@ -261,6 +279,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - Calendar scheduling is mock-data/UI only. Calendar item creation, saving, real placement edits, volunteer assignment mutations, drag/drop, calendar libraries, production scheduling logic, scheduled jobs, and email sending are not implemented.
 - Calendar Day/Week/Month switching and filters are local mock UI. They do not persist state, navigate real dates, or mutate scheduling data.
 - Empty-slot scheduled-item creation is preview-only. It opens a mock creation surface but does not create, save, or mutate Calendar items or task presets.
+- Calendar overlay stabilization is UI-only. It does not add persistence, Supabase, real scheduling mutations, drag/drop, or assignment workflows.
 - `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
@@ -288,4 +307,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.14 Overview realignment.
+09.15 Overview realignment.
