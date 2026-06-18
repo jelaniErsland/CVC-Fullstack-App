@@ -85,7 +85,12 @@ export default function VolunteerDemoPage() {
             {schedule.announcements.length > 0 ? (
               <div className="mt-4 space-y-4 text-sm leading-6 text-slate-600">
                 {schedule.announcements.map((announcement) => (
-                  <p key={announcement.id}>{announcement.message}</p>
+                  <p key={announcement.id}>
+                    <span className="font-medium text-slate-700">
+                      {announcement.title}:
+                    </span>{" "}
+                    {announcement.bodyPreview}
+                  </p>
                 ))}
               </div>
             ) : (

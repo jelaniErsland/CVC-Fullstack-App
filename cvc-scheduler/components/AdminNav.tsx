@@ -52,7 +52,7 @@ const navItems: Array<{
   {
     id: "announcements",
     label: "Announcements",
-    href: "/admin/dashboard#announcements",
+    href: "/admin/announcements",
     module: "announcements",
   },
   { id: "emails", label: "Emails", href: "/admin/dashboard#emails", module: "emails" },

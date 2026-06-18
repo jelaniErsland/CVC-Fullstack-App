@@ -57,11 +57,13 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock role-home foundation for `/admin/dashboard`, currently showing a stabilized Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
 - Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
 - Mock conflict/coverage detail patterns for Needs Attention items, including coverage gaps, possible overlaps, denied assignments, and missing information before scheduling.
+- Mock Emails and Announcements foundation with communication data, counts/grouping helpers, a calm admin overview, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
+- `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
 - `/admin/needs-attention/[itemId]`: Mock conflict/coverage detail page with suggested next step, related assignments/people, and placeholder-only actions.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
@@ -96,6 +98,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No Supabase yet.
 - No real persistence.
 - No email sending.
+- No real announcement sending, recipient resolution, reminder scheduling, templates, unsubscribe/suppression logic, or delivery tracking.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -120,4 +123,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-07.3 Needs Attention visual QA/stabilization.
+08.2 Announcement detail/preview page, or 08.3 Reminder templates if detail patterns are not needed yet.

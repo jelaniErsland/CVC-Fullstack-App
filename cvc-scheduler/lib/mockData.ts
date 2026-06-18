@@ -513,10 +513,59 @@ export type LunchItem = {
   details: string;
 };
 
-export type Announcement = {
+export type CommunicationMessageType =
+  | "announcement"
+  | "reminder"
+  | "update"
+  | "scheduleChange"
+  | "foodNote"
+  | "securityNote";
+
+export type CommunicationAudience =
+  | "allVolunteers"
+  | "assignedVolunteers"
+  | "congregationContacts"
+  | "foodContacts"
+  | "securityContacts"
+  | "specificCongregation";
+
+export type CommunicationStatus =
+  | "draft"
+  | "ready"
+  | "scheduledMock"
+  | "sentMock";
+
+export type Communication = {
   id: string;
   projectId: string;
-  message: string;
+  title: string;
+  messageType: CommunicationMessageType;
+  audience: CommunicationAudience;
+  status: CommunicationStatus;
+  author: string;
+  authorRole: AdminProjectRole;
+  createdAt: string;
+  updatedAt: string;
+  scheduledAt?: string;
+  bodyPreview: string;
+  recipientExplanation: string;
+  relatedRoute?: string;
+};
+
+export type Announcement = Communication;
+
+export type CommunicationCounts = {
+  total: number;
+  drafts: number;
+  ready: number;
+  scheduledMock: number;
+  sentMock: number;
+};
+
+export type RecommendedCommunicationAction = {
+  title: string;
+  detail: string;
+  href: string;
 };
 
 export type ProjectInfo = {
@@ -1496,19 +1545,123 @@ export const lunches: LunchItem[] = [
 
 export const announcements: Announcement[] = [
   {
-    id: "parking",
+    id: "comm-belgrade-parking-draft",
     projectId: "belgrade-remodel-2026",
-    message: "Parking has moved to the east lot for weekday crews.",
+    title: "Weekday parking note",
+    messageType: "announcement",
+    audience: "allVolunteers",
+    status: "draft",
+    author: "Jordan Miller",
+    authorRole: "Primary CVC",
+    createdAt: "2026-06-12",
+    updatedAt: "2026-06-15",
+    bodyPreview:
+      "Parking has moved to the east lot for weekday crews. Please leave the west entrance open for deliveries and check in at the front desk before going to the work area.",
+    recipientExplanation:
+      "Intended for all approved volunteers attached to the Belgrade workspace once real recipient lists exist.",
+    relatedRoute: "/admin/schedule",
   },
   {
-    id: "ppe",
+    id: "comm-belgrade-ppe-ready",
     projectId: "belgrade-remodel-2026",
-    message: "Please bring gloves and closed-toe shoes for staging shifts.",
+    title: "Gloves and closed-toe shoes reminder",
+    messageType: "reminder",
+    audience: "assignedVolunteers",
+    status: "ready",
+    author: "Morgan Lee",
+    authorRole: "Assistant CVC",
+    createdAt: "2026-06-13",
+    updatedAt: "2026-06-16",
+    bodyPreview:
+      "For staging and demo prep shifts, please bring work gloves and closed-toe shoes. If you have questions about what to bring, contact the project CVC before your shift.",
+    recipientExplanation:
+      "Prepared for volunteers assigned to construction and staging shifts, but recipient resolution is still mock-only.",
+    relatedRoute: "/admin/schedule",
   },
   {
-    id: "check-in",
+    id: "comm-belgrade-check-in-scheduled",
     projectId: "belgrade-remodel-2026",
-    message: "Check in with the front desk before entering work areas.",
+    title: "Monday check-in reminder",
+    messageType: "reminder",
+    audience: "allVolunteers",
+    status: "scheduledMock",
+    author: "Jordan Miller",
+    authorRole: "Primary CVC",
+    createdAt: "2026-06-10",
+    updatedAt: "2026-06-14",
+    scheduledAt: "2026-01-11 6:00 PM",
+    bodyPreview:
+      "Thank you for helping this week. Please check in with the front desk before entering work areas so the on-site contact knows who has arrived.",
+    recipientExplanation:
+      "Mock reminder plan for the first project evening. No background job or scheduled email exists yet.",
+    relatedRoute: "/admin/dashboard",
+  },
+  {
+    id: "comm-belgrade-food-headcount",
+    projectId: "belgrade-remodel-2026",
+    title: "Lunch headcount check",
+    messageType: "foodNote",
+    audience: "foodContacts",
+    status: "draft",
+    author: "Priya Santos",
+    authorRole: "Primary Food Contact",
+    createdAt: "2026-06-14",
+    updatedAt: "2026-06-14",
+    bodyPreview:
+      "Please review the Monday and Wednesday lunch counts before we prepare the final food plan. The current schedule still has a few assigned volunteers waiting on confirmation.",
+    recipientExplanation:
+      "Prepared for food contacts and assistants when the food module has real recipient lists.",
+    relatedRoute: "/admin/schedule",
+  },
+  {
+    id: "comm-belgrade-security-pairing",
+    projectId: "belgrade-remodel-2026",
+    title: "Evening site check pairing",
+    messageType: "securityNote",
+    audience: "securityContacts",
+    status: "ready",
+    author: "Caleb Ross",
+    authorRole: "Primary Security Contact",
+    createdAt: "2026-06-11",
+    updatedAt: "2026-06-16",
+    bodyPreview:
+      "Monday evening site check still needs one additional approved helper before it is ready to confirm. Please review the coverage note and suggest a paired volunteer.",
+    recipientExplanation:
+      "Prepared for security contacts only. This does not notify anyone while sending is inactive.",
+    relatedRoute: "/admin/needs-attention/needs-security-evening-pair",
+  },
+  {
+    id: "comm-belgrade-bozeman-update",
+    projectId: "belgrade-remodel-2026",
+    title: "Bozeman congregation schedule update",
+    messageType: "scheduleChange",
+    audience: "specificCongregation",
+    status: "sentMock",
+    author: "Jordan Miller",
+    authorRole: "Primary CVC",
+    createdAt: "2026-06-08",
+    updatedAt: "2026-06-09",
+    bodyPreview:
+      "A few Bozeman assignments moved from Monday afternoon to Wednesday morning. Please review the schedule preview before final confirmations are prepared.",
+    recipientExplanation:
+      "Historical mock row showing how a sent item might appear later. No email was sent from this app.",
+    relatedRoute: "/admin/schedule",
+  },
+  {
+    id: "comm-bozeman-draft-welcome",
+    projectId: "bozeman-sample-draft",
+    title: "Welcome note draft",
+    messageType: "announcement",
+    audience: "congregationContacts",
+    status: "draft",
+    author: "Jordan Miller",
+    authorRole: "Primary CVC",
+    createdAt: "2026-06-10",
+    updatedAt: "2026-06-10",
+    bodyPreview:
+      "Thank you for helping us prepare the Bozeman sample project workspace. This note is a placeholder for future congregation contact announcements.",
+    recipientExplanation:
+      "Would be intended for congregation contacts after real contact management exists.",
   },
 ];
 
@@ -2542,6 +2695,165 @@ export function getVolunteerSchedule(projectId = demoProjectId) {
       (announcement) => announcement.projectId === projectId,
     ),
     projectInfo: projectInfo.find((info) => info.projectId === projectId),
+  };
+}
+
+const communicationStatusOrder: CommunicationStatus[] = [
+  "draft",
+  "ready",
+  "scheduledMock",
+  "sentMock",
+];
+
+const communicationTypeOrder: CommunicationMessageType[] = [
+  "announcement",
+  "reminder",
+  "update",
+  "scheduleChange",
+  "foodNote",
+  "securityNote",
+];
+
+export const communicationTypeLabels: Record<CommunicationMessageType, string> = {
+  announcement: "Announcement",
+  reminder: "Reminder",
+  update: "Update",
+  scheduleChange: "Schedule change",
+  foodNote: "Food note",
+  securityNote: "Security note",
+};
+
+export const communicationAudienceLabels: Record<CommunicationAudience, string> = {
+  allVolunteers: "All volunteers",
+  assignedVolunteers: "Assigned volunteers",
+  congregationContacts: "Congregation contacts",
+  foodContacts: "Food contacts",
+  securityContacts: "Security contacts",
+  specificCongregation: "Specific congregation",
+};
+
+export const communicationStatusLabels: Record<CommunicationStatus, string> = {
+  draft: "Draft",
+  ready: "Ready to send later",
+  scheduledMock: "Scheduled/mock",
+  sentMock: "Sent/mock",
+};
+
+function compareCommunicationDates(first: Communication, second: Communication) {
+  return new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime();
+}
+
+export function getCommunicationsForProject(projectId = demoProjectId) {
+  return announcements
+    .filter((announcement) => announcement.projectId === projectId)
+    .sort(compareCommunicationDates);
+}
+
+export function getCommunicationsForActiveWorkspace() {
+  return getCommunicationsForProject(demoProjectId);
+}
+
+export function groupCommunicationsByStatus(
+  items = getCommunicationsForActiveWorkspace(),
+) {
+  return communicationStatusOrder
+    .map((status) => ({
+      status,
+      label: communicationStatusLabels[status],
+      items: items.filter((item) => item.status === status),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function groupCommunicationsByType(
+  items = getCommunicationsForActiveWorkspace(),
+) {
+  return communicationTypeOrder
+    .map((type) => ({
+      type,
+      label: communicationTypeLabels[type],
+      items: items.filter((item) => item.messageType === type),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function getCommunicationCounts(projectId = demoProjectId): CommunicationCounts {
+  return getCommunicationsForProject(projectId).reduce<CommunicationCounts>(
+    (counts, item) => {
+      counts.total += 1;
+
+      if (item.status === "draft") {
+        counts.drafts += 1;
+      }
+
+      if (item.status === "ready") {
+        counts.ready += 1;
+      }
+
+      if (item.status === "scheduledMock") {
+        counts.scheduledMock += 1;
+      }
+
+      if (item.status === "sentMock") {
+        counts.sentMock += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      drafts: 0,
+      ready: 0,
+      scheduledMock: 0,
+      sentMock: 0,
+    },
+  );
+}
+
+export function getRecentCommunications(projectId = demoProjectId, limit = 4) {
+  return getCommunicationsForProject(projectId).slice(0, limit);
+}
+
+export function getRecommendedCommunicationAction(
+  projectId = demoProjectId,
+): RecommendedCommunicationAction {
+  const items = getCommunicationsForProject(projectId);
+  const readyItem = items.find((item) => item.status === "ready");
+  const draftItem = items.find((item) => item.status === "draft");
+  const scheduledItem = items.find((item) => item.status === "scheduledMock");
+
+  if (readyItem) {
+    return {
+      title: `Preview "${readyItem.title}"`,
+      detail:
+        "This announcement is ready to send later. Preview the wording and recipients before real sending is added.",
+      href: "/admin/announcements",
+    };
+  }
+
+  if (draftItem) {
+    return {
+      title: `Finish "${draftItem.title}"`,
+      detail:
+        "A draft is started. Keep the next step simple: review the preview and recipient plan.",
+      href: "/admin/announcements",
+    };
+  }
+
+  if (scheduledItem) {
+    return {
+      title: "Review the reminder plan",
+      detail:
+        "A mock scheduled reminder exists for planning only. No background sending is active.",
+      href: "/admin/announcements",
+    };
+  }
+
+  return {
+    title: "Start a project announcement",
+    detail:
+      "Create a calm draft for the next volunteer update when announcement editing is available.",
+    href: "/admin/announcements",
   };
 }
 

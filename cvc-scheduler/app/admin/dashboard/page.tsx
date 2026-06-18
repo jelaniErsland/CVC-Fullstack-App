@@ -5,9 +5,12 @@ import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import {
+  communicationStatusLabels,
   getAssignedProjectWorkspace,
   getCurrentAdminRoleHome,
+  getRecentCommunications,
   getRoleHomeOptions,
+  projectHasModule,
 } from "@/lib/mockData";
 import type { RoleHomeData, RoleHomeFocus, RoleHomeUpdate } from "@/lib/mockData";
 
@@ -218,6 +221,23 @@ export default function AdminDashboardPage() {
   const roleHomes = project
     ? getRoleHomeOptions(project.id).filter((home) => home.role !== activeHome?.role)
     : [];
+  const recentAnnouncement =
+    project && projectHasModule(project, "announcements")
+      ? getRecentCommunications(project.id, 1)[0]
+      : undefined;
+  const recentUpdates = activeHome && recentAnnouncement
+    ? [
+        {
+          id: `dashboard-${recentAnnouncement.id}`,
+          label: "Announcement",
+          detail: `${recentAnnouncement.title} - ${
+            communicationStatusLabels[recentAnnouncement.status]
+          }`,
+          href: "/admin/announcements",
+        },
+        ...activeHome.recentUpdates,
+      ]
+    : (activeHome?.recentUpdates ?? []);
 
   if (!project || !activeHome) {
     return (
@@ -288,7 +308,7 @@ export default function AdminDashboardPage() {
           </section>
 
           <section className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <CompactUpdateList title="Recent Updates" items={activeHome.recentUpdates} />
+            <CompactUpdateList title="Recent Updates" items={recentUpdates} />
             <RolePatternPreview homes={roleHomes} />
           </section>
         </main>

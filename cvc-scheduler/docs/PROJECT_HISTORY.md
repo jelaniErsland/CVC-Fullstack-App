@@ -543,6 +543,72 @@ Limitations:
 Next recommended step:
 - 07.3 Needs Attention visual QA/stabilization.
 
+## Iteration 07.3 - Needs Attention Visual QA / Stabilization
+
+Summary:
+- Reviewed Needs Attention overview and detail pages for calm hierarchy, mobile fit, tap targets, and route stability.
+- Stabilized follow-up and conflict/coverage copy so mock-only actions stay clear and non-alarming.
+- Confirmed the Needs Attention routes stay quiet alongside dashboard, schedule, and settings routes.
+- Kept the pass focused on QA and stabilization, with no real detection, resolution, persistence, or notification behavior added.
+
+Changed files:
+- `components/NeedsAttentionOverview.tsx`
+- `app/admin/needs-attention/page.tsx`
+- `app/admin/needs-attention/[itemId]/page.tsx`
+- `app/admin/dashboard/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/needs-attention`, `/admin/dashboard`, `/admin/schedule`, and `/admin/settings`.
+- Visual QA checked the Needs Attention overview and detail patterns for desktop and mobile layout stability.
+
+Limitations:
+- Needs Attention remains mock-only.
+- No real conflict detection.
+- No real resolution actions or persistence.
+- No notification logic.
+- No role-scoped follow-up views yet.
+
+Next recommended step:
+- 08.1 Emails and Announcements data model + admin overview.
+
+## Iteration 08.1 - Emails and Announcements Data Model + Admin Overview
+
+Summary:
+- Added a mock communication model for announcements, reminders, updates, schedule changes, food notes, and security notes.
+- Added communication helpers for active workspace items, status/type grouping, draft/ready/scheduled/mock/sent/mock counts, recent items, and recommended next action.
+- Created `/admin/announcements` with compact summary counts, recent/draft rows, audience and status labels, expandable preview/recipient details, and placeholder-only actions.
+- Added Announcements to the module-aware admin navigation as a dedicated route.
+- Lightly connected the dashboard with one recent announcement row while keeping the Primary CVC home quiet.
+- Kept all email and announcement behavior mock-only with clear copy that sending is inactive.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `app/admin/announcements/page.tsx`
+- `app/admin/dashboard/page.tsx`
+- `app/v/demo/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/announcements`, `/admin/dashboard`, `/admin/needs-attention`, `/admin/schedule`, and `/admin/settings`.
+
+Limitations:
+- Announcements and emails are mock-only.
+- No Resend, SMTP, Supabase, auth, real persistence, real sending, background jobs, cron reminders, or notification delivery.
+- No real recipient resolution, scheduled reminders, templates, unsubscribe/suppression logic, or delivery tracking.
+
+Next recommended step:
+- 08.2 Announcement detail/preview page, or 08.3 Reminder templates if detail patterns are not needed yet.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
