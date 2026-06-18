@@ -38,7 +38,8 @@ Rough phases:
 - 08.4 Emails/Announcements visual QA and stabilization. Completed.
 - 08.5 Preview Screenshot Refresh + Visual Review Coverage. Completed.
 - 09.1 Food module foundation. Completed.
-- 09.2 Food detail/day view. Next recommended step.
+- 09.2 Food detail/day view. Completed.
+- 09.3 Food visual/icon density stabilization. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -56,6 +57,7 @@ Rough phases:
 - 08.5 Preview Screenshot Refresh + Visual Review Coverage.
 - 09.1 Food module foundation.
 - 09.2 Food detail/day view.
+- 09.3 Food visual/icon density stabilization.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -213,7 +215,6 @@ mobile layouts from showing a cramped permanent sidebar.
 
 Announcements and emails are mock-only. Future work still needs:
 
-- Food module foundation.
 - Real email sending.
 - Recipient resolution.
 - Scheduled reminders and background jobs.
@@ -231,9 +232,15 @@ date-grouped rows, headcount notes, food contact/congregation responsibility,
 helpers, expandable meal/helper notes, related links, and placeholder-only
 actions.
 
+09.2 added focused mock Food detail/day pages at `/admin/food/[foodItemId]`.
+The detail page shows one food support item with date/day, service type,
+status, headcount, congregation/contact responsibility, helpers, meal notes,
+helper/headcount notes, related links, same-day food support, and
+placeholder-only actions.
+
 Food is mock-only. Future work still needs:
 
-- Food detail/day view.
+- Food visual/icon density stabilization.
 - Real helper assignment actions.
 - Real persistence.
 - Food-role scoped views.

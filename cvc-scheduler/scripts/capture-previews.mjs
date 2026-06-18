@@ -45,6 +45,11 @@ const captures = [
     viewport: desktopViewport,
   },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
+  {
+    route: "/admin/food/food-belgrade-lunch-jan-14",
+    fileName: "food-detail-lunch-jan-14.jpg",
+    viewport: desktopViewport,
+  },
   { route: "/admin/schedule", fileName: "schedule.jpg", viewport: desktopViewport },
   { route: "/admin/settings", fileName: "settings.jpg", viewport: desktopViewport },
   {
@@ -87,6 +92,11 @@ const captures = [
     viewport: mobileViewport,
   },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
+  {
+    route: "/admin/food/food-belgrade-lunch-jan-14",
+    fileName: "mobile-food-detail-lunch-jan-14.jpg",
+    viewport: mobileViewport,
+  },
   {
     route: "/admin/announcements",
     fileName: "mobile-admin-drawer-open.jpg",

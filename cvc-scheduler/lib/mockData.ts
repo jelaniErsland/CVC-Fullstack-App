@@ -3418,6 +3418,24 @@ export function getFoodItemById(itemId: string) {
   return foodCoordinationItems.find((item) => item.id === itemId);
 }
 
+export function getFoodItemsByDate(date: string, projectId = demoProjectId) {
+  return getFoodItemsForProject(projectId).filter((item) => item.date === date);
+}
+
+export function getRelatedFoodItemsForSameDay(item: FoodCoordinationItem) {
+  return getFoodItemsByDate(item.date, item.projectId).filter(
+    (relatedItem) => relatedItem.id !== item.id,
+  );
+}
+
+export function getFoodDetailHref(item: FoodCoordinationItem) {
+  return `/admin/food/${item.id}`;
+}
+
+export function getFoodNotFoundHref() {
+  return "/admin/food";
+}
+
 export function groupFoodItemsByDate(
   items = getFoodItemsForActiveWorkspace(),
 ): FoodCoordinationGroup[] {
@@ -3533,6 +3551,57 @@ export function getNextFoodAction(projectId = demoProjectId): RecommendedFoodAct
     title: "Review upcoming lunch support",
     detail: "Food support looks steady in the current mock data.",
     href: "/admin/food",
+  };
+}
+
+export function getNextFoodActionForItem(
+  item: FoodCoordinationItem,
+): RecommendedFoodAction {
+  const href = getFoodDetailHref(item);
+
+  if (item.status === "needsHelpers") {
+    return {
+      title: "Add helper later",
+      detail:
+        item.helperNotes ??
+        "This food support item needs a calm helper review before the project week.",
+      href,
+    };
+  }
+
+  if (item.status === "needsHeadcount") {
+    return {
+      title: "Review headcount",
+      detail:
+        item.headcountNotes ??
+        "Check the related schedule before confirming the food support count.",
+      href,
+    };
+  }
+
+  if (item.status === "draftMock") {
+    return {
+      title: "Review draft food notes",
+      detail:
+        "This is a draft/mock food support item. Review the notes before using them as a planning reference.",
+      href,
+    };
+  }
+
+  if (item.status === "covered") {
+    return {
+      title: "Keep this marked covered",
+      detail:
+        "This food support item has helpers and headcount notes in the mock plan.",
+      href,
+    };
+  }
+
+  return {
+    title: "Review food support notes",
+    detail:
+      "This item has been reviewed in mock data. Check the meal notes and helper notes if anything changes.",
+    href,
   };
 }
 

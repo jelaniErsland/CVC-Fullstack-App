@@ -8,6 +8,7 @@ import {
   getFoodCoordinationCounts,
   getFoodCoverageStatusLabel,
   getFoodCoverageStatusTone,
+  getFoodDetailHref,
   getFoodItemsForActiveWorkspace,
   getNextFoodAction,
   getProjectById,
@@ -66,117 +67,35 @@ function SummaryStrip() {
   );
 }
 
-function PlaceholderActions({ item }: { item: FoodCoordinationItem }) {
-  const actions =
-    item.status === "needsHeadcount"
-      ? ["Review headcount", "Prepare food note"]
-      : item.status === "needsHelpers"
-        ? ["Add helper later", "Open day details"]
-        : ["Open day details", "Prepare food note"];
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {actions.map((action) => (
-        <button
-          className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
-          key={action}
-          type="button"
-        >
-          {action}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function FoodRow({ item }: { item: FoodCoordinationItem }) {
   const helpers =
     item.assignedHelpers.length > 0 ? item.assignedHelpers.join(", ") : "Helpers to add";
 
   return (
-    <details className="group border-b border-white/72 last:border-b-0">
-      <summary className="grid min-h-16 cursor-pointer list-none gap-3 px-4 py-3 transition hover:bg-white/46 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-semibold text-slate-950">{item.title}</p>
-            <StatusLabel status={item.status} />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-            <span>{foodServiceTypeLabels[item.serviceType]}</span>
-            {item.estimatedHeadcount ? (
-              <span>Headcount: {item.estimatedHeadcount}</span>
-            ) : null}
-            {item.congregation ? <span>{item.congregation}</span> : null}
-          </div>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Food contact: {item.responsibleContact ?? "To confirm"} - Helpers: {helpers}
-          </p>
+    <Link
+      className="grid min-h-16 gap-3 border-b border-white/72 px-4 py-3 transition hover:bg-white/46 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"
+      href={getFoodDetailHref(item)}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-base font-semibold text-slate-950">{item.title}</p>
+          <StatusLabel status={item.status} />
         </div>
-        <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
-          <span className="group-open:hidden">Details</span>
-          <span className="hidden group-open:inline">Hide</span>
-        </div>
-      </summary>
-
-      <div className="grid gap-4 bg-white/34 px-4 pb-4 sm:grid-cols-[1fr_260px] sm:px-5">
-        <div className="space-y-3 text-sm leading-6 text-slate-600">
-          {item.mealNotes ? (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Meal notes
-              </p>
-              <p className="mt-1">{item.mealNotes}</p>
-            </div>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+          <span>{foodServiceTypeLabels[item.serviceType]}</span>
+          {item.estimatedHeadcount ? (
+            <span>Headcount: {item.estimatedHeadcount}</span>
           ) : null}
-          {item.headcountNotes ? (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Headcount
-              </p>
-              <p className="mt-1">{item.headcountNotes}</p>
-            </div>
-          ) : null}
-          {item.helperNotes ? (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                Helpers
-              </p>
-              <p className="mt-1">{item.helperNotes}</p>
-            </div>
-          ) : null}
-          <div className="flex flex-wrap gap-3">
-            {item.relatedNeedsAttentionId ? (
-              <Link
-                className="inline-flex min-h-10 items-center text-sm font-semibold text-slate-700 hover:text-slate-950"
-                href={`/admin/needs-attention/${item.relatedNeedsAttentionId}`}
-              >
-                Open related follow-up
-              </Link>
-            ) : null}
-            {item.relatedAnnouncementId ? (
-              <Link
-                className="inline-flex min-h-10 items-center text-sm font-semibold text-slate-700 hover:text-slate-950"
-                href={`/admin/announcements/${item.relatedAnnouncementId}`}
-              >
-                Open food note
-              </Link>
-            ) : null}
-          </div>
+          {item.congregation ? <span>{item.congregation}</span> : null}
         </div>
-
-        <div className="rounded-lg border border-white/72 bg-white/56 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Placeholder actions
-          </p>
-          <div className="mt-3">
-            <PlaceholderActions item={item} />
-          </div>
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            These actions do not save changes or create food assignments yet.
-          </p>
-        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          Food contact: {item.responsibleContact ?? "To confirm"} - Helpers: {helpers}
+        </p>
       </div>
-    </details>
+      <div className="flex items-center text-sm font-semibold text-slate-600">
+        Review
+      </div>
+    </Link>
   );
 }
 

@@ -63,6 +63,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
 - Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
 - Mock Food module foundation with lunch support, snack support, water/coffee, cleanup, helpers, headcount notes, food contact responsibility, grouped food rows, and placeholder-only actions.
+- Mock Food detail/day view with focused headcount, helper, meal note, related item, and same-day support review.
 
 ## 5. Current Routes
 
@@ -72,6 +73,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
 - `/admin/announcements/[communicationId]`: Mock announcement detail/preview page with a helpful not-found state for unknown communication ids.
 - `/admin/food`: Mock Food module overview for lunch support, helpers, headcount notes, and food contact coordination.
+- `/admin/food/[foodItemId]`: Mock Food detail/day page with a helpful not-found state for unknown food item ids.
 - `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
 - `/admin/needs-attention/[itemId]`: Mock conflict/coverage detail page with suggested next step, related assignments/people, and placeholder-only actions.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
@@ -89,7 +91,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
 
-The script captures key admin routes, communication overview/template/detail pages, Food, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, Food, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, communication overview/template/detail pages, Food overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, Food overview/detail, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -133,4 +135,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.2 Food detail/day view.
+09.3 Food visual/icon density stabilization.

@@ -771,6 +771,43 @@ Limitations:
 Next recommended step:
 - 09.2 Food detail/day view.
 
+## Iteration 09.2 - Food Detail / Day View
+
+Summary:
+- Added helper support for Food detail pages, including same-day lookup, related items, detail/not-found hrefs, and single-item next action guidance.
+- Added `/admin/food/[foodItemId]` using the shared `AdminShell`.
+- The detail page shows date/day, service type, status, headcount, congregation/contact responsibility, helpers, meal notes, helper/headcount notes, related schedule/announcement/follow-up links, same-day food support, and placeholder-only actions.
+- Updated `/admin/food` so each compact food row opens the detail/day view.
+- Added a helpful not-found state for unknown food item ids.
+- Added desktop and mobile Food detail screenshots to the preview workflow.
+- Kept Food mock-only with no persistence, food ordering, helper assignment mutations, sending, recipient resolution, scheduled jobs, or production workflows.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/food/page.tsx`
+- `app/admin/food/[foodItemId]/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- Local route checks returned 200 for `/admin/food`, one valid Food detail route, `/admin/food/not-real`, `/admin/dashboard`, and `/admin/settings`.
+- Mobile browser checks around 390px confirmed `/admin/food` and one Food detail page have no horizontal overflow and the mobile drawer opens/closes.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Food detail/day views are mock-only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
+- Placeholder actions do not save changes or assign helpers.
+
+Next recommended step:
+- 09.3 Food visual/icon density stabilization.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
