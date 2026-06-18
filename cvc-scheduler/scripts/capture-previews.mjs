@@ -120,6 +120,12 @@ const captures = [
     openMobileDrawer: true,
   },
   {
+    route: "/admin/dashboard",
+    fileName: "mobile-more-menu-open.jpg",
+    viewport: mobileViewport,
+    openMobileMore: true,
+  },
+  {
     route: "/questionnaire/belgrade-remodel-2026",
     fileName: "mobile-questionnaire-belgrade.jpg",
     viewport: mobileViewport,
@@ -140,7 +146,7 @@ async function main() {
   const page = await browser.newPage({ viewport: desktopViewport });
 
   try {
-    for (const { route, fileName, viewport, openMobileDrawer } of captures) {
+    for (const { route, fileName, viewport, openMobileDrawer, openMobileMore } of captures) {
       await page.setViewportSize(viewport);
 
       const response = await page.goto(previewUrl(route), {
@@ -154,6 +160,10 @@ async function main() {
 
       if (openMobileDrawer) {
         await page.getByRole("button", { name: "Open navigation menu" }).click();
+      }
+
+      if (openMobileMore) {
+        await page.getByRole("button", { name: "Open more admin navigation" }).click();
       }
 
       await page.screenshot({

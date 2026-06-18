@@ -328,7 +328,7 @@ function CalendarInspector({
   return (
     <div
       className={[
-        "fixed inset-0 z-40 transition",
+        "fixed inset-0 z-50 transition",
         isOpen ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
     >

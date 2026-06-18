@@ -1102,6 +1102,46 @@ Limitations:
 Next recommended step:
 - 09.11 Mobile 5-tab navigation direction.
 
+## Iteration 09.11 - Mobile 5-Tab Navigation Direction
+
+Summary:
+- Added the long-term mobile primary admin navigation pattern to the shared `AdminShell`.
+- Mobile admin routes now show five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More.
+- Calendar is treated as the center action with a raised/filled treatment and visible label.
+- Added a mobile More sheet for secondary destinations: Communications, Reminder templates, Settings, Workspaces, Questionnaires, Needs Attention, Legacy Schedule, Food prototype, and Security prototype.
+- Kept the persistent desktop sidebar unchanged and hid the bottom navigation on desktop.
+- Kept the existing mobile hamburger drawer as a temporary fallback while making bottom tabs the primary mobile navigation.
+- Added mobile bottom padding in the shell so page content is not hidden behind the tab bar.
+- Added preview screenshot coverage for the new More sheet.
+- Preserved `/admin/schedule` as the legacy schedule prototype route and kept Food/Security prototype routes.
+
+Changed files:
+- `components/AdminShell.tsx`
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews.
+- Route checks covered `/admin/dashboard`, `/admin/calendar`, `/admin/tasks`, `/admin/volunteers`, `/admin/settings`, `/admin/announcements`, and `/admin/schedule`.
+- Desktop browser checks confirmed the persistent sidebar remains visible, the bottom nav is hidden, `/admin/calendar` still works, and the Calendar inspector opens/closes.
+- Mobile browser checks around 390px confirmed the bottom nav is visible, Overview/Tasks/Calendar/Volunteers tabs navigate, Calendar is emphasized, More opens/closes, no horizontal overflow appears, content is not hidden by the tab bar, and the Calendar inspector bottom sheet still opens/closes.
+
+Limitations:
+- UI/navigation only.
+- No auth, persistence, route permissions, role enforcement, Supabase, database logic, real scheduling behavior, drag/drop, calendar libraries, production workflows, or Calendar day/month functionality.
+- The mobile hamburger drawer remains temporarily as a fallback.
+- Calendar Day/Week/Month controls are still visual/mock-only and need a later Calendar view-controls pass.
+
+Next recommended step:
+- 09.12 Calendar view controls / day-month foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
