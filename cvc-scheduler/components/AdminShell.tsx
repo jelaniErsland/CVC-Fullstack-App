@@ -58,25 +58,50 @@ const primaryMobileTabs: PrimaryMobileTab[] = [
   { id: "volunteers", label: "Volunteers", href: "/admin/volunteers", icon: Users },
 ];
 
-const moreLinks: Array<{
+type MoreLink = {
   label: string;
   href: string;
   icon: LucideIcon;
   note?: string;
+};
+
+const moreGroups: Array<{
+  title: string;
+  links: MoreLink[];
 }> = [
-  { label: "Communications", href: "/admin/announcements", icon: MessageSquare },
   {
-    label: "Reminder templates",
-    href: "/admin/announcements/templates",
-    icon: Bell,
+    title: "Communications",
+    links: [
+      { label: "Communications", href: "/admin/announcements", icon: MessageSquare },
+      {
+        label: "Reminder templates",
+        href: "/admin/announcements/templates",
+        icon: Bell,
+      },
+    ],
   },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-  { label: "Workspaces", href: "/admin/projects", icon: LayoutGrid },
-  { label: "Questionnaires", href: "/admin/questionnaires", icon: FileQuestion },
-  { label: "Needs Attention", href: "/admin/needs-attention", icon: Bell },
-  { label: "Legacy Schedule", href: "/admin/schedule", icon: CalendarDays },
-  { label: "Food prototype", href: "/admin/food", icon: Soup, note: "Prototype" },
-  { label: "Security prototype", href: "/admin/security", icon: Shield, note: "Prototype" },
+  {
+    title: "Follow-up",
+    links: [
+      { label: "Needs Attention", href: "/admin/needs-attention", icon: Bell },
+      { label: "Questionnaires", href: "/admin/questionnaires", icon: FileQuestion },
+    ],
+  },
+  {
+    title: "Workspace",
+    links: [
+      { label: "Settings", href: "/admin/settings", icon: Settings },
+      { label: "Project Workspaces", href: "/admin/projects", icon: LayoutGrid },
+    ],
+  },
+  {
+    title: "Prototype / legacy",
+    links: [
+      { label: "Legacy Schedule", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Food prototype", href: "/admin/food", icon: Soup, note: "Prototype" },
+      { label: "Security prototype", href: "/admin/security", icon: Shield, note: "Prototype" },
+    ],
+  },
 ];
 
 const primaryMobileTabIds = new Set<AdminNavActive>([
@@ -220,35 +245,48 @@ function MobileMoreSheet({
             </button>
           </div>
 
-          <div className="mt-4 grid gap-2">
-            {moreLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive =
-                active === getActiveIdForMoreHref(link.href) ||
-                (active === "announcements" && link.href === "/admin/announcements");
+          <div className="mt-4 grid gap-4">
+            {moreGroups.map((group) => (
+              <div key={group.title}>
+                <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  {group.title}
+                </p>
+                <div className="mt-2 grid gap-2">
+                  {group.links.map((link) => {
+                    const Icon = link.icon;
+                    const isActive =
+                      active === getActiveIdForMoreHref(link.href) ||
+                      (active === "announcements" &&
+                        link.href === "/admin/announcements");
 
-              return (
-                <Link
-                  className={[
-                    "flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition",
-                    isActive
-                      ? "border-slate-200 bg-white text-slate-950 shadow-sm"
-                      : "border-white/70 bg-white/48 text-slate-600 hover:bg-white/76 hover:text-slate-950",
-                  ].join(" ")}
-                  href={link.href}
-                  key={link.href}
-                  onClick={onClose}
-                >
-                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
-                  <span className="min-w-0 flex-1">{link.label}</span>
-                  {link.note ? (
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500">
-                      {link.note}
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
+                    return (
+                      <Link
+                        className={[
+                          "flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition",
+                          isActive
+                            ? "border-slate-200 bg-white text-slate-950 shadow-sm"
+                            : "border-white/70 bg-white/48 text-slate-600 hover:bg-white/76 hover:text-slate-950",
+                        ].join(" ")}
+                        href={link.href}
+                        key={link.href}
+                        onClick={onClose}
+                      >
+                        <Icon
+                          aria-hidden="true"
+                          className="h-4 w-4 shrink-0 text-slate-400"
+                        />
+                        <span className="min-w-0 flex-1">{link.label}</span>
+                        {link.note ? (
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500">
+                            {link.note}
+                          </span>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </GlassCard>
       </section>

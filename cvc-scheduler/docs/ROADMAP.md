@@ -53,7 +53,8 @@ Rough phases:
 - 09.13 Calendar empty-slot creation mock. Completed.
 - 09.14 Calendar Overlay + Mobile Interaction Stabilization. Completed.
 - 09.15 Overview realignment. Completed.
-- 09.16 Admin navigation simplification + Communications alignment. Next recommended step.
+- 09.16 Admin navigation simplification + Communications alignment. Completed.
+- 09.17 Communications detail/template copy alignment. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -86,6 +87,7 @@ Rough phases:
 - 09.14 Calendar Overlay + Mobile Interaction Stabilization.
 - 09.15 Overview realignment.
 - 09.16 Admin navigation simplification + Communications alignment.
+- 09.17 Communications detail/template copy alignment.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -220,9 +222,10 @@ Needs Attention is mock-only. Future work still needs:
 ## 12. Emails and Announcements Notes
 
 08.1 added a mock communication foundation for announcements, reminders,
-updates, schedule changes, food notes, and security notes. The new
-`/admin/announcements` route shows compact summary counts, recent and draft
-announcement rows, audience/status labels, status/type grouping, and clear
+updates, schedule changes, food notes, and security notes. The
+`/admin/announcements` route now presents as Communications while keeping the
+existing route name; it shows compact summary counts, recent and draft
+communication rows, audience/status labels, status/type grouping, and clear
 copy that sending is not active yet.
 
 08.2 added focused mock detail/preview pages at
@@ -243,7 +246,7 @@ shows a compact mobile top bar with a collapsible navigation drawer. The drawer
 uses the existing admin nav, closes on outside tap or link selection, and keeps
 mobile layouts from showing a cramped permanent sidebar.
 
-Announcements and emails are mock-only. Future work still needs:
+Communications are mock-only. Future work still needs:
 
 - Real email sending.
 - Recipient resolution.

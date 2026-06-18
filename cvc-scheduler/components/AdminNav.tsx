@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { demoProjectId, getProjectById, projectHasModule } from "@/lib/mockData";
-import type { ProjectModule } from "@/lib/mockData";
+import {
+  CalendarDays,
+  ClipboardList,
+  Home,
+  MessageSquare,
+  Settings,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { demoProjectId, getProjectById } from "@/lib/mockData";
 
 export type AdminNavActive =
   | "projects"
@@ -28,53 +36,26 @@ type AdminNavProps = {
 
 const navItems: Array<{
   id: AdminNavActive;
+  icon: LucideIcon;
   label: string;
   href: string;
-  module?: ProjectModule;
-  always?: boolean;
 }> = [
-  { id: "overview", label: "Overview", href: "/admin/dashboard", always: true },
+  { id: "overview", icon: Home, label: "Overview", href: "/admin/dashboard" },
   {
     id: "calendar",
+    icon: CalendarDays,
     label: "Calendar",
     href: "/admin/calendar",
-    module: "scheduling",
   },
-  { id: "tasks", label: "Tasks", href: "/admin/tasks", always: true },
-  { id: "volunteers", label: "Volunteers", href: "/admin/volunteers", always: true },
-  {
-    id: "questionnaires",
-    label: "Questionnaires",
-    href: "/admin/questionnaires",
-    always: true,
-  },
-  { id: "food", label: "Food", href: "/admin/food", module: "food" },
-  {
-    id: "security",
-    label: "Security",
-    href: "/admin/security",
-    module: "security",
-  },
+  { id: "tasks", icon: ClipboardList, label: "Tasks", href: "/admin/tasks" },
+  { id: "volunteers", icon: Users, label: "Volunteers", href: "/admin/volunteers" },
   {
     id: "announcements",
+    icon: MessageSquare,
     label: "Communications",
     href: "/admin/announcements",
-    module: "announcements",
   },
-  { id: "emails", label: "Emails", href: "/admin/dashboard#emails", module: "emails" },
-  {
-    id: "needs-attention",
-    label: "Needs Attention",
-    href: "/admin/needs-attention",
-    module: "needsAttention",
-  },
-  {
-    id: "conflicts",
-    label: "Conflicts",
-    href: "/admin/dashboard#conflicts",
-    module: "conflicts",
-  },
-  { id: "settings", label: "Settings", href: "/admin/settings", always: true },
+  { id: "settings", icon: Settings, label: "Settings", href: "/admin/settings" },
 ];
 
 export function AdminNav({
@@ -83,9 +64,6 @@ export function AdminNav({
   onNavigate,
 }: AdminNavProps) {
   const project = getProjectById(projectId);
-  const visibleItems = navItems.filter(
-    (item) => item.always || (item.module ? projectHasModule(project, item.module) : false),
-  );
 
   return (
     <div className="mt-5">
@@ -110,35 +88,27 @@ export function AdminNav({
         </div>
       ) : null}
 
-      <Link
-        href="/admin/projects"
-        onClick={onNavigate}
-        className={[
-          "mt-3 flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm font-medium transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
-          active === "projects"
-            ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
-            : "border-transparent text-slate-600",
-        ].join(" ")}
-      >
-        Switch Workspace
-      </Link>
+      <nav className="mt-3 grid gap-1 text-sm font-medium text-slate-600">
+        {navItems.map((item) => {
+          const Icon = item.icon;
 
-      <nav className="mt-2 grid gap-1 text-sm font-medium text-slate-600">
-        {visibleItems.map((item) => (
-          <Link
-            key={item.id}
-            className={[
-              "flex min-h-11 items-center rounded-lg border px-3 py-2 transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
-              active === item.id
-                ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
-                : "border-transparent",
-            ].join(" ")}
-            href={item.href}
-            onClick={onNavigate}
-          >
-            {item.label}
-          </Link>
-        ))}
+          return (
+            <Link
+              key={item.id}
+              className={[
+                "flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2 transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
+                active === item.id
+                  ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
+                  : "border-transparent",
+              ].join(" ")}
+              href={item.href}
+              onClick={onNavigate}
+            >
+              <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

@@ -91,20 +91,20 @@ function AnnouncementRow({ item }: { item: Communication }) {
   );
 }
 
-function AnnouncementList({ items }: { items: Communication[] }) {
+function CommunicationList({ items }: { items: Communication[] }) {
   return (
     <GlassCard className="overflow-hidden">
       <div className="border-b border-white/72 px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-              Recent and draft announcements
+              Recent drafts and reminders
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
               Compact rows for wording, audience, and reminder planning.
             </p>
           </div>
-          <p className="text-sm font-semibold text-slate-500">Sending inactive</p>
+            <p className="text-sm font-semibold text-slate-500">Sending inactive</p>
         </div>
       </div>
       <div>
@@ -165,14 +165,14 @@ export default function AdminAnnouncementsPage() {
     <AdminShell active="announcements">
           <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Communications
+              Project messaging
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              Announcements
+              Communications
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Prepare project announcements, reminder plans, and recipient notes without sending
-              real email yet.
+              Prepare announcements, reminders, and recipient notes for the project without
+              sending real email yet.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
               This overview is mock-only. Resend, SMTP, scheduled jobs, recipient resolution,
@@ -212,13 +212,13 @@ export default function AdminAnnouncementsPage() {
                   </div>
                 </GlassCard>
 
-                <AnnouncementList items={recentCommunications} />
+                <CommunicationList items={recentCommunications} />
                 <GroupSummary />
               </div>
             ) : (
               <EmptyState
-                title="Announcements are not enabled"
-                message="This workspace is not using announcement planning yet. If enabled later, calm drafts and reminder plans will appear here."
+                title="Communications are not enabled"
+                message="This workspace is not using communication planning yet. If enabled later, calm drafts and reminder plans will appear here."
               />
             )}
           </section>

@@ -183,8 +183,8 @@ Upcoming UI direction:
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
-- Shared admin shell with persistent desktop sidebar, mobile 5-tab bottom navigation, a More sheet for secondary destinations, and a temporary collapsible mobile drawer fallback.
-- Mobile bottom navigation is shared across the checked admin routes, including Dashboard, Calendar, Tasks, Volunteers, Volunteer detail, Settings, Announcements, Reminder templates, Questionnaires, Needs Attention, Workspaces, Food/Security prototypes, and the legacy Schedule route.
+- Shared admin shell with simplified desktop primary navigation for Overview, Calendar, Tasks, Volunteers, Communications, and Settings; mobile keeps the 5-tab bottom navigation with a grouped More sheet for secondary destinations.
+- Mobile bottom navigation is shared across the checked admin routes, including Dashboard, Calendar, Tasks, Volunteers, Volunteer detail, Settings, Communications, Reminder templates, Questionnaires, Needs Attention, Workspaces, Food/Security prototypes, and the legacy Schedule route.
 - Workspace setup wizard.
 - Project settings panel with client-only module toggles.
 - Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
@@ -200,7 +200,7 @@ Upcoming UI direction:
 - Overview realignment at `/admin/dashboard`, now presenting a compact project home for Belgrade Major Remodel 2026 with project context, a this-week Calendar snapshot, calm follow-up rows, quick actions, and lighter role-aware guidance.
 - Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
 - Mock conflict/coverage detail patterns for Needs Attention items, including coverage gaps, possible overlaps, denied assignments, and missing information before scheduling.
-- Mock Emails and Announcements foundation with communication data, counts/grouping helpers, a calm admin overview, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
+- Mock Communications foundation with announcement/reminder data, counts/grouping helpers, a calm admin overview at `/admin/announcements`, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
 - Mock announcement detail/preview pages with message body preview, intended audience, recipient explanation, reminder plan, related links, and placeholder-only future actions.
 - Mock reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
 - Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
@@ -222,6 +222,7 @@ Upcoming UI direction:
 - Mobile More coordinates with Calendar surfaces so More, Filter, Create, and Inspect do not stack on narrow layouts. Calendar actions also close the mobile More sheet or drawer before opening their own panel.
 - Calendar interaction direction remains Google Calendar-inspired without visual cloning: empty date/time areas begin scheduling from the clicked/tapped slot, while the CVC-specific display emphasizes task name, filled count, coverage/confirmation state, and task type.
 - Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More. Calendar is the center action, and secondary admin destinations live in More.
+- Mobile More is grouped into Communications, Follow-up, Workspace, and Prototype / legacy sections so reminder templates, Needs Attention, Questionnaires, Project Workspaces, Legacy Schedule, Food prototype, and Security prototype remain reachable without feeling like primary modules.
 
 ## 5. Current Routes
 
@@ -229,7 +230,7 @@ Upcoming UI direction:
 - `/admin/dashboard`: Mock Overview page inside Belgrade Major Remodel 2026 with compact project context, this-week Calendar rows, calm follow-up summary, quick links to Questionnaires/Calendar/Tasks/Communications, and light role-aware guidance.
 - `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month mock views, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets. Calendar overlays are mutually exclusive, including coordination with mobile More.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
-- `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
+- `/admin/announcements`: Mock Communications overview with announcement and reminder planning rows for draft, ready, scheduled/mock, and sent/mock communication items. The route name remains unchanged for now.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
 - `/admin/announcements/[communicationId]`: Mock announcement detail/preview page with a helpful not-found state for unknown communication ids.
 - `/admin/food`: Mock Food module overview for lunch support, helpers, headcount notes, and food contact coordination.
@@ -307,4 +308,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.16 Admin navigation simplification + Communications alignment.
+09.17 Communications detail/template copy alignment.

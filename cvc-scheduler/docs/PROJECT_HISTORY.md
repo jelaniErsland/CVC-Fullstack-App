@@ -1325,6 +1325,37 @@ Limitations:
 Next recommended step:
 - 09.16 Admin navigation simplification + Communications alignment.
 
+## Iteration 09.16 - Admin Navigation Simplification + Communications Alignment
+
+Summary:
+- Simplified the desktop admin sidebar to the six primary workspace destinations: Overview, Calendar, Tasks, Volunteers, Communications, and Settings.
+- Added calm icons to the desktop primary nav and removed Questionnaires, Needs Attention, Food, Security, Emails, Conflicts, and other prototype/legacy concepts from the primary sidebar list.
+- Kept mobile bottom tabs as Overview, Tasks, Calendar, Volunteers, and More.
+- Reworked mobile More into grouped sections for Communications, Follow-up, Workspace, and Prototype / legacy.
+- Kept Reminder templates, Needs Attention, Questionnaires, Project Workspaces, Legacy Schedule, Food prototype, and Security prototype reachable from mobile More.
+- Adjusted the communications overview copy so `/admin/announcements` presents as Communications while keeping the existing route intact.
+- Preserved all existing legacy/prototype routes and avoided route migrations.
+
+Changed files:
+- `components/AdminNav.tsx`
+- `components/AdminShell.tsx`
+- `app/admin/announcements/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+
+Limitations:
+- Navigation/copy alignment only.
+- No route renames, redirects, Supabase, auth, persistence, real messaging, scheduling, assignment workflow, or mutation logic was added.
+- Announcement detail and template routes still live under `/admin/announcements`.
+
+Next recommended step:
+- 09.17 Communications detail/template copy alignment.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
