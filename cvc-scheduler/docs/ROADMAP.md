@@ -37,7 +37,8 @@ Rough phases:
 - 08.3 Reminder templates. Completed.
 - 08.4 Emails/Announcements visual QA and stabilization. Completed.
 - 08.5 Preview Screenshot Refresh + Visual Review Coverage. Completed.
-- 09.1 Food module foundation. Next recommended step.
+- 09.1 Food module foundation. Completed.
+- 09.2 Food detail/day view. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -54,6 +55,7 @@ Rough phases:
 - 08.4 Emails/Announcements visual QA and stabilization.
 - 08.5 Preview Screenshot Refresh + Visual Review Coverage.
 - 09.1 Food module foundation.
+- 09.2 Food detail/day view.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -219,3 +221,21 @@ Announcements and emails are mock-only. Future work still needs:
 - Unsubscribe and suppression logic.
 - Delivery tracking.
 - Real persistence.
+
+## 13. Food Module Notes
+
+09.1 added a mock Food module foundation at `/admin/food`. The overview shows
+upcoming lunch support, water/coffee, snack support, and cleanup items for the
+active Belgrade workspace with compact counts, a next suggested food action,
+date-grouped rows, headcount notes, food contact/congregation responsibility,
+helpers, expandable meal/helper notes, related links, and placeholder-only
+actions.
+
+Food is mock-only. Future work still needs:
+
+- Food detail/day view.
+- Real helper assignment actions.
+- Real persistence.
+- Food-role scoped views.
+- Deeper schedule integration.
+- Food contact communication workflows.

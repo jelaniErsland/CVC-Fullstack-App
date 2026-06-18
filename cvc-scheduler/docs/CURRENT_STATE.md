@@ -62,6 +62,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock announcement detail/preview pages with message body preview, intended audience, recipient explanation, reminder plan, related links, and placeholder-only future actions.
 - Mock reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
 - Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
+- Mock Food module foundation with lunch support, snack support, water/coffee, cleanup, helpers, headcount notes, food contact responsibility, grouped food rows, and placeholder-only actions.
 
 ## 5. Current Routes
 
@@ -70,6 +71,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
 - `/admin/announcements/[communicationId]`: Mock announcement detail/preview page with a helpful not-found state for unknown communication ids.
+- `/admin/food`: Mock Food module overview for lunch support, helpers, headcount notes, and food contact coordination.
 - `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
 - `/admin/needs-attention/[itemId]`: Mock conflict/coverage detail page with suggested next step, related assignments/people, and placeholder-only actions.
 - `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
@@ -87,7 +89,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
 
-The script captures key admin routes, communication overview/template/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, communication overview/template/detail pages, Food, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, Food, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -105,6 +107,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real persistence.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
+- No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -120,7 +123,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No notification logic yet.
 - No volunteer confirmation / denial persistence yet.
 - Role homes are preview/mock-only and do not enforce permissions yet.
-- Food, Security, and On-site role homes are compact preview patterns, not full modules.
+- Security and On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
 - No public volunteer portal yet.
 - Some admin routes outside the checked communication/dashboard/settings surfaces may still use older local shell markup until a broader shell cleanup pass.
@@ -130,4 +133,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.1 Food module foundation.
+09.2 Food detail/day view.

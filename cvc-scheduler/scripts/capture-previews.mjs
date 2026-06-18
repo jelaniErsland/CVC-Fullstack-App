@@ -44,6 +44,7 @@ const captures = [
     fileName: "needs-attention.jpg",
     viewport: desktopViewport,
   },
+  { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
   { route: "/admin/schedule", fileName: "schedule.jpg", viewport: desktopViewport },
   { route: "/admin/settings", fileName: "settings.jpg", viewport: desktopViewport },
   {
@@ -85,6 +86,7 @@ const captures = [
     fileName: "mobile-announcement-templates.jpg",
     viewport: mobileViewport,
   },
+  { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
   {
     route: "/admin/announcements",
     fileName: "mobile-admin-drawer-open.jpg",

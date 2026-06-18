@@ -735,6 +735,42 @@ Limitations:
 Next recommended step:
 - 09.1 Food module foundation.
 
+## Iteration 09.1 - Food Module Foundation
+
+Summary:
+- Added mock food coordination types, data, labels, tones, counts, grouping, lookup, and next-action helpers.
+- Included Belgrade food support examples for lunch, water/coffee, snack support, and cleanup with contacts, congregations, helpers, headcount notes, meal notes, and related references.
+- Added `/admin/food` using the shared `AdminShell` with compact summary counts, a next suggested food action, grouped food support rows, expandable meal/helper/headcount notes, and placeholder-only actions.
+- Updated the Food nav item to open `/admin/food` when the module is enabled.
+- Added desktop and mobile Food screenshots to the preview workflow.
+- Kept Food mock-only with no ordering, inventory tracking, persistence, sending, recipient resolution, jobs, or mutations.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `app/admin/food/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- Local route checks returned 200 for `/admin/food`, `/admin/dashboard`, `/admin/announcements`, `/admin/needs-attention`, and `/admin/settings`.
+- Mobile browser check around 390px confirmed `/admin/food` has no horizontal overflow and the mobile drawer opens/closes.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Food is mock-only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, food ordering, inventory tracking, or production food workflows.
+- Placeholder actions do not save changes or assign helpers.
+
+Next recommended step:
+- 09.2 Food detail/day view.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

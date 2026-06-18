@@ -513,6 +513,65 @@ export type LunchItem = {
   details: string;
 };
 
+export type FoodServiceType =
+  | "lunch"
+  | "snackSupport"
+  | "waterCoffee"
+  | "cleanup";
+
+export type FoodCoverageStatus =
+  | "covered"
+  | "needsHelpers"
+  | "needsHeadcount"
+  | "draftMock"
+  | "reviewedMock";
+
+export type FoodStatusTone =
+  | "neutral"
+  | "success"
+  | "warning"
+  | "info";
+
+export type FoodCoordinationItem = {
+  id: string;
+  projectId: string;
+  date: string;
+  dayLabel: string;
+  serviceType: FoodServiceType;
+  title: string;
+  congregation?: string;
+  responsibleContact?: string;
+  estimatedHeadcount?: number;
+  assignedHelpers: string[];
+  status: FoodCoverageStatus;
+  mealNotes?: string;
+  helperNotes?: string;
+  headcountNotes?: string;
+  relatedScheduleId?: string;
+  relatedAnnouncementId?: string;
+  relatedNeedsAttentionId?: string;
+};
+
+export type FoodCoordinationGroup = {
+  date: string;
+  dayLabel: string;
+  items: FoodCoordinationItem[];
+};
+
+export type FoodCoordinationCounts = {
+  total: number;
+  upcoming: number;
+  covered: number;
+  needsReview: number;
+  needsHelpers: number;
+};
+
+export type RecommendedFoodAction = {
+  title: string;
+  detail: string;
+  href: string;
+};
+
 export type CommunicationMessageType =
   | "announcement"
   | "reminder"
@@ -1589,6 +1648,95 @@ export const lunches: LunchItem[] = [
     projectId: "belgrade-remodel-2026",
     day: "Saturday",
     details: "Light lunch after cleanup for all volunteers.",
+  },
+];
+
+export const foodCoordinationItems: FoodCoordinationItem[] = [
+  {
+    id: "food-belgrade-lunch-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    dayLabel: "Monday, Jan 12",
+    serviceType: "lunch",
+    title: "Lunch support",
+    congregation: "Bozeman",
+    responsibleContact: "Priya Santos",
+    estimatedHeadcount: 28,
+    assignedHelpers: ["Mia Thompson", "Priya Santos"],
+    status: "covered",
+    mealNotes: "Sandwich bar at noon in the break area. Keep a small vegetarian tray aside.",
+    helperNotes: "Mia can help with setup and Priya will handle serving notes.",
+    headcountNotes: "Headcount is based on confirmed Monday assignments plus a small buffer.",
+    relatedScheduleId: "schedule-lunch-jan-12",
+    relatedAnnouncementId: "comm-belgrade-food-headcount",
+  },
+  {
+    id: "food-belgrade-coffee-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    dayLabel: "Monday, Jan 12",
+    serviceType: "waterCoffee",
+    title: "Water and coffee station",
+    congregation: "Belgrade",
+    responsibleContact: "Evan Brooks",
+    estimatedHeadcount: 34,
+    assignedHelpers: ["Evan Brooks"],
+    status: "reviewedMock",
+    mealNotes: "Coffee and water available near the fellowship area before the morning crew starts.",
+    helperNotes: "One helper can refresh cups and water after lunch.",
+    headcountNotes: "Use the full day count because several volunteers overlap shifts.",
+  },
+  {
+    id: "food-belgrade-lunch-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    dayLabel: "Wednesday, Jan 14",
+    serviceType: "lunch",
+    title: "Lunch setup and service",
+    congregation: "Bozeman",
+    responsibleContact: "Priya Santos",
+    estimatedHeadcount: 36,
+    assignedHelpers: [],
+    status: "needsHelpers",
+    mealNotes: "Soup and salad from 11:45 AM to 12:30 PM.",
+    helperNotes: "Needs two food helpers and one cleanup helper before the project week.",
+    headcountNotes: "Final count depends on pending confirmations for staging and security support.",
+    relatedScheduleId: "schedule-lunch-jan-14",
+    relatedAnnouncementId: "comm-belgrade-food-headcount",
+    relatedNeedsAttentionId: "needs-lunch-jan-14-details",
+  },
+  {
+    id: "food-belgrade-snack-jan-16",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-16",
+    dayLabel: "Friday, Jan 16",
+    serviceType: "snackSupport",
+    title: "Afternoon snack support",
+    congregation: "Helena",
+    responsibleContact: "Evan Brooks",
+    estimatedHeadcount: 22,
+    assignedHelpers: ["Nora Bennett"],
+    status: "needsHeadcount",
+    mealNotes: "Simple packaged snacks and water for the late-afternoon crew.",
+    helperNotes: "Nora can drop off snacks if the final count stays small.",
+    headcountNotes: "Review Friday assignments before confirming how much to bring.",
+  },
+  {
+    id: "food-belgrade-cleanup-jan-17",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-17",
+    dayLabel: "Saturday, Jan 17",
+    serviceType: "cleanup",
+    title: "Lunch cleanup",
+    congregation: "Belgrade",
+    responsibleContact: "Priya Santos",
+    estimatedHeadcount: 42,
+    assignedHelpers: ["Mia Thompson"],
+    status: "draftMock",
+    mealNotes: "Light lunch after cleanup for all volunteers.",
+    helperNotes: "Draft note: add one more helper if Saturday cleanup stays near forty volunteers.",
+    headcountNotes: "Saturday count is still a planning estimate.",
+    relatedScheduleId: "schedule-cleanup-jan-17",
   },
 ];
 
@@ -3223,6 +3371,168 @@ export function getRecommendedReminderTemplateAction(
     detail:
       "Templates are starting points only. Preview the wording and adjust it when real draft creation exists.",
     href: "/admin/announcements/templates",
+  };
+}
+
+export const foodServiceTypeLabels: Record<FoodServiceType, string> = {
+  lunch: "Lunch support",
+  snackSupport: "Snack support",
+  waterCoffee: "Water / coffee",
+  cleanup: "Cleanup",
+};
+
+export const foodCoverageStatusLabels: Record<FoodCoverageStatus, string> = {
+  covered: "Covered",
+  needsHelpers: "Needs helpers",
+  needsHeadcount: "Needs headcount",
+  draftMock: "Draft/mock",
+  reviewedMock: "Reviewed/mock",
+};
+
+export const foodCoverageStatusTones: Record<
+  FoodCoverageStatus,
+  FoodStatusTone
+> = {
+  covered: "success",
+  needsHelpers: "warning",
+  needsHeadcount: "warning",
+  draftMock: "neutral",
+  reviewedMock: "info",
+};
+
+function compareFoodDates(first: FoodCoordinationItem, second: FoodCoordinationItem) {
+  return new Date(first.date).getTime() - new Date(second.date).getTime();
+}
+
+export function getFoodItemsForProject(projectId = demoProjectId) {
+  return foodCoordinationItems
+    .filter((item) => item.projectId === projectId)
+    .sort(compareFoodDates);
+}
+
+export function getFoodItemsForActiveWorkspace() {
+  return getFoodItemsForProject(demoProjectId);
+}
+
+export function getFoodItemById(itemId: string) {
+  return foodCoordinationItems.find((item) => item.id === itemId);
+}
+
+export function groupFoodItemsByDate(
+  items = getFoodItemsForActiveWorkspace(),
+): FoodCoordinationGroup[] {
+  return items.reduce<FoodCoordinationGroup[]>((groups, item) => {
+    const existingGroup = groups.find((group) => group.date === item.date);
+
+    if (existingGroup) {
+      existingGroup.items.push(item);
+      return groups;
+    }
+
+    groups.push({
+      date: item.date,
+      dayLabel: item.dayLabel,
+      items: [item],
+    });
+
+    return groups;
+  }, []);
+}
+
+export function groupFoodItemsByStatus(items = getFoodItemsForActiveWorkspace()) {
+  return Object.entries(foodCoverageStatusLabels)
+    .map(([status, label]) => ({
+      status: status as FoodCoverageStatus,
+      label,
+      items: items.filter((item) => item.status === status),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function getFoodCoordinationCounts(
+  projectId = demoProjectId,
+): FoodCoordinationCounts {
+  return getFoodItemsForProject(projectId).reduce<FoodCoordinationCounts>(
+    (counts, item) => {
+      counts.total += 1;
+      counts.upcoming += 1;
+
+      if (item.status === "covered" || item.status === "reviewedMock") {
+        counts.covered += 1;
+      }
+
+      if (
+        item.status === "needsHelpers" ||
+        item.status === "needsHeadcount" ||
+        item.status === "draftMock"
+      ) {
+        counts.needsReview += 1;
+      }
+
+      if (item.status === "needsHelpers") {
+        counts.needsHelpers += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      upcoming: 0,
+      covered: 0,
+      needsReview: 0,
+      needsHelpers: 0,
+    },
+  );
+}
+
+export function getFoodCoverageStatusLabel(status: FoodCoverageStatus) {
+  return foodCoverageStatusLabels[status];
+}
+
+export function getFoodCoverageStatusTone(status: FoodCoverageStatus) {
+  return foodCoverageStatusTones[status];
+}
+
+export function getNextFoodAction(projectId = demoProjectId): RecommendedFoodAction {
+  const items = getFoodItemsForProject(projectId);
+  const needsHelpers = items.find((item) => item.status === "needsHelpers");
+  const needsHeadcount = items.find((item) => item.status === "needsHeadcount");
+  const draftItem = items.find((item) => item.status === "draftMock");
+
+  if (needsHelpers) {
+    return {
+      title: `Find helpers for ${needsHelpers.title}`,
+      detail:
+        needsHelpers.helperNotes ??
+        "Review which food helpers are available before the project week.",
+      href: needsHelpers.relatedNeedsAttentionId
+        ? `/admin/needs-attention/${needsHelpers.relatedNeedsAttentionId}`
+        : "/admin/food",
+    };
+  }
+
+  if (needsHeadcount) {
+    return {
+      title: `Review headcount for ${needsHeadcount.title}`,
+      detail:
+        needsHeadcount.headcountNotes ??
+        "Check the schedule before confirming how much food support is needed.",
+      href: "/admin/food",
+    };
+  }
+
+  if (draftItem) {
+    return {
+      title: `Review ${draftItem.title}`,
+      detail: "A draft food note is ready for a calm review before it becomes useful.",
+      href: "/admin/food",
+    };
+  }
+
+  return {
+    title: "Review upcoming lunch support",
+    detail: "Food support looks steady in the current mock data.",
+    href: "/admin/food",
   };
 }
 

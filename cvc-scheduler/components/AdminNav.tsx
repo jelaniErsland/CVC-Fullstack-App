@@ -45,7 +45,7 @@ const navItems: Array<{
     href: "/admin/schedule",
     module: "scheduling",
   },
-  { id: "food", label: "Food", href: "/admin/dashboard#food", module: "food" },
+  { id: "food", label: "Food", href: "/admin/food", module: "food" },
   {
     id: "security",
     label: "Security",
