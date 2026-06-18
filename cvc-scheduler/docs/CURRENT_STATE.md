@@ -186,13 +186,13 @@ Upcoming UI direction:
 - Lightweight mock type scaffolding for future task presets and calendar items.
 - Product model realignment toward unified Tasks + Calendar, with Food/Security pages now treated as prototype/research surfaces to fold into that model.
 - Mock Tasks preset library at `/admin/tasks` with Belgrade task preset data, category grouping, counts, Lunch system preset handling, duplicate-name guidance, and placeholder-only actions.
-- Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, week layout, category filters, summary counts, selected-item details, Lunch menu display, and placeholder-only scheduling actions.
+- Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, a stabilized full-width desktop week layout, mobile day groups, category filters, summary counts, selected-item details, Lunch menu display, and placeholder-only scheduling actions.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
-- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, and category filters.
+- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, category filters, and a focused selected-item detail area.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
@@ -266,4 +266,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.9 Calendar visual/stability pass.
+09.10 Mobile 5-tab navigation direction.

@@ -1028,6 +1028,43 @@ Limitations:
 Next recommended step:
 - 09.9 Calendar visual/stability pass.
 
+## Iteration 09.9 - Calendar Visual / Stability Pass
+
+Summary:
+- Polished `/admin/calendar` without changing the Tasks + Calendar model.
+- Reworked the desktop Calendar layout so the week grid uses the full content width instead of sharing space with the selected-item panel.
+- Increased calendar block padding, tap target height, task-name readability, filled-count visibility, and time-window hierarchy.
+- Reduced secondary detail inside grid blocks so the week is more glanceable.
+- Moved the selected-item panel below the week/day surface and added category-colored accenting, stronger title hierarchy, visible category/status/filled pills, helper chips, schedule notes, Lunch menu display, and one-off source indication.
+- Polished mobile day groups with slightly roomier spacing and the same clearer block hierarchy.
+- Tightened Calendar copy while preserving preview-only language and the distinction between Tasks and Calendar.
+- Kept `/admin/schedule` intact as the legacy schedule prototype route.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews.
+- Route checks covered `/admin/calendar`, `/admin/tasks`, `/admin/schedule`, `/admin/dashboard`, `/admin/settings`, and `/admin/volunteers`.
+- Mobile browser checks around 390px confirmed `/admin/calendar` has no horizontal overflow and the mobile drawer opens/closes.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- UI/UX stabilization only.
+- No Supabase, auth, persistence, real mutations, drag/drop, calendar libraries, calendar item creation/saving, volunteer assignment editing, production scheduling logic, scheduled jobs, email sending, copy/paste behavior, repeat behavior, or assignment workflows.
+- Day/week/month switching remains visual/mock-only.
+- Food and Security prototype pages remain in place temporarily as research/reference surfaces.
+
+Next recommended step:
+- 09.10 Mobile 5-tab navigation direction.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

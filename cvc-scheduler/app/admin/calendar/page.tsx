@@ -59,12 +59,21 @@ const categoryStyles: Record<TaskPresetCategory, string> = {
 };
 
 const blockStyles: Record<TaskPresetCategory, string> = {
-  general: "border-l-slate-400 bg-slate-50/92",
-  lunch: "border-l-emerald-500 bg-emerald-50/92",
-  security: "border-l-sky-500 bg-sky-50/92",
-  cleanup: "border-l-amber-500 bg-amber-50/92",
-  construction: "border-l-violet-500 bg-violet-50/92",
-  custom: "border-l-rose-500 bg-rose-50/92",
+  general: "border-l-slate-400 bg-slate-50/88",
+  lunch: "border-l-emerald-500 bg-emerald-50/88",
+  security: "border-l-sky-500 bg-sky-50/88",
+  cleanup: "border-l-amber-500 bg-amber-50/88",
+  construction: "border-l-violet-500 bg-violet-50/88",
+  custom: "border-l-rose-500 bg-rose-50/88",
+};
+
+const detailAccentStyles: Record<TaskPresetCategory, string> = {
+  general: "border-l-slate-400",
+  lunch: "border-l-emerald-500",
+  security: "border-l-sky-500",
+  cleanup: "border-l-amber-500",
+  construction: "border-l-violet-500",
+  custom: "border-l-rose-500",
 };
 
 const toneStyles: Record<CalendarStatusTone, string> = {
@@ -165,26 +174,26 @@ function CalendarBlock({
   return (
     <button
       className={[
-        "w-full rounded-lg border border-white/80 border-l-4 px-3 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-white",
+        "min-h-[112px] w-full rounded-lg border border-white/80 border-l-4 px-3.5 py-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:bg-white",
         blockStyles[item.category],
-        isSelected ? "ring-2 ring-slate-900/20" : "",
+        isSelected ? "bg-white ring-2 ring-slate-900/20 shadow-md" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
     >
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <p className="min-w-0 text-sm font-semibold leading-5 text-slate-950">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <p className="line-clamp-2 min-w-0 text-[15px] font-semibold leading-5 text-slate-950">
           {getCalendarItemDisplayName(item)}
         </p>
-        <span className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-xs font-semibold text-slate-700">
+        <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm">
           {getCalendarFilledLabel(item)}
         </span>
       </div>
-      <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+      <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
         <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-        <span>{getCalendarItemTimeWindow(item)}</span>
+        <span className="truncate">{getCalendarItemTimeWindow(item)}</span>
       </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-3 flex flex-wrap gap-1.5">
         <span
           className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${categoryStyles[item.category]}`}
         >
@@ -196,11 +205,6 @@ function CalendarBlock({
           {getCalendarStatusLabel(item.status)}
         </span>
       </div>
-      {isLunchCalendarItem(item) && item.menuSummary ? (
-        <p className="mt-2 line-clamp-2 text-xs leading-5 text-emerald-800">
-          Menu: {item.menuSummary}
-        </p>
-      ) : null}
     </button>
   );
 }
@@ -217,26 +221,24 @@ function WeekGrid({
   const groups = groupCalendarItemsByDay(items);
 
   return (
-    <GlassCard className="hidden overflow-hidden lg:block">
-      <div className="grid grid-cols-7 border-b border-white/72 bg-white/44">
+    <GlassCard className="hidden overflow-x-auto lg:block">
+      <div className="grid min-w-[900px] grid-cols-7 border-b border-white/72 bg-white/44">
         {groups.map((group) => (
-          <div className="border-r border-white/72 px-3 py-3 last:border-r-0" key={group.date}>
-            <p className="text-sm font-semibold text-slate-950">
-              {getCalendarCompactDayLabel(group.date)}
-            </p>
+          <div className="border-r border-white/72 px-4 py-3.5 last:border-r-0" key={group.date}>
+            <p className="text-sm font-semibold text-slate-950">{group.dayLabel}</p>
             <p className="mt-1 text-xs font-medium text-slate-400">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </p>
           </div>
         ))}
       </div>
-      <div className="grid min-h-[520px] grid-cols-7">
+      <div className="grid min-h-[540px] min-w-[900px] grid-cols-7">
         {groups.map((group) => (
           <div
-            className="min-w-0 border-r border-white/72 bg-white/24 p-2 last:border-r-0"
+            className="min-w-0 border-r border-white/72 bg-white/22 p-3 last:border-r-0"
             key={group.date}
           >
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {group.items.map((item) => (
                 <CalendarBlock
                   isSelected={selectedId === item.id}
@@ -246,7 +248,7 @@ function WeekGrid({
                 />
               ))}
               {group.items.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-white/80 px-3 py-6 text-center text-xs font-medium text-slate-400">
+                <div className="rounded-lg border border-dashed border-white/80 px-3 py-8 text-center text-xs font-medium text-slate-400">
                   Open day
                 </div>
               ) : null}
@@ -270,10 +272,10 @@ function MobileDayGroups({
   const groups = groupCalendarItemsByDay(items);
 
   return (
-    <div className="space-y-3 lg:hidden">
+    <div className="space-y-4 lg:hidden">
       {groups.map((group) => (
         <section
-          className="rounded-xl border border-white/72 bg-white/42 p-3"
+          className="rounded-xl border border-white/72 bg-white/46 p-3.5"
           key={group.date}
         >
           <div className="flex items-center justify-between gap-3">
@@ -284,7 +286,7 @@ function MobileDayGroups({
               {group.items.length}
             </span>
           </div>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2.5">
             {group.items.length > 0 ? (
               group.items.map((item) => (
                 <CalendarBlock
@@ -318,11 +320,6 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
     );
   }
 
-  const volunteers =
-    item.assignedVolunteers.length > 0
-      ? item.assignedVolunteers.map((volunteer) => volunteer.name).join(", ")
-      : "No helpers assigned in this mock item";
-
   const placeholderActions = [
     { label: "Add to calendar", icon: Plus },
     { label: "Edit placement", icon: Pencil },
@@ -330,86 +327,98 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
     { label: "Repeat later", icon: Repeat },
     { label: "Copy later", icon: Copy },
   ];
+  const tone = getCalendarStatusTone(item.status);
 
   return (
-    <GlassCard className="p-4 sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <GlassCard
+      className={`border-l-4 p-4 sm:p-5 ${detailAccentStyles[item.category]}`}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             Selected item
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
             {getCalendarItemDisplayName(item)}
           </h2>
-        </div>
-        <span
-          className={`inline-flex min-h-8 w-fit items-center rounded-full border px-3 py-1 text-xs font-semibold ${categoryStyles[item.category]}`}
-        >
-          {getCalendarCategoryLabel(item.category)}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-white/70 bg-white/52 px-3 py-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-            Time
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-800">
+          <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-slate-500">
+            <Clock aria-hidden="true" className="h-4 w-4" />
             {getCalendarItemTimeWindow(item)}
           </p>
         </div>
-        <div className="rounded-lg border border-white/70 bg-white/52 px-3 py-3">
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <span className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white/78 px-3 text-sm font-semibold text-slate-800">
+            {getCalendarFilledLabel(item)} filled
+          </span>
+          <span
+            className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold ${categoryStyles[item.category]}`}
+          >
+            {getCalendarCategoryLabel(item.category)}
+          </span>
+          <span
+            className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold ${toneStyles[tone]}`}
+          >
+            {getCalendarStatusLabel(item.status)}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-lg border border-white/70 bg-white/52 px-4 py-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
-            Filled
+            Helpers
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-800">
-            {getCalendarFilledLabel(item)}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {item.assignedVolunteers.length > 0 ? (
+              item.assignedVolunteers.map((volunteer) => (
+                <span
+                  className="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  key={volunteer.id}
+                >
+                  {volunteer.name}
+                </span>
+              ))
+            ) : (
+              <span className="text-sm font-medium leading-6 text-slate-500">
+                No helpers assigned in this mock item.
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-white/70 bg-white/52 px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Schedule notes
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-700">
+            {item.scheduleNotes ?? "No schedule-specific notes."}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-white/70 bg-white/52 px-3 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-          Helpers
-        </p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">{volunteers}</p>
-      </div>
-
       {isLunchCalendarItem(item) ? (
-        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm leading-6 text-emerald-800">
+        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
           <div className="flex items-center gap-2 font-semibold">
             <Soup aria-hidden="true" className="h-4 w-4" />
-            Lunch menu-aware item
+            Lunch menu
           </div>
-          <p className="mt-1">
-            {item.menuSummary ?? "Menu can appear here when the scheduled lunch has one."}
-          </p>
+          <p className="mt-1">{item.menuSummary ?? "Menu not added yet."}</p>
           <p className="mt-1 text-xs font-semibold text-emerald-700">
-            Later this can feed a volunteer-facing lunch schedule/menu view.
+            Future volunteer-facing lunch schedule source.
           </p>
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-lg border border-white/70 bg-white/52 px-3 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-          Schedule notes
-        </p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          {item.scheduleNotes ?? "No schedule-specific notes."}
-        </p>
-      </div>
-
-      <div className="mt-4 grid gap-2 text-xs font-semibold text-slate-500">
+      <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
         <span>
           Source:{" "}
           {isOneOffCalendarItem(item)
             ? "One-off custom task, no reusable preset"
             : item.taskPreset?.name ?? "Preset reference missing"}
         </span>
-        {item.repeatLabel ? <span>Repeat metadata: {item.repeatLabel}</span> : null}
-        {item.copyLabel ? <span>Copy metadata: {item.copyLabel}</span> : null}
+        {item.repeatLabel ? <span>Repeat: {item.repeatLabel}</span> : null}
+        {item.copyLabel ? <span>Copy: {item.copyLabel}</span> : null}
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -462,12 +471,11 @@ export default function AdminCalendarPage() {
               Calendar
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Calendar is where task presets become scheduled work with dates,
-              times, helpers, filled counts, and schedule notes.
+              Schedule task presets into project days, times, helper counts,
+              and notes.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
-              Preview only. This page does not save changes, create calendar
-              items, assign helpers, or edit task presets.
+              Preview only. Task preset editing stays on Tasks.
             </p>
           </div>
           <ViewToggle />
@@ -493,22 +501,18 @@ export default function AdminCalendarPage() {
               </div>
             </GlassCard>
 
-            <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-              <div className="min-w-0">
-                <WeekGrid
-                  items={filteredItems}
-                  onSelect={(item) => setSelectedId(item.id)}
-                  selectedId={selectedItem?.id}
-                />
-                <MobileDayGroups
-                  items={filteredItems}
-                  onSelect={(item) => setSelectedId(item.id)}
-                  selectedId={selectedItem?.id}
-                />
-              </div>
-              <div className="min-w-0">
-                <DetailPanel item={selectedItem} />
-              </div>
+            <div className="space-y-4">
+              <WeekGrid
+                items={filteredItems}
+                onSelect={(item) => setSelectedId(item.id)}
+                selectedId={selectedItem?.id}
+              />
+              <MobileDayGroups
+                items={filteredItems}
+                onSelect={(item) => setSelectedId(item.id)}
+                selectedId={selectedItem?.id}
+              />
+              <DetailPanel item={selectedItem} />
             </div>
           </>
         ) : (
