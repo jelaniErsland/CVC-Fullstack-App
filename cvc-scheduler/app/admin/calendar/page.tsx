@@ -39,6 +39,7 @@ import {
   getCalendarStatusLabel,
   getCalendarStatusTone,
   getCalendarSummaryCounts,
+  getTaskPresetsForActiveWorkspace,
   groupCalendarItemsByDay,
   isLunchCalendarItem,
   isOneOffCalendarItem,
@@ -50,10 +51,28 @@ import type {
   CalendarFilterOptions,
   CalendarHighLevelTaskType,
   CalendarStatusTone,
+  TaskPreset,
   TaskPresetCategory,
 } from "@/lib/mockData";
 
 type CalendarViewMode = "day" | "week" | "month";
+type CreationMode = "preset" | "oneOff";
+
+type CreationSlot = {
+  date: string;
+  label: string;
+  timeWindow: string;
+};
+
+type CreationDraft = {
+  slot: CreationSlot;
+  mode: CreationMode;
+  presetId: string;
+  neededCount: number;
+  notes: string;
+  customName: string;
+  customTaskType: CalendarHighLevelTaskType;
+};
 
 const viewModes: Array<{ id: CalendarViewMode; label: string }> = [
   { id: "day", label: "Day" },
@@ -74,6 +93,23 @@ const coverageOptions: CalendarCoverageFilterState[] = [
   "allConfirmed",
   "someDenied",
 ];
+
+const preferredCreationPresetIds = [
+  "task-belgrade-lunch",
+  "task-belgrade-night-watch",
+  "task-belgrade-gate-attendant",
+  "task-belgrade-drywall-crew",
+  "task-belgrade-cleanup-help",
+  "task-belgrade-water-coffee",
+  "task-belgrade-morning-unlock",
+  "task-belgrade-custom-special",
+];
+
+const suggestedSlots = {
+  morning: "8:00 AM - 11:00 AM",
+  afternoon: "1:00 PM - 3:30 PM",
+  evening: "6:30 PM - 8:30 PM",
+};
 
 const categoryStyles: Record<TaskPresetCategory, string> = {
   general: "border-slate-200 bg-slate-50 text-slate-700",
@@ -328,7 +364,7 @@ function CalendarFilterPanel({
           aria-label="Calendar filters"
           className={[
             "relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
-            isOpen ? "translate-y-0" : "translate-y-[calc(100%+24px)]",
+            isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
         >
           <FilterPanelContent
@@ -548,10 +584,12 @@ function CalendarBlock({
 
 function WeekGrid({
   items,
+  onCreateFromSlot,
   selectedId,
   onSelect,
 }: {
   items: CalendarItem[];
+  onCreateFromSlot: (slot: CreationSlot) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
@@ -585,9 +623,29 @@ function WeekGrid({
                 />
               ))}
               {group.items.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-white/80 px-3 py-8 text-center text-xs font-medium text-slate-400">
-                  Open day
-                </div>
+                <EmptySlotAffordance
+                  label="Add scheduled task"
+                  onSelect={() =>
+                    onCreateFromSlot({
+                      date: group.date,
+                      label: `${group.dayLabel} morning`,
+                      timeWindow: suggestedSlots.morning,
+                    })
+                  }
+                />
+              ) : null}
+              {group.items.length > 0 ? (
+                <EmptySlotAffordance
+                  compact
+                  label="Add scheduled task"
+                  onSelect={() =>
+                    onCreateFromSlot({
+                      date: group.date,
+                      label: `${group.dayLabel} afternoon`,
+                      timeWindow: suggestedSlots.afternoon,
+                    })
+                  }
+                />
               ) : null}
             </div>
           </div>
@@ -597,20 +655,33 @@ function WeekGrid({
   );
 }
 
-function EmptySlotAffordance({ label }: { label: string }) {
+function EmptySlotAffordance({
+  compact,
+  label,
+  onSelect,
+}: {
+  compact?: boolean;
+  label: string;
+  onSelect: () => void;
+}) {
   return (
     <button
-      className="group min-h-16 w-full rounded-lg border border-dashed border-slate-200/80 bg-white/28 px-3 py-3 text-left text-xs font-semibold text-slate-400 transition hover:border-slate-300 hover:bg-white/54 hover:text-slate-600"
+      className={[
+        "group w-full rounded-lg border border-dashed border-slate-200/80 bg-white/28 px-3 text-left text-xs font-semibold text-slate-400 transition hover:border-slate-300 hover:bg-white/54 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-900/15",
+        compact ? "min-h-12 py-2.5" : "min-h-16 py-3",
+      ].join(" ")}
+      onClick={onSelect}
       type="button"
     >
       <span className="inline-flex items-center gap-1.5">
         <Plus aria-hidden="true" className="h-3.5 w-3.5" />
         {label}
       </span>
-      <span className="mt-1 block font-medium leading-5 opacity-0 transition group-hover:opacity-100">
-        Future mock: choose a task preset, confirm time, count, notes, and assign
-        helpers later.
-      </span>
+      {!compact ? (
+        <span className="mt-1 block font-medium leading-5 opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
+          Choose preset, time, count, notes, and helpers later.
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -618,11 +689,13 @@ function EmptySlotAffordance({ label }: { label: string }) {
 function DayView({
   date,
   items,
+  onCreateFromSlot,
   selectedId,
   onSelect,
 }: {
   date: string;
   items: CalendarItem[];
+  onCreateFromSlot: (slot: CreationSlot) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
@@ -662,7 +735,21 @@ function DayView({
                   ) : null}
                 </div>
               ) : (
-                <EmptySlotAffordance label={`Preview empty slot near ${time}`} />
+                <EmptySlotAffordance
+                  label={`Add scheduled task near ${time}`}
+                  onSelect={() =>
+                    onCreateFromSlot({
+                      date,
+                      label: `${getCalendarCompactDayLabel(date)} near ${time}`,
+                      timeWindow:
+                        index >= 5
+                          ? suggestedSlots.evening
+                          : index >= 3
+                            ? suggestedSlots.afternoon
+                            : suggestedSlots.morning,
+                    })
+                  }
+                />
               )}
             </div>
           </div>
@@ -687,11 +774,13 @@ function deriveMockMonthDates(referenceDate: string) {
 
 function MonthView({
   items,
+  onCreateFromSlot,
   selectedId,
   onSelect,
   referenceDate,
 }: {
   items: CalendarItem[];
+  onCreateFromSlot: (slot: CreationSlot) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
@@ -764,9 +853,19 @@ function MonthView({
                   </p>
                 ) : null}
                 {dateItems.length === 0 && inMonth ? (
-                  <span className="block rounded-md border border-dashed border-white/80 py-3 text-center text-[11px] font-semibold text-slate-300">
-                    Empty
-                  </span>
+                  <button
+                    className="block min-h-10 w-full rounded-md border border-dashed border-white/80 py-2 text-center text-[11px] font-semibold text-slate-300 transition hover:bg-white/56 hover:text-slate-500"
+                    onClick={() =>
+                      onCreateFromSlot({
+                        date,
+                        label: `${getCalendarCompactDayLabel(date)} morning`,
+                        timeWindow: suggestedSlots.morning,
+                      })
+                    }
+                    type="button"
+                  >
+                    Add
+                  </button>
                 ) : null}
               </div>
             </div>
@@ -779,10 +878,12 @@ function MonthView({
 
 function MobileDayGroups({
   items,
+  onCreateFromSlot,
   selectedId,
   onSelect,
 }: {
   items: CalendarItem[];
+  onCreateFromSlot: (slot: CreationSlot) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
@@ -818,10 +919,364 @@ function MobileDayGroups({
                 No scheduled items
               </p>
             )}
+            <EmptySlotAffordance
+              compact={group.items.length > 0}
+              label="Add scheduled task"
+              onSelect={() =>
+                onCreateFromSlot({
+                  date: group.date,
+                  label: `${getCalendarCompactDayLabel(group.date)} afternoon`,
+                  timeWindow: suggestedSlots.afternoon,
+                })
+              }
+            />
           </div>
         </section>
       ))}
     </div>
+  );
+}
+
+function CalendarCreatePanel({
+  creationDraft,
+  isOpen,
+  onClose,
+  onDraftChange,
+  presets,
+}: {
+  creationDraft?: CreationDraft;
+  isOpen: boolean;
+  onClose: () => void;
+  onDraftChange: (draft: CreationDraft) => void;
+  presets: TaskPreset[];
+}) {
+  if (!creationDraft) {
+    return null;
+  }
+
+  const selectedPreset = presets.find((preset) => preset.id === creationDraft.presetId);
+  const selectedTaskType =
+    creationDraft.mode === "oneOff"
+      ? creationDraft.customTaskType
+      : selectedPreset
+        ? getCalendarHighLevelTaskType({
+            id: "preview",
+            projectId: selectedPreset.projectId,
+            taskPresetId: selectedPreset.id,
+            date: creationDraft.slot.date,
+            category: selectedPreset.category,
+            assignedVolunteerIds: [],
+            filledCount: 0,
+            neededCount: selectedPreset.neededCount,
+            status: "draftMock",
+          })
+        : "generalVolunteers";
+
+  const updateDraft = (changes: Partial<CreationDraft>) => {
+    onDraftChange({ ...creationDraft, ...changes });
+  };
+
+  const handlePresetChange = (presetId: string) => {
+    const preset = presets.find((option) => option.id === presetId);
+    updateDraft({
+      presetId,
+      mode: "preset",
+      neededCount: preset?.neededCount ?? creationDraft.neededCount,
+    });
+  };
+
+  return (
+    <div
+      className={[
+        "fixed inset-0 z-[55] transition",
+        isOpen ? "pointer-events-auto" : "pointer-events-none",
+      ].join(" ")}
+    >
+      <button
+        aria-label="Close scheduled task creator backdrop"
+        className={[
+          "absolute inset-0 bg-slate-950/14 transition-opacity",
+          isOpen ? "opacity-100" : "opacity-0",
+        ].join(" ")}
+        onClick={onClose}
+        type="button"
+      />
+
+      <aside
+        aria-label="New scheduled task"
+        className={[
+          "absolute right-0 top-0 hidden h-full w-[min(440px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
+          isOpen ? "translate-x-0" : "translate-x-full",
+        ].join(" ")}
+      >
+        <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_24px_90px_rgba(15,23,42,0.22)]">
+          <CreatePanelContent
+            creationDraft={creationDraft}
+            onClose={onClose}
+            onPresetChange={handlePresetChange}
+            onUpdate={updateDraft}
+            presets={presets}
+            selectedPreset={selectedPreset}
+            selectedTaskType={selectedTaskType}
+          />
+        </GlassCard>
+      </aside>
+
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
+        <section
+          aria-label="New scheduled task"
+          className={[
+            "relative max-h-[84vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
+            isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
+          ].join(" ")}
+        >
+          <CreatePanelContent
+            creationDraft={creationDraft}
+            onClose={onClose}
+            onPresetChange={handlePresetChange}
+            onUpdate={updateDraft}
+            presets={presets}
+            selectedPreset={selectedPreset}
+            selectedTaskType={selectedTaskType}
+          />
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function CreatePanelContent({
+  creationDraft,
+  onClose,
+  onPresetChange,
+  onUpdate,
+  presets,
+  selectedPreset,
+  selectedTaskType,
+}: {
+  creationDraft: CreationDraft;
+  onClose: () => void;
+  onPresetChange: (presetId: string) => void;
+  onUpdate: (changes: Partial<CreationDraft>) => void;
+  presets: TaskPreset[];
+  selectedPreset?: TaskPreset;
+  selectedTaskType: CalendarHighLevelTaskType;
+}) {
+  const isOneOff = creationDraft.mode === "oneOff";
+
+  return (
+    <>
+      <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
+        <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Preview creator
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              New scheduled task
+            </h2>
+          </div>
+          <button
+            aria-label="Close scheduled task creator"
+            className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="rounded-xl border border-slate-200/70 bg-slate-50/78 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <Clock aria-hidden="true" className="h-3.5 w-3.5" />
+            Selected slot
+          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-800">
+            {creationDraft.slot.label}
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-500">
+            {creationDraft.slot.timeWindow}
+          </p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            className={[
+              "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
+              !isOneOff
+                ? "border-slate-950 bg-slate-950 text-white"
+                : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
+            ].join(" ")}
+            onClick={() =>
+              onUpdate({
+                mode: "preset",
+                neededCount: selectedPreset?.neededCount ?? creationDraft.neededCount,
+              })
+            }
+            type="button"
+          >
+            Task preset
+          </button>
+          <button
+            className={[
+              "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
+              isOneOff
+                ? "border-slate-950 bg-slate-950 text-white"
+                : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
+            ].join(" ")}
+            onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
+            type="button"
+          >
+            Custom one-day
+          </button>
+        </div>
+
+        {!isOneOff ? (
+          <label className="mt-4 block">
+            <span className="text-sm font-semibold text-slate-700">Task preset</span>
+            <select
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+              onChange={(event) => onPresetChange(event.target.value)}
+              value={creationDraft.presetId}
+            >
+              {presets.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="mt-4 grid gap-3">
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Custom task name</span>
+              <input
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                onChange={(event) => onUpdate({ customName: event.target.value })}
+                value={creationDraft.customName}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">Task type</span>
+              <select
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                onChange={(event) =>
+                  onUpdate({
+                    customTaskType: event.target.value as CalendarHighLevelTaskType,
+                  })
+                }
+                value={creationDraft.customTaskType}
+              >
+                {taskTypeOptions.map((taskType) => (
+                  <option key={taskType} value={taskType}>
+                    {getCalendarHighLevelTaskTypeLabel(taskType)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_132px]">
+          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Preview
+            </p>
+            <h3 className="mt-2 text-lg font-semibold text-slate-950">
+              {isOneOff
+                ? creationDraft.customName || "Custom one-day task"
+                : selectedPreset?.name ?? "Task preset"}
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                {getCalendarHighLevelTaskTypeLabel(selectedTaskType)}
+              </span>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                0/{creationDraft.neededCount} filled
+              </span>
+            </div>
+            {!isOneOff && selectedPreset?.customFields.length ? (
+              <div className="mt-3 grid gap-1 text-xs font-semibold text-slate-500">
+                {selectedPreset.customFields.slice(0, 3).map((field) => (
+                  <span key={field.id}>
+                    {field.label}
+                    {field.required ? " required" : ""}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {!isOneOff && selectedPreset?.name === "Lunch" ? (
+              <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                Lunch menu field will travel with this scheduled item later.
+              </div>
+            ) : null}
+            {isOneOff ? (
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                This would schedule a one-off item without creating a reusable task preset.
+              </p>
+            ) : null}
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Needed</span>
+            <input
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+              min={1}
+              onChange={(event) =>
+                onUpdate({ neededCount: Math.max(1, Number(event.target.value) || 1) })
+              }
+              type="number"
+              value={creationDraft.neededCount}
+            />
+          </label>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="text-sm font-semibold text-slate-700">Schedule notes</span>
+          <textarea
+            className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none"
+            onChange={(event) => onUpdate({ notes: event.target.value })}
+            placeholder="Add notes for the future scheduled item..."
+            value={creationDraft.notes}
+          />
+        </label>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <Users aria-hidden="true" className="h-3.5 w-3.5" />
+            Helpers
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Helper assignment stays later. This mock keeps the slot ready for assigning
+            volunteers after the scheduled item exists.
+          </p>
+        </div>
+
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-800">
+          Preview only. This does not create a calendar item yet.
+        </p>
+      </div>
+
+      <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
+        <div className="grid gap-2 sm:grid-cols-3">
+          {["Add to calendar later", "Save draft later", "Assign helpers later"].map(
+            (label) => (
+              <button
+                className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
+                disabled
+                key={label}
+                type="button"
+              >
+                {label}
+              </button>
+            ),
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -884,7 +1339,7 @@ function CalendarInspector({
           aria-label="Calendar item inspector"
           className={[
             `relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 border-t-4 bg-white/92 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out ${detailAccentStyles[item.category].replace("border-l", "border-t")}`,
-            isOpen ? "translate-y-0" : "translate-y-[calc(100%+24px)]",
+            isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
         >
           <InspectorContent item={item} onClose={onClose} tone={tone} />
@@ -1043,12 +1498,22 @@ function InspectorContent({
 
 export default function AdminCalendarPage() {
   const allItems = getCalendarItemsByWeek("2026-01-12", demoProjectId);
+  const creationPresets = useMemo(() => {
+    const presets = getTaskPresetsForActiveWorkspace();
+    const preferred = preferredCreationPresetIds
+      .map((presetId) => presets.find((preset) => preset.id === presetId))
+      .filter((preset): preset is TaskPreset => Boolean(preset));
+
+    return preferred.length > 0 ? preferred : presets;
+  }, []);
   const weekRange = deriveCalendarWeekRange("2026-01-12");
   const [activeView, setActiveView] = useState<CalendarViewMode>("week");
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [creationDraft, setCreationDraft] = useState<CreationDraft | undefined>();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const filteredItems = useMemo(
     () => filterCalendarItems(allItems, filters),
@@ -1066,8 +1531,34 @@ export default function AdminCalendarPage() {
     : undefined;
 
   const handleSelectCalendarItem = (item: CalendarItemWithPreset) => {
+    setIsCreateOpen(false);
+    setIsFilterOpen(false);
     setSelectedId(item.id);
     setIsInspectorOpen(true);
+  };
+
+  const handleOpenFilters = () => {
+    setIsCreateOpen(false);
+    setIsInspectorOpen(false);
+    setIsFilterOpen(true);
+  };
+
+  const handleCreateFromSlot = (slot: CreationSlot) => {
+    const defaultPreset = creationPresets[0];
+
+    setSelectedId(undefined);
+    setIsInspectorOpen(false);
+    setIsFilterOpen(false);
+    setCreationDraft({
+      slot,
+      mode: "preset",
+      presetId: defaultPreset?.id ?? "",
+      neededCount: defaultPreset?.neededCount ?? 2,
+      notes: "",
+      customName: "Custom one-day task",
+      customTaskType: "generalVolunteers",
+    });
+    setIsCreateOpen(true);
   };
 
   const clearFilters = () => {
@@ -1105,7 +1596,7 @@ export default function AdminCalendarPage() {
               activeFilterSummary={activeFilterSummary}
               activeView={activeView}
               filteredItemCount={filteredItems.length}
-              onFilterOpen={() => setIsFilterOpen(true)}
+              onFilterOpen={handleOpenFilters}
               onViewChange={setActiveView}
               weekLabel={weekRange.label}
             />
@@ -1117,6 +1608,7 @@ export default function AdminCalendarPage() {
                 <DayView
                   date={weekRange.dates[1]}
                   items={filteredItems}
+                  onCreateFromSlot={handleCreateFromSlot}
                   onSelect={handleSelectCalendarItem}
                   selectedId={selectedItem?.id}
                 />
@@ -1125,11 +1617,13 @@ export default function AdminCalendarPage() {
                 <>
                   <WeekGrid
                     items={filteredItems}
+                    onCreateFromSlot={handleCreateFromSlot}
                     onSelect={handleSelectCalendarItem}
                     selectedId={selectedItem?.id}
                   />
                   <MobileDayGroups
                     items={filteredItems}
+                    onCreateFromSlot={handleCreateFromSlot}
                     onSelect={handleSelectCalendarItem}
                     selectedId={selectedItem?.id}
                   />
@@ -1138,6 +1632,7 @@ export default function AdminCalendarPage() {
               {activeView === "month" ? (
                 <MonthView
                   items={filteredItems}
+                  onCreateFromSlot={handleCreateFromSlot}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={weekRange.start}
                   selectedId={selectedItem?.id}
@@ -1150,6 +1645,13 @@ export default function AdminCalendarPage() {
               onChange={setFilters}
               onClear={clearFilters}
               onClose={() => setIsFilterOpen(false)}
+            />
+            <CalendarCreatePanel
+              creationDraft={creationDraft}
+              isOpen={isCreateOpen}
+              onClose={() => setIsCreateOpen(false)}
+              onDraftChange={setCreationDraft}
+              presets={creationPresets}
             />
             <CalendarInspector
               isOpen={isInspectorOpen}

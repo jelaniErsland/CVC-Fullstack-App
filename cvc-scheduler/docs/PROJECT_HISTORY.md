@@ -1228,6 +1228,46 @@ Limitations:
 Next recommended step:
 - 09.13 Calendar empty-slot creation mock.
 
+## Iteration 09.13 - Calendar Empty-Slot Creation Mock
+
+Summary:
+- Added the first mock empty-slot creation interaction to `/admin/calendar`.
+- Empty slot affordances now appear in desktop Week columns, mobile day groups, the Day timeline preview, and empty Month cells.
+- Clicking/tapping an empty slot opens a mock "New scheduled task" creation surface.
+- Desktop uses a right-side creation inspector that overlays the Calendar without squeezing the grid.
+- Mobile uses a bottom sheet creation surface.
+- The creation surface can choose an existing task preset, preview the task name/type/default needed count/custom fields, adjust needed count, add schedule notes, and show disabled preview-only actions.
+- Added a Custom one-day task mode with custom name, high-level task type, needed count, and notes. It is explicitly represented as a one-off item that would not create a reusable task preset.
+- Preserved the existing Calendar item inspector for scheduled items.
+- Added single-open behavior for Calendar-owned overlays so opening creation closes filters and the item inspector, opening filters closes creation and the item inspector, and opening an item closes creation and filters.
+- Added preview screenshot coverage for the creation inspector/sheet.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews, including `calendar-create-open.jpg` and `mobile-calendar-create-open.jpg`.
+- Route checks covered `/admin/calendar`, `/admin/tasks`, `/admin/dashboard`, `/admin/volunteers`, `/admin/settings`, `/admin/announcements`, and `/admin/schedule`.
+- Desktop browser checks confirmed the persistent sidebar remains visible, the bottom nav is hidden, Day/Week/Month still switch views, filters open/close, existing item inspector opens/closes/reopens, empty slot creation opens/closes, Calendar-owned overlays do not stack, and no horizontal overflow appears.
+- Mobile browser checks around 390px confirmed the bottom nav remains visible, Calendar remains emphasized, Day/Week/Month still switch views, filters open/close, More opens/closes, existing item inspector opens/closes, empty slot creation opens/closes, Calendar-owned overlays do not stack, content is not hidden behind the bottom nav, and no horizontal overflow appears.
+
+Limitations:
+- Mock-data/UI only.
+- No persistence, real scheduling mutations, drag/drop, task creation persistence, calendar item creation persistence, volunteer assignment editing, Supabase, auth, database logic, calendar libraries, or production workflows were added.
+- Creation controls do not create or save Calendar items.
+- Helper assignment remains placeholder-only.
+
+Next recommended step:
+- 09.14 Overview realignment.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

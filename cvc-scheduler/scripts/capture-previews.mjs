@@ -51,6 +51,12 @@ const captures = [
     viewport: desktopViewport,
     openCalendarFilters: true,
   },
+  {
+    route: "/admin/calendar",
+    fileName: "calendar-create-open.jpg",
+    viewport: desktopViewport,
+    openCalendarCreate: true,
+  },
   { route: "/admin/tasks", fileName: "tasks.jpg", viewport: desktopViewport },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
   {
@@ -113,6 +119,12 @@ const captures = [
     viewport: mobileViewport,
     openCalendarFilters: true,
   },
+  {
+    route: "/admin/calendar",
+    fileName: "mobile-calendar-create-open.jpg",
+    viewport: mobileViewport,
+    openCalendarCreate: true,
+  },
   { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
   {
@@ -163,6 +175,7 @@ async function main() {
       route,
       fileName,
       viewport,
+      openCalendarCreate,
       openCalendarFilters,
       openMobileDrawer,
       openMobileMore,
@@ -188,6 +201,10 @@ async function main() {
 
       if (openCalendarFilters) {
         await page.getByRole("button", { name: "Open calendar filters" }).click();
+      }
+
+      if (openCalendarCreate) {
+        await page.getByRole("button", { name: "Add scheduled task" }).first().click();
       }
 
       await page.screenshot({
