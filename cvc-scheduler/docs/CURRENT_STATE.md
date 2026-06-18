@@ -197,7 +197,7 @@ Upcoming UI direction:
 - Mock questionnaire workflow guidance for new, needs-review, needs-follow-up, missing-info, ready-for-profile, and already-linked submissions.
 - Intake flow stabilization pass completed across public questionnaire, admin queue, questionnaire details, linked volunteer profiles, mobile tap targets, and preview screenshot coverage.
 - Mock scheduling foundation with assignment data, grouping/count helpers, and a compact admin schedule view.
-- Mock role-home foundation for `/admin/dashboard`, currently showing a stabilized Primary CVC home with preview patterns for Assistant CVC, Food, Security, and On-site Contact roles.
+- Overview realignment at `/admin/dashboard`, now presenting a compact project home for Belgrade Major Remodel 2026 with project context, a this-week Calendar snapshot, calm follow-up rows, quick actions, and lighter role-aware guidance.
 - Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
 - Mock conflict/coverage detail patterns for Needs Attention items, including coverage gaps, possible overlaps, denied assignments, and missing information before scheduling.
 - Mock Emails and Announcements foundation with communication data, counts/grouping helpers, a calm admin overview, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
@@ -226,7 +226,7 @@ Upcoming UI direction:
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
-- `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
+- `/admin/dashboard`: Mock Overview page inside Belgrade Major Remodel 2026 with compact project context, this-week Calendar rows, calm follow-up summary, quick links to Questionnaires/Calendar/Tasks/Communications, and light role-aware guidance.
 - `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month mock views, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets. Calendar overlays are mutually exclusive, including coordination with mobile More.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
@@ -295,7 +295,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real conflict detection yet.
 - No notification logic yet.
 - No volunteer confirmation / denial persistence yet.
-- Role homes are preview/mock-only and do not enforce permissions yet.
+- Overview role-aware guidance is preview/mock-only and does not enforce permissions yet.
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
@@ -307,4 +307,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.15 Overview realignment.
+09.16 Admin navigation simplification + Communications alignment.

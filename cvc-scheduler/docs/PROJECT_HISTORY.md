@@ -1296,6 +1296,35 @@ Limitations:
 Next recommended step:
 - 09.15 Overview realignment.
 
+## Iteration 09.15 - Overview Realignment
+
+Summary:
+- Realigned `/admin/dashboard` into a calmer Overview page for the main project contact.
+- Replaced the dense role-home/prototype dashboard with compact project context, a this-week Calendar snapshot, calm follow-up rows, quick actions, and a lighter role-aware note.
+- Used existing mock Calendar helpers for upcoming scheduled items, including task name, day/time, type/status, and filled count.
+- Used existing Needs Attention helpers for open follow-ups and linked rows to their review/detail routes.
+- Added quick links to Review questionnaires, Open Calendar, Open Tasks, and Prepare communication.
+- Kept Food and Security as quiet task/calendar context rather than separate main dashboard sections.
+- Preserved the mock-only boundary with no persistence, Supabase, real scheduling, assignment workflow, or mutation logic.
+
+Changed files:
+- `app/admin/dashboard/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+
+Limitations:
+- Mock-data/UI only.
+- No Supabase, auth, persistence, real scheduling mutations, questionnaire mutations, communication sending, assignment workflow, permissions, or role enforcement was added.
+- Role-aware behavior is represented as light guidance only.
+
+Next recommended step:
+- 09.16 Admin navigation simplification + Communications alignment.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

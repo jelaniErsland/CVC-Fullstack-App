@@ -52,7 +52,8 @@ Rough phases:
 - 09.12 Calendar view controls + filter drawer / day-month foundation. Completed.
 - 09.13 Calendar empty-slot creation mock. Completed.
 - 09.14 Calendar Overlay + Mobile Interaction Stabilization. Completed.
-- 09.15 Overview realignment. Next recommended step.
+- 09.15 Overview realignment. Completed.
+- 09.16 Admin navigation simplification + Communications alignment. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -84,6 +85,7 @@ Rough phases:
 - 09.13 Calendar empty-slot creation mock.
 - 09.14 Calendar Overlay + Mobile Interaction Stabilization.
 - 09.15 Overview realignment.
+- 09.16 Admin navigation simplification + Communications alignment.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -174,11 +176,11 @@ Scheduling is still mock-only. Future scheduling work still needs:
 
 ## 10. Role Home Notes
 
-06.5 reshaped `/admin/dashboard` into a mock role-aware landing page. The
-current admin sees a Primary CVC home first, with compact metrics, one next
-best action, a week snapshot, coordinator focus rows, recent updates, and
-expandable preview patterns for Assistant CVC, Primary Food Contact, Primary
-Security Contact, and On-site Contact.
+06.5 reshaped `/admin/dashboard` into a mock role-aware landing page. 09.15
+then realigned it into the current Overview direction: a compact project home
+with Belgrade context, this-week Calendar rows, calm follow-up items, quick
+links to common work areas, and lighter role-aware guidance for shared main
+contact use.
 
 06.6 stabilized the role home visually with tighter dashboard hierarchy, a
 lighter project context panel, more prominent next-action treatment, clearer
