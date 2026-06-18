@@ -535,6 +535,11 @@ export type CommunicationStatus =
   | "scheduledMock"
   | "sentMock";
 
+export type CommunicationStatusTone =
+  | "neutral"
+  | "success"
+  | "info";
+
 export type Communication = {
   id: string;
   projectId: string;
@@ -2739,6 +2744,16 @@ export const communicationStatusLabels: Record<CommunicationStatus, string> = {
   sentMock: "Sent/mock",
 };
 
+export const communicationStatusTones: Record<
+  CommunicationStatus,
+  CommunicationStatusTone
+> = {
+  draft: "neutral",
+  ready: "success",
+  scheduledMock: "info",
+  sentMock: "neutral",
+};
+
 function compareCommunicationDates(first: Communication, second: Communication) {
   return new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime();
 }
@@ -2751,6 +2766,26 @@ export function getCommunicationsForProject(projectId = demoProjectId) {
 
 export function getCommunicationsForActiveWorkspace() {
   return getCommunicationsForProject(demoProjectId);
+}
+
+export function getCommunicationById(communicationId: string) {
+  return announcements.find((announcement) => announcement.id === communicationId);
+}
+
+export function getCommunicationStatusTone(status: CommunicationStatus) {
+  return communicationStatusTones[status];
+}
+
+export function getCommunicationAudienceExplanation(communication: Communication) {
+  return communication.recipientExplanation;
+}
+
+export function getCommunicationPreviewHref(communication: Communication) {
+  return `/admin/announcements/${communication.id}`;
+}
+
+export function getCommunicationNotFoundHref() {
+  return "/admin/announcements";
 }
 
 export function groupCommunicationsByStatus(
@@ -2854,6 +2889,46 @@ export function getRecommendedCommunicationAction(
     detail:
       "Create a calm draft for the next volunteer update when announcement editing is available.",
     href: "/admin/announcements",
+  };
+}
+
+export function getRecommendedCommunicationActionForItem(
+  communication: Communication,
+): RecommendedCommunicationAction {
+  const href = getCommunicationPreviewHref(communication);
+
+  if (communication.status === "draft") {
+    return {
+      title: "Review the draft",
+      detail:
+        "Check the message and recipients before this becomes ready to send later.",
+      href,
+    };
+  }
+
+  if (communication.status === "ready") {
+    return {
+      title: "Preview before preparing send",
+      detail:
+        "This is ready to send later, but sending is not active yet. Review the wording and audience first.",
+      href,
+    };
+  }
+
+  if (communication.status === "scheduledMock") {
+    return {
+      title: "Review the reminder plan",
+      detail:
+        "This mock reminder has a planned time, but no background job or email delivery is active.",
+      href,
+    };
+  }
+
+  return {
+    title: "Review the mock sent record",
+    detail:
+      "This is labeled sent/mock for preview history only. No email was sent from this app.",
+    href,
   };
 }
 

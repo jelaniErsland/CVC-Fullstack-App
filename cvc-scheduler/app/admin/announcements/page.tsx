@@ -9,6 +9,7 @@ import {
   communicationTypeLabels,
   demoProjectId,
   getCommunicationCounts,
+  getCommunicationPreviewHref,
   getProjectById,
   getRecentCommunications,
   getRecommendedCommunicationAction,
@@ -64,92 +65,30 @@ function SummaryStrip() {
   );
 }
 
-function PlaceholderActions({ item }: { item: Communication }) {
-  const actions =
-    item.status === "draft"
-      ? ["Preview", "Edit draft"]
-      : item.status === "ready"
-        ? ["Preview", "Prepare send"]
-        : ["Preview"];
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {actions.map((action) => (
-        <button
-          className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
-          key={action}
-          type="button"
-        >
-          {action}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function AnnouncementRow({ item }: { item: Communication }) {
   return (
-    <details className="group border-b border-white/72 last:border-b-0">
-      <summary className="grid min-h-16 cursor-pointer list-none gap-3 px-4 py-3 transition hover:bg-white/46 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-base font-semibold text-slate-950">{item.title}</p>
-            <StatusLabel status={item.status} />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-            <span>{communicationTypeLabels[item.messageType]}</span>
-            <span>{communicationAudienceLabels[item.audience]}</span>
-            <span>Updated {item.updatedAt}</span>
-          </div>
+    <Link
+      className="grid min-h-16 gap-3 border-b border-white/72 px-4 py-3 transition hover:bg-white/46 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center sm:px-5"
+      href={getCommunicationPreviewHref(item)}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-base font-semibold text-slate-950">{item.title}</p>
+          <StatusLabel status={item.status} />
         </div>
-        <div className="flex items-center gap-3 text-xs font-semibold text-slate-400">
-          <span className="group-open:hidden">Details</span>
-          <span className="hidden group-open:inline">Hide</span>
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+          <span>{communicationTypeLabels[item.messageType]}</span>
+          <span>{communicationAudienceLabels[item.audience]}</span>
+          <span>Updated {item.updatedAt}</span>
         </div>
-      </summary>
-
-      <div className="grid gap-4 bg-white/34 px-4 pb-4 sm:grid-cols-[1fr_220px] sm:px-5">
-        <div className="space-y-3 text-sm leading-6 text-slate-600">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Preview
-            </p>
-            <p className="mt-1">{item.bodyPreview}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Recipients
-            </p>
-            <p className="mt-1">{item.recipientExplanation}</p>
-          </div>
-          {item.scheduledAt ? (
-            <p className="text-sm font-medium text-slate-500">
-              Reminder plan: {item.scheduledAt}
-            </p>
-          ) : null}
-          {item.relatedRoute ? (
-            <Link
-              className="inline-flex min-h-10 items-center text-sm font-semibold text-slate-700 hover:text-slate-950"
-              href={item.relatedRoute}
-            >
-              Open related project area
-            </Link>
-          ) : null}
-        </div>
-
-        <div className="rounded-lg border border-white/72 bg-white/56 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Placeholder actions
-          </p>
-          <div className="mt-3">
-            <PlaceholderActions item={item} />
-          </div>
-          <p className="mt-3 text-xs leading-5 text-slate-500">
-            These buttons do not send email. They show the future workflow shape only.
-          </p>
-        </div>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+          {item.bodyPreview}
+        </p>
       </div>
-    </details>
+      <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
+        <span>Open preview</span>
+      </div>
+    </Link>
   );
 }
 

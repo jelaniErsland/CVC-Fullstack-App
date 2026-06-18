@@ -609,6 +609,37 @@ Limitations:
 Next recommended step:
 - 08.2 Announcement detail/preview page, or 08.3 Reminder templates if detail patterns are not needed yet.
 
+## Iteration 08.2 - Announcement Detail / Preview Page
+
+Summary:
+- Added single-communication helpers for lookup, status tone, audience explanation, preview href, not-found href, and per-message suggested next action.
+- Added `/admin/announcements/[communicationId]` as a focused mock detail/preview page for prepared announcements and reminders.
+- Shows message type, status, audience, recipient explanation, created/updated dates, optional reminder plan, author/role, body preview, related route, and placeholder-only actions.
+- Added a helpful not-found state for unknown communication ids.
+- Updated `/admin/announcements` so compact overview rows open the detail/preview page instead of duplicating full detail content.
+- Kept sending clearly inactive and did not add real delivery, persistence, scheduling, or recipient resolution.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/announcements/page.tsx`
+- `app/admin/announcements/[communicationId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/announcements`, one valid announcement detail route, `/admin/announcements/not-real`, `/admin/dashboard`, and `/admin/settings`.
+
+Limitations:
+- Announcements and reminders remain mock-only.
+- No Resend, SMTP, Supabase, auth, real persistence, real sending, background jobs, cron reminders, notification delivery, unsubscribe logic, suppression logic, or delivery tracking.
+- Placeholder actions do not mutate state.
+
+Next recommended step:
+- 08.3 Reminder templates.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -31,9 +31,10 @@ Rough phases:
 - 06.6 Role-home visual QA/stabilization. Completed.
 - 07.1 Needs Attention data model + calm overview. Completed.
 - 07.2 Conflict/coverage detail patterns. Completed.
-- 07.3 Needs Attention visual QA/stabilization. Deferred.
+- 07.3 Needs Attention visual QA/stabilization. Completed.
 - 08.1 Emails and Announcements data model + admin overview. Completed.
-- 08.2 Announcement detail/preview page. Next recommended step.
+- 08.2 Announcement detail/preview page. Completed.
+- 08.3 Reminder templates. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -181,14 +182,17 @@ Needs Attention is mock-only. Future work still needs:
 08.1 added a mock communication foundation for announcements, reminders,
 updates, schedule changes, food notes, and security notes. The new
 `/admin/announcements` route shows compact summary counts, recent and draft
-announcement rows, audience/status labels, expandable preview and recipient
-details, placeholder-only actions, status/type grouping, and clear copy that
-sending is not active yet.
+announcement rows, audience/status labels, status/type grouping, and clear
+copy that sending is not active yet.
+
+08.2 added focused mock detail/preview pages at
+`/admin/announcements/[communicationId]` with message preview, audience and
+recipient explanation, dates, author/role, reminder plan where present,
+related links, placeholder-only actions, and a helpful not-found state.
 
 Announcements and emails are mock-only. Future work still needs:
 
-- Announcement detail/preview page.
-- Reminder templates if detail patterns are not needed yet.
+- Reminder templates.
 - Real email sending.
 - Recipient resolution.
 - Scheduled reminders and background jobs.
