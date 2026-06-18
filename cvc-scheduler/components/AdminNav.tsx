@@ -49,7 +49,7 @@ const navItems: Array<{
   {
     id: "security",
     label: "Security",
-    href: "/admin/dashboard#security",
+    href: "/admin/security",
     module: "security",
   },
   {

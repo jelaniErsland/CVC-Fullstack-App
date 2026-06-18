@@ -40,7 +40,8 @@ Rough phases:
 - 09.1 Food module foundation. Completed.
 - 09.2 Food detail/day view. Completed.
 - 09.3 Food visual/icon density stabilization. Completed.
-- 09.4 Security module foundation. Next recommended step.
+- 09.4 Security module foundation. Completed.
+- 09.5 Security detail/day view. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -60,6 +61,7 @@ Rough phases:
 - 09.2 Food detail/day view.
 - 09.3 Food visual/icon density stabilization.
 - 09.4 Security module foundation.
+- 09.5 Security detail/day view.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -251,3 +253,20 @@ Food is mock-only. Future work still needs:
 - Food-role scoped views.
 - Deeper schedule integration.
 - Food contact communication workflows.
+
+## 14. Security Module Notes
+
+09.4 added a mock Security module foundation at `/admin/security`. The
+overview shows night watch coverage, evening site checks, morning
+unlock/check-in, and access notes for the active Belgrade workspace with
+compact counts, a next suggested security action, date-grouped rows,
+icon-supported metadata, related links, and placeholder-only actions.
+
+Security is mock-only. Future work still needs:
+
+- Security detail/day views.
+- Real helper assignment actions.
+- Real persistence.
+- Security-role scoped views.
+- Deeper schedule integration.
+- Security reminder workflows.

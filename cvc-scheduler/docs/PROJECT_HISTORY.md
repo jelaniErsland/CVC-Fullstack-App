@@ -845,6 +845,43 @@ Limitations:
 Next recommended step:
 - 09.4 Security module foundation.
 
+## Iteration 09.4 - Security Module Foundation
+
+Summary:
+- Added mock security coordination data for Belgrade night watch, evening site checks, morning unlock/check-in, and access notes.
+- Added Security helper functions for active-workspace lookup, date/status grouping, counts, readable labels/tones, type labels, item lookup, and next suggested action.
+- Added `/admin/security` using the shared `AdminShell` with compact summary counts, a next suggested security action, date-grouped rows, icon-supported metadata, quiet related links, and placeholder-only actions.
+- Updated the Security nav item to open `/admin/security` when the module is enabled.
+- Added desktop and mobile Security screenshots to the preview workflow.
+- Kept Security mock-only with no live alerts, tracking, camera systems, access control, persistence, sending, jobs, mutations, or production workflows.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `app/admin/security/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- `npm run preview` was checked and is not defined in `package.json`.
+- Local route checks returned 200 for `/admin/security`, `/admin/food`, `/admin/dashboard`, `/admin/announcements`, and `/admin/settings`.
+- Mobile browser check around 390px confirmed `/admin/security` has no horizontal overflow and the drawer opens/closes from the hamburger icon.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Security is mock-only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
+- Placeholder actions do not save changes or assign helpers.
+
+Next recommended step:
+- 09.5 Security detail/day view.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

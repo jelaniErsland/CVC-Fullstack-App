@@ -572,6 +572,65 @@ export type RecommendedFoodAction = {
   href: string;
 };
 
+export type SecurityServiceType =
+  | "nightWatch"
+  | "eveningSiteCheck"
+  | "morningUnlock"
+  | "accessNote";
+
+export type SecurityCoverageStatus =
+  | "covered"
+  | "needsHelper"
+  | "needsReview"
+  | "draftMock"
+  | "reviewedMock";
+
+export type SecurityStatusTone =
+  | "neutral"
+  | "success"
+  | "warning"
+  | "info";
+
+export type SecurityCoordinationItem = {
+  id: string;
+  projectId: string;
+  date: string;
+  dayLabel: string;
+  serviceType: SecurityServiceType;
+  title: string;
+  status: SecurityCoverageStatus;
+  assignedContact?: string;
+  assignedHelpers: string[];
+  congregation?: string;
+  timeWindow?: string;
+  siteNotes?: string;
+  coverageNotes?: string;
+  helperNotes?: string;
+  relatedScheduleId?: string;
+  relatedAnnouncementId?: string;
+  relatedNeedsAttentionId?: string;
+};
+
+export type SecurityCoordinationGroup = {
+  date: string;
+  dayLabel: string;
+  items: SecurityCoordinationItem[];
+};
+
+export type SecurityCoordinationCounts = {
+  total: number;
+  upcoming: number;
+  covered: number;
+  needsReview: number;
+  needsHelpers: number;
+};
+
+export type RecommendedSecurityAction = {
+  title: string;
+  detail: string;
+  href: string;
+};
+
 export type CommunicationMessageType =
   | "announcement"
   | "reminder"
@@ -1737,6 +1796,102 @@ export const foodCoordinationItems: FoodCoordinationItem[] = [
     helperNotes: "Draft note: add one more helper if Saturday cleanup stays near forty volunteers.",
     headcountNotes: "Saturday count is still a planning estimate.",
     relatedScheduleId: "schedule-cleanup-jan-17",
+  },
+];
+
+export const securityCoordinationItems: SecurityCoordinationItem[] = [
+  {
+    id: "security-belgrade-evening-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    dayLabel: "Monday, Jan 12",
+    serviceType: "eveningSiteCheck",
+    title: "Evening site check",
+    status: "needsHelper",
+    assignedContact: "Caleb Ross",
+    assignedHelpers: ["Marcus Lee"],
+    congregation: "Belgrade",
+    timeWindow: "6:30 PM - 8:00 PM",
+    siteNotes:
+      "Check exterior doors, tool storage, and the fellowship area after the day crew leaves.",
+    coverageNotes:
+      "One helper is listed. Add a second approved helper before treating this as covered.",
+    helperNotes: "Marcus can pair with Caleb if his work shift ends on time.",
+    relatedScheduleId: "schedule-security-jan-12",
+    relatedAnnouncementId: "comm-belgrade-security-pairing",
+    relatedNeedsAttentionId: "needs-security-evening-pair",
+  },
+  {
+    id: "security-belgrade-access-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    dayLabel: "Wednesday, Jan 14",
+    serviceType: "accessNote",
+    title: "Building access note",
+    status: "needsReview",
+    assignedContact: "Caleb Ross",
+    assignedHelpers: [],
+    congregation: "Bozeman",
+    timeWindow: "Before lunch setup",
+    siteNotes:
+      "Confirm who will have the side-entry key before lunch support and staging overlap.",
+    coverageNotes:
+      "Access details should be reviewed with the project CVC before the midweek crew arrives.",
+    helperNotes: "No helper is needed yet; this is a contact-review note.",
+    relatedScheduleId: "schedule-security-lockup-jan-14",
+  },
+  {
+    id: "security-belgrade-night-jan-16",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-16",
+    dayLabel: "Friday, Jan 16",
+    serviceType: "nightWatch",
+    title: "Night watch coverage",
+    status: "covered",
+    assignedContact: "Caleb Ross",
+    assignedHelpers: ["Jonah Price", "Marcus Lee"],
+    congregation: "Belgrade",
+    timeWindow: "7:00 PM - 10:00 PM",
+    siteNotes:
+      "Keep the site check simple: exterior doors, tool storage, and hallway lights.",
+    coverageNotes: "Two approved helpers are listed for the Friday evening check.",
+    helperNotes: "Jonah and Marcus are both comfortable with a paired evening check.",
+    relatedScheduleId: "schedule-security-jan-16",
+  },
+  {
+    id: "security-belgrade-unlock-jan-17",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-17",
+    dayLabel: "Saturday, Jan 17",
+    serviceType: "morningUnlock",
+    title: "Morning unlock and check-in",
+    status: "reviewedMock",
+    assignedContact: "Caleb Ross",
+    assignedHelpers: ["Nora Bennett"],
+    congregation: "Belgrade",
+    timeWindow: "7:15 AM - 8:00 AM",
+    siteNotes:
+      "Open the main entrance, confirm the check-in area is ready, and note any access questions for the project CVC.",
+    coverageNotes: "Reviewed as a mock planning item for the Saturday crew start.",
+    helperNotes: "Nora can help with check-in table setup after doors are opened.",
+  },
+  {
+    id: "security-belgrade-draft-jan-18",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-18",
+    dayLabel: "Sunday, Jan 18",
+    serviceType: "accessNote",
+    title: "Wrap-up access note",
+    status: "draftMock",
+    assignedContact: "Caleb Ross",
+    assignedHelpers: [],
+    congregation: "Belgrade",
+    timeWindow: "After final cleanup",
+    siteNotes:
+      "Draft note to confirm who returns keys and checks that remaining rooms are closed.",
+    coverageNotes:
+      "Keep this as a calm review note until final cleanup timing is clearer.",
+    helperNotes: "No helper is assigned in mock data yet.",
   },
 ];
 
@@ -3602,6 +3757,179 @@ export function getNextFoodActionForItem(
     detail:
       "This item has been reviewed in mock data. Check the meal notes and helper notes if anything changes.",
     href,
+  };
+}
+
+export const securityServiceTypeLabels: Record<SecurityServiceType, string> = {
+  nightWatch: "Night watch",
+  eveningSiteCheck: "Evening site check",
+  morningUnlock: "Morning unlock/check-in",
+  accessNote: "Access note",
+};
+
+export const securityCoverageStatusLabels: Record<SecurityCoverageStatus, string> = {
+  covered: "Covered",
+  needsHelper: "Needs helper",
+  needsReview: "Needs review",
+  draftMock: "Draft/mock",
+  reviewedMock: "Reviewed/mock",
+};
+
+export const securityCoverageStatusTones: Record<
+  SecurityCoverageStatus,
+  SecurityStatusTone
+> = {
+  covered: "success",
+  needsHelper: "warning",
+  needsReview: "warning",
+  draftMock: "neutral",
+  reviewedMock: "info",
+};
+
+function compareSecurityDates(
+  first: SecurityCoordinationItem,
+  second: SecurityCoordinationItem,
+) {
+  return new Date(first.date).getTime() - new Date(second.date).getTime();
+}
+
+export function getSecurityItemsForProject(projectId = demoProjectId) {
+  return securityCoordinationItems
+    .filter((item) => item.projectId === projectId)
+    .sort(compareSecurityDates);
+}
+
+export function getSecurityItemsForActiveWorkspace() {
+  return getSecurityItemsForProject(demoProjectId);
+}
+
+export function getSecurityItemById(itemId: string) {
+  return securityCoordinationItems.find((item) => item.id === itemId);
+}
+
+export function groupSecurityItemsByDate(
+  items = getSecurityItemsForActiveWorkspace(),
+): SecurityCoordinationGroup[] {
+  return items.reduce<SecurityCoordinationGroup[]>((groups, item) => {
+    const existingGroup = groups.find((group) => group.date === item.date);
+
+    if (existingGroup) {
+      existingGroup.items.push(item);
+      return groups;
+    }
+
+    groups.push({
+      date: item.date,
+      dayLabel: item.dayLabel,
+      items: [item],
+    });
+
+    return groups;
+  }, []);
+}
+
+export function groupSecurityItemsByStatus(
+  items = getSecurityItemsForActiveWorkspace(),
+) {
+  return Object.entries(securityCoverageStatusLabels)
+    .map(([status, label]) => ({
+      status: status as SecurityCoverageStatus,
+      label,
+      items: items.filter((item) => item.status === status),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function getSecurityCoordinationCounts(
+  projectId = demoProjectId,
+): SecurityCoordinationCounts {
+  return getSecurityItemsForProject(projectId).reduce<SecurityCoordinationCounts>(
+    (counts, item) => {
+      counts.total += 1;
+      counts.upcoming += 1;
+
+      if (item.status === "covered" || item.status === "reviewedMock") {
+        counts.covered += 1;
+      }
+
+      if (
+        item.status === "needsHelper" ||
+        item.status === "needsReview" ||
+        item.status === "draftMock"
+      ) {
+        counts.needsReview += 1;
+      }
+
+      if (item.status === "needsHelper") {
+        counts.needsHelpers += 1;
+      }
+
+      return counts;
+    },
+    {
+      total: 0,
+      upcoming: 0,
+      covered: 0,
+      needsReview: 0,
+      needsHelpers: 0,
+    },
+  );
+}
+
+export function getSecurityCoverageStatusLabel(status: SecurityCoverageStatus) {
+  return securityCoverageStatusLabels[status];
+}
+
+export function getSecurityCoverageStatusTone(status: SecurityCoverageStatus) {
+  return securityCoverageStatusTones[status];
+}
+
+export function getSecurityServiceTypeLabel(type: SecurityServiceType) {
+  return securityServiceTypeLabels[type];
+}
+
+export function getNextSecurityAction(
+  projectId = demoProjectId,
+): RecommendedSecurityAction {
+  const items = getSecurityItemsForProject(projectId);
+  const needsHelper = items.find((item) => item.status === "needsHelper");
+  const needsReview = items.find((item) => item.status === "needsReview");
+  const draftItem = items.find((item) => item.status === "draftMock");
+
+  if (needsHelper) {
+    return {
+      title: `Review coverage for ${needsHelper.title}`,
+      detail:
+        needsHelper.coverageNotes ??
+        "A security item needs a calm helper review before the project week.",
+      href: needsHelper.relatedNeedsAttentionId
+        ? `/admin/needs-attention/${needsHelper.relatedNeedsAttentionId}`
+        : "/admin/security",
+    };
+  }
+
+  if (needsReview) {
+    return {
+      title: `Review ${needsReview.title}`,
+      detail:
+        needsReview.coverageNotes ??
+        "Check the site/access notes with the security contact before treating this as covered.",
+      href: "/admin/security",
+    };
+  }
+
+  if (draftItem) {
+    return {
+      title: `Review draft note for ${draftItem.title}`,
+      detail: "A draft/mock security note is ready for review when timing is clearer.",
+      href: "/admin/security",
+    };
+  }
+
+  return {
+    title: "Review upcoming security coverage",
+    detail: "Security coverage looks steady in the current mock data.",
+    href: "/admin/security",
   };
 }
 
