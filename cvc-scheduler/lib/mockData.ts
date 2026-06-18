@@ -113,6 +113,66 @@ export type ScheduleAssignment = {
   statusExplanation?: string;
 };
 
+export type TaskPresetCategory =
+  | "general"
+  | "lunch"
+  | "security"
+  | "cleanup"
+  | "construction"
+  | "custom";
+
+export type TaskPresetVisibility = "mainContacts" | "allContacts" | "volunteers";
+
+export type TaskPresetCustomFieldType =
+  | "shortText"
+  | "longText"
+  | "number"
+  | "select"
+  | "checkbox";
+
+export type TaskPresetCustomField = {
+  id: string;
+  name: string;
+  label: string;
+  type: TaskPresetCustomFieldType;
+  required?: boolean;
+  options?: string[];
+};
+
+export type TaskPreset = {
+  id: string;
+  projectId: string;
+  name: string;
+  category: TaskPresetCategory;
+  neededCount: number;
+  visibility: TaskPresetVisibility;
+  customFields: TaskPresetCustomField[];
+  isSystemPreset?: boolean;
+  sourcePresetId?: string;
+  duplicateIndex?: number;
+};
+
+export type CalendarItem = {
+  id: string;
+  projectId: string;
+  taskPresetId?: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  timeWindow?: string;
+  assignedVolunteerIds: string[];
+  filledCount: number;
+  neededCount: number;
+  scheduleNotes?: string;
+  repeatRule?: string;
+  copiedFromItemId?: string;
+  oneOffTask?: {
+    name: string;
+    category: TaskPresetCategory;
+    customFields?: TaskPresetCustomField[];
+  };
+};
+
 export type VolunteerAssignment = {
   id: string;
   volunteerId: string;

@@ -919,6 +919,38 @@ Limitations:
 Next recommended step:
 - 09.6 Food/Security role-home alignment.
 
+## Iteration 09.6 - Unified Tasks + Calendar + Navigation Realignment
+
+Summary:
+- Realigned the product model around separate Tasks and Calendar concepts.
+- Defined task presets as reusable blocks with no dates, times, assigned volunteers, scheduled status, or calendar placement.
+- Defined calendar items as scheduled instances of task presets with date/time, assigned helpers, filled counts, notes, repeat/copy metadata, and optional one-off task data.
+- Documented Lunch as a system task preset with a predefined Menu field so it can later support a volunteer-facing lunch schedule/menu view.
+- Reframed Food and Security pages as prototype/research surfaces that should fold into Tasks + Calendar instead of remaining permanent top-level modules.
+- Documented the target desktop sidebar as Overview, Calendar, Tasks, Volunteers, Communications, Settings.
+- Documented the target mobile 5-tab navigation as Overview/Home, Tasks, Calendar, Volunteers, More, with Calendar emphasized in the center.
+- Clarified that trusted main project contacts should share one main app experience rather than separate Primary CVC, Food Contact, and Security Contact app experiences.
+- Added lightweight mock type scaffolding for future task presets and calendar items.
+
+Changed files:
+- `lib/mockData.ts`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- No preview screenshot refresh was required because no UI files changed.
+
+Limitations:
+- Product architecture and documentation alignment only.
+- No Tasks UI, Calendar UI, mobile bottom nav, data migration, production scheduling, persistence, drag/drop, calendar libraries, task duplication behavior, real mutations, Supabase, auth, or production workflows were added.
+- Existing Food and Security prototype pages remain in place for research/reference until a future Tasks + Calendar pass folds them in.
+
+Next recommended step:
+- 09.7 Task presets foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

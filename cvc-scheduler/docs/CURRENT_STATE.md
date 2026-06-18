@@ -4,11 +4,21 @@
 
 CVC Scheduler is the full-stack successor to the Belgrade Remodel Sheets/App Script tool. It is being built as a project-centered workspace system where each workspace is centered around one real-world CVC project.
 
-The main admin mental model is:
+The current target admin mental model is:
 
 Admin user/account -> assigned project workspace -> one real-world project -> enabled modules inside that workspace.
 
-Modules inside a workspace may include Volunteers, Schedule, Food, Security, Announcements, Emails, Needs Attention, Conflicts, and Settings.
+The product model is being realigned around:
+
+- Overview: role-aware project home and follow-up summary.
+- Tasks: reusable predefined blocks/presets.
+- Calendar: scheduled instances of task presets.
+- Volunteers: people, questionnaires, readiness.
+- Communications: announcements, emails, reminders, templates.
+- Settings: project/workspace/module setup.
+
+Tasks and Calendar are separate things. A task preset is a reusable block. A
+calendar item is a scheduled instance of a task preset.
 
 Belgrade Major Remodel 2026 is the current blueprint and case study. The current app is a mock/prototype foundation only; it does not use real production data yet.
 
@@ -31,11 +41,117 @@ Admin user/account
 -> one real-world project
 -> enabled modules inside that workspace
 
-"Projects" should not feel like a peer feature beside Volunteers, Schedule, Food, Security, or other modules. The selection layer should generally use visible language such as Workspace, Workspaces, or Project Workspaces.
+"Projects" should not feel like a peer feature beside Volunteers, Calendar,
+Tasks, Communications, or Settings. The selection layer should generally use
+visible language such as Workspace, Workspaces, or Project Workspaces.
 
 "Project" is still acceptable when referring to the actual real-world project, such as Belgrade Major Remodel 2026, project contacts, project dates, or project type.
 
 The `/admin/projects` route can remain for now, but visible UI language should stay workspace-centered.
+
+## 3A. Tasks + Calendar Model
+
+Task preset = reusable block.
+
+Calendar item = scheduled instance of a task preset.
+
+Tasks do not include the calendar. Calendar does not replace Tasks. They are
+separate entities that work together to create the full project schedule.
+
+Task presets may include:
+
+- Task id.
+- Workspace/project id.
+- Task name.
+- Category/type such as general, lunch, security, cleanup, construction, or custom.
+- Needed count.
+- Visibility settings.
+- Optional custom fields with name/label/type.
+- Duplicate/source info.
+- System preset flag.
+
+Task presets do not include date, time, assigned volunteers, scheduled status,
+or calendar placement.
+
+Task duplication should append a number suffix to the original task name, such
+as Night watch, Night watch (1), Night watch (2).
+
+Lunch is a predefined/system task preset. Lunch has one predefined field:
+Menu. Lunch may also have custom fields below that. The reason Lunch is special
+is so the system can later recognize it and generate a volunteer-facing lunch
+schedule/menu view.
+
+Calendar items may include:
+
+- Task preset id.
+- Date.
+- Time/window.
+- Assigned volunteers/helpers.
+- Filled count such as 0/3, 1/3, or 2/2.
+- Schedule-specific notes.
+- Repeat rule.
+- Copy/paste/bulk creation metadata.
+- Optional one-off custom task data when the user drops in a task that does not need to become a reusable preset.
+
+Future Calendar work should support day/week/month views, filters by task
+type/category/visibility, drag/drop placement, copy/paste, repeatable tasks,
+bulk creation, simple edit mode, and custom one-day tasks.
+
+## 3B. Navigation Direction
+
+Target desktop sidebar:
+
+- Overview.
+- Calendar.
+- Tasks.
+- Volunteers.
+- Communications.
+- Settings.
+
+Desktop should keep the persistent left sidebar. Do not replace desktop
+navigation with bottom navigation.
+
+Communications should absorb Emails and Announcements. Needs Attention and
+Conflicts should become Overview/Calendar follow-up concepts rather than
+permanent top-level sidebar siblings. Food and Security should become task
+categories/presets/calendar filters rather than permanent top-level sidebar
+siblings.
+
+Target mobile 5-tab bottom navigation:
+
+- Overview / Home.
+- Tasks.
+- Calendar.
+- Volunteers.
+- More.
+
+Calendar should be the emphasized center tab/action on mobile. More should
+contain secondary destinations such as Communications, Settings, Workspaces,
+Needs Attention/follow-ups if not surfaced on Overview, and other admin/support
+tools as needed.
+
+Mobile can still use a drawer or More menu for secondary links, but the
+long-term primary mobile navigation should be the 5-tab bottom bar.
+
+Trusted main project contacts should share one main app experience. The app
+should still distinguish project/main contacts, assistant contacts, on-site
+contacts, and volunteers, but should not split Primary CVC, Primary Food
+Contact, and Primary Security Contact into separate main-contact sign-in
+experiences.
+
+Upcoming UI direction:
+
+- Less text-heavy.
+- Fewer sidebar items.
+- Icon-supported where useful.
+- Calm, premium, high-end, Apple-clean.
+- Avoid giant stacks of cards.
+- Show one thing at a time without removing power.
+- Prioritize a focused calendar workspace.
+- Make task creation feel simple and powerful.
+- Keep older/low-tech users in mind.
+- Mobile should feel app-like, with the 5-tab bottom nav as the long-term target.
+- Desktop should keep the sidebar, but the sidebar should be simplified.
 
 ## 4. Current Implemented Areas
 
@@ -67,6 +183,8 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Food visual/icon density stabilization for the overview/detail pages, plus a compact accessible mobile menu icon in the shared admin shell.
 - Mock Security module foundation with night watch coverage, site checks, access notes, assigned helpers, related follow-ups, icon-supported rows, and placeholder-only actions.
 - Mock Security detail/day view with focused time window, contact/helper, site note, coverage note, related item, and same-day security review.
+- Lightweight mock type scaffolding for future task presets and calendar items.
+- Product model realignment toward unified Tasks + Calendar, with Food/Security pages now treated as prototype/research surfaces to fold into that model.
 
 ## 5. Current Routes
 
@@ -116,6 +234,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
 - No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
 - No real security persistence, helper assignment mutations, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
+- No real task preset UI, calendar item UI, task duplication behavior, calendar scheduling model, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -131,6 +250,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No notification logic yet.
 - No volunteer confirmation / denial persistence yet.
 - Role homes are preview/mock-only and do not enforce permissions yet.
+- Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
 - No public volunteer portal yet.
@@ -141,4 +261,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.6 Food/Security role-home alignment.
+09.7 Task presets foundation.

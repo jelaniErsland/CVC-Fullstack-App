@@ -42,7 +42,10 @@ Rough phases:
 - 09.3 Food visual/icon density stabilization. Completed.
 - 09.4 Security module foundation. Completed.
 - 09.5 Security detail/day view. Completed.
-- 09.6 Food/Security role-home alignment. Next recommended step.
+- 09.6 Unified Tasks + Calendar + Navigation Realignment. Completed.
+- 09.7 Task presets foundation. Next recommended step.
+- 09.8 Calendar scheduling foundation. Planned.
+- 09.9 Mobile 5-tab navigation direction. Planned UI pass.
 
 ## 4. Mid-Term Roadmap
 
@@ -63,8 +66,11 @@ Rough phases:
 - 09.3 Food visual/icon density stabilization.
 - 09.4 Security module foundation.
 - 09.5 Security detail/day view.
-- 09.6 Food/Security role-home alignment.
-- 09 Food and Security modules.
+- 09.6 Unified Tasks + Calendar + Navigation Realignment.
+- 09.7 Task presets foundation.
+- 09.8 Calendar scheduling foundation.
+- 09.9 Mobile 5-tab navigation direction.
+- 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
 ## 5. Later Roadmap
@@ -86,11 +92,12 @@ For the next project, the app should eventually support:
 - Send volunteer questionnaire link.
 - Review questionnaire submissions.
 - Create volunteer profiles.
-- Build assignments.
+- Create reusable task presets.
+- Schedule task presets onto the calendar as dated work.
 - Let volunteers confirm/deny.
 - Show needs-attention items.
 - Send reminder emails.
-- Support food/security if enabled.
+- Support lunch, security, cleanup, construction, and custom work as task categories and calendar filters.
 - Archive project when done.
 
 ## 7. Build Discipline
@@ -143,6 +150,7 @@ available.
 
 Scheduling is still mock-only. Future scheduling work still needs:
 
+- Unified Calendar model where task presets become scheduled instances.
 - Real scheduling engine.
 - Assignment creation and editing.
 - Conflict and coverage logic.
@@ -166,7 +174,7 @@ Role homes are preview/mock-only. Future role work still needs:
 
 - Real role permissions and scoped data.
 - Real persistence.
-- Full Food and Security module surfaces.
+- Food and Security research surfaces folded into Tasks + Calendar.
 - On-site contact workflows.
 - Platform owner/admin homes.
 
@@ -250,11 +258,11 @@ accessible mobile menu icon in the shared admin shell.
 
 Food is mock-only. Future work still needs:
 
-- Real helper assignment actions.
+- Fold Food research surfaces into task presets and calendar items.
+- Treat lunch as a system task preset with a predefined Menu field.
+- Real helper assignment actions through Calendar.
 - Real persistence.
-- Food-role scoped views.
-- Deeper schedule integration.
-- Food contact communication workflows.
+- Food contact communication workflows through Communications.
 
 ## 14. Security Module Notes
 
@@ -272,8 +280,95 @@ same-day security items, and placeholder-only actions.
 
 Security is mock-only. Future work still needs:
 
-- Real helper assignment actions.
+- Fold Security research surfaces into task presets and calendar items.
+- Real helper assignment actions through Calendar.
 - Real persistence.
-- Security-role scoped views.
-- Deeper schedule integration.
-- Security reminder workflows.
+- Security reminder workflows through Communications.
+
+## 15. Unified Tasks + Calendar Notes
+
+09.6 realigned the product model away from permanent Food/Security top-level
+modules and toward a simpler Tasks + Calendar structure.
+
+Core model:
+
+- Task preset = reusable block.
+- Calendar item = scheduled instance of a task preset.
+- Tasks and Calendar are separate entities that work together.
+
+Task presets do not include dates, times, assigned volunteers, schedule status,
+or calendar placement. A task preset may include:
+
+- Task id.
+- Workspace/project id.
+- Task name.
+- Category/type such as general, lunch, security, cleanup, construction, or custom.
+- Needed count.
+- Visibility settings.
+- Optional custom fields.
+- Duplicate/source info.
+- System preset flag.
+
+Task duplication should use the original name plus a number suffix:
+
+- Night watch.
+- Night watch (1).
+- Night watch (2).
+
+Lunch is a predefined/system task preset. Lunch has one predefined field,
+Menu, and may also have custom fields below it. This lets the system later
+recognize lunch and generate a volunteer-facing lunch schedule/menu view.
+
+Calendar items are scheduled instances. They may include task preset id, date,
+time/window, assigned volunteers/helpers, filled count such as 0/3, notes,
+repeat rule, copy/paste/bulk creation metadata, and optional one-off custom
+task data.
+
+Future Calendar work should support day/week/month views, filters by task
+category/visibility, drag/drop placement, copy/paste, repeatable tasks, bulk
+creation, simple edit mode, and custom one-day tasks.
+
+Target desktop sidebar:
+
+- Overview.
+- Calendar.
+- Tasks.
+- Volunteers.
+- Communications.
+- Settings.
+
+Desktop should keep the persistent left sidebar. Needs Attention and Conflicts
+should become Overview/Calendar follow-up concepts. Food and Security should
+be task categories/presets/calendar filters. Emails and Announcements should be
+absorbed into Communications.
+
+Target mobile bottom navigation:
+
+- Overview / Home.
+- Tasks.
+- Calendar.
+- Volunteers.
+- More.
+
+Calendar should be the emphasized center tab/action on mobile. More should
+contain Communications, Settings, Workspaces, Needs Attention/follow-ups if
+not surfaced on Overview, and other secondary admin/support tools as needed.
+
+Trusted main project contacts should share one main app experience. The app
+should still distinguish project/main contacts, assistant contacts, on-site
+contacts, and volunteers, but should not split Primary CVC, Primary Food
+Contact, and Primary Security Contact into separate main-contact sign-in
+experiences.
+
+Upcoming UI direction:
+
+- Less text-heavy.
+- Fewer sidebar items.
+- Icon-supported where useful.
+- Calm, premium, high-end, Apple-clean.
+- Avoid giant stacks of cards.
+- Show one thing at a time without removing power.
+- Prioritize a focused calendar workspace.
+- Make task creation feel simple and powerful.
+- Keep older/low-tech users in mind.
+- Make mobile feel app-like with the 5-tab bottom nav as the long-term target.
