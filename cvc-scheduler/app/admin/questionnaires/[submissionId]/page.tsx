@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import {
   getLinkedVolunteerForSubmission,
@@ -227,36 +226,23 @@ function OtherHelpSummary({ submission }: { submission: VolunteerQuestionnaireSu
 
 function NotFoundState() {
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="questionnaires" />
-          </GlassCard>
-        </aside>
-
-        <main className="py-4">
-          <GlassCard className="p-6 text-center sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Questionnaire Review
-            </p>
-            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
-              Questionnaire not found
-            </h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-              This mock submission may have been removed or the link may be incomplete.
-              Return to the review queue to choose another questionnaire.
-            </p>
-            <Button href="/admin/questionnaires" variant="secondary" className="mt-6">
-              Back to questionnaires
-            </Button>
-          </GlassCard>
-        </main>
-      </div>
-    </PageShell>
+    <AdminShell active="questionnaires">
+      <GlassCard className="p-6 text-center sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+          Questionnaire Review
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
+          Questionnaire not found
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+          This mock submission may have been removed or the link may be incomplete.
+          Return to the review queue to choose another questionnaire.
+        </p>
+        <Button href="/admin/questionnaires" variant="secondary" className="mt-6">
+          Back to questionnaires
+        </Button>
+      </GlassCard>
+    </AdminShell>
   );
 }
 
@@ -286,18 +272,7 @@ export default async function AdminQuestionnaireDetailPage({
   const workflowState = getQuestionnaireWorkflowStateFromSubmission(submission);
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="questionnaires" />
-          </GlassCard>
-        </aside>
-
-        <main className="py-4">
+    <AdminShell active="questionnaires">
           <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <Link
@@ -693,8 +668,6 @@ export default async function AdminQuestionnaireDetailPage({
               )}
             </DetailSection>
           </section>
-        </main>
-      </div>
-    </PageShell>
+    </AdminShell>
   );
 }

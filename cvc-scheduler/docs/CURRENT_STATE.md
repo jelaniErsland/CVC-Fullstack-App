@@ -168,6 +168,7 @@ Upcoming UI direction:
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
 - Shared admin shell with persistent desktop sidebar, mobile 5-tab bottom navigation, a More sheet for secondary destinations, and a temporary collapsible mobile drawer fallback.
+- Mobile bottom navigation is shared across the checked admin routes, including Dashboard, Calendar, Tasks, Volunteers, Volunteer detail, Settings, Announcements, Reminder templates, Questionnaires, Needs Attention, Workspaces, Food/Security prototypes, and the legacy Schedule route.
 - Workspace setup wizard.
 - Project settings panel with client-only module toggles.
 - Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
@@ -196,7 +197,7 @@ Upcoming UI direction:
 - Product model realignment toward unified Tasks + Calendar, with Food/Security pages now treated as prototype/research surfaces to fold into that model.
 - Mock Tasks preset library at `/admin/tasks` with Belgrade task preset data, category grouping, counts, Lunch system preset handling, duplicate-name guidance, and placeholder-only actions.
 - Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, a stabilized full-width desktop week layout, mobile day groups, category filters, summary counts, an app-like item inspector drawer/sheet, Lunch menu display, and placeholder-only scheduling actions.
-- Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More.
+- Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More. Calendar is the center action, and secondary admin destinations live in More.
 
 ## 5. Current Routes
 
@@ -228,7 +229,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures key admin routes, Calendar, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Tasks, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, Calendar, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Tasks, Volunteers, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots include the bottom tab navigation. The screenshot workflow also captures the legacy mobile drawer open state and the new mobile More sheet open state.
 
@@ -253,6 +254,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real task preset creation/edit/duplicate mutations, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
 - Calendar scheduling is mock-data/UI only. Calendar item creation, saving, real placement edits, volunteer assignment mutations, drag/drop, calendar libraries, production scheduling logic, scheduled jobs, and email sending are not implemented.
 - Calendar remains week-first/mock-only. True Day/Month behavior, view-control placement, a Filter button with a drawer/sheet, task search, and coverage/type filters should be handled in a later Calendar view-controls pass.
+- `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.

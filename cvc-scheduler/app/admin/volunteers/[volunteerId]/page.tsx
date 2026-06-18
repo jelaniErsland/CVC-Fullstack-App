@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import { getVolunteerById, projectVolunteers } from "@/lib/mockData";
 import type { ProjectVolunteer } from "@/lib/mockData";
@@ -88,18 +87,7 @@ export default async function AdminVolunteerDetailPage({
           : "Approve Volunteer";
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="volunteers" />
-          </GlassCard>
-        </aside>
-
-        <div className="py-4">
+    <AdminShell active="volunteers">
           <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <Link
@@ -213,8 +201,6 @@ export default async function AdminVolunteerDetailPage({
               )}
             </DetailCard>
           </section>
-        </div>
-      </div>
-    </PageShell>
+    </AdminShell>
   );
 }

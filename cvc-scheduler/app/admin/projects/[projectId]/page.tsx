@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { AdminSectionCard } from "@/components/AdminSectionCard";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import {
   demoProjectId,
@@ -51,18 +50,7 @@ export default async function AdminProjectDetailPage({
   const canOpenWorkspace = project.status === "active" && project.id === demoProjectId;
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="projects" projectId={project.id} />
-          </GlassCard>
-        </aside>
-
-        <main className="py-4">
+    <AdminShell active="projects" projectId={project.id}>
           <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <Link
@@ -128,8 +116,6 @@ export default async function AdminProjectDetailPage({
               />
             ))}
           </section>
-        </main>
-      </div>
-    </PageShell>
+    </AdminShell>
   );
 }

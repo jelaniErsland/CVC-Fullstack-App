@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { VolunteerDirectory } from "@/components/VolunteerDirectory";
 import { getCongregations, projectVolunteers } from "@/lib/mockData";
 
@@ -26,58 +24,45 @@ export default function AdminVolunteersPage() {
   ];
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="volunteers" />
-          </GlassCard>
-        </aside>
-
-        <div className="py-4">
-          <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Current Project
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Project Volunteers
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                Review submitted questionnaires, approve volunteers for scheduling,
-                and enter paper questionnaires so every willing helper can be included.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button type="button" variant="secondary">
-                Send Questionnaire Link
-              </Button>
-              <Button type="button">Enter Paper Questionnaire</Button>
-            </div>
-          </header>
-
-          <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <GlassCard key={stat.label} className="p-5">
-                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                <p className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
-                  {stat.value}
-                </p>
-              </GlassCard>
-            ))}
-          </section>
-
-          <section className="mt-6">
-            <VolunteerDirectory
-              congregations={congregations}
-              volunteers={projectVolunteers}
-            />
-          </section>
+    <AdminShell active="volunteers">
+      <header className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Current Project
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+            Project Volunteers
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            Review submitted questionnaires, approve volunteers for scheduling,
+            and enter paper questionnaires so every willing helper can be included.
+          </p>
         </div>
-      </div>
-    </PageShell>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button type="button" variant="secondary">
+            Send Questionnaire Link
+          </Button>
+          <Button type="button">Enter Paper Questionnaire</Button>
+        </div>
+      </header>
+
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <GlassCard key={stat.label} className="p-5">
+            <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+            <p className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
+              {stat.value}
+            </p>
+          </GlassCard>
+        ))}
+      </section>
+
+      <section className="mt-6">
+        <VolunteerDirectory
+          congregations={congregations}
+          volunteers={projectVolunteers}
+        />
+      </section>
+    </AdminShell>
   );
 }

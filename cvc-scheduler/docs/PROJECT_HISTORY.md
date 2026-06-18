@@ -1143,6 +1143,51 @@ Limitations:
 Next recommended step:
 - 09.12 Calendar view controls + filter drawer / day-month foundation.
 
+## Iteration 09.11.1 - Mobile Nav Coverage Stabilization
+
+Summary:
+- Stabilized the 09.11 mobile bottom navigation coverage across checked admin routes.
+- Confirmed the issue was caused by older admin pages using local `PageShell` + `AdminNav` sidebar markup instead of the shared `AdminShell`.
+- Moved Volunteers, Volunteer detail, legacy Schedule, Questionnaires, Questionnaire detail, Needs Attention, Needs Attention detail, Workspaces, Workspace detail, and New Workspace onto the shared `AdminShell`.
+- Preserved the persistent desktop sidebar through the shared shell and kept the mobile bottom nav hidden on desktop.
+- Kept the existing mobile hamburger drawer as a temporary fallback while the bottom tabs remain the primary mobile navigation.
+- Added mobile Volunteers preview screenshot coverage.
+
+Changed files:
+- `app/admin/volunteers/page.tsx`
+- `app/admin/volunteers/[volunteerId]/page.tsx`
+- `app/admin/schedule/page.tsx`
+- `app/admin/questionnaires/page.tsx`
+- `app/admin/questionnaires/[submissionId]/page.tsx`
+- `app/admin/needs-attention/page.tsx`
+- `app/admin/needs-attention/[itemId]/page.tsx`
+- `app/admin/projects/page.tsx`
+- `app/admin/projects/[projectId]/page.tsx`
+- `app/admin/projects/new/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews, including `mobile-volunteers.jpg`.
+- Route checks covered `/admin/dashboard`, `/admin/calendar`, `/admin/tasks`, `/admin/volunteers`, `/admin/volunteers/alex-rivera`, `/admin/settings`, `/admin/announcements`, `/admin/announcements/templates`, `/admin/questionnaires`, and `/admin/schedule`.
+- Desktop browser checks confirmed the persistent sidebar remains visible, the bottom nav is hidden, and the Calendar inspector still opens/closes.
+- Mobile browser checks around 390px confirmed the bottom nav is visible on Dashboard, Tasks, Calendar, Volunteers, and Settings; More opens/closes; content is not hidden behind the bottom nav; and the Calendar inspector bottom sheet still opens/closes.
+
+Limitations:
+- UI shell/navigation coverage only.
+- No Calendar filter drawer, Day view, Month view, real scheduling behavior, drag/drop, task/calendar mutations, auth, Supabase, persistence, route permissions, or production workflows were added.
+- `/admin/login` and `/admin/onboarding` still use simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
+- Calendar Day/Week/Month controls and the future Filter button/drawer remain planned for the next Calendar pass.
+
+Next recommended step:
+- 09.12 Calendar view controls + filter drawer / day-month foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

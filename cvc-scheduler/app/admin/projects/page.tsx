@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import {
   currentMockUser,
@@ -82,49 +80,36 @@ export default function AdminProjectsPage() {
   const assignments = getCurrentAdminProjectAssignments();
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="projects" />
-          </GlassCard>
-        </aside>
+    <AdminShell active="projects">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Assigned Workspaces
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+            Project Workspaces
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            These are the workspaces assigned to {currentMockUser.name}. Each one
+            centers one real-world CVC project. Drafts stay visible to their owner,
+            while archived workspaces remain
+            readable without cluttering the active work.
+          </p>
+        </div>
+        <Button href="/admin/projects/new" className="w-full sm:w-auto">
+          Start New Workspace
+        </Button>
+      </header>
 
-        <main className="py-4">
-          <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Assigned Workspaces
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Project Workspaces
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                These are the workspaces assigned to {currentMockUser.name}. Each one
-                centers one real-world CVC project. Drafts stay visible to their owner,
-                while archived workspaces remain
-                readable without cluttering the active work.
-              </p>
-            </div>
-            <Button href="/admin/projects/new" className="w-full sm:w-auto">
-              Start New Workspace
-            </Button>
-          </header>
-
-          <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {assignments.map((assignment) => (
-              <ProjectCard
-                key={assignment.project.id}
-                project={assignment.project}
-                roles={assignment.roles}
-              />
-            ))}
-          </section>
-        </main>
-      </div>
-    </PageShell>
+      <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {assignments.map((assignment) => (
+          <ProjectCard
+            key={assignment.project.id}
+            project={assignment.project}
+            roles={assignment.roles}
+          />
+        ))}
+      </section>
+    </AdminShell>
   );
 }

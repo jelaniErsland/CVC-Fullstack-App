@@ -101,6 +101,7 @@ const captures = [
   },
   { route: "/admin/tasks", fileName: "mobile-tasks.jpg", viewport: mobileViewport },
   { route: "/admin/calendar", fileName: "mobile-calendar.jpg", viewport: mobileViewport },
+  { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
   {
     route: "/admin/food/food-belgrade-lunch-jan-14",
