@@ -92,7 +92,7 @@ function TemplateRow({ template }: { template: ReminderTemplate }) {
 
         <div className="rounded-lg border border-white/72 bg-white/56 p-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Placeholder actions
+            Future actions
           </p>
           <div className="mt-3">
             <TemplateActions />
@@ -154,23 +154,23 @@ export default function AnnouncementTemplatesPage() {
             className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/56 hover:text-slate-950"
             href="/admin/announcements"
           >
-            Back to Announcements
+            Back to Communications
           </Link>
 
           <header className="mt-4 rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Starting points
+              Communications
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
               Reminder templates
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Use calm, reusable starting points for reminders and project updates before real
-              draft creation or sending exists.
+              Calm starting points for reminders, updates, food notes, security notes, and
+              schedule messages inside the Communications area.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
-              Templates are mock-only. They do not create messages, schedule delivery, resolve
-              recipients, or send email.
+              These templates do not create drafts, schedule delivery, resolve recipients, or
+              send email yet.
             </p>
           </header>
 
@@ -201,7 +201,7 @@ export default function AnnouncementTemplatesPage() {
             ) : (
               <EmptyState
                 title="No reminder templates available"
-                message="This mock workspace does not have reminder template starting points for its enabled modules yet."
+                message="This workspace does not have communication template starting points for its enabled areas yet."
               />
             )}
           </section>

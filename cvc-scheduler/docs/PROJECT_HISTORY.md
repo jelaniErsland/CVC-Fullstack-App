@@ -1356,6 +1356,34 @@ Limitations:
 Next recommended step:
 - 09.17 Communications detail/template copy alignment.
 
+## Iteration 09.17 - Communications Detail/Template Copy Alignment
+
+Summary:
+- Aligned `/admin/announcements/[communicationId]` visible copy so detail pages read as Communications previews rather than Announcements as a module.
+- Updated not-found, back-link, return-button, header, body-preview, and future-action copy on communication detail pages.
+- Aligned `/admin/announcements/templates` as Reminder templates inside Communications.
+- Updated template back-link, page intro, inactive-action copy, and empty state language.
+- Preserved message type, status, audience, recipient explanation, reminder plan, related links, and placeholder-only future actions.
+- Kept existing routes unchanged.
+
+Changed files:
+- `app/admin/announcements/[communicationId]/page.tsx`
+- `app/admin/announcements/templates/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+
+Limitations:
+- Copy alignment only.
+- No route renames, redirects, real sending, persistence, Supabase, auth, recipient resolution, scheduled jobs, templates-to-drafts, or mutation logic was added.
+
+Next recommended step:
+- 09.18 Overview/navigation/Communications visual QA + preview refresh.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

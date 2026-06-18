@@ -95,8 +95,8 @@ function PlaceholderActions({ communication }: { communication: Communication })
 function NotFoundState() {
   return (
     <EmptyState
-      title="Announcement preview not found"
-      message="This is mock preview data, so the communication may have been renamed or removed. Return to Announcements to choose another draft or reminder."
+      title="Communication preview not found"
+      message="This planning item may have been renamed or removed. Return to Communications to choose another draft or reminder."
     />
   );
 }
@@ -123,7 +123,7 @@ export default async function AnnouncementDetailPage({
             className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/56 hover:text-slate-950"
             href={getCommunicationNotFoundHref()}
           >
-            Back to Announcements
+            Back to Communications
           </Link>
 
           {!communication ? (
@@ -131,7 +131,7 @@ export default async function AnnouncementDetailPage({
               <NotFoundState />
               <div className="mt-4">
                 <Button href="/admin/announcements" variant="secondary">
-                  Return to Announcements
+                  Return to Communications
                 </Button>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default async function AnnouncementDetailPage({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Preview
+                      Communications preview
                     </p>
                     <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
                       {communication.title}
@@ -155,7 +155,7 @@ export default async function AnnouncementDetailPage({
                   </div>
                 </div>
                 <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
-                  Review the message, audience, and reminder plan before real sending exists.
+                  Review the message, audience, and reminder plan before sending is active.
                 </p>
               </header>
 
@@ -166,7 +166,7 @@ export default async function AnnouncementDetailPage({
                       Message preview
                     </h2>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      This is the current mock body preview for review.
+                      Current message body for coordinator review.
                     </p>
                   </div>
                   <div className="p-4 sm:p-5">
@@ -190,7 +190,7 @@ export default async function AnnouncementDetailPage({
                   </p>
                   <p className="mt-4 text-sm leading-6 text-slate-500">
                     This page does not send email, schedule jobs, resolve recipients, or save
-                    changes. It is a preview pattern for future communication review.
+                    changes. It is a planning surface for future communication review.
                   </p>
                 </GlassCard>
               </section>
@@ -239,7 +239,7 @@ export default async function AnnouncementDetailPage({
                 <GlassCard className="overflow-hidden">
                   <div className="border-b border-white/72 px-4 py-4 sm:px-5">
                     <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                      Placeholder actions
+                      Future actions
                     </h2>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
                       These show likely future actions and do not save or send anything.

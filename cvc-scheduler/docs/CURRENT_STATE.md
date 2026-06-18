@@ -201,8 +201,8 @@ Upcoming UI direction:
 - Mock Needs Attention foundation with calm grouped follow-up rows and dashboard next-action integration.
 - Mock conflict/coverage detail patterns for Needs Attention items, including coverage gaps, possible overlaps, denied assignments, and missing information before scheduling.
 - Mock Communications foundation with announcement/reminder data, counts/grouping helpers, a calm admin overview at `/admin/announcements`, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
-- Mock announcement detail/preview pages with message body preview, intended audience, recipient explanation, reminder plan, related links, and placeholder-only future actions.
-- Mock reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
+- Mock Communications detail/preview pages with message body preview, intended audience, recipient explanation, reminder plan, related links, and calm future-action placeholders.
+- Mock Communications reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
 - Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
 - Mock Food module foundation with lunch support, snack support, water/coffee, cleanup, helpers, headcount notes, food contact responsibility, grouped food rows, and placeholder-only actions.
 - Mock Food detail/day view with focused headcount, helper, meal note, related item, and same-day support review.
@@ -232,7 +232,7 @@ Upcoming UI direction:
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock Communications overview with announcement and reminder planning rows for draft, ready, scheduled/mock, and sent/mock communication items. The route name remains unchanged for now.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
-- `/admin/announcements/[communicationId]`: Mock announcement detail/preview page with a helpful not-found state for unknown communication ids.
+- `/admin/announcements/[communicationId]`: Mock Communications detail/preview page with message, audience, recipient, reminder-plan, related-link, and helpful not-found states for unknown communication ids. The route name remains unchanged for now.
 - `/admin/food`: Mock Food module overview for lunch support, helpers, headcount notes, and food contact coordination.
 - `/admin/food/[foodItemId]`: Mock Food detail/day page with a helpful not-found state for unknown food item ids.
 - `/admin/security`: Mock Security module overview for night watch, site checks, access notes, coverage review, and security contact coordination.
@@ -308,4 +308,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.17 Communications detail/template copy alignment.
+09.18 Overview/navigation/Communications visual QA + preview refresh.

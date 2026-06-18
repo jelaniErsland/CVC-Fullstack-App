@@ -54,7 +54,8 @@ Rough phases:
 - 09.14 Calendar Overlay + Mobile Interaction Stabilization. Completed.
 - 09.15 Overview realignment. Completed.
 - 09.16 Admin navigation simplification + Communications alignment. Completed.
-- 09.17 Communications detail/template copy alignment. Next recommended step.
+- 09.17 Communications detail/template copy alignment. Completed.
+- 09.18 Overview/navigation/Communications visual QA + preview refresh. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -88,6 +89,7 @@ Rough phases:
 - 09.15 Overview realignment.
 - 09.16 Admin navigation simplification + Communications alignment.
 - 09.17 Communications detail/template copy alignment.
+- 09.18 Overview/navigation/Communications visual QA + preview refresh.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -231,14 +233,18 @@ copy that sending is not active yet.
 08.2 added focused mock detail/preview pages at
 `/admin/announcements/[communicationId]` with message preview, audience and
 recipient explanation, dates, author/role, reminder plan where present,
-related links, placeholder-only actions, and a helpful not-found state.
+related links, placeholder-only actions, and a helpful not-found state. 09.17
+aligned the visible copy so these pages read as Communications previews while
+keeping the existing route.
 
 08.3 added a mock reminder-template foundation at
 `/admin/announcements/templates`. Templates provide calm starting points for
 schedule reminders, pending confirmations, questionnaire follow-up, food
 service notes, security/night-watch reminders, project updates, plan changes,
 and thank-you/wrap-up notes. They are grouped by module and show suggested
-audience, timing, subject suggestions, body previews, and placeholders.
+audience, timing, subject suggestions, body previews, and placeholders. 09.17
+aligned the page as Reminder templates inside Communications rather than a
+separate top-level product area.
 
 08.4 stabilized the communication surfaces and admin shell. The checked admin
 routes now use a shared shell that preserves the persistent desktop sidebar and
