@@ -1,8 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { demoProjectId, getProjectById, projectHasModule } from "@/lib/mockData";
 import type { ProjectModule } from "@/lib/mockData";
 
-type AdminNavActive =
+export type AdminNavActive =
   | "projects"
   | "overview"
   | "volunteers"
@@ -19,6 +21,7 @@ type AdminNavActive =
 type AdminNavProps = {
   active?: AdminNavActive;
   projectId?: string;
+  onNavigate?: () => void;
 };
 
 const navItems: Array<{
@@ -71,7 +74,11 @@ const navItems: Array<{
   { id: "settings", label: "Settings", href: "/admin/settings", always: true },
 ];
 
-export function AdminNav({ active = "overview", projectId = demoProjectId }: AdminNavProps) {
+export function AdminNav({
+  active = "overview",
+  projectId = demoProjectId,
+  onNavigate,
+}: AdminNavProps) {
   const project = getProjectById(projectId);
   const visibleItems = navItems.filter(
     (item) => item.always || (item.module ? projectHasModule(project, item.module) : false),
@@ -92,6 +99,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
             <Link
               href="/admin/projects"
               className="inline-flex min-h-10 items-center rounded-full px-3 py-1.5 hover:bg-white/56 hover:text-slate-950"
+              onClick={onNavigate}
             >
               Switch
             </Link>
@@ -101,6 +109,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
 
       <Link
         href="/admin/projects"
+        onClick={onNavigate}
         className={[
           "mt-3 flex min-h-11 items-center rounded-lg border px-3 py-2 text-sm font-medium transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
           active === "projects"
@@ -122,6 +131,7 @@ export function AdminNav({ active = "overview", projectId = demoProjectId }: Adm
                 : "border-transparent",
             ].join(" ")}
             href={item.href}
+            onClick={onNavigate}
           >
             {item.label}
           </Link>

@@ -35,7 +35,9 @@ Rough phases:
 - 08.1 Emails and Announcements data model + admin overview. Completed.
 - 08.2 Announcement detail/preview page. Completed.
 - 08.3 Reminder templates. Completed.
-- 08.4 Emails/Announcements visual QA and stabilization. Next recommended step.
+- 08.4 Emails/Announcements visual QA and stabilization. Completed.
+- 08.5 Preview Screenshot Refresh + Visual Review Coverage. Completed.
+- 09.1 Food module foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -50,6 +52,8 @@ Rough phases:
 - 08.2 Announcement detail/preview page.
 - 08.3 Reminder templates.
 - 08.4 Emails/Announcements visual QA and stabilization.
+- 08.5 Preview Screenshot Refresh + Visual Review Coverage.
+- 09.1 Food module foundation.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -199,9 +203,15 @@ service notes, security/night-watch reminders, project updates, plan changes,
 and thank-you/wrap-up notes. They are grouped by module and show suggested
 audience, timing, subject suggestions, body previews, and placeholders.
 
+08.4 stabilized the communication surfaces and admin shell. The checked admin
+routes now use a shared shell that preserves the persistent desktop sidebar and
+shows a compact mobile top bar with a collapsible navigation drawer. The drawer
+uses the existing admin nav, closes on outside tap or link selection, and keeps
+mobile layouts from showing a cramped permanent sidebar.
+
 Announcements and emails are mock-only. Future work still needs:
 
-- Visual QA and stabilization for the communication surfaces.
+- Food module foundation.
 - Real email sending.
 - Recipient resolution.
 - Scheduled reminders and background jobs.

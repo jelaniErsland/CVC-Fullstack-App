@@ -42,6 +42,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
+- Shared admin shell with persistent desktop sidebar and collapsible mobile drawer.
 - Workspace setup wizard.
 - Project settings panel with client-only module toggles.
 - Workspace language cleanup so selection language uses Workspace / Project Workspace rather than presenting Projects as a module.
@@ -60,6 +61,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Mock Emails and Announcements foundation with communication data, counts/grouping helpers, a calm admin overview, placeholder-only preview/edit/prepare actions, and explicit copy that real sending is inactive.
 - Mock announcement detail/preview pages with message body preview, intended audience, recipient explanation, reminder plan, related links, and placeholder-only future actions.
 - Mock reminder-template foundation with grouped starting points for schedule reminders, pending confirmations, questionnaire follow-up, food notes, security reminders, project updates, plan changes, and wrap-up thanks.
+- Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
 
 ## 5. Current Routes
 
@@ -85,7 +87,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
 
-The script captures key admin routes, the admin questionnaire queue, a questionnaire detail page, and the Belgrade public questionnaire from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, communication overview/template/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -121,10 +123,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - Food, Security, and On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
 - No public volunteer portal yet.
+- Some admin routes outside the checked communication/dashboard/settings surfaces may still use older local shell markup until a broader shell cleanup pass.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
 - Belgrade remains the production workflow in Sheets/App Script for now.
 
 ## 9. Next Recommended Step
 
-08.4 Emails/Announcements visual QA and stabilization.
+09.1 Food module foundation.

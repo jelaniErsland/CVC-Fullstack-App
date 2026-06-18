@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
 import {
   communicationStatusLabels,
@@ -241,7 +240,7 @@ export default function AdminDashboardPage() {
 
   if (!project || !activeHome) {
     return (
-      <PageShell className="flex items-center justify-center">
+      <AdminShell active="overview">
         <GlassCard className="w-full max-w-lg p-6 text-center sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
             No Workspace
@@ -257,26 +256,12 @@ export default function AdminDashboardPage() {
             Start New Workspace
           </Button>
         </GlassCard>
-      </PageShell>
+      </AdminShell>
     );
   }
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link
-              href="/"
-              className="flex min-h-10 items-center text-lg font-semibold tracking-tight text-slate-950"
-            >
-              CVC Scheduler
-            </Link>
-            <AdminNav active="overview" />
-          </GlassCard>
-        </aside>
-
-        <main className="py-4">
+    <AdminShell active="overview">
           <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
             <div className="space-y-4">
               <RoleHomeHeader home={activeHome} />
@@ -311,8 +296,6 @@ export default function AdminDashboardPage() {
             <CompactUpdateList title="Recent Updates" items={recentUpdates} />
             <RolePatternPreview homes={roleHomes} />
           </section>
-        </main>
-      </div>
-    </PageShell>
+    </AdminShell>
   );
 }

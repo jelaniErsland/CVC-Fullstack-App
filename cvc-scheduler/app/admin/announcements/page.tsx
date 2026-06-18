@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import {
   communicationAudienceLabels,
   communicationStatusLabels,
@@ -163,18 +162,7 @@ export default function AdminAnnouncementsPage() {
   const nextAction = getRecommendedCommunicationAction(demoProjectId);
 
   return (
-    <PageShell>
-      <div className="mx-auto grid min-h-[calc(100vh-40px)] w-full max-w-7xl gap-4 lg:grid-cols-[240px_1fr]">
-        <aside className="lg:py-4">
-          <GlassCard className="p-4 lg:sticky lg:top-6">
-            <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-              CVC Scheduler
-            </Link>
-            <AdminNav active="announcements" />
-          </GlassCard>
-        </aside>
-
-        <main className="py-4">
+    <AdminShell active="announcements">
           <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
               Communications
@@ -234,8 +222,6 @@ export default function AdminAnnouncementsPage() {
               />
             )}
           </section>
-        </main>
-      </div>
-    </PageShell>
+    </AdminShell>
   );
 }

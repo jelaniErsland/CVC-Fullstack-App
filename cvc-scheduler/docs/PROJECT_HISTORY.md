@@ -671,6 +671,70 @@ Limitations:
 Next recommended step:
 - 08.4 Emails/Announcements visual QA and stabilization.
 
+## Iteration 08.4 - Admin Mobile Sidebar + Communications Visual QA
+
+Summary:
+- Added a shared `AdminShell` for the checked admin routes.
+- Preserved the persistent desktop sidebar while adding a compact mobile top bar and collapsible navigation drawer.
+- Drawer uses the existing admin nav/workspace context, closes on outside tap, and closes after selecting a nav link.
+- Swapped the announcements overview, templates overview, announcement detail, dashboard, and settings routes onto the shared shell.
+- Lightly stabilized communication surfaces after 08.1-08.3 without adding new sending, persistence, recipient resolution, scheduling, or mutation behavior.
+
+Changed files:
+- `components/AdminNav.tsx`
+- `components/AdminShell.tsx`
+- `app/admin/announcements/page.tsx`
+- `app/admin/announcements/templates/page.tsx`
+- `app/admin/announcements/[communicationId]/page.tsx`
+- `app/admin/dashboard/page.tsx`
+- `app/admin/settings/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Local route checks returned 200 for `/admin/announcements`, `/admin/announcements/templates`, one valid announcement detail route, `/admin/dashboard`, and `/admin/settings`.
+- Mobile browser checks around 390px confirmed the drawer opens/closes and checked routes avoid horizontal overflow.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- UI/stabilization only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, or new product modules.
+- Some admin routes outside the checked communication/dashboard/settings surfaces may still use older local sidebar markup.
+
+Next recommended step:
+- 09.1 Food module foundation.
+
+## Iteration 08.5 - Preview Screenshot Refresh + Visual Review Coverage
+
+Summary:
+- Refreshed the preview screenshot workflow for the current admin UI after the shared admin shell and mobile drawer work.
+- Added communication overview, reminder templates, announcement detail, Needs Attention, Schedule, Settings, questionnaire, and Belgrade public questionnaire coverage.
+- Added mobile captures for dashboard, announcements overview, announcement templates, and the admin drawer-open state.
+- Kept this as a visual review support pass with no product behavior changes.
+
+Changed files:
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- `docs/previews/latest/` was cleared and refreshed with the current screenshot set.
+
+Limitations:
+- Preview screenshots are QA/review artifacts, not product approvals.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, or new modules were added.
+
+Next recommended step:
+- 09.1 Food module foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
