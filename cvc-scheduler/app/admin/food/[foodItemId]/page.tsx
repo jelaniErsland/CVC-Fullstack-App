@@ -1,4 +1,19 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarDays,
+  CircleCheck,
+  ClipboardList,
+  HandHeart,
+  ListChecks,
+  MessageSquareText,
+  Utensils,
+  UserRound,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
@@ -37,27 +52,46 @@ const statusStyles: Record<FoodStatusTone, string> = {
 function StatusLabel({ status }: { status: FoodCoverageStatus }) {
   return (
     <span
-      className={`inline-flex min-h-8 items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[getFoodCoverageStatusTone(status)]}`}
+      className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[getFoodCoverageStatusTone(status)]}`}
     >
+      <CircleCheck aria-hidden="true" className="h-3.5 w-3.5" />
       {getFoodCoverageStatusLabel(status)}
     </span>
   );
 }
 
 function InfoTile({
+  icon: Icon,
   label,
   value,
 }: {
+  icon: LucideIcon;
   label: string;
   value: string | number;
 }) {
   return (
     <div className="rounded-lg border border-white/70 bg-white/50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-        {label}
-      </p>
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <Icon aria-hidden="true" className="h-4 w-4" />
+        <p>{label}</p>
+      </div>
       <p className="mt-2 text-sm font-medium leading-6 text-slate-800">{value}</p>
     </div>
+  );
+}
+
+function SectionTitle({
+  icon: Icon,
+  children,
+}: {
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <h2 className="inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-950">
+      <Icon aria-hidden="true" className="h-5 w-5 text-slate-500" />
+      {children}
+    </h2>
   );
 }
 
@@ -66,7 +100,7 @@ function PlaceholderActions({ item }: { item: FoodCoordinationItem }) {
     item.status === "needsHeadcount"
       ? ["Review headcount", "Prepare food note"]
       : item.status === "needsHelpers"
-        ? ["Add helper later", "Open related follow-up"]
+        ? ["Add helper later", "Review follow-up"]
         : ["Prepare food note", "Add helper later"];
 
   return (
@@ -91,19 +125,19 @@ function RelatedLinks({ item }: { item: FoodCoordinationItem }) {
     item.relatedScheduleId
       ? {
           href: "/admin/schedule",
-          label: "Open related schedule",
+          label: "Schedule",
         }
       : undefined,
     item.relatedAnnouncementId
       ? {
           href: `/admin/announcements/${item.relatedAnnouncementId}`,
-          label: "Open food note",
+          label: "Food note",
         }
       : undefined,
     item.relatedNeedsAttentionId
       ? {
           href: `/admin/needs-attention/${item.relatedNeedsAttentionId}`,
-          label: "Open related follow-up",
+          label: "Follow-up",
         }
       : undefined,
   ].filter((link): link is { href: string; label: string } => Boolean(link));
@@ -151,10 +185,18 @@ function SameDayItems({ items }: { items: FoodCoordinationItem[] }) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="font-semibold text-slate-950">{item.title}</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                {foodServiceTypeLabels[item.serviceType]}
-                {item.estimatedHeadcount ? ` - Headcount ${item.estimatedHeadcount}` : ""}
-              </p>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/70 bg-white/58 px-2.5">
+                  <Utensils aria-hidden="true" className="h-3.5 w-3.5 text-slate-400" />
+                  {foodServiceTypeLabels[item.serviceType]}
+                </span>
+                {item.estimatedHeadcount ? (
+                  <span className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-white/70 bg-white/58 px-2.5">
+                    <Users aria-hidden="true" className="h-3.5 w-3.5 text-slate-400" />
+                    {item.estimatedHeadcount} people
+                  </span>
+                ) : null}
+              </div>
             </div>
             <StatusLabel status={item.status} />
           </div>
@@ -196,6 +238,7 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
         className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/56 hover:text-slate-950"
         href={getFoodNotFoundHref()}
       >
+        <ArrowLeft aria-hidden="true" className="mr-1.5 h-4 w-4" />
         Back to Food
       </Link>
 
@@ -222,6 +265,7 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex min-h-8 items-center rounded-full border border-white/80 bg-white/62 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <Utensils aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
                   {foodServiceTypeLabels[item.serviceType]}
                 </span>
                 <StatusLabel status={item.status} />
@@ -255,21 +299,28 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
                 Food details
               </h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <InfoTile label="Date" value={item.dayLabel} />
+                <InfoTile icon={CalendarDays} label="Date" value={item.dayLabel} />
                 <InfoTile
+                  icon={Users}
                   label="Headcount"
                   value={item.estimatedHeadcount ?? "To review"}
                 />
                 <InfoTile
+                  icon={Building2}
                   label="Congregation"
                   value={item.congregation ?? "To confirm"}
                 />
                 <InfoTile
+                  icon={UserRound}
                   label="Food contact"
                   value={item.responsibleContact ?? "To confirm"}
                 />
-                <InfoTile label="Helpers" value={helpers} />
-                <InfoTile label="Project" value={project?.name ?? "Active workspace"} />
+                <InfoTile icon={HandHeart} label="Helpers" value={helpers} />
+                <InfoTile
+                  icon={ClipboardList}
+                  label="Project"
+                  value={project?.name ?? "Active workspace"}
+                />
               </div>
             </GlassCard>
           </section>
@@ -277,9 +328,7 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
           <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <GlassCard className="overflow-hidden">
               <div className="border-b border-white/72 px-4 py-4 sm:px-5">
-                <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                  Meal notes
-                </h2>
+                <SectionTitle icon={Utensils}>Meal notes</SectionTitle>
               </div>
               <div className="space-y-4 p-4 text-sm leading-6 text-slate-600 sm:p-5">
                 <div>
@@ -305,9 +354,7 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
 
             <GlassCard className="overflow-hidden">
               <div className="border-b border-white/72 px-4 py-4 sm:px-5">
-                <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                  Placeholder actions
-                </h2>
+                <SectionTitle icon={ListChecks}>Placeholder actions</SectionTitle>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   These show likely future actions and do not save changes.
                 </p>
@@ -320,18 +367,14 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
 
           <section className="grid gap-4 xl:grid-cols-2">
             <GlassCard className="p-4 sm:p-5">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                Related items
-              </h2>
+              <SectionTitle icon={MessageSquareText}>Related items</SectionTitle>
               <div className="mt-4">
                 <RelatedLinks item={item} />
               </div>
             </GlassCard>
 
             <GlassCard className="p-4 sm:p-5">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-                Same-day food support
-              </h2>
+              <SectionTitle icon={CalendarDays}>Same-day food support</SectionTitle>
               <div className="mt-4">
                 <SameDayItems items={relatedItems} />
               </div>

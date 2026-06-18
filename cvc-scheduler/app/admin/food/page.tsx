@@ -1,4 +1,15 @@
 import Link from "next/link";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CircleCheck,
+  HandHeart,
+  Utensils,
+  UserRound,
+  Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
@@ -31,9 +42,25 @@ const statusStyles: Record<FoodStatusTone, string> = {
 function StatusLabel({ status }: { status: FoodCoverageStatus }) {
   return (
     <span
-      className={`inline-flex min-h-8 items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[getFoodCoverageStatusTone(status)]}`}
+      className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles[getFoodCoverageStatusTone(status)]}`}
     >
+      <CircleCheck aria-hidden="true" className="h-3.5 w-3.5" />
       {getFoodCoverageStatusLabel(status)}
+    </span>
+  );
+}
+
+function MetaPill({
+  icon: Icon,
+  label,
+}: {
+  icon: LucideIcon;
+  label: string | number;
+}) {
+  return (
+    <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/70 bg-white/54 px-3 text-xs font-semibold text-slate-600">
+      <Icon aria-hidden="true" className="h-3.5 w-3.5 text-slate-400" />
+      {label}
     </span>
   );
 }
@@ -82,18 +109,20 @@ function FoodRow({ item }: { item: FoodCoordinationItem }) {
           <StatusLabel status={item.status} />
         </div>
         <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-          <span>{foodServiceTypeLabels[item.serviceType]}</span>
+          <MetaPill icon={Utensils} label={foodServiceTypeLabels[item.serviceType]} />
           {item.estimatedHeadcount ? (
-            <span>Headcount: {item.estimatedHeadcount}</span>
+            <MetaPill icon={Users} label={`${item.estimatedHeadcount} people`} />
           ) : null}
-          {item.congregation ? <span>{item.congregation}</span> : null}
+          {item.congregation ? (
+            <MetaPill icon={Building2} label={item.congregation} />
+          ) : null}
+          <MetaPill icon={UserRound} label={item.responsibleContact ?? "Contact to confirm"} />
+          <MetaPill icon={HandHeart} label={helpers} />
         </div>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Food contact: {item.responsibleContact ?? "To confirm"} - Helpers: {helpers}
-        </p>
       </div>
-      <div className="flex items-center text-sm font-semibold text-slate-600">
+      <div className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
         Review
+        <ArrowRight aria-hidden="true" className="h-4 w-4" />
       </div>
     </Link>
   );
@@ -111,7 +140,8 @@ function FoodGroups({ items }: { items: FoodCoordinationItem[] }) {
               <h2 className="text-lg font-semibold tracking-tight text-slate-950">
                 {group.dayLabel}
               </h2>
-              <p className="text-sm font-semibold text-slate-500">
+              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500">
+                <CalendarDays aria-hidden="true" className="h-4 w-4" />
                 {group.items.length} food support item
                 {group.items.length === 1 ? "" : "s"}
               </p>

@@ -39,7 +39,8 @@ Rough phases:
 - 08.5 Preview Screenshot Refresh + Visual Review Coverage. Completed.
 - 09.1 Food module foundation. Completed.
 - 09.2 Food detail/day view. Completed.
-- 09.3 Food visual/icon density stabilization. Next recommended step.
+- 09.3 Food visual/icon density stabilization. Completed.
+- 09.4 Security module foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -58,6 +59,7 @@ Rough phases:
 - 09.1 Food module foundation.
 - 09.2 Food detail/day view.
 - 09.3 Food visual/icon density stabilization.
+- 09.4 Security module foundation.
 - 09 Food and Security modules.
 - 10 Public volunteer portal.
 
@@ -238,9 +240,12 @@ status, headcount, congregation/contact responsibility, helpers, meal notes,
 helper/headcount notes, related links, same-day food support, and
 placeholder-only actions.
 
+09.3 stabilized Food visual density with consistent icon-supported labels on
+the overview and detail pages, shorter related-link language, and a compact
+accessible mobile menu icon in the shared admin shell.
+
 Food is mock-only. Future work still needs:
 
-- Food visual/icon density stabilization.
 - Real helper assignment actions.
 - Real persistence.
 - Food-role scoped views.

@@ -64,6 +64,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 - Emails/Announcements visual QA and admin mobile sidebar stabilization across the communication overview, template overview, detail preview, dashboard, and settings routes.
 - Mock Food module foundation with lunch support, snack support, water/coffee, cleanup, helpers, headcount notes, food contact responsibility, grouped food rows, and placeholder-only actions.
 - Mock Food detail/day view with focused headcount, helper, meal note, related item, and same-day support review.
+- Food visual/icon density stabilization for the overview/detail pages, plus a compact accessible mobile menu icon in the shared admin shell.
 
 ## 5. Current Routes
 
@@ -91,7 +92,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
 
-The script captures key admin routes, communication overview/template/detail pages, Food overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, Food overview/detail, and open admin drawer from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, communication overview/template/detail pages, Food overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, announcements, templates, Food overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -135,4 +136,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.3 Food visual/icon density stabilization.
+09.4 Security module foundation.

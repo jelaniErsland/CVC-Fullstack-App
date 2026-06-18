@@ -137,7 +137,7 @@ async function main() {
       }
 
       if (openMobileDrawer) {
-        await page.getByRole("button", { name: "Open admin navigation" }).click();
+        await page.getByRole("button", { name: "Open navigation menu" }).click();
       }
 
       await page.screenshot({

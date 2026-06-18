@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AdminNav } from "@/components/AdminNav";
@@ -46,12 +47,12 @@ export function AdminShell({
                 </p>
               </div>
               <button
-                aria-label="Open admin navigation"
-                className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-white/80 bg-white/72 px-4 text-sm font-semibold text-slate-800 shadow-sm"
+                aria-label="Open navigation menu"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/80 bg-white/72 text-slate-800 shadow-sm transition hover:bg-white"
                 onClick={() => setIsDrawerOpen(true)}
                 type="button"
               >
-                Menu
+                <Menu aria-hidden="true" className="h-5 w-5" />
               </button>
             </div>
           </GlassCard>
@@ -83,10 +84,11 @@ export function AdminShell({
                 <AdminBrand />
                 <button
                   aria-label="Close admin navigation"
-                  className="inline-flex min-h-11 items-center rounded-full border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 text-sm font-semibold text-slate-700"
                   onClick={() => setIsDrawerOpen(false)}
                   type="button"
                 >
+                  <X aria-hidden="true" className="h-4 w-4" />
                   Close
                 </button>
               </div>

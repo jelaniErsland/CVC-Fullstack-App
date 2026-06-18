@@ -808,6 +808,43 @@ Limitations:
 Next recommended step:
 - 09.3 Food visual/icon density stabilization.
 
+## Iteration 09.3 - Food Visual/Icon Density Stabilization
+
+Summary:
+- Added consistent lucide-supported labels to Food overview rows and Food detail cards for service type, headcount, congregation, food contact, helpers, status, related items, and same-day support.
+- Reduced repeated prose in `/admin/food` rows while keeping critical food contact and helper information visible.
+- Shortened noisy related-link and placeholder-action language on Food detail pages.
+- Changed the shared mobile admin shell menu affordance to a compact hamburger icon button with an accessible label.
+- Refreshed Food and drawer preview screenshots while keeping Food mock-only.
+
+Changed files:
+- `package.json`
+- `package-lock.json`
+- `components/AdminShell.tsx`
+- `app/admin/food/page.tsx`
+- `app/admin/food/[foodItemId]/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run preview:screenshots` passed.
+- Local route checks returned 200 for `/admin/food`, one valid Food detail route, `/admin/dashboard`, and `/admin/settings`.
+- Mobile browser checks around 390px confirmed `/admin/food` and one Food detail page have no horizontal overflow and the drawer opens/closes from the accessible menu icon.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- UI/stabilization only.
+- Food remains mock-only.
+- No Supabase, auth, persistence, real email sending, recipient resolution, scheduled jobs, background jobs, mutation actions, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
+
+Next recommended step:
+- 09.4 Security module foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
