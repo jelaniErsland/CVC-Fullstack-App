@@ -46,7 +46,8 @@ Rough phases:
 - 09.7 Task presets foundation. Completed.
 - 09.8 Calendar scheduling foundation. Completed.
 - 09.9 Calendar visual/stability pass. Completed.
-- 09.10 Mobile 5-tab navigation direction. Next recommended step.
+- 09.10 Calendar item inspector drawer. Completed.
+- 09.11 Mobile 5-tab navigation direction. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -71,7 +72,8 @@ Rough phases:
 - 09.7 Task presets foundation.
 - 09.8 Calendar scheduling foundation.
 - 09.9 Calendar visual/stability pass.
-- 09.10 Mobile 5-tab navigation direction.
+- 09.10 Calendar item inspector drawer.
+- 09.11 Mobile 5-tab navigation direction.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

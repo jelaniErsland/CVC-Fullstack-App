@@ -1063,7 +1063,44 @@ Limitations:
 - Food and Security prototype pages remain in place temporarily as research/reference surfaces.
 
 Next recommended step:
-- 09.10 Mobile 5-tab navigation direction.
+- 09.10 Calendar item inspector drawer.
+
+## Iteration 09.10 - Calendar Item Inspector Drawer
+
+Summary:
+- Replaced the permanent selected-item section on `/admin/calendar` with an app-like Calendar item inspector.
+- Calendar blocks now open the inspector when selected, while the calendar grid stays full-width and glanceable.
+- Added a desktop right-side inspector panel with a soft backdrop and category-colored accent.
+- Added a mobile bottom-sheet inspector with the same selected item content and close behavior.
+- Preserved selected block emphasis with a subtle ring/shadow.
+- Added close/tuck-away behavior plus a small reopen affordance when an item remains selected and the inspector is closed.
+- Inspector content includes task name, category/status/filled pills, time window, helpers, schedule notes, Lunch menu summary, one-off/source preset information, and disabled preview-only actions.
+- Kept `/admin/schedule` intact as the legacy schedule prototype route.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews.
+- Route checks covered `/admin/calendar`, `/admin/tasks`, `/admin/schedule`, `/admin/dashboard`, `/admin/settings`, and `/admin/volunteers`.
+- Desktop browser checks confirmed the persistent sidebar remains visible, the calendar grid stays roomy, selecting a block opens the inspector, the inspector closes/reopens, and selected block state is visible.
+- Mobile browser checks around 390px confirmed no horizontal overflow, day groups remain readable, selecting a block opens the bottom-sheet inspector, the inspector closes, and the mobile drawer still opens/closes.
+
+Limitations:
+- Mock-data/UI only.
+- No Supabase, auth, persistence, real mutations, drag/drop, calendar libraries, calendar item creation/saving, volunteer assignment editing, production scheduling logic, scheduled jobs, email sending, copy/paste behavior, repeat behavior, task editing, or assignment workflows.
+- Day/week/month switching remains visual/mock-only.
+- Food and Security prototype pages remain in place temporarily as research/reference surfaces.
+
+Next recommended step:
+- 09.11 Mobile 5-tab navigation direction.
 
 ## Documentation Maintenance Rules
 

@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  ChevronDown,
   Clock,
   Copy,
   Pencil,
@@ -10,6 +11,7 @@ import {
   Soup,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
@@ -308,18 +310,84 @@ function MobileDayGroups({
   );
 }
 
-function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
+function CalendarInspector({
+  item,
+  isOpen,
+  onClose,
+}: {
+  item?: CalendarItemWithPreset;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   if (!item) {
-    return (
-      <GlassCard className="p-4 sm:p-5">
-        <p className="text-sm leading-6 text-slate-600">
-          Select a calendar item to review the scheduled instance. Task preset
-          editing stays on the Tasks page.
-        </p>
-      </GlassCard>
-    );
+    return null;
   }
 
+  const tone = getCalendarStatusTone(item.status);
+
+  return (
+    <div
+      className={[
+        "fixed inset-0 z-40 transition",
+        isOpen ? "pointer-events-auto" : "pointer-events-none",
+      ].join(" ")}
+    >
+      <button
+        aria-label="Close calendar item inspector backdrop"
+        className={[
+          "absolute inset-0 hidden bg-slate-950/12 transition-opacity lg:block",
+          isOpen ? "opacity-100" : "opacity-0",
+        ].join(" ")}
+        onClick={onClose}
+        type="button"
+      />
+      <aside
+        aria-label="Calendar item inspector"
+        className={[
+          "absolute right-0 top-0 hidden h-full w-[min(420px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
+          isOpen ? "translate-x-0" : "translate-x-full",
+        ].join(" ")}
+      >
+        <div
+          className={`flex h-full flex-col overflow-hidden rounded-2xl border border-white/72 border-l-4 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.22)] backdrop-blur-2xl ${detailAccentStyles[item.category]}`}
+        >
+          <InspectorContent item={item} onClose={onClose} tone={tone} />
+        </div>
+      </aside>
+
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
+        <button
+          aria-label="Close calendar item inspector backdrop"
+          className={[
+            "fixed inset-0 bg-slate-950/18 transition-opacity",
+            isOpen ? "opacity-100" : "opacity-0",
+          ].join(" ")}
+          onClick={onClose}
+          type="button"
+        />
+        <section
+          aria-label="Calendar item inspector"
+          className={[
+            `relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 border-t-4 bg-white/92 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out ${detailAccentStyles[item.category].replace("border-l", "border-t")}`,
+            isOpen ? "translate-y-0" : "translate-y-[calc(100%+24px)]",
+          ].join(" ")}
+        >
+          <InspectorContent item={item} onClose={onClose} tone={tone} />
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function InspectorContent({
+  item,
+  tone,
+  onClose,
+}: {
+  item: CalendarItemWithPreset;
+  tone: CalendarStatusTone;
+  onClose: () => void;
+}) {
   const placeholderActions = [
     { label: "Add to calendar", icon: Plus },
     { label: "Edit placement", icon: Pencil },
@@ -327,26 +395,33 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
     { label: "Repeat later", icon: Repeat },
     { label: "Copy later", icon: Copy },
   ];
-  const tone = getCalendarStatusTone(item.status);
 
   return (
-    <GlassCard
-      className={`border-l-4 p-4 sm:p-5 ${detailAccentStyles[item.category]}`}
-    >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Selected item
-          </p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-            {getCalendarItemDisplayName(item)}
-          </h2>
-          <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-slate-500">
-            <Clock aria-hidden="true" className="h-4 w-4" />
-            {getCalendarItemTimeWindow(item)}
-          </p>
+    <>
+      <div className="shrink-0 border-b border-slate-200/60 px-4 py-4 sm:px-5">
+        <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Selected item
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+              {getCalendarItemDisplayName(item)}
+            </h2>
+          </div>
+          <button
+            aria-label="Close calendar item inspector"
+            className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-4 w-4" />
+          </button>
         </div>
-        <div className="flex flex-wrap gap-2 lg:justify-end">
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap gap-2">
           <span className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white/78 px-3 text-sm font-semibold text-slate-800">
             {getCalendarFilledLabel(item)} filled
           </span>
@@ -361,10 +436,18 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
             {getCalendarStatusLabel(item.status)}
           </span>
         </div>
-      </div>
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-lg border border-white/70 bg-white/52 px-4 py-4">
+        <div className="mt-4 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <Clock aria-hidden="true" className="h-3.5 w-3.5" />
+            Time
+          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-800">
+            {getCalendarItemTimeWindow(item)}
+          </p>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
             Helpers
@@ -373,7 +456,7 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
             {item.assignedVolunteers.length > 0 ? (
               item.assignedVolunteers.map((volunteer) => (
                 <span
-                  className="rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                   key={volunteer.id}
                 >
                   {volunteer.name}
@@ -387,7 +470,7 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
           </div>
         </div>
 
-        <div className="rounded-lg border border-white/70 bg-white/52 px-4 py-4">
+        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Schedule notes
           </p>
@@ -395,46 +478,51 @@ function DetailPanel({ item }: { item?: CalendarItemWithPreset }) {
             {item.scheduleNotes ?? "No schedule-specific notes."}
           </p>
         </div>
-      </div>
 
-      {isLunchCalendarItem(item) ? (
-        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
-          <div className="flex items-center gap-2 font-semibold">
-            <Soup aria-hidden="true" className="h-4 w-4" />
-            Lunch menu
+        {isLunchCalendarItem(item) ? (
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
+            <div className="flex items-center gap-2 font-semibold">
+              <Soup aria-hidden="true" className="h-4 w-4" />
+              Lunch menu
+            </div>
+            <p className="mt-1">{item.menuSummary ?? "Menu not added yet."}</p>
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              Future volunteer-facing lunch schedule source.
+            </p>
           </div>
-          <p className="mt-1">{item.menuSummary ?? "Menu not added yet."}</p>
-          <p className="mt-1 text-xs font-semibold text-emerald-700">
-            Future volunteer-facing lunch schedule source.
-          </p>
+        ) : null}
+
+        <div className="mt-4 grid gap-2 text-xs font-semibold text-slate-500">
+          <span>
+            Source:{" "}
+            {isOneOffCalendarItem(item)
+              ? "One-off custom task, no reusable preset"
+              : item.taskPreset?.name ?? "Preset reference missing"}
+          </span>
+          {item.repeatLabel ? <span>Repeat: {item.repeatLabel}</span> : null}
+          {item.copyLabel ? <span>Copy: {item.copyLabel}</span> : null}
         </div>
-      ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-        <span>
-          Source:{" "}
-          {isOneOffCalendarItem(item)
-            ? "One-off custom task, no reusable preset"
-            : item.taskPreset?.name ?? "Preset reference missing"}
-        </span>
-        {item.repeatLabel ? <span>Repeat: {item.repeatLabel}</span> : null}
-        {item.copyLabel ? <span>Copy: {item.copyLabel}</span> : null}
+        <div className="mt-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Preview actions
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {placeholderActions.map(({ label, icon: Icon }) => (
+              <button
+                className="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
+                disabled
+                key={label}
+                type="button"
+              >
+                <Icon aria-hidden="true" className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-
-      <div className="mt-5 flex flex-wrap gap-2">
-        {placeholderActions.map(({ label, icon: Icon }) => (
-          <button
-            className="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
-            disabled
-            key={label}
-            type="button"
-          >
-            <Icon aria-hidden="true" className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
-      </div>
-    </GlassCard>
+    </>
   );
 }
 
@@ -442,7 +530,8 @@ export default function AdminCalendarPage() {
   const allItems = getCalendarItemsByWeek("2026-01-12", demoProjectId);
   const weekRange = deriveCalendarWeekRange("2026-01-12");
   const [activeFilter, setActiveFilter] = useState<CalendarFilter>("all");
-  const [selectedId, setSelectedId] = useState(allItems[0]?.id);
+  const [selectedId, setSelectedId] = useState<string | undefined>();
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
 
   const filteredItems = useMemo(() => {
     if (activeFilter === "all") {
@@ -455,8 +544,14 @@ export default function AdminCalendarPage() {
   const groupedItems = groupCalendarItemsByDay(filteredItems, weekRange.start).flatMap(
     (group) => group.items,
   );
-  const selectedItem =
-    groupedItems.find((item) => item.id === selectedId) ?? groupedItems[0];
+  const selectedItem = selectedId
+    ? groupedItems.find((item) => item.id === selectedId)
+    : undefined;
+
+  const handleSelectCalendarItem = (item: CalendarItemWithPreset) => {
+    setSelectedId(item.id);
+    setIsInspectorOpen(true);
+  };
 
   return (
     <AdminShell active="calendar">
@@ -504,16 +599,30 @@ export default function AdminCalendarPage() {
             <div className="space-y-4">
               <WeekGrid
                 items={filteredItems}
-                onSelect={(item) => setSelectedId(item.id)}
+                onSelect={handleSelectCalendarItem}
                 selectedId={selectedItem?.id}
               />
               <MobileDayGroups
                 items={filteredItems}
-                onSelect={(item) => setSelectedId(item.id)}
+                onSelect={handleSelectCalendarItem}
                 selectedId={selectedItem?.id}
               />
-              <DetailPanel item={selectedItem} />
             </div>
+            <CalendarInspector
+              isOpen={isInspectorOpen}
+              item={selectedItem}
+              onClose={() => setIsInspectorOpen(false)}
+            />
+            {selectedItem && !isInspectorOpen ? (
+              <button
+                className="fixed bottom-4 right-4 z-30 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-white/88 px-4 text-sm font-semibold text-slate-700 shadow-[0_16px_50px_rgba(15,23,42,0.18)] backdrop-blur-xl transition hover:bg-white"
+                onClick={() => setIsInspectorOpen(true)}
+                type="button"
+              >
+                <ChevronDown aria-hidden="true" className="h-4 w-4 rotate-180" />
+                Open inspector
+              </button>
+            ) : null}
           </>
         ) : (
           <EmptyState
