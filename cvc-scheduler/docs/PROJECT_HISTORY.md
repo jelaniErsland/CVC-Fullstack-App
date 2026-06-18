@@ -988,6 +988,46 @@ Limitations:
 Next recommended step:
 - 09.8 Calendar scheduling foundation.
 
+## Iteration 09.8 - Calendar Scheduling Foundation
+
+Summary:
+- Added mock Calendar item data for the active Belgrade workspace using 09.7 task preset ids for Lunch, Night watch, Gate attendant, Drywall crew, Cleanup help, and Water / coffee station.
+- Added a one-off custom scheduled task that does not create or reference a reusable preset.
+- Expanded the Calendar item model with date/time windows, assigned helpers, needed/filled counts, category, status/tone, schedule notes, Lunch menu summary, and mock repeat/copy metadata.
+- Added Calendar helpers for active-workspace lookup, date/week lookup, day grouping, week range derivation, filled labels, category/status labels, preset resolution, one-off detection, Lunch detection, and summary counts.
+- Added `/admin/calendar` using the shared `AdminShell` with compact counts, day/week/month toggle UI, category filter chips, desktop week grid, mobile day groups, selected-item details, Lunch menu display, and disabled placeholder scheduling actions.
+- Updated the admin navigation so Calendar points to `/admin/calendar`; `/admin/schedule` remains the legacy schedule prototype route for compatibility.
+- Added desktop and mobile Calendar screenshots to the preview workflow.
+- Preserved the separation between reusable task presets and scheduled Calendar instances.
+
+Changed files:
+- `lib/mockData.ts`
+- `components/AdminNav.tsx`
+- `app/admin/calendar/page.tsx`
+- `package.json`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview:screenshots` refreshed the latest previews after the app was running locally.
+- Route checks covered `/admin/calendar`, `/admin/tasks`, `/admin/schedule`, `/admin/dashboard`, `/admin/settings`, `/admin/volunteers`, `/admin/food`, and `/admin/security`.
+- Mobile browser checks around 390px confirmed `/admin/calendar` has no horizontal overflow and the mobile drawer opens/closes.
+- Desktop browser check confirmed the persistent sidebar remains visible.
+
+Limitations:
+- Mock-data/UI only.
+- No Supabase, auth, persistence, real mutations, drag/drop, calendar libraries, calendar item creation/saving, volunteer assignment editing, production scheduling logic, scheduled jobs, email sending, or assignment workflows.
+- Day/week/month switching is represented visually only; week view is the functional mock.
+- Food and Security prototype pages remain in place temporarily as research/reference surfaces.
+
+Next recommended step:
+- 09.9 Calendar visual/stability pass.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

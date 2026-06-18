@@ -173,17 +173,62 @@ export type CalendarItem = {
   startTime?: string;
   endTime?: string;
   timeWindow?: string;
+  category: TaskPresetCategory;
   assignedVolunteerIds: string[];
   filledCount: number;
   neededCount: number;
+  status: CalendarItemStatus;
   scheduleNotes?: string;
-  repeatRule?: string;
+  repeatLabel?: string;
+  copyLabel?: string;
+  menuSummary?: string;
   copiedFromItemId?: string;
   oneOffTask?: {
     name: string;
     category: TaskPresetCategory;
+    neededCount?: number;
     customFields?: TaskPresetCustomField[];
   };
+};
+
+export type CalendarItemStatus =
+  | "open"
+  | "partiallyFilled"
+  | "filled"
+  | "needsReview"
+  | "draftMock";
+
+export type CalendarStatusTone =
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "attention";
+
+export type CalendarItemWithPreset = CalendarItem & {
+  taskPreset?: TaskPreset;
+  assignedVolunteers: ProjectVolunteer[];
+};
+
+export type CalendarDayGroup = {
+  date: string;
+  dayLabel: string;
+  items: CalendarItemWithPreset[];
+};
+
+export type CalendarWeekRange = {
+  start: string;
+  end: string;
+  label: string;
+  dates: string[];
+};
+
+export type CalendarSummaryCounts = {
+  scheduledItems: number;
+  openNeeds: number;
+  filledItems: number;
+  lunchItems: number;
+  securityItems: number;
 };
 
 export type VolunteerAssignment = {
@@ -1951,6 +1996,173 @@ export const taskPresets: TaskPreset[] = [
         type: "shortText",
       },
     ],
+  },
+];
+
+export const calendarItems: CalendarItem[] = [
+  {
+    id: "calendar-belgrade-lunch-jan-12",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-lunch",
+    date: "2026-01-12",
+    startTime: "11:45 AM",
+    endTime: "12:30 PM",
+    category: "lunch",
+    assignedVolunteerIds: ["priya-santos"],
+    filledCount: 1,
+    neededCount: 3,
+    status: "partiallyFilled",
+    menuSummary: "Sandwich bar, fruit, vegetarian tray",
+    scheduleNotes: "Serve in the break area. Keep lunch visible on future menu views.",
+    repeatLabel: "Copied from lunch pattern",
+  },
+  {
+    id: "calendar-belgrade-water-coffee-jan-12",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-water-coffee",
+    date: "2026-01-12",
+    startTime: "7:15 AM",
+    endTime: "9:30 AM",
+    category: "lunch",
+    assignedVolunteerIds: ["evan-brooks"],
+    filledCount: 1,
+    neededCount: 1,
+    status: "filled",
+    scheduleNotes: "Coffee, water, cups, and creamer near fellowship entry.",
+  },
+  {
+    id: "calendar-belgrade-drywall-jan-13",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-drywall-crew",
+    date: "2026-01-13",
+    startTime: "8:00 AM",
+    endTime: "3:30 PM",
+    category: "construction",
+    assignedVolunteerIds: [],
+    filledCount: 0,
+    neededCount: 6,
+    status: "open",
+    scheduleNotes: "Needs a lead before this can become a real assignment workflow.",
+  },
+  {
+    id: "calendar-belgrade-gate-jan-13",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-gate-attendant",
+    date: "2026-01-13",
+    startTime: "7:30 AM",
+    endTime: "10:30 AM",
+    category: "security",
+    assignedVolunteerIds: ["marcus-lee"],
+    filledCount: 1,
+    neededCount: 1,
+    status: "filled",
+    scheduleNotes: "Greet early deliveries and point volunteers to check-in.",
+  },
+  {
+    id: "calendar-belgrade-lunch-jan-14",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-lunch",
+    date: "2026-01-14",
+    startTime: "11:45 AM",
+    endTime: "12:30 PM",
+    category: "lunch",
+    assignedVolunteerIds: [],
+    filledCount: 0,
+    neededCount: 3,
+    status: "needsReview",
+    menuSummary: "Soup and salad, final count pending",
+    scheduleNotes: "Menu is known, but helpers are not placed yet.",
+    repeatLabel: "Lunch pattern",
+    copiedFromItemId: "calendar-belgrade-lunch-jan-12",
+  },
+  {
+    id: "calendar-belgrade-night-watch-jan-14",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-night-watch",
+    date: "2026-01-14",
+    startTime: "7:00 PM",
+    endTime: "10:00 PM",
+    category: "security",
+    assignedVolunteerIds: ["marcus-lee", "caleb-ross"],
+    filledCount: 2,
+    neededCount: 2,
+    status: "filled",
+    scheduleNotes: "Pairing shown only as mock calendar placement.",
+    repeatLabel: "Weekly evening pattern",
+  },
+  {
+    id: "calendar-belgrade-custom-signage-jan-15",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-15",
+    startTime: "10:00 AM",
+    endTime: "12:00 PM",
+    category: "custom",
+    assignedVolunteerIds: ["nora-bennett"],
+    filledCount: 1,
+    neededCount: 2,
+    status: "partiallyFilled",
+    scheduleNotes:
+      "One-off sign labeling help for staging rooms. This should not create a reusable preset.",
+    copyLabel: "One-day custom item",
+    oneOffTask: {
+      name: "Room signage labels",
+      category: "custom",
+      neededCount: 2,
+      customFields: [
+        {
+          id: "field-one-off-signage-note",
+          name: "signageNote",
+          label: "Signage note",
+          type: "longText",
+        },
+      ],
+    },
+  },
+  {
+    id: "calendar-belgrade-cleanup-jan-16",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-cleanup-help",
+    date: "2026-01-16",
+    startTime: "3:30 PM",
+    endTime: "5:00 PM",
+    category: "cleanup",
+    assignedVolunteerIds: ["mia-thompson", "nora-bennett"],
+    filledCount: 2,
+    neededCount: 5,
+    status: "partiallyFilled",
+    scheduleNotes: "End-of-day reset for fellowship area and tool room.",
+  },
+  {
+    id: "calendar-belgrade-night-watch-jan-16",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-night-watch-copy",
+    date: "2026-01-16",
+    startTime: "7:00 PM",
+    endTime: "10:00 PM",
+    category: "security",
+    assignedVolunteerIds: ["caleb-ross"],
+    filledCount: 1,
+    neededCount: 2,
+    status: "partiallyFilled",
+    scheduleNotes: "Second helper still open in this mock placement.",
+    copyLabel: "Copied from Wednesday night watch",
+    copiedFromItemId: "calendar-belgrade-night-watch-jan-14",
+  },
+  {
+    id: "calendar-belgrade-lunch-jan-17",
+    projectId: "belgrade-remodel-2026",
+    taskPresetId: "task-belgrade-lunch",
+    date: "2026-01-17",
+    startTime: "12:00 PM",
+    endTime: "12:45 PM",
+    category: "lunch",
+    assignedVolunteerIds: ["mia-thompson", "priya-santos"],
+    filledCount: 2,
+    neededCount: 3,
+    status: "partiallyFilled",
+    menuSummary: "Light wrap-up lunch after cleanup",
+    scheduleNotes: "Good future candidate for public lunch/menu display.",
+    repeatLabel: "Copied from lunch pattern",
   },
 ];
 
@@ -3935,6 +4147,234 @@ export function getRequiredSystemFieldsForTaskPreset(preset: TaskPreset) {
   }
 
   return preset.customFields.filter((field) => field.name === "menu" && field.required);
+}
+
+export const calendarItemStatusLabels: Record<CalendarItemStatus, string> = {
+  open: "Open",
+  partiallyFilled: "Partially filled",
+  filled: "Filled",
+  needsReview: "Needs review",
+  draftMock: "Draft/mock",
+};
+
+export const calendarItemStatusTones: Record<
+  CalendarItemStatus,
+  CalendarStatusTone
+> = {
+  open: "attention",
+  partiallyFilled: "info",
+  filled: "success",
+  needsReview: "warning",
+  draftMock: "neutral",
+};
+
+function getCalendarDateLabel(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(parseScheduleDate(date));
+}
+
+function getCalendarDayName(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+  }).format(parseScheduleDate(date));
+}
+
+function getCalendarMonthDay(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(parseScheduleDate(date));
+}
+
+function getCalendarItemTimeSortValue(item: CalendarItem) {
+  if (!item.startTime) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const match = item.startTime.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const [, hourText, minuteText, meridiem] = match;
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const normalizedHour =
+    meridiem.toUpperCase() === "PM" && hour !== 12
+      ? hour + 12
+      : meridiem.toUpperCase() === "AM" && hour === 12
+        ? 0
+        : hour;
+
+  return normalizedHour * 60 + minute;
+}
+
+export function getCalendarItemsForProject(projectId = demoProjectId) {
+  return calendarItems
+    .filter((item) => item.projectId === projectId)
+    .sort((first, second) => {
+      const dateDiff =
+        parseScheduleDate(first.date).getTime() - parseScheduleDate(second.date).getTime();
+
+      if (dateDiff !== 0) {
+        return dateDiff;
+      }
+
+      return getCalendarItemTimeSortValue(first) - getCalendarItemTimeSortValue(second);
+    });
+}
+
+export function getCalendarItemsForActiveWorkspace() {
+  return getCalendarItemsForProject(demoProjectId);
+}
+
+export function getCalendarItemsByDate(date: string, projectId = demoProjectId) {
+  return getCalendarItemsForProject(projectId).filter((item) => item.date === date);
+}
+
+export function deriveCalendarWeekRange(
+  referenceDate = calendarItems[0]?.date ?? scheduleReferenceDate,
+): CalendarWeekRange {
+  const start = getScheduleWeekStart(referenceDate);
+  const dates = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return date.toISOString().slice(0, 10);
+  });
+  const end = dates[dates.length - 1];
+
+  return {
+    start: dates[0],
+    end,
+    dates,
+    label: `${getCalendarMonthDay(dates[0])} to ${getCalendarMonthDay(end)}, ${start.getFullYear()}`,
+  };
+}
+
+export function getCalendarItemsByWeek(
+  referenceDate = calendarItems[0]?.date ?? scheduleReferenceDate,
+  projectId = demoProjectId,
+) {
+  const weekRange = deriveCalendarWeekRange(referenceDate);
+
+  return getCalendarItemsForProject(projectId).filter(
+    (item) => item.date >= weekRange.start && item.date <= weekRange.end,
+  );
+}
+
+export function getCalendarItemAssignedVolunteers(item: CalendarItem) {
+  return item.assignedVolunteerIds
+    .map((volunteerId) => getVolunteerById(volunteerId))
+    .filter((volunteer): volunteer is ProjectVolunteer => Boolean(volunteer));
+}
+
+export function resolveCalendarItemTaskPreset(item: CalendarItem) {
+  return item.taskPresetId ? getTaskPresetById(item.taskPresetId) : undefined;
+}
+
+export function enrichCalendarItem(item: CalendarItem): CalendarItemWithPreset {
+  return {
+    ...item,
+    taskPreset: resolveCalendarItemTaskPreset(item),
+    assignedVolunteers: getCalendarItemAssignedVolunteers(item),
+  };
+}
+
+export function groupCalendarItemsByDay(
+  items = getCalendarItemsByWeek(),
+  referenceDate = items[0]?.date ?? scheduleReferenceDate,
+): CalendarDayGroup[] {
+  const itemsByDate = items.reduce<Record<string, CalendarItemWithPreset[]>>(
+    (grouped, item) => {
+      grouped[item.date] = [...(grouped[item.date] ?? []), enrichCalendarItem(item)];
+      return grouped;
+    },
+    {},
+  );
+  const weekRange = deriveCalendarWeekRange(referenceDate);
+
+  return weekRange.dates.map((date) => ({
+    date,
+    dayLabel: getCalendarDateLabel(date),
+    items: itemsByDate[date] ?? [],
+  }));
+}
+
+export function getCalendarFilledLabel(item: CalendarItem) {
+  return `${item.filledCount}/${item.neededCount}`;
+}
+
+export function getCalendarItemDisplayName(item: CalendarItem) {
+  return item.oneOffTask?.name ?? resolveCalendarItemTaskPreset(item)?.name ?? "Custom task";
+}
+
+export function getCalendarItemTimeWindow(item: CalendarItem) {
+  if (item.startTime && item.endTime) {
+    return `${item.startTime} - ${item.endTime}`;
+  }
+
+  return item.timeWindow ?? "Time TBD";
+}
+
+export function getCalendarCategoryLabel(category: TaskPresetCategory) {
+  return taskPresetCategoryLabels[category];
+}
+
+export function getCalendarStatusLabel(status: CalendarItemStatus) {
+  return calendarItemStatusLabels[status];
+}
+
+export function getCalendarStatusTone(status: CalendarItemStatus) {
+  return calendarItemStatusTones[status];
+}
+
+export function isOneOffCalendarItem(item: CalendarItem) {
+  return Boolean(item.oneOffTask) && !item.taskPresetId;
+}
+
+export function isLunchCalendarItem(item: CalendarItem) {
+  const preset = resolveCalendarItemTaskPreset(item);
+  return item.category === "lunch" && Boolean(preset && isLunchTaskPreset(preset));
+}
+
+export function getCalendarSummaryCounts(
+  items = getCalendarItemsForActiveWorkspace(),
+): CalendarSummaryCounts {
+  return items.reduce<CalendarSummaryCounts>(
+    (counts, item) => {
+      counts.scheduledItems += 1;
+      counts.openNeeds += Math.max(item.neededCount - item.filledCount, 0);
+
+      if (item.filledCount >= item.neededCount || item.status === "filled") {
+        counts.filledItems += 1;
+      }
+
+      if (isLunchCalendarItem(item)) {
+        counts.lunchItems += 1;
+      }
+
+      if (item.category === "security") {
+        counts.securityItems += 1;
+      }
+
+      return counts;
+    },
+    {
+      scheduledItems: 0,
+      openNeeds: 0,
+      filledItems: 0,
+      lunchItems: 0,
+      securityItems: 0,
+    },
+  );
+}
+
+export function getCalendarCompactDayLabel(date: string) {
+  return `${getCalendarDayName(date)} ${getCalendarMonthDay(date)}`;
 }
 
 export const foodServiceTypeLabels: Record<FoodServiceType, string> = {

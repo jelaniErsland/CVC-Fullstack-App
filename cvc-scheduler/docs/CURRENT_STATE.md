@@ -186,11 +186,13 @@ Upcoming UI direction:
 - Lightweight mock type scaffolding for future task presets and calendar items.
 - Product model realignment toward unified Tasks + Calendar, with Food/Security pages now treated as prototype/research surfaces to fold into that model.
 - Mock Tasks preset library at `/admin/tasks` with Belgrade task preset data, category grouping, counts, Lunch system preset handling, duplicate-name guidance, and placeholder-only actions.
+- Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, week layout, category filters, summary counts, selected-item details, Lunch menu display, and placeholder-only scheduling actions.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
+- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, and category filters.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
@@ -201,7 +203,7 @@ Upcoming UI direction:
 - `/admin/security/[securityItemId]`: Mock Security detail/day page with a helpful not-found state for unknown security item ids.
 - `/admin/needs-attention`: Mock Needs Attention overview for project follow-ups, open coverage, and setup notes.
 - `/admin/needs-attention/[itemId]`: Mock conflict/coverage detail page with suggested next step, related assignments/people, and placeholder-only actions.
-- `/admin/schedule`: Mock schedule view for the active Belgrade workspace with compact day groups and expandable assignment rows.
+- `/admin/schedule`: Legacy mock schedule prototype for the active Belgrade workspace with compact day groups and expandable assignment rows. It remains intact for route compatibility; `/admin/calendar` is the new primary scheduling surface.
 - `/admin/projects`: Workspace selection/list page, visibly presented as Project Workspaces.
 - `/admin/projects/new`: Mock project workspace setup wizard.
 - `/admin/projects/[projectId]`: Workspace detail/read-only setup overview for specific mock workspaces.
@@ -214,9 +216,9 @@ Upcoming UI direction:
 
 ## 6. Preview Screenshot Workflow
 
-Use `npm run preview:screenshots` after starting the app locally with `npm run dev`.
+Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures key admin routes, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Tasks, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, Calendar, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Tasks, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 Latest generated screenshots are written to `docs/previews/latest/`. The folder is cleared and recreated each time the script runs.
 
@@ -236,7 +238,8 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
 - No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
 - No real security persistence, helper assignment mutations, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
-- No real task preset creation/edit/duplicate mutations, calendar item UI, calendar scheduling model, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
+- No real task preset creation/edit/duplicate mutations, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
+- Calendar scheduling is mock-data/UI only. Calendar item creation, saving, real placement edits, volunteer assignment mutations, drag/drop, calendar libraries, production scheduling logic, scheduled jobs, and email sending are not implemented.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -263,4 +266,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.8 Calendar scheduling foundation.
+09.9 Calendar visual/stability pass.

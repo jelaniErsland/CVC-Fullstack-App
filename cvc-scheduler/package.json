@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
+    "preview": "next start",
     "start": "next start",
     "lint": "eslint",
     "preview:screenshots": "node scripts/capture-previews.mjs"

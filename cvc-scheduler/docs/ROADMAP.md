@@ -44,8 +44,9 @@ Rough phases:
 - 09.5 Security detail/day view. Completed.
 - 09.6 Unified Tasks + Calendar + Navigation Realignment. Completed.
 - 09.7 Task presets foundation. Completed.
-- 09.8 Calendar scheduling foundation. Next recommended step.
-- 09.9 Mobile 5-tab navigation direction. Planned UI pass.
+- 09.8 Calendar scheduling foundation. Completed.
+- 09.9 Calendar visual/stability pass. Next recommended step.
+- 09.10 Mobile 5-tab navigation direction. Planned UI pass.
 
 ## 4. Mid-Term Roadmap
 
@@ -69,7 +70,8 @@ Rough phases:
 - 09.6 Unified Tasks + Calendar + Navigation Realignment.
 - 09.7 Task presets foundation.
 - 09.8 Calendar scheduling foundation.
-- 09.9 Mobile 5-tab navigation direction.
+- 09.9 Calendar visual/stability pass.
+- 09.10 Mobile 5-tab navigation direction.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

@@ -7,6 +7,7 @@ import type { ProjectModule } from "@/lib/mockData";
 export type AdminNavActive =
   | "projects"
   | "overview"
+  | "calendar"
   | "tasks"
   | "volunteers"
   | "questionnaires"
@@ -34,9 +35,9 @@ const navItems: Array<{
 }> = [
   { id: "overview", label: "Overview", href: "/admin/dashboard", always: true },
   {
-    id: "schedule",
+    id: "calendar",
     label: "Calendar",
-    href: "/admin/schedule",
+    href: "/admin/calendar",
     module: "scheduling",
   },
   { id: "tasks", label: "Tasks", href: "/admin/tasks", always: true },
@@ -56,7 +57,7 @@ const navItems: Array<{
   },
   {
     id: "announcements",
-    label: "Announcements",
+    label: "Communications",
     href: "/admin/announcements",
     module: "announcements",
   },
