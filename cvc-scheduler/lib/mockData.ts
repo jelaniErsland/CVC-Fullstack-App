@@ -231,6 +231,21 @@ export type CalendarSummaryCounts = {
   securityItems: number;
 };
 
+export type CalendarHighLevelTaskType = "generalVolunteers" | "food" | "security";
+
+export type CalendarCoverageFilterState =
+  | "unfilled"
+  | "filled"
+  | "waitingConfirmations"
+  | "allConfirmed"
+  | "someDenied";
+
+export type CalendarFilterOptions = {
+  search?: string;
+  taskTypes?: CalendarHighLevelTaskType[];
+  coverageStates?: CalendarCoverageFilterState[];
+};
+
 export type VolunteerAssignment = {
   id: string;
   volunteerId: string;
@@ -4330,6 +4345,131 @@ export function getCalendarStatusLabel(status: CalendarItemStatus) {
 
 export function getCalendarStatusTone(status: CalendarItemStatus) {
   return calendarItemStatusTones[status];
+}
+
+export const calendarHighLevelTaskTypeLabels: Record<
+  CalendarHighLevelTaskType,
+  string
+> = {
+  generalVolunteers: "General Volunteers",
+  food: "Food",
+  security: "Security",
+};
+
+export const calendarCoverageFilterStateLabels: Record<
+  CalendarCoverageFilterState,
+  string
+> = {
+  unfilled: "Unfilled",
+  filled: "Filled",
+  waitingConfirmations: "Waiting on some confirmations",
+  allConfirmed: "All confirmed",
+  someDenied: "Some/all denied",
+};
+
+export function getCalendarHighLevelTaskType(
+  item: CalendarItem,
+): CalendarHighLevelTaskType {
+  if (item.category === "lunch") {
+    return "food";
+  }
+
+  if (item.category === "security") {
+    return "security";
+  }
+
+  return "generalVolunteers";
+}
+
+export function getCalendarHighLevelTaskTypeLabel(
+  taskType: CalendarHighLevelTaskType,
+) {
+  return calendarHighLevelTaskTypeLabels[taskType];
+}
+
+export function getCalendarCoverageFilterState(
+  item: CalendarItem,
+): CalendarCoverageFilterState {
+  if (item.status === "filled" && item.filledCount >= item.neededCount) {
+    return "allConfirmed";
+  }
+
+  if (item.status === "needsReview") {
+    return "waitingConfirmations";
+  }
+
+  if (item.filledCount >= item.neededCount) {
+    return "filled";
+  }
+
+  if (item.filledCount > 0) {
+    return "waitingConfirmations";
+  }
+
+  return "unfilled";
+}
+
+export function getCalendarCoverageFilterStateLabel(
+  state: CalendarCoverageFilterState,
+) {
+  return calendarCoverageFilterStateLabels[state];
+}
+
+export function filterCalendarItems(
+  items: CalendarItem[],
+  filters: CalendarFilterOptions,
+) {
+  const search = filters.search?.trim().toLowerCase();
+  const taskTypes = filters.taskTypes ?? [];
+  const coverageStates = filters.coverageStates ?? [];
+
+  return items.filter((item) => {
+    const name = getCalendarItemDisplayName(item).toLowerCase();
+
+    if (search && !name.includes(search)) {
+      return false;
+    }
+
+    if (
+      taskTypes.length > 0 &&
+      !taskTypes.includes(getCalendarHighLevelTaskType(item))
+    ) {
+      return false;
+    }
+
+    if (
+      coverageStates.length > 0 &&
+      !coverageStates.includes(getCalendarCoverageFilterState(item))
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+export function getCalendarActiveFilterCount(filters: CalendarFilterOptions) {
+  return (
+    (filters.search?.trim() ? 1 : 0) +
+    (filters.taskTypes?.length ?? 0) +
+    (filters.coverageStates?.length ?? 0)
+  );
+}
+
+export function getCalendarActiveFilterSummary(filters: CalendarFilterOptions) {
+  const activeCount = getCalendarActiveFilterCount(filters);
+
+  if (activeCount === 0) {
+    return "All scheduled items";
+  }
+
+  const parts = [
+    filters.search?.trim() ? `Search: ${filters.search.trim()}` : undefined,
+    ...(filters.taskTypes ?? []).map(getCalendarHighLevelTaskTypeLabel),
+    ...(filters.coverageStates ?? []).map(getCalendarCoverageFilterStateLabel),
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.join(", ");
 }
 
 export function isOneOffCalendarItem(item: CalendarItem) {

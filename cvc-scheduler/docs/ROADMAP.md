@@ -49,7 +49,8 @@ Rough phases:
 - 09.10 Calendar item inspector drawer. Completed.
 - 09.11 Mobile 5-tab navigation direction. Completed.
 - 09.11.1 Mobile nav coverage stabilization. Completed.
-- 09.12 Calendar view controls + filter drawer / day-month foundation. Next recommended step.
+- 09.12 Calendar view controls + filter drawer / day-month foundation. Completed.
+- 09.13 Calendar empty-slot creation mock. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -78,6 +79,7 @@ Rough phases:
 - 09.11 Mobile 5-tab navigation direction.
 - 09.11.1 Mobile nav coverage stabilization.
 - 09.12 Calendar view controls + filter drawer / day-month foundation.
+- 09.13 Calendar empty-slot creation mock.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -338,19 +340,21 @@ time/window, assigned volunteers/helpers, filled count such as 0/3, notes,
 repeat rule, copy/paste/bulk creation metadata, and optional one-off custom
 task data.
 
-Future Calendar work should support day/week/month views, a Filter button with
-a drawer/sheet, filters by task name and helper coverage state, drag/drop
-placement, copy/paste, repeatable tasks, bulk creation, simple edit mode, and
-custom one-day tasks.
+Future Calendar work should continue toward a Google Calendar-inspired
+interaction model without copying its visual design directly. Empty date/time
+areas should eventually be clickable/tappable to create a scheduled Calendar
+item: desktop can open a compact popover or side inspector, while mobile should
+open a bottom sheet. The creation flow should choose a reusable task preset,
+confirm date/time, use or adjust needed count, add notes, and optionally assign
+helpers later.
 
-The next Calendar pass should add the Filter button and drawer/sheet before
-deeper scheduling behavior. Calendar filters should eventually support search
-by task name, unfilled tasks, filled tasks, tasks waiting on some
-confirmations, tasks with all helpers confirmed, and tasks with some/all
-helpers denied. Task type filtering should stay high-level: General Volunteers,
-Food, and Security. Construction, cleanup, gate attendant, drywall, concrete,
-and similar work should roll up under General Volunteers rather than becoming
-top-level filter types.
+Calendar now has mock Day/Week/Month view switching and a mock Filter
+drawer/sheet. Calendar filters support task-name search, unfilled tasks, filled
+tasks, tasks waiting on some confirmations, tasks with all helpers confirmed,
+tasks with some/all helpers denied, and high-level task type filters: General
+Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall,
+concrete, room signage, water/coffee, and similar work roll up under General
+Volunteers rather than becoming top-level filter types.
 
 Target desktop sidebar:
 

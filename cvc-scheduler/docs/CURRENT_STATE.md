@@ -196,14 +196,18 @@ Upcoming UI direction:
 - Lightweight mock type scaffolding for future task presets and calendar items.
 - Product model realignment toward unified Tasks + Calendar, with Food/Security pages now treated as prototype/research surfaces to fold into that model.
 - Mock Tasks preset library at `/admin/tasks` with Belgrade task preset data, category grouping, counts, Lunch system preset handling, duplicate-name guidance, and placeholder-only actions.
-- Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, a stabilized full-width desktop week layout, mobile day groups, category filters, summary counts, an app-like item inspector drawer/sheet, Lunch menu display, and placeholder-only scheduling actions.
+- Mock Calendar scheduling foundation at `/admin/calendar` with Belgrade scheduled task instances, a stabilized full-width desktop week layout, mobile day groups, summary counts, an app-like item inspector drawer/sheet, Lunch menu display, and placeholder-only scheduling actions.
+- Calendar view controls now live with the calendar workspace, not the page hero. Day/Week/Month switching is functional mock UI: Week remains the richest view, Day is a focused timeline/list preview, and Month is a compact count/chip grid preview.
+- Calendar filtering is functional local mock UI with a desktop drawer and mobile bottom sheet. Filters include task-name search, coverage/confirmation states, and high-level task type filters for General Volunteers, Food, and Security.
+- Calendar task type filtering rolls construction, cleanup, gate attendant, drywall, concrete, room signage, water/coffee, and similar project work into General Volunteers. Food covers Lunch and food-related calendar items. Security covers night watch, site checks, unlock/check-in, and security-related items.
+- Calendar future direction is Google Calendar-inspired interaction logic without visual cloning: empty date/time areas should later open a scheduled-item creation flow from the clicked/tapped slot. Desktop can use a compact popover or side inspector; mobile should use a bottom sheet. Creation should choose a reusable task preset, confirm date/time, use or adjust needed count, add notes, and optionally assign helpers later.
 - Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More. Calendar is the center action, and secondary admin destinations live in More.
 
 ## 5. Current Routes
 
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock role-aware admin home inside Belgrade Major Remodel 2026, currently centered on the Primary CVC experience.
-- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, category filters, and a click/tap-open item inspector. Desktop uses a right-side inspector panel; mobile uses a bottom sheet.
+- `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month mock views, and a click/tap-open item inspector. Desktop uses a right-side inspector panel and filter drawer; mobile uses bottom sheets.
 - `/admin/tasks`: Mock task preset library for reusable project work blocks, separate from Calendar scheduling.
 - `/admin/announcements`: Mock announcement and reminder planning overview with draft, ready, scheduled/mock, and sent/mock communication rows.
 - `/admin/announcements/templates`: Mock reminder templates overview with suggested audience, timing, preview text, placeholders, and placeholder-only actions.
@@ -229,7 +233,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures key admin routes, Calendar, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Tasks, Volunteers, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures key admin routes, Calendar, Calendar filters open, Tasks, communication overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for the dashboard, Calendar, Calendar filters open, Tasks, Volunteers, announcements, templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots include the bottom tab navigation. The screenshot workflow also captures the legacy mobile drawer open state and the new mobile More sheet open state.
 
@@ -253,7 +257,8 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - No real security persistence, helper assignment mutations, live alerts, GPS/location tracking, camera systems, access control, incident reporting workflows, or production security workflows.
 - No real task preset creation/edit/duplicate mutations, drag/drop, repeat rules, copy/paste, bulk creation, or calendar persistence yet.
 - Calendar scheduling is mock-data/UI only. Calendar item creation, saving, real placement edits, volunteer assignment mutations, drag/drop, calendar libraries, production scheduling logic, scheduled jobs, and email sending are not implemented.
-- Calendar remains week-first/mock-only. True Day/Month behavior, view-control placement, a Filter button with a drawer/sheet, task search, and coverage/type filters should be handled in a later Calendar view-controls pass.
+- Calendar Day/Week/Month switching and filters are local mock UI. They do not persist state, navigate real dates, or mutate scheduling data.
+- Empty-slot scheduled-item creation is not implemented yet. The current subtle empty-slot affordance is preview-only and points toward the future mock creation pass.
 - `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
@@ -274,11 +279,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
 - No public volunteer portal yet.
-- Some admin routes outside the checked communication/dashboard/settings surfaces may still use older local shell markup until a broader shell cleanup pass.
+- Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
 - Belgrade remains the production workflow in Sheets/App Script for now.
 
 ## 9. Next Recommended Step
 
-09.12 Calendar view controls + filter drawer / day-month foundation.
+09.13 Calendar empty-slot creation mock.

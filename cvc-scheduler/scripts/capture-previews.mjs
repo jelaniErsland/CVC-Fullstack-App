@@ -45,6 +45,12 @@ const captures = [
     viewport: desktopViewport,
   },
   { route: "/admin/calendar", fileName: "calendar.jpg", viewport: desktopViewport },
+  {
+    route: "/admin/calendar",
+    fileName: "calendar-filter-open.jpg",
+    viewport: desktopViewport,
+    openCalendarFilters: true,
+  },
   { route: "/admin/tasks", fileName: "tasks.jpg", viewport: desktopViewport },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
   {
@@ -101,6 +107,12 @@ const captures = [
   },
   { route: "/admin/tasks", fileName: "mobile-tasks.jpg", viewport: mobileViewport },
   { route: "/admin/calendar", fileName: "mobile-calendar.jpg", viewport: mobileViewport },
+  {
+    route: "/admin/calendar",
+    fileName: "mobile-calendar-filter-open.jpg",
+    viewport: mobileViewport,
+    openCalendarFilters: true,
+  },
   { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
   {
@@ -147,7 +159,14 @@ async function main() {
   const page = await browser.newPage({ viewport: desktopViewport });
 
   try {
-    for (const { route, fileName, viewport, openMobileDrawer, openMobileMore } of captures) {
+    for (const {
+      route,
+      fileName,
+      viewport,
+      openCalendarFilters,
+      openMobileDrawer,
+      openMobileMore,
+    } of captures) {
       await page.setViewportSize(viewport);
 
       const response = await page.goto(previewUrl(route), {
@@ -165,6 +184,10 @@ async function main() {
 
       if (openMobileMore) {
         await page.getByRole("button", { name: "Open more admin navigation" }).click();
+      }
+
+      if (openCalendarFilters) {
+        await page.getByRole("button", { name: "Open calendar filters" }).click();
       }
 
       await page.screenshot({

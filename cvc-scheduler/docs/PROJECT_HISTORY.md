@@ -1188,6 +1188,46 @@ Limitations:
 Next recommended step:
 - 09.12 Calendar view controls + filter drawer / day-month foundation.
 
+## Iteration 09.12 - Calendar View Controls + Filter Drawer / Day-Month Foundation
+
+Summary:
+- Moved Calendar Day/Week/Month controls out of the page hero and into the Calendar workspace header near the grid.
+- Added functional local mock Day/Week/Month switching. Week remains the richest planning view, Day shows a focused timeline/list preview, and Month shows a compact count/chip grid preview.
+- Replaced the top-level category chip direction with a Filter button that opens a desktop drawer or mobile bottom sheet.
+- Added functional local mock filtering by task-name search, coverage/confirmation state, and high-level task type.
+- Added high-level Calendar task type mapping: General Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall, concrete, room signage, water/coffee, and similar project work roll up under General Volunteers.
+- Preserved existing Calendar item inspector behavior for scheduled items.
+- Added subtle preview-only empty-slot affordances that point toward the future Google Calendar-inspired creation model without creating data.
+- Added screenshot coverage for the Calendar filter drawer/sheet.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `lib/mockData.ts`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*.jpg` when generated
+
+Verification:
+- `npm run lint` passed via `npm.cmd run lint`.
+- `npm run build` passed via `npm.cmd run build`.
+- `npm run preview` started successfully for local verification.
+- `npm run preview:screenshots` refreshed the latest previews, including `calendar-filter-open.jpg` and `mobile-calendar-filter-open.jpg`.
+- Route checks covered `/admin/calendar`, `/admin/tasks`, `/admin/dashboard`, `/admin/volunteers`, `/admin/settings`, `/admin/announcements`, and `/admin/schedule`.
+- Desktop browser checks confirmed the persistent sidebar remains visible, the bottom nav is hidden, Calendar controls sit near the Calendar workspace, Day/Week/Month controls switch views, filters open/close and display active filter state, the Calendar item inspector still opens/closes/reopens, and no horizontal overflow appears.
+- Mobile browser checks around 390px confirmed the bottom nav remains visible, Calendar remains the emphasized center tab, Calendar controls are usable, the filter bottom sheet opens/closes, Day/Week/Month controls switch views, the Calendar item inspector bottom sheet still opens/closes, More still opens/closes, content is not hidden behind the bottom nav, and no horizontal overflow appears.
+
+Limitations:
+- Mock-data/UI only.
+- No persistence, real scheduling mutations, drag/drop, task creation, calendar item creation, volunteer assignment editing, Supabase, auth, database logic, calendar libraries, or production workflows were added.
+- Day and Month are lightweight mock derived views, not full production calendar views.
+- Empty-slot creation is not implemented; the current empty-slot affordance is preview-only.
+- Filter state is local-only and does not save.
+
+Next recommended step:
+- 09.13 Calendar empty-slot creation mock.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
