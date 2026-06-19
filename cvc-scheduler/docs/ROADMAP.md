@@ -59,7 +59,8 @@ Rough phases:
 - 09.19 Calendar minimal grid visual direction pass. Completed.
 - 09.20 Calendar creation detail refinement. Completed.
 - 09.21 Calendar Day View 24-Hour Timeline Foundation. Completed.
-- 09.22 Calendar Day timeline visual QA + proportional placement planning. Next recommended step.
+- 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass. Completed.
+- 09.23 Calendar visual QA + screenshot refresh. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -97,7 +98,8 @@ Rough phases:
 - 09.19 Calendar minimal grid visual direction pass.
 - 09.20 Calendar creation detail refinement.
 - 09.21 Calendar Day View 24-Hour Timeline Foundation.
-- 09.22 Calendar Day timeline visual QA + proportional placement planning.
+- 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass.
+- 09.23 Calendar visual QA + screenshot refresh.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -410,6 +412,11 @@ empty hour rows quietly open the existing preview-only creation flow with a
 specific editable one-hour time suggestion. Proportional block heights,
 overlap handling, resizing, drag/drop, persistence, and production scheduling
 logic remain future work.
+
+The Calendar grid has been simplified further: Day view no longer has an
+internal scroll container, hour rows are thinner, Week columns are broad
+clickable surfaces, and compact event blocks show only task name plus filled
+count. Richer type/status/category/helper details remain in the inspector.
 
 Calendar overlays now use a single active-surface interaction model. Filters,
 mobile More, empty-slot creation, and existing-item inspection are mutually

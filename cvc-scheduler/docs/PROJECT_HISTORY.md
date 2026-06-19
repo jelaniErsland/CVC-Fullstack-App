@@ -1504,7 +1504,37 @@ Limitations:
 - No Supabase, auth, real saves, or Calendar mutations were added.
 
 Next recommended step:
-- 09.22 Calendar Day timeline visual QA + proportional placement planning.
+- 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass.
+
+## Iteration 09.22 - Calendar Simplicity + Full-Surface Grid Interaction Pass
+
+Summary:
+- Simplified `/admin/calendar` toward a calmer Google Calendar-inspired scheduling surface without changing routes or adding real scheduling behavior.
+- Removed the internal Day timeline scroll container so the page handles vertical scrolling naturally.
+- Made Day timeline hour rows thinner while preserving the 24-hour structure and subtle separators.
+- Made Day hour rows and Week day columns broad clickable surfaces instead of relying on small empty-slot affordance areas.
+- Week grid clicks now seed a specific editable one-hour draft based on the click position in the day column.
+- Simplified compact Calendar event blocks to task name plus filled count only.
+- Kept richer item type, status, helper, notes, Lunch, and coverage details available in the item inspector.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` at desktop and 390px mobile widths, including page-scrolling Day view, full-surface Week creation, specific editable start/end defaults, compact event display, existing-item inspection, filters, Week/Day/Month switching, and mobile horizontal overflow.
+
+Limitations:
+- UI simplification only.
+- Week click-position time seeding is approximate.
+- No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, proportional event layout, overlap handling, or production scheduling logic was added.
+
+Next recommended step:
+- 09.23 Calendar visual QA + screenshot refresh.
 
 ## Documentation Maintenance Rules
 

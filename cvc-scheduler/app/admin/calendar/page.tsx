@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
@@ -177,6 +177,14 @@ function getCalendarItemStartHour(item: CalendarItem) {
   }
 
   return hour;
+}
+
+function getTimelineSlotFromPointer(event: MouseEvent<HTMLButtonElement>) {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const offset = bounds.height > 0 ? event.clientY - bounds.top : 0;
+  const hour = Math.min(23, Math.max(0, Math.floor((offset / bounds.height) * 24)));
+
+  return dayTimelineSlots[hour] ?? dayTimelineSlots[13];
 }
 
 const detailAccentStyles: Record<TaskPresetCategory, string> = {
@@ -591,41 +599,22 @@ function CalendarBlock({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const tone = getCalendarStatusTone(item.status);
-  const taskType = getCalendarHighLevelTaskType(item);
-
   return (
     <button
       className={[
-        "min-h-[96px] w-full rounded-lg border border-white/74 border-l-4 px-3 py-3 text-left shadow-[0_1px_8px_rgba(15,23,42,0.05)] transition hover:bg-white/92 hover:shadow-sm",
+        "min-h-[54px] w-full rounded-md border border-white/72 border-l-4 px-2.5 py-2 text-left shadow-[0_1px_6px_rgba(15,23,42,0.04)] transition hover:bg-white/92 hover:shadow-sm",
         blockStyles[item.category],
-        isSelected ? "bg-white ring-2 ring-slate-900/20 shadow-md" : "",
+        isSelected ? "bg-white ring-2 ring-slate-900/20 shadow-sm" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
     >
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <p className="line-clamp-2 min-w-0 text-[15px] font-semibold leading-5 text-slate-950">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <p className="line-clamp-2 min-w-0 text-sm font-semibold leading-5 text-slate-950">
           {getCalendarItemDisplayName(item)}
         </p>
-        <span className="shrink-0 rounded-full bg-white/88 px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm">
+        <span className="shrink-0 text-xs font-semibold text-slate-700">
           {getCalendarFilledLabel(item)}
-        </span>
-      </div>
-      <div className="mt-2.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-        <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-        <span className="truncate">{getCalendarItemTimeWindow(item)}</span>
-      </div>
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <span
-          className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${categoryStyles[item.category]}`}
-        >
-          {getCalendarHighLevelTaskTypeLabel(taskType)}
-        </span>
-        <span
-          className={`rounded-full border px-2 py-1 text-[11px] font-semibold ${toneStyles[tone]}`}
-        >
-          {getCalendarStatusLabel(item.status)}
         </span>
       </div>
     </button>
@@ -660,47 +649,35 @@ function WeekGrid({
       <div className="grid min-h-[620px] min-w-[900px] grid-cols-7">
         {groups.map((group) => (
           <div
-            className="min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] bg-[length:100%_92px] p-3 last:border-r-0"
+            className="relative min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] bg-[length:100%_92px] last:border-r-0"
             key={group.date}
           >
-            <div className="space-y-2.5">
+            <button
+              aria-label={`Create scheduled task from ${group.dayLabel}`}
+              className="absolute inset-0 cursor-pointer rounded-none transition hover:bg-white/18 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+              onClick={(event) => {
+                const slot = getTimelineSlotFromPointer(event);
+
+                onCreateFromSlot({
+                  date: group.date,
+                  label: `${group.dayLabel} at ${slot.label}`,
+                  contextLabel: "Suggested from calendar grid",
+                  suggestedStartTime: slot.start,
+                  suggestedEndTime: slot.end,
+                });
+              }}
+              type="button"
+            />
+            <div className="pointer-events-none relative z-10 space-y-2.5 p-3">
               {group.items.map((item) => (
-                <CalendarBlock
-                  isSelected={selectedId === item.id}
-                  item={item}
-                  key={item.id}
-                  onSelect={() => onSelect(item)}
-                />
+                <div className="pointer-events-auto" key={item.id}>
+                  <CalendarBlock
+                    isSelected={selectedId === item.id}
+                    item={item}
+                    onSelect={() => onSelect(item)}
+                  />
+                </div>
               ))}
-              {group.items.length === 0 ? (
-                <EmptySlotAffordance
-                  label={`Create scheduled task from ${group.dayLabel}`}
-                  onSelect={() =>
-                    onCreateFromSlot({
-                      date: group.date,
-                      label: group.dayLabel,
-                      contextLabel: "Suggested from calendar day",
-                      suggestedStartTime: suggestedSlots.morning.start,
-                      suggestedEndTime: suggestedSlots.morning.end,
-                    })
-                  }
-                />
-              ) : null}
-              {group.items.length > 0 ? (
-                <EmptySlotAffordance
-                  compact
-                  label={`Create scheduled task from ${group.dayLabel}`}
-                  onSelect={() =>
-                    onCreateFromSlot({
-                      date: group.date,
-                      label: group.dayLabel,
-                      contextLabel: "Suggested from calendar whitespace",
-                      suggestedStartTime: suggestedSlots.afternoon.start,
-                      suggestedEndTime: suggestedSlots.afternoon.end,
-                    })
-                  }
-                />
-              ) : null}
             </div>
           </div>
         ))}
@@ -762,34 +739,23 @@ function DayView({
           {getCalendarCompactDayLabel(date)}
         </h2>
       </div>
-      <div className="max-h-[72vh] overflow-y-auto">
+      <div>
         {dayTimelineSlots.map((slot) => {
           const slotItems = dayItems.filter((item) => getCalendarItemStartHour(item) === slot.hour);
 
           return (
             <div
-              className="grid min-h-[86px] grid-cols-[64px_1fr] border-b border-white/72 bg-white/10 sm:grid-cols-[86px_1fr]"
+              className="grid min-h-[58px] grid-cols-[58px_1fr] border-b border-white/72 bg-white/10 sm:min-h-[64px] sm:grid-cols-[80px_1fr]"
               key={slot.hour}
             >
-              <div className="border-r border-white/72 bg-white/18 px-2 py-3 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:text-xs">
+              <div className="border-r border-white/72 bg-white/18 px-2 py-2 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:py-3 sm:text-xs">
                 {slot.label}
               </div>
-              <div className="min-w-0 px-2 py-2 sm:px-3">
-                {slotItems.length > 0 ? (
-                  <div className="mb-2 grid gap-2 xl:grid-cols-2">
-                    {slotItems.map((item) => (
-                      <CalendarBlock
-                        isSelected={selectedId === item.id}
-                        item={item}
-                        key={item.id}
-                        onSelect={() => onSelect(item)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-                <EmptySlotAffordance
-                  label={`Create scheduled task at ${slot.label}`}
-                  onSelect={() =>
+              <div className="relative min-w-0">
+                <button
+                  aria-label={`Create scheduled task at ${slot.label}`}
+                  className="absolute inset-0 cursor-pointer transition hover:bg-white/24 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+                  onClick={() =>
                     onCreateFromSlot({
                       date,
                       label: `${getCalendarCompactDayLabel(date)} at ${slot.label}`,
@@ -798,7 +764,21 @@ function DayView({
                       suggestedEndTime: slot.end,
                     })
                   }
+                  type="button"
                 />
+                {slotItems.length > 0 ? (
+                  <div className="pointer-events-none relative z-10 grid gap-1.5 p-1.5 sm:p-2 xl:grid-cols-2">
+                    {slotItems.map((item) => (
+                      <div className="pointer-events-auto" key={item.id}>
+                        <CalendarBlock
+                          isSelected={selectedId === item.id}
+                          item={item}
+                          onSelect={() => onSelect(item)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           );
