@@ -1649,6 +1649,117 @@ Limitations:
 Next recommended step:
 - 09.27 Calendar date navigation visual QA and polish.
 
+## Iteration 09.27 — Calendar Date Navigation Visual QA and Polish
+
+Summary:
+- Rebalanced the Calendar workspace header so the period, previous/next controls, Project week reset, view switcher, and Filters remain calm and predictable across desktop and mobile.
+- Kept previous/next and Project week at comfortable 44px touch targets, tightened title/summary spacing, and placed Day/Week/Month beside Filters on one compact mobile row.
+- Added pressed-state semantics to the Day/Week/Month switcher without changing its local date-context behavior.
+- Confirmed Week time-gutter/header alignment, simple task-name/count event blocks, usable empty calendar space, bottom-navigation clearance, and the existing mutually exclusive filter/create/inspect surfaces.
+- Focused the clean mobile Calendar preview on the workspace header and refreshed only the default desktop Week and mobile Calendar captures.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar.jpg`
+- `docs/previews/latest/mobile-calendar.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed after allowing the configured Google font fetch.
+- `npm.cmd run preview` started the production server successfully.
+- `npm.cmd run preview:screenshots` passed against the clean production preview.
+- A production-browser regression checked previous/next movement in Week, Day, and Month, Project week reset, view-context preservation, and exact empty Week/Day/Month creation seeds.
+- Production preview captures checked Week, Day, and Month on desktop plus Calendar Week/Day at 390px; the workflow found no Calendar console/page errors or 390px horizontal overflow.
+
+Limitations:
+- Date navigation remains local UI state and resets on refresh.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.28 Calendar keyboard and screen-reader interaction QA.
+
+## Iteration 09.28 — Calendar Month View Cleanup + Full-Cell Creation Pass
+
+Summary:
+- Replaced the empty-day-only Month creation affordance with a full-cell background button on every visible date.
+- Kept event chips as separate foreground sibling buttons so selecting an event opens the inspector without nesting interactive controls or blocking the rest of the day.
+- Limited Month cells to one visible event chip plus a quiet `+N` remainder, preserving broad creation space on dates with multiple scheduled items.
+- Kept desktop chips to task name plus volunteer fraction/count; narrow mobile chips prioritize the truncated task name when both values do not fit cleanly.
+- Preserved the existing 09:00-10:00 Month creation default, local date navigation, view switching, filters, mutually exclusive overlays, mobile More coordination, and preview-only behavior.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started a clean production server successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser regression checks clicked the background of a multi-event Month date on desktop and at 390px, confirmed the exact visible date and 09:00-10:00 creation seed, and independently opened/closed the foreground event inspector.
+- Desktop and mobile Month captures confirmed clean chip truncation, usable day-cell space, bottom-navigation clearance, no horizontal overflow, and no Calendar console/page or hydration errors.
+
+Limitations:
+- Month intentionally exposes one event chip per date; additional items are summarized with `+N` and remain available through Day and Week views.
+- Month creation remains preview-only and local; it does not save or mutate scheduling data.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.29 Calendar keyboard and screen-reader interaction QA.
+
+## Iteration 09.29 — Calendar Visual Reset Toward Native Calendar Feel
+
+Summary:
+- Tightened the Calendar page title and removed the dashboard-style summary-card strip so the active date controls and calendar grid appear immediately.
+- Replaced the glass-card Calendar toolbar with a flat divider-based control area and removed redundant Day timeline and Month preview headings.
+- Flattened Week, Day, Month, and mobile Week surfaces into direct calendar workspaces with subtle slate grid lines, quiet white backgrounds, and no nested glass shadows.
+- Replaced compact event side rails, outlines, and card shadows with restrained filled category bars. Event content remains limited to task name and volunteer fraction/count where space permits.
+- Preserved Month full-cell creation, one-chip-plus-`+N` density, Week time positioning and overlap lanes, Day page scrolling, filters, date navigation, inspector/creation surfaces, overlay exclusivity, and mobile More coordination.
+- Added a short post-view-switch settle to the screenshot workflow so Day and Month captures do not freeze the control transition mid-frame.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar.jpg`
+- `docs/previews/latest/calendar-day.jpg`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/calendar-filter-open.jpg`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar.jpg`
+- `docs/previews/latest/mobile-calendar-day.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-filter-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser regression checks confirmed Week navigation/reset, Day empty-hour creation and event inspection, Month multi-event full-cell creation and event inspection on desktop and at 390px, and exact visible date/time creation seeds.
+- Desktop and mobile Week/Day/Month captures confirmed the flatter grid hierarchy, filled event treatment, bottom-navigation clearance, no horizontal overflow, and no Calendar console/page or hydration errors.
+
+Limitations:
+- This is a visual and interaction-stability reset over mock data; it does not add real calendar persistence or scheduling behavior.
+- Week duration/overlap layout and Day placement remain approximate visual foundations.
+- Mobile Week remains a compact day-group view rather than a seven-column time grid.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.30 Calendar keyboard and screen-reader interaction QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

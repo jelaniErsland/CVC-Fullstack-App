@@ -125,12 +125,24 @@ const captures = [
     viewport: mobileViewport,
   },
   { route: "/admin/tasks", fileName: "mobile-tasks.jpg", viewport: mobileViewport },
-  { route: "/admin/calendar", fileName: "mobile-calendar.jpg", viewport: mobileViewport },
+  {
+    route: "/admin/calendar",
+    fileName: "mobile-calendar.jpg",
+    viewport: mobileViewport,
+    focusCalendarWorkspace: true,
+  },
   {
     route: "/admin/calendar",
     fileName: "mobile-calendar-day.jpg",
     viewport: mobileViewport,
     calendarView: "Day",
+  },
+  {
+    route: "/admin/calendar",
+    fileName: "mobile-calendar-month.jpg",
+    viewport: mobileViewport,
+    calendarView: "Month",
+    focusCalendarWorkspace: true,
   },
   {
     route: "/admin/calendar",
@@ -197,6 +209,7 @@ async function main() {
       viewport,
       calendarView,
       calendarCreateLabel,
+      focusCalendarWorkspace,
       openCalendarCreate,
       openCalendarFilters,
       openMobileDrawer,
@@ -215,6 +228,7 @@ async function main() {
 
       if (calendarView) {
         await page.getByRole("button", { name: calendarView, exact: true }).click();
+        await page.waitForTimeout(200);
       }
 
       if (openMobileDrawer) {
@@ -233,6 +247,20 @@ async function main() {
         await page
           .getByRole("button", { name: calendarCreateLabel, exact: true })
           .click();
+      }
+
+      if (focusCalendarWorkspace) {
+        await page.getByTestId("calendar-workspace-header").evaluate((element) => {
+          element.scrollIntoView({ block: "start" });
+        });
+
+        const hasHorizontalOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        );
+
+        if (hasHorizontalOverflow) {
+          throw new Error("Mobile Calendar has horizontal overflow at 390px");
+        }
       }
 
       await page.screenshot({

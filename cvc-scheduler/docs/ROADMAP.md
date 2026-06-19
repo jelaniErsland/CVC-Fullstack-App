@@ -64,7 +64,10 @@ Rough phases:
 - 09.24 Calendar Week Time-Positioning Foundation. Completed.
 - 09.25 Calendar Event Duration and Overlap Foundation. Completed.
 - 09.26 Calendar Date Navigation Foundation. Completed.
-- 09.27 Calendar date navigation visual QA and polish. Next recommended step.
+- 09.27 Calendar Date Navigation Visual QA and Polish. Completed.
+- 09.28 Calendar Month View Cleanup + Full-Cell Creation Pass. Completed.
+- 09.29 Calendar Visual Reset Toward Native Calendar Feel. Completed.
+- 09.30 Calendar keyboard and screen-reader interaction QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -107,7 +110,10 @@ Rough phases:
 - 09.24 Calendar Week Time-Positioning Foundation.
 - 09.25 Calendar Event Duration and Overlap Foundation.
 - 09.26 Calendar Date Navigation Foundation.
-- 09.27 Calendar date navigation visual QA and polish.
+- 09.27 Calendar Date Navigation Visual QA and Polish.
+- 09.28 Calendar Month View Cleanup + Full-Cell Creation Pass.
+- 09.29 Calendar Visual Reset Toward Native Calendar Feel.
+- 09.30 Calendar keyboard and screen-reader interaction QA.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

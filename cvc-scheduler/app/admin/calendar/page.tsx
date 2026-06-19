@@ -40,7 +40,6 @@ import {
   getCalendarItemsByWeek,
   getCalendarStatusLabel,
   getCalendarStatusTone,
-  getCalendarSummaryCounts,
   getTaskPresetsForActiveWorkspace,
   groupCalendarItemsByDay,
   isLunchCalendarItem,
@@ -132,12 +131,21 @@ const categoryStyles: Record<TaskPresetCategory, string> = {
 };
 
 const blockStyles: Record<TaskPresetCategory, string> = {
-  general: "border-l-slate-400 bg-slate-50/74",
-  lunch: "border-l-emerald-500 bg-emerald-50/74",
-  security: "border-l-sky-500 bg-sky-50/74",
-  cleanup: "border-l-amber-500 bg-amber-50/74",
-  construction: "border-l-violet-500 bg-violet-50/74",
-  custom: "border-l-rose-500 bg-rose-50/74",
+  general: "bg-slate-200/90 text-slate-900 hover:bg-slate-200",
+  lunch: "bg-emerald-200/80 text-emerald-950 hover:bg-emerald-200",
+  security: "bg-sky-200/80 text-sky-950 hover:bg-sky-200",
+  cleanup: "bg-amber-200/80 text-amber-950 hover:bg-amber-200",
+  construction: "bg-violet-200/80 text-violet-950 hover:bg-violet-200",
+  custom: "bg-rose-200/80 text-rose-950 hover:bg-rose-200",
+};
+
+const monthEventStyles: Record<TaskPresetCategory, string> = {
+  general: "bg-slate-200/90 text-slate-800 hover:bg-slate-200",
+  lunch: "bg-emerald-200/80 text-emerald-900 hover:bg-emerald-200",
+  security: "bg-sky-200/80 text-sky-900 hover:bg-sky-200",
+  cleanup: "bg-amber-200/80 text-amber-900 hover:bg-amber-200",
+  construction: "bg-violet-200/80 text-violet-900 hover:bg-violet-200",
+  custom: "bg-rose-200/80 text-rose-900 hover:bg-rose-200",
 };
 
 const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
@@ -333,35 +341,6 @@ const toneStyles: Record<CalendarStatusTone, string> = {
   attention: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-function SummaryStrip({ items }: { items: CalendarItem[] }) {
-  const counts = getCalendarSummaryCounts(items);
-  const summary = [
-    { label: "Scheduled", value: counts.scheduledItems, helper: "Calendar items" },
-    { label: "Open spots", value: counts.openNeeds, helper: "Helpers still needed" },
-    { label: "Filled", value: counts.filledItems, helper: "Covered items" },
-    { label: "Lunch", value: counts.lunchItems, helper: "Menu-aware items" },
-  ];
-
-  return (
-    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {summary.map((item) => (
-        <div
-          className="rounded-lg border border-white/72 bg-white/58 px-4 py-3"
-          key={item.label}
-        >
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-sm font-semibold text-slate-600">{item.label}</p>
-            <p className="text-2xl font-semibold tracking-tight text-slate-950">
-              {item.value}
-            </p>
-          </div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">{item.helper}</p>
-        </div>
-      ))}
-    </section>
-  );
-}
-
 function ViewToggle({
   activeView,
   onChange,
@@ -370,11 +349,12 @@ function ViewToggle({
   onChange: (view: CalendarViewMode) => void;
 }) {
   return (
-    <div className="inline-flex w-full rounded-full border border-white/80 bg-white/60 p-1 text-sm font-semibold text-slate-500 sm:w-auto">
+    <div className="inline-flex min-w-0 flex-1 rounded-full border border-slate-200/80 bg-white/58 p-1 text-sm font-semibold text-slate-500 sm:w-auto sm:flex-none">
       {viewModes.map((view) => (
         <button
+          aria-pressed={activeView === view.id}
           className={[
-            "min-h-10 flex-1 rounded-full px-4 transition sm:flex-none",
+            "min-h-11 min-w-0 flex-1 rounded-full px-3 transition sm:flex-none sm:px-4",
             activeView === view.id
               ? "bg-slate-950 text-white shadow-sm"
               : "hover:bg-white/70",
@@ -418,26 +398,26 @@ function CalendarWorkspaceHeader({
   const navigationUnit = activeView === "day" ? "day" : activeView;
 
   return (
-    <GlassCard className="p-4 sm:p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <section
+      className="border-b border-slate-200/80 pb-3"
+      data-testid="calendar-workspace-header"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Calendar workspace
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
             {periodLabel}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
+          <p className="mt-1 text-sm leading-6 text-slate-500">
             {filteredItemCount} visible item{filteredItemCount === 1 ? "" : "s"} -{" "}
             {activeFilterSummary}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-full border border-white/80 bg-white/60 p-1">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+          <div className="inline-flex rounded-full border border-slate-200/80 bg-white/58 p-1">
             <button
               aria-label={`Previous ${navigationUnit}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
               onClick={onNavigatePrevious}
               title={`Previous ${navigationUnit}`}
               type="button"
@@ -446,7 +426,7 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label={`Next ${navigationUnit}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
               onClick={onNavigateNext}
               title={`Next ${navigationUnit}`}
               type="button"
@@ -455,7 +435,7 @@ function CalendarWorkspaceHeader({
             </button>
           </div>
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/58 px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45 sm:px-4"
             disabled={resetDisabled}
             onClick={onNavigateReset}
             type="button"
@@ -466,15 +446,15 @@ function CalendarWorkspaceHeader({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-3 flex min-w-0 items-center gap-2 sm:justify-between">
         <ViewToggle activeView={activeView} onChange={onViewChange} />
         <button
           aria-label="Open calendar filters"
           className={[
-            "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+            "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition sm:px-4",
             activeFilterCount > 0
               ? "border-slate-950 bg-slate-950 text-white shadow-sm"
-              : "border-white/80 bg-white/70 text-slate-700 hover:bg-white",
+              : "border-slate-200/80 bg-white/58 text-slate-700 hover:bg-white",
           ].join(" ")}
           onClick={onFilterOpen}
           type="button"
@@ -488,7 +468,7 @@ function CalendarWorkspaceHeader({
           ) : null}
         </button>
       </div>
-    </GlassCard>
+    </section>
   );
 }
 
@@ -777,10 +757,10 @@ function CalendarBlock({
   return (
     <button
       className={[
-        "w-full rounded-md border border-white/72 border-l-4 text-left shadow-[0_1px_6px_rgba(15,23,42,0.04)] transition hover:bg-white/92 hover:shadow-sm",
+        "w-full overflow-hidden rounded text-left shadow-none transition",
         fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
         blockStyles[item.category],
-        isSelected ? "bg-white ring-2 ring-slate-900/20 shadow-sm" : "",
+        isSelected ? "ring-2 ring-slate-900/30 ring-offset-1" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
@@ -795,7 +775,7 @@ function CalendarBlock({
       >
         <p
           className={[
-            "line-clamp-2 min-w-0 font-semibold text-slate-950",
+            "line-clamp-2 min-w-0 font-semibold",
             narrow ? "text-xs leading-4" : "text-sm leading-5",
           ].join(" ")}
         >
@@ -803,7 +783,7 @@ function CalendarBlock({
         </p>
         <span
           className={[
-            "shrink-0 font-semibold text-slate-700",
+            "shrink-0 font-semibold opacity-75",
             narrow ? "text-[11px]" : "text-xs",
           ].join(" ")}
         >
@@ -830,11 +810,11 @@ function WeekGrid({
   const groups = groupCalendarItemsByDay(items, referenceDate);
 
   return (
-    <GlassCard className="hidden overflow-x-auto lg:block">
-      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-white/72 bg-white/38">
-        <div aria-hidden="true" className="border-r border-white/72" />
+    <section className="hidden overflow-x-auto rounded-xl border border-slate-200/80 bg-white/52 lg:block">
+      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/62">
+        <div aria-hidden="true" className="border-r border-slate-200/80" />
         {groups.map((group) => (
-          <div className="border-r border-white/72 px-4 py-3.5 last:border-r-0" key={group.date}>
+          <div className="border-r border-slate-200/80 px-3 py-3 last:border-r-0" key={group.date}>
             <p className="text-sm font-semibold text-slate-950">{group.dayLabel}</p>
             <p className="mt-1 text-xs font-medium text-slate-400">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
@@ -845,7 +825,7 @@ function WeekGrid({
       <div className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]">
         <div
           aria-hidden="true"
-          className="relative border-r border-white/72 bg-white/22"
+          className="relative border-r border-slate-200/80 bg-white/42"
         >
           {weekTimeLabels.map((slot) => (
             <span
@@ -862,13 +842,13 @@ function WeekGrid({
         </div>
         {groups.map((group) => (
           <div
-            className="relative min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] last:border-r-0"
+            className="relative min-w-0 border-r border-slate-200/80 bg-white/28 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.14)_1px,transparent_1px)] last:border-r-0"
             key={group.date}
             style={{ backgroundSize: "100% 30px" }}
           >
             <button
               aria-label={`Create scheduled task from ${group.dayLabel}`}
-              className="absolute inset-0 cursor-pointer rounded-none transition hover:bg-white/18 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+              className="absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
               onClick={(event) => {
                 const slot = getTimelineSlotFromPointer(event);
 
@@ -913,7 +893,7 @@ function WeekGrid({
           </div>
         ))}
       </div>
-    </GlassCard>
+    </section>
   );
 }
 
@@ -961,31 +941,23 @@ function DayView({
   const dayItems = items.filter((item) => item.date === date).map(enrichCalendarItem);
 
   return (
-    <GlassCard className="overflow-hidden">
-      <div className="border-b border-white/72 bg-white/44 px-4 py-4 sm:px-5">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Day timeline
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-          {getCalendarCompactDayLabel(date)}
-        </h2>
-      </div>
+    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
       <div>
         {dayTimelineSlots.map((slot) => {
           const slotItems = dayItems.filter((item) => getCalendarItemStartHour(item) === slot.hour);
 
           return (
             <div
-              className="grid min-h-[58px] grid-cols-[58px_1fr] border-b border-white/72 bg-white/10 sm:min-h-[64px] sm:grid-cols-[80px_1fr]"
+              className="grid min-h-[58px] grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/20 sm:min-h-[64px] sm:grid-cols-[80px_1fr]"
               key={slot.hour}
             >
-              <div className="border-r border-white/72 bg-white/18 px-2 py-2 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:py-3 sm:text-xs">
+              <div className="border-r border-slate-200/80 bg-white/42 px-2 py-2 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:py-3 sm:text-xs">
                 {slot.label}
               </div>
               <div className="relative min-w-0">
                 <button
                   aria-label={`Create scheduled task at ${slot.label}`}
-                  className="absolute inset-0 cursor-pointer transition hover:bg-white/24 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+                  className="absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
                   onClick={() =>
                     onCreateFromSlot({
                       date,
@@ -1015,7 +987,7 @@ function DayView({
           );
         })}
       </div>
-    </GlassCard>
+    </section>
   );
 }
 
@@ -1056,23 +1028,10 @@ function MonthView({
 }) {
   const dates = deriveMockMonthDates(referenceDate);
   const reference = new Date(`${referenceDate}T00:00:00Z`);
-  const monthLabel = new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    timeZone: "UTC",
-    year: "numeric",
-  }).format(reference);
 
   return (
-    <GlassCard className="overflow-hidden">
-      <div className="border-b border-white/72 bg-white/44 px-4 py-4 sm:px-5">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Month preview
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-          {monthLabel}
-        </h2>
-      </div>
-      <div className="grid grid-cols-7 border-b border-white/72 bg-white/40">
+    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
+      <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
             {day}
@@ -1088,66 +1047,65 @@ function MonthView({
           return (
             <div
               className={[
-                "min-h-28 border-r border-b border-white/72 p-2 last:border-r-0",
-                inMonth ? "bg-white/18" : "bg-white/8 opacity-45",
+                "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-28",
+                inMonth ? "bg-white/24" : "bg-slate-50/42 opacity-45",
               ].join(" ")}
               key={date}
             >
-              <div className="flex items-center justify-between gap-2">
+              <button
+                aria-label={`Create scheduled task from ${getCalendarCompactDayLabel(date)}`}
+                className="absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+                onClick={() =>
+                  onCreateFromSlot({
+                    date,
+                    label: getCalendarCompactDayLabel(date),
+                    contextLabel: "Suggested from calendar day",
+                    suggestedStartTime: suggestedSlots.morning.start,
+                    suggestedEndTime: suggestedSlots.morning.end,
+                  })
+                }
+                type="button"
+              />
+              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1.5 sm:min-h-28 sm:p-2">
                 <span className="text-xs font-semibold text-slate-500">
                   {Number(date.slice(-2))}
                 </span>
-                {dateItems.length > 0 ? (
-                  <span className="rounded-full bg-white/74 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                    {dateItems.length}
-                  </span>
-                ) : null}
-              </div>
-              <div className="mt-2 space-y-1.5">
-                {dateItems.slice(0, 2).map((item) => (
-                  <button
-                    className={[
-                      "w-full truncate rounded-md border px-2 py-1.5 text-left text-[11px] font-semibold transition hover:bg-white",
-                      categoryStyles[item.category],
-                      selectedId === item.id ? "ring-2 ring-slate-900/20" : "",
-                    ].join(" ")}
-                    key={item.id}
-                    onClick={() => onSelect(item)}
-                    type="button"
-                  >
-                    {getCalendarItemDisplayName(item)} - {getCalendarFilledLabel(item)}
-                  </button>
-                ))}
-                {dateItems.length > 2 ? (
-                  <p className="text-[11px] font-semibold text-slate-400">
-                    +{dateItems.length - 2} more
-                  </p>
-                ) : null}
-                {dateItems.length === 0 && inMonth ? (
-                  <button
-                    aria-label={`Create scheduled task from ${getCalendarCompactDayLabel(date)}`}
-                    className="group relative block min-h-10 w-full rounded-md border border-transparent py-2 text-center transition hover:border-slate-200/70 hover:bg-white/32 focus:outline-none focus:ring-2 focus:ring-slate-900/15"
-                    onClick={() =>
-                      onCreateFromSlot({
-                        date,
-                        label: getCalendarCompactDayLabel(date),
-                        contextLabel: "Suggested from calendar day",
-                        suggestedStartTime: suggestedSlots.morning.start,
-                        suggestedEndTime: suggestedSlots.morning.end,
-                      })
-                    }
-                    type="button"
-                  >
-                    <span className="sr-only">Create scheduled task</span>
-                    <span className="mx-auto block h-1.5 w-1.5 rounded-full bg-slate-300/60 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
-                  </button>
-                ) : null}
+                <div className="mt-2 space-y-1.5">
+                  {dateItems.slice(0, 1).map((item) => (
+                    <button
+                      className={[
+                        "pointer-events-auto w-full rounded px-1.5 py-1.5 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px]",
+                        monthEventStyles[item.category],
+                        selectedId === item.id
+                          ? "ring-2 ring-slate-900/30 ring-offset-1"
+                          : "",
+                      ].join(" ")}
+                      key={item.id}
+                      onClick={() => onSelect(item)}
+                      type="button"
+                    >
+                      <span className="flex min-w-0 items-center justify-between gap-1.5">
+                        <span className="min-w-0 truncate">
+                          {getCalendarItemDisplayName(item)}
+                        </span>
+                        <span className="hidden shrink-0 opacity-75 sm:inline">
+                          {getCalendarFilledLabel(item)}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                  {dateItems.length > 1 ? (
+                    <p className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">
+                      +{dateItems.length - 1}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-    </GlassCard>
+    </section>
   );
 }
 
@@ -1167,35 +1125,29 @@ function MobileDayGroups({
   const groups = groupCalendarItemsByDay(items, referenceDate);
 
   return (
-    <div className="space-y-4 lg:hidden">
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52 lg:hidden">
       {groups.map((group) => (
         <section
-          className="rounded-xl border border-white/72 bg-white/46 p-3.5"
+          className="border-b border-slate-200/80 p-3.5 last:border-b-0"
           key={group.date}
         >
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold text-slate-950">
               {getCalendarCompactDayLabel(group.date)}
             </h2>
-            <span className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-slate-500">
-              {group.items.length}
+            <span className="text-xs font-semibold text-slate-400">
+              {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </span>
           </div>
           <div className="mt-3 space-y-2.5">
-            {group.items.length > 0 ? (
-              group.items.map((item) => (
+            {group.items.map((item) => (
                 <CalendarBlock
                   isSelected={selectedId === item.id}
                   item={item}
                   key={item.id}
                   onSelect={() => onSelect(item)}
                 />
-              ))
-            ) : (
-              <p className="rounded-lg border border-dashed border-white/80 px-3 py-5 text-center text-sm font-medium text-slate-400">
-                No scheduled items
-              </p>
-            )}
+              ))}
             <EmptySlotAffordance
               compact={group.items.length > 0}
               label={`Create scheduled task from ${getCalendarCompactDayLabel(group.date)}`}
@@ -1961,30 +1913,19 @@ export default function AdminCalendarPage() {
         setActiveSurface("more");
       }}
     >
-      <header className="rounded-2xl border border-white/60 bg-white/28 px-5 py-5 backdrop-blur-xl sm:px-6">
-        <div>
-          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-            <CalendarDays aria-hidden="true" className="h-4 w-4" />
-            Belgrade Remodel
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-            Calendar
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            Schedule task presets into project days, times, helper counts,
-            and notes.
-          </p>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
-            Preview only. Task preset editing stays on Tasks.
-          </p>
-        </div>
+      <header className="px-1 sm:px-0">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          <CalendarDays aria-hidden="true" className="h-4 w-4" />
+          Belgrade Remodel
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          Calendar
+        </h1>
       </header>
 
-      <section className="mt-6 space-y-4">
+      <section className="mt-4 space-y-3">
         {allItems.length > 0 ? (
           <>
-            <SummaryStrip items={visibleItems} />
-
             <CalendarWorkspaceHeader
               activeFilterCount={activeFilterCount}
               activeFilterSummary={activeFilterSummary}
@@ -2001,7 +1942,7 @@ export default function AdminCalendarPage() {
 
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activeView === "day" ? (
                 <DayView
                   date={calendarAnchor}
