@@ -1806,6 +1806,40 @@ Limitations:
 Next recommended step:
 - 09.31 Calendar keyboard and screen-reader interaction QA.
 
+## Iteration 09.31 — Calendar Keyboard and Screen-Reader Interaction QA
+
+Summary:
+- Added consistent visible-but-calm focus treatment across Calendar navigation, view switching, filters, creation targets, event controls, Month overflow, and panel form controls.
+- Added descriptive accessible names to Week, Day, and Month creation targets; timed event buttons now announce task, volunteer coverage, date, and time while preserving minimal visible event content.
+- Prepared the all-day/multi-day band as a named region, with date-span-aware item names and clear Day-view behavior for future `+N` overflow controls.
+- Kept Week, Day, and Month background targets and foreground event/overflow buttons as sibling layers, with no nested interactive controls.
+- Added dialog semantics and initial focus for Filters, Create, and Inspect; Escape and close actions now restore focus to the launching control when it remains available.
+- Kept closed filter UI inert and hidden from assistive technology, preserved overlay exclusivity and mobile More coordination, and retained the 09.29/09.30 visual direction.
+- Updated the two Calendar creation selectors in the screenshot workflow to match the improved accessible names; capture scope and runtime remain unchanged.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview with the updated Calendar selectors.
+- Production-browser keyboard checks covered filter/create/inspect initial focus and Escape focus restoration, Week keyboard creation at 09:00-10:00, Day/Week/Month pressed states and accessible names, Month keyboard-accessible `+N`, and absence of nested Calendar interactive controls.
+- Production-browser mobile QA at 390px confirmed creation-sheet focus and restoration, one visible Calendar surface, no horizontal overflow, and no console, page, or hydration errors.
+
+Limitations:
+- Calendar keyboard traversal uses normal document tab order; specialized arrow-key grid navigation and a full modal focus trap were intentionally not added in this small, safe pass.
+- Current mock Calendar data remains entirely timed, so live all-day/multi-day item and overflow semantics are prepared but not exercised by normal UI data.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.32 Calendar all-day/multi-day mock-data validation and overflow QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

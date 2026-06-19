@@ -68,7 +68,8 @@ Rough phases:
 - 09.28 Calendar Month View Cleanup + Full-Cell Creation Pass. Completed.
 - 09.29 Calendar Visual Reset Toward Native Calendar Feel. Completed.
 - 09.30 Calendar Week Density + All-Day Band Foundation. Completed.
-- 09.31 Calendar keyboard and screen-reader interaction QA. Next recommended step.
+- 09.31 Calendar keyboard and screen-reader interaction QA. Completed.
+- 09.32 Calendar all-day/multi-day mock-data validation and overflow QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -116,6 +117,7 @@ Rough phases:
 - 09.29 Calendar Visual Reset Toward Native Calendar Feel.
 - 09.30 Calendar Week Density + All-Day Band Foundation.
 - 09.31 Calendar keyboard and screen-reader interaction QA.
+- 09.32 Calendar all-day/multi-day mock-data validation and overflow QA.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

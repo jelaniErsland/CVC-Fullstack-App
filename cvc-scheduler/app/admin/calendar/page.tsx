@@ -18,7 +18,14 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import {
+  type MouseEvent,
+  type Ref,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
@@ -60,6 +67,8 @@ type CalendarViewMode = "day" | "week" | "month";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
 type CreationMode = "preset" | "oneOff";
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
+const calmFocusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-1";
 
 type CreationSlot = {
   date: string;
@@ -177,6 +186,31 @@ function getCalendarEventStyle(item: CalendarItem) {
     calendarEventPalette[hash % calendarEventPalette.length] ??
     calendarEventPalette[0]
   );
+}
+
+function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
+  return [
+    getCalendarItemDisplayName(item),
+    `${item.filledCount} of ${item.neededCount} volunteers`,
+    getCalendarCompactDayLabel(item.date),
+    getCalendarItemTimeWindow(item),
+  ].join(", ");
+}
+
+function getWeekBandItemAccessibleLabel(item: WeekBandCalendarItem) {
+  const startLabel = getCalendarCompactDayLabel(item.date);
+  const endLabel = item.endDate
+    ? getCalendarCompactDayLabel(item.endDate)
+    : undefined;
+  const dateLabel = endLabel && endLabel !== startLabel
+    ? `all day ${startLabel} through ${endLabel}`
+    : `all day ${startLabel}`;
+
+  return [
+    getCalendarItemDisplayName(item),
+    `${item.filledCount} of ${item.neededCount} volunteers`,
+    dateLabel,
+  ].join(", ");
 }
 
 function isWeekBandCalendarItem(item: CalendarItem) {
@@ -411,12 +445,17 @@ function ViewToggle({
   onChange: (view: CalendarViewMode) => void;
 }) {
   return (
-    <div className="inline-flex min-w-0 flex-1 rounded-full border border-slate-200/80 bg-white/58 p-1 text-sm font-semibold text-slate-500 sm:w-auto sm:flex-none">
+    <div
+      aria-label="Calendar view"
+      className="inline-flex min-w-0 flex-1 rounded-full border border-slate-200/80 bg-white/58 p-1 text-sm font-semibold text-slate-500 sm:w-auto sm:flex-none"
+      role="group"
+    >
       {viewModes.map((view) => (
         <button
+          aria-controls="calendar-view-content"
           aria-pressed={activeView === view.id}
           className={[
-            "min-h-11 min-w-0 flex-1 rounded-full px-3 transition sm:flex-none sm:px-4",
+            `min-h-11 min-w-0 flex-1 rounded-full px-3 transition sm:flex-none sm:px-4 ${calmFocusRing}`,
             activeView === view.id
               ? "bg-slate-950 text-white shadow-sm"
               : "hover:bg-white/70",
@@ -479,7 +518,7 @@ function CalendarWorkspaceHeader({
           <div className="inline-flex rounded-full border border-slate-200/80 bg-white/58 p-1">
             <button
               aria-label={`Previous ${navigationUnit}`}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white ${calmFocusRing}`}
               onClick={onNavigatePrevious}
               title={`Previous ${navigationUnit}`}
               type="button"
@@ -488,7 +527,7 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label={`Next ${navigationUnit}`}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white ${calmFocusRing}`}
               onClick={onNavigateNext}
               title={`Next ${navigationUnit}`}
               type="button"
@@ -497,7 +536,7 @@ function CalendarWorkspaceHeader({
             </button>
           </div>
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/58 px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45 sm:px-4"
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/58 px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45 sm:px-4 ${calmFocusRing}`}
             disabled={resetDisabled}
             onClick={onNavigateReset}
             type="button"
@@ -513,7 +552,7 @@ function CalendarWorkspaceHeader({
         <button
           aria-label="Open calendar filters"
           className={[
-            "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition sm:px-4",
+            `inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition sm:px-4 ${calmFocusRing}`,
             activeFilterCount > 0
               ? "border-slate-950 bg-slate-950 text-white shadow-sm"
               : "border-slate-200/80 bg-white/58 text-slate-700 hover:bg-white",
@@ -546,7 +585,7 @@ function FilterToggleButton({
   return (
     <button
       className={[
-        "inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition",
+        `inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
         active
           ? "border-slate-900 bg-slate-950 text-white"
           : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white hover:text-slate-950",
@@ -574,6 +613,24 @@ function CalendarFilterPanel({
   onClose: () => void;
 }) {
   const activeFilterCount = getCalendarActiveFilterCount(filters);
+  const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const closeButton = window.matchMedia("(min-width: 1024px)").matches
+        ? desktopCloseButtonRef.current
+        : mobileCloseButtonRef.current;
+
+      closeButton?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen]);
 
   const toggleTaskType = (taskType: CalendarHighLevelTaskType) => {
     const taskTypes = filters.taskTypes ?? [];
@@ -595,10 +652,12 @@ function CalendarFilterPanel({
 
   return (
     <div
+      aria-hidden={!isOpen}
       className={[
         "fixed inset-0 z-[60] transition",
         isOpen ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
+      inert={!isOpen}
     >
       <button
         aria-label="Close calendar filters backdrop"
@@ -607,19 +666,23 @@ function CalendarFilterPanel({
           isOpen ? "opacity-100" : "opacity-0",
         ].join(" ")}
         onClick={onClose}
+        tabIndex={-1}
         type="button"
       />
 
       <aside
         aria-label="Calendar filters"
+        aria-modal="true"
         className={[
           "absolute right-0 top-0 hidden h-full w-[min(400px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
+        role="dialog"
       >
         <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_24px_90px_rgba(15,23,42,0.22)]">
           <FilterPanelContent
             activeFilterCount={activeFilterCount}
+            closeButtonRef={desktopCloseButtonRef}
             filters={filters}
             onChange={onChange}
             onClear={onClear}
@@ -633,13 +696,16 @@ function CalendarFilterPanel({
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
         <section
           aria-label="Calendar filters"
+          aria-modal="true"
           className={[
             "relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
+          role="dialog"
         >
           <FilterPanelContent
             activeFilterCount={activeFilterCount}
+            closeButtonRef={mobileCloseButtonRef}
             filters={filters}
             onChange={onChange}
             onClear={onClear}
@@ -655,6 +721,7 @@ function CalendarFilterPanel({
 
 function FilterPanelContent({
   activeFilterCount,
+  closeButtonRef,
   filters,
   onChange,
   onClear,
@@ -663,6 +730,7 @@ function FilterPanelContent({
   toggleTaskType,
 }: {
   activeFilterCount: number;
+  closeButtonRef?: Ref<HTMLButtonElement>;
   filters: CalendarFilterOptions;
   onChange: (filters: CalendarFilterOptions) => void;
   onClear: () => void;
@@ -685,8 +753,9 @@ function FilterPanelContent({
           </div>
           <button
             aria-label="Close calendar filters"
-            className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950"
+            className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950 ${calmFocusRing}`}
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -697,7 +766,7 @@ function FilterPanelContent({
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Task name</span>
-          <span className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/72 px-3">
+          <span className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/72 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
             <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
             <input
               className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
@@ -755,14 +824,14 @@ function FilterPanelContent({
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="grid gap-2 sm:grid-cols-2">
           <button
-            className="min-h-11 rounded-full border border-slate-200 bg-white/78 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white"
+            className={`min-h-11 rounded-full border border-slate-200 bg-white/78 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white ${calmFocusRing}`}
             onClick={onClear}
             type="button"
           >
             Clear filters
           </button>
           <button
-            className="min-h-11 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm"
+            className={`min-h-11 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm ${calmFocusRing}`}
             onClick={onClose}
             type="button"
           >
@@ -793,7 +862,7 @@ function ActiveFilterBar({
         {getCalendarActiveFilterSummary(filters)}
       </p>
       <button
-        className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/80 bg-white/72 px-4 text-sm font-semibold text-slate-600 transition hover:bg-white"
+        className={`inline-flex min-h-10 items-center justify-center rounded-full border border-white/80 bg-white/72 px-4 text-sm font-semibold text-slate-600 transition hover:bg-white ${calmFocusRing}`}
         onClick={onClear}
         type="button"
       >
@@ -816,8 +885,9 @@ function CalendarBlock({
 }) {
   return (
     <button
+      aria-label={getCalendarItemAccessibleLabel(item)}
       className={[
-        "w-full overflow-hidden rounded text-left shadow-none transition",
+        `w-full overflow-hidden rounded text-left shadow-none transition ${calmFocusRing}`,
         fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
         getCalendarEventStyle(item),
         isSelected ? "ring-2 ring-slate-900/30 ring-offset-1" : "",
@@ -897,7 +967,11 @@ function WeekGrid({
           </div>
         ))}
       </div>
-      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/42">
+      <div
+        aria-label="All-day and multi-day calendar items"
+        className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/42"
+        role="region"
+      >
         <div className="border-r border-slate-200/80 px-2 pt-2 text-right text-[10px] font-semibold text-slate-400">
           All day
         </div>
@@ -916,8 +990,9 @@ function WeekGrid({
           >
             {visibleBandItems.map(({ endIndex, item, lane, startIndex }) => (
               <button
+                aria-label={getWeekBandItemAccessibleLabel(item)}
                 className={[
-                  "flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition",
+                  `flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition ${calmFocusRing}`,
                   getCalendarEventStyle(item),
                   selectedId === item.id
                     ? "ring-2 ring-slate-900/30 ring-offset-1"
@@ -942,8 +1017,8 @@ function WeekGrid({
             {overflowCounts.map((count, dayIndex) =>
               count > 0 ? (
                 <button
-                  aria-label={`Show ${count} more item${count === 1 ? "" : "s"} for ${groups[dayIndex]?.dayLabel}`}
-                  className="self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950"
+                  aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more all-day item${count === 1 ? "" : "s"}`}
+                  className={`self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
                   key={groups[dayIndex]?.date}
                   onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
                   style={{
@@ -984,10 +1059,13 @@ function WeekGrid({
             style={{ backgroundSize: "100% 30px" }}
           >
             <button
-              aria-label={`Create scheduled task from ${group.dayLabel}`}
-              className="absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+              aria-label={`Create new scheduled task draft on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
+              className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
               onClick={(event) => {
-                const slot = getTimelineSlotFromPointer(event);
+                const slot =
+                  event.detail === 0
+                    ? dayTimelineSlots[9]
+                    : getTimelineSlotFromPointer(event);
 
                 onCreateFromSlot({
                   date: group.date,
@@ -1046,7 +1124,7 @@ function EmptySlotAffordance({
     <button
       aria-label={label}
       className={[
-        "group relative w-full cursor-pointer overflow-hidden rounded-md border border-transparent bg-transparent text-left transition hover:border-slate-200/70 hover:bg-white/32 focus:outline-none focus:ring-2 focus:ring-slate-900/15",
+        `group relative w-full cursor-pointer overflow-hidden rounded-md border border-transparent bg-transparent text-left transition hover:border-slate-200/70 hover:bg-white/32 ${calmFocusRing}`,
         compact ? "min-h-9" : "min-h-[72px]",
       ].join(" ")}
       onClick={onSelect}
@@ -1092,8 +1170,8 @@ function DayView({
               </div>
               <div className="relative min-w-0">
                 <button
-                  aria-label={`Create scheduled task at ${slot.label}`}
-                  className="absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+                  aria-label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(date)} at ${slot.label}`}
+                  className={`absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
                   onClick={() =>
                     onCreateFromSlot({
                       date,
@@ -1152,12 +1230,14 @@ function deriveMockMonthDates(referenceDate: string) {
 function MonthView({
   items,
   onCreateFromSlot,
+  onFocusDate,
   selectedId,
   onSelect,
   referenceDate,
 }: {
   items: CalendarItem[];
   onCreateFromSlot: (slot: CreationSlot) => void;
+  onFocusDate: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
@@ -1189,8 +1269,8 @@ function MonthView({
               key={date}
             >
               <button
-                aria-label={`Create scheduled task from ${getCalendarCompactDayLabel(date)}`}
-                className="absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-900/15"
+                aria-label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(date)}`}
+                className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
                 onClick={() =>
                   onCreateFromSlot({
                     date,
@@ -1209,8 +1289,9 @@ function MonthView({
                 <div className="mt-2 space-y-1.5">
                   {dateItems.slice(0, 1).map((item) => (
                     <button
+                      aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        "pointer-events-auto w-full rounded px-1.5 py-1.5 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px]",
+                        `pointer-events-auto w-full rounded px-1.5 py-1.5 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px] ${calmFocusRing}`,
                         getCalendarEventStyle(item),
                         selectedId === item.id
                           ? "ring-2 ring-slate-900/30 ring-offset-1"
@@ -1231,9 +1312,14 @@ function MonthView({
                     </button>
                   ))}
                   {dateItems.length > 1 ? (
-                    <p className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">
+                    <button
+                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${dateItems.length - 1} more scheduled item${dateItems.length - 1 === 1 ? "" : "s"}`}
+                      className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:text-[11px] ${calmFocusRing}`}
+                      onClick={() => onFocusDate(date)}
+                      type="button"
+                    >
                       +{dateItems.length - 1}
-                    </p>
+                    </button>
                   ) : null}
                 </div>
               </div>
@@ -1286,7 +1372,7 @@ function MobileDayGroups({
               ))}
             <EmptySlotAffordance
               compact={group.items.length > 0}
-              label={`Create scheduled task from ${getCalendarCompactDayLabel(group.date)}`}
+              label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(group.date)}`}
               onSelect={() =>
                 onCreateFromSlot({
                   date: group.date,
@@ -1317,6 +1403,25 @@ function CalendarCreatePanel({
   onDraftChange: (draft: CreationDraft) => void;
   presets: TaskPreset[];
 }) {
+  const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const closeButton = window.matchMedia("(min-width: 1024px)").matches
+        ? desktopCloseButtonRef.current
+        : mobileCloseButtonRef.current;
+
+      closeButton?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen]);
+
   if (!creationDraft) {
     return null;
   }
@@ -1354,10 +1459,12 @@ function CalendarCreatePanel({
 
   return (
     <div
+      aria-hidden={!isOpen}
       className={[
         "fixed inset-0 z-[55] transition",
         isOpen ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
+      inert={!isOpen}
     >
       <button
         aria-label="Close scheduled task creator backdrop"
@@ -1366,18 +1473,22 @@ function CalendarCreatePanel({
           isOpen ? "opacity-100" : "opacity-0",
         ].join(" ")}
         onClick={onClose}
+        tabIndex={-1}
         type="button"
       />
 
       <aside
         aria-label="New scheduled task"
+        aria-modal="true"
         className={[
           "absolute right-0 top-0 hidden h-full w-[min(420px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
+        role="dialog"
       >
         <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_20px_72px_rgba(15,23,42,0.18)]">
           <CreatePanelContent
+            closeButtonRef={desktopCloseButtonRef}
             creationDraft={creationDraft}
             onClose={onClose}
             onPresetChange={handlePresetChange}
@@ -1392,12 +1503,15 @@ function CalendarCreatePanel({
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
         <section
           aria-label="New scheduled task"
+          aria-modal="true"
           className={[
             "relative max-h-[84vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
+          role="dialog"
         >
           <CreatePanelContent
+            closeButtonRef={mobileCloseButtonRef}
             creationDraft={creationDraft}
             onClose={onClose}
             onPresetChange={handlePresetChange}
@@ -1413,6 +1527,7 @@ function CalendarCreatePanel({
 }
 
 function CreatePanelContent({
+  closeButtonRef,
   creationDraft,
   onClose,
   onPresetChange,
@@ -1421,6 +1536,7 @@ function CreatePanelContent({
   selectedPreset,
   selectedTaskType,
 }: {
+  closeButtonRef?: Ref<HTMLButtonElement>;
   creationDraft: CreationDraft;
   onClose: () => void;
   onPresetChange: (presetId: string) => void;
@@ -1446,8 +1562,9 @@ function CreatePanelContent({
           </div>
           <button
             aria-label="Close scheduled task creator"
-            className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950"
+            className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950 ${calmFocusRing}`}
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -1477,7 +1594,7 @@ function CreatePanelContent({
           <div className="mt-2 grid grid-cols-2 gap-2">
             <button
               className={[
-                "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
+                `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 !isOneOff
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
@@ -1494,7 +1611,7 @@ function CreatePanelContent({
             </button>
             <button
               className={[
-                "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
+                `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 isOneOff
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
@@ -1510,7 +1627,7 @@ function CreatePanelContent({
             <label className="mt-3 block">
               <span className="text-sm font-semibold text-slate-700">Task preset</span>
               <select
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                 onChange={(event) => onPresetChange(event.target.value)}
                 value={creationDraft.presetId}
               >
@@ -1526,7 +1643,7 @@ function CreatePanelContent({
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Custom task name</span>
                 <input
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                   onChange={(event) => onUpdate({ customName: event.target.value })}
                   value={creationDraft.customName}
                 />
@@ -1534,7 +1651,7 @@ function CreatePanelContent({
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Task type</span>
                 <select
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                   onChange={(event) =>
                     onUpdate({
                       customTaskType: event.target.value as CalendarHighLevelTaskType,
@@ -1565,7 +1682,7 @@ function CreatePanelContent({
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">Date</span>
               <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                 onChange={(event) => onUpdate({ date: event.target.value })}
                 type="date"
                 value={creationDraft.date}
@@ -1574,7 +1691,7 @@ function CreatePanelContent({
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">Start</span>
               <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                 onChange={(event) => onUpdate({ startTime: event.target.value })}
                 type="time"
                 value={creationDraft.startTime}
@@ -1583,7 +1700,7 @@ function CreatePanelContent({
             <label className="block">
               <span className="text-sm font-semibold text-slate-700">End</span>
               <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                 onChange={(event) => onUpdate({ endTime: event.target.value })}
                 type="time"
                 value={creationDraft.endTime}
@@ -1635,7 +1752,7 @@ function CreatePanelContent({
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Needed</span>
             <input
-              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none"
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
               min={1}
               onChange={(event) =>
                 onUpdate({ neededCount: Math.max(1, Number(event.target.value) || 1) })
@@ -1659,7 +1776,7 @@ function CreatePanelContent({
           <label className="mt-2 block">
             <span className="text-sm font-semibold text-slate-700">Schedule notes</span>
             <textarea
-              className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none"
+              className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
               onChange={(event) => onUpdate({ notes: event.target.value })}
               placeholder="Add notes for the future scheduled item..."
               value={creationDraft.notes}
@@ -1708,6 +1825,25 @@ function CalendarInspector({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const closeButton = window.matchMedia("(min-width: 1024px)").matches
+        ? desktopCloseButtonRef.current
+        : mobileCloseButtonRef.current;
+
+      closeButton?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen]);
+
   if (!item) {
     return null;
   }
@@ -1716,10 +1852,12 @@ function CalendarInspector({
 
   return (
     <div
+      aria-hidden={!isOpen}
       className={[
         "fixed inset-0 z-50 transition",
         isOpen ? "pointer-events-auto" : "pointer-events-none",
       ].join(" ")}
+      inert={!isOpen}
     >
       <button
         aria-label="Close calendar item inspector backdrop"
@@ -1728,19 +1866,27 @@ function CalendarInspector({
           isOpen ? "opacity-100" : "opacity-0",
         ].join(" ")}
         onClick={onClose}
+        tabIndex={-1}
         type="button"
       />
       <aside
         aria-label="Calendar item inspector"
+        aria-modal="true"
         className={[
           "absolute right-0 top-0 hidden h-full w-[min(420px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
+        role="dialog"
       >
         <div
           className={`flex h-full flex-col overflow-hidden rounded-2xl border border-white/72 border-l-4 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.22)] backdrop-blur-2xl ${detailAccentStyles[item.category]}`}
         >
-          <InspectorContent item={item} onClose={onClose} tone={tone} />
+          <InspectorContent
+            closeButtonRef={desktopCloseButtonRef}
+            item={item}
+            onClose={onClose}
+            tone={tone}
+          />
         </div>
       </aside>
 
@@ -1752,16 +1898,24 @@ function CalendarInspector({
             isOpen ? "opacity-100" : "opacity-0",
           ].join(" ")}
           onClick={onClose}
+          tabIndex={-1}
           type="button"
         />
         <section
           aria-label="Calendar item inspector"
+          aria-modal="true"
           className={[
             `relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 border-t-4 bg-white/92 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out ${detailAccentStyles[item.category].replace("border-l", "border-t")}`,
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
+          role="dialog"
         >
-          <InspectorContent item={item} onClose={onClose} tone={tone} />
+          <InspectorContent
+            closeButtonRef={mobileCloseButtonRef}
+            item={item}
+            onClose={onClose}
+            tone={tone}
+          />
         </section>
       </div>
     </div>
@@ -1769,10 +1923,12 @@ function CalendarInspector({
 }
 
 function InspectorContent({
+  closeButtonRef,
   item,
   tone,
   onClose,
 }: {
+  closeButtonRef?: Ref<HTMLButtonElement>;
   item: CalendarItemWithPreset;
   tone: CalendarStatusTone;
   onClose: () => void;
@@ -1800,8 +1956,9 @@ function InspectorContent({
           </div>
           <button
             aria-label="Close calendar item inspector"
-            className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950"
+            className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950 ${calmFocusRing}`}
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             <X aria-hidden="true" className="h-4 w-4" />
@@ -1931,6 +2088,7 @@ export default function AdminCalendarPage() {
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [creationDraft, setCreationDraft] = useState<CreationDraft | undefined>();
+  const surfaceTriggerRef = useRef<HTMLElement | null>(null);
 
   const filteredItems = useMemo(
     () => filterCalendarItems(allItems, filters),
@@ -1960,10 +2118,28 @@ export default function AdminCalendarPage() {
     ? filteredItems.map(enrichCalendarItem).find((item) => item.id === selectedId)
     : undefined;
 
+  const rememberSurfaceTrigger = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      surfaceTriggerRef.current = document.activeElement;
+    }
+  };
+
   const closeCalendarSurface = () => {
+    const shouldRestoreFocus = activeSurface !== "none";
+    const trigger = surfaceTriggerRef.current;
+
     setActiveSurface("none");
     setSelectedId(undefined);
     setCreationDraft(undefined);
+
+    if (shouldRestoreFocus) {
+      surfaceTriggerRef.current = null;
+      window.requestAnimationFrame(() => {
+        if (trigger?.isConnected) {
+          trigger.focus();
+        }
+      });
+    }
   };
 
   const closeMobileNavigation = () => {
@@ -1973,9 +2149,17 @@ export default function AdminCalendarPage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && activeSurface !== "none") {
+        const trigger = surfaceTriggerRef.current;
+
         setActiveSurface("none");
         setSelectedId(undefined);
         setCreationDraft(undefined);
+        surfaceTriggerRef.current = null;
+        window.requestAnimationFrame(() => {
+          if (trigger?.isConnected) {
+            trigger.focus();
+          }
+        });
       }
     };
 
@@ -1987,6 +2171,7 @@ export default function AdminCalendarPage() {
   }, [activeSurface]);
 
   const handleSelectCalendarItem = (item: CalendarItemWithPreset) => {
+    rememberSurfaceTrigger();
     closeMobileNavigation();
     setCreationDraft(undefined);
     setSelectedId(item.id);
@@ -1994,6 +2179,7 @@ export default function AdminCalendarPage() {
   };
 
   const handleOpenFilters = () => {
+    rememberSurfaceTrigger();
     closeMobileNavigation();
     setSelectedId(undefined);
     setCreationDraft(undefined);
@@ -2003,6 +2189,7 @@ export default function AdminCalendarPage() {
   const handleCreateFromSlot = (slot: CreationSlot) => {
     const defaultPreset = creationPresets[0];
 
+    rememberSurfaceTrigger();
     closeMobileNavigation();
     setSelectedId(undefined);
     setCreationDraft({
@@ -2050,6 +2237,7 @@ export default function AdminCalendarPage() {
       active="calendar"
       onMobileMoreClose={closeCalendarSurface}
       onMobileMoreOpen={() => {
+        rememberSurfaceTrigger();
         setSelectedId(undefined);
         setCreationDraft(undefined);
         setActiveSurface("more");
@@ -2084,7 +2272,7 @@ export default function AdminCalendarPage() {
 
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
 
-            <div className="space-y-3">
+            <div className="space-y-3" id="calendar-view-content">
               {activeView === "day" ? (
                 <DayView
                   date={calendarAnchor}
@@ -2117,6 +2305,7 @@ export default function AdminCalendarPage() {
                 <MonthView
                   items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
+                  onFocusDate={handleFocusCalendarDate}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={calendarAnchor}
                   selectedId={selectedItem?.id}

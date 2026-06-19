@@ -68,7 +68,8 @@ const captures = [
     fileName: "calendar-create-open.jpg",
     viewport: desktopViewport,
     openCalendarCreate: true,
-    calendarCreateLabel: "Create scheduled task from Sun, Jan 18",
+    calendarCreateLabel:
+      "Create new scheduled task draft on Sun, Jan 18 in the Week time grid; keyboard default 9 AM",
   },
   { route: "/admin/tasks", fileName: "tasks.jpg", viewport: desktopViewport },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
@@ -155,7 +156,7 @@ const captures = [
     fileName: "mobile-calendar-create-open.jpg",
     viewport: mobileViewport,
     openCalendarCreate: true,
-    calendarCreateLabel: "Create scheduled task from Sun Jan 18",
+    calendarCreateLabel: "Create new scheduled task draft on Sun Jan 18",
   },
   { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },

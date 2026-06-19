@@ -220,6 +220,8 @@ Upcoming UI direction:
 - Calendar empty date/time areas now open a mock scheduled-task creation surface. Desktop uses a lighter right-side creation inspector; mobile uses a bottom sheet. The mock flow can choose a reusable task preset, adjust local-only date/start/end fields, preview task type/default needed count/custom fields, adjust needed count, add notes, switch to a one-off custom task, and see disabled preview-only actions.
 - Existing scheduled Calendar items still open the Calendar item inspector. Empty slots open the separate creation surface. Neither path saves data.
 - Calendar overlays are mutually exclusive through a single active surface model. Opening filters, mobile More, empty-slot creation, or an existing-item inspector closes the other Calendar surfaces, and Escape/close controls return the Calendar to a clean base state.
+- Calendar controls now expose consistent calm keyboard focus rings, grouped pressed-state semantics for Day/Week/Month, and descriptive accessible names for creation surfaces, event buttons, Month overflow, and future all-day/multi-day controls. Event names include date, time, and volunteer coverage for assistive technology without adding visible metadata to compact bars.
+- Calendar filter, creation, and inspector surfaces now use dialog semantics, move focus to their close control when opened, close with Escape, and return focus to the control that launched them. Hidden filter UI is removed from the keyboard and accessibility trees while closed.
 - Mobile More coordinates with Calendar surfaces so More, Filter, Create, and Inspect do not stack on narrow layouts. Calendar actions also close the mobile More sheet or drawer before opening their own panel.
 - Calendar interaction direction remains Google Calendar-inspired without visual cloning: Week keeps days across the x-axis and time down the y-axis, full clickable 24-hour day columns, a subtle two-hour time gutter, hourly separators, duration-based block heights, and deterministic side-by-side lanes for overlapping work. A compact desktop all-day band now sits between the headers and timed grid. Day uses a full 24-hour timeline with quiet clickable hour rows instead of repeated visible "Add task" or "Plan" buttons.
 - Calendar date navigation is local mock UI. Previous/next shifts by one day, week, or month according to the active view; Project week resets the anchor to Jan 13, 2026 and its Jan 12-18 project week. Navigated empty periods retain their normal clickable Day, Week, or Month grids without introducing error states or large empty cards.
@@ -294,6 +296,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - Calendar creation detail refinement is local UI-only. Editable date/start/end fields, helper count, preset choice, one-off task fields, and notes update only the temporary creation draft; they do not create, save, persist, or mutate Calendar data.
 - Calendar Day and Week timeline placement remains approximate. Week blocks now use start/end times for proportional visual height and deterministic overlap lanes, but this is still a visual-only foundation without editing, drag/drop, resizing, advanced collision rules, or production scheduling layout logic. Compact event blocks remain intentionally minimal in the grid.
 - The all-day/multi-day band is desktop-only for now. Existing mock items are all timed, so live all-day spanning and `+N` overflow are prepared but not represented by current production-like mock content.
+- Calendar keyboard behavior currently follows normal document tab order. It does not yet implement specialized arrow-key grid traversal or a full modal focus trap; the current dialogs provide initial focus, Escape dismissal, and trigger-focus restoration.
 - Month intentionally shows one directly selectable event chip per date and summarizes additional items with a quiet count; the full item set remains visible in Day and Week views.
 - `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
@@ -322,4 +325,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.31 Calendar keyboard and screen-reader interaction QA.
+09.32 Calendar all-day/multi-day mock-data validation and overflow QA.
