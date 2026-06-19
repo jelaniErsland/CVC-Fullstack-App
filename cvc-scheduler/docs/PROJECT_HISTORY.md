@@ -1534,7 +1534,38 @@ Limitations:
 - No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, proportional event layout, overlap handling, or production scheduling logic was added.
 
 Next recommended step:
-- 09.23 Calendar visual QA + screenshot refresh.
+- 09.23 Calendar Hydration Fix + Visual QA + Screenshot Refresh.
+
+## Iteration 09.23 - Calendar Hydration Fix + Visual QA + Screenshot Refresh
+
+Summary:
+- Rebuilt and restarted the production preview to investigate the reported `/admin/calendar` hydration mismatch.
+- Confirmed that the mismatch did not reproduce after the clean build: Week background click surfaces and event buttons render as stable sibling elements in the initial DOM, with no hydration or console warnings.
+- Rechecked Week click-position time seeding, the page-scrolling 24-hour Day view, Month switching, minimal event blocks, empty-space creation, item inspection, filters, creation panels, and mobile layout behavior.
+- Expanded the preview workflow with focused desktop Day, desktop Month, and mobile Day Calendar captures.
+- Changed mobile previews to viewport-sized captures so closed off-canvas sheets do not appear in clean screenshot states.
+- Refreshed the tracked preview screenshots from the clean production preview.
+
+Changed files:
+- `scripts/capture-previews.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/*`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview:screenshots` passed against the clean local production preview.
+- Browser QA checked `/admin/calendar` on desktop and at 390px mobile width with no hydration warnings or horizontal overflow.
+
+Limitations:
+- No source-level hydration change was needed because the reported mismatch did not reproduce after rebuilding and restarting the preview.
+- Week time-position seeding and scheduled-item placement remain approximate.
+- No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, overlap handling, or production scheduling logic was added.
+
+Next recommended step:
+- 09.24 Calendar Week time-positioning foundation.
 
 ## Documentation Maintenance Rules
 

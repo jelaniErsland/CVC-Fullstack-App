@@ -60,7 +60,8 @@ Rough phases:
 - 09.20 Calendar creation detail refinement. Completed.
 - 09.21 Calendar Day View 24-Hour Timeline Foundation. Completed.
 - 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass. Completed.
-- 09.23 Calendar visual QA + screenshot refresh. Next recommended step.
+- 09.23 Calendar Hydration Fix + Visual QA + Screenshot Refresh. Completed.
+- 09.24 Calendar Week time-positioning foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -99,7 +100,8 @@ Rough phases:
 - 09.20 Calendar creation detail refinement.
 - 09.21 Calendar Day View 24-Hour Timeline Foundation.
 - 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass.
-- 09.23 Calendar visual QA + screenshot refresh.
+- 09.23 Calendar Hydration Fix + Visual QA + Screenshot Refresh.
+- 09.24 Calendar Week time-positioning foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

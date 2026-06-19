@@ -47,6 +47,18 @@ const captures = [
   { route: "/admin/calendar", fileName: "calendar.jpg", viewport: desktopViewport },
   {
     route: "/admin/calendar",
+    fileName: "calendar-day.jpg",
+    viewport: desktopViewport,
+    calendarView: "Day",
+  },
+  {
+    route: "/admin/calendar",
+    fileName: "calendar-month.jpg",
+    viewport: desktopViewport,
+    calendarView: "Month",
+  },
+  {
+    route: "/admin/calendar",
     fileName: "calendar-filter-open.jpg",
     viewport: desktopViewport,
     openCalendarFilters: true,
@@ -56,6 +68,7 @@ const captures = [
     fileName: "calendar-create-open.jpg",
     viewport: desktopViewport,
     openCalendarCreate: true,
+    calendarCreateLabel: "Create scheduled task from Sun, Jan 18",
   },
   { route: "/admin/tasks", fileName: "tasks.jpg", viewport: desktopViewport },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
@@ -115,6 +128,12 @@ const captures = [
   { route: "/admin/calendar", fileName: "mobile-calendar.jpg", viewport: mobileViewport },
   {
     route: "/admin/calendar",
+    fileName: "mobile-calendar-day.jpg",
+    viewport: mobileViewport,
+    calendarView: "Day",
+  },
+  {
+    route: "/admin/calendar",
     fileName: "mobile-calendar-filter-open.jpg",
     viewport: mobileViewport,
     openCalendarFilters: true,
@@ -124,6 +143,7 @@ const captures = [
     fileName: "mobile-calendar-create-open.jpg",
     viewport: mobileViewport,
     openCalendarCreate: true,
+    calendarCreateLabel: "Create scheduled task from Sun Jan 18",
   },
   { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
@@ -175,6 +195,8 @@ async function main() {
       route,
       fileName,
       viewport,
+      calendarView,
+      calendarCreateLabel,
       openCalendarCreate,
       openCalendarFilters,
       openMobileDrawer,
@@ -191,6 +213,10 @@ async function main() {
         throw new Error(`Failed to load ${route}: ${response?.status() ?? "no response"}`);
       }
 
+      if (calendarView) {
+        await page.getByRole("button", { name: calendarView, exact: true }).click();
+      }
+
       if (openMobileDrawer) {
         await page.getByRole("button", { name: "Open navigation menu" }).click();
       }
@@ -204,11 +230,14 @@ async function main() {
       }
 
       if (openCalendarCreate) {
-        await page.getByRole("button", { name: "Add scheduled task" }).first().click();
+        await page
+          .getByRole("button", { name: calendarCreateLabel, exact: true })
+          .click();
       }
 
       await page.screenshot({
         ...jpegOptions,
+        fullPage: viewport.width >= 1024,
         path: path.join(outputDir, fileName),
       });
 
