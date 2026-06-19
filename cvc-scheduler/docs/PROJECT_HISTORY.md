@@ -1621,6 +1621,34 @@ Limitations:
 Next recommended step:
 - 09.26 Calendar date navigation foundation.
 
+## Iteration 09.26 - Calendar Date Navigation Foundation
+
+Summary:
+- Added compact previous, next, and Project week reset controls to the Calendar workspace header.
+- Added a local Jan 13, 2026 anchor that moves by day, week, or month according to the active Calendar view.
+- Updated visible counts, summaries, Week groups, mobile Week groups, Day dates, and Month dates to derive from the selected period.
+- Preserved clickable empty Day/Week/Month grids so navigated periods without mock items still seed creation with visible date/time context.
+- Expanded Month grids to six rows only when a navigated month requires them.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked date navigation, reset, empty-period creation, overlays, and `/admin/calendar` on desktop and at 390px mobile width with no hydration warnings or horizontal overflow.
+
+Limitations:
+- Date navigation is local UI state and resets on refresh.
+- Mock scheduled items still exist only in the fixed project dataset; navigation does not query, save, route, or mutate Calendar data.
+- No persistence, Supabase, auth, drag/drop, resizing, assignment workflow, scheduling engine, or calendar library was added.
+
+Next recommended step:
+- 09.27 Calendar date navigation visual QA and polish.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

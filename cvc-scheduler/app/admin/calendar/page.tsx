@@ -2,7 +2,10 @@
 
 import {
   CalendarDays,
+  CalendarRange,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Copy,
   Pencil,
@@ -117,6 +120,8 @@ const suggestedSlots = {
   evening: { start: "18:00", end: "19:00" },
 };
 
+const projectCalendarAnchor = "2026-01-13";
+
 const categoryStyles: Record<TaskPresetCategory, string> = {
   general: "border-slate-200 bg-slate-50 text-slate-700",
   lunch: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -156,6 +161,51 @@ function formatHourLabel(hour: number) {
   }
 
   return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+}
+
+function shiftCalendarAnchor(
+  date: string,
+  amount: number,
+  view: CalendarViewMode,
+) {
+  const nextDate = new Date(`${date}T00:00:00Z`);
+
+  if (view === "month") {
+    const day = nextDate.getUTCDate();
+
+    nextDate.setUTCDate(1);
+    nextDate.setUTCMonth(nextDate.getUTCMonth() + amount);
+
+    const lastDay = new Date(Date.UTC(
+      nextDate.getUTCFullYear(),
+      nextDate.getUTCMonth() + 1,
+      0,
+    )).getUTCDate();
+
+    nextDate.setUTCDate(Math.min(day, lastDay));
+  } else {
+    nextDate.setUTCDate(
+      nextDate.getUTCDate() + amount * (view === "week" ? 7 : 1),
+    );
+  }
+
+  return nextDate.toISOString().slice(0, 10);
+}
+
+function getCalendarPeriodLabel(date: string, view: CalendarViewMode) {
+  if (view === "week") {
+    return deriveCalendarWeekRange(date).label;
+  }
+
+  if (view === "month") {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      timeZone: "UTC",
+      year: "numeric",
+    }).format(new Date(`${date}T00:00:00Z`));
+  }
+
+  return `${getCalendarCompactDayLabel(date)}, ${date.slice(0, 4)}`;
 }
 
 function parseCalendarTimeMinutes(value?: string) {
@@ -346,26 +396,36 @@ function CalendarWorkspaceHeader({
   activeView,
   filteredItemCount,
   onFilterOpen,
+  onNavigateNext,
+  onNavigatePrevious,
+  onNavigateReset,
   onViewChange,
-  weekLabel,
+  periodLabel,
+  resetDisabled,
 }: {
   activeFilterCount: number;
   activeFilterSummary: string;
   activeView: CalendarViewMode;
   filteredItemCount: number;
   onFilterOpen: () => void;
+  onNavigateNext: () => void;
+  onNavigatePrevious: () => void;
+  onNavigateReset: () => void;
   onViewChange: (view: CalendarViewMode) => void;
-  weekLabel: string;
+  periodLabel: string;
+  resetDisabled: boolean;
 }) {
+  const navigationUnit = activeView === "day" ? "day" : activeView;
+
   return (
     <GlassCard className="p-4 sm:p-5">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
             Calendar workspace
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            {weekLabel}
+            {periodLabel}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {filteredItemCount} visible item{filteredItemCount === 1 ? "" : "s"} -{" "}
@@ -373,28 +433,60 @@ function CalendarWorkspaceHeader({
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <ViewToggle activeView={activeView} onChange={onViewChange} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full border border-white/80 bg-white/60 p-1">
+            <button
+              aria-label={`Previous ${navigationUnit}`}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              onClick={onNavigatePrevious}
+              title={`Previous ${navigationUnit}`}
+              type="button"
+            >
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <button
+              aria-label={`Next ${navigationUnit}`}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/15"
+              onClick={onNavigateNext}
+              title={`Next ${navigationUnit}`}
+              type="button"
+            >
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
           <button
-            aria-label="Open calendar filters"
-            className={[
-              "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
-              activeFilterCount > 0
-                ? "border-slate-950 bg-slate-950 text-white shadow-sm"
-                : "border-white/80 bg-white/70 text-slate-700 hover:bg-white",
-            ].join(" ")}
-            onClick={onFilterOpen}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/80 bg-white/70 px-4 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45"
+            disabled={resetDisabled}
+            onClick={onNavigateReset}
             type="button"
           >
-            <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
-            Filters
-            {activeFilterCount > 0 ? (
-              <span className="rounded-full bg-white/18 px-2 py-0.5 text-xs">
-                {activeFilterCount}
-              </span>
-            ) : null}
+            <CalendarRange aria-hidden="true" className="h-4 w-4" />
+            Project week
           </button>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <ViewToggle activeView={activeView} onChange={onViewChange} />
+        <button
+          aria-label="Open calendar filters"
+          className={[
+            "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+            activeFilterCount > 0
+              ? "border-slate-950 bg-slate-950 text-white shadow-sm"
+              : "border-white/80 bg-white/70 text-slate-700 hover:bg-white",
+          ].join(" ")}
+          onClick={onFilterOpen}
+          type="button"
+        >
+          <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+          Filters
+          {activeFilterCount > 0 ? (
+            <span className="rounded-full bg-white/18 px-2 py-0.5 text-xs">
+              {activeFilterCount}
+            </span>
+          ) : null}
+        </button>
       </div>
     </GlassCard>
   );
@@ -725,15 +817,17 @@ function CalendarBlock({
 function WeekGrid({
   items,
   onCreateFromSlot,
+  referenceDate,
   selectedId,
   onSelect,
 }: {
   items: CalendarItem[];
   onCreateFromSlot: (slot: CreationSlot) => void;
+  referenceDate: string;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
-  const groups = groupCalendarItemsByDay(items);
+  const groups = groupCalendarItemsByDay(items, referenceDate);
 
   return (
     <GlassCard className="hidden overflow-x-auto lg:block">
@@ -926,14 +1020,23 @@ function DayView({
 }
 
 function deriveMockMonthDates(referenceDate: string) {
-  const reference = new Date(`${referenceDate}T00:00:00`);
-  const firstOfMonth = new Date(reference.getFullYear(), reference.getMonth(), 1);
+  const reference = new Date(`${referenceDate}T00:00:00Z`);
+  const firstOfMonth = new Date(
+    Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), 1),
+  );
   const start = new Date(firstOfMonth);
-  start.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+  start.setUTCDate(firstOfMonth.getUTCDate() - firstOfMonth.getUTCDay());
 
-  return Array.from({ length: 35 }, (_, index) => {
+  const daysInMonth = new Date(Date.UTC(
+    reference.getUTCFullYear(),
+    reference.getUTCMonth() + 1,
+    0,
+  )).getUTCDate();
+  const dateCount = firstOfMonth.getUTCDay() + daysInMonth > 35 ? 42 : 35;
+
+  return Array.from({ length: dateCount }, (_, index) => {
     const date = new Date(start);
-    date.setDate(start.getDate() + index);
+    date.setUTCDate(start.getUTCDate() + index);
     return date.toISOString().slice(0, 10);
   });
 }
@@ -952,9 +1055,10 @@ function MonthView({
   referenceDate: string;
 }) {
   const dates = deriveMockMonthDates(referenceDate);
-  const reference = new Date(`${referenceDate}T00:00:00`);
+  const reference = new Date(`${referenceDate}T00:00:00Z`);
   const monthLabel = new Intl.DateTimeFormat("en-US", {
     month: "long",
+    timeZone: "UTC",
     year: "numeric",
   }).format(reference);
 
@@ -978,7 +1082,8 @@ function MonthView({
       <div className="grid grid-cols-7">
         {dates.map((date) => {
           const dateItems = items.filter((item) => item.date === date).map(enrichCalendarItem);
-          const inMonth = new Date(`${date}T00:00:00`).getMonth() === reference.getMonth();
+          const inMonth =
+            new Date(`${date}T00:00:00Z`).getUTCMonth() === reference.getUTCMonth();
 
           return (
             <div
@@ -1049,15 +1154,17 @@ function MonthView({
 function MobileDayGroups({
   items,
   onCreateFromSlot,
+  referenceDate,
   selectedId,
   onSelect,
 }: {
   items: CalendarItem[];
   onCreateFromSlot: (slot: CreationSlot) => void;
+  referenceDate: string;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
-  const groups = groupCalendarItemsByDay(items);
+  const groups = groupCalendarItemsByDay(items, referenceDate);
 
   return (
     <div className="space-y-4 lg:hidden">
@@ -1721,7 +1828,7 @@ function InspectorContent({
 }
 
 export default function AdminCalendarPage() {
-  const allItems = getCalendarItemsByWeek("2026-01-12", demoProjectId);
+  const allItems = getCalendarItemsByWeek(projectCalendarAnchor, demoProjectId);
   const creationPresets = useMemo(() => {
     const presets = getTaskPresetsForActiveWorkspace();
     const preferred = preferredCreationPresetIds
@@ -1730,8 +1837,8 @@ export default function AdminCalendarPage() {
 
     return preferred.length > 0 ? preferred : presets;
   }, []);
-  const weekRange = deriveCalendarWeekRange("2026-01-12");
   const [activeView, setActiveView] = useState<CalendarViewMode>("week");
+  const [calendarAnchor, setCalendarAnchor] = useState(projectCalendarAnchor);
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
   const [selectedId, setSelectedId] = useState<string | undefined>();
@@ -1741,15 +1848,28 @@ export default function AdminCalendarPage() {
     () => filterCalendarItems(allItems, filters),
     [allItems, filters],
   );
+  const weekRange = deriveCalendarWeekRange(calendarAnchor);
+  const visibleItems = useMemo(() => {
+    if (activeView === "day") {
+      return filteredItems.filter((item) => item.date === calendarAnchor);
+    }
+
+    if (activeView === "month") {
+      const month = calendarAnchor.slice(0, 7);
+
+      return filteredItems.filter((item) => item.date.startsWith(month));
+    }
+
+    return filteredItems.filter(
+      (item) => item.date >= weekRange.start && item.date <= weekRange.end,
+    );
+  }, [activeView, calendarAnchor, filteredItems, weekRange.end, weekRange.start]);
 
   const activeFilterCount = getCalendarActiveFilterCount(filters);
   const activeFilterSummary = getCalendarActiveFilterSummary(filters);
 
-  const groupedItems = groupCalendarItemsByDay(filteredItems, weekRange.start).flatMap(
-    (group) => group.items,
-  );
   const selectedItem = selectedId
-    ? groupedItems.find((item) => item.id === selectedId)
+    ? filteredItems.map(enrichCalendarItem).find((item) => item.id === selectedId)
     : undefined;
 
   const closeCalendarSurface = () => {
@@ -1816,6 +1936,21 @@ export default function AdminCalendarPage() {
     setFilters({});
   };
 
+  const handleViewChange = (view: CalendarViewMode) => {
+    closeCalendarSurface();
+    setActiveView(view);
+  };
+
+  const handleNavigateCalendar = (amount: number) => {
+    closeCalendarSurface();
+    setCalendarAnchor((current) => shiftCalendarAnchor(current, amount, activeView));
+  };
+
+  const handleResetCalendar = () => {
+    closeCalendarSurface();
+    setCalendarAnchor(projectCalendarAnchor);
+  };
+
   return (
     <AdminShell
       active="calendar"
@@ -1848,16 +1983,20 @@ export default function AdminCalendarPage() {
       <section className="mt-6 space-y-4">
         {allItems.length > 0 ? (
           <>
-            <SummaryStrip items={filteredItems} />
+            <SummaryStrip items={visibleItems} />
 
             <CalendarWorkspaceHeader
               activeFilterCount={activeFilterCount}
               activeFilterSummary={activeFilterSummary}
               activeView={activeView}
-              filteredItemCount={filteredItems.length}
+              filteredItemCount={visibleItems.length}
               onFilterOpen={handleOpenFilters}
-              onViewChange={setActiveView}
-              weekLabel={weekRange.label}
+              onNavigateNext={() => handleNavigateCalendar(1)}
+              onNavigatePrevious={() => handleNavigateCalendar(-1)}
+              onNavigateReset={handleResetCalendar}
+              onViewChange={handleViewChange}
+              periodLabel={getCalendarPeriodLabel(calendarAnchor, activeView)}
+              resetDisabled={calendarAnchor === projectCalendarAnchor}
             />
 
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
@@ -1865,8 +2004,8 @@ export default function AdminCalendarPage() {
             <div className="space-y-4">
               {activeView === "day" ? (
                 <DayView
-                  date={weekRange.dates[1]}
-                  items={filteredItems}
+                  date={calendarAnchor}
+                  items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
                   onSelect={handleSelectCalendarItem}
                   selectedId={selectedItem?.id}
@@ -1875,25 +2014,27 @@ export default function AdminCalendarPage() {
               {activeView === "week" ? (
                 <>
                   <WeekGrid
-                    items={filteredItems}
+                    items={visibleItems}
                     onCreateFromSlot={handleCreateFromSlot}
                     onSelect={handleSelectCalendarItem}
+                    referenceDate={weekRange.start}
                     selectedId={selectedItem?.id}
                   />
                   <MobileDayGroups
-                    items={filteredItems}
+                    items={visibleItems}
                     onCreateFromSlot={handleCreateFromSlot}
                     onSelect={handleSelectCalendarItem}
+                    referenceDate={weekRange.start}
                     selectedId={selectedItem?.id}
                   />
                 </>
               ) : null}
               {activeView === "month" ? (
                 <MonthView
-                  items={filteredItems}
+                  items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
                   onSelect={handleSelectCalendarItem}
-                  referenceDate={weekRange.start}
+                  referenceDate={calendarAnchor}
                   selectedId={selectedItem?.id}
                 />
               ) : null}

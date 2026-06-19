@@ -222,6 +222,7 @@ Upcoming UI direction:
 - Calendar overlays are mutually exclusive through a single active surface model. Opening filters, mobile More, empty-slot creation, or an existing-item inspector closes the other Calendar surfaces, and Escape/close controls return the Calendar to a clean base state.
 - Mobile More coordinates with Calendar surfaces so More, Filter, Create, and Inspect do not stack on narrow layouts. Calendar actions also close the mobile More sheet or drawer before opening their own panel.
 - Calendar interaction direction remains Google Calendar-inspired without visual cloning: Week view now uses full clickable 24-hour day columns, a subtle two-hour time gutter, hourly separators, duration-based block heights, and deterministic side-by-side lanes for overlapping work. Day view uses a full 24-hour timeline with quiet clickable hour rows instead of repeated visible "Add task" or "Plan" buttons. Compact event blocks show only task name and filled count, with richer context left to the inspector.
+- Calendar date navigation is local mock UI. Previous/next shifts by one day, week, or month according to the active view; Project week resets the anchor to Jan 13, 2026 and its Jan 12-18 project week. Navigated empty periods retain their normal clickable Day, Week, or Month grids without introducing error states or large empty cards.
 - Empty-slot creation now treats the clicked/tapped area as suggested calendar context rather than a fixed time window. Day hour rows and Week grid clicks seed specific editable start/end defaults, day-only clicks seed editable date/time defaults, and the flow remains preview-only.
 - A clean production build/preview QA pass confirmed that `/admin/calendar` hydrates without warnings. The Week background click surfaces and event buttons render as stable siblings in the initial DOM; the earlier mismatch did not reproduce after rebuilding and restarting the preview.
 - Mobile admin primary navigation now uses five bottom tabs: Overview, Tasks, emphasized Calendar, Volunteers, and More. Calendar is the center action, and secondary admin destinations live in More.
@@ -313,4 +314,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.26 Calendar date navigation foundation.
+09.27 Calendar date navigation visual QA and polish.
