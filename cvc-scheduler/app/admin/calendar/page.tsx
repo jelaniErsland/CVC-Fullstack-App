@@ -135,15 +135,49 @@ const blockStyles: Record<TaskPresetCategory, string> = {
   custom: "border-l-rose-500 bg-rose-50/74",
 };
 
-const dayTimelineSlots = [
-  { label: "7 AM", start: "07:00", end: "08:00" },
-  { label: "9 AM", start: "09:00", end: "10:00" },
-  { label: "11 AM", start: "11:00", end: "12:00" },
-  { label: "1 PM", start: "13:00", end: "14:00" },
-  { label: "3 PM", start: "15:00", end: "16:00" },
-  { label: "5 PM", start: "17:00", end: "18:00" },
-  { label: "7 PM", start: "19:00", end: "20:00" },
-];
+const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
+  hour,
+  label: formatHourLabel(hour),
+  start: `${String(hour).padStart(2, "0")}:00`,
+  end: `${String((hour + 1) % 24).padStart(2, "0")}:00`,
+}));
+
+function formatHourLabel(hour: number) {
+  if (hour === 0) {
+    return "12 AM";
+  }
+
+  if (hour === 12) {
+    return "12 PM";
+  }
+
+  return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+}
+
+function getCalendarItemStartHour(item: CalendarItem) {
+  if (!item.startTime) {
+    return 9;
+  }
+
+  const match = item.startTime.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+
+  if (!match) {
+    return 9;
+  }
+
+  const [, hourText, , meridiem] = match;
+  const hour = Number(hourText);
+
+  if (meridiem.toUpperCase() === "PM" && hour !== 12) {
+    return hour + 12;
+  }
+
+  if (meridiem.toUpperCase() === "AM" && hour === 12) {
+    return 0;
+  }
+
+  return hour;
+}
 
 const detailAccentStyles: Record<TaskPresetCategory, string> = {
   general: "border-l-slate-400",
@@ -722,36 +756,37 @@ function DayView({
     <GlassCard className="overflow-hidden">
       <div className="border-b border-white/72 bg-white/44 px-4 py-4 sm:px-5">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Day preview
+          Day timeline
         </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
           {getCalendarCompactDayLabel(date)}
         </h2>
       </div>
-      <div className="grid gap-0 lg:grid-cols-[96px_1fr]">
-        {dayTimelineSlots.map((slot, index) => (
-          <div className="contents" key={slot.label}>
-            <div className="hidden border-b border-white/72 bg-white/22 px-4 py-5 text-xs font-semibold text-slate-400 lg:block">
-              {slot.label}
-            </div>
-            <div className="border-b border-white/72 bg-white/12 p-3">
-              {index === 1 ? (
-                <div className="grid gap-2 lg:grid-cols-2">
-                  {dayItems.map((item) => (
-                    <CalendarBlock
-                      isSelected={selectedId === item.id}
-                      item={item}
-                      key={item.id}
-                      onSelect={() => onSelect(item)}
-                    />
-                  ))}
-                  {dayItems.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-white/80 px-3 py-5 text-center text-sm font-medium text-slate-400">
-                      No scheduled items for this mock day
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
+      <div className="max-h-[72vh] overflow-y-auto">
+        {dayTimelineSlots.map((slot) => {
+          const slotItems = dayItems.filter((item) => getCalendarItemStartHour(item) === slot.hour);
+
+          return (
+            <div
+              className="grid min-h-[86px] grid-cols-[64px_1fr] border-b border-white/72 bg-white/10 sm:grid-cols-[86px_1fr]"
+              key={slot.hour}
+            >
+              <div className="border-r border-white/72 bg-white/18 px-2 py-3 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:text-xs">
+                {slot.label}
+              </div>
+              <div className="min-w-0 px-2 py-2 sm:px-3">
+                {slotItems.length > 0 ? (
+                  <div className="mb-2 grid gap-2 xl:grid-cols-2">
+                    {slotItems.map((item) => (
+                      <CalendarBlock
+                        isSelected={selectedId === item.id}
+                        item={item}
+                        key={item.id}
+                        onSelect={() => onSelect(item)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
                 <EmptySlotAffordance
                   label={`Create scheduled task at ${slot.label}`}
                   onSelect={() =>
@@ -764,10 +799,10 @@ function DayView({
                     })
                   }
                 />
-              )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </GlassCard>
   );

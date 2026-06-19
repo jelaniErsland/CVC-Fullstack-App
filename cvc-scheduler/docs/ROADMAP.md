@@ -58,7 +58,8 @@ Rough phases:
 - 09.18 Overview/navigation/Communications visual QA + preview refresh. Completed.
 - 09.19 Calendar minimal grid visual direction pass. Completed.
 - 09.20 Calendar creation detail refinement. Completed.
-- 09.21 Calendar creation/mobile visual QA. Next recommended step.
+- 09.21 Calendar Day View 24-Hour Timeline Foundation. Completed.
+- 09.22 Calendar Day timeline visual QA + proportional placement planning. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -95,7 +96,8 @@ Rough phases:
 - 09.18 Overview/navigation/Communications visual QA + preview refresh.
 - 09.19 Calendar minimal grid visual direction pass.
 - 09.20 Calendar creation detail refinement.
-- 09.21 Calendar creation/mobile visual QA.
+- 09.21 Calendar Day View 24-Hour Timeline Foundation.
+- 09.22 Calendar Day timeline visual QA + proportional placement planning.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -401,6 +403,13 @@ suggested calendar context rather than a committed predefined time window.
 Timed rows seed specific editable start/end defaults, day-only clicks seed
 editable defaults, and the creation surface remains preview-only without
 saving or mutating data.
+
+Day view now has a 24-hour vertical timeline foundation from 12 AM through
+11 PM. Mock scheduled items are placed in approximate starting-hour rows, and
+empty hour rows quietly open the existing preview-only creation flow with a
+specific editable one-hour time suggestion. Proportional block heights,
+overlap handling, resizing, drag/drop, persistence, and production scheduling
+logic remain future work.
 
 Calendar overlays now use a single active-surface interaction model. Filters,
 mobile More, empty-slot creation, and existing-item inspection are mutually

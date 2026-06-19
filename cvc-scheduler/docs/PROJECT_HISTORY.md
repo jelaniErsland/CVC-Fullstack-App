@@ -1474,7 +1474,37 @@ Limitations:
 - No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, or production scheduling logic was added.
 
 Next recommended step:
-- 09.21 Calendar creation/mobile visual QA.
+- 09.21 Calendar Day View 24-Hour Timeline Foundation.
+
+## Iteration 09.21 - Calendar Day View 24-Hour Timeline Foundation
+
+Summary:
+- Reframed 09.21 from creation/mobile QA into the Calendar Day View 24-Hour Timeline Foundation pass.
+- Replaced the compact Day preview list with a scrollable 24-hour vertical timeline from 12 AM through 11 PM.
+- Added subtle hour separators and quiet empty-hour click targets without repeated visible "Plan" or "Add task" buttons.
+- Placed existing mock scheduled Calendar items into approximate starting-hour rows using their mock start times.
+- Kept task name, time/window, filled count, task type, and status readable inside scheduled item blocks.
+- Empty hour rows open the existing preview-only creation flow with specific editable one-hour start/end suggestions.
+- Included desktop and mobile QA coverage for creation, filters, inspectors, Day/Week/Month switching, and horizontal overflow.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` at desktop and 390px mobile widths, including the 24-hour Day timeline, empty-hour creation, specific editable start/end suggestions, existing-item inspection, filters, Week/Month switching, and mobile horizontal overflow.
+
+Limitations:
+- Day timeline placement is approximate.
+- Items are placed in their starting-hour rows, but proportional block heights, overlap handling, resizing, drag/drop, persistence, assignment workflow, calendar libraries, and production scheduling logic are not implemented.
+- No Supabase, auth, real saves, or Calendar mutations were added.
+
+Next recommended step:
+- 09.22 Calendar Day timeline visual QA + proportional placement planning.
 
 ## Documentation Maintenance Rules
 
