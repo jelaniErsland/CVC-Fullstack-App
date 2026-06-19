@@ -82,6 +82,18 @@ type CreationDraft = {
   customTaskType: CalendarHighLevelTaskType;
 };
 
+type WeekBandCalendarItem = CalendarItemWithPreset & {
+  allDay?: boolean;
+  endDate?: string;
+};
+
+type WeekBandLayoutItem = {
+  endIndex: number;
+  item: WeekBandCalendarItem;
+  lane: number;
+  startIndex: number;
+};
+
 const viewModes: Array<{ id: CalendarViewMode; label: string }> = [
   { id: "day", label: "Day" },
   { id: "week", label: "Week" },
@@ -130,23 +142,16 @@ const categoryStyles: Record<TaskPresetCategory, string> = {
   custom: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
-const blockStyles: Record<TaskPresetCategory, string> = {
-  general: "bg-slate-200/90 text-slate-900 hover:bg-slate-200",
-  lunch: "bg-emerald-200/80 text-emerald-950 hover:bg-emerald-200",
-  security: "bg-sky-200/80 text-sky-950 hover:bg-sky-200",
-  cleanup: "bg-amber-200/80 text-amber-950 hover:bg-amber-200",
-  construction: "bg-violet-200/80 text-violet-950 hover:bg-violet-200",
-  custom: "bg-rose-200/80 text-rose-950 hover:bg-rose-200",
-};
-
-const monthEventStyles: Record<TaskPresetCategory, string> = {
-  general: "bg-slate-200/90 text-slate-800 hover:bg-slate-200",
-  lunch: "bg-emerald-200/80 text-emerald-900 hover:bg-emerald-200",
-  security: "bg-sky-200/80 text-sky-900 hover:bg-sky-200",
-  cleanup: "bg-amber-200/80 text-amber-900 hover:bg-amber-200",
-  construction: "bg-violet-200/80 text-violet-900 hover:bg-violet-200",
-  custom: "bg-rose-200/80 text-rose-900 hover:bg-rose-200",
-};
+const calendarEventPalette = [
+  "bg-sky-200/85 text-sky-950 hover:bg-sky-200",
+  "bg-emerald-200/85 text-emerald-950 hover:bg-emerald-200",
+  "bg-violet-200/85 text-violet-950 hover:bg-violet-200",
+  "bg-amber-200/85 text-amber-950 hover:bg-amber-200",
+  "bg-rose-200/85 text-rose-950 hover:bg-rose-200",
+  "bg-cyan-200/85 text-cyan-950 hover:bg-cyan-200",
+  "bg-indigo-200/85 text-indigo-950 hover:bg-indigo-200",
+  "bg-orange-200/85 text-orange-950 hover:bg-orange-200",
+] as const;
 
 const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
   hour,
@@ -157,7 +162,64 @@ const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
 
 const weekGridHeight = 720;
 const weekEventMinHeight = 44;
+const weekBandVisibleLaneCount = 2;
 const weekTimeLabels = dayTimelineSlots.filter(({ hour }) => hour % 2 === 0);
+
+function getCalendarEventStyle(item: CalendarItem) {
+  const stableKey = item.taskPresetId ?? item.oneOffTask?.name ?? item.id;
+  let hash = 0;
+
+  for (let index = 0; index < stableKey.length; index += 1) {
+    hash = (hash * 31 + stableKey.charCodeAt(index)) >>> 0;
+  }
+
+  return (
+    calendarEventPalette[hash % calendarEventPalette.length] ??
+    calendarEventPalette[0]
+  );
+}
+
+function isWeekBandCalendarItem(item: CalendarItem) {
+  const candidate = item as CalendarItem & { allDay?: boolean };
+
+  return (
+    candidate.allDay === true ||
+    item.timeWindow?.trim().toLowerCase() === "all day" ||
+    (!item.startTime && !item.endTime)
+  );
+}
+
+function getWeekBandLayout(items: WeekBandCalendarItem[], referenceDate: string) {
+  const weekStart = new Date(`${referenceDate}T00:00:00Z`);
+  const dayOffset = (date: string) =>
+    Math.round(
+      (new Date(`${date}T00:00:00Z`).getTime() - weekStart.getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+  const ranges = items
+    .map((item) => ({
+      endIndex: Math.min(6, Math.max(0, dayOffset(item.endDate ?? item.date))),
+      item,
+      startIndex: Math.min(6, Math.max(0, dayOffset(item.date))),
+    }))
+    .filter(({ endIndex, startIndex }) => endIndex >= startIndex)
+    .sort(
+      (first, second) =>
+        first.startIndex - second.startIndex ||
+        second.endIndex - first.endIndex ||
+        (first.item.id < second.item.id ? -1 : first.item.id > second.item.id ? 1 : 0),
+    );
+  const laneEnds: number[] = [];
+
+  return ranges.map(({ endIndex, item, startIndex }): WeekBandLayoutItem => {
+    const availableLane = laneEnds.findIndex((laneEnd) => laneEnd < startIndex);
+    const lane = availableLane === -1 ? laneEnds.length : availableLane;
+
+    laneEnds[lane] = endIndex;
+
+    return { endIndex, item, lane, startIndex };
+  });
+}
 
 function formatHourLabel(hour: number) {
   if (hour === 0) {
@@ -745,13 +807,11 @@ function CalendarBlock({
   fillHeight,
   item,
   isSelected,
-  narrow,
   onSelect,
 }: {
   fillHeight?: boolean;
   item: CalendarItemWithPreset;
   isSelected: boolean;
-  narrow?: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -759,36 +819,19 @@ function CalendarBlock({
       className={[
         "w-full overflow-hidden rounded text-left shadow-none transition",
         fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
-        blockStyles[item.category],
+        getCalendarEventStyle(item),
         isSelected ? "ring-2 ring-slate-900/30 ring-offset-1" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
     >
-      <div
-        className={[
-          "min-w-0",
-          narrow
-            ? "flex flex-col items-start gap-1"
-            : "flex items-center justify-between gap-2",
-        ].join(" ")}
-      >
-        <p
-          className={[
-            "line-clamp-2 min-w-0 font-semibold",
-            narrow ? "text-xs leading-4" : "text-sm leading-5",
-          ].join(" ")}
-        >
-          {getCalendarItemDisplayName(item)}
-        </p>
-        <span
-          className={[
-            "shrink-0 font-semibold opacity-75",
-            narrow ? "text-[11px]" : "text-xs",
-          ].join(" ")}
-        >
+      <div className="flex min-w-0 items-start gap-1.5">
+        <span className="mt-px shrink-0 text-[11px] font-semibold leading-4 opacity-70">
           {getCalendarFilledLabel(item)}
         </span>
+        <p className="line-clamp-2 min-w-0 text-xs font-semibold leading-4">
+          {getCalendarItemDisplayName(item)}
+        </p>
       </div>
     </button>
   );
@@ -797,17 +840,49 @@ function CalendarBlock({
 function WeekGrid({
   items,
   onCreateFromSlot,
+  onFocusDate,
   referenceDate,
   selectedId,
   onSelect,
 }: {
   items: CalendarItem[];
   onCreateFromSlot: (slot: CreationSlot) => void;
+  onFocusDate: (date: string) => void;
   referenceDate: string;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
   const groups = groupCalendarItemsByDay(items, referenceDate);
+  const timedGroups = groups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !isWeekBandCalendarItem(item)),
+  }));
+  const bandItems = items
+    .filter(isWeekBandCalendarItem)
+    .map((item) => enrichCalendarItem(item) as WeekBandCalendarItem);
+  const bandLayout = getWeekBandLayout(bandItems, referenceDate);
+  const visibleBandItems = bandLayout.filter(
+    ({ lane }) => lane < weekBandVisibleLaneCount,
+  );
+  const visibleBandLaneCount = Math.min(
+    weekBandVisibleLaneCount,
+    bandLayout.reduce((highestLane, item) => Math.max(highestLane, item.lane + 1), 0),
+  );
+  const overflowCounts = groups.map((_, dayIndex) =>
+    bandLayout.filter(
+      ({ endIndex, lane, startIndex }) =>
+        lane >= weekBandVisibleLaneCount && startIndex <= dayIndex && endIndex >= dayIndex,
+    ).length,
+  );
+  const hasBandOverflow = overflowCounts.some((count) => count > 0);
+  const bandHeight =
+    visibleBandLaneCount === 0
+      ? 36
+      : 8 + visibleBandLaneCount * 24 + (hasBandOverflow ? 18 : 0);
+  const bandRowCount = Math.max(
+    1,
+    visibleBandLaneCount + (hasBandOverflow ? 1 : 0),
+  );
 
   return (
     <section className="hidden overflow-x-auto rounded-xl border border-slate-200/80 bg-white/52 lg:block">
@@ -821,6 +896,68 @@ function WeekGrid({
             </p>
           </div>
         ))}
+      </div>
+      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/42">
+        <div className="border-r border-slate-200/80 px-2 pt-2 text-right text-[10px] font-semibold text-slate-400">
+          All day
+        </div>
+        <div className="relative col-span-7" style={{ height: bandHeight }}>
+          <div aria-hidden="true" className="absolute inset-0 grid grid-cols-7">
+            {groups.map((group) => (
+              <div
+                className="border-r border-slate-200/80 last:border-r-0"
+                key={group.date}
+              />
+            ))}
+          </div>
+          <div
+            className="relative z-10 grid h-full grid-cols-7 gap-x-1 gap-y-1 p-1.5"
+            style={{ gridTemplateRows: `repeat(${bandRowCount}, minmax(0, 1fr))` }}
+          >
+            {visibleBandItems.map(({ endIndex, item, lane, startIndex }) => (
+              <button
+                className={[
+                  "flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition",
+                  getCalendarEventStyle(item),
+                  selectedId === item.id
+                    ? "ring-2 ring-slate-900/30 ring-offset-1"
+                    : "",
+                ].join(" ")}
+                key={item.id}
+                onClick={() => onSelect(item)}
+                style={{
+                  gridColumn: `${startIndex + 1} / ${endIndex + 2}`,
+                  gridRow: lane + 1,
+                }}
+                type="button"
+              >
+                <span className="shrink-0 opacity-70">
+                  {getCalendarFilledLabel(item)}
+                </span>
+                <span className="min-w-0 truncate">
+                  {getCalendarItemDisplayName(item)}
+                </span>
+              </button>
+            ))}
+            {overflowCounts.map((count, dayIndex) =>
+              count > 0 ? (
+                <button
+                  aria-label={`Show ${count} more item${count === 1 ? "" : "s"} for ${groups[dayIndex]?.dayLabel}`}
+                  className="self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950"
+                  key={groups[dayIndex]?.date}
+                  onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
+                  style={{
+                    gridColumn: dayIndex + 1,
+                    gridRow: visibleBandLaneCount + 1,
+                  }}
+                  type="button"
+                >
+                  +{count}
+                </button>
+              ) : null,
+            )}
+          </div>
+        </div>
       </div>
       <div className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]">
         <div
@@ -840,7 +977,7 @@ function WeekGrid({
             </span>
           ))}
         </div>
-        {groups.map((group) => (
+        {timedGroups.map((group) => (
           <div
             className="relative min-w-0 border-r border-slate-200/80 bg-white/28 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.14)_1px,transparent_1px)] last:border-r-0"
             key={group.date}
@@ -883,7 +1020,6 @@ function WeekGrid({
                       fillHeight
                       isSelected={selectedId === item.id}
                       item={item}
-                      narrow={laneCount > 1}
                       onSelect={() => onSelect(item)}
                     />
                   </div>
@@ -1075,7 +1211,7 @@ function MonthView({
                     <button
                       className={[
                         "pointer-events-auto w-full rounded px-1.5 py-1.5 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px]",
-                        monthEventStyles[item.category],
+                        getCalendarEventStyle(item),
                         selectedId === item.id
                           ? "ring-2 ring-slate-900/30 ring-offset-1"
                           : "",
@@ -1084,12 +1220,12 @@ function MonthView({
                       onClick={() => onSelect(item)}
                       type="button"
                     >
-                      <span className="flex min-w-0 items-center justify-between gap-1.5">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="hidden shrink-0 opacity-70 sm:inline">
+                          {getCalendarFilledLabel(item)}
+                        </span>
                         <span className="min-w-0 truncate">
                           {getCalendarItemDisplayName(item)}
-                        </span>
-                        <span className="hidden shrink-0 opacity-75 sm:inline">
-                          {getCalendarFilledLabel(item)}
                         </span>
                       </span>
                     </button>
@@ -1903,6 +2039,12 @@ export default function AdminCalendarPage() {
     setCalendarAnchor(projectCalendarAnchor);
   };
 
+  const handleFocusCalendarDate = (date: string) => {
+    closeCalendarSurface();
+    setCalendarAnchor(date);
+    setActiveView("day");
+  };
+
   return (
     <AdminShell
       active="calendar"
@@ -1957,6 +2099,7 @@ export default function AdminCalendarPage() {
                   <WeekGrid
                     items={visibleItems}
                     onCreateFromSlot={handleCreateFromSlot}
+                    onFocusDate={handleFocusCalendarDate}
                     onSelect={handleSelectCalendarItem}
                     referenceDate={weekRange.start}
                     selectedId={selectedItem?.id}

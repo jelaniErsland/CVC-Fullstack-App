@@ -1760,6 +1760,52 @@ Limitations:
 Next recommended step:
 - 09.30 Calendar keyboard and screen-reader interaction QA.
 
+## Iteration 09.30 — Calendar Week Density + All-Day Band Foundation
+
+Summary:
+- Kept the familiar Week model with days across the x-axis and time down the y-axis.
+- Added a compact desktop all-day/multi-day band between the day headers and timed grid without moving or reclassifying current timed mock work.
+- Added data-safe band recognition for future explicit all-day items, `All day` time windows, and untimed items, plus optional `endDate` spans across multiple day columns.
+- Added deterministic two-lane band layout and quiet per-day `+N` overflow that focuses the existing local Day view for that date.
+- Standardized compact events around smaller count-first typography while preserving task name plus volunteer fraction/count as the only grid metadata.
+- Replaced broad category-based event colors with a deterministic stable-id/task-id hash over a restrained palette. No random or per-render color values are used.
+- Documented a future Timeline / Work Plan companion view for construction-style dense and multi-day work without changing or replacing Week.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar.jpg`
+- `docs/previews/latest/calendar-day.jpg`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/calendar-filter-open.jpg`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar.jpg`
+- `docs/previews/latest/mobile-calendar-day.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-filter-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser regression checks confirmed Week event inspection and navigation/reset, Day empty-hour creation and event inspection, Month multi-event full-cell creation and event inspection on desktop and at 390px, and exact visible date/time creation seeds.
+- Desktop Week capture confirmed the quiet empty all-day band, retained time gutter/timed positioning/overlap lanes, deterministic task-level colors, and count-first event typography.
+- Mobile Week and Month captures confirmed compact tap targets, bottom-navigation clearance, no horizontal overflow, and no Calendar console/page or hydration errors.
+
+Limitations:
+- Current mock Calendar items all have start/end times, so the all-day band is intentionally empty and its multi-day/overflow rendering remains a prepared foundation.
+- The all-day band is desktop-only; mobile Week continues to use compact day groups.
+- Timed overlap lanes remain approximate and are not capped into a separate dense-event disclosure flow.
+- The future Timeline / Work Plan view is documented only and was not implemented.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.31 Calendar keyboard and screen-reader interaction QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
