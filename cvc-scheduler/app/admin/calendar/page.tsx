@@ -91,10 +91,7 @@ type CreationDraft = {
   customTaskType: CalendarHighLevelTaskType;
 };
 
-type WeekBandCalendarItem = CalendarItemWithPreset & {
-  allDay?: boolean;
-  endDate?: string;
-};
+type WeekBandCalendarItem = CalendarItemWithPreset;
 
 type WeekBandLayoutItem = {
   endIndex: number;
@@ -189,6 +186,10 @@ function getCalendarEventStyle(item: CalendarItem) {
 }
 
 function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
+  if (isWeekBandCalendarItem(item)) {
+    return getWeekBandItemAccessibleLabel(item);
+  }
+
   return [
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
@@ -213,18 +214,42 @@ function getWeekBandItemAccessibleLabel(item: WeekBandCalendarItem) {
   ].join(", ");
 }
 
-function isWeekBandCalendarItem(item: CalendarItem) {
-  const candidate = item as CalendarItem & { allDay?: boolean };
+function getCalendarItemScheduleDisplay(item: CalendarItem) {
+  if (!isWeekBandCalendarItem(item)) {
+    return {
+      heading: "Time",
+      label: getCalendarItemTimeWindow(item),
+    };
+  }
 
+  const startLabel = getCalendarCompactDayLabel(item.date);
+  const endLabel = item.endDate
+    ? getCalendarCompactDayLabel(item.endDate)
+    : undefined;
+
+  return endLabel && endLabel !== startLabel
+    ? {
+        heading: "Schedule",
+        label: `Multi-day · ${startLabel} through ${endLabel}`,
+      }
+    : {
+        heading: "Schedule",
+        label: `All day · ${startLabel}`,
+      };
+}
+
+function isWeekBandCalendarItem(item: CalendarItem) {
   return (
-    candidate.allDay === true ||
+    item.allDay === true ||
     item.timeWindow?.trim().toLowerCase() === "all day" ||
     (!item.startTime && !item.endTime)
   );
 }
 
 function getWeekBandLayout(items: WeekBandCalendarItem[], referenceDate: string) {
-  const weekStart = new Date(`${referenceDate}T00:00:00Z`);
+  const weekStart = new Date(
+    `${deriveCalendarWeekRange(referenceDate).start}T00:00:00Z`,
+  );
   const dayOffset = (date: string) =>
     Math.round(
       (new Date(`${date}T00:00:00Z`).getTime() - weekStart.getTime()) /
@@ -1152,13 +1177,60 @@ function DayView({
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
-  const dayItems = items.filter((item) => item.date === date).map(enrichCalendarItem);
+  const dayItems = items
+    .filter(
+      (item) =>
+        item.date === date ||
+        (isWeekBandCalendarItem(item) &&
+          item.date <= date &&
+          (item.endDate ?? item.date) >= date),
+    )
+    .map(enrichCalendarItem);
+  const allDayItems = dayItems.filter(isWeekBandCalendarItem);
+  const timedItems = dayItems.filter((item) => !isWeekBandCalendarItem(item));
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
+      {allDayItems.length > 0 ? (
+        <div
+          aria-label={`All-day and multi-day items for ${getCalendarCompactDayLabel(date)}`}
+          className="grid grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/42 sm:grid-cols-[80px_1fr]"
+          role="region"
+        >
+          <div className="border-r border-slate-200/80 px-2 py-3 text-right text-[10px] font-semibold text-slate-400 sm:px-4 sm:text-xs">
+            All day
+          </div>
+          <div className="grid min-w-0 gap-1 p-1.5 sm:grid-cols-2 sm:p-2 xl:grid-cols-3">
+            {allDayItems.map((item) => (
+              <button
+                aria-label={getWeekBandItemAccessibleLabel(item)}
+                className={[
+                  `flex min-h-10 min-w-0 items-center gap-1 overflow-hidden rounded px-2 text-left text-[10px] font-semibold leading-4 transition sm:text-[11px] ${calmFocusRing}`,
+                  getCalendarEventStyle(item),
+                  selectedId === item.id
+                    ? "ring-2 ring-slate-900/30 ring-offset-1"
+                    : "",
+                ].join(" ")}
+                key={item.id}
+                onClick={() => onSelect(item)}
+                type="button"
+              >
+                <span className="shrink-0 opacity-70">
+                  {getCalendarFilledLabel(item)}
+                </span>
+                <span className="min-w-0 truncate">
+                  {getCalendarItemDisplayName(item)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div>
         {dayTimelineSlots.map((slot) => {
-          const slotItems = dayItems.filter((item) => getCalendarItemStartHour(item) === slot.hour);
+          const slotItems = timedItems.filter(
+            (item) => getCalendarItemStartHour(item) === slot.hour,
+          );
 
           return (
             <div
@@ -1933,6 +2005,7 @@ function InspectorContent({
   tone: CalendarStatusTone;
   onClose: () => void;
 }) {
+  const scheduleDisplay = getCalendarItemScheduleDisplay(item);
   const placeholderActions = [
     { label: "Add to calendar", icon: Plus },
     { label: "Edit placement", icon: Pencil },
@@ -1986,10 +2059,10 @@ function InspectorContent({
         <div className="mt-4 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-            Time
+            {scheduleDisplay.heading}
           </p>
           <p className="mt-2 text-sm font-semibold text-slate-800">
-            {getCalendarItemTimeWindow(item)}
+            {scheduleDisplay.label}
           </p>
         </div>
 
@@ -2097,7 +2170,13 @@ export default function AdminCalendarPage() {
   const weekRange = deriveCalendarWeekRange(calendarAnchor);
   const visibleItems = useMemo(() => {
     if (activeView === "day") {
-      return filteredItems.filter((item) => item.date === calendarAnchor);
+      return filteredItems.filter(
+        (item) =>
+          item.date === calendarAnchor ||
+          (isWeekBandCalendarItem(item) &&
+            item.date <= calendarAnchor &&
+            (item.endDate ?? item.date) >= calendarAnchor),
+      );
     }
 
     if (activeView === "month") {
@@ -2106,8 +2185,11 @@ export default function AdminCalendarPage() {
       return filteredItems.filter((item) => item.date.startsWith(month));
     }
 
-    return filteredItems.filter(
-      (item) => item.date >= weekRange.start && item.date <= weekRange.end,
+    return filteredItems.filter((item) =>
+      isWeekBandCalendarItem(item)
+        ? item.date <= weekRange.end &&
+          (item.endDate ?? item.date) >= weekRange.start
+        : item.date >= weekRange.start && item.date <= weekRange.end,
     );
   }, [activeView, calendarAnchor, filteredItems, weekRange.end, weekRange.start]);
 

@@ -170,6 +170,8 @@ export type CalendarItem = {
   projectId: string;
   taskPresetId?: string;
   date: string;
+  endDate?: string;
+  allDay?: boolean;
   startTime?: string;
   endTime?: string;
   timeWindow?: string;
@@ -2015,6 +2017,104 @@ export const taskPresets: TaskPreset[] = [
 ];
 
 export const calendarItems: CalendarItem[] = [
+  {
+    id: "calendar-belgrade-site-support-week-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    endDate: "2026-01-17",
+    allDay: true,
+    timeWindow: "All day",
+    category: "general",
+    assignedVolunteerIds: ["nora-bennett", "caleb-ross"],
+    filledCount: 2,
+    neededCount: 3,
+    status: "partiallyFilled",
+    scheduleNotes:
+      "Prototype validation item for remodel-week site support. This is mock-only planning data.",
+    oneOffTask: {
+      name: "Site support week",
+      category: "general",
+      neededCount: 3,
+    },
+  },
+  {
+    id: "calendar-belgrade-preconstruction-prep-jan-12",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-12",
+    allDay: true,
+    timeWindow: "All day",
+    category: "construction",
+    assignedVolunteerIds: ["mia-thompson"],
+    filledCount: 1,
+    neededCount: 2,
+    status: "partiallyFilled",
+    scheduleNotes:
+      "Prototype validation item for preconstruction staging. This is mock-only planning data.",
+    oneOffTask: {
+      name: "Preconstruction prep",
+      category: "construction",
+      neededCount: 2,
+    },
+  },
+  {
+    id: "calendar-belgrade-concrete-prep-window-jan-13",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-13",
+    endDate: "2026-01-15",
+    allDay: true,
+    timeWindow: "All day",
+    category: "construction",
+    assignedVolunteerIds: [],
+    filledCount: 0,
+    neededCount: 4,
+    status: "open",
+    scheduleNotes:
+      "Prototype validation window for concrete-area preparation. This is mock-only planning data.",
+    oneOffTask: {
+      name: "Concrete prep window",
+      category: "construction",
+      neededCount: 4,
+    },
+  },
+  {
+    id: "calendar-belgrade-materials-receiving-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    allDay: true,
+    timeWindow: "All day",
+    category: "general",
+    assignedVolunteerIds: ["evan-brooks"],
+    filledCount: 1,
+    neededCount: 2,
+    status: "partiallyFilled",
+    scheduleNotes:
+      "Prototype validation item for a flexible materials delivery day. This is mock-only planning data.",
+    oneOffTask: {
+      name: "Materials receiving",
+      category: "general",
+      neededCount: 2,
+    },
+  },
+  {
+    id: "calendar-belgrade-safety-coverage-jan-14",
+    projectId: "belgrade-remodel-2026",
+    date: "2026-01-14",
+    endDate: "2026-01-16",
+    allDay: true,
+    timeWindow: "All day",
+    category: "security",
+    assignedVolunteerIds: ["marcus-lee", "caleb-ross"],
+    filledCount: 2,
+    neededCount: 2,
+    status: "filled",
+    scheduleNotes:
+      "Prototype validation span for site safety coverage. This is mock-only planning data.",
+    oneOffTask: {
+      name: "Safety coverage",
+      category: "security",
+      neededCount: 2,
+    },
+  },
   {
     id: "calendar-belgrade-lunch-jan-12",
     projectId: "belgrade-remodel-2026",

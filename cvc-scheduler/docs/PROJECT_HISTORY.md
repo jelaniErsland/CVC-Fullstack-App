@@ -1840,6 +1840,54 @@ Limitations:
 Next recommended step:
 - 09.32 Calendar all-day/multi-day mock-data validation and overflow QA.
 
+## Iteration 09.32 — Calendar All-Day/Multi-Day Mock-Data Validation and Overflow QA
+
+Summary:
+- Added five clearly mock-only Belgrade Calendar validation items: Site support week, Preconstruction prep, Concrete prep window, Materials receiving, and Safety coverage.
+- Extended the shared Calendar item type with optional `allDay` and `endDate` fields while keeping the examples as one-off Calendar instances rather than reusable task presets.
+- Corrected all-day span placement to calculate columns from the actual Monday week start instead of the selected Tuesday anchor.
+- Validated two visible all-day lanes with a six-day span, a three-day span, a single-day item, Wednesday `+2` overflow, and Thursday/Friday `+1` overflow.
+- Added a compact Day-view all-day section so overflow focus reveals every all-day or spanning item active on that date without placing untimed work misleadingly at 9 AM.
+- Updated inspector schedule presentation to use `All day · date` or `Multi-day · start through end`; compact bars remain count-first and visually limited to task name plus volunteer coverage.
+- Preserved deterministic item colors, timed Week placement and overlap lanes, broad timed creation, Month full-cell creation, overlay exclusivity, Escape behavior, and trigger-focus restoration.
+- Refreshed the ten existing desktop/mobile Calendar previews; the screenshot script and capture scope did not change.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar.jpg`
+- `docs/previews/latest/calendar-day.jpg`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/calendar-filter-open.jpg`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar.jpg`
+- `docs/previews/latest/mobile-calendar-day.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-filter-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser QA verified exact Monday-Saturday and Tuesday-Thursday grid spans, two visible lanes, Wednesday `+2`, Thursday/Friday `+1`, keyboard overflow activation into Day view, and all four items active on the focused Wednesday.
+- Inspector QA verified useful all-day/multi-day accessible names, clear multi-day schedule text, initial focus, Escape dismissal, and trigger-focus restoration.
+- Regression checks covered timed Week events and 09:00 keyboard creation, Day hour targets, Month full-cell creation and `+N`, filters, and non-stacked mobile surfaces.
+- Visual review confirmed a compact desktop band, readable Day all-day section, sensible mobile day-group representation, no 390px horizontal overflow, and no console, page, or hydration errors.
+
+Limitations:
+- The five all-day/multi-day entries are prototype validation data and do not represent confirmed production schedules.
+- Mobile Week continues to use compact day groups rather than the desktop seven-column all-day band.
+- Empty all-day-band space does not start an all-day draft; all-day creation and editable date spans remain future work.
+- No persistence, Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.33 Calendar all-day creation interaction foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
