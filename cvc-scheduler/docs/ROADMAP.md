@@ -56,7 +56,9 @@ Rough phases:
 - 09.16 Admin navigation simplification + Communications alignment. Completed.
 - 09.17 Communications detail/template copy alignment. Completed.
 - 09.18 Overview/navigation/Communications visual QA + preview refresh. Completed.
-- 09.19 Calendar minimal grid visual direction pass. Next recommended step.
+- 09.19 Calendar minimal grid visual direction pass. Completed.
+- 09.20 Calendar creation detail refinement. Completed.
+- 09.21 Calendar creation/mobile visual QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -92,6 +94,8 @@ Rough phases:
 - 09.17 Communications detail/template copy alignment.
 - 09.18 Overview/navigation/Communications visual QA + preview refresh.
 - 09.19 Calendar minimal grid visual direction pass.
+- 09.20 Calendar creation detail refinement.
+- 09.21 Calendar creation/mobile visual QA.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -389,6 +393,14 @@ tasks with some/all helpers denied, and high-level task type filters: General
 Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall,
 concrete, room signage, water/coffee, and similar work roll up under General
 Volunteers rather than becoming top-level filter types.
+
+The Calendar Week view has started moving toward the minimal time-grid
+direction: subtler horizontal separators, quieter empty-space affordances, and
+lighter scheduled-item blocks. Empty-slot creation now treats clicks/taps as
+suggested calendar context rather than a committed predefined time window.
+Timed rows seed specific editable start/end defaults, day-only clicks seed
+editable defaults, and the creation surface remains preview-only without
+saving or mutating data.
 
 Calendar overlays now use a single active-surface interaction model. Filters,
 mobile More, empty-slot creation, and existing-item inspection are mutually

@@ -1418,6 +1418,64 @@ Limitations:
 Next recommended step:
 - 09.19 Calendar minimal grid visual direction pass.
 
+## Iteration 09.19 - Calendar Minimal Grid Visual Direction Pass
+
+Summary:
+- Moved `/admin/calendar` toward a quieter minimal time-grid direction without changing routes or adding real scheduling behavior.
+- Made desktop Week view more calendar-like with subtle horizontal time separators, lighter scheduled-item blocks, and quieter empty-space affordances.
+- Replaced repeated visible empty-slot "Add task" treatment with calmer "Plan" cues that stay discoverable through hover, focus, and mobile-visible tap targets.
+- Updated empty-slot creation context so clicks/taps suggest a day or nearby time without committing to a rigid predefined time window.
+- Lightened the desktop "New scheduled task" creation panel and added preview start/end-window fields that remain read-only until real scheduling exists.
+- Preserved existing item inspector, filters, Day/Week/Month switching, mobile bottom sheets, and mutually exclusive Calendar overlay behavior.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` at desktop and 390px mobile widths, including Week/Day/Month switching, empty-slot creation, existing-item inspection, filters, and mobile horizontal overflow.
+
+Limitations:
+- Visual direction and preview-only interaction refinement only.
+- No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, or production scheduling logic was added.
+
+Next recommended step:
+- 09.20 Calendar creation detail refinement.
+
+## Iteration 09.20 - Calendar Creation Detail Refinement
+
+Summary:
+- Refined the mock `/admin/calendar` creation surface into a clearer local scheduling draft flow.
+- Added local-only editable Date, Start, and End fields to the creation draft.
+- Updated timed empty-slot clicks to seed specific one-hour start/end defaults instead of vague nearby-time language.
+- Updated day-only empty-slot clicks to seed editable date/time defaults without forcing a fixed appointment.
+- Further quieted the Calendar grid by removing repeated visible "Plan" text from empty spaces and using subtle hover/focus affordances.
+- Reorganized the creation panel around Calendar context, Task, Date and time, and Helpers and notes.
+- Kept task preset selection, one-off custom task mode, helper count, notes, and preview-only disabled actions.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` at desktop and 390px mobile widths, including empty-slot creation, editable date/time fields, one-off task mode, existing-item inspection, filters, view switching, and mobile horizontal overflow.
+
+Limitations:
+- Local UI refinement only.
+- Date/start/end fields, helper count, task choice, one-off fields, and notes update only the temporary creation draft.
+- No persistence, Supabase, auth, real scheduling mutations, drag/drop, resizing, assignment workflow, calendar library, or production scheduling logic was added.
+
+Next recommended step:
+- 09.21 Calendar creation/mobile visual QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
