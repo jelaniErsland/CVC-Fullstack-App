@@ -1567,6 +1567,33 @@ Limitations:
 Next recommended step:
 - 09.24 Calendar Week time-positioning foundation.
 
+## Iteration 09.24 - Calendar Week Time-Positioning Foundation
+
+Summary:
+- Changed the desktop Week view from top-clustered event rows to a fixed 24-hour time canvas.
+- Positioned scheduled blocks by their parsed start hour and minute so morning, lunch, afternoon, and evening work appear in the expected part of each day.
+- Added small minimum visual spacing for nearby starts so the current 7:30 AM and 8:00 AM mock items remain readable without adding duration-based sizing or full overlap logic.
+- Preserved broad day-column click surfaces, specific one-hour creation defaults, separate event buttons, minimal block content, and richer inspector details.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` on desktop and at 390px mobile width with no hydration warnings or horizontal overflow.
+
+Limitations:
+- Week placement is a visual foundation based on start time only.
+- Nearby starts receive minimum visual spacing, but event duration height, true overlap handling, drag/drop, resizing, persistence, assignment workflow, and production scheduling logic remain future work.
+- No Supabase, auth, real saves, Calendar mutations, or calendar library was added.
+
+Next recommended step:
+- 09.25 Calendar event duration and overlap foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

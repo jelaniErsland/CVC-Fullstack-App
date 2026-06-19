@@ -142,6 +142,9 @@ const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
   end: `${String((hour + 1) % 24).padStart(2, "0")}:00`,
 }));
 
+const weekGridHeight = 720;
+const weekEventFootprint = 62;
+
 function formatHourLabel(hour: number) {
   if (hour === 0) {
     return "12 AM";
@@ -154,29 +157,55 @@ function formatHourLabel(hour: number) {
   return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
 }
 
-function getCalendarItemStartHour(item: CalendarItem) {
+function getCalendarItemStartMinutes(item: CalendarItem) {
   if (!item.startTime) {
-    return 9;
+    return 9 * 60;
   }
 
   const match = item.startTime.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
 
   if (!match) {
-    return 9;
+    return 9 * 60;
   }
 
-  const [, hourText, , meridiem] = match;
-  const hour = Number(hourText);
+  const [, hourText, minuteText, meridiem] = match;
+  let hour = Number(hourText);
 
   if (meridiem.toUpperCase() === "PM" && hour !== 12) {
-    return hour + 12;
+    hour += 12;
   }
 
   if (meridiem.toUpperCase() === "AM" && hour === 12) {
-    return 0;
+    hour = 0;
   }
 
-  return hour;
+  return hour * 60 + Number(minuteText);
+}
+
+function getCalendarItemStartHour(item: CalendarItem) {
+  return Math.floor(getCalendarItemStartMinutes(item) / 60);
+}
+
+function positionWeekItems(items: CalendarItemWithPreset[]) {
+  let previousTop = -weekEventFootprint;
+
+  return [...items]
+    .sort(
+      (first, second) =>
+        getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second),
+    )
+    .map((item) => {
+      const timeTop =
+        (getCalendarItemStartMinutes(item) / (24 * 60)) * weekGridHeight;
+      const top = Math.min(
+        Math.max(timeTop, previousTop + weekEventFootprint),
+        weekGridHeight - weekEventFootprint,
+      );
+
+      previousTop = top;
+
+      return { item, top };
+    });
 }
 
 function getTimelineSlotFromPointer(event: MouseEvent<HTMLButtonElement>) {
@@ -646,11 +675,12 @@ function WeekGrid({
           </div>
         ))}
       </div>
-      <div className="grid min-h-[620px] min-w-[900px] grid-cols-7">
+      <div className="grid h-[720px] min-w-[900px] grid-cols-7">
         {groups.map((group) => (
           <div
-            className="relative min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] bg-[length:100%_92px] last:border-r-0"
+            className="relative min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] last:border-r-0"
             key={group.date}
+            style={{ backgroundSize: "100% 30px" }}
           >
             <button
               aria-label={`Create scheduled task from ${group.dayLabel}`}
@@ -668,17 +698,19 @@ function WeekGrid({
               }}
               type="button"
             />
-            <div className="pointer-events-none relative z-10 space-y-2.5 p-3">
-              {group.items.map((item) => (
-                <div className="pointer-events-auto" key={item.id}>
-                  <CalendarBlock
-                    isSelected={selectedId === item.id}
-                    item={item}
-                    onSelect={() => onSelect(item)}
-                  />
-                </div>
-              ))}
-            </div>
+            {positionWeekItems(group.items).map(({ item, top }) => (
+              <div
+                className="absolute inset-x-2 z-10"
+                key={item.id}
+                style={{ top }}
+              >
+                <CalendarBlock
+                  isSelected={selectedId === item.id}
+                  item={item}
+                  onSelect={() => onSelect(item)}
+                />
+              </div>
+            ))}
           </div>
         ))}
       </div>
