@@ -1594,6 +1594,33 @@ Limitations:
 Next recommended step:
 - 09.25 Calendar event duration and overlap foundation.
 
+## Iteration 09.25 - Calendar Event Duration and Overlap Foundation
+
+Summary:
+- Added approximate Week event heights derived from existing mock start/end times, with a calm minimum height for short items.
+- Added deterministic overlap clusters and side-by-side lanes so simultaneous work remains readable while non-overlapping items keep the normal day-column width.
+- Added a narrow Week time gutter with subtle two-hour labels aligned to the existing 24-hour canvas and hourly separators.
+- Preserved broad empty-column creation, click-position one-hour defaults, separate event buttons, minimal task-name/count blocks, and richer inspector details.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Browser QA checked `/admin/calendar` on desktop and at 390px mobile width with no hydration warnings or horizontal overflow.
+
+Limitations:
+- Duration heights and overlap lanes are visual approximations over mock data.
+- No drag/drop, resizing, persistence, assignment workflow, conflict resolution, scheduling engine, advanced collision behavior, or calendar library was added.
+- No Supabase, auth, real saves, or Calendar mutations were added.
+
+Next recommended step:
+- 09.26 Calendar date navigation foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

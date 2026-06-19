@@ -62,7 +62,8 @@ Rough phases:
 - 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass. Completed.
 - 09.23 Calendar Hydration Fix + Visual QA + Screenshot Refresh. Completed.
 - 09.24 Calendar Week Time-Positioning Foundation. Completed.
-- 09.25 Calendar event duration and overlap foundation. Next recommended step.
+- 09.25 Calendar Event Duration and Overlap Foundation. Completed.
+- 09.26 Calendar date navigation foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -103,7 +104,8 @@ Rough phases:
 - 09.22 Calendar Simplicity + Full-Surface Grid Interaction Pass.
 - 09.23 Calendar Hydration Fix + Visual QA + Screenshot Refresh.
 - 09.24 Calendar Week Time-Positioning Foundation.
-- 09.25 Calendar event duration and overlap foundation.
+- 09.25 Calendar Event Duration and Overlap Foundation.
+- 09.26 Calendar date navigation foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

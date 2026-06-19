@@ -143,7 +143,8 @@ const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
 }));
 
 const weekGridHeight = 720;
-const weekEventFootprint = 62;
+const weekEventMinHeight = 44;
+const weekTimeLabels = dayTimelineSlots.filter(({ hour }) => hour % 2 === 0);
 
 function formatHourLabel(hour: number) {
   if (hour === 0) {
@@ -157,15 +158,11 @@ function formatHourLabel(hour: number) {
   return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
 }
 
-function getCalendarItemStartMinutes(item: CalendarItem) {
-  if (!item.startTime) {
-    return 9 * 60;
-  }
-
-  const match = item.startTime.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+function parseCalendarTimeMinutes(value?: string) {
+  const match = value?.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
 
   if (!match) {
-    return 9 * 60;
+    return undefined;
   }
 
   const [, hourText, minuteText, meridiem] = match;
@@ -182,30 +179,83 @@ function getCalendarItemStartMinutes(item: CalendarItem) {
   return hour * 60 + Number(minuteText);
 }
 
+function getCalendarItemStartMinutes(item: CalendarItem) {
+  return parseCalendarTimeMinutes(item.startTime) ?? 9 * 60;
+}
+
+function getCalendarItemEndMinutes(item: CalendarItem) {
+  const start = getCalendarItemStartMinutes(item);
+  const parsedEnd = parseCalendarTimeMinutes(item.endTime);
+
+  if (parsedEnd === undefined) {
+    return Math.min(start + 60, 24 * 60);
+  }
+
+  return parsedEnd <= start ? 24 * 60 : parsedEnd;
+}
+
 function getCalendarItemStartHour(item: CalendarItem) {
   return Math.floor(getCalendarItemStartMinutes(item) / 60);
 }
 
-function positionWeekItems(items: CalendarItemWithPreset[]) {
-  let previousTop = -weekEventFootprint;
-
-  return [...items]
+function layoutWeekItems(items: CalendarItemWithPreset[]) {
+  const timedItems = [...items]
     .sort(
       (first, second) =>
-        getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second),
+        getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second) ||
+        getCalendarItemEndMinutes(first) - getCalendarItemEndMinutes(second) ||
+        (first.id < second.id ? -1 : first.id > second.id ? 1 : 0),
     )
-    .map((item) => {
-      const timeTop =
-        (getCalendarItemStartMinutes(item) / (24 * 60)) * weekGridHeight;
-      const top = Math.min(
-        Math.max(timeTop, previousTop + weekEventFootprint),
-        weekGridHeight - weekEventFootprint,
+    .map((item) => ({
+      end: getCalendarItemEndMinutes(item),
+      item,
+      start: getCalendarItemStartMinutes(item),
+    }));
+  const clusters: (typeof timedItems)[] = [];
+  let activeCluster: typeof timedItems = [];
+  let activeClusterEnd = -1;
+
+  timedItems.forEach((timedItem) => {
+    if (activeCluster.length > 0 && timedItem.start >= activeClusterEnd) {
+      clusters.push(activeCluster);
+      activeCluster = [];
+      activeClusterEnd = -1;
+    }
+
+    activeCluster.push(timedItem);
+    activeClusterEnd = Math.max(activeClusterEnd, timedItem.end);
+  });
+
+  if (activeCluster.length > 0) {
+    clusters.push(activeCluster);
+  }
+
+  return clusters.flatMap((cluster) => {
+    const laneEndTimes: number[] = [];
+    const assignedItems = cluster.map((timedItem) => {
+      const availableLane = laneEndTimes.findIndex(
+        (laneEnd) => laneEnd <= timedItem.start,
+      );
+      const lane = availableLane === -1 ? laneEndTimes.length : availableLane;
+
+      laneEndTimes[lane] = timedItem.end;
+
+      return { ...timedItem, lane };
+    });
+    const laneCount = laneEndTimes.length;
+
+    return assignedItems.map(({ end, item, lane, start }) => {
+      const rawTop = (start / (24 * 60)) * weekGridHeight;
+      const top = Math.min(rawTop, weekGridHeight - weekEventMinHeight);
+      const durationHeight = ((end - start) / (24 * 60)) * weekGridHeight;
+      const height = Math.min(
+        Math.max(durationHeight, weekEventMinHeight),
+        weekGridHeight - top,
       );
 
-      previousTop = top;
-
-      return { item, top };
+      return { height, item, lane, laneCount, top };
     });
+  });
 }
 
 function getTimelineSlotFromPointer(event: MouseEvent<HTMLButtonElement>) {
@@ -620,29 +670,51 @@ function ActiveFilterBar({
 }
 
 function CalendarBlock({
+  fillHeight,
   item,
   isSelected,
+  narrow,
   onSelect,
 }: {
+  fillHeight?: boolean;
   item: CalendarItemWithPreset;
   isSelected: boolean;
+  narrow?: boolean;
   onSelect: () => void;
 }) {
   return (
     <button
       className={[
-        "min-h-[54px] w-full rounded-md border border-white/72 border-l-4 px-2.5 py-2 text-left shadow-[0_1px_6px_rgba(15,23,42,0.04)] transition hover:bg-white/92 hover:shadow-sm",
+        "w-full rounded-md border border-white/72 border-l-4 text-left shadow-[0_1px_6px_rgba(15,23,42,0.04)] transition hover:bg-white/92 hover:shadow-sm",
+        fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
         blockStyles[item.category],
         isSelected ? "bg-white ring-2 ring-slate-900/20 shadow-sm" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
     >
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <p className="line-clamp-2 min-w-0 text-sm font-semibold leading-5 text-slate-950">
+      <div
+        className={[
+          "min-w-0",
+          narrow
+            ? "flex flex-col items-start gap-1"
+            : "flex items-center justify-between gap-2",
+        ].join(" ")}
+      >
+        <p
+          className={[
+            "line-clamp-2 min-w-0 font-semibold text-slate-950",
+            narrow ? "text-xs leading-4" : "text-sm leading-5",
+          ].join(" ")}
+        >
           {getCalendarItemDisplayName(item)}
         </p>
-        <span className="shrink-0 text-xs font-semibold text-slate-700">
+        <span
+          className={[
+            "shrink-0 font-semibold text-slate-700",
+            narrow ? "text-[11px]" : "text-xs",
+          ].join(" ")}
+        >
           {getCalendarFilledLabel(item)}
         </span>
       </div>
@@ -665,7 +737,8 @@ function WeekGrid({
 
   return (
     <GlassCard className="hidden overflow-x-auto lg:block">
-      <div className="grid min-w-[900px] grid-cols-7 border-b border-white/72 bg-white/38">
+      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-white/72 bg-white/38">
+        <div aria-hidden="true" className="border-r border-white/72" />
         {groups.map((group) => (
           <div className="border-r border-white/72 px-4 py-3.5 last:border-r-0" key={group.date}>
             <p className="text-sm font-semibold text-slate-950">{group.dayLabel}</p>
@@ -675,7 +748,24 @@ function WeekGrid({
           </div>
         ))}
       </div>
-      <div className="grid h-[720px] min-w-[900px] grid-cols-7">
+      <div className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]">
+        <div
+          aria-hidden="true"
+          className="relative border-r border-white/72 bg-white/22"
+        >
+          {weekTimeLabels.map((slot) => (
+            <span
+              className="absolute right-2 text-[10px] font-semibold text-slate-400"
+              key={slot.hour}
+              style={{
+                top: slot.hour === 0 ? 5 : slot.hour * 30,
+                transform: slot.hour === 0 ? undefined : "translateY(-50%)",
+              }}
+            >
+              {slot.label}
+            </span>
+          ))}
+        </div>
         {groups.map((group) => (
           <div
             className="relative min-w-0 border-r border-white/72 bg-white/16 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.16)_1px,transparent_1px)] last:border-r-0"
@@ -698,19 +788,34 @@ function WeekGrid({
               }}
               type="button"
             />
-            {positionWeekItems(group.items).map(({ item, top }) => (
-              <div
-                className="absolute inset-x-2 z-10"
-                key={item.id}
-                style={{ top }}
-              >
-                <CalendarBlock
-                  isSelected={selectedId === item.id}
-                  item={item}
-                  onSelect={() => onSelect(item)}
-                />
-              </div>
-            ))}
+            {layoutWeekItems(group.items).map(
+              ({ height, item, lane, laneCount, top }) => {
+                const laneWidth = 100 / laneCount;
+
+                return (
+                  <div
+                    className="absolute z-10"
+                    data-week-event-id={item.id}
+                    data-week-lane={`${lane + 1}/${laneCount}`}
+                    key={item.id}
+                    style={{
+                      height,
+                      left: `calc(${lane * laneWidth}% + ${lane === 0 ? 8 : 4}px)`,
+                      top,
+                      width: `calc(${laneWidth}% - ${laneCount === 1 ? 16 : 12}px)`,
+                    }}
+                  >
+                    <CalendarBlock
+                      fillHeight
+                      isSelected={selectedId === item.id}
+                      item={item}
+                      narrow={laneCount > 1}
+                      onSelect={() => onSelect(item)}
+                    />
+                  </div>
+                );
+              },
+            )}
           </div>
         ))}
       </div>
