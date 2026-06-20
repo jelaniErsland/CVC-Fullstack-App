@@ -1926,6 +1926,45 @@ Limitations:
 Next recommended step:
 - 09.34 Calendar draft validation and creation-surface polish.
 
+## Iteration 09.34 — Calendar Draft Validation and Creation-Surface Polish
+
+Summary:
+- Reworked timed creation layout so Date uses a full desktop row and Start/End share a readable second row inside the existing drawer width; mobile remains a single-column bottom sheet.
+- Added local timed-range validation for missing times and End values that are not later than Start.
+- Preserved all-day date clamping, added accessible date-range validation safeguards, and kept time fields hidden while All day is active.
+- Clamped Needed to a local 1-99 range and added a concise range cue beside the preset default.
+- Added a required-name state for Custom one-day mode with calm field styling, `aria-invalid`, and uniquely generated description ids across desktop/mobile panel copies.
+- Replaced launch-slot-dependent context sentences with live Suggested date/time or date-range copy that stays accurate as the draft changes.
+- Simplified the fixed disabled actions to Schedule, Save draft, and Assign helpers with one polite status line explaining preview-only unavailability or the first field issue.
+- Refreshed the existing desktop and mobile Calendar creation-open previews; screenshot selectors and capture scope did not change.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser QA confirmed the full-width Date row, paired Start/End row, no desktop clipping, accurate live Suggested copy, all-day field switching, initial focus, Escape restoration, Filters focus, and existing all-day inspection.
+- Draft regression checks confirmed invalid timed ranges and their accessible descriptions, validation clearing, 1-99 Needed clamping, required custom-name messaging, disabled-action reasons, all-day End-date clamping, and unique ids across the two responsive panel copies.
+- Mobile QA at 390px confirmed readable creation fields, one visible Calendar sheet, no horizontal overflow, and preserved all-day item representation.
+- No console, page, or hydration errors were reported.
+
+Limitations:
+- Validation is local UI state only and does not save, render, or mutate Calendar items.
+- Timed drafts currently require End later than Start on the same date; overnight timed ranges are not modeled.
+- Disabled actions remain intentional preview placeholders; helper assignment and persistence are not connected.
+- No Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.35 Calendar production data-model readiness review.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

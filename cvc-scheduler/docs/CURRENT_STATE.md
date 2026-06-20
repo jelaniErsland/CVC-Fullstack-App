@@ -233,6 +233,9 @@ Upcoming UI direction:
 - All-day span placement is calculated from the actual Monday week boundary. The validation set produces a six-day bar, a three-day bar, a single-day bar, and deterministic Wednesday `+2` plus Thursday/Friday `+1` overflow. Focused Day view exposes every item spanning that date in a compact all-day section above the timed rows.
 - Each desktop Week all-day day column now has a quiet full-background creation target behind the event and overflow controls. It opens the existing preview-only creator with All day enabled for that date; foreground bars and `+N` remain separate sibling controls.
 - Calendar creation drafts can now switch locally between timed and all-day modes. All-day mode hides start/end times, keeps Date editable, exposes an optional End date clamped to Date, and uses date-range context language. Switching back restores the clicked timed suggestion or the calm 09:00-10:00 default.
+- The creation panel now gives Date its own full desktop row with Start/End paired beneath it, preventing the End field from clipping inside the existing drawer width. Mobile retains the same readable single-column sheet.
+- Creation validation remains local and calm: timed End must be later than Start, all-day End date cannot precede Date, Needed is clamped to 1-99, and custom one-day mode requires a non-empty name. Field messages use `aria-invalid`/descriptions, while the fixed footer explains that Schedule, Save draft, and Assign helpers remain unavailable in this preview.
+- Creation context copy now derives from the editable draft rather than the launch slot, so it continues to say “Suggested” and stays accurate as dates, times, or All day change.
 - A future Timeline / Work Plan view may be useful for dense construction or multi-day work, with date/time on the x-axis and tasks, groups, or days on the y-axis. That remains a later companion view and does not replace the standard Week calendar.
 - Empty-slot creation now treats the clicked/tapped area as suggested calendar context rather than a fixed time window. Day hour rows and Week grid clicks seed specific editable start/end defaults, day-only clicks seed editable date/time defaults, and the flow remains preview-only.
 - A clean production build/preview QA pass confirmed that `/admin/calendar` hydrates without warnings. The Week background click surfaces and event buttons render as stable siblings in the initial DOM; the earlier mismatch did not reproduce after rebuilding and restarting the preview.
@@ -329,4 +332,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.34 Calendar draft validation and creation-surface polish.
+09.35 Calendar production data-model readiness review.

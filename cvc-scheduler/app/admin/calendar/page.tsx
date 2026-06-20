@@ -22,6 +22,7 @@ import {
   type MouseEvent,
   type Ref,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -302,6 +303,20 @@ function getCalendarAccessibleDayLabel(date: string) {
     timeZone: "UTC",
     weekday: "long",
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function getCreationTimeLabel(value: string) {
+  const [hourText, minute = "00"] = value.split(":");
+  const hour = Number(hourText);
+
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+    return "a time";
+  }
+
+  const meridiem = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+
+  return `${displayHour}${minute === "00" ? "" : `:${minute}`} ${meridiem}`;
 }
 
 function shiftCalendarAnchor(
@@ -1639,7 +1654,56 @@ function CreatePanelContent({
   selectedPreset?: TaskPreset;
   selectedTaskType: CalendarHighLevelTaskType;
 }) {
+  const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
+  const customNameInvalid = isOneOff && creationDraft.customName.trim().length === 0;
+  const dateMissing = creationDraft.date.length === 0;
+  const allDayEndMissing = creationDraft.allDay && creationDraft.endDate.length === 0;
+  const allDayRangeInvalid =
+    creationDraft.allDay &&
+    !dateMissing &&
+    !allDayEndMissing &&
+    creationDraft.endDate < creationDraft.date;
+  const timedTimeMissing =
+    !creationDraft.allDay &&
+    (creationDraft.startTime.length === 0 || creationDraft.endTime.length === 0);
+  const timedRangeInvalid =
+    !creationDraft.allDay &&
+    !timedTimeMissing &&
+    creationDraft.endTime <= creationDraft.startTime;
+  const neededCountInvalid =
+    creationDraft.neededCount < 1 || creationDraft.neededCount > 99;
+  const customNameErrorId = `${validationId}-custom-task-name-error`;
+  const dateErrorId = `${validationId}-creation-date-error`;
+  const timeErrorId = `${validationId}-creation-time-error`;
+  const actionStatusId = `${validationId}-creation-action-status`;
+  const dateValidationMessage = dateMissing
+    ? "Choose a date."
+    : allDayEndMissing
+      ? "Choose an end date."
+      : allDayRangeInvalid
+        ? "End date must be on or after Date."
+        : undefined;
+  const timeValidationMessage = timedTimeMissing
+    ? "Choose both a start and end time."
+    : timedRangeInvalid
+      ? "End time must be later than Start."
+      : undefined;
+  const actionStatus =
+    (customNameInvalid && "Add a custom task name.") ||
+    dateValidationMessage ||
+    timeValidationMessage ||
+    (neededCountInvalid && "Needed must be between 1 and 99.") ||
+    "Preview only. Saving, scheduling, and helper assignment are not connected yet.";
+  const creationContextCopy = dateMissing
+    ? "Choose a date below."
+    : creationDraft.allDay
+      ? creationDraft.endDate && creationDraft.endDate !== creationDraft.date
+        ? `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)} through ${getCalendarAccessibleDayLabel(creationDraft.endDate)}. Adjust below.`
+        : `Suggested all day on ${getCalendarAccessibleDayLabel(creationDraft.date)}. Adjust below.`
+      : creationDraft.startTime && creationDraft.endTime
+        ? `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}, ${getCreationTimeLabel(creationDraft.startTime)} to ${getCreationTimeLabel(creationDraft.endTime)}. Adjust below.`
+        : `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}. Add a start and end time below.`;
 
   return (
     <>
@@ -1676,7 +1740,7 @@ function CreatePanelContent({
             {creationDraft.slot.contextLabel ?? "Suggested from calendar"}
           </p>
           <p className="mt-1 text-sm font-medium leading-5 text-slate-500">
-            Started from {creationDraft.slot.label}. Adjust the {creationDraft.allDay ? "date range" : "date and time"} below before this becomes real scheduling.
+            {creationContextCopy}
           </p>
         </section>
 
@@ -1736,11 +1800,24 @@ function CreatePanelContent({
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Custom task name</span>
                 <input
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  aria-describedby={customNameInvalid ? customNameErrorId : undefined}
+                  aria-invalid={customNameInvalid}
+                  className={[
+                    "mt-2 min-h-11 w-full rounded-xl border bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1",
+                    customNameInvalid ? "border-rose-300" : "border-slate-200",
+                  ].join(" ")}
                   onChange={(event) => onUpdate({ customName: event.target.value })}
                   value={creationDraft.customName}
                 />
               </label>
+              {customNameInvalid ? (
+                <span
+                  className="text-xs font-semibold text-rose-600"
+                  id={customNameErrorId}
+                >
+                  Add a custom task name.
+                </span>
+              ) : null}
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">Task type</span>
                 <select
@@ -1812,7 +1889,12 @@ function CreatePanelContent({
             >
               <span className="text-sm font-semibold text-slate-700">Date</span>
               <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                aria-describedby={dateValidationMessage ? dateErrorId : undefined}
+                aria-invalid={Boolean(dateValidationMessage)}
+                className={[
+                  "mt-2 min-h-11 w-full rounded-xl border bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1",
+                  dateValidationMessage ? "border-rose-300" : "border-slate-200",
+                ].join(" ")}
                 onChange={(event) => {
                   const date = event.target.value;
 
@@ -1831,7 +1913,12 @@ function CreatePanelContent({
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">End date</span>
                 <input
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  aria-describedby={dateValidationMessage ? dateErrorId : undefined}
+                  aria-invalid={Boolean(dateValidationMessage)}
+                  className={[
+                    "mt-2 min-h-11 w-full rounded-xl border bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1",
+                    dateValidationMessage ? "border-rose-300" : "border-slate-200",
+                  ].join(" ")}
                   min={creationDraft.date}
                   onChange={(event) =>
                     onUpdate({
@@ -1850,7 +1937,12 @@ function CreatePanelContent({
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Start</span>
                   <input
-                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    aria-describedby={timeValidationMessage ? timeErrorId : undefined}
+                    aria-invalid={Boolean(timeValidationMessage)}
+                    className={[
+                      "mt-2 min-h-11 w-full rounded-xl border bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1",
+                      timeValidationMessage ? "border-rose-300" : "border-slate-200",
+                    ].join(" ")}
                     onChange={(event) => onUpdate({ startTime: event.target.value })}
                     type="time"
                     value={creationDraft.startTime}
@@ -1859,7 +1951,12 @@ function CreatePanelContent({
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">End</span>
                   <input
-                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    aria-describedby={timeValidationMessage ? timeErrorId : undefined}
+                    aria-invalid={Boolean(timeValidationMessage)}
+                    className={[
+                      "mt-2 min-h-11 w-full rounded-xl border bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1",
+                      timeValidationMessage ? "border-rose-300" : "border-slate-200",
+                    ].join(" ")}
                     onChange={(event) => onUpdate({ endTime: event.target.value })}
                     type="time"
                     value={creationDraft.endTime}
@@ -1867,6 +1964,22 @@ function CreatePanelContent({
                 </label>
               </>
             )}
+            {dateValidationMessage ? (
+              <p
+                className="text-xs font-semibold text-rose-600 sm:col-span-2"
+                id={dateErrorId}
+              >
+                {dateValidationMessage}
+              </p>
+            ) : null}
+            {timeValidationMessage ? (
+              <p
+                className="text-xs font-semibold text-rose-600 sm:col-span-2"
+                id={timeErrorId}
+              >
+                {timeValidationMessage}
+              </p>
+            ) : null}
           </div>
         </section>
 
@@ -1914,18 +2027,28 @@ function CreatePanelContent({
             <span className="text-sm font-semibold text-slate-700">Needed</span>
             <input
               className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+              max={99}
               min={1}
               onChange={(event) =>
-                onUpdate({ neededCount: Math.max(1, Number(event.target.value) || 1) })
+                onUpdate({
+                  neededCount: Math.min(
+                    99,
+                    Math.max(1, Number(event.target.value) || 1),
+                  ),
+                })
               }
               type="number"
               value={creationDraft.neededCount}
             />
             {!isOneOff && selectedPreset ? (
               <span className="mt-2 block text-xs font-medium leading-5 text-slate-500">
-                Preset default: {selectedPreset.neededCount}
+                Preset default: {selectedPreset.neededCount} · 1-99
               </span>
-            ) : null}
+            ) : (
+              <span className="mt-2 block text-xs font-medium leading-5 text-slate-500">
+                1-99 volunteers
+              </span>
+            )}
           </label>
         </section>
 
@@ -1952,25 +2075,36 @@ function CreatePanelContent({
           </div>
         </section>
 
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-6 text-amber-800">
-          Preview only. Scheduling and saving are coming later.
-        </p>
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
+        <p
+          aria-live="polite"
+          className={[
+            "mb-3 text-xs font-semibold leading-5",
+            actionStatus.startsWith("Preview only")
+              ? "text-slate-500"
+              : "text-rose-600",
+          ].join(" ")}
+          id={actionStatusId}
+        >
+          {actionStatus}
+          {!actionStatus.startsWith("Preview only")
+            ? " Actions stay unavailable in this preview."
+            : ""}
+        </p>
         <div className="grid gap-2 sm:grid-cols-3">
-          {["Scheduling coming later", "Draft save coming later", "Assign helpers later"].map(
-            (label) => (
-              <button
-                className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
-                disabled
-                key={label}
-                type="button"
-              >
-                {label}
-              </button>
-            ),
-          )}
+          {["Schedule", "Save draft", "Assign helpers"].map((label) => (
+            <button
+              aria-describedby={actionStatusId}
+              className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
+              disabled
+              key={label}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
     </>
