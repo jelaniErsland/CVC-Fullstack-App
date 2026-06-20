@@ -2033,6 +2033,43 @@ Limitations:
 Next recommended step:
 - 09.37 Calendar Month Density + Overflow Behavior.
 
+## Iteration 09.37 — Calendar Month Density + Overflow Behavior
+
+Summary:
+- Increased Month density from one visible item to a fixed responsive limit: three compact rows on larger screens and two rows below 640px.
+- Kept `+N` only for true breakpoint-specific overflow and preserved its keyboard-accessible Day-view focus behavior with descriptive date/count labels.
+- Reused the shared date-intersection helper so current compatibility all-day/multi-day validation items appear as compact rows on each relevant Month date without adding complex horizontal spans.
+- Preserved deterministic event colors, minimal task-name/coverage content, the flat calendar grid, and richer item details in the inspector.
+- Preserved the full-cell background creation target and kept event/overflow controls as separate foreground siblings with no nested interactive controls.
+- Refreshed the existing desktop and mobile Month previews; screenshot selectors and capture scope did not change.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Desktop production-browser QA confirmed three visible rows, true overflow counts, `+N` focus to Day, item inspection, and populated-cell creation at the existing 09:00-10:00 default.
+- Week, Day, Filters, creation, Escape dismissal, and focus behavior remained functional.
+- Mobile QA at 390px confirmed two visible rows, breakpoint-correct overflow counts, populated-cell creation, one active sheet at a time, bottom-navigation clearance, and no horizontal overflow.
+- No nested buttons, console errors, page errors, or hydration warnings were found.
+
+Limitations:
+- Month uses compact per-date rows rather than horizontal multi-day spans; range items repeat on intersecting dates for now.
+- The row limits are fixed responsive rules rather than measurements of dynamic cell height.
+- Current All day compatibility terminology and mock scheduling semantics were not redesigned.
+- No persistence, Supabase, auth, mutations, drag/drop, resizing, assignment workflow, List view, Timeline / Work Plan, schema, or scheduling engine was added.
+
+Next recommended step:
+- 09.38 Calendar Month Density Visual QA + Terminology Review.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

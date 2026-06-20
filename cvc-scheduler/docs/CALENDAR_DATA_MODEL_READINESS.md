@@ -88,15 +88,16 @@ Day and Week remain the operational scheduling views. A future List view should 
 
 ### Month view implications
 
-Month currently shows one chip plus a quiet `+N` per date. That protected full-cell creation during the interaction foundation, but it is too restrictive for the mature Calendar.
+Month originally showed one chip plus a quiet `+N` per date. That protected full-cell creation during the interaction foundation, but it was too restrictive for the mature Calendar.
 
-The next Month pass should:
+Iteration 09.37 applies the first Month-density step:
 
-- Show more compact item rows when cell height allows while preserving calm spacing and truncation.
-- Keep a quiet `+N` only for true overflow; activating it should focus Day view for that date.
-- Keep the full-cell creation target behind foreground item and overflow controls.
-- Preserve event chips and the background creation target as sibling controls with no nested interactive elements.
-- Reserve a coherent treatment for date-based items, project windows, and milestones without implementing dense spanning logic prematurely.
+- Larger screens show up to three compact item rows; screens below 640px show two.
+- A quiet `+N` represents only true breakpoint-specific overflow and focuses Day view for that date.
+- The full-cell creation target remains behind foreground item and overflow sibling controls.
+- Date-intersection helpers allow current compatibility range items to appear on relevant dates without implementing horizontal Month spans.
+
+Future Month work should refine visual density and the terminology/treatment for date-based items, project windows, and milestones without making the grid noisy.
 
 ## Recommended schedule rules
 
@@ -179,7 +180,7 @@ Calendar item lifecycle remains separate from assignment response and derived co
 - Keep one-off custom tasks as deliberate snapshots with validation; do not silently create reusable presets from them.
 - Unify Lunch/menu and other custom-field values without making Food, Security, and General presentation filters separate scheduling models.
 - Keep deterministic colors stable and derived unless explicit user-owned color becomes a requirement.
-- Increase Month density without blocking full-cell creation or weakening sibling-control semantics; keep `+N` focused on Day.
+- Continue refining Month density without blocking full-cell creation or weakening sibling-control semantics; keep `+N` focused on Day.
 - Define List sorting/grouping for date-only and range items without duplicating multi-day windows per date.
 - Let a future Timeline / Work Plan express project windows and milestones without replacing Week or becoming the source of scheduling truth.
 - Decide whether view/date state belongs in the URL before shareable Calendar links are introduced.

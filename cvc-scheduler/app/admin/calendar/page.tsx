@@ -1331,6 +1331,9 @@ function deriveMockMonthDates(referenceDate: string) {
   });
 }
 
+const monthMobileVisibleItemLimit = 2;
+const monthDesktopVisibleItemLimit = 3;
+
 function MonthView({
   items,
   onCreateFromSlot,
@@ -1360,14 +1363,24 @@ function MonthView({
       </div>
       <div className="grid grid-cols-7">
         {dates.map((date) => {
-          const dateItems = items.filter((item) => item.date === date).map(enrichCalendarItem);
+          const dateItems = items
+            .filter((item) => doesCalendarItemOccurOnDate(item, date))
+            .map(enrichCalendarItem);
+          const mobileOverflowCount = Math.max(
+            dateItems.length - monthMobileVisibleItemLimit,
+            0,
+          );
+          const desktopOverflowCount = Math.max(
+            dateItems.length - monthDesktopVisibleItemLimit,
+            0,
+          );
           const inMonth =
             new Date(`${date}T00:00:00Z`).getUTCMonth() === reference.getUTCMonth();
 
           return (
             <div
               className={[
-                "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-28",
+                "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-32",
                 inMonth ? "bg-white/24" : "bg-slate-50/42 opacity-45",
               ].join(" ")}
               key={date}
@@ -1386,16 +1399,17 @@ function MonthView({
                 }
                 type="button"
               />
-              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1.5 sm:min-h-28 sm:p-2">
+              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1.5 sm:min-h-32 sm:p-2">
                 <span className="text-xs font-semibold text-slate-500">
                   {Number(date.slice(-2))}
                 </span>
-                <div className="mt-2 space-y-1.5">
-                  {dateItems.slice(0, 1).map((item) => (
+                <div className="mt-1.5 space-y-1">
+                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item, index) => (
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        `pointer-events-auto w-full rounded px-1.5 py-1.5 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px] ${calmFocusRing}`,
+                        `pointer-events-auto w-full rounded px-1.5 py-1 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px] ${calmFocusRing}`,
+                        index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
                         getCalendarEventStyle(item),
                         selectedId === item.id
                           ? "ring-2 ring-slate-900/30 ring-offset-1"
@@ -1415,14 +1429,24 @@ function MonthView({
                       </span>
                     </button>
                   ))}
-                  {dateItems.length > 1 ? (
+                  {mobileOverflowCount > 0 ? (
                     <button
-                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${dateItems.length - 1} more scheduled item${dateItems.length - 1 === 1 ? "" : "s"}`}
-                      className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:text-[11px] ${calmFocusRing}`}
+                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${mobileOverflowCount} more scheduled item${mobileOverflowCount === 1 ? "" : "s"}`}
+                      className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:hidden ${calmFocusRing}`}
                       onClick={() => onFocusDate(date)}
                       type="button"
                     >
-                      +{dateItems.length - 1}
+                      +{mobileOverflowCount}
+                    </button>
+                  ) : null}
+                  {desktopOverflowCount > 0 ? (
+                    <button
+                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more scheduled item${desktopOverflowCount === 1 ? "" : "s"}`}
+                      className={`pointer-events-auto hidden text-[11px] font-semibold text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
+                      onClick={() => onFocusDate(date)}
+                      type="button"
+                    >
+                      +{desktopOverflowCount}
                     </button>
                   ) : null}
                 </div>
