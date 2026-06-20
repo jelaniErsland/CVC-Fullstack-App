@@ -93,6 +93,12 @@ Calendar items may include:
 - Copy/paste/bulk creation metadata.
 - Optional one-off custom task data when the user drops in a task that does not need to become a reusable preset.
 
+The production boundary and unresolved migration rules are summarized in
+[`CALENDAR_DATA_MODEL_READINESS.md`](./CALENDAR_DATA_MODEL_READINESS.md).
+Creation drafts remain local UI state; they are not Calendar item records.
+Future assignment rows should be the source of volunteer response and coverage
+truth rather than the current mock item counters and volunteer id arrays.
+
 Future Calendar work should support day/week/month views, a Filter button with
 a drawer/sheet, task search, helper coverage filters, drag/drop placement,
 copy/paste, repeatable tasks, bulk creation, simple edit mode, and custom
@@ -235,6 +241,8 @@ Upcoming UI direction:
 - Calendar creation drafts can now switch locally between timed and all-day modes. All-day mode hides start/end times, keeps Date editable, exposes an optional End date clamped to Date, and uses date-range context language. Switching back restores the clicked timed suggestion or the calm 09:00-10:00 default.
 - The creation panel now gives Date its own full desktop row with Start/End paired beneath it, preventing the End field from clipping inside the existing drawer width. Mobile retains the same readable single-column sheet.
 - Creation validation remains local and calm: timed End must be later than Start, all-day End date cannot precede Date, Needed is clamped to 1-99, and custom one-day mode requires a non-empty name. Field messages use `aria-invalid`/descriptions, while the fixed footer explains that Schedule, Save draft, and Assign helpers remain unavailable in this preview.
+- Calendar model readiness is now documented separately from the UI implementation. Local draft types are explicitly named as preview state, Calendar timing is classified through one deterministic helper, and shared date/range intersection helpers keep all-day and multi-day selection rules consistent without adding persistence.
+- The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - Creation context copy now derives from the editable draft rather than the launch slot, so it continues to say “Suggested” and stays accurate as dates, times, or All day change.
 - A future Timeline / Work Plan view may be useful for dense construction or multi-day work, with date/time on the x-axis and tasks, groups, or days on the y-axis. That remains a later companion view and does not replace the standard Week calendar.
 - Empty-slot creation now treats the clicked/tapped area as suggested calendar context rather than a fixed time window. Day hour rows and Week grid clicks seed specific editable start/end defaults, day-only clicks seed editable date/time defaults, and the flow remains preview-only.
@@ -300,6 +308,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 - Empty-slot scheduled-item creation is preview-only. It opens a mock creation surface but does not create, save, or mutate Calendar items or task presets.
 - Calendar overlay stabilization is UI-only. It does not add persistence, Supabase, real scheduling mutations, drag/drop, or assignment workflows.
 - Calendar creation detail refinement is local UI-only. Editable date/start/end fields, helper count, preset choice, one-off task fields, and notes update only the temporary creation draft; they do not create, save, persist, or mutate Calendar data.
+- Calendar data-model readiness is documented, but no production schema or mutation contract exists yet. Timezone policy, overnight work, recurrence, assignment response truth, preset snapshots, custom-field values, audit history, and concurrent updates must be resolved before persistence.
 - Calendar Day and Week timeline placement remains approximate. Week blocks now use start/end times for proportional visual height and deterministic overlap lanes, but this is still a visual-only foundation without editing, drag/drop, resizing, advanced collision rules, or production scheduling layout logic. Compact event blocks remain intentionally minimal in the grid.
 - The seven-column all-day/multi-day band remains desktop-only. Mobile Week represents the same controlled validation items in its compact day groups, while Day view uses a compact all-day section on both desktop and mobile.
 - The five all-day/multi-day examples are explicitly mock validation data, not production project truth. All-day creation is preview-only and does not add or mutate Calendar items. Mobile exposes the All day toggle in its creation sheet but intentionally has no new all-day-band launcher.
@@ -332,4 +341,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. The folder 
 
 ## 9. Next Recommended Step
 
-09.35 Calendar production data-model readiness review.
+09.36 Calendar persistence contract and schema planning.

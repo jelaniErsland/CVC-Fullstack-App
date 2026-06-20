@@ -1965,6 +1965,39 @@ Limitations:
 Next recommended step:
 - 09.35 Calendar production data-model readiness review.
 
+## Iteration 09.35 — Calendar Production Data-Model Readiness Review
+
+Summary:
+- Audited the mock Calendar item, task preset, local creation draft, assignment, coverage, copy/repeat, custom-field, and deterministic-color boundaries without adding persistence or changing the visible Calendar.
+- Added a focused readiness note describing recommended future entities, production-shaped fields, mock-only conveniences, schedule invariants, the draft-to-item boundary, and migration risks.
+- Renamed the local creation slot/draft types to make their preview-only scope explicit and documented `CalendarItem` as a partially persistence-shaped mock scheduled instance.
+- Added deterministic timing classification plus date/range intersection helpers, then reused them across Calendar selection paths so all-day and multi-day inclusion rules have one safer boundary.
+- Clarified that coverage filters are derived preview vocabulary and that denied coverage cannot be authoritative until assignment-response records exist.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/calendar/page.tsx`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Production-browser QA confirmed Week, Day, and Month rendering; timed and all-day creation; existing-item inspection; Filters; and 390px mobile layout without horizontal overflow.
+- No console, page, hydration, or browser errors were reported.
+- Screenshot workflow was not changed because the review produced no visible UI or selector changes.
+
+Limitations:
+- This is a readiness review, not a database schema, persistence contract, or migration implementation.
+- Current assignment ids/counts, coverage status, repeat/copy labels, and menu data remain denormalized mock conveniences.
+- Timezone, overnight scheduling, recurrence, preset versioning/snapshots, assignment response truth, audit history, concurrency, authorization, and idempotency remain unresolved before real mutations.
+- No Supabase, auth, database calls, real create/update/delete behavior, drag/drop, resizing, assignments, reminders, routes, or Calendar redesign were added.
+
+Next recommended step:
+- 09.36 Calendar persistence contract and schema planning.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -33,6 +33,8 @@ import { GlassCard } from "@/components/GlassCard";
 import {
   demoProjectId,
   deriveCalendarWeekRange,
+  doesCalendarItemOccurOnDate,
+  doesCalendarItemOverlapDateRange,
   enrichCalendarItem,
   filterCalendarItems,
   getCalendarActiveFilterCount,
@@ -44,6 +46,7 @@ import {
   getCalendarHighLevelTaskType,
   getCalendarHighLevelTaskTypeLabel,
   getCalendarItemDisplayName,
+  getCalendarItemTimingKind,
   getCalendarItemTimeWindow,
   getCalendarItemsByWeek,
   getCalendarStatusLabel,
@@ -71,7 +74,8 @@ const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 const calmFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-1";
 
-type CreationSlot = {
+// Local preview state only; these types are not persistence contracts.
+type CalendarCreationSlot = {
   date: string;
   label: string;
   contextLabel?: string;
@@ -80,8 +84,8 @@ type CreationSlot = {
   suggestedEndTime?: string;
 };
 
-type CreationDraft = {
-  slot: CreationSlot;
+type CalendarCreationDraft = {
+  slot: CalendarCreationSlot;
   date: string;
   endDate: string;
   allDay: boolean;
@@ -243,11 +247,7 @@ function getCalendarItemScheduleDisplay(item: CalendarItem) {
 }
 
 function isWeekBandCalendarItem(item: CalendarItem) {
-  return (
-    item.allDay === true ||
-    item.timeWindow?.trim().toLowerCase() === "all day" ||
-    (!item.startTime && !item.endTime)
-  );
+  return getCalendarItemTimingKind(item) !== "timed";
 }
 
 function getWeekBandLayout(items: WeekBandCalendarItem[], referenceDate: string) {
@@ -968,7 +968,7 @@ function WeekGrid({
   onSelect,
 }: {
   items: CalendarItem[];
-  onCreateFromSlot: (slot: CreationSlot) => void;
+  onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   onFocusDate: (date: string) => void;
   referenceDate: string;
   selectedId?: string;
@@ -1210,18 +1210,12 @@ function DayView({
 }: {
   date: string;
   items: CalendarItem[];
-  onCreateFromSlot: (slot: CreationSlot) => void;
+  onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
   const dayItems = items
-    .filter(
-      (item) =>
-        item.date === date ||
-        (isWeekBandCalendarItem(item) &&
-          item.date <= date &&
-          (item.endDate ?? item.date) >= date),
-    )
+    .filter((item) => doesCalendarItemOccurOnDate(item, date))
     .map(enrichCalendarItem);
   const allDayItems = dayItems.filter(isWeekBandCalendarItem);
   const timedItems = dayItems.filter((item) => !isWeekBandCalendarItem(item));
@@ -1345,7 +1339,7 @@ function MonthView({
   referenceDate,
 }: {
   items: CalendarItem[];
-  onCreateFromSlot: (slot: CreationSlot) => void;
+  onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   onFocusDate: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
@@ -1448,7 +1442,7 @@ function MobileDayGroups({
   onSelect,
 }: {
   items: CalendarItem[];
-  onCreateFromSlot: (slot: CreationSlot) => void;
+  onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   referenceDate: string;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
@@ -1506,10 +1500,10 @@ function CalendarCreatePanel({
   onDraftChange,
   presets,
 }: {
-  creationDraft?: CreationDraft;
+  creationDraft?: CalendarCreationDraft;
   isOpen: boolean;
   onClose: () => void;
-  onDraftChange: (draft: CreationDraft) => void;
+  onDraftChange: (draft: CalendarCreationDraft) => void;
   presets: TaskPreset[];
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -1553,7 +1547,7 @@ function CalendarCreatePanel({
           })
         : "generalVolunteers";
 
-  const updateDraft = (changes: Partial<CreationDraft>) => {
+  const updateDraft = (changes: Partial<CalendarCreationDraft>) => {
     onDraftChange({ ...creationDraft, ...changes });
   };
 
@@ -1646,10 +1640,10 @@ function CreatePanelContent({
   selectedTaskType,
 }: {
   closeButtonRef?: Ref<HTMLButtonElement>;
-  creationDraft: CreationDraft;
+  creationDraft: CalendarCreationDraft;
   onClose: () => void;
   onPresetChange: (presetId: string) => void;
-  onUpdate: (changes: Partial<CreationDraft>) => void;
+  onUpdate: (changes: Partial<CalendarCreationDraft>) => void;
   presets: TaskPreset[];
   selectedPreset?: TaskPreset;
   selectedTaskType: CalendarHighLevelTaskType;
@@ -2383,7 +2377,9 @@ export default function AdminCalendarPage() {
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
   const [selectedId, setSelectedId] = useState<string | undefined>();
-  const [creationDraft, setCreationDraft] = useState<CreationDraft | undefined>();
+  const [creationDraft, setCreationDraft] = useState<
+    CalendarCreationDraft | undefined
+  >();
   const surfaceTriggerRef = useRef<HTMLElement | null>(null);
 
   const filteredItems = useMemo(
@@ -2393,12 +2389,8 @@ export default function AdminCalendarPage() {
   const weekRange = deriveCalendarWeekRange(calendarAnchor);
   const visibleItems = useMemo(() => {
     if (activeView === "day") {
-      return filteredItems.filter(
-        (item) =>
-          item.date === calendarAnchor ||
-          (isWeekBandCalendarItem(item) &&
-            item.date <= calendarAnchor &&
-            (item.endDate ?? item.date) >= calendarAnchor),
+      return filteredItems.filter((item) =>
+        doesCalendarItemOccurOnDate(item, calendarAnchor),
       );
     }
 
@@ -2409,10 +2401,7 @@ export default function AdminCalendarPage() {
     }
 
     return filteredItems.filter((item) =>
-      isWeekBandCalendarItem(item)
-        ? item.date <= weekRange.end &&
-          (item.endDate ?? item.date) >= weekRange.start
-        : item.date >= weekRange.start && item.date <= weekRange.end,
+      doesCalendarItemOverlapDateRange(item, weekRange.start, weekRange.end),
     );
   }, [activeView, calendarAnchor, filteredItems, weekRange.end, weekRange.start]);
 
@@ -2491,7 +2480,7 @@ export default function AdminCalendarPage() {
     setActiveSurface("filter");
   };
 
-  const handleCreateFromSlot = (slot: CreationSlot) => {
+  const handleCreateFromSlot = (slot: CalendarCreationSlot) => {
     const defaultPreset = creationPresets[0];
 
     rememberSurfaceTrigger();

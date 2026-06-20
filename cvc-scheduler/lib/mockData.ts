@@ -165,6 +165,20 @@ export type TaskPresetCounts = {
   byCategory: Record<TaskPresetCategory, number>;
 };
 
+export type CalendarOneOffTaskSnapshot = {
+  name: string;
+  category: TaskPresetCategory;
+  neededCount?: number;
+  customFields?: TaskPresetCustomField[];
+};
+
+export type CalendarItemTimingKind = "timed" | "allDay" | "untimedPreview";
+
+/**
+ * Mock persistence-shaped scheduled instance.
+ * `filledCount`, `assignedVolunteerIds`, coverage status, and copy/repeat labels
+ * are denormalized preview fields, not a proposed production storage contract.
+ */
 export type CalendarItem = {
   id: string;
   projectId: string;
@@ -185,14 +199,10 @@ export type CalendarItem = {
   copyLabel?: string;
   menuSummary?: string;
   copiedFromItemId?: string;
-  oneOffTask?: {
-    name: string;
-    category: TaskPresetCategory;
-    neededCount?: number;
-    customFields?: TaskPresetCustomField[];
-  };
+  oneOffTask?: CalendarOneOffTaskSnapshot;
 };
 
+/** Preview UI state currently combines item lifecycle and coverage. */
 export type CalendarItemStatus =
   | "open"
   | "partiallyFilled"
@@ -235,6 +245,10 @@ export type CalendarSummaryCounts = {
 
 export type CalendarHighLevelTaskType = "generalVolunteers" | "food" | "security";
 
+/**
+ * Derived preview-filter vocabulary, not a persisted item status contract.
+ * `someDenied` requires future assignment-response records to derive reliably.
+ */
 export type CalendarCoverageFilterState =
   | "unfilled"
   | "filled"
@@ -4328,6 +4342,32 @@ function getCalendarItemTimeSortValue(item: CalendarItem) {
   return normalizedHour * 60 + minute;
 }
 
+export function getCalendarItemTimingKind(
+  item: CalendarItem,
+): CalendarItemTimingKind {
+  if (item.allDay === true || item.timeWindow?.trim().toLowerCase() === "all day") {
+    return "allDay";
+  }
+
+  if (item.startTime && item.endTime) {
+    return "timed";
+  }
+
+  return "untimedPreview";
+}
+
+export function doesCalendarItemOccurOnDate(item: CalendarItem, date: string) {
+  return item.date <= date && (item.endDate ?? item.date) >= date;
+}
+
+export function doesCalendarItemOverlapDateRange(
+  item: CalendarItem,
+  startDate: string,
+  endDate: string,
+) {
+  return item.date <= endDate && (item.endDate ?? item.date) >= startDate;
+}
+
 export function getCalendarItemsForProject(projectId = demoProjectId) {
   return calendarItems
     .filter((item) => item.projectId === projectId)
@@ -4348,7 +4388,9 @@ export function getCalendarItemsForActiveWorkspace() {
 }
 
 export function getCalendarItemsByDate(date: string, projectId = demoProjectId) {
-  return getCalendarItemsForProject(projectId).filter((item) => item.date === date);
+  return getCalendarItemsForProject(projectId).filter((item) =>
+    doesCalendarItemOccurOnDate(item, date),
+  );
 }
 
 export function deriveCalendarWeekRange(
@@ -4376,8 +4418,8 @@ export function getCalendarItemsByWeek(
 ) {
   const weekRange = deriveCalendarWeekRange(referenceDate);
 
-  return getCalendarItemsForProject(projectId).filter(
-    (item) => item.date >= weekRange.start && item.date <= weekRange.end,
+  return getCalendarItemsForProject(projectId).filter((item) =>
+    doesCalendarItemOverlapDateRange(item, weekRange.start, weekRange.end),
   );
 }
 
