@@ -74,6 +74,7 @@ type CreationSlot = {
   date: string;
   label: string;
   contextLabel?: string;
+  allDay?: boolean;
   suggestedStartTime?: string;
   suggestedEndTime?: string;
 };
@@ -81,6 +82,8 @@ type CreationSlot = {
 type CreationDraft = {
   slot: CreationSlot;
   date: string;
+  endDate: string;
+  allDay: boolean;
   startTime: string;
   endTime: string;
   mode: CreationMode;
@@ -290,6 +293,15 @@ function formatHourLabel(hour: number) {
   }
 
   return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+}
+
+function getCalendarAccessibleDayLabel(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+    weekday: "long",
+  }).format(new Date(`${date}T00:00:00Z`));
 }
 
 function shiftCalendarAnchor(
@@ -1001,23 +1013,33 @@ function WeekGrid({
           All day
         </div>
         <div className="relative col-span-7" style={{ height: bandHeight }}>
-          <div aria-hidden="true" className="absolute inset-0 grid grid-cols-7">
+          <div className="absolute inset-0 z-0 grid grid-cols-7">
             {groups.map((group) => (
-              <div
-                className="border-r border-slate-200/80 last:border-r-0"
+              <button
+                aria-label={`Create all-day scheduled task draft for ${getCalendarAccessibleDayLabel(group.date)}`}
+                className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
                 key={group.date}
+                onClick={() =>
+                  onCreateFromSlot({
+                    allDay: true,
+                    date: group.date,
+                    label: `${group.dayLabel} all day`,
+                    contextLabel: "Suggested from all-day band",
+                  })
+                }
+                type="button"
               />
             ))}
           </div>
           <div
-            className="relative z-10 grid h-full grid-cols-7 gap-x-1 gap-y-1 p-1.5"
+            className="pointer-events-none relative z-10 grid h-full grid-cols-7 gap-x-1 gap-y-1 p-1.5"
             style={{ gridTemplateRows: `repeat(${bandRowCount}, minmax(0, 1fr))` }}
           >
             {visibleBandItems.map(({ endIndex, item, lane, startIndex }) => (
               <button
                 aria-label={getWeekBandItemAccessibleLabel(item)}
                 className={[
-                  `flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition ${calmFocusRing}`,
+                  `pointer-events-auto flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition ${calmFocusRing}`,
                   getCalendarEventStyle(item),
                   selectedId === item.id
                     ? "ring-2 ring-slate-900/30 ring-offset-1"
@@ -1043,7 +1065,7 @@ function WeekGrid({
               count > 0 ? (
                 <button
                   aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more all-day item${count === 1 ? "" : "s"}`}
-                  className={`self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
+                  className={`pointer-events-auto self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
                   key={groups[dayIndex]?.date}
                   onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
                   style={{
@@ -1654,8 +1676,7 @@ function CreatePanelContent({
             {creationDraft.slot.contextLabel ?? "Suggested from calendar"}
           </p>
           <p className="mt-1 text-sm font-medium leading-5 text-slate-500">
-            Started from {creationDraft.slot.label}. Adjust the date and time below before this
-            becomes real scheduling.
+            Started from {creationDraft.slot.label}. Adjust the {creationDraft.allDay ? "date range" : "date and time"} below before this becomes real scheduling.
           </p>
         </section>
 
@@ -1750,34 +1771,102 @@ function CreatePanelContent({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Date and time
           </p>
-          <div className="mt-2 grid gap-3 sm:grid-cols-3">
-            <label className="block">
+          <label className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-700">
+            <input
+              checked={creationDraft.allDay}
+              className="h-4 w-4 accent-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2"
+              onChange={(event) =>
+                onUpdate(
+                  event.target.checked
+                    ? {
+                        allDay: true,
+                        endDate:
+                          creationDraft.endDate < creationDraft.date
+                            ? creationDraft.date
+                            : creationDraft.endDate,
+                        endTime: "",
+                        startTime: "",
+                      }
+                    : {
+                        allDay: false,
+                        endDate: creationDraft.date,
+                        endTime:
+                          creationDraft.slot.suggestedEndTime ??
+                          suggestedSlots.morning.end,
+                        startTime:
+                          creationDraft.slot.suggestedStartTime ??
+                          suggestedSlots.morning.start,
+                      },
+                )
+              }
+              type="checkbox"
+            />
+            All day
+          </label>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <label
+              className={[
+                "block min-w-0",
+                creationDraft.allDay ? "" : "sm:col-span-2",
+              ].join(" ")}
+            >
               <span className="text-sm font-semibold text-slate-700">Date</span>
               <input
                 className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                onChange={(event) => onUpdate({ date: event.target.value })}
+                onChange={(event) => {
+                  const date = event.target.value;
+
+                  onUpdate({
+                    date,
+                    ...(creationDraft.allDay && creationDraft.endDate < date
+                      ? { endDate: date }
+                      : {}),
+                  });
+                }}
                 type="date"
                 value={creationDraft.date}
               />
             </label>
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">Start</span>
-              <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                onChange={(event) => onUpdate({ startTime: event.target.value })}
-                type="time"
-                value={creationDraft.startTime}
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-semibold text-slate-700">End</span>
-              <input
-                className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                onChange={(event) => onUpdate({ endTime: event.target.value })}
-                type="time"
-                value={creationDraft.endTime}
-              />
-            </label>
+            {creationDraft.allDay ? (
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">End date</span>
+                <input
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  min={creationDraft.date}
+                  onChange={(event) =>
+                    onUpdate({
+                      endDate:
+                        event.target.value < creationDraft.date
+                          ? creationDraft.date
+                          : event.target.value,
+                    })
+                  }
+                  type="date"
+                  value={creationDraft.endDate}
+                />
+              </label>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Start</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    onChange={(event) => onUpdate({ startTime: event.target.value })}
+                    type="time"
+                    value={creationDraft.startTime}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">End</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    onChange={(event) => onUpdate({ endTime: event.target.value })}
+                    type="time"
+                    value={creationDraft.endTime}
+                  />
+                </label>
+              </>
+            )}
           </div>
         </section>
 
@@ -2277,8 +2366,14 @@ export default function AdminCalendarPage() {
     setCreationDraft({
       slot,
       date: slot.date,
-      startTime: slot.suggestedStartTime ?? suggestedSlots.morning.start,
-      endTime: slot.suggestedEndTime ?? suggestedSlots.morning.end,
+      endDate: slot.date,
+      allDay: slot.allDay ?? false,
+      startTime: slot.allDay
+        ? ""
+        : slot.suggestedStartTime ?? suggestedSlots.morning.start,
+      endTime: slot.allDay
+        ? ""
+        : slot.suggestedEndTime ?? suggestedSlots.morning.end,
       mode: "preset",
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,

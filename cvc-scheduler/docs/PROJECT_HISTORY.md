@@ -1888,6 +1888,44 @@ Limitations:
 Next recommended step:
 - 09.33 Calendar all-day creation interaction foundation.
 
+## Iteration 09.33 — Calendar All-Day Creation Interaction Foundation
+
+Summary:
+- Added one quiet background creation target per desktop Week all-day day column without adding visible repeated CTA text.
+- Kept all-day background targets, existing event bars, and `+N` overflow as stable sibling layers; foreground controls remain independently clickable and keyboard accessible.
+- Extended the local creation slot/draft model with an all-day flag and editable end date while keeping all behavior preview-only.
+- Added a compact All day checkbox in the existing Date and time section. All-day band clicks default it on; timed Week, Day, and Month creation defaults it off.
+- All-day drafts hide start/end time fields, use date-range context language, and clamp End date so it cannot precede Date. Switching All day off restores the clicked timed suggestion or 09:00-10:00 defaults.
+- Preserved existing all-day/multi-day inspection, overflow-to-Day behavior, timed event placement, deterministic colors, filters, overlay exclusivity, Escape dismissal, and trigger-focus restoration.
+- Refreshed the existing desktop and mobile Calendar creation-open previews; the screenshot script and capture selectors did not change.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview` started the production preview successfully.
+- `npm.cmd run preview:screenshots` passed against the production preview.
+- Production-browser QA opened the Sunday all-day target, confirmed All day was checked with Date/End date and no time inputs, toggled back to 09:00-10:00, and confirmed initial close-button focus plus Escape restoration to the exact day launcher.
+- Timed regression checks confirmed a pointer-selected Week one-hour draft and an exact 09:00-10:00 Day-hour draft with All day off.
+- Existing Site support inspection still showed its multi-day schedule; Wednesday `+2` still focused Day view with all four spanning items; Filters still received initial focus.
+- Mobile QA at 390px confirmed existing all-day items in Day view, the creation-sheet All day toggle, hidden time fields when enabled, no horizontal overflow, and no console, page, or hydration errors.
+
+Limitations:
+- All-day and multi-day creation remains a local draft preview; no Calendar item is saved or rendered from the draft.
+- Mobile intentionally has no new all-day creation launcher; its existing timed/day creation paths can toggle All day inside the sheet.
+- End-date handling only prevents an end before the start date; production-grade validation, persistence, and scheduling rules remain future work.
+- No Supabase, auth, URL date routing, drag/drop, resizing, assignment workflow, scheduling engine, calendar library, or Calendar mutations were added.
+
+Next recommended step:
+- 09.34 Calendar draft validation and creation-surface polish.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

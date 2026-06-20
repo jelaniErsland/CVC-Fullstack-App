@@ -70,7 +70,8 @@ Rough phases:
 - 09.30 Calendar Week Density + All-Day Band Foundation. Completed.
 - 09.31 Calendar keyboard and screen-reader interaction QA. Completed.
 - 09.32 Calendar all-day/multi-day mock-data validation and overflow QA. Completed.
-- 09.33 Calendar all-day creation interaction foundation. Next recommended step.
+- 09.33 Calendar all-day creation interaction foundation. Completed.
+- 09.34 Calendar draft validation and creation-surface polish. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -120,6 +121,7 @@ Rough phases:
 - 09.31 Calendar keyboard and screen-reader interaction QA.
 - 09.32 Calendar all-day/multi-day mock-data validation and overflow QA.
 - 09.33 Calendar all-day creation interaction foundation.
+- 09.34 Calendar draft validation and creation-surface polish.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
