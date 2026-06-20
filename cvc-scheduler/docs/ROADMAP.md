@@ -73,7 +73,8 @@ Rough phases:
 - 09.33 Calendar all-day creation interaction foundation. Completed.
 - 09.34 Calendar draft validation and creation-surface polish. Completed.
 - 09.35 Calendar production data-model readiness review. Completed.
-- 09.36 Calendar persistence contract and schema planning. Next recommended step.
+- 09.36 Calendar scheduling semantics + persistence contract planning. Completed.
+- 09.37 Calendar Month Density + Overflow Behavior. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -125,7 +126,8 @@ Rough phases:
 - 09.33 Calendar all-day creation interaction foundation.
 - 09.34 Calendar draft validation and creation-surface polish.
 - 09.35 Calendar production data-model readiness review.
-- 09.36 Calendar persistence contract and schema planning.
+- 09.36 Calendar scheduling semantics + persistence contract planning.
+- 09.37 Calendar Month Density + Overflow Behavior.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 

@@ -46,7 +46,7 @@ import {
   getCalendarHighLevelTaskType,
   getCalendarHighLevelTaskTypeLabel,
   getCalendarItemDisplayName,
-  getCalendarItemTimingKind,
+  getCalendarItemPreviewTimingKind,
   getCalendarItemTimeWindow,
   getCalendarItemsByWeek,
   getCalendarStatusLabel,
@@ -79,6 +79,7 @@ type CalendarCreationSlot = {
   date: string;
   label: string;
   contextLabel?: string;
+  // Compatibility state for the current preview; not a future persisted kind.
   allDay?: boolean;
   suggestedStartTime?: string;
   suggestedEndTime?: string;
@@ -247,7 +248,7 @@ function getCalendarItemScheduleDisplay(item: CalendarItem) {
 }
 
 function isWeekBandCalendarItem(item: CalendarItem) {
-  return getCalendarItemTimingKind(item) !== "timed";
+  return getCalendarItemPreviewTimingKind(item) !== "timed";
 }
 
 function getWeekBandLayout(items: WeekBandCalendarItem[], referenceDate: string) {

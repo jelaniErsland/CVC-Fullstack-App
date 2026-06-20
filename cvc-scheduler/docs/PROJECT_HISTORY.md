@@ -1996,7 +1996,42 @@ Limitations:
 - No Supabase, auth, database calls, real create/update/delete behavior, drag/drop, resizing, assignments, reminders, routes, or Calendar redesign were added.
 
 Next recommended step:
-- 09.36 Calendar persistence contract and schema planning.
+- 09.36 Calendar Scheduling Semantics + Persistence Contract Planning.
+
+## Iteration 09.36 — Calendar Scheduling Semantics + Persistence Contract Planning
+
+Summary:
+- Defined the recommended production scheduling vocabulary as `timed`, `date_based`, `multi_day_window`, and `milestone`, with standalone notes intentionally excluded from the first scheduling-kind contract.
+- Recommended moving future visible UI away from All day toward Timed, Date-based/No specific time, Project window/Multi-day, and Milestone language while retaining the current All day wording as unchanged preview compatibility behavior.
+- Documented how each kind should appear in Day, Week, Month, mobile Week groups, a future List view, and a future Timeline / Work Plan view.
+- Added a discriminated persistence-contract sketch covering workspace scope, preset-or-one-off task source, scheduling values, timezone, coverage mode, needed count, notes, custom values, lifecycle, structured copy/recurrence/bulk source metadata, and record-level audit/version needs.
+- Reaffirmed assignment rows as the source of filled, confirmed, denied, waiting, open-spot, and volunteer-response truth rather than Calendar item counters.
+- Documented the next Month direction: more compact rows when space allows, true-overflow `+N` focusing Day, and preserved full-cell creation with sibling foreground controls.
+- Renamed the current timing helper/type as preview-specific and added a future schedule-kind vocabulary type without changing mock records or visible Calendar behavior.
+
+Changed files:
+- `lib/mockData.ts`
+- `app/admin/calendar/page.tsx`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- Production-browser QA confirmed Week, Day, and Month rendering; timed and current all-day/date-based creation; existing-item inspection; Filters; and 390px mobile layout without horizontal overflow.
+- No console, page, hydration, or browser errors were reported.
+- Screenshot workflow was not changed because no visible UI or selector behavior changed.
+
+Limitations:
+- The persistence contract is a planning sketch, not a schema, migration, API, or mutation implementation.
+- Current mock data and visible UI still use the compatibility `allDay` flag/wording; no record migration or UI terminology change was made.
+- Coverage-mode enforcement, recurrence editing, preset snapshot rules, overnight work, timezone conversion, List/Timeline views, and denser Month rendering remain future work.
+- No Supabase, auth, database calls, real create/update/delete, assignments, confirmations, communications, drag/drop, resizing, route, or scheduling-engine behavior was added.
+
+Next recommended step:
+- 09.37 Calendar Month Density + Overflow Behavior.
 
 ## Documentation Maintenance Rules
 

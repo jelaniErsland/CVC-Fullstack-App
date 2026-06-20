@@ -172,7 +172,18 @@ export type CalendarOneOffTaskSnapshot = {
   customFields?: TaskPresetCustomField[];
 };
 
-export type CalendarItemTimingKind = "timed" | "allDay" | "untimedPreview";
+/** Future persistence vocabulary; current mock records do not populate it yet. */
+export type CalendarScheduleKind =
+  | "timed"
+  | "date_based"
+  | "multi_day_window"
+  | "milestone";
+
+/** Current preview compatibility classification, not the persistence contract. */
+export type CalendarItemPreviewTimingKind =
+  | "timed"
+  | "dateBased"
+  | "untimedPreview";
 
 /**
  * Mock persistence-shaped scheduled instance.
@@ -185,6 +196,7 @@ export type CalendarItem = {
   taskPresetId?: string;
   date: string;
   endDate?: string;
+  /** Preview compatibility flag behind the current "All day" UI wording. */
   allDay?: boolean;
   startTime?: string;
   endTime?: string;
@@ -4342,11 +4354,11 @@ function getCalendarItemTimeSortValue(item: CalendarItem) {
   return normalizedHour * 60 + minute;
 }
 
-export function getCalendarItemTimingKind(
+export function getCalendarItemPreviewTimingKind(
   item: CalendarItem,
-): CalendarItemTimingKind {
+): CalendarItemPreviewTimingKind {
   if (item.allDay === true || item.timeWindow?.trim().toLowerCase() === "all day") {
-    return "allDay";
+    return "dateBased";
   }
 
   if (item.startTime && item.endTime) {
