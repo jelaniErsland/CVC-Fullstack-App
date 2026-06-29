@@ -81,10 +81,10 @@ The current mock `allDay` flag and `All day` mock time-window values remain comp
 | Week | Positioned by start/end time with overlap handling. | One-day bar in the band. | Spanning bar across intersecting day columns. | Compact marker in the relevant day column. |
 | Month | Compact row within its date cell. | Compact row within its date cell. | Compact continuation/spanning treatment across the range where practical. | Compact marker on its date. |
 | Mobile Week groups | Sorted within the relevant date group with time visible in its accessible/expanded detail. | Shown in its date group without a fake time. | Represented on intersecting dates with concise ongoing/range context; avoid implying a shift. | Shown once in its date group as informational. |
-| Future List | One chronological row using start instant. | One row using project date. | One row using the full date range, not one duplicate per day. | One dated informational row. |
+| List (current mock) | One chronological row using the mock start time. | One row using project date and `No specific time`. | One row using the full date range, not one duplicate per day. | One dated informational row when milestone support exists. |
 | Future Timeline / Work Plan | Duration bar on the time/date axis. | One-date bar or marker. | Natural multi-day phase/window bar. | Point marker. |
 
-Day and Week remain the operational scheduling views. A future List view should favor scanning and filtering, while a future Timeline / Work Plan should favor construction phases, dependencies, and multi-day context. Neither future view should replace the familiar Week calendar.
+Day and Week remain the operational scheduling views. The current List companion favors scanning and filtering without replacing the familiar grid, while a future Timeline / Work Plan should favor construction phases, dependencies, and multi-day context.
 
 ### Month view implications
 
@@ -114,6 +114,14 @@ Iteration 09.39 applies the visible terminology contract without changing the pr
 - Internal `allDay` fields, timing classification, intersection helpers, and mock `All day` values remain compatibility implementation details.
 
 Future terminology work should introduce `Milestone` only with real model support rather than relabeling existing mock items heuristically.
+
+Iteration 09.40 applies that presentation guidance in a mock-only List view:
+
+- List follows the visible Week period and uses the existing filtered item set.
+- Date-based/no-specific-time items sort before timed work; timed work sorts by start time.
+- A multi-day compatibility item appears once, anchored to its start date or the visible Week boundary, with the full `Project window` range.
+- Rows expose the task name, schedule wording, high-level type, helper fraction, and existing inspector action without creating a new entity or schedule kind.
+- Grouping and sorting remain presentation helpers. They do not define production queries, timezone behavior, or assignment truth.
 
 ## Recommended schedule rules
 
@@ -197,7 +205,7 @@ Calendar item lifecycle remains separate from assignment response and derived co
 - Unify Lunch/menu and other custom-field values without making Food, Security, and General presentation filters separate scheduling models.
 - Keep deterministic colors stable and derived unless explicit user-owned color becomes a requirement.
 - Preserve Month's six/three density rule without blocking full-cell creation or weakening sibling-control semantics; keep `+N` focused on Day.
-- Define List sorting/grouping for date-only and range items without duplicating multi-day windows per date.
+- Preserve the preview List rule of one full-range project-window row while defining production query, timezone, and boundary behavior explicitly; do not derive per-day shifts from a window.
 - Let a future Timeline / Work Plan express project windows and milestones without replacing Week or becoming the source of scheduling truth.
 - Decide whether view/date state belongs in the URL before shareable Calendar links are introduced.
 - Add audit/history requirements for schedule edits, assignments, status changes, preset snapshots, and communications.
@@ -205,4 +213,4 @@ Calendar item lifecycle remains separate from assignment response and derived co
 
 ## Deliberately out of scope
 
-No schema migration, Supabase client, authentication, persistence, mutation, volunteer assignment workflow, recurrence engine, drag/drop, resizing, URL date routing, List/Timeline UI, or production scheduling engine is introduced by this readiness guidance.
+No schema migration, Supabase client, authentication, persistence, mutation, volunteer assignment workflow, recurrence engine, drag/drop, resizing, URL date routing, Timeline UI, production List query contract, or production scheduling engine is introduced by this readiness guidance.

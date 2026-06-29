@@ -77,7 +77,8 @@ Rough phases:
 - 09.37 Calendar Month Density + Overflow Behavior. Completed.
 - 09.38 Calendar Month Density + Day View Date-Based Cleanup. Completed.
 - 09.39 Calendar Terminology Cleanup. Completed.
-- 09.40 Calendar List View Foundation. Next recommended step.
+- 09.40 Calendar List View Foundation. Completed.
+- 09.41 Calendar List View Visual QA + Density Polish. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -134,6 +135,7 @@ Rough phases:
 - 09.38 Calendar Month Density + Day View Date-Based Cleanup.
 - 09.39 Calendar Terminology Cleanup.
 - 09.40 Calendar List View Foundation.
+- 09.41 Calendar List View Visual QA + Density Polish.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -424,13 +426,19 @@ controls if direct drag/drop is too fiddly. Keep the Calendar powerful but
 visually quiet: the grid should not look cluttered before the user takes
 action.
 
-Calendar now has mock Day/Week/Month view switching and a mock Filter
+Calendar now has mock Day/Week/Month/List view switching and a mock Filter
 drawer/sheet. Calendar filters support task-name search, unfilled tasks, filled
 tasks, tasks waiting on some confirmations, tasks with all helpers confirmed,
 tasks with some/all helpers denied, and high-level task type filters: General
 Volunteers, Food, and Security. Construction, cleanup, gate attendant, drywall,
 concrete, room signage, water/coffee, and similar work roll up under General
 Volunteers rather than becoming top-level filter types.
+
+List is a compact companion for dense project weeks. It follows Week-period
+navigation, groups visible work by date, keeps no-specific-time/date-based work
+near the top, sorts timed rows chronologically, and shows each project window
+once with its full range. Rows reuse the existing inspector and filter model;
+the view remains local mock UI rather than a new scheduling contract.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and

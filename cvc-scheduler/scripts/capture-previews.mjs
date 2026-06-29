@@ -20,6 +20,12 @@ const browserExecutable =
 const desktopViewport = { width: 1440, height: 1000 };
 const mobileViewport = { width: 390, height: 844 };
 const jpegOptions = { type: "jpeg", quality: 78, fullPage: true };
+const requestedCaptureFiles = new Set(
+  (process.env.PREVIEW_CAPTURE_FILES ?? "")
+    .split(",")
+    .map((fileName) => fileName.trim())
+    .filter(Boolean),
+);
 
 const captures = [
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
@@ -56,6 +62,12 @@ const captures = [
     fileName: "calendar-month.jpg",
     viewport: desktopViewport,
     calendarView: "Month",
+  },
+  {
+    route: "/admin/calendar",
+    fileName: "calendar-list.jpg",
+    viewport: desktopViewport,
+    calendarView: "List",
   },
   {
     route: "/admin/calendar",
@@ -147,6 +159,13 @@ const captures = [
   },
   {
     route: "/admin/calendar",
+    fileName: "mobile-calendar-list.jpg",
+    viewport: mobileViewport,
+    calendarView: "List",
+    focusCalendarWorkspace: true,
+  },
+  {
+    route: "/admin/calendar",
     fileName: "mobile-calendar-filter-open.jpg",
     viewport: mobileViewport,
     openCalendarFilters: true,
@@ -195,7 +214,26 @@ function previewUrl(route) {
 }
 
 async function main() {
-  await rm(outputDir, { recursive: true, force: true });
+  const selectedCaptures =
+    requestedCaptureFiles.size > 0
+      ? captures.filter(({ fileName }) => requestedCaptureFiles.has(fileName))
+      : captures;
+
+  if (requestedCaptureFiles.size > 0) {
+    const selectedFileNames = new Set(
+      selectedCaptures.map(({ fileName }) => fileName),
+    );
+    const missingFileNames = [...requestedCaptureFiles].filter(
+      (fileName) => !selectedFileNames.has(fileName),
+    );
+
+    if (missingFileNames.length > 0) {
+      throw new Error(`Unknown preview file${missingFileNames.length === 1 ? "" : "s"}: ${missingFileNames.join(", ")}`);
+    }
+  } else {
+    await rm(outputDir, { recursive: true, force: true });
+  }
+
   await mkdir(outputDir, { recursive: true });
 
   const browser = await chromium.launch(
@@ -215,7 +253,7 @@ async function main() {
       openCalendarFilters,
       openMobileDrawer,
       openMobileMore,
-    } of captures) {
+    } of selectedCaptures) {
       await page.setViewportSize(viewport);
 
       const response = await page.goto(previewUrl(route), {

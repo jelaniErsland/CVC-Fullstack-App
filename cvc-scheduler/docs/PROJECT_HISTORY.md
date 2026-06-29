@@ -2156,6 +2156,46 @@ Limitations:
 Next recommended step:
 - 09.40 Calendar List View Foundation.
 
+## Iteration 09.40 — Calendar List View Foundation
+
+Summary:
+- Added List as the fourth pressed-state Calendar view alongside Day, Week, and Month without changing their layouts or interaction behavior.
+- Added a compact week-based List surface with date-group headers and flat inspector-opening rows for task name, schedule wording, high-level type, and helper fraction.
+- Kept no-specific-time/date-based work near the top of each date group and sorted timed work chronologically.
+- Represented each project window once with its full 09.39 range wording instead of duplicating it into per-day shift rows.
+- Reused the existing filtered mock item set, item inspector, active-surface exclusivity, previous/next Week navigation, and Project week reset.
+- Added calm List empty-period copy, clear row accessible names, and a responsive 390px layout without horizontal overflow.
+- Added desktop/mobile List preview captures and optional `PREVIEW_CAPTURE_FILES` workflow filtering so intentional screenshots can be refreshed without clearing unrelated previews.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-list.jpg`
+- `docs/previews/latest/mobile-calendar-list.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npx tsc --noEmit` and `node --check scripts/capture-previews.mjs` passed.
+- Desktop browser QA confirmed 15 rows across six date groups, no-specific-time/project-window rows before chronological timed work, one row per project window, Food filtering, Week navigation/reset, and inspector opening.
+- Existing Day, Week, and Month checks confirmed 24 Day time rows, seven Week columns plus project context, and 35 Month cells.
+- Inspector and filter surfaces received initial focus, closed with Escape, and restored trigger focus; mobile More and Filters remained mutually exclusive.
+- Mobile QA at 390px confirmed 57px-wide view controls, thumb-friendly rows, no nested interactive controls, and no document or List horizontal overflow.
+- No console errors, page errors, or hydration warnings were reported.
+
+Limitations:
+- List is local mock presentation only. It does not add persistence, URL state, routes, mutations, drag/drop, resizing, or production scheduling logic.
+- List follows Week-period navigation and groups a project window once at its start date, or at the visible Week boundary when it began earlier; this is not a production query contract.
+- The current helper fractions and schedule-kind classification still come from denormalized mock compatibility fields.
+- List has no empty-row creation affordance; creation remains on the existing Day, Week, and Month grid surfaces.
+
+Next recommended step:
+- 09.41 Calendar List View Visual QA + Density Polish.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

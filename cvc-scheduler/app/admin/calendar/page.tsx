@@ -67,7 +67,7 @@ import type {
   TaskPresetCategory,
 } from "@/lib/mockData";
 
-type CalendarViewMode = "day" | "week" | "month";
+type CalendarViewMode = "day" | "week" | "month" | "list";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
 type CreationMode = "preset" | "oneOff";
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
@@ -113,6 +113,7 @@ const viewModes: Array<{ id: CalendarViewMode; label: string }> = [
   { id: "day", label: "Day" },
   { id: "week", label: "Week" },
   { id: "month", label: "Month" },
+  { id: "list", label: "List" },
 ];
 
 const taskTypeOptions: CalendarHighLevelTaskType[] = [
@@ -358,7 +359,8 @@ function shiftCalendarAnchor(
     nextDate.setUTCDate(Math.min(day, lastDay));
   } else {
     nextDate.setUTCDate(
-      nextDate.getUTCDate() + amount * (view === "week" ? 7 : 1),
+      nextDate.getUTCDate() +
+        amount * (view === "week" || view === "list" ? 7 : 1),
     );
   }
 
@@ -366,7 +368,7 @@ function shiftCalendarAnchor(
 }
 
 function getCalendarPeriodLabel(date: string, view: CalendarViewMode) {
-  if (view === "week") {
+  if (view === "week" || view === "list") {
     return deriveCalendarWeekRange(date).label;
   }
 
@@ -524,7 +526,7 @@ function ViewToggle({
           aria-controls="calendar-view-content"
           aria-pressed={activeView === view.id}
           className={[
-            `min-h-11 min-w-0 flex-1 rounded-full px-3 transition sm:flex-none sm:px-4 ${calmFocusRing}`,
+            `min-h-11 min-w-0 flex-1 rounded-full px-2 transition sm:flex-none sm:px-4 ${calmFocusRing}`,
             activeView === view.id
               ? "bg-slate-950 text-white shadow-sm"
               : "hover:bg-white/70",
@@ -565,7 +567,8 @@ function CalendarWorkspaceHeader({
   periodLabel: string;
   resetDisabled: boolean;
 }) {
-  const navigationUnit = activeView === "day" ? "day" : activeView;
+  const navigationUnit =
+    activeView === "day" ? "day" : activeView === "list" ? "week" : activeView;
 
   return (
     <section
@@ -1480,6 +1483,169 @@ function MonthView({
         })}
       </div>
     </section>
+  );
+}
+
+function getCalendarListItemScheduleLabel(item: CalendarItem) {
+  return getCalendarItemScheduleDisplay(item).label;
+}
+
+function getCalendarListItemAccessibleLabel(item: CalendarItemWithPreset) {
+  return [
+    getCalendarItemDisplayName(item),
+    getCalendarListItemScheduleLabel(item),
+    `${item.filledCount} of ${item.neededCount} helpers`,
+    getCalendarHighLevelTaskTypeLabel(getCalendarHighLevelTaskType(item)),
+  ].join(", ");
+}
+
+function CalendarListView({
+  items,
+  onSelect,
+  referenceDate,
+  selectedId,
+}: {
+  items: CalendarItem[];
+  onSelect: (item: CalendarItemWithPreset) => void;
+  referenceDate: string;
+  selectedId?: string;
+}) {
+  const weekRange = deriveCalendarWeekRange(referenceDate);
+  const groups = Array.from(
+    items.reduce<Map<string, CalendarItemWithPreset[]>>((grouped, item) => {
+      const groupDate = item.date < weekRange.start ? weekRange.start : item.date;
+      const currentItems = grouped.get(groupDate) ?? [];
+
+      grouped.set(groupDate, [...currentItems, enrichCalendarItem(item)]);
+      return grouped;
+    }, new Map()),
+  )
+    .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+    .map(([date, groupItems]) => ({
+      date,
+      items: [...groupItems].sort((first, second) => {
+        const firstIsTimed = getCalendarItemPreviewTimingKind(first) === "timed";
+        const secondIsTimed = getCalendarItemPreviewTimingKind(second) === "timed";
+
+        if (firstIsTimed !== secondIsTimed) {
+          return firstIsTimed ? 1 : -1;
+        }
+
+        if (firstIsTimed && secondIsTimed) {
+          const timeDifference =
+            getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second);
+
+          if (timeDifference !== 0) {
+            return timeDifference;
+          }
+        }
+
+        return getCalendarItemDisplayName(first).localeCompare(
+          getCalendarItemDisplayName(second),
+        );
+      }),
+    }));
+
+  if (groups.length === 0) {
+    return (
+      <section className="rounded-xl border border-slate-200/80 bg-white/40 px-4 py-8 text-center">
+        <p className="text-sm font-medium text-slate-500">
+          No project work to show this week.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <div
+      className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52"
+      data-testid="calendar-list-view"
+    >
+      {groups.map((group) => {
+        const headingId = `calendar-list-${group.date}`;
+
+        return (
+          <section
+            aria-labelledby={headingId}
+            className="border-b border-slate-200/80 last:border-b-0"
+            key={group.date}
+          >
+            <header className="flex min-h-11 items-center justify-between gap-3 bg-white/46 px-3 py-2 sm:px-4">
+              <h3
+                className="text-sm font-semibold tracking-tight text-slate-950"
+                id={headingId}
+              >
+                <time dateTime={group.date}>
+                  {getCalendarAccessibleDayLabel(group.date)}
+                </time>
+              </h3>
+              <span className="shrink-0 text-xs font-semibold text-slate-400">
+                {group.items.length} item{group.items.length === 1 ? "" : "s"}
+              </span>
+            </header>
+
+            <div aria-label={`Project work for ${getCalendarAccessibleDayLabel(group.date)}`} role="list">
+              {group.items.map((item) => {
+                const scheduleLabel = getCalendarListItemScheduleLabel(item);
+                const typeLabel = getCalendarHighLevelTaskTypeLabel(
+                  getCalendarHighLevelTaskType(item),
+                );
+
+                return (
+                  <div
+                    className="border-t border-slate-200/70 first:border-t-0"
+                    key={item.id}
+                    role="listitem"
+                  >
+                    <button
+                      aria-label={getCalendarListItemAccessibleLabel(item)}
+                      className={[
+                        `grid min-h-16 w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-3 text-left transition hover:bg-white/58 sm:min-h-14 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.9fr)_auto_auto] sm:px-4 ${calmFocusRing}`,
+                        selectedId === item.id
+                          ? "bg-white/72 ring-2 ring-inset ring-slate-900/25"
+                          : "",
+                      ].join(" ")}
+                      onClick={() => onSelect(item)}
+                      type="button"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-950">
+                          {getCalendarItemDisplayName(item)}
+                        </p>
+                        <p className="mt-1 text-xs leading-4 text-slate-500 sm:hidden">
+                          {scheduleLabel}
+                        </p>
+                        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500 sm:hidden">
+                          <span>{typeLabel}</span>
+                          <span aria-hidden="true" className="text-slate-300">
+                            ·
+                          </span>
+                          <span>{getCalendarFilledLabel(item)} helpers</span>
+                        </p>
+                      </div>
+
+                      <p className="hidden min-w-0 text-xs leading-5 text-slate-500 sm:block">
+                        {scheduleLabel}
+                      </p>
+                      <span className="hidden whitespace-nowrap rounded-full bg-slate-100/80 px-2.5 py-1 text-xs font-semibold text-slate-600 sm:inline-flex">
+                        {typeLabel}
+                      </span>
+                      <span className="hidden whitespace-nowrap text-xs font-semibold text-slate-600 sm:inline">
+                        {getCalendarFilledLabel(item)} helpers
+                      </span>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 text-slate-300 sm:hidden"
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
   );
 }
 
@@ -2657,6 +2823,14 @@ export default function AdminCalendarPage() {
                   onFocusDate={handleFocusCalendarDate}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={calendarAnchor}
+                  selectedId={selectedItem?.id}
+                />
+              ) : null}
+              {activeView === "list" ? (
+                <CalendarListView
+                  items={visibleItems}
+                  onSelect={handleSelectCalendarItem}
+                  referenceDate={weekRange.start}
                   selectedId={selectedItem?.id}
                 />
               ) : null}
