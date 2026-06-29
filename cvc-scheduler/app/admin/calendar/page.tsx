@@ -213,8 +213,24 @@ function getWeekBandItemAccessibleLabel(item: WeekBandCalendarItem) {
     ? getCalendarCompactDayLabel(item.endDate)
     : undefined;
   const dateLabel = endLabel && endLabel !== startLabel
-    ? `all day ${startLabel} through ${endLabel}`
-    : `all day ${startLabel}`;
+    ? `project window ${startLabel} through ${endLabel}`
+    : `no specific time ${startLabel}`;
+
+  return [
+    getCalendarItemDisplayName(item),
+    `${item.filledCount} of ${item.neededCount} volunteers`,
+    dateLabel,
+  ].join(", ");
+}
+
+function getProjectContextItemAccessibleLabel(item: WeekBandCalendarItem) {
+  const startLabel = getCalendarCompactDayLabel(item.date);
+  const endLabel = item.endDate
+    ? getCalendarCompactDayLabel(item.endDate)
+    : undefined;
+  const dateLabel = endLabel && endLabel !== startLabel
+    ? `project context ${startLabel} through ${endLabel}`
+    : `date-based project context ${startLabel}`;
 
   return [
     getCalendarItemDisplayName(item),
@@ -239,11 +255,11 @@ function getCalendarItemScheduleDisplay(item: CalendarItem) {
   return endLabel && endLabel !== startLabel
     ? {
         heading: "Schedule",
-        label: `Multi-day · ${startLabel} through ${endLabel}`,
+        label: `Project window · ${startLabel} through ${endLabel}`,
       }
     : {
         heading: "Schedule",
-        label: `All day · ${startLabel}`,
+        label: `No specific time · ${startLabel}`,
       };
 }
 
@@ -801,7 +817,7 @@ function FilterPanelContent({
               Calendar filters
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              Find scheduled work
+              Find project work
             </h2>
           </div>
           <button
@@ -1021,26 +1037,26 @@ function WeekGrid({
         ))}
       </div>
       <div
-        aria-label="All-day and multi-day calendar items"
+        aria-label="Project context and date-based work"
         className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/42"
         role="region"
       >
         <div className="border-r border-slate-200/80 px-2 pt-2 text-right text-[10px] font-semibold text-slate-400">
-          All day
+          Project context
         </div>
         <div className="relative col-span-7" style={{ height: bandHeight }}>
           <div className="absolute inset-0 z-0 grid grid-cols-7">
             {groups.map((group) => (
               <button
-                aria-label={`Create all-day scheduled task draft for ${getCalendarAccessibleDayLabel(group.date)}`}
+                aria-label={`Plan project work with no specific time on ${getCalendarAccessibleDayLabel(group.date)}`}
                 className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
                 key={group.date}
                 onClick={() =>
                   onCreateFromSlot({
                     allDay: true,
                     date: group.date,
-                    label: `${group.dayLabel} all day`,
-                    contextLabel: "Suggested from all-day band",
+                    label: `${group.dayLabel}, no specific time`,
+                    contextLabel: "Suggested from project context",
                   })
                 }
                 type="button"
@@ -1080,7 +1096,7 @@ function WeekGrid({
             {overflowCounts.map((count, dayIndex) =>
               count > 0 ? (
                 <button
-                  aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more all-day item${count === 1 ? "" : "s"}`}
+                  aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more project context item${count === 1 ? "" : "s"}`}
                   className={`pointer-events-auto self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
                   key={groups[dayIndex]?.date}
                   onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
@@ -1122,7 +1138,7 @@ function WeekGrid({
             style={{ backgroundSize: "100% 30px" }}
           >
             <button
-              aria-label={`Create new scheduled task draft on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
+              aria-label={`Plan project work on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
               className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
               onClick={(event) => {
                 const slot =
@@ -1218,43 +1234,51 @@ function DayView({
   const dayItems = items
     .filter((item) => doesCalendarItemOccurOnDate(item, date))
     .map(enrichCalendarItem);
-  const allDayItems = dayItems.filter(isWeekBandCalendarItem);
+  const contextItems = dayItems.filter(isWeekBandCalendarItem);
   const timedItems = dayItems.filter((item) => !isWeekBandCalendarItem(item));
+  const visibleContextItem = contextItems[0];
+  const contextOverflowCount = Math.max(contextItems.length - 1, 0);
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
-      {allDayItems.length > 0 ? (
+      {visibleContextItem ? (
         <div
-          aria-label={`All-day and multi-day items for ${getCalendarCompactDayLabel(date)}`}
-          className="grid grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/42 sm:grid-cols-[80px_1fr]"
+          aria-label={`Project context for ${getCalendarCompactDayLabel(date)}`}
+          className="grid min-h-8 grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/32 sm:grid-cols-[80px_1fr]"
           role="region"
         >
-          <div className="border-r border-slate-200/80 px-2 py-3 text-right text-[10px] font-semibold text-slate-400 sm:px-4 sm:text-xs">
-            All day
+          <div className="flex items-center justify-end border-r border-slate-200/80 px-2 text-right text-[9px] font-semibold text-slate-400 sm:px-3 sm:text-[10px]">
+            Project context
           </div>
-          <div className="grid min-w-0 gap-1 p-1.5 sm:grid-cols-2 sm:p-2 xl:grid-cols-3">
-            {allDayItems.map((item) => (
-              <button
-                aria-label={getWeekBandItemAccessibleLabel(item)}
-                className={[
-                  `flex min-h-10 min-w-0 items-center gap-1 overflow-hidden rounded px-2 text-left text-[10px] font-semibold leading-4 transition sm:text-[11px] ${calmFocusRing}`,
-                  getCalendarEventStyle(item),
-                  selectedId === item.id
-                    ? "ring-2 ring-slate-900/30 ring-offset-1"
-                    : "",
-                ].join(" ")}
-                key={item.id}
-                onClick={() => onSelect(item)}
-                type="button"
+          <div className="flex min-w-0 items-center gap-1.5 px-1.5 py-1 sm:px-2">
+            <button
+              aria-label={getProjectContextItemAccessibleLabel(visibleContextItem)}
+              className={[
+                `flex h-6 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-3 transition sm:max-w-[min(28rem,75%)] ${calmFocusRing}`,
+                getCalendarEventStyle(visibleContextItem),
+                selectedId === visibleContextItem.id
+                  ? "ring-2 ring-slate-900/30 ring-offset-1"
+                  : "",
+              ].join(" ")}
+              onClick={() => onSelect(visibleContextItem)}
+              type="button"
+            >
+              <span className="hidden shrink-0 opacity-70 sm:inline">
+                {getCalendarFilledLabel(visibleContextItem)}
+              </span>
+              <span className="min-w-0 truncate">
+                {getCalendarItemDisplayName(visibleContextItem)}
+              </span>
+            </button>
+            {contextOverflowCount > 0 ? (
+              <span
+                aria-label={`${contextOverflowCount} more project context item${contextOverflowCount === 1 ? "" : "s"} available in Week and Month views`}
+                className="shrink-0 text-[10px] font-semibold text-slate-400"
+                title="Additional project context is available in Week and Month views"
               >
-                <span className="shrink-0 opacity-70">
-                  {getCalendarFilledLabel(item)}
-                </span>
-                <span className="min-w-0 truncate">
-                  {getCalendarItemDisplayName(item)}
-                </span>
-              </button>
-            ))}
+                +{contextOverflowCount}
+              </span>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -1274,7 +1298,7 @@ function DayView({
               </div>
               <div className="relative min-w-0">
                 <button
-                  aria-label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(date)} at ${slot.label}`}
+                  aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)} at ${slot.label}`}
                   className={`absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
                   onClick={() =>
                     onCreateFromSlot({
@@ -1331,8 +1355,8 @@ function deriveMockMonthDates(referenceDate: string) {
   });
 }
 
-const monthMobileVisibleItemLimit = 2;
-const monthDesktopVisibleItemLimit = 3;
+const monthMobileVisibleItemLimit = 3;
+const monthDesktopVisibleItemLimit = 6;
 
 function MonthView({
   items,
@@ -1380,13 +1404,13 @@ function MonthView({
           return (
             <div
               className={[
-                "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-32",
+                "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-36",
                 inMonth ? "bg-white/24" : "bg-slate-50/42 opacity-45",
               ].join(" ")}
               key={date}
             >
               <button
-                aria-label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(date)}`}
+                aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)}`}
                 className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
                 onClick={() =>
                   onCreateFromSlot({
@@ -1399,16 +1423,16 @@ function MonthView({
                 }
                 type="button"
               />
-              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1.5 sm:min-h-32 sm:p-2">
-                <span className="text-xs font-semibold text-slate-500">
+              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
+                <span className="text-[10px] font-semibold leading-3 text-slate-500 sm:text-xs sm:leading-4">
                   {Number(date.slice(-2))}
                 </span>
-                <div className="mt-1.5 space-y-1">
+                <div className="mt-1 space-y-0.5">
                   {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item, index) => (
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        `pointer-events-auto w-full rounded px-1.5 py-1 text-left text-[10px] font-semibold transition sm:px-2 sm:text-[11px] ${calmFocusRing}`,
+                        `pointer-events-auto h-4 w-full rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
                         index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
                         getCalendarEventStyle(item),
                         selectedId === item.id
@@ -1419,7 +1443,7 @@ function MonthView({
                       onClick={() => onSelect(item)}
                       type="button"
                     >
-                      <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="flex min-w-0 items-center gap-1">
                         <span className="hidden shrink-0 opacity-70 sm:inline">
                           {getCalendarFilledLabel(item)}
                         </span>
@@ -1431,7 +1455,7 @@ function MonthView({
                   ))}
                   {mobileOverflowCount > 0 ? (
                     <button
-                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${mobileOverflowCount} more scheduled item${mobileOverflowCount === 1 ? "" : "s"}`}
+                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${mobileOverflowCount} more calendar item${mobileOverflowCount === 1 ? "" : "s"}`}
                       className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:hidden ${calmFocusRing}`}
                       onClick={() => onFocusDate(date)}
                       type="button"
@@ -1441,7 +1465,7 @@ function MonthView({
                   ) : null}
                   {desktopOverflowCount > 0 ? (
                     <button
-                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more scheduled item${desktopOverflowCount === 1 ? "" : "s"}`}
+                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
                       className={`pointer-events-auto hidden text-[11px] font-semibold text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
                       onClick={() => onFocusDate(date)}
                       type="button"
@@ -1500,7 +1524,7 @@ function MobileDayGroups({
               ))}
             <EmptySlotAffordance
               compact={group.items.length > 0}
-              label={`Create new scheduled task draft on ${getCalendarCompactDayLabel(group.date)}`}
+              label={`Plan project work on ${getCalendarCompactDayLabel(group.date)}`}
               onSelect={() =>
                 onCreateFromSlot({
                   date: group.date,
@@ -1595,7 +1619,7 @@ function CalendarCreatePanel({
       inert={!isOpen}
     >
       <button
-        aria-label="Close scheduled task creator backdrop"
+        aria-label="Close project work planner backdrop"
         className={[
           "absolute inset-0 bg-slate-950/8 transition-opacity",
           isOpen ? "opacity-100" : "opacity-0",
@@ -1606,7 +1630,7 @@ function CalendarCreatePanel({
       />
 
       <aside
-        aria-label="New scheduled task"
+        aria-label="Plan project work"
         aria-modal="true"
         className={[
           "absolute right-0 top-0 hidden h-full w-[min(420px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
@@ -1630,7 +1654,7 @@ function CalendarCreatePanel({
 
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
         <section
-          aria-label="New scheduled task"
+          aria-label="Plan project work"
           aria-modal="true"
           className={[
             "relative max-h-[84vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
@@ -1718,8 +1742,8 @@ function CreatePanelContent({
     ? "Choose a date below."
     : creationDraft.allDay
       ? creationDraft.endDate && creationDraft.endDate !== creationDraft.date
-        ? `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)} through ${getCalendarAccessibleDayLabel(creationDraft.endDate)}. Adjust below.`
-        : `Suggested all day on ${getCalendarAccessibleDayLabel(creationDraft.date)}. Adjust below.`
+        ? `Suggested project window from ${getCalendarAccessibleDayLabel(creationDraft.date)} through ${getCalendarAccessibleDayLabel(creationDraft.endDate)}. Adjust below.`
+        : `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}, with no specific time. Adjust below.`
       : creationDraft.startTime && creationDraft.endTime
         ? `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}, ${getCreationTimeLabel(creationDraft.startTime)} to ${getCreationTimeLabel(creationDraft.endTime)}. Adjust below.`
         : `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}. Add a start and end time below.`;
@@ -1734,11 +1758,11 @@ function CreatePanelContent({
               Calendar draft
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              New scheduled task
+              Plan project work
             </h2>
           </div>
           <button
-            aria-label="Close scheduled task creator"
+            aria-label="Close project work planner"
             className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950 ${calmFocusRing}`}
             onClick={onClose}
             ref={closeButtonRef}
@@ -1856,8 +1880,8 @@ function CreatePanelContent({
                 </select>
               </label>
               <p className="text-sm leading-6 text-slate-500">
-                One-off tasks stay on this future scheduled item and do not create reusable task
-                presets.
+                One-off work stays with this calendar item and does not create a reusable task
+                preset.
               </p>
             </div>
           )}
@@ -1865,7 +1889,7 @@ function CreatePanelContent({
 
         <section className="mt-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Date and time
+            Timing
           </p>
           <label className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-700">
             <input
@@ -1897,7 +1921,7 @@ function CreatePanelContent({
               }
               type="checkbox"
             />
-            All day
+            No specific time
           </label>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
             <label
@@ -2032,7 +2056,7 @@ function CreatePanelContent({
             ) : null}
             {!isOneOff && selectedPreset?.name === "Lunch" ? (
               <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                Lunch menu field will travel with this scheduled item later.
+                The lunch menu will stay with this calendar item when scheduling is connected.
               </div>
             ) : null}
             {isOneOff ? (
@@ -2081,15 +2105,15 @@ function CreatePanelContent({
             <textarea
               className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
               onChange={(event) => onUpdate({ notes: event.target.value })}
-              placeholder="Add notes for the future scheduled item..."
+              placeholder="Add planning notes for this work..."
               value={creationDraft.notes}
             />
           </label>
 
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
             <p className="text-sm leading-6 text-slate-600">
-              Helper assignment stays later. This mock keeps the slot ready for assigning
-              volunteers after the scheduled item exists.
+              Helper assignment stays later. This mock keeps the work ready for assigning
+              volunteers after it is scheduled.
             </p>
           </div>
         </section>
@@ -2660,7 +2684,7 @@ export default function AdminCalendarPage() {
         ) : (
           <EmptyState
             title="No calendar items yet"
-            message="Scheduled task instances for the active project week will appear here."
+            message="Planned project work for the selected dates will appear here."
           />
         )}
       </section>

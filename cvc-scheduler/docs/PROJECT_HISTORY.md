@@ -2070,6 +2070,92 @@ Limitations:
 Next recommended step:
 - 09.38 Calendar Month Density Visual QA + Terminology Review.
 
+## Iteration 09.38 — Calendar Month Density + Day View Date-Based Cleanup
+
+Summary:
+- Reduced Month event rows to 16px with tighter padding, 10px typography, deterministic item colors, and the existing minimal task-name plus optional volunteer-count content.
+- Increased the fixed responsive Month limits to six visible rows on screens 640px and wider and three below 640px; `+N` continues to represent only true breakpoint overflow.
+- Preserved the full-cell Month creation layer behind event-chip and overflow sibling controls, including the existing 09:00-10:00 populated-date default, item inspection, keyboard labels, and Day-focus overflow behavior.
+- Removed the large Day all-day/date-based section and replaced it with a hard-capped 32px `Project context` strip showing one intersecting compatibility item plus `+N` without assigning fake times.
+- Preserved the desktop Week all-day/date-based band, its two visible lanes, per-day overflow, background all-day creation targets, and unchanged timed grid.
+- Refreshed only the intentionally changed desktop/mobile Day and Month previews.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-day.jpg`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-day.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview:screenshots` passed against the restarted production preview.
+- Desktop production-browser QA confirmed six readable Month rows, compact Day project context, Month item inspection, Week's unchanged two-lane band with `+2`/`+1`/`+1` overflow, seven timed creation surfaces, filters, creation, and inspector behavior.
+- Mobile QA at 390px confirmed three visible Month rows, true `+1`/`+3` overflow, populated-date creation at 09:00-10:00, item inspection, overflow focus to the correct Day, a roughly 32px project-context strip, and no horizontal overflow.
+- Escape restored focus to the launching Month background, event chip, Day hour, and Filters control; Mobile More displayed with no Calendar dialog stacked; no nested interactive controls were found.
+- No console, page, or hydration errors were reported.
+
+Limitations:
+- Month uses fixed six/three row limits rather than dynamically measuring each date cell, and multi-day windows still repeat in intersecting cells instead of spanning horizontally.
+- Day's `+N` project-context summary is intentionally informational rather than an expander; Week, Month, and the inspector provide fuller date-based context.
+- The mock `allDay` compatibility field and remaining Week/creation/inspector terminology are not migrated to scheduling kinds in this pass.
+- No persistence, Supabase, auth, mutations, drag/drop, resizing, assignment workflow, List view, Timeline / Work Plan, schema, or scheduling engine was added.
+
+Next recommended step:
+- 09.39 Calendar terminology cleanup or Calendar List View Foundation, depending on how the compact Day context feels in continued use.
+
+## Iteration 09.39 — Calendar Terminology Cleanup
+
+Summary:
+- Replaced visible Calendar `All day` language with CVC-specific scheduling terms without changing the mock timing model: `Project context` for Week/Day aggregate surfaces, `No specific time` for one-date untimed work, and `Project window` for date ranges.
+- Renamed the creation surface and its launch labels from `New scheduled task` to `Plan project work`, and updated nearby draft, notes, helper, empty-state, and filter-summary copy to speak about project work or calendar items.
+- Kept `Project week` as the reset-control label because it still accurately describes the current anchor behavior.
+- Updated Week-band, Day-context, Month, creation, overflow, and inspector accessible names so screen-reader terminology matches the visible product language.
+- Preserved the internal `allDay` compatibility flag, mock `All day` time-window values, timing classification, data intersections, Week band layout, Day strip, Month density, and all interaction behavior.
+- Updated screenshot selectors for the new creation labels, added a short filter/create transition settle so open-sheet captures are reliable, and refreshed the ten affected desktop/mobile Calendar previews.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `lib/mockData.ts`
+- `scripts/capture-previews.mjs`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar.jpg`
+- `docs/previews/latest/calendar-day.jpg`
+- `docs/previews/latest/calendar-month.jpg`
+- `docs/previews/latest/calendar-filter-open.jpg`
+- `docs/previews/latest/calendar-create-open.jpg`
+- `docs/previews/latest/mobile-calendar.jpg`
+- `docs/previews/latest/mobile-calendar-day.jpg`
+- `docs/previews/latest/mobile-calendar-month.jpg`
+- `docs/previews/latest/mobile-calendar-filter-open.jpg`
+- `docs/previews/latest/mobile-calendar-create-open.jpg`
+
+Verification:
+- `npm.cmd run lint` passed.
+- `npm.cmd run build` passed.
+- `npm.cmd run preview:screenshots` passed against the restarted production preview with the updated creation selectors.
+- Production-browser QA confirmed the Week `Project context` band, two visible lanes, `+2`/`+1`/`+1` overflow, no-specific-time creation, 09:00-10:00 timed defaults, correct Day overflow focus, and `Project window` inspector copy.
+- Desktop Month retained six 16px rows on Jan 14; mobile at 390px retained three rows plus true `+3` overflow with no horizontal overflow.
+- Planner, inspector, and filter dialogs received initial focus; close/Escape restored the launching control; Mobile More displayed with no Calendar dialog stacked.
+- No nested interactive controls, console errors, page errors, or hydration warnings were found.
+
+Limitations:
+- This is a terminology cleanup only. Internal `allDay` compatibility fields and mock time-window strings remain until a future schedule-kind migration.
+- `No specific time` still maps to the current compatibility checkbox rather than an authoritative `date_based` schedule kind.
+- `Project window` is inferred from the existing optional end date for presentation only; milestones are not introduced or inferred.
+- No persistence, Supabase, auth, mutations, drag/drop, resizing, route changes, List view, Timeline / Work Plan, schema, or scheduling engine was added.
+
+Next recommended step:
+- 09.40 Calendar List View Foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

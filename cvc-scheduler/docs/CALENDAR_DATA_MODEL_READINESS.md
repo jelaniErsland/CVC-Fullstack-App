@@ -69,15 +69,15 @@ The controlled validation records were designed to exercise the current band, no
 
 ### UI language recommendation
 
-Do not center the production UI on **All day**. In CVC work it can incorrectly imply a 24-hour commitment. Prefer **Timed** and **Date-based** as creation modes, with **No specific time** as optional supporting copy for low-tech users. When a date range is present, present the item as **Project window** or **Multi-day**. Inspectors can use concise schedules such as `Date-based · Mon Jan 12`, `Project window · Jan 12–17`, or `Milestone · Jan 16`.
+Do not center the production UI on **All day**. In CVC work it can incorrectly imply a 24-hour commitment. Prefer normal start/end fields for timed work and **No specific time** for date-based work. When a date range is present, present the item as **Project window**. Inspectors can use concise schedules such as `No specific time · Mon Jan 12`, `Project window · Jan 12–17`, or `Milestone · Jan 16` when milestone semantics are actually supported.
 
-The current mock `allDay` flag and visible **All day** copy remain unchanged for this iteration. Treat them as preview and calendar-compatibility language that will later translate to `date_based` or `multi_day_window`; do not persist `allDay` beside an authoritative scheduling kind. External calendar interoperability may still require technical all-day event semantics at an adapter boundary.
+The current mock `allDay` flag and `All day` mock time-window values remain compatibility state, but visible Calendar copy no longer exposes that terminology. Week and Day use **Project context**, creation uses **No specific time**, date ranges and inspector schedules use **Project window**, and creation is framed as **Plan project work**. Do not persist `allDay` beside an authoritative scheduling kind. External calendar interoperability may still require technical all-day event semantics at an adapter boundary.
 
 ### Calendar view behavior
 
 | View | `timed` | `date_based` | `multi_day_window` | `milestone` |
 | --- | --- | --- | --- | --- |
-| Day | Positioned in the time grid. | Shown in the quiet date-based band above the grid. | Shown in the band on every intersecting date with its full range available to assistive technology. | Shown as a compact informational marker above the grid. |
+| Day | Positioned in the time grid. | Represented in a hard-capped `Project context` strip without a fake time. | Represented in the strip on intersecting dates; Week, Month, and the inspector carry fuller range context. | Represented as compact project context when relevant. |
 | Week | Positioned by start/end time with overlap handling. | One-day bar in the band. | Spanning bar across intersecting day columns. | Compact marker in the relevant day column. |
 | Month | Compact row within its date cell. | Compact row within its date cell. | Compact continuation/spanning treatment across the range where practical. | Compact marker on its date. |
 | Mobile Week groups | Sorted within the relevant date group with time visible in its accessible/expanded detail. | Shown in its date group without a fake time. | Represented on intersecting dates with concise ongoing/range context; avoid implying a shift. | Shown once in its date group as informational. |
@@ -90,14 +90,30 @@ Day and Week remain the operational scheduling views. A future List view should 
 
 Month originally showed one chip plus a quiet `+N` per date. That protected full-cell creation during the interaction foundation, but it was too restrictive for the mature Calendar.
 
-Iteration 09.37 applies the first Month-density step:
+Iteration 09.37 applied the first Month-density step:
 
 - Larger screens show up to three compact item rows; screens below 640px show two.
 - A quiet `+N` represents only true breakpoint-specific overflow and focuses Day view for that date.
 - The full-cell creation target remains behind foreground item and overflow sibling controls.
 - Date-intersection helpers allow current compatibility range items to appear on relevant dates without implementing horizontal Month spans.
 
-Future Month work should refine visual density and the terminology/treatment for date-based items, project windows, and milestones without making the grid noisy.
+Iteration 09.38 applies the denser visual rule:
+
+- Month rows are 16px high with reduced padding and 10px text.
+- Screens 640px and wider show up to six rows; smaller screens show up to three.
+- The six/three limits keep `+N` tied to true breakpoint overflow while preserving the existing full-cell creation layer and sibling-control structure.
+- Day replaces its large compatibility section with one quiet `Project context` row, capped at one item plus `+N`; the Week band remains unchanged.
+
+Iteration 09.39 applies the visible terminology contract without changing the preview model:
+
+- Week and Day aggregate surfaces use `Project context`.
+- One-date untimed creation and inspector schedules use `No specific time`.
+- Date ranges use `Project window`.
+- The creation surface uses `Plan project work`; Calendar summaries use `All project work`.
+- `Project week` remains the reset label because it accurately describes the control's current destination.
+- Internal `allDay` fields, timing classification, intersection helpers, and mock `All day` values remain compatibility implementation details.
+
+Future terminology work should introduce `Milestone` only with real model support rather than relabeling existing mock items heuristically.
 
 ## Recommended schedule rules
 
@@ -180,7 +196,7 @@ Calendar item lifecycle remains separate from assignment response and derived co
 - Keep one-off custom tasks as deliberate snapshots with validation; do not silently create reusable presets from them.
 - Unify Lunch/menu and other custom-field values without making Food, Security, and General presentation filters separate scheduling models.
 - Keep deterministic colors stable and derived unless explicit user-owned color becomes a requirement.
-- Continue refining Month density without blocking full-cell creation or weakening sibling-control semantics; keep `+N` focused on Day.
+- Preserve Month's six/three density rule without blocking full-cell creation or weakening sibling-control semantics; keep `+N` focused on Day.
 - Define List sorting/grouping for date-only and range items without duplicating multi-day windows per date.
 - Let a future Timeline / Work Plan express project windows and milestones without replacing Week or becoming the source of scheduling truth.
 - Decide whether view/date state belongs in the URL before shareable Calendar links are introduced.
@@ -189,4 +205,4 @@ Calendar item lifecycle remains separate from assignment response and derived co
 
 ## Deliberately out of scope
 
-No schema migration, Supabase client, authentication, persistence, mutation, volunteer assignment workflow, recurrence engine, drag/drop, resizing, URL date routing, Month-density change, List/Timeline UI, or production scheduling engine is introduced by this review.
+No schema migration, Supabase client, authentication, persistence, mutation, volunteer assignment workflow, recurrence engine, drag/drop, resizing, URL date routing, List/Timeline UI, or production scheduling engine is introduced by this readiness guidance.

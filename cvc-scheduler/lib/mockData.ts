@@ -4614,7 +4614,7 @@ export function getCalendarActiveFilterSummary(filters: CalendarFilterOptions) {
   const activeCount = getCalendarActiveFilterCount(filters);
 
   if (activeCount === 0) {
-    return "All scheduled items";
+    return "All project work";
   }
 
   const parts = [

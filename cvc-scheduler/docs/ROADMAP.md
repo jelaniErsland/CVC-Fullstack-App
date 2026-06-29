@@ -75,7 +75,9 @@ Rough phases:
 - 09.35 Calendar production data-model readiness review. Completed.
 - 09.36 Calendar scheduling semantics + persistence contract planning. Completed.
 - 09.37 Calendar Month Density + Overflow Behavior. Completed.
-- 09.38 Calendar Month Density Visual QA + Terminology Review. Next recommended step.
+- 09.38 Calendar Month Density + Day View Date-Based Cleanup. Completed.
+- 09.39 Calendar Terminology Cleanup. Completed.
+- 09.40 Calendar List View Foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -129,7 +131,9 @@ Rough phases:
 - 09.35 Calendar production data-model readiness review.
 - 09.36 Calendar scheduling semantics + persistence contract planning.
 - 09.37 Calendar Month Density + Overflow Behavior.
-- 09.38 Calendar Month Density Visual QA + Terminology Review.
+- 09.38 Calendar Month Density + Day View Date-Based Cleanup.
+- 09.39 Calendar Terminology Cleanup.
+- 09.40 Calendar List View Foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -409,11 +413,11 @@ rather than repeated visible "Add task" buttons everywhere. Clicking or
 tapping an empty area may suggest a date or starting context, but should not
 force a predefined time window. The creation flow should let the admin choose
 or adjust start time, end time/time window, task preset, helper count, and
-notes. The "New scheduled task" surface should become lighter and less
+notes. The `Plan project work` surface should become lighter and less
 intrusive over time, especially on desktop.
 
 Future desktop Calendar should support drag/drop scheduling and moving
-scheduled tasks. It may also support dragging task presets onto the calendar
+calendar work items. It may also support dragging task presets onto the calendar
 and resizing scheduled blocks to adjust time. Mobile drag/drop should be
 considered carefully; prefer tap/hold, edit mode, or simpler bottom-sheet
 controls if direct drag/drop is too fiddly. Keep the Calendar powerful but
@@ -437,16 +441,32 @@ editable defaults, and the creation surface remains preview-only without
 saving or mutating data.
 
 Day view now has a 24-hour vertical timeline foundation from 12 AM through
-11 PM. Mock scheduled items are placed in approximate starting-hour rows, and
+11 PM. Mock calendar items are placed in approximate starting-hour rows, and
 empty hour rows quietly open the existing preview-only creation flow with a
 specific editable one-hour time suggestion. Proportional block heights,
 overlap handling, resizing, drag/drop, persistence, and production scheduling
 logic remain future work.
 
+Day no longer gives date-based/project-window compatibility items a large
+section above the timeline. A hard-capped `Project context` strip shows one
+intersecting item plus `+N`; Week retains its desktop top band, and Week,
+Month, and the inspector remain the fuller date-based context surfaces.
+
+Visible Calendar language now treats that Week top band as `Project context`,
+uses `No specific time` for one-date untimed work, uses `Project window` for
+date ranges, and frames creation as `Plan project work`. Internal mock
+`allDay` compatibility fields remain unchanged until a real schedule-kind
+migration is designed.
+
 The Calendar grid has been simplified further: Day view no longer has an
 internal scroll container, hour rows are thinner, Week columns are broad
 clickable surfaces, and compact event blocks show only task name plus filled
 count. Richer type/status/category/helper details remain in the inspector.
+
+Month now uses skinny 16px rows with fixed responsive limits of six visible
+items on screens 640px and wider and three below 640px. Breakpoint-specific
+`+N` remains true overflow, focuses Day for that date, and stays a foreground
+sibling of event chips and the full-cell background creation target.
 
 Calendar overlays now use a single active-surface interaction model. Filters,
 mobile More, empty-slot creation, and existing-item inspection are mutually

@@ -69,7 +69,7 @@ const captures = [
     viewport: desktopViewport,
     openCalendarCreate: true,
     calendarCreateLabel:
-      "Create new scheduled task draft on Sun, Jan 18 in the Week time grid; keyboard default 9 AM",
+      "Plan project work on Sun, Jan 18 in the Week time grid; keyboard default 9 AM",
   },
   { route: "/admin/tasks", fileName: "tasks.jpg", viewport: desktopViewport },
   { route: "/admin/food", fileName: "food.jpg", viewport: desktopViewport },
@@ -156,7 +156,7 @@ const captures = [
     fileName: "mobile-calendar-create-open.jpg",
     viewport: mobileViewport,
     openCalendarCreate: true,
-    calendarCreateLabel: "Create new scheduled task draft on Sun Jan 18",
+    calendarCreateLabel: "Plan project work on Sun Jan 18",
   },
   { route: "/admin/volunteers", fileName: "mobile-volunteers.jpg", viewport: mobileViewport },
   { route: "/admin/food", fileName: "mobile-food.jpg", viewport: mobileViewport },
@@ -242,12 +242,14 @@ async function main() {
 
       if (openCalendarFilters) {
         await page.getByRole("button", { name: "Open calendar filters" }).click();
+        await page.waitForTimeout(200);
       }
 
       if (openCalendarCreate) {
         await page
           .getByRole("button", { name: calendarCreateLabel, exact: true })
           .click();
+        await page.waitForTimeout(200);
       }
 
       if (focusCalendarWorkspace) {
