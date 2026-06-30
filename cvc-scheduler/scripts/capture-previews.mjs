@@ -25,8 +25,20 @@ const requestedCaptureFiles = new Set(
 );
 
 const captures = [
-  { route: "/", fileName: "public-home.jpg", viewport: desktopViewport, auditPage: true },
-  { route: "/v/demo", fileName: "volunteer-home.jpg", viewport: desktopViewport, auditPage: true },
+  {
+    route: "/",
+    fileName: "public-home.jpg",
+    viewport: desktopViewport,
+    auditPage: true,
+    auditVolunteerLookup: true,
+  },
+  {
+    route: "/v/demo",
+    fileName: "volunteer-home.jpg",
+    viewport: desktopViewport,
+    auditPage: true,
+    auditVolunteerConfirmation: true,
+  },
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
   { route: "/admin/dashboard", fileName: "dashboard.jpg", viewport: desktopViewport },
   {
@@ -255,6 +267,8 @@ async function main() {
       openMobileDrawer,
       openMobileMore,
       auditPage,
+      auditVolunteerLookup,
+      auditVolunteerConfirmation,
     } of selectedCaptures) {
       const browserErrors = [];
       const handleConsole = (message) => {
@@ -336,6 +350,23 @@ async function main() {
         if (hasHorizontalOverflow) {
           throw new Error("Mobile Calendar has horizontal overflow at 390px");
         }
+      }
+
+      if (auditVolunteerLookup) {
+        await page.getByRole("button", { name: "Find my volunteer info" }).click();
+        await page.waitForURL(/\/v\/demo\?/);
+        await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+        await page.goBack({ waitUntil: "domcontentloaded" });
+        await page.getByRole("heading", { name: "Find your project" }).waitFor();
+      }
+
+      if (auditVolunteerConfirmation) {
+        await page.getByRole("button", { name: "Confirm", exact: true }).click();
+        await page.getByText("Preview updated: you can make this assignment.", { exact: false }).waitFor();
+        await page.getByRole("button", { name: "Can't make it", exact: true }).click();
+        await page.getByText("the project contact would be told", { exact: false }).waitFor();
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await page.getByText("Needs reply", { exact: true }).waitFor();
       }
 
       if (auditPage) {

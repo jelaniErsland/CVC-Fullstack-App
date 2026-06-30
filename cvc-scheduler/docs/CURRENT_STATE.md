@@ -186,8 +186,8 @@ Upcoming UI direction:
 
 ## 4. Current Implemented Areas
 
-- Public Project Local entry at `/` now leads with account-free volunteer access instead of an admin dashboard. It frames the product as one place for volunteers, tasks, schedules, and updates; highlights the active Belgrade example; links the live mock questionnaire and sample schedule; and keeps real name/email lookup visibly disabled and preview-only.
-- Mock remembered-volunteer home direction at `/v/demo` gives Alex a plain next-assignment view, later schedule statuses, lunch details, a project update, and questionnaire access without admin language or navigation. A compact, accessibly named `Special access` control remains separate for project contacts and points to the existing admin login.
+- Public Project Local entry at `/` now leads with one account-free volunteer access flow instead of an admin dashboard. The Belgrade project context is integrated into the lookup card, Alex Rivera is the explicit sample identity, the keyboard-accessible submit opens `/v/demo`, and the questionnaire remains the quiet secondary action. Copy states that the preview neither creates an account nor searches real volunteer information.
+- Mock remembered-volunteer home at `/v/demo` identifies Alex and the Belgrade project in a quiet `You’re viewing` area with a different-person link back to lookup. The pending next assignment shows date/time, location, crew, helper coverage, and local-only Confirm / Can’t make it controls with an announced status update; later work, lunch, a project update, and questionnaire access stay secondary.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -250,6 +250,7 @@ Upcoming UI direction:
 - Month density now exposes more useful schedule context without changing the flat calendar direction. Current timed and compatibility date-based/multi-day items use the shared date-intersection helper, so range items appear on each relevant Month date as compact rows without adding complex horizontal spans.
 - List groups the visible week by item date, places date-based/no-specific-time work before timed rows, and sorts timed rows chronologically. Each project window appears once with its full range instead of becoming misleading per-day shift rows; every native row opens the existing inspector. The flat hierarchy now makes task name primary, schedule/window secondary, type/context a quiet tertiary label, and helper coverage a stable trailing chip. Desktop uses three column-like zones with 56px minimum rows; mobile uses a name/helper line followed by full-width schedule and type lines with a 72px minimum, allowing long project windows to wrap without horizontal overflow.
 - Calendar is now in a stable mock-prototype handoff state after the interaction, keyboard, focus-containment, and List hierarchy passes. The production regression run covers view switching, local navigation/reset, filtering, inspector and creation flows, mobile More coordination, trigger restoration, Day/Month/Week arrow behavior, sibling-control semantics, browser errors, and 390px overflow; future Calendar work should begin from an explicit product or persistence requirement rather than another general polish pass.
+- Future Calendar review should treat true all-day events as rare: full-day work can usually remain a normal timed block spanning the visible workday. The Project context band may eventually become collapsible, exceptional, or unnecessary. Every visible `+N` must lead somewhere useful—Month/Week may open Day or a fuller List, while Day must expand or open a filtered fuller view rather than navigate back to itself.
 - Future List styling may make day boundaries more obvious with subtly tinted date headers, slightly more space between groups, an optional quiet left accent rail, or a stronger date divider. Keep that treatment at the day-group level: rows should stay calm and flat, without a card wall or item-level color that competes with task, schedule, and helper hierarchy.
 - Creation context copy derives from the editable draft, so it continues to say “Suggested” and stays accurate as dates, times, `No specific time`, or a `Project window` change.
 - A future Timeline / Work Plan view may be useful for dense construction or multi-day work, with date/time on the x-axis and tasks, groups, or days on the y-axis. That remains a later companion view and does not replace the standard Week calendar or the scanning-focused List companion.
@@ -288,7 +289,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures the public Project Local landing and volunteer home on desktop/mobile, plus key admin routes, Calendar views/states, Tasks, Communications, Food, Security, Needs Attention, Schedule, Settings, questionnaire review, the Belgrade public questionnaire, and mobile admin navigation states from `http://127.0.0.1:3000` by default. Public captures also fail on console/page errors or horizontal overflow. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures the public Project Local landing and volunteer home on desktop/mobile, plus key admin routes, Calendar views/states, Tasks, Communications, Food, Security, Needs Attention, Schedule, Settings, questionnaire review, the Belgrade public questionnaire, and mobile admin navigation states from `http://127.0.0.1:3000` by default. Public captures also fail on console/page errors or horizontal overflow; desktop capture audits exercise the lookup handoff and both local confirmation choices before restoring the clean state. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
@@ -355,7 +356,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- The public volunteer portal is a mock foundation only. Project lookup, remembered-device access, schedule confirmation, secure email links, and real volunteer identity resolution are not implemented.
+- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic preview, remembered-device identity is explanatory copy only, and confirmation state resets on navigation. Secure email links, real volunteer identity resolution, and schedule mutations are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -363,4 +364,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.
+10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface.

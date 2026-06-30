@@ -3,16 +3,17 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
-  CheckCircle2,
   ClipboardCheck,
   Clock3,
   KeyRound,
   MapPin,
   Megaphone,
   Utensils,
+  Users,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { StatusPill } from "@/components/StatusPill";
+import { VolunteerConfirmationPreview } from "@/components/VolunteerConfirmationPreview";
 import { getVolunteerSchedule } from "@/lib/mockData";
 
 export const metadata: Metadata = {
@@ -23,8 +24,8 @@ export const metadata: Metadata = {
 export default function VolunteerDemoPage() {
   const schedule = getVolunteerSchedule();
   const projectName = schedule.project?.name ?? "Volunteer project";
-  const nextAssignment = schedule.assignments[0];
-  const laterAssignments = schedule.assignments.slice(1, 3);
+  const nextAssignment = schedule.assignments[1];
+  const laterAssignments = schedule.assignments.slice(2, 3);
   const nextLunch = schedule.lunches[0];
   const projectUpdate = schedule.announcements.find(
     (announcement) => announcement.title === "Gloves and closed-toe shoes reminder",
@@ -50,27 +51,37 @@ export default function VolunteerDemoPage() {
           </Link>
         </header>
 
-        <main className="pb-12 pt-10 sm:pt-14">
-          <Link
-            href="/"
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Find another project
-          </Link>
+        <main className="pb-12 pt-8 sm:pt-12">
+          <section aria-label="Remembered volunteer" className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-800">AR</span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">You&apos;re viewing</p>
+                <p className="mt-0.5 font-semibold text-slate-950">Alex Rivera</p>
+                <p className="text-sm text-slate-500">{projectName}</p>
+              </div>
+            </div>
+            <Link
+              href="/"
+              className="inline-flex min-h-10 items-center gap-2 self-start rounded-lg text-sm font-medium text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 sm:self-auto"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Not you? Use a different name or email
+            </Link>
+          </section>
 
-          <section className="mt-6 border-b border-slate-200/80 pb-8">
-            <p className="text-sm font-semibold text-sky-700">{projectName}</p>
+          <section className="py-8">
+            <p className="text-sm font-semibold text-sky-700">Welcome back, Alex</p>
             <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-6xl">
-              Hi, Alex.
+              Your volunteer schedule
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-              Here is what is next for your volunteer week. You can return on this device
-              without creating an account.
+              Here is what is next for your project week. No account or password is needed
+              for this preview.
             </p>
           </section>
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.7fr)] lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.7fr)] lg:items-start">
             <div className="space-y-8">
               <section aria-labelledby="next-assignment-title">
                 <div className="flex items-center justify-between gap-4">
@@ -89,7 +100,7 @@ export default function VolunteerDemoPage() {
                           {nextAssignment.role}
                         </h3>
                       </div>
-                      <StatusPill status={nextAssignment.status} />
+                      <span className="text-sm font-medium text-slate-500">1 of 2 helpers confirmed</span>
                     </div>
                     <dl className="grid border-t border-slate-200/70 sm:grid-cols-3">
                       <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r">
@@ -101,10 +112,11 @@ export default function VolunteerDemoPage() {
                         <div><dt className="sr-only">Location</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.location}</dd></div>
                       </div>
                       <div className="flex gap-3 p-5">
-                        <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
+                        <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
                         <div><dt className="sr-only">Crew</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.crew}</dd></div>
                       </div>
                     </dl>
+                    <VolunteerConfirmationPreview />
                   </div>
                 ) : null}
               </section>
@@ -123,9 +135,6 @@ export default function VolunteerDemoPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">
-                  Confirmation actions are shown as status previews only in this foundation.
-                </p>
               </section>
             </div>
 

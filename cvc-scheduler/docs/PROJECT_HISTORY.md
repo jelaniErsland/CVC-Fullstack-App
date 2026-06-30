@@ -2566,6 +2566,49 @@ Limitations:
 Next recommended step:
 - 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.
 
+## Iteration 10.2 — Volunteer Schedule Lookup / Remembered Volunteer Home Mock
+
+Summary:
+- Removed the detached active-project treatment from `/` and integrated Belgrade project context directly into the single volunteer lookup card.
+- Made `Find my volunteer info` a keyboard-accessible mock submit to the existing `/v/demo` route, with Alex Rivera prefilled and explicit no-account/no-real-search guidance.
+- Added a quiet remembered-person area to the volunteer home with Alex, the project name, and a `Not you?` path back to lookup.
+- Promoted the pending Material staging shift as the next assignment with helper coverage and local-only Confirm / Can’t make it state announced to assistive technology.
+- Kept later work, questionnaire, lunch, and project updates subordinate to the next assignment rather than expanding the page into a dense schedule.
+- Extended targeted public capture QA to exercise lookup navigation and both confirmation choices before restoring the clean screenshot state.
+- Documented future Calendar guidance for rare all-day work, Project context reconsideration, and useful non-self-referential `+N` destinations without changing Calendar code.
+
+Changed files:
+- `app/page.tsx`
+- `app/v/demo/page.tsx`
+- `components/VolunteerConfirmationPreview.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/public-home.jpg`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-public-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, `/questionnaire/belgrade-remodel-2026`, `/admin/dashboard`, and `/admin/calendar`.
+- Targeted Playwright public capture passed on desktop and 390px mobile with no console errors, page errors, hydration warnings, or horizontal overflow.
+- Desktop public QA submitted the lookup into `/v/demo`, exercised Confirm and Can’t make it, verified their announced local states, and reloaded to the initial Needs reply state.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots were unchanged.
+
+Limitations:
+- Lookup does not resolve the entered identity; it always opens the deterministic Alex Rivera preview.
+- Confirmation changes exist only in component memory and reset when the volunteer leaves or reloads the page.
+- Remembered-device access, secure links, auth, Supabase, database calls, email, and production schedule mutations are not implemented.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed because this pass only added future product notes and did not change Calendar readiness or implementation.
+
+Next recommended step:
+- 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

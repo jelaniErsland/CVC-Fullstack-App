@@ -88,7 +88,8 @@ Rough phases:
 - 09.48 Calendar List Information Hierarchy Cleanup. Completed.
 - 09.49 Calendar Stabilization + Handoff Review. Completed.
 - 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction. Completed.
-- 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock. Next recommended step.
+- 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock. Completed.
+- 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -158,6 +159,7 @@ Rough phases:
 - 10 Public volunteer portal.
 - 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
 - 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.
+- 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface.
 
 ## 5. Later Roadmap
 
@@ -515,6 +517,13 @@ and Home/End now move among Monday-Sunday while preserving the existing 9 AM
 keyboard default; Up/Down would imply hour precision the DOM does not provide.
 Project context uses a separate horizontal day-background group. Timed events,
 project-window bars, overflow, Tab order, and modal behavior remain independent.
+
+Future Calendar semantics should assume true all-day events are uncommon; most
+full-day work can be represented as a normal timed block spanning the visible
+workday. Reconsider whether Project context should be rare, collapsible, or
+removed. Every `+N` must reveal useful hidden work: Month/Week may open Day or a
+fuller List, while Day should expand or open a filtered fuller view rather than
+navigate to itself.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and
