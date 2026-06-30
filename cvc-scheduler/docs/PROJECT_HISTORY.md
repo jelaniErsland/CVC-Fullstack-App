@@ -2416,6 +2416,44 @@ Limitations:
 Next recommended step:
 - 09.47 Calendar Week Keyboard Navigation Evaluation.
 
+## Iteration 09.47 — Calendar Week Keyboard Navigation Evaluation
+
+Summary:
+- Evaluated the desktop Week DOM before implementation: timed work exposes one full-column background target per day with a 9 AM keyboard default, while Project context exposes seven separate no-specific-time day backgrounds.
+- Added only ArrowLeft/ArrowRight and Home/End across the seven timed-day backgrounds; Up/Down remains unimplemented because Week has no hour-level keyboard targets.
+- Added a separate horizontal/Home/End group for Project context day backgrounds without including project-window bars or overflow controls.
+- Preserved every native Tab stop, event inspection, Enter/Space creation, 9 AM timed defaults, No specific time context defaults, modal containment, and trigger-focus restoration.
+- Kept timed events, Project context bars, and `+N` overflow as independent sibling controls; no ARIA grid or roving `tabIndex` was introduced.
+- Extended the regression harness with deterministic Week arrow, Enter/Space, sibling, normal-Tab, creation-default, containment, restoration, and event-inspection coverage.
+
+Decision:
+- Implement the small horizontal Week helper. It improves day-to-day keyboard movement without pretending the full-column backgrounds expose hourly positions. A vertical or production ARIA-grid model remains premature for the current mock structure.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/calendar-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 17 desktop/mobile steps against the production preview at `http://127.0.0.1:3015`.
+- Production Playwright QA covered timed and Project context Left/Right/Home/End movement, Enter/Space defaults, modal containment/restoration, event inspection, sibling controls, and 390px behavior.
+- No console errors, page errors, hydration warnings, nested interactive controls, broken focus containment, stacked mobile surfaces, or horizontal overflow were found.
+- Screenshot capture was not run because the pass changed only nonvisual keyboard selectors and behavior.
+
+Limitations:
+- Week ArrowUp/ArrowDown is intentionally unavailable; the current timed background has one target per day rather than hour-level targets.
+- Week remains a native-control composition, not an ARIA grid, and retains all normal Tab stops rather than roving focus.
+- The independent in-app browser backend was unavailable during final QA; the production Playwright desktop/mobile run completed successfully.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, visual redesign, or production scheduling logic was added.
+
+Next recommended step:
+- 09.48 Calendar List Information Hierarchy Cleanup.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

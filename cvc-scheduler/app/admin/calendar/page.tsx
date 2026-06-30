@@ -1118,11 +1118,15 @@ function WeekGrid({
           Project context
         </div>
         <div className="relative col-span-7" style={{ height: bandHeight }}>
-          <div className="absolute inset-0 z-0 grid grid-cols-7">
-            {groups.map((group) => (
+          <div
+            className="absolute inset-0 z-0 grid grid-cols-7"
+            data-calendar-arrow-group="week-context"
+          >
+            {groups.map((group, dayIndex) => (
               <button
                 aria-label={`Plan project work with no specific time on ${getCalendarAccessibleDayLabel(group.date)}`}
                 className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
+                data-calendar-arrow-target="week-context-day"
                 key={group.date}
                 onClick={() =>
                   onCreateFromSlot({
@@ -1131,6 +1135,9 @@ function WeekGrid({
                     label: `${group.dayLabel}, no specific time`,
                     contextLabel: "Suggested from project context",
                   })
+                }
+                onKeyDown={(event) =>
+                  handleCalendarGridArrowKey(event, dayIndex, 7)
                 }
                 type="button"
               />
@@ -1186,7 +1193,10 @@ function WeekGrid({
           </div>
         </div>
       </div>
-      <div className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]">
+      <div
+        className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]"
+        data-calendar-arrow-group="week-timed"
+      >
         <div
           aria-hidden="true"
           className="relative border-r border-slate-200/80 bg-white/42"
@@ -1204,7 +1214,7 @@ function WeekGrid({
             </span>
           ))}
         </div>
-        {timedGroups.map((group) => (
+        {timedGroups.map((group, dayIndex) => (
           <div
             className="relative min-w-0 border-r border-slate-200/80 bg-white/28 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.14)_1px,transparent_1px)] last:border-r-0"
             key={group.date}
@@ -1213,6 +1223,7 @@ function WeekGrid({
             <button
               aria-label={`Plan project work on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
               className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
+              data-calendar-arrow-target="week-timed-day"
               onClick={(event) => {
                 const slot =
                   event.detail === 0
@@ -1227,6 +1238,9 @@ function WeekGrid({
                   suggestedEndTime: slot.end,
                 });
               }}
+              onKeyDown={(event) =>
+                handleCalendarGridArrowKey(event, dayIndex, 7)
+              }
               type="button"
             />
             {layoutWeekItems(group.items).map(

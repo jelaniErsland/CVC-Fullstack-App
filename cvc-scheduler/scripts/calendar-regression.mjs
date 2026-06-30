@@ -397,7 +397,177 @@ async function runDesktop(browser) {
       await selectView(page, "List");
     });
 
+    await step("desktop Week safe horizontal arrows and sibling controls", async () => {
+      await selectView(page, "Week");
+      const timedTuesdayLabel =
+        "Plan project work on Tue, Jan 13 in the Week time grid; keyboard default 9 AM";
+      const timedTuesday = await assertUnique(
+        page.getByRole("button", { name: timedTuesdayLabel, exact: true }),
+        "Week Tuesday timed background",
+      );
+      const weekTargetAudit = await page.evaluate(() => {
+        const timedTargets = Array.from(
+          document.querySelectorAll('[data-calendar-arrow-target="week-timed-day"]'),
+        );
+        const contextTargets = Array.from(
+          document.querySelectorAll('[data-calendar-arrow-target="week-context-day"]'),
+        );
+        const contextRegion = document.querySelector(
+          '[aria-label="Project context and date-based work"]',
+        );
+        const contextButtons = Array.from(
+          contextRegion?.querySelectorAll("button") ?? [],
+        );
+
+        return {
+          contextCount: contextTargets.length,
+          contextForegroundCount: contextButtons.filter(
+            (button) => !button.hasAttribute("data-calendar-arrow-target"),
+          ).length,
+          contextNested: contextRegion?.querySelectorAll("button button, button a, a button").length ?? -1,
+          contextTabbable: contextTargets.every(
+            (target) => target instanceof HTMLElement && target.tabIndex >= 0,
+          ),
+          timedCount: timedTargets.length,
+          timedNested:
+            document.querySelector('[data-calendar-arrow-group="week-timed"]')?.querySelectorAll(
+              "button button, button a, a button",
+            ).length ?? -1,
+          timedTabbable: timedTargets.every(
+            (target) => target instanceof HTMLElement && target.tabIndex >= 0,
+          ),
+        };
+      });
+      assert(
+        weekTargetAudit.timedCount === 7 && weekTargetAudit.timedTabbable,
+        "Week should keep seven normally tabbable timed day backgrounds",
+      );
+      assert(
+        weekTargetAudit.contextCount === 7 && weekTargetAudit.contextTabbable,
+        "Project context should keep seven normally tabbable day backgrounds",
+      );
+      assert(
+        weekTargetAudit.timedNested === 0 && weekTargetAudit.contextNested === 0,
+        "Week timed or Project context controls became nested",
+      );
+      assert(
+        weekTargetAudit.contextForegroundCount > 0,
+        "Project context bars and overflow controls should remain foreground siblings",
+      );
+
+      await timedTuesday.focus();
+      await pressAndWaitForFocus(
+        page,
+        "ArrowRight",
+        "Plan project work on Wed, Jan 14 in the Week time grid; keyboard default 9 AM",
+      );
+      await pressAndWaitForFocus(page, "ArrowLeft", timedTuesdayLabel);
+      await pressAndWaitForFocus(
+        page,
+        "Home",
+        "Plan project work on Mon, Jan 12 in the Week time grid; keyboard default 9 AM",
+      );
+      await pressAndWaitForFocus(
+        page,
+        "End",
+        "Plan project work on Sun, Jan 18 in the Week time grid; keyboard default 9 AM",
+      );
+
+      const planner = page.getByRole("dialog", {
+        name: "Plan project work",
+        exact: true,
+      });
+      await activateWithKeyboard(timedTuesday, "Week Tuesday timed background");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      await assertDialogFocusContainment(page, planner, "Week timed creation");
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
+          "2026-01-13" &&
+          (await planner.getByLabel("Start", { exact: true }).inputValue()) ===
+            "09:00" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) ===
+            "10:00",
+        "Week Enter creation should keep Tuesday's 09:00-10:00 keyboard default",
+      );
+      await closeWithEscape(page, "Plan project work", timedTuesdayLabel);
+
+      await timedTuesday.focus();
+      const timedWednesdayLabel =
+        "Plan project work on Wed, Jan 14 in the Week time grid; keyboard default 9 AM";
+      await pressAndWaitForFocus(page, "ArrowRight", timedWednesdayLabel);
+      await page.keyboard.press("Space");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
+          "2026-01-14" &&
+          (await planner.getByLabel("Start", { exact: true }).inputValue()) ===
+            "09:00" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) ===
+            "10:00",
+        "Week Space creation should keep Wednesday's 09:00-10:00 keyboard default",
+      );
+      await closeWithEscape(page, "Plan project work", timedWednesdayLabel);
+
+      const contextTuesdayLabel =
+        "Plan project work with no specific time on Tuesday, Jan 13";
+      const contextTuesday = await assertUnique(
+        page.getByRole("button", { name: contextTuesdayLabel, exact: true }),
+        "Tuesday Project context background",
+      );
+      await contextTuesday.focus();
+      await pressAndWaitForFocus(
+        page,
+        "ArrowRight",
+        "Plan project work with no specific time on Wednesday, Jan 14",
+      );
+      await pressAndWaitForFocus(page, "ArrowLeft", contextTuesdayLabel);
+      await pressAndWaitForFocus(
+        page,
+        "Home",
+        "Plan project work with no specific time on Monday, Jan 12",
+      );
+      await pressAndWaitForFocus(
+        page,
+        "End",
+        "Plan project work with no specific time on Sunday, Jan 18",
+      );
+
+      await activateWithKeyboard(contextTuesday, "Tuesday Project context background");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
+          "2026-01-13" &&
+          (await planner.getByLabel("No specific time", { exact: true }).isChecked()),
+        "Project context Enter creation should keep Tuesday with no specific time",
+      );
+      await closeWithEscape(page, "Plan project work", contextTuesdayLabel);
+
+      await contextTuesday.focus();
+      const contextWednesdayLabel =
+        "Plan project work with no specific time on Wednesday, Jan 14";
+      await pressAndWaitForFocus(page, "ArrowRight", contextWednesdayLabel);
+      await page.keyboard.press("Space");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      await assertDialogFocusContainment(
+        page,
+        planner,
+        "Week Project context creation",
+      );
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
+          "2026-01-14" &&
+          (await planner.getByLabel("No specific time", { exact: true }).isChecked()),
+        "Project context Space creation should keep Wednesday with no specific time",
+      );
+      await closeWithEscape(page, "Plan project work", contextWednesdayLabel);
+    });
+
     await step("desktop filters focus, filter to Food, and close", async () => {
+      await selectView(page, "List");
       const trigger = await assertUnique(
         page.getByRole("button", { name: "Open calendar filters", exact: true }),
         "Calendar filters trigger",
