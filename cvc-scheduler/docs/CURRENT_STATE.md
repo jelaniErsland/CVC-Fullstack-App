@@ -246,7 +246,7 @@ Upcoming UI direction:
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
 - Month density now exposes more useful schedule context without changing the flat calendar direction. Current timed and compatibility date-based/multi-day items use the shared date-intersection helper, so range items appear on each relevant Month date as compact rows without adding complex horizontal spans.
-- List groups the visible week by item date, places date-based/no-specific-time work before timed rows, and sorts timed rows chronologically. Each project window appears once with its full range instead of becoming misleading per-day shift rows; every row shows task name, schedule wording, high-level type, helper fraction, and opens the existing inspector.
+- List groups the visible week by item date, places date-based/no-specific-time work before timed rows, and sorts timed rows chronologically. Each project window appears once with its full range instead of becoming misleading per-day shift rows; every row shows task name, schedule wording, high-level type, helper fraction, and opens the existing inspector. The polished surface is deliberately flat: 36px date headers, 48px desktop rows, 68px mobile rows, top/bottom framing instead of an enclosing rounded card, and plain desktop type text instead of pills.
 - Creation context copy derives from the editable draft, so it continues to say “Suggested” and stays accurate as dates, times, `No specific time`, or a `Project window` change.
 - A future Timeline / Work Plan view may be useful for dense construction or multi-day work, with date/time on the x-axis and tasks, groups, or days on the y-axis. That remains a later companion view and does not replace the standard Week calendar or the scanning-focused List companion.
 - Empty-slot creation now treats the clicked/tapped area as suggested calendar context rather than a fixed time window. Day hour rows and Week grid clicks seed specific editable start/end defaults, day-only clicks seed editable date/time defaults, and the flow remains preview-only.
@@ -287,6 +287,8 @@ Use `npm run build` and `npm run preview` for a production-like local preview, o
 The script captures key admin routes, Overview, Calendar Week/Day/Month/List, Calendar filters open, Calendar create open, Tasks, Communications overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for Overview, Calendar Week/Day/Month/List, Calendar filters open, Calendar create open, Tasks, Volunteers, Communications, Communications templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
+
+Calendar view captures wait for the client interaction to be ready, verify that the requested Day/Week/Month/List control is pressed, and allow the shared control transition to settle before capturing.
 
 Latest generated screenshots are written to `docs/previews/latest/`. A normal run clears and recreates the folder. Set `PREVIEW_CAPTURE_FILES` to a comma-separated filename list to refresh only intentional previews without removing the rest.
 
@@ -346,4 +348,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-09.40 Calendar List View Foundation.
+09.42 Calendar Interaction Regression Test Foundation.

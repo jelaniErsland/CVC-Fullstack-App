@@ -2196,6 +2196,45 @@ Limitations:
 Next recommended step:
 - 09.41 Calendar List View Visual QA + Density Polish.
 
+## Iteration 09.41 — Calendar List View Visual QA + Density Polish
+
+Summary:
+- Flattened the List surface by removing its enclosing rounded-card treatment and retaining only quiet top/bottom framing and row dividers.
+- Reduced date headers to 36px and desktop rows to 48px so dense weeks scan as a list rather than a card stack.
+- Replaced desktop type pills with plain compact type text while preserving name, schedule, type, and helper columns.
+- Tightened mobile secondary typography and spacing to consistent 68px rows while keeping the task name prominent, all metadata readable, and the full row thumb-friendly.
+- Preserved the 09.40 grouping, sorting, one-row project-window rule, accessible names, filters, Week navigation, inspector behavior, and overlay exclusivity.
+- Hardened Calendar screenshot capture so it verifies the requested view is pressed and waits for the shared control transition before capture.
+- Refreshed only the desktop and mobile List previews through the targeted production screenshot workflow.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/previews/latest/calendar-list.jpg`
+- `docs/previews/latest/mobile-calendar-list.jpg`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- Targeted production `npm run preview:screenshots` passed for `calendar-list.jpg` and `mobile-calendar-list.jpg`.
+- Desktop QA confirmed 36px headers, 48px rows, no outer radius, plain type labels, 15 unchanged rows, and no document/List overflow.
+- Mobile QA at 390px confirmed consistent 68px rows, four complete rows plus the next date header in the initial viewport, 57px-wide view controls, and no document/List overflow.
+- Food filtering returned the expected four rows; next/Project week navigation, Day/Week/Month/List switching, inspector opening, Escape/focus restoration, and mobile More exclusivity remained intact.
+- No nested interactive controls, console errors, page errors, or hydration warnings were reported in the application QA browser.
+
+Limitations:
+- This is visual density polish only; List remains local mock presentation with Week-period navigation and no List-based creation affordance.
+- Secondary mobile metadata uses compact 11px text to keep three readable lines within the 68px row; continued device testing may justify a small typography adjustment.
+- The production data/query, timezone, assignment truth, and schedule-kind limitations documented in 09.40 remain unchanged.
+- No persistence, Supabase, mutations, URL state, routes, drag/drop, resizing, Timeline view, schema, or production scheduling logic was added.
+
+Next recommended step:
+- 09.42 Calendar Interaction Regression Test Foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

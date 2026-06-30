@@ -78,7 +78,8 @@ Rough phases:
 - 09.38 Calendar Month Density + Day View Date-Based Cleanup. Completed.
 - 09.39 Calendar Terminology Cleanup. Completed.
 - 09.40 Calendar List View Foundation. Completed.
-- 09.41 Calendar List View Visual QA + Density Polish. Next recommended step.
+- 09.41 Calendar List View Visual QA + Density Polish. Completed.
+- 09.42 Calendar Interaction Regression Test Foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -136,6 +137,7 @@ Rough phases:
 - 09.39 Calendar Terminology Cleanup.
 - 09.40 Calendar List View Foundation.
 - 09.41 Calendar List View Visual QA + Density Polish.
+- 09.42 Calendar Interaction Regression Test Foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -439,6 +441,11 @@ navigation, groups visible work by date, keeps no-specific-time/date-based work
 near the top, sorts timed rows chronologically, and shows each project window
 once with its full range. Rows reuse the existing inspector and filter model;
 the view remains local mock UI rather than a new scheduling contract.
+
+The List visual polish keeps that behavior in a flatter scan: 36px date headers,
+48px desktop rows, 68px mobile rows, light dividers, plain type text on desktop,
+and no enclosing rounded-card treatment. Mobile retains the full row metadata
+and 390px overflow safety.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and

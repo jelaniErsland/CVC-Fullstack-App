@@ -266,7 +266,24 @@ async function main() {
       }
 
       if (calendarView) {
-        await page.getByRole("button", { name: calendarView, exact: true }).click();
+        const calendarViewButton = page.getByRole("button", {
+          name: calendarView,
+          exact: true,
+        });
+
+        await page.waitForTimeout(200);
+        await calendarViewButton.click();
+        await page.waitForFunction(
+          (viewLabel) =>
+            Array.from(
+              document.querySelectorAll('[aria-label="Calendar view"] button'),
+            ).some(
+              (button) =>
+                button.textContent?.trim() === viewLabel &&
+                button.getAttribute("aria-pressed") === "true",
+            ),
+          calendarView,
+        );
         await page.waitForTimeout(200);
       }
 

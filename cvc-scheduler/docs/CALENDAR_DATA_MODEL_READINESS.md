@@ -123,6 +123,8 @@ Iteration 09.40 applies that presentation guidance in a mock-only List view:
 - Rows expose the task name, schedule wording, high-level type, helper fraction, and existing inspector action without creating a new entity or schedule kind.
 - Grouping and sorting remain presentation helpers. They do not define production queries, timezone behavior, or assignment truth.
 
+Iteration 09.41 keeps the same data presentation while reducing visual weight: date headers are 36px, desktop rows are 48px, mobile rows are 68px, desktop type labels are plain text, and the List uses top/bottom framing instead of a rounded container. These density choices are presentation rules only and must not become schedule-kind or coverage semantics.
+
 ## Recommended schedule rules
 
 - A scheduled item should reference exactly one reusable preset or carry one one-off task snapshot. The create boundary should reject ambiguous records containing both or neither.
