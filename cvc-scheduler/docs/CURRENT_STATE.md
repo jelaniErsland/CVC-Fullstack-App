@@ -290,7 +290,9 @@ The mobile admin screenshots use viewport-sized captures so closed off-canvas sh
 
 Calendar view captures wait for the client interaction to be ready, verify that the requested Day/Week/Month/List control is pressed, and allow the shared control transition to settle before capturing.
 
-Calendar interaction regression coverage is available through `npm run test:calendar` while an app preview is already running. The focused Playwright script checks desktop and 390px mobile view switching, Week/List navigation reset, Food filtering, inspector and creation focus/Escape restoration, populated Month-cell creation, List row semantics, mobile bottom navigation and More exclusivity, nested controls, browser errors, hydration warnings, and horizontal overflow. Set `PREVIEW_BASE_URL` to target a non-default preview host.
+Calendar interaction regression coverage is available through `npm run test:calendar` while an app preview is already running. The focused Playwright script checks desktop and 390px mobile view switching, Week and List navigation/reset, Food filtering, inspector and creation focus/Escape restoration, populated Month-cell creation, List row semantics, mobile bottom navigation and overlay exclusivity, nested controls, browser errors, hydration warnings, and horizontal overflow. It first checks that the target is reachable, then reports scoped step timing plus URL, viewport, pressed-view, focus, and dialog context when an interaction fails.
+
+`test:calendar` and `preview:screenshots` share `scripts/preview-config.mjs`, including the default `http://127.0.0.1:3000`, validated `PREVIEW_BASE_URL` handling, and local Chrome/Edge discovery. For future CI, build and start the production preview as a separately managed job/process, set `PREVIEW_BASE_URL`, and run the existing `npm run test:calendar`; this repository does not yet add CI or server-lifecycle orchestration.
 
 Latest generated screenshots are written to `docs/previews/latest/`. A normal run clears and recreates the folder. Set `PREVIEW_CAPTURE_FILES` to a comma-separated filename list to refresh only intentional previews without removing the rest.
 
@@ -323,7 +325,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - The five date-based/project-window examples are explicitly mock validation data, not production project truth. No-specific-time creation is preview-only and does not add or mutate Calendar items. Mobile exposes the `No specific time` toggle in its creation sheet but intentionally has no project-context-band launcher.
 - Calendar keyboard behavior currently follows normal document tab order. It does not yet implement specialized arrow-key grid traversal or a full modal focus trap; the current dialogs provide initial focus, Escape dismissal, and trigger-focus restoration.
 - Month intentionally caps visible density at six skinny rows on screens 640px and wider and three below 640px. Additional items use a keyboard-accessible `+N` that focuses Day view; complex cross-week range spanning remains future work.
-- The Calendar regression script assumes the app is already running and exercises the deterministic Belgrade mock data/accessibility labels. It is not a cross-browser matrix, visual-diff suite, persistence test, or substitute for production scheduling tests.
+- The Calendar regression script assumes the app is already running and exercises the deterministic Belgrade mock data/accessibility labels. It has no CI configuration or managed server lifecycle and is not a cross-browser matrix, visual-diff suite, persistence test, or substitute for production scheduling tests.
 - `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
@@ -351,4 +353,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-09.43 Calendar Regression Harness Stabilization + CI Readiness.
+09.44 Calendar Keyboard Navigation + Accessibility QA.

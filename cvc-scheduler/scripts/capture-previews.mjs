@@ -1,21 +1,18 @@
-import { existsSync } from "node:fs";
 import { rm, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import {
+  createPreviewUrl,
+  resolvePreviewBaseUrl,
+  resolvePreviewBrowserExecutable,
+} from "./preview-config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const outputDir = path.join(projectRoot, "docs", "previews", "latest");
-const baseUrl = process.env.PREVIEW_BASE_URL ?? "http://127.0.0.1:3000";
-const browserExecutable =
-  process.env.PREVIEW_BROWSER_EXECUTABLE ??
-  [
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  ].find((candidate) => existsSync(candidate));
+const baseUrl = resolvePreviewBaseUrl();
+const browserExecutable = resolvePreviewBrowserExecutable();
 
 const desktopViewport = { width: 1440, height: 1000 };
 const mobileViewport = { width: 390, height: 844 };
@@ -210,7 +207,7 @@ const captures = [
 ];
 
 function previewUrl(route) {
-  return new URL(route, baseUrl).toString();
+  return createPreviewUrl(baseUrl, route);
 }
 
 async function main() {

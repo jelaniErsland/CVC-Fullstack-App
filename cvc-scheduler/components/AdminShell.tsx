@@ -173,6 +173,7 @@ function MobileTabLink({
   return (
     <Link
       aria-label={`Open ${tab.label}`}
+      aria-current={active ? "page" : undefined}
       className={[
         "flex flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition",
         emphasized ? "min-h-[68px] -translate-y-2" : "min-h-[58px]",

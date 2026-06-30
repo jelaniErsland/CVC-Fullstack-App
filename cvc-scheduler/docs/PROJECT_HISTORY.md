@@ -2270,6 +2270,44 @@ Limitations:
 Next recommended step:
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness.
 
+## Iteration 09.43 — Calendar Regression Harness Stabilization + CI Readiness
+
+Summary:
+- Added shared preview configuration so Calendar regression and screenshot capture use the same validated `PREVIEW_BASE_URL`, default host, and Chrome/Edge discovery rules.
+- Added a five-second availability preflight with actionable start/override guidance before browser launch.
+- Improved failures with desktop/mobile scope, step timing, URL, viewport, pressed view, active focus, and open-dialog context.
+- Strengthened deterministic checks for exclusive Day/Week/Month/List pressed state, both Week and List navigation/reset, semantic mobile Calendar current state, and Month background clicking that adapts around foreground event controls.
+- Added `aria-current="page"` to the active mobile admin tab as a nonvisual accessibility/selector stabilization; no Calendar behavior or visible copy changed.
+- Kept `npm run test:calendar` as the single local/future-CI command. CI remains responsible for starting and stopping its production preview.
+
+Changed files:
+- `components/AdminShell.tsx`
+- `scripts/calendar-regression.mjs`
+- `scripts/capture-previews.mjs`
+- `scripts/preview-config.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check` passed for the regression, screenshot, and shared preview-config scripts.
+- The unavailable-preview preflight exited nonzero with the expected actionable message.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 16 named checks against a production preview at `http://127.0.0.1:3011`.
+- Independent 390px browser QA confirmed four fitting view controls, `aria-current="page"` on Calendar, List pressed state, no document/List overflow, no nested List controls, and no browser warning/error logs.
+- Targeted Calendar screenshot capture passed. Preview files remain unchanged because the selector stabilization has no visual effect.
+- No console errors, page errors, hydration warnings, stacked mobile surfaces, or Calendar product behavior changes were found.
+
+Limitations:
+- The harness still uses one Chromium-family browser and deterministic Belgrade mock data; it is not a cross-browser, visual-diff, load, or full accessibility-audit suite.
+- The app must already be running. No GitHub Actions workflow, CI provider configuration, port management, or start/wait/stop orchestration was added.
+- Accessible names remain deliberate test contracts; intentional product-language changes must update the assertions.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, or production scheduling logic was added or tested.
+
+Next recommended step:
+- 09.44 Calendar Keyboard Navigation + Accessibility QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

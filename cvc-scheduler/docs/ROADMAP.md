@@ -80,7 +80,8 @@ Rough phases:
 - 09.40 Calendar List View Foundation. Completed.
 - 09.41 Calendar List View Visual QA + Density Polish. Completed.
 - 09.42 Calendar Interaction Regression Test Foundation. Completed.
-- 09.43 Calendar Regression Harness Stabilization + CI Readiness. Next recommended step.
+- 09.43 Calendar Regression Harness Stabilization + CI Readiness. Completed.
+- 09.44 Calendar Keyboard Navigation + Accessibility QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -140,6 +141,7 @@ Rough phases:
 - 09.41 Calendar List View Visual QA + Density Polish.
 - 09.42 Calendar Interaction Regression Test Foundation.
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness.
+- 09.44 Calendar Keyboard Navigation + Accessibility QA.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -454,6 +456,13 @@ preview and checks the core desktop/mobile view, navigation, filter, inspector,
 creation, focus-restoration, overlay-exclusivity, overflow, and browser-error
 contracts. It intentionally remains a small script rather than a broad test
 framework or persistence test suite.
+
+The stabilized harness now shares preview URL/browser resolution with screenshot
+capture, rejects invalid or unreachable targets before browser launch, reports
+scoped interaction diagnostics, checks Week and List navigation explicitly, and
+uses semantic mobile current-page state instead of styling classes. A future CI
+job can manage the production preview lifecycle and invoke the existing command;
+no CI provider or orchestration is coupled to the repository yet.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and

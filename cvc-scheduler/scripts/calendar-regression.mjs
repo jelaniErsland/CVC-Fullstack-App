@@ -1,20 +1,18 @@
-import { existsSync } from "node:fs";
 import { chromium } from "playwright";
+import {
+  createPreviewUrl,
+  resolvePreviewBaseUrl,
+  resolvePreviewBrowserExecutable,
+} from "./preview-config.mjs";
 
-const baseUrl = process.env.PREVIEW_BASE_URL ?? "http://127.0.0.1:3000";
-const browserExecutable =
-  process.env.PREVIEW_BROWSER_EXECUTABLE ??
-  [
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  ].find((candidate) => existsSync(candidate));
+const baseUrl = resolvePreviewBaseUrl();
+const browserExecutable = resolvePreviewBrowserExecutable();
 
 const desktopViewport = { width: 1440, height: 1000 };
 const mobileViewport = { width: 390, height: 844 };
 const projectWeekLabel = "Jan 12 to Jan 18, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
+// Accessible names are the deliberate interaction contract for the fixed Belgrade mock.
 const weekItemLabel =
   "Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
 const listItemLabel =
@@ -28,17 +26,83 @@ function assert(condition, message) {
   }
 }
 
-async function step(label, action) {
+function calendarUrl() {
+  return createPreviewUrl(baseUrl, "/admin/calendar");
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function collectPageDiagnostics(page) {
+  if (page.isClosed()) {
+    return "Page diagnostics: page already closed";
+  }
+
   try {
-    await action();
-    console.log(`✓ ${label}`);
+    const state = await page.evaluate(() => {
+      const activeElement = document.activeElement;
+      const activeDescription = activeElement
+        ? [
+            activeElement.tagName.toLowerCase(),
+            activeElement.getAttribute("role"),
+            activeElement.getAttribute("aria-label"),
+            activeElement.textContent?.trim().replace(/\s+/g, " ").slice(0, 80),
+          ]
+            .filter(Boolean)
+            .join(" | ")
+        : "none";
+      const pressedView = Array.from(
+        document.querySelectorAll('[aria-label="Calendar view"] button'),
+      ).find((button) => button.getAttribute("aria-pressed") === "true");
+      const activeDialogs = Array.from(
+        document.querySelectorAll('[role="dialog"]'),
+      )
+        .filter((dialog) => !dialog.closest("[inert]"))
+        .map(
+          (dialog) =>
+            dialog.getAttribute("aria-label") ||
+            dialog.getAttribute("aria-labelledby") ||
+            "unnamed dialog",
+        );
+
+      return {
+        activeDescription,
+        activeDialogs,
+        pressedView: pressedView?.textContent?.trim() || "none",
+      };
+    });
+    const viewport = page.viewportSize();
+
+    return [
+      `URL: ${page.url()}`,
+      `Viewport: ${viewport ? `${viewport.width}x${viewport.height}` : "unknown"}`,
+      `Pressed view: ${state.pressedView}`,
+      `Active element: ${state.activeDescription}`,
+      `Active dialogs: ${state.activeDialogs.join(", ") || "none"}`,
+    ].join("\n");
   } catch (error) {
-    throw new Error(`${label}: ${error instanceof Error ? error.message : String(error)}`);
+    return `Page diagnostics unavailable: ${errorMessage(error)}`;
   }
 }
 
-function calendarUrl() {
-  return new URL("/admin/calendar", baseUrl).toString();
+function createStepRunner(scope, page) {
+  return async function step(label, action) {
+    const startedAt = performance.now();
+
+    try {
+      await action();
+      const elapsedMs = Math.round(performance.now() - startedAt);
+      console.log(`[PASS] ${scope}: ${label} (${elapsedMs}ms)`);
+    } catch (error) {
+      const diagnostics = await collectPageDiagnostics(page);
+
+      throw new Error(
+        `[FAIL] ${scope}: ${label}\n${errorMessage(error)}\n${diagnostics}`,
+        { cause: error },
+      );
+    }
+  };
 }
 
 function watchPageErrors(page) {
@@ -69,7 +133,6 @@ async function loadCalendar(page) {
   assert(response?.ok(), `Calendar returned ${response?.status() ?? "no response"}`);
   await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
   await page.getByRole("button", { name: "Week", exact: true }).waitFor();
-  await page.waitForTimeout(100);
 }
 
 async function assertUnique(locator, label) {
@@ -99,6 +162,24 @@ async function selectView(page, view) {
   assert(
     (await button.getAttribute("aria-pressed")) === "true",
     `${view} did not expose aria-pressed=true`,
+  );
+
+  const viewStates = await page
+    .locator('[aria-label="Calendar view"] button')
+    .evaluateAll((buttons) =>
+      buttons.map((candidate) => ({
+        label: candidate.textContent?.trim(),
+        pressed: candidate.getAttribute("aria-pressed"),
+      })),
+    );
+  const pressedViews = viewStates
+    .filter(({ pressed }) => pressed === "true")
+    .map(({ label }) => label);
+
+  assert(viewStates.length === 4, `Expected four Calendar views, found ${viewStates.length}`);
+  assert(
+    pressedViews.length === 1 && pressedViews[0] === view,
+    `Expected only ${view} pressed; received ${JSON.stringify(viewStates)}`,
   );
 }
 
@@ -141,6 +222,39 @@ async function assertNoHorizontalOverflow(page, label) {
   assert(!hasOverflow, `${label} has document horizontal overflow`);
 }
 
+async function clickExposedBackground(locator, label) {
+  const position = await locator.evaluate((background) => {
+    const bounds = background.getBoundingClientRect();
+    const siblingControls = Array.from(
+      background.parentElement?.querySelectorAll("button, a") ?? [],
+    )
+      .filter((control) => control !== background)
+      .map((control) => control.getBoundingClientRect());
+    const inset = 8;
+
+    for (let y = bounds.bottom - inset; y >= bounds.top + inset; y -= inset) {
+      for (let x = bounds.left + inset; x <= bounds.right - inset; x += inset) {
+        const isCovered = siblingControls.some(
+          (control) =>
+            x >= control.left &&
+            x <= control.right &&
+            y >= control.top &&
+            y <= control.bottom,
+        );
+
+        if (!isCovered) {
+          return { x: x - bounds.left, y: y - bounds.top };
+        }
+      }
+    }
+
+    return null;
+  });
+
+  assert(position, `${label} has no exposed click point outside its event controls`);
+  await locator.click({ position });
+}
+
 async function closeWithEscape(page, dialogName, triggerLabel) {
   await page.keyboard.press("Escape");
   await page
@@ -157,6 +271,7 @@ async function runDesktop(browser) {
   const context = await browser.newContext({ viewport: desktopViewport });
   const page = await context.newPage();
   const errors = watchPageErrors(page);
+  const step = createStepRunner("desktop", page);
   page.setDefaultTimeout(7_500);
 
   try {
@@ -192,21 +307,29 @@ async function runDesktop(browser) {
       await page.getByTestId("calendar-list-view").waitFor();
     });
 
-    await step("desktop List navigation and Project week reset", async () => {
-      const next = await assertUnique(
-        page.getByRole("button", { name: "Next week", exact: true }),
-        "Next week button",
-      );
-      await next.click();
-      await assertPeriod(page, nextWeekLabel);
+    await step("Week/List navigation and Project week reset", async () => {
+      for (const view of ["List", "Week"]) {
+        await selectView(page, view);
+        const next = await assertUnique(
+          page.getByRole("button", { name: "Next week", exact: true }),
+          `${view} Next week button`,
+        );
+        await next.click();
+        await assertPeriod(page, nextWeekLabel);
 
-      const reset = await assertUnique(
-        page.getByRole("button", { name: "Project week", exact: true }),
-        "Project week button",
-      );
-      assert(await reset.isEnabled(), "Project week should be enabled after navigation");
-      await reset.click();
-      await assertPeriod(page, projectWeekLabel);
+        const reset = await assertUnique(
+          page.getByRole("button", { name: "Project week", exact: true }),
+          `${view} Project week button`,
+        );
+        assert(
+          await reset.isEnabled(),
+          `${view} Project week should be enabled after navigation`,
+        );
+        await reset.click();
+        await assertPeriod(page, projectWeekLabel);
+      }
+
+      await selectView(page, "List");
     });
 
     await step("desktop filters focus, filter to Food, and close", async () => {
@@ -276,13 +399,11 @@ async function runDesktop(browser) {
         })
         .waitFor();
       assert(
-        (await planner.getByLabel("Start", { exact: true }).getAttribute("value")) ===
-          "13:00",
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "13:00",
         "Day creation should default Start to 13:00",
       );
       assert(
-        (await planner.getByLabel("End", { exact: true }).getAttribute("value")) ===
-          "14:00",
+        (await planner.getByLabel("End", { exact: true }).inputValue()) === "14:00",
         "Day creation should default End to 14:00",
       );
       await closeWithEscape(page, "Plan project work", triggerLabel);
@@ -305,32 +426,23 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Populated Month background",
       );
-      const backgroundBounds = await background.boundingBox();
-      assert(backgroundBounds, "Populated Month background has no bounds");
-      await background.click({
-        position: {
-          x: backgroundBounds.width / 2,
-          y: backgroundBounds.height - 8,
-        },
-      });
+      await clickExposedBackground(background, "Populated Month background");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
         exact: true,
       });
       await planner.waitFor();
       assert(
-        (await planner.getByLabel("Date", { exact: true }).getAttribute("value")) ===
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
           "2026-01-15",
         "Month creation should keep Jan 15",
       );
       assert(
-        (await planner.getByLabel("Start", { exact: true }).getAttribute("value")) ===
-          "09:00",
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "09:00",
         "Month creation should default Start to 09:00",
       );
       assert(
-        (await planner.getByLabel("End", { exact: true }).getAttribute("value")) ===
-          "10:00",
+        (await planner.getByLabel("End", { exact: true }).inputValue()) === "10:00",
         "Month creation should default End to 10:00",
       );
       await closeWithEscape(page, "Plan project work", triggerLabel);
@@ -368,6 +480,7 @@ async function runMobile(browser) {
   const context = await browser.newContext({ viewport: mobileViewport });
   const page = await context.newPage();
   const errors = watchPageErrors(page);
+  const step = createStepRunner("mobile", page);
   page.setDefaultTimeout(7_500);
 
   try {
@@ -383,10 +496,9 @@ async function runMobile(browser) {
         exact: true,
       });
       await calendarTab.waitFor();
-      const className = await calendarTab.getAttribute("class");
       assert(
-        className?.includes("-translate-y-2") && className.includes("bg-slate-950"),
-        "Mobile Calendar tab is not emphasized and active",
+        (await calendarTab.getAttribute("aria-current")) === "page",
+        "Mobile Calendar tab does not expose aria-current=page",
       );
       await assertNoHorizontalOverflow(page, "Mobile Calendar");
     });
@@ -496,13 +608,59 @@ async function runMobile(browser) {
   }
 }
 
-async function main() {
-  const browser = await chromium.launch(
-    browserExecutable ? { executablePath: browserExecutable } : {},
-  );
+async function assertPreviewAvailable() {
+  const target = calendarUrl();
 
   try {
-    console.log(`Calendar regression target: ${calendarUrl()}`);
+    const response = await fetch(target, {
+      headers: { accept: "text/html" },
+      signal: AbortSignal.timeout(5_000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+
+    await response.body?.cancel();
+  } catch (error) {
+    throw new Error(
+      [
+        `Calendar preview is unavailable at ${target}.`,
+        "Start a production preview with `npm run build` then `npm run preview`,",
+        "or set PREVIEW_BASE_URL to an already-running preview.",
+        `Connection detail: ${errorMessage(error)}`,
+      ].join("\n"),
+      { cause: error },
+    );
+  }
+}
+
+async function launchBrowser() {
+  try {
+    return await chromium.launch(
+      browserExecutable ? { executablePath: browserExecutable } : {},
+    );
+  } catch (error) {
+    throw new Error(
+      [
+        "Unable to launch a Chromium browser for Calendar regression.",
+        browserExecutable
+          ? `Configured browser: ${browserExecutable}`
+          : "Install Playwright Chromium or set PREVIEW_BROWSER_EXECUTABLE to Chrome/Edge.",
+        `Launch detail: ${errorMessage(error)}`,
+      ].join("\n"),
+      { cause: error },
+    );
+  }
+}
+
+async function main() {
+  console.log(`Calendar regression target: ${calendarUrl()}`);
+  await assertPreviewAvailable();
+
+  const browser = await launchBrowser();
+
+  try {
     await runDesktop(browser);
     await runMobile(browser);
   } finally {
@@ -513,6 +671,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  console.error(`\nCalendar interaction regression failed.\n${errorMessage(error)}`);
   process.exitCode = 1;
 });
