@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type Ref,
   useEffect,
@@ -490,6 +491,54 @@ function getTimelineSlotFromPointer(event: MouseEvent<HTMLButtonElement>) {
   const hour = Math.min(23, Math.max(0, Math.floor((offset / bounds.height) * 24)));
 
   return dayTimelineSlots[hour] ?? dayTimelineSlots[13];
+}
+
+function handleCalendarGridArrowKey(
+  event: ReactKeyboardEvent<HTMLButtonElement>,
+  currentIndex: number,
+  columnCount: number,
+) {
+  const group = event.currentTarget.closest("[data-calendar-arrow-group]");
+  const targets = Array.from(
+    group?.querySelectorAll<HTMLButtonElement>("[data-calendar-arrow-target]") ?? [],
+  );
+  let nextIndex: number | undefined;
+
+  switch (event.key) {
+    case "ArrowDown":
+      nextIndex = currentIndex + columnCount;
+      break;
+    case "ArrowUp":
+      nextIndex = currentIndex - columnCount;
+      break;
+    case "ArrowRight":
+      if (columnCount > 1) {
+        nextIndex = currentIndex + 1;
+      }
+      break;
+    case "ArrowLeft":
+      if (columnCount > 1) {
+        nextIndex = currentIndex - 1;
+      }
+      break;
+    case "Home":
+      nextIndex = 0;
+      break;
+    case "End":
+      nextIndex = targets.length - 1;
+      break;
+    default:
+      return;
+  }
+
+  const nextTarget = nextIndex === undefined ? undefined : targets[nextIndex];
+
+  if (!nextTarget) {
+    return;
+  }
+
+  event.preventDefault();
+  nextTarget.focus();
 }
 
 const detailAccentStyles: Record<TaskPresetCategory, string> = {
@@ -1306,7 +1355,7 @@ function DayView({
           </div>
         </div>
       ) : null}
-      <div>
+      <div data-calendar-arrow-group="day-hours">
         {dayTimelineSlots.map((slot) => {
           const slotItems = timedItems.filter(
             (item) => getCalendarItemStartHour(item) === slot.hour,
@@ -1324,6 +1373,7 @@ function DayView({
                 <button
                   aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)} at ${slot.label}`}
                   className={`absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
+                  data-calendar-arrow-target="day-hour"
                   onClick={() =>
                     onCreateFromSlot({
                       date,
@@ -1332,6 +1382,9 @@ function DayView({
                       suggestedStartTime: slot.start,
                       suggestedEndTime: slot.end,
                     })
+                  }
+                  onKeyDown={(event) =>
+                    handleCalendarGridArrowKey(event, slot.hour, 1)
                   }
                   type="button"
                 />
@@ -1409,8 +1462,8 @@ function MonthView({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7">
-        {dates.map((date) => {
+      <div className="grid grid-cols-7" data-calendar-arrow-group="month-dates">
+        {dates.map((date, dateIndex) => {
           const dateItems = items
             .filter((item) => doesCalendarItemOccurOnDate(item, date))
             .map(enrichCalendarItem);
@@ -1431,11 +1484,13 @@ function MonthView({
                 "relative min-h-24 border-r border-b border-slate-200/80 last:border-r-0 sm:min-h-36",
                 inMonth ? "bg-white/24" : "bg-slate-50/42 opacity-45",
               ].join(" ")}
+              data-calendar-month-cell={date}
               key={date}
             >
               <button
                 aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)}`}
                 className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
+                data-calendar-arrow-target="month-date"
                 onClick={() =>
                   onCreateFromSlot({
                     date,
@@ -1444,6 +1499,9 @@ function MonthView({
                     suggestedStartTime: suggestedSlots.morning.start,
                     suggestedEndTime: suggestedSlots.morning.end,
                   })
+                }
+                onKeyDown={(event) =>
+                  handleCalendarGridArrowKey(event, dateIndex, 7)
                 }
                 type="button"
               />

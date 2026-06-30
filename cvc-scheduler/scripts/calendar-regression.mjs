@@ -205,6 +205,11 @@ async function waitForFocusLabel(page, label) {
   );
 }
 
+async function pressAndWaitForFocus(page, key, label) {
+  await page.keyboard.press(key);
+  await waitForFocusLabel(page, label);
+}
+
 async function visibleCalendarSurfaceCount(page) {
   return page.evaluate(() => {
     const closeLabels = [
@@ -484,13 +489,46 @@ async function runDesktop(browser) {
       await closeWithEscape(page, "Calendar item inspector", weekItemLabel);
     });
 
-    await step("desktop Day creation defaults and focus restoration", async () => {
+    await step("desktop Day arrows, creation, and focus restoration", async () => {
       await selectView(page, "Day");
       const triggerLabel = "Plan project work on Tue Jan 13 at 1 PM";
       const trigger = await assertUnique(
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Day creation target",
       );
+      const dayTargetAudit = await page.evaluate(() => {
+        const targets = Array.from(
+          document.querySelectorAll('[data-calendar-arrow-target="day-hour"]'),
+        );
+
+        return {
+          count: targets.length,
+          tabbable: targets.every((target) => target instanceof HTMLElement && target.tabIndex >= 0),
+        };
+      });
+      assert(
+        dayTargetAudit.count === 24 && dayTargetAudit.tabbable,
+        "Day should keep 24 normally tabbable hour targets",
+      );
+
+      await trigger.focus();
+      await pressAndWaitForFocus(
+        page,
+        "ArrowDown",
+        "Plan project work on Tue Jan 13 at 2 PM",
+      );
+      await pressAndWaitForFocus(page, "ArrowUp", triggerLabel);
+      await pressAndWaitForFocus(
+        page,
+        "Home",
+        "Plan project work on Tue Jan 13 at 12 AM",
+      );
+      await pressAndWaitForFocus(
+        page,
+        "End",
+        "Plan project work on Tue Jan 13 at 11 PM",
+      );
+
       await activateWithKeyboard(trigger, "Day creation target");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
@@ -562,9 +600,27 @@ async function runDesktop(browser) {
         );
       }
       await closeWithEscape(page, "Plan project work", triggerLabel);
+
+      await trigger.focus();
+      const arrowSpaceTriggerLabel = "Plan project work on Tue Jan 13 at 2 PM";
+      await pressAndWaitForFocus(page, "ArrowDown", arrowSpaceTriggerLabel);
+      await page.keyboard.press("Space");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      await assertDialogFocusContainment(
+        page,
+        planner,
+        "Arrow-focused Day creation",
+      );
+      assert(
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "14:00" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) === "15:00",
+        "Day Space creation should preserve the arrow-focused 2 PM default",
+      );
+      await closeWithEscape(page, "Plan project work", arrowSpaceTriggerLabel);
     });
 
-    await step("desktop Month populated cell creation and event inspection", async () => {
+    await step("desktop Month arrows, sibling controls, and creation", async () => {
       await selectView(page, "Month");
       const event = await assertUnique(
         page.getByRole("button", { name: monthItemLabel, exact: true }),
@@ -581,6 +637,44 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Populated Month background",
       );
+      const monthTargetAudit = await page.evaluate(() => {
+        const targets = Array.from(
+          document.querySelectorAll('[data-calendar-arrow-target="month-date"]'),
+        );
+
+        return {
+          count: targets.length,
+          tabbable: targets.every((target) => target instanceof HTMLElement && target.tabIndex >= 0),
+        };
+      });
+      assert(
+        monthTargetAudit.count === 35 && monthTargetAudit.tabbable,
+        "January Month should keep 35 normally tabbable visible date targets",
+      );
+      await background.focus();
+      await pressAndWaitForFocus(
+        page,
+        "ArrowRight",
+        "Plan project work on Fri Jan 16",
+      );
+      await pressAndWaitForFocus(page, "ArrowLeft", triggerLabel);
+      await pressAndWaitForFocus(
+        page,
+        "ArrowDown",
+        "Plan project work on Thu Jan 22",
+      );
+      await pressAndWaitForFocus(page, "ArrowUp", triggerLabel);
+      await pressAndWaitForFocus(
+        page,
+        "Home",
+        "Plan project work on Sun Dec 28",
+      );
+      await pressAndWaitForFocus(
+        page,
+        "End",
+        "Plan project work on Sat Jan 31",
+      );
+
       const siblingState = await background.evaluate((backgroundControl, eventLabel) => {
         const cell = backgroundControl.parentElement;
         const eventControl = Array.from(cell?.querySelectorAll("button") ?? []).find(
@@ -597,6 +691,15 @@ async function runDesktop(browser) {
       }, monthItemLabel);
       assert(siblingState.eventFound, "Month event chip was not found in its date cell");
       assert(!siblingState.nested, "Month background and event chip must be sibling controls");
+      const nestedMonthControls = await page
+        .locator(
+          '[data-calendar-arrow-group="month-dates"] button button, [data-calendar-arrow-group="month-dates"] button a, [data-calendar-arrow-group="month-dates"] a button',
+        )
+        .count();
+      assert(
+        nestedMonthControls === 0,
+        `Month contains ${nestedMonthControls} nested interactive controls`,
+      );
       await activateWithKeyboard(background, "Populated Month background");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
@@ -617,6 +720,28 @@ async function runDesktop(browser) {
         "Month creation should default End to 10:00",
       );
       await closeWithEscape(page, "Plan project work", triggerLabel);
+
+      await background.focus();
+      const arrowSpaceTriggerLabel = "Plan project work on Fri Jan 16";
+      await pressAndWaitForFocus(page, "ArrowRight", arrowSpaceTriggerLabel);
+      await page.keyboard.press("Space");
+      await planner.waitFor();
+      await waitForFocusLabel(page, "Close project work planner");
+      await assertDialogFocusContainment(
+        page,
+        planner,
+        "Arrow-focused Month creation",
+      );
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
+          "2026-01-16" &&
+          (await planner.getByLabel("Start", { exact: true }).inputValue()) ===
+            "09:00" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) ===
+            "10:00",
+        "Month Space creation should preserve the arrow-focused Jan 16 default",
+      );
+      await closeWithEscape(page, "Plan project work", arrowSpaceTriggerLabel);
     });
 
     await step("desktop List rows reuse inspector without nested controls", async () => {
@@ -700,12 +825,41 @@ async function runMobile(browser) {
       }
 
       await selectView(page, "Month");
+      const mobileMonthDate = await assertUnique(
+        page.getByRole("button", {
+          name: "Plan project work on Wed Jan 14",
+          exact: true,
+        }),
+        "Mobile Month date target",
+      );
+      await mobileMonthDate.focus();
+      await pressAndWaitForFocus(
+        page,
+        "ArrowRight",
+        "Plan project work on Thu Jan 15",
+      );
       const overflow = await assertUnique(
         page.getByRole("button", {
           name: "Switch to Day view for Wed Jan 14 to show 3 more calendar items",
           exact: true,
         }),
         "Mobile Month overflow button",
+      );
+      const overflowSiblingState = await overflow.evaluate((overflowControl) => {
+        const cell = overflowControl.closest("[data-calendar-month-cell]");
+        const background = cell?.querySelector("[data-calendar-arrow-target]");
+
+        return {
+          backgroundFound: Boolean(background),
+          nested:
+            Boolean(background) &&
+            (background.contains(overflowControl) ||
+              overflowControl.contains(background)),
+        };
+      });
+      assert(
+        overflowSiblingState.backgroundFound && !overflowSiblingState.nested,
+        "Mobile Month overflow and date creation target must remain sibling controls",
       );
       await activateWithKeyboard(overflow, "Mobile Month overflow button");
       assert(

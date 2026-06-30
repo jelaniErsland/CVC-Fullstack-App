@@ -2381,6 +2381,41 @@ Limitations:
 Next recommended step:
 - 09.46 Calendar Grid Arrow-Key Navigation Foundation.
 
+## Iteration 09.46 — Calendar Grid Arrow-Key Navigation Foundation
+
+Summary:
+- Added one small index-based arrow handler for native Day hour and Month date creation buttons without changing their normal Tab stops.
+- Day supports ArrowUp/ArrowDown and Home/End across all 24 hour targets; Enter and Space retain the selected hour’s draft defaults.
+- Month supports ArrowLeft/ArrowRight, one-week ArrowUp/ArrowDown, and Home/End across the visible date grid; Enter and Space retain 09:00-10:00 creation.
+- Scoped Month movement to background date targets through stable local data attributes, leaving event chips and `+N` overflow as separate keyboard-reachable sibling controls.
+- Preserved 09.45 modal containment and trigger restoration when creation opens from an arrow-focused Day or Month target.
+- Left Week and List keyboard models unchanged and made no visible Calendar changes.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/calendar-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 16 desktop/mobile steps against the production preview at `http://127.0.0.1:3014`.
+- Production Playwright QA covered all requested Day/Month arrow keys, Enter/Space creation defaults, post-arrow modal containment, focus restoration, Month sibling controls, mobile overflow, and 390px no-overflow behavior.
+- No console errors, page errors, hydration warnings, nested interactive controls, broken focus containment, or stacked mobile surfaces were found.
+- Screenshot capture was not run because layout, copy, colors, and screenshot-relevant states did not change.
+
+Limitations:
+- Week retains its current normal-Tab keyboard behavior; no hour-by-hour Week arrow model was attempted.
+- Day/Month keep every native Tab stop and do not implement roving `tabIndex`, ARIA grid roles, selection state, or cross-month date loading.
+- The independent in-app browser backend was unavailable during final QA; the production Playwright desktop/mobile run completed successfully.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, visual redesign, or production scheduling logic was added.
+
+Next recommended step:
+- 09.47 Calendar Week Keyboard Navigation Evaluation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

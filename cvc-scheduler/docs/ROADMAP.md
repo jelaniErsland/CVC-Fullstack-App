@@ -83,7 +83,8 @@ Rough phases:
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness. Completed.
 - 09.44 Calendar Keyboard Navigation + Accessibility QA. Completed.
 - 09.45 Calendar Dialog Focus Containment + Screen Reader QA. Completed.
-- 09.46 Calendar Grid Arrow-Key Navigation Foundation. Next recommended step.
+- 09.46 Calendar Grid Arrow-Key Navigation Foundation. Completed.
+- 09.47 Calendar Week Keyboard Navigation Evaluation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -146,6 +147,7 @@ Rough phases:
 - 09.44 Calendar Keyboard Navigation + Accessibility QA.
 - 09.45 Calendar Dialog Focus Containment + Screen Reader QA.
 - 09.46 Calendar Grid Arrow-Key Navigation Foundation.
+- 09.47 Calendar Week Keyboard Navigation Evaluation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -482,6 +484,13 @@ across enabled controls, and leaves normal Calendar grids untouched. Filters,
 creation, inspector, and Mobile More retain initial focus, Escape dismissal, and
 trigger restoration while exposing concise screen-reader descriptions. Grid
 arrow-key traversal and a broader assistive-technology matrix remain future work.
+
+Day and Month now provide the first grid-arrow foundation while preserving every
+native Tab stop. Day moves among hour creation targets vertically; Month moves
+among visible date creation targets horizontally, vertically by week, and to
+grid boundaries. Enter/Space keep the existing draft defaults and modal focus
+containment. Foreground Month events and overflow remain sibling controls outside
+the arrow target set. Week's denser time-grid model remains intentionally pending.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and
