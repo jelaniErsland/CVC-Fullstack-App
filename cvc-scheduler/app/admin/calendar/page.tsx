@@ -1693,7 +1693,7 @@ function CalendarListView({
                     <button
                       aria-label={getCalendarListItemAccessibleLabel(item)}
                       className={[
-                        `grid min-h-[60px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 px-3 py-2 text-left transition hover:bg-white/44 sm:min-h-12 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)_auto_auto] sm:gap-x-3 ${calmFocusRing}`,
+                        `grid min-h-[72px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-2.5 text-left transition hover:bg-white/44 sm:min-h-14 sm:grid-cols-[minmax(0,1.15fr)_minmax(11rem,0.9fr)_auto] sm:gap-x-5 sm:px-4 sm:py-2 ${calmFocusRing}`,
                         selectedId === item.id
                           ? "bg-white/64 ring-2 ring-inset ring-slate-900/25"
                           : "",
@@ -1702,34 +1702,26 @@ function CalendarListView({
                       type="button"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold leading-[18px] text-slate-950">
+                        <p className="truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-slate-950 sm:text-sm">
                           {getCalendarItemDisplayName(item)}
                         </p>
-                        <p className="mt-0.5 text-[11px] leading-[15px] text-slate-500 sm:hidden">
-                          {scheduleLabel}
-                        </p>
-                        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-medium leading-[15px] text-slate-500 sm:hidden">
-                          <span>{typeLabel}</span>
-                          <span aria-hidden="true" className="text-slate-300">
-                            ·
-                          </span>
-                          <span>{getCalendarFilledLabel(item)} helpers</span>
+                        <p className="mt-1 hidden truncate text-[10px] font-semibold uppercase leading-4 tracking-[0.08em] text-slate-400 sm:block">
+                          {typeLabel}
                         </p>
                       </div>
 
-                      <p className="hidden min-w-0 text-xs leading-5 text-slate-500 sm:block">
+                      <p className="hidden min-w-0 text-xs font-medium leading-5 text-slate-500 sm:block">
                         {scheduleLabel}
                       </p>
-                      <span className="hidden whitespace-nowrap text-[11px] font-medium text-slate-500 sm:inline">
-                        {typeLabel}
-                      </span>
-                      <span className="hidden whitespace-nowrap text-[11px] font-semibold text-slate-600 sm:inline">
+                      <span className="mt-0.5 inline-flex min-h-7 shrink-0 self-start items-center justify-center whitespace-nowrap rounded-full border border-slate-200/80 bg-white/58 px-2.5 text-[11px] font-semibold text-slate-700 sm:mt-0 sm:self-center">
                         {getCalendarFilledLabel(item)} helpers
                       </span>
-                      <ChevronRight
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5 shrink-0 text-slate-300 sm:hidden"
-                      />
+                      <p className="col-span-2 mt-0.5 text-[11px] font-medium leading-4 text-slate-500 sm:hidden">
+                        {scheduleLabel}
+                      </p>
+                      <p className="col-span-2 truncate text-[10px] font-semibold uppercase leading-4 tracking-[0.08em] text-slate-400 sm:hidden">
+                        {typeLabel}
+                      </p>
                     </button>
                   </div>
                 );

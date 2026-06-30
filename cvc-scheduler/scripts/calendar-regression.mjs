@@ -994,6 +994,23 @@ async function runMobile(browser) {
         await selectView(page, view);
       }
 
+      const mobileListAudit = await page.evaluate(() => {
+        const list = document.querySelector('[data-testid="calendar-list-view"]');
+
+        return {
+          nestedControls:
+            list?.querySelectorAll("button button, button a, a button").length ?? -1,
+          overflow: Boolean(list && list.scrollWidth > list.clientWidth),
+          rows: list?.querySelectorAll('[role="listitem"] > button').length ?? 0,
+        };
+      });
+      assert(mobileListAudit.rows === 15, "Mobile List should retain all 15 rows");
+      assert(
+        mobileListAudit.nestedControls === 0,
+        "Mobile List should not contain nested interactive controls",
+      );
+      assert(!mobileListAudit.overflow, "Mobile List has horizontal overflow");
+
       await selectView(page, "Month");
       const mobileMonthDate = await assertUnique(
         page.getByRole("button", {

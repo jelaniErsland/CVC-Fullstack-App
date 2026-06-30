@@ -85,7 +85,8 @@ Rough phases:
 - 09.45 Calendar Dialog Focus Containment + Screen Reader QA. Completed.
 - 09.46 Calendar Grid Arrow-Key Navigation Foundation. Completed.
 - 09.47 Calendar Week Keyboard Navigation Evaluation. Completed.
-- 09.48 Calendar List Information Hierarchy Cleanup. Next recommended step.
+- 09.48 Calendar List Information Hierarchy Cleanup. Completed.
+- 09.49 Calendar Stabilization + Handoff Review. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -150,6 +151,7 @@ Rough phases:
 - 09.46 Calendar Grid Arrow-Key Navigation Foundation.
 - 09.47 Calendar Week Keyboard Navigation Evaluation.
 - 09.48 Calendar List Information Hierarchy Cleanup.
+- 09.49 Calendar Stabilization + Handoff Review.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -455,9 +457,11 @@ once with its full range. Rows reuse the existing inspector and filter model;
 the view remains local mock UI rather than a new scheduling contract.
 
 The List visual polish keeps that behavior in a flatter scan: 36px date headers,
-48px desktop rows, 68px mobile rows, light dividers, plain type text on desktop,
-and no enclosing rounded-card treatment. Mobile retains the full row metadata
-and 390px overflow safety.
+light dividers, and no enclosing rounded-card treatment. Rows now use a clear
+name/schedule/type hierarchy with helper coverage anchored in a trailing chip.
+Desktop uses three column-like zones and 56px minimum rows; mobile uses a
+name/helper line plus full-width schedule and quiet type lines with a 72px
+minimum, retaining full project-window wording and 390px overflow safety.
 
 Calendar now has a focused Playwright regression script that assumes a running
 preview and checks the core desktop/mobile view, navigation, filter, inspector,

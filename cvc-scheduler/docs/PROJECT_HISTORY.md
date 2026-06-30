@@ -2454,6 +2454,43 @@ Limitations:
 Next recommended step:
 - 09.48 Calendar List Information Hierarchy Cleanup.
 
+## Iteration 09.48 — Calendar List Information Hierarchy Cleanup
+
+Summary:
+- Reworked only the existing List row presentation so task name is primary, schedule/window is secondary, and type/context is a quieter tertiary label.
+- Consolidated desktop rows from four competing metadata columns into three stable zones: task/type, schedule, and trailing helper coverage.
+- Added a calm helper-fraction chip as the consistent trailing value on desktop and mobile.
+- Reflowed mobile rows into a name/helper first line with full-width schedule and type lines beneath it, preserving complete project-window wording at 390px.
+- Kept the flat divider-based List surface, date grouping, no-specific-time-before-timed sorting, one-row project windows, native inspector buttons, accessible names, filters, navigation, and focus restoration unchanged.
+- Added a durable mobile regression audit for 15 List rows, nested controls, and List-local horizontal overflow without asserting pixel heights.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `scripts/calendar-regression.mjs`
+- `docs/previews/latest/calendar-list.jpg`
+- `docs/previews/latest/mobile-calendar-list.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 17 desktop/mobile steps against the production preview at `http://127.0.0.1:3016`.
+- Targeted screenshot capture refreshed only `calendar-list.jpg` and `mobile-calendar-list.jpg`.
+- Rendered preview QA confirmed clear desktop column alignment, full mobile project-window wording, comfortable rows, stable helper chips, and no 390px List/document overflow.
+- No console errors, page errors, hydration warnings, nested interactive controls, broken focus containment, stacked mobile surfaces, or behavior regressions were found.
+
+Limitations:
+- List remains mock presentation with Week-period navigation and no List-specific creation affordance.
+- Mobile type/context remains compact 10px tertiary text; device and assistive-technology testing may justify future typography adjustment.
+- The independent in-app browser backend was unavailable during final QA; production Playwright and rendered screenshot QA completed successfully.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, or production scheduling logic was added.
+
+Next recommended step:
+- 09.49 Calendar Stabilization + Handoff Review.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
