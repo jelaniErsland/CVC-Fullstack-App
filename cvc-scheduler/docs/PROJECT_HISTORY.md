@@ -2609,6 +2609,49 @@ Limitations:
 Next recommended step:
 - 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface.
 
+## Iteration 10.3 — Volunteer Confirmation Flow Mock / Assignment Detail Surface
+
+Summary:
+- Added the deterministic public detail route `/v/demo/assignments/material-staging` for Alex’s next assignment.
+- Made the Material staging summary on `/v/demo` clearly openable through an accessible `View details` link while keeping confirmation buttons as separate sibling controls.
+- Built one calm assignment surface with project/person context, date/time, location and check-in, work purpose, helper coverage, project contact, PPE/clothing guidance, lunch information, and a clear back path.
+- Reused the local-only confirmation component and clarified that preview choices do not send a response and reset on navigation.
+- Added a plain unknown-assignment recovery state with a route back to the volunteer schedule.
+- Extended public capture QA to cover home-to-detail navigation, both response states, nested controls, desktop/mobile overflow, and two new assignment-detail previews.
+
+Changed files:
+- `app/v/demo/page.tsx`
+- `app/v/demo/assignments/[assignmentId]/page.tsx`
+- `components/VolunteerConfirmationPreview.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/previews/latest/volunteer-assignment-detail.jpg`
+- `docs/previews/latest/mobile-volunteer-assignment-detail.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 64 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, `/v/demo/assignments/material-staging`, the helpful unknown-assignment state, `/questionnaire/belgrade-remodel-2026`, `/admin/dashboard`, and `/admin/calendar`.
+- Targeted Playwright capture passed for all six public desktop/mobile previews with no console errors, page errors, hydration warnings, nested interactive controls, or horizontal overflow.
+- Desktop QA opened Material staging from the volunteer home and exercised Confirm and Can’t make it with the expected announced local status before restoring the initial state.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots were unchanged.
+
+Limitations:
+- Only Material staging has a dedicated assignment detail; this is not yet a reusable multiple-assignment schedule system.
+- Confirmation remains component-local, sends nothing, and resets on navigation or reload.
+- Contact, preparation, helper, and lunch details are deterministic preview copy built from existing mock context rather than persisted assignment data.
+- No auth, Supabase, database calls, identity resolution, email, secure links, or real schedule mutations were added.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed.
+
+Next recommended step:
+- 10.4 Volunteer Schedule List / Multiple Assignments Mock.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

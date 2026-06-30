@@ -37,6 +37,14 @@ const captures = [
     fileName: "volunteer-home.jpg",
     viewport: desktopViewport,
     auditPage: true,
+    auditAssignmentDetailLink: true,
+    auditVolunteerConfirmation: true,
+  },
+  {
+    route: "/v/demo/assignments/material-staging",
+    fileName: "volunteer-assignment-detail.jpg",
+    viewport: desktopViewport,
+    auditPage: true,
     auditVolunteerConfirmation: true,
   },
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
@@ -220,6 +228,13 @@ const captures = [
   },
   { route: "/", fileName: "mobile-public-home.jpg", viewport: mobileViewport, auditPage: true },
   { route: "/v/demo", fileName: "mobile-volunteer-home.jpg", viewport: mobileViewport, auditPage: true },
+  {
+    route: "/v/demo/assignments/material-staging",
+    fileName: "mobile-volunteer-assignment-detail.jpg",
+    viewport: mobileViewport,
+    auditPage: true,
+    fullPageCapture: true,
+  },
 ];
 
 function previewUrl(route) {
@@ -268,7 +283,9 @@ async function main() {
       openMobileMore,
       auditPage,
       auditVolunteerLookup,
+      auditAssignmentDetailLink,
       auditVolunteerConfirmation,
+      fullPageCapture,
     } of selectedCaptures) {
       const browserErrors = [];
       const handleConsole = (message) => {
@@ -360,6 +377,14 @@ async function main() {
         await page.getByRole("heading", { name: "Find your project" }).waitFor();
       }
 
+      if (auditAssignmentDetailLink) {
+        await page.getByRole("link", { name: "View details for Material staging" }).click();
+        await page.waitForURL(/\/v\/demo\/assignments\/material-staging$/);
+        await page.getByRole("heading", { name: "Material staging", level: 1 }).waitFor();
+        await page.goBack({ waitUntil: "domcontentloaded" });
+        await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+      }
+
       if (auditVolunteerConfirmation) {
         await page.getByRole("button", { name: "Confirm", exact: true }).click();
         await page.getByText("Preview updated: you can make this assignment.", { exact: false }).waitFor();
@@ -379,6 +404,14 @@ async function main() {
           throw new Error(`${fileName} has horizontal overflow at ${viewport.width}px`);
         }
 
+        const nestedInteractiveCount = await page.locator(
+          "a a, a button, button a, button button",
+        ).count();
+
+        if (nestedInteractiveCount > 0) {
+          throw new Error(`${fileName} contains nested interactive controls`);
+        }
+
         if (browserErrors.length > 0) {
           throw new Error(`${fileName} reported browser errors:\n${browserErrors.join("\n")}`);
         }
@@ -386,7 +419,7 @@ async function main() {
 
       await page.screenshot({
         ...jpegOptions,
-        fullPage: viewport.width >= 1024,
+        fullPage: fullPageCapture ?? viewport.width >= 1024,
         path: path.join(outputDir, fileName),
       });
 

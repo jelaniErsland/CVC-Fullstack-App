@@ -33,7 +33,7 @@ export function VolunteerConfirmationPreview() {
           {current.label}
         </span>
         <p aria-live="polite" className="mt-2 text-xs leading-5 text-slate-500">
-          {current.message} Changes are preview-only and reset when you leave.
+          {current.message} This preview does not send a response and resets when you leave.
         </p>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-0 sm:flex">

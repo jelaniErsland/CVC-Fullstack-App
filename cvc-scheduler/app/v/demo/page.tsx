@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  ArrowRight,
   ArrowLeft,
   CalendarDays,
   ClipboardCheck,
@@ -99,6 +100,14 @@ export default function VolunteerDemoPage() {
                         <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
                           {nextAssignment.role}
                         </h3>
+                        <Link
+                          href="/v/demo/assignments/material-staging"
+                          aria-label="View details for Material staging"
+                          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-sky-700 hover:text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                        >
+                          View details
+                          <ArrowRight aria-hidden="true" className="size-4" />
+                        </Link>
                       </div>
                       <span className="text-sm font-medium text-slate-500">1 of 2 helpers confirmed</span>
                     </div>
