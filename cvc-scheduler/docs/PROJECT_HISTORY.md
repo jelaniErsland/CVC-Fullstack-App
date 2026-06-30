@@ -2344,6 +2344,43 @@ Limitations:
 Next recommended step:
 - 09.45 Calendar Dialog Focus Containment + Screen Reader QA.
 
+## Iteration 09.45 — Calendar Dialog Focus Containment + Screen Reader QA
+
+Summary:
+- Added one reusable, visibility-aware focus-containment hook for Calendar Filters, Plan project work, Inspector, and Mobile More only.
+- Preserved existing initial close-button focus, Escape dismissal, trigger-focus restoration, single-surface coordination, and closed-filter `inert` behavior.
+- Added concise `aria-describedby` content to all four modal surfaces; inspector context derives from the selected item’s task, date, schedule, and coverage label.
+- Kept disabled creation preview actions outside the focus loop while preserving their availability descriptions.
+- Extended `npm run test:calendar` with deterministic Tab/Shift+Tab boundary wrapping on desktop Filters, creation, inspector, Mobile More, and a mobile filter sheet.
+- Preserved view/toggle/current-page semantics plus Month/List sibling-control and accessible-name coverage without changing visible Calendar UI.
+
+Changed files:
+- `hooks/useFocusContainment.ts`
+- `app/admin/calendar/page.tsx`
+- `components/AdminShell.tsx`
+- `scripts/calendar-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 16 desktop/mobile steps against the production preview at `http://127.0.0.1:3013`.
+- Production browser QA verified desktop Filters and 390px Mobile More descriptions, initial focus, backward/forward boundary wrapping, Escape restoration, current-page state, and zero horizontal overflow.
+- No console errors, page errors, hydration warnings, nested interactive controls, or stacked mobile surfaces were found.
+- Screenshot capture was not run because the pass changed only nonvisual focus and accessibility semantics.
+
+Limitations:
+- Calendar grids continue to use normal Tab order; arrow-key grid traversal and roving focus are not implemented.
+- Validation used Chromium accessibility semantics and automated/browser inspection, not a full NVDA, JAWS, VoiceOver, TalkBack, or cross-browser matrix.
+- Focus containment is intentionally scoped to the four existing modal surfaces and is not applied to normal Calendar grids or non-modal UI.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, visual redesign, or production scheduling logic was added.
+
+Next recommended step:
+- 09.46 Calendar Grid Arrow-Key Navigation Foundation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

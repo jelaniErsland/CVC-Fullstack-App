@@ -82,7 +82,8 @@ Rough phases:
 - 09.42 Calendar Interaction Regression Test Foundation. Completed.
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness. Completed.
 - 09.44 Calendar Keyboard Navigation + Accessibility QA. Completed.
-- 09.45 Calendar Dialog Focus Containment + Screen Reader QA. Next recommended step.
+- 09.45 Calendar Dialog Focus Containment + Screen Reader QA. Completed.
+- 09.46 Calendar Grid Arrow-Key Navigation Foundation. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -144,6 +145,7 @@ Rough phases:
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness.
 - 09.44 Calendar Keyboard Navigation + Accessibility QA.
 - 09.45 Calendar Dialog Focus Containment + Screen Reader QA.
+- 09.46 Calendar Grid Arrow-Key Navigation Foundation.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -472,7 +474,14 @@ activation and focus-visible treatment, toggle buttons announce pressed state,
 closed filters are inert, Month background/event/overflow controls remain
 siblings, and Mobile More now behaves as an expanded modal dialog with initial
 focus, Escape dismissal, and trigger-focus restoration. Specialized grid arrow
-keys and full modal focus containment remain future accessibility work.
+keys remain future accessibility work.
+
+Calendar-owned modal surfaces now share practical focus containment. The helper
+selects only the visible desktop drawer or mobile sheet, wraps Tab and Shift+Tab
+across enabled controls, and leaves normal Calendar grids untouched. Filters,
+creation, inspector, and Mobile More retain initial focus, Escape dismissal, and
+trigger restoration while exposing concise screen-reader descriptions. Grid
+arrow-key traversal and a broader assistive-technology matrix remain future work.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and

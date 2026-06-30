@@ -249,6 +249,63 @@ async function assertClosedSurfaceInert(page, closeLabel) {
   assert(!state.activeInside, `${closeLabel} retained focus while closed`);
 }
 
+const dialogFocusableSelector = [
+  "a[href]",
+  'button:not([disabled]):not([tabindex="-1"])',
+  'input:not([disabled]):not([tabindex="-1"])',
+  'select:not([disabled]):not([tabindex="-1"])',
+  'textarea:not([disabled]):not([tabindex="-1"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+async function assertDialogFocusContainment(page, dialog, label) {
+  assert(
+    (await dialog.getAttribute("aria-modal")) === "true",
+    `${label} should expose aria-modal=true`,
+  );
+
+  const descriptionId = await dialog.getAttribute("aria-describedby");
+  assert(descriptionId, `${label} should reference an accessible description`);
+  const description = dialog.locator(`[id="${descriptionId}"]`);
+  assert(
+    (await description.count()) === 1 && (await description.textContent())?.trim(),
+    `${label} accessible description is missing or empty`,
+  );
+
+  const focusable = dialog.locator(dialogFocusableSelector);
+  const focusableCount = await focusable.count();
+  assert(focusableCount > 0, `${label} has no focusable controls`);
+  const firstFocusable = focusable.first();
+  const lastFocusable = focusable.last();
+
+  assert(
+    await firstFocusable.evaluate((element) => element === document.activeElement),
+    `${label} initial focus is not on its first control`,
+  );
+
+  await page.keyboard.press("Shift+Tab");
+  assert(
+    await lastFocusable.evaluate((element) => element === document.activeElement),
+    `${label} Shift+Tab did not wrap to its last control`,
+  );
+  assert(
+    await dialog.evaluate((element) => element.contains(document.activeElement)),
+    `${label} allowed focus to leave after Shift+Tab`,
+  );
+
+  await page.keyboard.press("Tab");
+  assert(
+    await firstFocusable.evaluate((element) => element === document.activeElement),
+    `${label} Tab did not wrap to its first control`,
+  );
+  assert(
+    await dialog.evaluate((element) => element.contains(document.activeElement)),
+    `${label} allowed focus to leave after Tab`,
+  );
+
+  return (await description.textContent())?.trim() ?? "";
+}
+
 async function closeWithEscape(page, dialogName, triggerLabel) {
   await page.keyboard.press("Escape");
   await page
@@ -347,6 +404,15 @@ async function runDesktop(browser) {
       });
       await dialog.waitFor();
       await waitForFocusLabel(page, "Close calendar filters");
+      const filterDescription = await assertDialogFocusContainment(
+        page,
+        dialog,
+        "Desktop filters",
+      );
+      assert(
+        filterDescription.includes("task name, coverage, or task type"),
+        "Desktop filters description lacks filter context",
+      );
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Filters should be the only active Calendar surface",
@@ -400,6 +466,21 @@ async function runDesktop(browser) {
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
       await waitForFocusLabel(page, "Close calendar item inspector");
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      const inspectorDescription = await assertDialogFocusContainment(
+        page,
+        inspector,
+        "Desktop inspector",
+      );
+      assert(
+        inspectorDescription.includes("Gate attendant") &&
+          inspectorDescription.includes("1 of 1 volunteers") &&
+          inspectorDescription.includes("Tue Jan 13"),
+        "Inspector description lacks task, coverage, or date context",
+      );
       await closeWithEscape(page, "Calendar item inspector", weekItemLabel);
     });
 
@@ -417,6 +498,15 @@ async function runDesktop(browser) {
       });
       await planner.waitFor();
       await waitForFocusLabel(page, "Close project work planner");
+      const creationDescription = await assertDialogFocusContainment(
+        page,
+        planner,
+        "Desktop creation",
+      );
+      assert(
+        creationDescription.includes("Saving, scheduling, and helper assignment"),
+        "Creation description lacks preview availability context",
+      );
       await planner
         .getByText("Suggested Tuesday, Jan 13, 1 PM to 2 PM. Adjust below.", {
           exact: true,
@@ -459,6 +549,18 @@ async function runDesktop(browser) {
       assert(errorDescriptionId, "Invalid End should reference an error description");
       await planner.locator(`[id="${errorDescriptionId}"]`).waitFor();
       await endInput.fill("14:00");
+
+      for (const action of ["Schedule", "Save draft", "Assign helpers"]) {
+        const actionButton = await assertUnique(
+          planner.getByRole("button", { name: action, exact: true }),
+          `${action} preview action`,
+        );
+        assert(!(await actionButton.isEnabled()), `${action} should remain disabled`);
+        assert(
+          Boolean(await actionButton.getAttribute("aria-describedby")),
+          `${action} should describe why it is unavailable`,
+        );
+      }
       await closeWithEscape(page, "Plan project work", triggerLabel);
     });
 
@@ -635,6 +737,15 @@ async function runMobile(browser) {
       });
       await more.waitFor();
       await waitForFocusLabel(page, "Close more admin navigation");
+      const moreDescription = await assertDialogFocusContainment(
+        page,
+        more,
+        "Mobile More",
+      );
+      assert(
+        moreDescription.includes("Additional admin destinations"),
+        "Mobile More description lacks destination context",
+      );
       assert(
         (await trigger.getAttribute("aria-expanded")) === "true",
         "Mobile More should expose aria-expanded=true while open",
@@ -668,6 +779,7 @@ async function runMobile(browser) {
       });
       await dialog.waitFor();
       await waitForFocusLabel(page, "Close calendar filters");
+      await assertDialogFocusContainment(page, dialog, "Mobile filters");
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile filters should not stack with More or another dialog",

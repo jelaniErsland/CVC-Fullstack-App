@@ -24,6 +24,7 @@ import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
+import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { demoProjectId, getProjectById } from "@/lib/mockData";
 
 type AdminShellProps = {
@@ -202,11 +203,13 @@ function MobileTabLink({
 function MobileMoreSheet({
   active,
   closeButtonRef,
+  dialogRef,
   isOpen,
   onClose,
 }: {
   active: AdminNavActive;
   closeButtonRef: Ref<HTMLButtonElement>;
+  dialogRef: Ref<HTMLElement>;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -226,13 +229,20 @@ function MobileMoreSheet({
         type="button"
       />
       <section
+        aria-describedby="mobile-more-navigation-description"
         aria-label="More admin navigation"
         aria-modal="true"
         className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+96px)]"
         id="mobile-more-navigation"
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
       >
         <GlassCard className="mx-auto max-h-[calc(100vh-126px)] max-w-md overflow-y-auto rounded-2xl p-4 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
+          <p className="sr-only" id="mobile-more-navigation-description">
+            Additional admin destinations for communications, follow-up, workspace,
+            and prototype tools.
+          </p>
           <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -330,7 +340,10 @@ export function AdminShell({
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMoreDialogRef = useRef<HTMLElement>(null);
   const project = getProjectById(projectId);
+
+  useFocusContainment(isMoreOpen, mobileMoreDialogRef);
 
   useEffect(() => {
     const closeMobileNavigation = () => {
@@ -469,6 +482,7 @@ export function AdminShell({
       <MobileMoreSheet
         active={active}
         closeButtonRef={mobileMoreCloseButtonRef}
+        dialogRef={mobileMoreDialogRef}
         isOpen={isMoreOpen}
         onClose={closeMobileMore}
       />

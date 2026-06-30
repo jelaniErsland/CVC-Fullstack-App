@@ -30,6 +30,7 @@ import {
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
+import { useFocusContainment } from "@/hooks/useFocusContainment";
 import {
   demoProjectId,
   deriveCalendarWeekRange,
@@ -687,7 +688,12 @@ function CalendarFilterPanel({
 }) {
   const activeFilterCount = getCalendarActiveFilterCount(filters);
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopDialogRef = useRef<HTMLElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDialogRef = useRef<HTMLElement>(null);
+  const descriptionId = useId();
+
+  useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -744,6 +750,7 @@ function CalendarFilterPanel({
       />
 
       <aside
+        aria-describedby={`${descriptionId}-desktop`}
         aria-label="Calendar filters"
         aria-modal="true"
         className={[
@@ -751,11 +758,14 @@ function CalendarFilterPanel({
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         role="dialog"
+        ref={desktopDialogRef}
+        tabIndex={-1}
       >
         <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_24px_90px_rgba(15,23,42,0.22)]">
           <FilterPanelContent
             activeFilterCount={activeFilterCount}
             closeButtonRef={desktopCloseButtonRef}
+            descriptionId={`${descriptionId}-desktop`}
             filters={filters}
             onChange={onChange}
             onClear={onClear}
@@ -768,6 +778,7 @@ function CalendarFilterPanel({
 
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
         <section
+          aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar filters"
           aria-modal="true"
           className={[
@@ -775,10 +786,13 @@ function CalendarFilterPanel({
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
           role="dialog"
+          ref={mobileDialogRef}
+          tabIndex={-1}
         >
           <FilterPanelContent
             activeFilterCount={activeFilterCount}
             closeButtonRef={mobileCloseButtonRef}
+            descriptionId={`${descriptionId}-mobile`}
             filters={filters}
             onChange={onChange}
             onClear={onClear}
@@ -795,6 +809,7 @@ function CalendarFilterPanel({
 function FilterPanelContent({
   activeFilterCount,
   closeButtonRef,
+  descriptionId,
   filters,
   onChange,
   onClear,
@@ -804,6 +819,7 @@ function FilterPanelContent({
 }: {
   activeFilterCount: number;
   closeButtonRef?: Ref<HTMLButtonElement>;
+  descriptionId: string;
   filters: CalendarFilterOptions;
   onChange: (filters: CalendarFilterOptions) => void;
   onClear: () => void;
@@ -813,6 +829,10 @@ function FilterPanelContent({
 }) {
   return (
     <>
+      <p className="sr-only" id={descriptionId}>
+        Filter visible Calendar items by task name, coverage, or task type. Changes
+        remain local to this preview.
+      </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
         <div className="flex items-start justify-between gap-3">
@@ -1723,7 +1743,12 @@ function CalendarCreatePanel({
   presets: TaskPreset[];
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopDialogRef = useRef<HTMLElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDialogRef = useRef<HTMLElement>(null);
+  const descriptionId = useId();
+
+  useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1797,6 +1822,7 @@ function CalendarCreatePanel({
       />
 
       <aside
+        aria-describedby={`${descriptionId}-desktop`}
         aria-label="Plan project work"
         aria-modal="true"
         className={[
@@ -1804,11 +1830,14 @@ function CalendarCreatePanel({
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         role="dialog"
+        ref={desktopDialogRef}
+        tabIndex={-1}
       >
         <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_20px_72px_rgba(15,23,42,0.18)]">
           <CreatePanelContent
             closeButtonRef={desktopCloseButtonRef}
             creationDraft={creationDraft}
+            descriptionId={`${descriptionId}-desktop`}
             onClose={onClose}
             onPresetChange={handlePresetChange}
             onUpdate={updateDraft}
@@ -1821,6 +1850,7 @@ function CalendarCreatePanel({
 
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
         <section
+          aria-describedby={`${descriptionId}-mobile`}
           aria-label="Plan project work"
           aria-modal="true"
           className={[
@@ -1828,10 +1858,13 @@ function CalendarCreatePanel({
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
           role="dialog"
+          ref={mobileDialogRef}
+          tabIndex={-1}
         >
           <CreatePanelContent
             closeButtonRef={mobileCloseButtonRef}
             creationDraft={creationDraft}
+            descriptionId={`${descriptionId}-mobile`}
             onClose={onClose}
             onPresetChange={handlePresetChange}
             onUpdate={updateDraft}
@@ -1848,6 +1881,7 @@ function CalendarCreatePanel({
 function CreatePanelContent({
   closeButtonRef,
   creationDraft,
+  descriptionId,
   onClose,
   onPresetChange,
   onUpdate,
@@ -1857,6 +1891,7 @@ function CreatePanelContent({
 }: {
   closeButtonRef?: Ref<HTMLButtonElement>;
   creationDraft: CalendarCreationDraft;
+  descriptionId: string;
   onClose: () => void;
   onPresetChange: (presetId: string) => void;
   onUpdate: (changes: Partial<CalendarCreationDraft>) => void;
@@ -1917,6 +1952,10 @@ function CreatePanelContent({
 
   return (
     <>
+      <p className="sr-only" id={descriptionId}>
+        Create a local Calendar draft from the selected date and time. Saving,
+        scheduling, and helper assignment remain unavailable in this preview.
+      </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
         <div className="flex items-start justify-between gap-3">
@@ -2337,7 +2376,12 @@ function CalendarInspector({
   onClose: () => void;
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopDialogRef = useRef<HTMLElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDialogRef = useRef<HTMLElement>(null);
+  const descriptionId = useId();
+
+  useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -2381,6 +2425,7 @@ function CalendarInspector({
         type="button"
       />
       <aside
+        aria-describedby={`${descriptionId}-desktop`}
         aria-label="Calendar item inspector"
         aria-modal="true"
         className={[
@@ -2388,12 +2433,15 @@ function CalendarInspector({
           isOpen ? "translate-x-0" : "translate-x-full",
         ].join(" ")}
         role="dialog"
+        ref={desktopDialogRef}
+        tabIndex={-1}
       >
         <div
           className={`flex h-full flex-col overflow-hidden rounded-2xl border border-white/72 border-l-4 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.22)] backdrop-blur-2xl ${detailAccentStyles[item.category]}`}
         >
           <InspectorContent
             closeButtonRef={desktopCloseButtonRef}
+            descriptionId={`${descriptionId}-desktop`}
             item={item}
             onClose={onClose}
             tone={tone}
@@ -2413,6 +2461,7 @@ function CalendarInspector({
           type="button"
         />
         <section
+          aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar item inspector"
           aria-modal="true"
           className={[
@@ -2420,9 +2469,12 @@ function CalendarInspector({
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
           role="dialog"
+          ref={mobileDialogRef}
+          tabIndex={-1}
         >
           <InspectorContent
             closeButtonRef={mobileCloseButtonRef}
+            descriptionId={`${descriptionId}-mobile`}
             item={item}
             onClose={onClose}
             tone={tone}
@@ -2435,11 +2487,13 @@ function CalendarInspector({
 
 function InspectorContent({
   closeButtonRef,
+  descriptionId,
   item,
   tone,
   onClose,
 }: {
   closeButtonRef?: Ref<HTMLButtonElement>;
+  descriptionId: string;
   item: CalendarItemWithPreset;
   tone: CalendarStatusTone;
   onClose: () => void;
@@ -2455,6 +2509,10 @@ function InspectorContent({
 
   return (
     <>
+      <p className="sr-only" id={descriptionId}>
+        {getCalendarItemAccessibleLabel(item)}. Review schedule, helper, status, and
+        source details for this Calendar item.
+      </p>
       <div className="shrink-0 border-b border-slate-200/60 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
         <div className="flex items-start justify-between gap-3">
