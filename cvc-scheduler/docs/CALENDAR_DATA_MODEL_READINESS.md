@@ -125,6 +125,8 @@ Iteration 09.40 applies that presentation guidance in a mock-only List view:
 
 Iteration 09.41 keeps the same data presentation while reducing visual weight: date headers are 36px, desktop rows are 48px, mobile rows are 68px, desktop type labels are plain text, and the List uses top/bottom framing instead of a rounded container. These density choices are presentation rules only and must not become schedule-kind or coverage semantics.
 
+Iteration 09.42 adds automated interaction protection for the current mock Calendar contract, including date/range wording, one-row List project windows, creation defaults, and filter/overlay behavior. Passing this UI regression does not validate the future persistence contract, timezone conversion, assignment-derived coverage, recurrence, authorization, concurrency, or migration rules below; those will require separate data and integration tests when implemented.
+
 ## Recommended schedule rules
 
 - A scheduled item should reference exactly one reusable preset or carry one one-off task snapshot. The create boundary should reject ambiguous records containing both or neither.

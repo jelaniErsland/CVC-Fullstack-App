@@ -290,6 +290,8 @@ The mobile admin screenshots use viewport-sized captures so closed off-canvas sh
 
 Calendar view captures wait for the client interaction to be ready, verify that the requested Day/Week/Month/List control is pressed, and allow the shared control transition to settle before capturing.
 
+Calendar interaction regression coverage is available through `npm run test:calendar` while an app preview is already running. The focused Playwright script checks desktop and 390px mobile view switching, Week/List navigation reset, Food filtering, inspector and creation focus/Escape restoration, populated Month-cell creation, List row semantics, mobile bottom navigation and More exclusivity, nested controls, browser errors, hydration warnings, and horizontal overflow. Set `PREVIEW_BASE_URL` to target a non-default preview host.
+
 Latest generated screenshots are written to `docs/previews/latest/`. A normal run clears and recreates the folder. Set `PREVIEW_CAPTURE_FILES` to a comma-separated filename list to refresh only intentional previews without removing the rest.
 
 ## 7. Current Mock Workspaces
@@ -321,6 +323,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - The five date-based/project-window examples are explicitly mock validation data, not production project truth. No-specific-time creation is preview-only and does not add or mutate Calendar items. Mobile exposes the `No specific time` toggle in its creation sheet but intentionally has no project-context-band launcher.
 - Calendar keyboard behavior currently follows normal document tab order. It does not yet implement specialized arrow-key grid traversal or a full modal focus trap; the current dialogs provide initial focus, Escape dismissal, and trigger-focus restoration.
 - Month intentionally caps visible density at six skinny rows on screens 640px and wider and three below 640px. Additional items use a keyboard-accessible `+N` that focuses Day view; complex cross-week range spanning remains future work.
+- The Calendar regression script assumes the app is already running and exercises the deterministic Belgrade mock data/accessibility labels. It is not a cross-browser matrix, visual-diff suite, persistence test, or substitute for production scheduling tests.
 - `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
@@ -348,4 +351,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-09.42 Calendar Interaction Regression Test Foundation.
+09.43 Calendar Regression Harness Stabilization + CI Readiness.

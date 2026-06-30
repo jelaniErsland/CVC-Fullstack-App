@@ -2235,6 +2235,41 @@ Limitations:
 Next recommended step:
 - 09.42 Calendar Interaction Regression Test Foundation.
 
+## Iteration 09.42 — Calendar Interaction Regression Test Foundation
+
+Summary:
+- Added a focused Playwright Calendar regression script without introducing a new test runner or framework migration.
+- Added desktop coverage for clean loading, Day/Week/Month/List pressed states, List week navigation/reset, Food filtering, inspector focus/Escape restoration, Day creation defaults, populated Month-cell creation plus event inspection, List inspector reuse, nested controls, overflow, and browser errors.
+- Added 390px mobile coverage for the emphasized bottom Calendar tab, four fitting view controls, Mobile More and filter exclusivity, inspector and creation sheets, focus/Escape restoration, overflow, nested surfaces, and browser errors.
+- Reused the screenshot workflow's browser executable and `PREVIEW_BASE_URL` conventions; the script assumes the app is already running.
+- Added named step output and scoped failure messages so broken Calendar behavior is identifiable without a large test framework.
+- Made no Calendar product or selector changes, so screenshot previews were not refreshed.
+
+Changed files:
+- `package.json`
+- `scripts/calendar-regression.mjs`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed.
+- `npm run test:calendar` passed against the production preview at `http://localhost:3002`.
+- All 16 named desktop/mobile regression steps passed, including exact 13:00-14:00 Day and 09:00-10:00 Month creation defaults.
+- The harness reported no console errors, page errors, hydration warnings, nested List controls, stacked mobile surfaces, or desktop/390px horizontal overflow.
+- The screenshot workflow was not run because no visible Calendar state or selector changed.
+
+Limitations:
+- The script uses one Chromium-family browser and deterministic Belgrade mock data; it is not a cross-browser, visual-diff, load, or accessibility-audit suite.
+- The app/production preview must already be running. Server lifecycle and CI orchestration are intentionally not part of this foundation.
+- Accessible names are deliberately part of the regression contract; intentional product-language changes must update the assertions.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, or production scheduling logic was added or tested.
+
+Next recommended step:
+- 09.43 Calendar Regression Harness Stabilization + CI Readiness.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -8,7 +8,8 @@
     "preview": "next start",
     "start": "next start",
     "lint": "eslint",
-    "preview:screenshots": "node scripts/capture-previews.mjs"
+    "preview:screenshots": "node scripts/capture-previews.mjs",
+    "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",
