@@ -186,6 +186,8 @@ Upcoming UI direction:
 
 ## 4. Current Implemented Areas
 
+- Public Project Local entry at `/` now leads with account-free volunteer access instead of an admin dashboard. It frames the product as one place for volunteers, tasks, schedules, and updates; highlights the active Belgrade example; links the live mock questionnaire and sample schedule; and keeps real name/email lookup visibly disabled and preview-only.
+- Mock remembered-volunteer home direction at `/v/demo` gives Alex a plain next-assignment view, later schedule statuses, lunch details, a project update, and questionnaire access without admin language or navigation. A compact, accessibly named `Special access` control remains separate for project contacts and points to the existing admin login.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -286,7 +288,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures key admin routes, Overview, Calendar Week/Day/Month/List, Calendar filters open, Calendar create open, Tasks, Communications overview/template/detail pages, Food overview/detail pages, Security overview/detail pages, Needs Attention, Schedule, Settings, the admin questionnaire queue, a questionnaire detail page, the Belgrade public questionnaire, and mobile checks for Overview, Calendar Week/Day/Month/List, Calendar filters open, Calendar create open, Tasks, Volunteers, Communications, Communications templates, Food overview/detail, Security overview/detail, and open admin drawer/menu from `http://127.0.0.1:3000` by default. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures the public Project Local landing and volunteer home on desktop/mobile, plus key admin routes, Calendar views/states, Tasks, Communications, Food, Security, Needs Attention, Schedule, Settings, questionnaire review, the Belgrade public questionnaire, and mobile admin navigation states from `http://127.0.0.1:3000` by default. Public captures also fail on console/page errors or horizontal overflow. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
@@ -353,7 +355,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- No public volunteer portal yet.
+- The public volunteer portal is a mock foundation only. Project lookup, remembered-device access, schedule confirmation, secure email links, and real volunteer identity resolution are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -361,4 +363,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
+10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.

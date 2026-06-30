@@ -2523,6 +2523,49 @@ Limitations:
 Next recommended step:
 - 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
 
+## Iteration 10.1 — Public Volunteer Portal Foundation / Project Local Volunteer Home Direction
+
+Summary:
+- Reframed `/` as the Project Local volunteer entry with the product line “Coordinate volunteers, tasks, schedules, and updates in one place.”
+- Made account-free volunteer access the obvious default through an active Belgrade project example, clearly labeled preview lookup, sample schedule, and direct questionnaire link.
+- Reworked the existing `/v/demo` route into a simple remembered-volunteer home with Alex’s next assignment, later status previews, lunch, project update, and questionnaire access.
+- Kept special-access roles separate through a compact, accessibly named control linked to the existing admin login; admin and Calendar behavior were not changed.
+- Added targeted desktop/mobile public previews and public-capture checks for console/page errors and horizontal overflow.
+
+Changed files:
+- `app/page.tsx`
+- `app/v/demo/page.tsx`
+- `app/questionnaire/[projectId]/page.tsx`
+- `app/q/demo/page.tsx`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/public-home.jpg`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-public-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, `/questionnaire/belgrade-remodel-2026`, `/admin/dashboard`, and `/admin/calendar`.
+- Targeted Playwright capture passed for desktop and 390px public/volunteer home previews with no console errors, page errors, hydration warnings, or horizontal overflow.
+- `npm run test:calendar` passed all 17 desktop/mobile steps against the same production preview, confirming the public work did not regress Calendar behavior.
+- Rendered previews confirmed clear hierarchy, readable form labels, a distinct Special access control, comfortable mobile targets, and no card-wall treatment.
+- Existing Calendar previews were not refreshed.
+
+Limitations:
+- Name/email lookup, remembered-device identity, schedule confirmation, secure email links, auth, and persistence are not implemented.
+- The Belgrade entry and Alex volunteer home use existing deterministic mock data; no real volunteer information is resolved.
+- Special access uses the existing placeholder admin login and does not implement role-aware authentication.
+- The independent in-app browser backend was unavailable during QA; the production screenshot workflow and rendered preview inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed because Calendar behavior and scheduling readiness did not change.
+
+Next recommended step:
+- 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

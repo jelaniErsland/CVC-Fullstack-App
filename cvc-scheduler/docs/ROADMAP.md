@@ -87,7 +87,8 @@ Rough phases:
 - 09.47 Calendar Week Keyboard Navigation Evaluation. Completed.
 - 09.48 Calendar List Information Hierarchy Cleanup. Completed.
 - 09.49 Calendar Stabilization + Handoff Review. Completed.
-- 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction. Next recommended step.
+- 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction. Completed.
+- 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -156,6 +157,7 @@ Rough phases:
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 - 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
+- 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock.
 
 ## 5. Later Roadmap
 

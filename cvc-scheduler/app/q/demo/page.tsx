@@ -8,7 +8,7 @@ export default function VolunteerQuestionnaireDemoPage() {
       <div className="mx-auto w-full max-w-5xl py-4">
         <header className="mb-5 flex items-center justify-between gap-4">
           <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-950">
-            CVC Scheduler
+            Project Local
           </Link>
           <Link
             href="/v/demo"

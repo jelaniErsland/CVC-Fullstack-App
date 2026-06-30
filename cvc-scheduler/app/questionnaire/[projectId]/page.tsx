@@ -40,7 +40,7 @@ function UnavailableQuestionnaireMessage({ projectName }: { projectName?: string
             href="/"
             className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full border border-white/80 bg-white/64 px-5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-white/86 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
           >
-            Back to CVC Scheduler
+            Back to Project Local
           </Link>
         </GlassCard>
       </div>

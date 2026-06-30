@@ -25,6 +25,8 @@ const requestedCaptureFiles = new Set(
 );
 
 const captures = [
+  { route: "/", fileName: "public-home.jpg", viewport: desktopViewport, auditPage: true },
+  { route: "/v/demo", fileName: "volunteer-home.jpg", viewport: desktopViewport, auditPage: true },
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
   { route: "/admin/dashboard", fileName: "dashboard.jpg", viewport: desktopViewport },
   {
@@ -204,6 +206,8 @@ const captures = [
     fileName: "mobile-questionnaire-belgrade.jpg",
     viewport: mobileViewport,
   },
+  { route: "/", fileName: "mobile-public-home.jpg", viewport: mobileViewport, auditPage: true },
+  { route: "/v/demo", fileName: "mobile-volunteer-home.jpg", viewport: mobileViewport, auditPage: true },
 ];
 
 function previewUrl(route) {
@@ -250,7 +254,23 @@ async function main() {
       openCalendarFilters,
       openMobileDrawer,
       openMobileMore,
+      auditPage,
     } of selectedCaptures) {
+      const browserErrors = [];
+      const handleConsole = (message) => {
+        if (message.type() === "error") {
+          browserErrors.push(`console: ${message.text()}`);
+        }
+      };
+      const handlePageError = (error) => {
+        browserErrors.push(`page: ${error.message}`);
+      };
+
+      if (auditPage) {
+        page.on("console", handleConsole);
+        page.on("pageerror", handlePageError);
+      }
+
       await page.setViewportSize(viewport);
 
       const response = await page.goto(previewUrl(route), {
@@ -318,6 +338,21 @@ async function main() {
         }
       }
 
+      if (auditPage) {
+        await page.waitForTimeout(150);
+        const hasHorizontalOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        );
+
+        if (hasHorizontalOverflow) {
+          throw new Error(`${fileName} has horizontal overflow at ${viewport.width}px`);
+        }
+
+        if (browserErrors.length > 0) {
+          throw new Error(`${fileName} reported browser errors:\n${browserErrors.join("\n")}`);
+        }
+      }
+
       await page.screenshot({
         ...jpegOptions,
         fullPage: viewport.width >= 1024,
@@ -325,6 +360,11 @@ async function main() {
       });
 
       console.log(`Saved ${fileName}`);
+
+      if (auditPage) {
+        page.off("console", handleConsole);
+        page.off("pageerror", handlePageError);
+      }
     }
   } finally {
     await browser.close();
