@@ -86,7 +86,8 @@ Rough phases:
 - 09.46 Calendar Grid Arrow-Key Navigation Foundation. Completed.
 - 09.47 Calendar Week Keyboard Navigation Evaluation. Completed.
 - 09.48 Calendar List Information Hierarchy Cleanup. Completed.
-- 09.49 Calendar Stabilization + Handoff Review. Next recommended step.
+- 09.49 Calendar Stabilization + Handoff Review. Completed.
+- 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -154,6 +155,7 @@ Rough phases:
 - 09.49 Calendar Stabilization + Handoff Review.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
+- 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
 
 ## 5. Later Roadmap
 
@@ -462,6 +464,13 @@ name/schedule/type hierarchy with helper coverage anchored in a trailing chip.
 Desktop uses three column-like zones and 56px minimum rows; mobile uses a
 name/helper line plus full-width schedule and quiet type lines with a 72px
 minimum, retaining full project-window wording and 390px overflow safety.
+
+Calendar is stabilized for mock-prototype handoff after the interaction,
+keyboard, focus-containment, and List hierarchy passes. Future List styling may
+strengthen day separation with subtly tinted headers, more inter-group space, an
+optional quiet left rail, or a stronger divider. Keep emphasis at the day-group
+level so individual rows remain flat, calm, and subordinate to the existing
+task/schedule/helper hierarchy.
 
 Calendar now has a focused Playwright regression script that assumes a running
 preview and checks the core desktop/mobile view, navigation, filter, inspector,

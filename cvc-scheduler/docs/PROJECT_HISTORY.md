@@ -2491,6 +2491,38 @@ Limitations:
 Next recommended step:
 - 09.49 Calendar Stabilization + Handoff Review.
 
+## Iteration 09.49 — Calendar Stabilization + Handoff Review
+
+Summary:
+- Audited the Calendar implementation and its 17-step regression harness across Day, Week, Month, List, navigation, filtering, inspection, creation, mobile overlays, focus containment/restoration, arrow navigation, sibling semantics, and responsive overflow.
+- Found no Calendar product bug or meaningful automation gap, so no UI, behavior, selector, or regression-script changes were made.
+- Documented the Calendar as a mature mock-prototype handoff and recorded a future List direction that strengthens day-group separation without turning rows into a card wall.
+- Moved the roadmap out of Calendar work and into the public volunteer experience.
+
+Changed files:
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 17 desktop/mobile steps against the production preview at `http://127.0.0.1:3017`.
+- Production Playwright QA covered desktop and 390px mobile view switching, navigation/reset, Food filtering, inspector and creation flows, More/sheet exclusivity, modal containment, trigger restoration, Day/Month/Week arrows, List row semantics, error capture, and horizontal overflow.
+- No console errors, page errors, hydration warnings, nested interactive controls, broken focus containment, stacked mobile surfaces, or horizontal overflow were found.
+- Screenshot capture was intentionally skipped because no visible UI or screenshot-relevant behavior changed.
+
+Limitations:
+- Calendar remains mock-only: no persistence, Supabase, mutations, URL date state, drag/drop, resizing, Timeline view, or production scheduling logic was added.
+- Week intentionally has no hour-level Up/Down traversal, and the native-control arrow helpers are not a full ARIA-grid or roving-focus model.
+- The regression harness assumes a separately running preview and is not a cross-browser, visual-diff, or multi-screen-reader/device matrix.
+- The independent in-app browser backend was unavailable during final QA; the production Playwright desktop/mobile run completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed because this review did not alter scheduling or persistence readiness.
+
+Next recommended step:
+- 10.1 Public Volunteer Portal Foundation / Project Local Volunteer Home Direction.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
