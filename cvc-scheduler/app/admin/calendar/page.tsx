@@ -656,6 +656,7 @@ function FilterToggleButton({
 }) {
   return (
     <button
+      aria-pressed={active}
       className={[
         `inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
         active
@@ -1957,8 +1958,13 @@ function CreatePanelContent({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Task
           </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div
+            aria-label="Task source"
+            className="mt-2 grid grid-cols-2 gap-2"
+            role="group"
+          >
             <button
+              aria-pressed={!isOneOff}
               className={[
                 `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 !isOneOff
@@ -1976,6 +1982,7 @@ function CreatePanelContent({
               Task preset
             </button>
             <button
+              aria-pressed={isOneOff}
               className={[
                 `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 isOneOff
@@ -2657,7 +2664,11 @@ export default function AdminCalendarPage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && activeSurface !== "none") {
+      if (
+        event.key === "Escape" &&
+        activeSurface !== "none" &&
+        activeSurface !== "more"
+      ) {
         const trigger = surfaceTriggerRef.current;
 
         setActiveSurface("none");

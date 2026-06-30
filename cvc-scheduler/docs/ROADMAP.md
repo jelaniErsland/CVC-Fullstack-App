@@ -81,7 +81,8 @@ Rough phases:
 - 09.41 Calendar List View Visual QA + Density Polish. Completed.
 - 09.42 Calendar Interaction Regression Test Foundation. Completed.
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness. Completed.
-- 09.44 Calendar Keyboard Navigation + Accessibility QA. Next recommended step.
+- 09.44 Calendar Keyboard Navigation + Accessibility QA. Completed.
+- 09.45 Calendar Dialog Focus Containment + Screen Reader QA. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -142,6 +143,7 @@ Rough phases:
 - 09.42 Calendar Interaction Regression Test Foundation.
 - 09.43 Calendar Regression Harness Stabilization + CI Readiness.
 - 09.44 Calendar Keyboard Navigation + Accessibility QA.
+- 09.45 Calendar Dialog Focus Containment + Screen Reader QA.
 - 09 Tasks + Calendar model.
 - 10 Public volunteer portal.
 
@@ -463,6 +465,14 @@ scoped interaction diagnostics, checks Week and List navigation explicitly, and
 uses semantic mobile current-page state instead of styling classes. A future CI
 job can manage the production preview lifecycle and invoke the existing command;
 no CI provider or orchestration is coupled to the repository yet.
+
+The keyboard/accessibility QA pass keeps normal document tab order while making
+the current contracts explicit: Calendar controls and rows use native keyboard
+activation and focus-visible treatment, toggle buttons announce pressed state,
+closed filters are inert, Month background/event/overflow controls remain
+siblings, and Mobile More now behaves as an expanded modal dialog with initial
+focus, Escape dismissal, and trigger-focus restoration. Specialized grid arrow
+keys and full modal focus containment remain future accessibility work.
 
 The Calendar Week view has started moving toward the minimal time-grid
 direction: subtler horizontal separators, quieter empty-space affordances, and

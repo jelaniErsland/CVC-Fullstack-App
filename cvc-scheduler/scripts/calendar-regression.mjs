@@ -11,6 +11,7 @@ const browserExecutable = resolvePreviewBrowserExecutable();
 const desktopViewport = { width: 1440, height: 1000 };
 const mobileViewport = { width: 390, height: 844 };
 const projectWeekLabel = "Jan 12 to Jan 18, 2026";
+const previousWeekLabel = "Jan 5 to Jan 11, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
 // Accessible names are the deliberate interaction contract for the fixed Belgrade mock.
 const weekItemLabel =
@@ -141,13 +142,22 @@ async function assertUnique(locator, label) {
   return locator;
 }
 
+async function activateWithKeyboard(locator, label, key = "Enter") {
+  await locator.focus();
+  assert(
+    await locator.evaluate((element) => element === document.activeElement),
+    `${label} did not receive keyboard focus`,
+  );
+  await locator.press(key);
+}
+
 async function selectView(page, view) {
   const button = await assertUnique(
     page.getByRole("button", { name: view, exact: true }),
     `${view} view button`,
   );
 
-  await button.click();
+  await activateWithKeyboard(button, `${view} view button`);
   await page.waitForFunction(
     (viewLabel) =>
       Array.from(
@@ -222,37 +232,21 @@ async function assertNoHorizontalOverflow(page, label) {
   assert(!hasOverflow, `${label} has document horizontal overflow`);
 }
 
-async function clickExposedBackground(locator, label) {
-  const position = await locator.evaluate((background) => {
-    const bounds = background.getBoundingClientRect();
-    const siblingControls = Array.from(
-      background.parentElement?.querySelectorAll("button, a") ?? [],
-    )
-      .filter((control) => control !== background)
-      .map((control) => control.getBoundingClientRect());
-    const inset = 8;
+async function assertClosedSurfaceInert(page, closeLabel) {
+  const state = await page.evaluate((label) => {
+    const closeControl = Array.from(
+      document.querySelectorAll(`[aria-label="${label}"]`),
+    ).find((control) => control.closest('[aria-hidden="true"]'));
+    const root = closeControl?.closest('[aria-hidden="true"]');
 
-    for (let y = bounds.bottom - inset; y >= bounds.top + inset; y -= inset) {
-      for (let x = bounds.left + inset; x <= bounds.right - inset; x += inset) {
-        const isCovered = siblingControls.some(
-          (control) =>
-            x >= control.left &&
-            x <= control.right &&
-            y >= control.top &&
-            y <= control.bottom,
-        );
+    return {
+      activeInside: Boolean(root?.contains(document.activeElement)),
+      inert: Boolean(root?.hasAttribute("inert")),
+    };
+  }, closeLabel);
 
-        if (!isCovered) {
-          return { x: x - bounds.left, y: y - bounds.top };
-        }
-      }
-    }
-
-    return null;
-  });
-
-  assert(position, `${label} has no exposed click point outside its event controls`);
-  await locator.click({ position });
+  assert(state.inert, `${closeLabel} closed surface is not inert`);
+  assert(!state.activeInside, `${closeLabel} retained focus while closed`);
 }
 
 async function closeWithEscape(page, dialogName, triggerLabel) {
@@ -310,11 +304,20 @@ async function runDesktop(browser) {
     await step("Week/List navigation and Project week reset", async () => {
       for (const view of ["List", "Week"]) {
         await selectView(page, view);
+        const previous = await assertUnique(
+          page.getByRole("button", { name: "Previous week", exact: true }),
+          `${view} Previous week button`,
+        );
         const next = await assertUnique(
           page.getByRole("button", { name: "Next week", exact: true }),
           `${view} Next week button`,
         );
-        await next.click();
+
+        await activateWithKeyboard(previous, `${view} Previous week button`);
+        await assertPeriod(page, previousWeekLabel);
+        await activateWithKeyboard(next, `${view} Next week button`);
+        await assertPeriod(page, projectWeekLabel);
+        await activateWithKeyboard(next, `${view} Next week button`);
         await assertPeriod(page, nextWeekLabel);
 
         const reset = await assertUnique(
@@ -325,7 +328,7 @@ async function runDesktop(browser) {
           await reset.isEnabled(),
           `${view} Project week should be enabled after navigation`,
         );
-        await reset.click();
+        await activateWithKeyboard(reset, `${view} Project week button`);
         await assertPeriod(page, projectWeekLabel);
       }
 
@@ -337,7 +340,7 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: "Open calendar filters", exact: true }),
         "Calendar filters trigger",
       );
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Calendar filters trigger");
       const dialog = page.getByRole("dialog", {
         name: "Calendar filters",
         exact: true,
@@ -349,12 +352,27 @@ async function runDesktop(browser) {
         "Filters should be the only active Calendar surface",
       );
 
-      await dialog.getByRole("button", { name: "Food", exact: true }).click();
-      await dialog
-        .getByRole("button", { name: "Show results (1)", exact: true })
-        .click();
+      const foodFilter = await assertUnique(
+        dialog.getByRole("button", { name: "Food", exact: true }),
+        "Food filter toggle",
+      );
+      assert(
+        (await foodFilter.getAttribute("aria-pressed")) === "false",
+        "Food filter should initially expose aria-pressed=false",
+      );
+      await activateWithKeyboard(foodFilter, "Food filter toggle");
+      assert(
+        (await foodFilter.getAttribute("aria-pressed")) === "true",
+        "Food filter should expose aria-pressed=true after activation",
+      );
+      const showResults = await assertUnique(
+        dialog.getByRole("button", { name: "Show results (1)", exact: true }),
+        "Show filtered results button",
+      );
+      await activateWithKeyboard(showResults, "Show filtered results button");
       await dialog.waitFor({ state: "hidden" });
       await waitForFocusLabel(page, "Open calendar filters");
+      await assertClosedSurfaceInert(page, "Close calendar filters");
       await page.getByText("4 visible items - Food", { exact: true }).waitFor();
       assert(
         (await page
@@ -362,7 +380,13 @@ async function runDesktop(browser) {
           .count()) === 4,
         "Food filter should leave four List rows",
       );
-      await page.getByRole("button", { name: "Reset", exact: true }).click();
+      await activateWithKeyboard(
+        await assertUnique(
+          page.getByRole("button", { name: "Reset", exact: true }),
+          "Reset filters button",
+        ),
+        "Reset filters button",
+      );
     });
 
     await step("desktop item inspector focus and Escape restoration", async () => {
@@ -371,7 +395,7 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: weekItemLabel, exact: true }),
         "Week event button",
       );
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Week event button");
       await page
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
@@ -386,7 +410,7 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Day creation target",
       );
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Day creation target");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
         exact: true,
@@ -406,6 +430,35 @@ async function runDesktop(browser) {
         (await planner.getByLabel("End", { exact: true }).inputValue()) === "14:00",
         "Day creation should default End to 14:00",
       );
+
+      const taskPresetMode = await assertUnique(
+        planner.getByRole("button", { name: "Task preset", exact: true }),
+        "Task preset mode",
+      );
+      const customMode = await assertUnique(
+        planner.getByRole("button", { name: "Custom one-day", exact: true }),
+        "Custom one-day mode",
+      );
+      assert(
+        (await taskPresetMode.getAttribute("aria-pressed")) === "true" &&
+          (await customMode.getAttribute("aria-pressed")) === "false",
+        "Creation task-source buttons should expose their selected state",
+      );
+
+      const endInput = planner.getByLabel("End", { exact: true });
+      await endInput.fill("12:00");
+      await page.waitForFunction(
+        () =>
+          Array.from(document.querySelectorAll('input[type="time"]')).some(
+            (input) =>
+              input.value === "12:00" &&
+              input.getAttribute("aria-invalid") === "true",
+          ),
+      );
+      const errorDescriptionId = await endInput.getAttribute("aria-describedby");
+      assert(errorDescriptionId, "Invalid End should reference an error description");
+      await planner.locator(`[id="${errorDescriptionId}"]`).waitFor();
+      await endInput.fill("14:00");
       await closeWithEscape(page, "Plan project work", triggerLabel);
     });
 
@@ -415,7 +468,7 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: monthItemLabel, exact: true }),
         "Month event chip",
       );
-      await event.click();
+      await activateWithKeyboard(event, "Month event chip");
       await page
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
@@ -426,7 +479,23 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Populated Month background",
       );
-      await clickExposedBackground(background, "Populated Month background");
+      const siblingState = await background.evaluate((backgroundControl, eventLabel) => {
+        const cell = backgroundControl.parentElement;
+        const eventControl = Array.from(cell?.querySelectorAll("button") ?? []).find(
+          (control) => control.getAttribute("aria-label") === eventLabel,
+        );
+
+        return {
+          eventFound: Boolean(eventControl),
+          nested:
+            Boolean(eventControl) &&
+            (backgroundControl.contains(eventControl) ||
+              eventControl.contains(backgroundControl)),
+        };
+      }, monthItemLabel);
+      assert(siblingState.eventFound, "Month event chip was not found in its date cell");
+      assert(!siblingState.nested, "Month background and event chip must be sibling controls");
+      await activateWithKeyboard(background, "Populated Month background");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
         exact: true,
@@ -461,7 +530,7 @@ async function runDesktop(browser) {
         page.getByRole("button", { name: listItemLabel, exact: true }),
         "List row",
       );
-      await trigger.click();
+      await activateWithKeyboard(trigger, "List row", "Space");
       await page
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
@@ -500,6 +569,11 @@ async function runMobile(browser) {
         (await calendarTab.getAttribute("aria-current")) === "page",
         "Mobile Calendar tab does not expose aria-current=page",
       );
+      await calendarTab.focus();
+      assert(
+        await calendarTab.evaluate((element) => element === document.activeElement),
+        "Mobile Calendar tab is not keyboard reachable",
+      );
       await assertNoHorizontalOverflow(page, "Mobile Calendar");
     });
 
@@ -522,27 +596,64 @@ async function runMobile(browser) {
       for (const view of ["Day", "Week", "Month", "List"]) {
         await selectView(page, view);
       }
+
+      await selectView(page, "Month");
+      const overflow = await assertUnique(
+        page.getByRole("button", {
+          name: "Switch to Day view for Wed Jan 14 to show 3 more calendar items",
+          exact: true,
+        }),
+        "Mobile Month overflow button",
+      );
+      await activateWithKeyboard(overflow, "Mobile Month overflow button");
+      assert(
+        (await page
+          .getByRole("button", { name: "Day", exact: true })
+          .getAttribute("aria-pressed")) === "true",
+        "Mobile Month overflow should switch to Day view",
+      );
       await selectView(page, "Week");
       await assertNoHorizontalOverflow(page, "Mobile view controls");
     });
 
-    await step("mobile More opens alone and closes", async () => {
-      await page
-        .getByRole("button", { name: "Open more admin navigation", exact: true })
-        .click();
-      const more = page.getByRole("region", {
+    await step("mobile More keyboard focus, Escape, and exclusivity", async () => {
+      const trigger = await assertUnique(
+        page.getByRole("button", {
+          name: "Open more admin navigation",
+          exact: true,
+        }),
+        "Mobile More trigger",
+      );
+      assert(
+        (await trigger.getAttribute("aria-expanded")) === "false",
+        "Mobile More should initially expose aria-expanded=false",
+      );
+      await activateWithKeyboard(trigger, "Mobile More trigger");
+      const more = page.getByRole("dialog", {
         name: "More admin navigation",
         exact: true,
       });
       await more.waitFor();
+      await waitForFocusLabel(page, "Close more admin navigation");
+      assert(
+        (await trigger.getAttribute("aria-expanded")) === "true",
+        "Mobile More should expose aria-expanded=true while open",
+      );
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile More should be the only active surface",
       );
-      await more
-        .getByRole("button", { name: "Close more admin navigation", exact: true })
-        .click();
+      await page.keyboard.press("Escape");
       await more.waitFor({ state: "hidden" });
+      await waitForFocusLabel(page, "Open more admin navigation");
+      assert(
+        (await trigger.getAttribute("aria-expanded")) === "false",
+        "Mobile More should expose aria-expanded=false after Escape",
+      );
+      assert(
+        (await visibleCalendarSurfaceCount(page)) === 0,
+        "Mobile More Escape should leave a clean Calendar surface",
+      );
     });
 
     await step("mobile filters open as the only sheet", async () => {
@@ -550,7 +661,7 @@ async function runMobile(browser) {
         name: "Open calendar filters",
         exact: true,
       });
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Mobile filters trigger");
       const dialog = page.getByRole("dialog", {
         name: "Calendar filters",
         exact: true,
@@ -562,11 +673,12 @@ async function runMobile(browser) {
         "Mobile filters should not stack with More or another dialog",
       );
       await closeWithEscape(page, "Calendar filters", "Open calendar filters");
+      await assertClosedSurfaceInert(page, "Close calendar filters");
     });
 
     await step("mobile item opens the inspector sheet alone", async () => {
       const trigger = page.getByRole("button", { name: weekItemLabel, exact: true });
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Mobile Week event button");
       await page
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
@@ -584,7 +696,7 @@ async function runMobile(browser) {
         page.getByRole("button", { name: triggerLabel, exact: true }),
         "Mobile Week creation target",
       );
-      await trigger.click();
+      await activateWithKeyboard(trigger, "Mobile Week creation target");
       const planner = page.getByRole("dialog", {
         name: "Plan project work",
         exact: true,

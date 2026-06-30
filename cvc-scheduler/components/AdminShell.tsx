@@ -18,8 +18,8 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import type { ReactNode, Ref } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { GlassCard } from "@/components/GlassCard";
@@ -114,10 +114,12 @@ const primaryMobileTabIds = new Set<AdminNavActive>([
 function MobileBottomNav({
   active,
   isMoreOpen,
+  moreButtonRef,
   onMoreClick,
 }: {
   active: AdminNavActive;
   isMoreOpen: boolean;
+  moreButtonRef: Ref<HTMLButtonElement>;
   onMoreClick: () => void;
 }) {
   const isMoreActive = isMoreOpen || !primaryMobileTabIds.has(active);
@@ -141,14 +143,18 @@ function MobileBottomNav({
           tab={primaryMobileTabs[3]}
         />
         <button
+          aria-controls="mobile-more-navigation"
+          aria-expanded={isMoreOpen}
+          aria-haspopup="dialog"
           aria-label="Open more admin navigation"
           className={[
-            "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition",
+            "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2",
             isMoreActive
               ? "bg-slate-950 text-white shadow-sm"
               : "text-slate-500 hover:bg-white/80 hover:text-slate-950",
           ].join(" ")}
           onClick={onMoreClick}
+          ref={moreButtonRef}
           type="button"
         >
           <MoreHorizontal aria-hidden="true" className="h-5 w-5" />
@@ -175,7 +181,7 @@ function MobileTabLink({
       aria-label={`Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
-        "flex flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition",
+        "flex flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2",
         emphasized ? "min-h-[68px] -translate-y-2" : "min-h-[58px]",
         active
           ? emphasized
@@ -195,10 +201,12 @@ function MobileTabLink({
 
 function MobileMoreSheet({
   active,
+  closeButtonRef,
   isOpen,
   onClose,
 }: {
   active: AdminNavActive;
+  closeButtonRef: Ref<HTMLButtonElement>;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -214,11 +222,15 @@ function MobileMoreSheet({
         aria-label="Close more navigation backdrop"
         className="absolute inset-0 h-full w-full bg-slate-950/22"
         onClick={onClose}
+        tabIndex={-1}
         type="button"
       />
       <section
         aria-label="More admin navigation"
+        aria-modal="true"
         className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+96px)]"
+        id="mobile-more-navigation"
+        role="dialog"
       >
         <GlassCard className="mx-auto max-h-[calc(100vh-126px)] max-w-md overflow-y-auto rounded-2xl p-4 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
           <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
@@ -233,8 +245,9 @@ function MobileMoreSheet({
             </div>
             <button
               aria-label="Close more admin navigation"
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-white/80 bg-white/72 text-slate-700"
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-full border border-white/80 bg-white/72 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2"
               onClick={onClose}
+              ref={closeButtonRef}
               type="button"
             >
               <X aria-hidden="true" className="h-4 w-4" />
@@ -315,6 +328,8 @@ export function AdminShell({
 }: AdminShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
   const project = getProjectById(projectId);
 
   useEffect(() => {
@@ -330,15 +345,42 @@ export function AdminShell({
     };
   }, []);
 
-  const closeMobileMore = () => {
+  const closeMobileMore = useCallback(() => {
     setIsMoreOpen(false);
     onMobileMoreClose?.();
-  };
+
+    window.requestAnimationFrame(() => {
+      mobileMoreButtonRef.current?.focus();
+    });
+  }, [onMobileMoreClose]);
 
   const openMobileMore = () => {
     onMobileMoreOpen?.();
     setIsMoreOpen(true);
   };
+
+  useEffect(() => {
+    if (!isMoreOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      mobileMoreCloseButtonRef.current?.focus();
+    });
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileMore();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMobileMore, isMoreOpen]);
 
   return (
     <PageShell>
@@ -421,10 +463,12 @@ export function AdminShell({
       <MobileBottomNav
         active={active}
         isMoreOpen={isMoreOpen}
+        moreButtonRef={mobileMoreButtonRef}
         onMoreClick={openMobileMore}
       />
       <MobileMoreSheet
         active={active}
+        closeButtonRef={mobileMoreCloseButtonRef}
         isOpen={isMoreOpen}
         onClose={closeMobileMore}
       />

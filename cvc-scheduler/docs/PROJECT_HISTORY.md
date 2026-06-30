@@ -2308,6 +2308,42 @@ Limitations:
 Next recommended step:
 - 09.44 Calendar Keyboard Navigation + Accessibility QA.
 
+## Iteration 09.44 — Calendar Keyboard Navigation + Accessibility QA
+
+Summary:
+- Audited Day/Week/Month/List controls, date navigation, filters, inspector, creation, Month sibling controls, List rows, mobile bottom navigation, and Mobile More without changing Calendar product direction or visible copy.
+- Added explicit pressed state to filter and creation task-source toggles.
+- Stabilized Mobile More as a labelled modal dialog with `aria-controls`, `aria-expanded`, `aria-haspopup`, initial close-button focus, Escape dismissal, and trigger-focus restoration.
+- Added calm focus-visible treatment to mobile bottom-navigation links, More, and its close button while preserving Calendar's semantic current-page state.
+- Extended the Calendar regression harness to activate core paths by keyboard, verify previous/next/reset in Week and List, closed-filter `inert`, toggle state, form error descriptions, Month sibling/overflow behavior, List Space activation, and mobile More focus/Escape/exclusivity.
+- Kept normal document tab order; no specialized grid arrow-key model or full modal focus trap was introduced.
+
+Changed files:
+- `app/admin/calendar/page.tsx`
+- `components/AdminShell.tsx`
+- `scripts/calendar-regression.mjs`
+- `docs/previews/latest/mobile-more-menu-open.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/calendar-regression.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 63 static pages generated.
+- `npm run test:calendar` passed all 16 desktop/mobile steps against the production preview at `http://127.0.0.1:3012`.
+- Production browser QA verified a visible desktop view-control focus ring, semantic List/Month controls, Mobile More dialog/expanded relationships, initial focus, Escape restoration, current Calendar tab state, and no 390px overflow.
+- Targeted Calendar/mobile-More screenshot capture passed; only the intentional mobile More focused preview was refreshed.
+- No console errors, page errors, hydration warnings, nested List controls, nested Month controls, or stacked mobile surfaces were found.
+
+Limitations:
+- Calendar grids use normal Tab order rather than arrow-key grid navigation, and modal surfaces do not yet implement full focus containment.
+- The harness uses one Chromium-family browser and deterministic Belgrade mock data; it is not a cross-browser or full assistive-technology audit.
+- No persistence, Supabase, mutations, URL state, routes, schema, drag/drop, resizing, Timeline view, visual redesign, or production scheduling logic was added.
+
+Next recommended step:
+- 09.45 Calendar Dialog Focus Containment + Screen Reader QA.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
