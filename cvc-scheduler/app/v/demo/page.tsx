@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight,
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   ClipboardCheck,
   Clock3,
@@ -13,20 +13,33 @@ import {
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
-import { StatusPill } from "@/components/StatusPill";
 import { VolunteerConfirmationPreview } from "@/components/VolunteerConfirmationPreview";
 import { getVolunteerSchedule } from "@/lib/mockData";
+import {
+  volunteerPreviewAssignments,
+  type VolunteerPreviewResponse,
+} from "@/lib/volunteerPreview";
 
 export const metadata: Metadata = {
-  title: "Alex's volunteer home | Project Local",
-  description: "A preview of the simple Project Local volunteer home.",
+  title: "Alex's volunteer schedule | Project Local",
+  description: "A preview of the simple Project Local volunteer schedule.",
+};
+
+const responseStyles: Record<VolunteerPreviewResponse, string> = {
+  pending: "border-amber-200 bg-amber-50 text-amber-700",
+  confirmed: "border-emerald-200 bg-emerald-50 text-emerald-700",
+};
+
+const responseLabels: Record<VolunteerPreviewResponse, string> = {
+  pending: "Needs reply",
+  confirmed: "Confirmed",
 };
 
 export default function VolunteerDemoPage() {
   const schedule = getVolunteerSchedule();
   const projectName = schedule.project?.name ?? "Volunteer project";
-  const nextAssignment = schedule.assignments[1];
-  const laterAssignments = schedule.assignments.slice(2, 3);
+  const nextAssignment = volunteerPreviewAssignments[0];
+  const upcomingAssignments = volunteerPreviewAssignments.slice(1);
   const nextLunch = schedule.lunches[0];
   const projectUpdate = schedule.announcements.find(
     (announcement) => announcement.title === "Gloves and closed-toe shoes reminder",
@@ -77,8 +90,8 @@ export default function VolunteerDemoPage() {
               Your volunteer schedule
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-              Here is what is next for your project week. No account or password is needed
-              for this preview.
+              Your next project assignments are gathered here. No account or password is
+              needed for this preview.
             </p>
           </section>
 
@@ -89,73 +102,92 @@ export default function VolunteerDemoPage() {
                   <h2 id="next-assignment-title" className="text-xl font-semibold tracking-tight text-slate-950">
                     Next assignment
                   </h2>
-                  <span className="text-xs font-medium text-slate-400">Schedule preview</span>
+                  <span className="text-xs font-medium text-slate-400">Wednesday</span>
                 </div>
 
-                {nextAssignment ? (
-                  <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/72 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur-xl">
-                    <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-7">
-                      <div>
-                        <p className="text-sm font-semibold text-sky-700">{nextAssignment.date}</p>
-                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                          {nextAssignment.role}
-                        </h3>
-                        <Link
-                          href="/v/demo/assignments/material-staging"
-                          aria-label="View details for Material staging"
-                          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-sky-700 hover:text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-                        >
-                          View details
-                          <ArrowRight aria-hidden="true" className="size-4" />
-                        </Link>
-                      </div>
-                      <span className="text-sm font-medium text-slate-500">1 of 2 helpers confirmed</span>
+                <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/72 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-7">
+                    <div>
+                      <p className="text-sm font-semibold text-sky-700">{nextAssignment.date}</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                        {nextAssignment.title}
+                      </h3>
+                      <Link
+                        href={`/v/demo/assignments/${nextAssignment.slug}`}
+                        aria-label={`View details for ${nextAssignment.title}`}
+                        className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-sky-700 hover:text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                      >
+                        View details
+                        <ArrowRight aria-hidden="true" className="size-4" />
+                      </Link>
                     </div>
-                    <dl className="grid border-t border-slate-200/70 sm:grid-cols-3">
-                      <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r">
-                        <Clock3 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
-                        <div><dt className="sr-only">Time</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.time}</dd></div>
-                      </div>
-                      <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r">
-                        <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
-                        <div><dt className="sr-only">Location</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.location}</dd></div>
-                      </div>
-                      <div className="flex gap-3 p-5">
-                        <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
-                        <div><dt className="sr-only">Crew</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.crew}</dd></div>
-                      </div>
-                    </dl>
-                    <VolunteerConfirmationPreview />
+                    <span className="text-sm font-medium text-slate-500">{nextAssignment.helperCoverage}</span>
                   </div>
-                ) : null}
+                  <dl className="grid border-t border-slate-200/70 sm:grid-cols-3">
+                    <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r">
+                      <Clock3 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
+                      <div><dt className="sr-only">Time</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.time}</dd></div>
+                    </div>
+                    <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r">
+                      <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
+                      <div><dt className="sr-only">Location</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.location}</dd></div>
+                    </div>
+                    <div className="flex gap-3 p-5">
+                      <Users aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-slate-400" />
+                      <div><dt className="sr-only">Crew</dt><dd className="text-sm leading-6 text-slate-700">{nextAssignment.crew}</dd></div>
+                    </div>
+                  </dl>
+                  <VolunteerConfirmationPreview initialStatus={nextAssignment.response} />
+                </div>
               </section>
 
-              <section aria-labelledby="later-title">
-                <h2 id="later-title" className="text-xl font-semibold tracking-tight text-slate-950">Later this week</h2>
+              <section aria-labelledby="upcoming-title">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Later this week</p>
+                    <h2 id="upcoming-title" className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Upcoming schedule</h2>
+                  </div>
+                  <span className="text-xs text-slate-400">3 assignments</span>
+                </div>
                 <div className="mt-3 divide-y divide-slate-200/80 border-y border-slate-200/80">
-                  {laterAssignments.map((assignment) => (
-                    <div key={assignment.id} className="flex min-h-20 items-center gap-4 py-4">
+                  {upcomingAssignments.map((assignment) => (
+                    <Link
+                      key={assignment.slug}
+                      href={`/v/demo/assignments/${assignment.slug}`}
+                      aria-label={`View details for ${assignment.title}, ${assignment.date}, ${assignment.time}, ${responseLabels[assignment.response]}`}
+                      className="group flex min-h-24 items-center gap-4 py-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                    >
                       <CalendarDays aria-hidden="true" className="size-5 shrink-0 text-slate-400" strokeWidth={1.7} />
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900">{assignment.role}</p>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <h3 className="font-semibold text-slate-900">{assignment.title}</h3>
+                          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${responseStyles[assignment.response]}`}>
+                            {responseLabels[assignment.response]}
+                          </span>
+                        </div>
                         <p className="mt-1 text-sm leading-5 text-slate-500">{assignment.date} · {assignment.time}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-slate-400">{assignment.location} · {assignment.helperCoverage}</p>
+                        <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-sky-700 sm:hidden">
+                          View details <ArrowRight aria-hidden="true" className="size-3.5" />
+                        </span>
                       </div>
-                      <StatusPill status={assignment.status} />
-                    </div>
+                      <span className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-sky-700 group-hover:text-sky-900 sm:inline-flex">
+                        View details <ArrowRight aria-hidden="true" className="size-4" />
+                      </span>
+                    </Link>
                   ))}
                 </div>
               </section>
             </div>
 
-            <aside className="space-y-3" aria-label="Volunteer project details">
+            <aside className="space-y-3" aria-label="Other project information">
+              <h2 className="px-1 text-sm font-semibold text-slate-700">Other project information</h2>
               <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
                 <div className="flex items-center gap-3">
                   <ClipboardCheck aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h2 className="font-semibold text-slate-950">Questionnaire</h2>
+                  <h3 className="font-semibold text-slate-950">Questionnaire</h3>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Your sample questionnaire is ready to review or finish.
-                </p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">Your sample questionnaire is ready to review or finish.</p>
                 <Link href="/questionnaire/belgrade-remodel-2026" className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-sky-700 hover:text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
                   Open questionnaire
                 </Link>
@@ -164,7 +196,7 @@ export default function VolunteerDemoPage() {
               <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
                 <div className="flex items-center gap-3">
                   <Utensils aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h2 className="font-semibold text-slate-950">Lunch</h2>
+                  <h3 className="font-semibold text-slate-950">Lunch</h3>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                   {nextLunch ? `${nextLunch.day}: ${nextLunch.details}` : "Lunch details will appear here."}
@@ -174,12 +206,10 @@ export default function VolunteerDemoPage() {
               <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
                 <div className="flex items-center gap-3">
                   <Megaphone aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h2 className="font-semibold text-slate-950">Project update</h2>
+                  <h3 className="font-semibold text-slate-950">Project update</h3>
                 </div>
                 <p className="mt-3 text-sm font-medium text-slate-800">{projectUpdate?.title ?? "Latest update"}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  {projectUpdate?.bodyPreview ?? "New project notes will appear here."}
-                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{projectUpdate?.bodyPreview ?? "New project notes will appear here."}</p>
               </section>
             </aside>
           </div>

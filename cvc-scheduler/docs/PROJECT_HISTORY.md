@@ -2652,6 +2652,49 @@ Limitations:
 Next recommended step:
 - 10.4 Volunteer Schedule List / Multiple Assignments Mock.
 
+## Iteration 10.4 — Volunteer Schedule List / Multiple Assignments Mock
+
+Summary:
+- Added one shared public-preview schedule source for Material staging, Drywall crew, Lunch support, and Site cleanup, including summary, detail, response, helper, preparation, lunch, and contact copy.
+- Kept Material staging as the emphasized next assignment and expanded `/v/demo` with a flat three-row Upcoming schedule rather than a dense table or card wall.
+- Made each upcoming row a single native link with a clear accessible name, visible response state, location, helper coverage, and desktop/mobile `View details` cue.
+- Refactored `/v/demo/assignments/[assignmentId]` to render all four assignments from the shared preview source and initialize local confirmation from each assignment’s preview response.
+- Preserved calm unknown-assignment recovery and clarified that response state remains page-local and unsent.
+- Extended public QA to open Material staging and Drywall crew, verify unknown recovery, exercise both response choices, audit nested controls/errors/overflow, and capture the full 390px volunteer schedule.
+
+Changed files:
+- `app/v/demo/page.tsx`
+- `app/v/demo/assignments/[assignmentId]/page.tsx`
+- `components/VolunteerConfirmationPreview.tsx`
+- `lib/volunteerPreview.ts`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/previews/latest/volunteer-assignment-detail.jpg`
+- `docs/previews/latest/mobile-volunteer-assignment-detail.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 67 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, Material staging, Drywall crew, unknown-assignment recovery, `/questionnaire/belgrade-remodel-2026`, `/admin/dashboard`, and `/admin/calendar`.
+- Targeted Playwright capture passed for the affected public desktop/full-page mobile previews with no console errors, page errors, hydration warnings, nested interactive controls, or horizontal overflow.
+- Public QA opened two assignment details, verified the unknown recovery state, exercised Confirm and Can’t make it, and restored the initial response state.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots were unchanged.
+
+Limitations:
+- All four assignments and their details remain deterministic preview content, not persisted or derived from the admin Calendar.
+- Response changes do not synchronize between home and detail, send anything, or survive navigation/reload.
+- Lookup still always resolves to Alex; there is no remembered-device identity, authentication, secure link, Supabase, database, email, or production scheduling behavior.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed.
+
+Next recommended step:
+- 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

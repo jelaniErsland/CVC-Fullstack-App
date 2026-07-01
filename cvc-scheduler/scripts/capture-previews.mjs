@@ -227,7 +227,13 @@ const captures = [
     viewport: mobileViewport,
   },
   { route: "/", fileName: "mobile-public-home.jpg", viewport: mobileViewport, auditPage: true },
-  { route: "/v/demo", fileName: "mobile-volunteer-home.jpg", viewport: mobileViewport, auditPage: true },
+  {
+    route: "/v/demo",
+    fileName: "mobile-volunteer-home.jpg",
+    viewport: mobileViewport,
+    auditPage: true,
+    fullPageCapture: true,
+  },
   {
     route: "/v/demo/assignments/material-staging",
     fileName: "mobile-volunteer-assignment-detail.jpg",
@@ -383,6 +389,18 @@ async function main() {
         await page.getByRole("heading", { name: "Material staging", level: 1 }).waitFor();
         await page.goBack({ waitUntil: "domcontentloaded" });
         await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+
+        await page.getByRole("link", { name: /^View details for Drywall crew,/ }).click();
+        await page.waitForURL(/\/v\/demo\/assignments\/drywall-crew$/);
+        await page.getByRole("heading", { name: "Drywall crew", level: 1 }).waitFor();
+
+        await page.goto(previewUrl("/v/demo/assignments/unknown-assignment"), {
+          waitUntil: "domcontentloaded",
+        });
+        await page.getByRole("heading", { name: "We could not find that assignment." }).waitFor();
+
+        await page.goto(previewUrl("/v/demo"), { waitUntil: "domcontentloaded" });
+        await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
       }
 
       if (auditVolunteerConfirmation) {
@@ -391,7 +409,10 @@ async function main() {
         await page.getByRole("button", { name: "Can't make it", exact: true }).click();
         await page.getByText("the project contact would be told", { exact: false }).waitFor();
         await page.reload({ waitUntil: "domcontentloaded" });
-        await page.getByText("Needs reply", { exact: true }).waitFor();
+        await page.getByText(
+          "Let the project contact know whether you can make this assignment.",
+          { exact: false },
+        ).waitFor();
       }
 
       if (auditPage) {

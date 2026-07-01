@@ -187,8 +187,8 @@ Upcoming UI direction:
 ## 4. Current Implemented Areas
 
 - Public Project Local entry at `/` now leads with one account-free volunteer access flow instead of an admin dashboard. The Belgrade project context is integrated into the lookup card, Alex Rivera is the explicit sample identity, the keyboard-accessible submit opens `/v/demo`, and the questionnaire remains the quiet secondary action. Copy states that the preview neither creates an account nor searches real volunteer information.
-- Mock remembered-volunteer home at `/v/demo` identifies Alex and the Belgrade project in a quiet `You’re viewing` area with a different-person link back to lookup. The pending next assignment shows date/time, location, crew, helper coverage, and local-only Confirm / Can’t make it controls with an announced status update; later work, lunch, a project update, and questionnaire access stay secondary.
-- Focused volunteer assignment detail at `/v/demo/assignments/material-staging` extends the public loop from schedule summary to a reassuring single-assignment view. It includes date/time, location and check-in, work purpose, crew coverage, project contact, clothing/PPE and lunch guidance, a clear schedule back path, and the shared local-only confirmation controls. Unknown assignment ids receive a plain recovery view instead of an admin or technical record screen.
+- Mock remembered-volunteer home at `/v/demo` identifies Alex and the Belgrade project, emphasizes Material staging as the next assignment, and presents Drywall crew, Lunch support, and Site cleanup as a flat linked Upcoming schedule. Every row carries date/time, location, helper coverage, response state, and an accessible detail name without becoming a calendar or admin table; questionnaire, lunch, and project updates remain secondary.
+- The reusable `/v/demo/assignments/[assignmentId]` preview renders all four listed assignments from one shared public-preview schedule source. Each detail includes person/project context, work purpose, date/time, location/check-in, crew coverage, contact, preparation and lunch guidance, a schedule back path, and shared local-only response controls initialized from the assignment’s preview state. Unknown ids retain the calm recovery view.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -263,8 +263,8 @@ Upcoming UI direction:
 ## 5. Current Routes
 
 - `/`: Project Local volunteer-first entry with integrated Belgrade context, sample identity lookup, questionnaire access, and separate Special access for project contacts.
-- `/v/demo`: Remembered-volunteer home preview for Alex Rivera with a focused next assignment, local response controls, and quieter later-project context.
-- `/v/demo/assignments/[assignmentId]`: Public assignment detail preview. `material-staging` is the current deterministic example; unknown ids show a calm recovery state.
+- `/v/demo`: Remembered-volunteer schedule preview for Alex Rivera with one focused next assignment, three quieter upcoming assignments, local response controls, and other project information.
+- `/v/demo/assignments/[assignmentId]`: Reusable public detail preview for Material staging, Drywall crew, Lunch support, and Site cleanup; unknown ids show a calm recovery state.
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock Overview page inside Belgrade Major Remodel 2026 with compact project context, this-week Calendar rows, calm follow-up summary, quick links to Questionnaires/Calendar/Tasks/Communications, and light role-aware guidance.
 - `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month/List mock views, a full-surface clickable Week grid direction, a page-scrolling 24-hour Day timeline, a compact List companion, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty grid slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets. Calendar overlays are mutually exclusive, including coordination with mobile More.
@@ -293,7 +293,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures the public Project Local landing, volunteer home, and assignment detail on desktop/mobile, plus key admin routes, Calendar views/states, Tasks, Communications, Food, Security, Needs Attention, Schedule, Settings, questionnaire review, the Belgrade public questionnaire, and mobile admin navigation states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested interactive controls, or horizontal overflow; desktop audits exercise lookup, home-to-detail navigation, and both local confirmation choices before restoring clean states. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures the public Project Local landing, full volunteer schedule, and representative assignment detail on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested interactive controls, or horizontal overflow; desktop audits exercise lookup, Material staging and Drywall detail navigation, unknown-assignment recovery, and both local confirmation choices before restoring clean states. The mobile schedule/detail captures are full-page so every assignment and response control receives 390px visual review. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
@@ -360,7 +360,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic preview, the assignment detail is one hard-coded Material staging example, remembered-device identity is explanatory copy only, and confirmation state resets on navigation. Secure email links, real volunteer identity resolution, and schedule mutations are not implemented.
+- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic four-assignment preview, remembered-device identity is explanatory copy only, and confirmation state is local to each rendered page and resets on navigation. The public schedule source is not synchronized with admin Calendar records; secure links, real identity resolution, and schedule mutations are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -368,4 +368,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.4 Volunteer Schedule List / Multiple Assignments Mock.
+10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.

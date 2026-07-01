@@ -13,26 +13,30 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { VolunteerConfirmationPreview } from "@/components/VolunteerConfirmationPreview";
-import { assignments, getVolunteerSchedule } from "@/lib/mockData";
+import { getVolunteerSchedule } from "@/lib/mockData";
+import {
+  getVolunteerPreviewAssignment,
+  volunteerPreviewAssignments,
+} from "@/lib/volunteerPreview";
 
 type AssignmentDetailPageProps = {
   params: Promise<{ assignmentId: string }>;
 };
 
-const detailSlug = "material-staging";
-
 export function generateStaticParams() {
-  return [{ assignmentId: detailSlug }];
+  return volunteerPreviewAssignments.map((assignment) => ({
+    assignmentId: assignment.slug,
+  }));
 }
 
 export async function generateMetadata({ params }: AssignmentDetailPageProps): Promise<Metadata> {
   const { assignmentId } = await params;
+  const assignment = getVolunteerPreviewAssignment(assignmentId);
 
   return {
-    title:
-      assignmentId === detailSlug
-        ? "Material staging | Project Local"
-        : "Assignment unavailable | Project Local",
+    title: assignment
+      ? `${assignment.title} | Project Local`
+      : "Assignment unavailable | Project Local",
     description: "Review a volunteer assignment and preview a response.",
   };
 }
@@ -86,15 +90,9 @@ function UnavailableAssignment() {
 
 export default async function AssignmentDetailPage({ params }: AssignmentDetailPageProps) {
   const { assignmentId } = await params;
-
-  if (assignmentId !== detailSlug) {
-    return <UnavailableAssignment />;
-  }
-
   const schedule = getVolunteerSchedule();
-  const assignment = assignments.find((item) => item.id === "stage-jan-14");
+  const assignment = getVolunteerPreviewAssignment(assignmentId);
   const projectName = schedule.project?.name ?? "Belgrade Major Remodel 2026";
-  const coordinator = schedule.projectInfo?.coordinator ?? "Your project contact";
 
   if (!assignment) {
     return <UnavailableAssignment />;
@@ -127,12 +125,12 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
 
           <article className="mt-8 overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/72 shadow-[0_28px_90px_rgba(15,23,42,0.11)] backdrop-blur-2xl">
             <header className="p-6 sm:p-9">
-              <p className="text-sm font-semibold text-sky-700">Your next assignment</p>
+              <p className="text-sm font-semibold text-sky-700">Your assignment</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-5xl">
-                {assignment.role}
+                {assignment.title}
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-                Help the logistics team receive, sort, and place materials so the next crew can start safely and on time.
+                {assignment.description}
               </p>
             </header>
 
@@ -143,15 +141,15 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
               </div>
               <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:p-6">
                 <MapPin aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-sky-700" strokeWidth={1.8} />
-                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Where</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{assignment.location}<br />Check in at the front desk first.</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Where</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{assignment.location}<br />{assignment.checkIn}</dd></div>
               </div>
               <div className="flex gap-3 border-b border-slate-200/70 p-5 sm:border-b-0 sm:border-r sm:p-6">
                 <Users aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-sky-700" strokeWidth={1.8} />
-                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Your crew</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{assignment.crew}<br />1 of 2 helpers confirmed.</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Your crew</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{assignment.crew}<br />{assignment.helperCoverage}.</dd></div>
               </div>
               <div className="flex gap-3 p-5 sm:p-6">
                 <UserRound aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-sky-700" strokeWidth={1.8} />
-                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Project contact</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{coordinator}<br />Ask at volunteer check-in if you need help.</dd></div>
+                <div><dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Project contact</dt><dd className="mt-1 text-sm leading-6 text-slate-800">{assignment.contact}<br />{assignment.contactHelp}</dd></div>
               </div>
             </dl>
 
@@ -160,15 +158,15 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
               <div className="mt-5 grid gap-5 sm:grid-cols-3">
                 <div className="flex gap-3">
                   <HardHat aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-slate-400" strokeWidth={1.7} />
-                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">Check in</span><br />Use the front desk before entering the work area.</p>
+                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">Check in</span><br />{assignment.checkIn}</p>
                 </div>
                 <div className="flex gap-3">
                   <Shirt aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-slate-400" strokeWidth={1.7} />
-                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">What to bring</span><br />Work gloves and closed-toe shoes.</p>
+                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">What to bring</span><br />{assignment.preparation}</p>
                 </div>
                 <div className="flex gap-3">
                   <Utensils aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-slate-400" strokeWidth={1.7} />
-                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">Lunch</span><br />Soup and salad begins at 11:45 AM.</p>
+                  <p className="text-sm leading-6 text-slate-600"><span className="font-semibold text-slate-800">Lunch</span><br />{assignment.lunch}</p>
                 </div>
               </div>
             </section>
@@ -178,7 +176,7 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                 <h2 id="response-title" className="text-xl font-semibold tracking-tight text-slate-950">Can you make it?</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">Choose a response to preview what this future flow will feel like.</p>
               </div>
-              <VolunteerConfirmationPreview />
+              <VolunteerConfirmationPreview initialStatus={assignment.response} />
             </section>
           </article>
         </main>

@@ -4,6 +4,10 @@ import { useState } from "react";
 
 type ConfirmationState = "pending" | "confirmed" | "unavailable";
 
+type VolunteerConfirmationPreviewProps = {
+  initialStatus?: "pending" | "confirmed";
+};
+
 const statusCopy: Record<ConfirmationState, { label: string; className: string; message: string }> = {
   pending: {
     label: "Needs reply",
@@ -22,8 +26,10 @@ const statusCopy: Record<ConfirmationState, { label: string; className: string; 
   },
 };
 
-export function VolunteerConfirmationPreview() {
-  const [status, setStatus] = useState<ConfirmationState>("pending");
+export function VolunteerConfirmationPreview({
+  initialStatus = "pending",
+}: VolunteerConfirmationPreviewProps) {
+  const [status, setStatus] = useState<ConfirmationState>(initialStatus);
   const current = statusCopy[status];
 
   return (
