@@ -91,7 +91,8 @@ Rough phases:
 - 10.2 Volunteer Schedule Lookup / Remembered Volunteer Home Mock. Completed.
 - 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface. Completed.
 - 10.4 Volunteer Schedule List / Multiple Assignments Mock. Completed.
-- 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish. Next recommended step.
+- 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish. Completed.
+- 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -164,6 +165,7 @@ Rough phases:
 - 10.3 Volunteer Confirmation Flow Mock / Assignment Detail Surface.
 - 10.4 Volunteer Schedule List / Multiple Assignments Mock.
 - 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.
+- 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
 
 ## 5. Later Roadmap
 

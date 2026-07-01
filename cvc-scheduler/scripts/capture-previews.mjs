@@ -47,6 +47,13 @@ const captures = [
     auditPage: true,
     auditVolunteerConfirmation: true,
   },
+  {
+    route: "/v/demo/no-assignments",
+    fileName: "volunteer-no-assignments.jpg",
+    viewport: desktopViewport,
+    auditPage: true,
+    auditNoAssignments: true,
+  },
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
   { route: "/admin/dashboard", fileName: "dashboard.jpg", viewport: desktopViewport },
   {
@@ -241,6 +248,14 @@ const captures = [
     auditPage: true,
     fullPageCapture: true,
   },
+  {
+    route: "/v/demo/no-assignments",
+    fileName: "mobile-volunteer-no-assignments.jpg",
+    viewport: mobileViewport,
+    auditPage: true,
+    auditNoAssignments: true,
+    fullPageCapture: true,
+  },
 ];
 
 function previewUrl(route) {
@@ -291,6 +306,7 @@ async function main() {
       auditVolunteerLookup,
       auditAssignmentDetailLink,
       auditVolunteerConfirmation,
+      auditNoAssignments,
       fullPageCapture,
     } of selectedCaptures) {
       const browserErrors = [];
@@ -413,6 +429,17 @@ async function main() {
           "Let the project contact know whether you can make this assignment.",
           { exact: false },
         ).waitFor();
+      }
+
+      if (auditNoAssignments) {
+        const emptySchedule = page.getByRole("region", {
+          name: "Nothing scheduled for you yet.",
+        });
+        await emptySchedule.getByRole("heading", { name: "Nothing scheduled for you yet." }).waitFor();
+        await emptySchedule.getByRole("link", { name: "Open volunteer questionnaire" }).waitFor();
+        await page.getByText("The project contact may still be reviewing your availability.", {
+          exact: false,
+        }).waitFor();
       }
 
       if (auditPage) {

@@ -189,6 +189,8 @@ Upcoming UI direction:
 - Public Project Local entry at `/` now leads with one account-free volunteer access flow instead of an admin dashboard. The Belgrade project context is integrated into the lookup card, Alex Rivera is the explicit sample identity, the keyboard-accessible submit opens `/v/demo`, and the questionnaire remains the quiet secondary action. Copy states that the preview neither creates an account nor searches real volunteer information.
 - Mock remembered-volunteer home at `/v/demo` identifies Alex and the Belgrade project, emphasizes Material staging as the next assignment, and presents Drywall crew, Lunch support, and Site cleanup as a flat linked Upcoming schedule. Every row carries date/time, location, helper coverage, response state, and an accessible detail name without becoming a calendar or admin table; questionnaire, lunch, and project updates remain secondary.
 - The reusable `/v/demo/assignments/[assignmentId]` preview renders all four listed assignments from one shared public-preview schedule source. Each detail includes person/project context, work purpose, date/time, location/check-in, crew coverage, contact, preparation and lunch guidance, a schedule back path, and shared local-only response controls initialized from the assignment’s preview state. Unknown ids retain the calm recovery view.
+- Deterministic `/v/demo/no-assignments` shows the same remembered person/project context without treating an empty schedule as an error or rejection. It explains that availability may still be under review, keeps account-free return guidance plain, offers real questionnaire and lookup links, and avoids a fake refresh action.
+- Normal and empty volunteer schedule states share a compact divided project-information rail. The normal schedule includes questionnaire status, the next relevant lunch, a dated concise project update, and check-in help; the empty state removes duplicate questionnaire and irrelevant lunch sections, leaving only the project update and help guidance.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -264,6 +266,7 @@ Upcoming UI direction:
 
 - `/`: Project Local volunteer-first entry with integrated Belgrade context, sample identity lookup, questionnaire access, and separate Special access for project contacts.
 - `/v/demo`: Remembered-volunteer schedule preview for Alex Rivera with one focused next assignment, three quieter upcoming assignments, local response controls, and other project information.
+- `/v/demo/no-assignments`: Reassuring deterministic schedule state for a found volunteer who has no assignments yet, with questionnaire/lookup actions and concise project guidance.
 - `/v/demo/assignments/[assignmentId]`: Reusable public detail preview for Material staging, Drywall crew, Lunch support, and Site cleanup; unknown ids show a calm recovery state.
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock Overview page inside Belgrade Major Remodel 2026 with compact project context, this-week Calendar rows, calm follow-up summary, quick links to Questionnaires/Calendar/Tasks/Communications, and light role-aware guidance.
@@ -293,7 +296,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures the public Project Local landing, full volunteer schedule, and representative assignment detail on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested interactive controls, or horizontal overflow; desktop audits exercise lookup, Material staging and Drywall detail navigation, unknown-assignment recovery, and both local confirmation choices before restoring clean states. The mobile schedule/detail captures are full-page so every assignment and response control receives 390px visual review. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures the public Project Local landing, full volunteer schedule, no-assignment state, and representative assignment detail on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested interactive controls, or horizontal overflow; desktop audits exercise lookup, two detail routes, unknown recovery, both response choices, and the empty-state questionnaire/reassurance contract. Mobile schedule, empty, and detail captures are full-page for complete 390px review. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
@@ -360,7 +363,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic four-assignment preview, remembered-device identity is explanatory copy only, and confirmation state is local to each rendered page and resets on navigation. The public schedule source is not synchronized with admin Calendar records; secure links, real identity resolution, and schedule mutations are not implemented.
+- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic four-assignment preview; the no-assignment route is a separate fixed variant rather than a lookup result. Remembered-device identity is explanatory copy only, confirmation state resets on navigation, and public schedule/update content is not synchronized with admin Calendar or Communications data. Secure links, real identity resolution, and mutations are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -368,4 +371,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.
+10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.

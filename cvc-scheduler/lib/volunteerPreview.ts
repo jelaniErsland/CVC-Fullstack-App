@@ -17,6 +17,33 @@ export type VolunteerAssignmentPreview = {
   contactHelp: string;
 };
 
+export const volunteerPreviewContext = {
+  volunteerName: "Alex Rivera",
+  volunteerFirstName: "Alex",
+  initials: "AR",
+  projectName: "Belgrade Major Remodel 2026",
+};
+
+export const volunteerPreviewProjectInfo = {
+  questionnaire: {
+    status: "Ready to review or finish",
+    href: "/questionnaire/belgrade-remodel-2026",
+  },
+  lunch: {
+    label: "Next lunch · Wednesday",
+    detail: "Soup and salad is available from 11:45 AM in the break area.",
+  },
+  update: {
+    label: "Latest update · Jan 13",
+    title: "Gloves and closed-toe shoes",
+    detail: "Please bring work gloves for staging or interior work. Closed-toe shoes are required in work areas.",
+  },
+  help: {
+    contact: "Jordan M.",
+    detail: "Ask for Jordan or the volunteer check-in contact if you need help when you arrive.",
+  },
+};
+
 export const volunteerPreviewAssignments: VolunteerAssignmentPreview[] = [
   {
     slug: "material-staging",

@@ -4,19 +4,17 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  ClipboardCheck,
   Clock3,
   KeyRound,
   MapPin,
-  Megaphone,
-  Utensils,
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { VolunteerConfirmationPreview } from "@/components/VolunteerConfirmationPreview";
-import { getVolunteerSchedule } from "@/lib/mockData";
+import { VolunteerProjectInfo } from "@/components/VolunteerProjectInfo";
 import {
   volunteerPreviewAssignments,
+  volunteerPreviewContext,
   type VolunteerPreviewResponse,
 } from "@/lib/volunteerPreview";
 
@@ -36,14 +34,9 @@ const responseLabels: Record<VolunteerPreviewResponse, string> = {
 };
 
 export default function VolunteerDemoPage() {
-  const schedule = getVolunteerSchedule();
-  const projectName = schedule.project?.name ?? "Volunteer project";
+  const context = volunteerPreviewContext;
   const nextAssignment = volunteerPreviewAssignments[0];
   const upcomingAssignments = volunteerPreviewAssignments.slice(1);
-  const nextLunch = schedule.lunches[0];
-  const projectUpdate = schedule.announcements.find(
-    (announcement) => announcement.title === "Gloves and closed-toe shoes reminder",
-  );
 
   return (
     <PageShell className="px-5 py-5 sm:px-8 lg:px-10">
@@ -68,11 +61,11 @@ export default function VolunteerDemoPage() {
         <main className="pb-12 pt-8 sm:pt-12">
           <section aria-label="Remembered volunteer" className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <span aria-hidden="true" className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-800">AR</span>
+              <span aria-hidden="true" className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-800">{context.initials}</span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">You&apos;re viewing</p>
-                <p className="mt-0.5 font-semibold text-slate-950">Alex Rivera</p>
-                <p className="text-sm text-slate-500">{projectName}</p>
+                <p className="mt-0.5 font-semibold text-slate-950">{context.volunteerName}</p>
+                <p className="text-sm text-slate-500">{context.projectName}</p>
               </div>
             </div>
             <Link
@@ -85,7 +78,7 @@ export default function VolunteerDemoPage() {
           </section>
 
           <section className="py-8">
-            <p className="text-sm font-semibold text-sky-700">Welcome back, Alex</p>
+            <p className="text-sm font-semibold text-sky-700">Welcome back, {context.volunteerFirstName}</p>
             <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-6xl">
               Your volunteer schedule
             </h1>
@@ -180,38 +173,7 @@ export default function VolunteerDemoPage() {
               </section>
             </div>
 
-            <aside className="space-y-3" aria-label="Other project information">
-              <h2 className="px-1 text-sm font-semibold text-slate-700">Other project information</h2>
-              <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
-                <div className="flex items-center gap-3">
-                  <ClipboardCheck aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h3 className="font-semibold text-slate-950">Questionnaire</h3>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">Your sample questionnaire is ready to review or finish.</p>
-                <Link href="/questionnaire/belgrade-remodel-2026" className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-sky-700 hover:text-sky-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400">
-                  Open questionnaire
-                </Link>
-              </section>
-
-              <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
-                <div className="flex items-center gap-3">
-                  <Utensils aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h3 className="font-semibold text-slate-950">Lunch</h3>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  {nextLunch ? `${nextLunch.day}: ${nextLunch.details}` : "Lunch details will appear here."}
-                </p>
-              </section>
-
-              <section className="rounded-2xl border border-white/80 bg-white/58 p-5">
-                <div className="flex items-center gap-3">
-                  <Megaphone aria-hidden="true" className="size-5 text-sky-700" strokeWidth={1.8} />
-                  <h3 className="font-semibold text-slate-950">Project update</h3>
-                </div>
-                <p className="mt-3 text-sm font-medium text-slate-800">{projectUpdate?.title ?? "Latest update"}</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{projectUpdate?.bodyPreview ?? "New project notes will appear here."}</p>
-              </section>
-            </aside>
+            <VolunteerProjectInfo />
           </div>
         </main>
       </div>

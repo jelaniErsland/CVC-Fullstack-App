@@ -2695,6 +2695,51 @@ Limitations:
 Next recommended step:
 - 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.
 
+## Iteration 10.5 — Volunteer Schedule Empty/No Assignment States + Project Updates Polish
+
+Summary:
+- Added `/v/demo/no-assignments` as a calm deterministic outcome for a found volunteer whose availability is still being reviewed.
+- Kept Alex, Belgrade, the different-person path, account-free guidance, questionnaire access, and project lookup visible without presenting the empty schedule as an error or rejection.
+- Avoided a fake refresh action; plain copy explains that new assignments would appear after the project contact finishes scheduling.
+- Centralized shared volunteer/person and project-information preview content in `lib/volunteerPreview.ts`.
+- Replaced the normal home’s separate filler cards with one compact divided project-information rail covering questionnaire status, next lunch, a dated concise update, and check-in help.
+- Configured the empty-state rail to omit duplicate questionnaire and irrelevant lunch sections, keeping only useful update and help guidance.
+- Added audited desktop/full-page mobile no-assignment previews and deterministic empty-state semantic checks.
+
+Changed files:
+- `app/v/demo/page.tsx`
+- `app/v/demo/no-assignments/page.tsx`
+- `components/VolunteerProjectInfo.tsx`
+- `lib/volunteerPreview.ts`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/previews/latest/volunteer-no-assignments.jpg`
+- `docs/previews/latest/mobile-volunteer-no-assignments.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 68 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, `/v/demo/no-assignments`, Material staging, Drywall crew, unknown-assignment recovery, `/questionnaire/belgrade-remodel-2026`, `/admin/dashboard`, and `/admin/calendar`.
+- Targeted Playwright capture passed for the normal and empty schedule states on desktop and full-page 390px mobile with no console errors, page errors, hydration warnings, nested interactive controls, or horizontal overflow.
+- Empty-state QA verified the page heading, reassurance copy, and primary questionnaire action; existing public detail and confirmation checks remained green through the volunteer-home audit.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots were unchanged.
+
+Limitations:
+- The no-assignment page is a fixed preview route, not the result of real lookup or schedule state.
+- Project updates, lunch, contact, and questionnaire status are deterministic public-preview content and do not sync with admin Communications, Calendar, or questionnaire data.
+- Responses remain page-local, unsent, and reset after navigation or reload.
+- No real identity resolution, schedule lookup, authentication, Supabase, database, email, secure link, remembered-device persistence, or production mutation behavior was added.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed.
+
+Next recommended step:
+- 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
