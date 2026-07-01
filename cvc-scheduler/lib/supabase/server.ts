@@ -1,6 +1,8 @@
 import "server-only";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
 import { readSupabaseServerConfig } from "@/lib/supabase/config";
 
@@ -13,17 +15,28 @@ export function getSupabaseServerConfig() {
 }
 
 /**
- * Creates a server-only, anonymous client without cookie/session behavior.
- * It is not an authenticated user client and is not used by any route yet.
+ * Creates the cookie-aware server client used by the contact auth shell.
+ * Product data and authorization remain outside this boundary.
  */
-export function createServerSupabaseClient(): SupabaseClient {
+export async function createServerSupabaseClient(): Promise<SupabaseClient> {
   const config = getSupabaseServerConfig();
+  const cookieStore = await cookies();
 
-  return createClient(config.url, config.anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      persistSession: false,
+  return createServerClient(config.url, config.anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, options, value }) =>
+            cookieStore.set(name, value, options),
+          );
+        } catch {
+          // Server Components cannot write cookies. proxy.ts owns refreshes;
+          // Route Handlers can write callback/sign-out changes normally.
+        }
+      },
     },
   });
 }

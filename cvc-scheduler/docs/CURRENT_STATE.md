@@ -250,7 +250,7 @@ Upcoming UI direction:
 - The creation panel now gives Date its own full desktop row with Start/End paired beneath it, preventing the End field from clipping inside the existing drawer width. Mobile retains the same readable single-column sheet.
 - Creation validation remains local and calm: timed End must be later than Start, a no-specific-time End date cannot precede Date, Needed is clamped to 1-99, and custom one-day mode requires a non-empty name. Field messages use `aria-invalid`/descriptions, while the fixed footer explains that Schedule, Save draft, and Assign helpers remain unavailable in this preview.
 - Calendar model readiness is now documented separately from the UI implementation. Local draft types are explicitly named as preview state, Calendar timing is classified through one deterministic helper, and shared date/range intersection helpers keep all-day and multi-day selection rules consistent without adding persistence.
-- Supabase, authentication, persistence, and real-data migration readiness is documented in [`SUPABASE_AUTH_PERSISTENCE_READINESS.md`](./SUPABASE_AUTH_PERSISTENCE_READINESS.md). Iteration 11.2 adds only the `@supabase/supabase-js` dependency, lazy browser/server client factories, typed environment validation, a committed placeholder `.env.example`, and a table-free Auth health smoke check. [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md) documents local wiring and secret boundaries. No app route imports a client or requires Supabase configuration.
+- Supabase, authentication, persistence, and real-data migration readiness is documented in [`SUPABASE_AUTH_PERSISTENCE_READINESS.md`](./SUPABASE_AUTH_PERSISTENCE_READINESS.md). Iteration 11.3 adds an invite-only project-contact magic-link shell, cookie callback/session handling, POST sign-out, and an optional admin proxy boundary. `ADMIN_AUTH_MODE=review` remains the default so current mock admin routes stay reviewable; `enforced` requires a verified Auth identity. Authentication does not grant project access: the grant loader returns a typed empty placeholder and performs no query. [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md) documents setup and redirect configuration.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -331,7 +331,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 - No real auth.
 - No real database.
-- Supabase tooling is installed but no product integration exists. There are no product tables, generated database types, migrations, RLS policies, auth/session flows, protected routes, database reads/writes, or mock-to-real cutovers.
+- Supabase Auth has a project-contact session shell, but no product integration exists. There are no product tables, generated database types, migrations, RLS policies, project grant reads, role enforcement, product database reads/writes, or mock-to-real cutovers.
 - The 11.1 readiness plan remains a proposed contract. Contact authentication approach, project/role grants, volunteer token strategy, schema constraints, and mock-to-real cutover remain unresolved until their dedicated slices.
 - No real persistence.
 - No email sending.
@@ -352,7 +352,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Week retains every normal Tab stop and has no hour-by-hour Up/Down model because each timed background is one full-day column with a 9 AM keyboard default. Day/Week/Month movement remains a local focus helper, not a complete ARIA calendar-grid or roving-focus implementation. List remains a normal button list, and automated semantic QA is not a substitute for a multi-screen-reader/device audit.
 - Month intentionally caps visible density at six skinny rows on screens 640px and wider and three below 640px. Additional items use a keyboard-accessible `+N` that focuses Day view; complex cross-week range spanning remains future work.
 - The Calendar regression script assumes the app is already running and exercises the deterministic Belgrade mock data/accessibility labels. It has no CI configuration or managed server lifecycle and is not a cross-browser matrix, visual-diff suite, persistence test, or substitute for production scheduling tests.
-- `/admin/login` and `/admin/onboarding` still use their simpler non-workspace shells; the checked workspace admin routes use the shared admin shell.
+- `/admin/login` is the project-contact Auth shell; `/admin/auth/callback` and the POST-only `/admin/auth/sign-out` handle session lifecycle. `/admin/onboarding` remains a mock non-workspace surface; workspace admin routes continue using the shared admin shell.
 - No real questionnaire submissions yet; questionnaire form submission is local-only/mock-only.
 - Questionnaire workflow states are preview/mock-only and do not save changes.
 - No approve / needs-follow-up mutation workflow yet.
@@ -379,4 +379,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-11.3 Auth Shell for Project Contacts. Keep it invite-oriented and contact-only; establish session and protected-route boundaries without migrating product data or involving volunteer accounts.
+11.4 Workspace Persistence Foundation. Persist only the minimal project/workspace boundary with project isolation and tests; do not combine it with Calendar, volunteer, questionnaire, or public-portal migration.

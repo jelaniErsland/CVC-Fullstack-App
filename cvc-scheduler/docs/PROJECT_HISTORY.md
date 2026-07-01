@@ -2898,6 +2898,56 @@ Limitations:
 Next recommended step:
 - 11.3 Auth Shell for Project Contacts. Keep it invite-oriented and contact-only; establish session and protected-route boundaries without migrating product data or creating volunteer accounts.
 
+## Iteration 11.3 — Auth Shell for Project Contacts
+
+Summary:
+- Added `@supabase/ssr` and converted the 11.2 browser/server factories to cookie-compatible Auth clients without adding product-data access.
+- Replaced the decorative admin login with invite-only magic-link sign-in using `shouldCreateUser: false`; volunteers remain outside Auth.
+- Added code callback and POST-only local sign-out routes, sanitized admin return paths, and server-side session inspection.
+- Added a Next.js proxy boundary. Default `review` mode preserves every mock admin route; explicit `enforced` mode requires a verified Supabase Auth user.
+- Added a typed project-contact grant loader that always returns empty `not_implemented` state and performs no database query.
+- Documented that authentication proves identity, project grants authorize scope, and future RLS/product commands enforce data access.
+
+Changed files:
+- `.env.example`
+- `package.json`
+- `package-lock.json`
+- `proxy.ts`
+- `app/admin/login/page.tsx`
+- `app/admin/auth/callback/route.ts`
+- `app/admin/auth/sign-out/route.ts`
+- `components/AdminContactSignIn.tsx`
+- `lib/auth/config.ts`
+- `lib/auth/redirects.ts`
+- `lib/auth/session.ts`
+- `lib/auth/project-contact-grants.ts`
+- `lib/supabase/browser.ts`
+- `lib/supabase/server.ts`
+- `lib/supabase/proxy.ts`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes and the Next.js proxy boundary.
+- `npm run test:calendar` passed all 17 desktop/mobile checks in default review mode.
+- `npx tsc --noEmit` passed.
+- `git diff --check` passed.
+- Review-mode admin and public routes remained reachable without Supabase environment values; enforced mode redirected anonymous admin requests to the Auth shell.
+- Sign-out rejected GET with 405, accepted POST with a 303 login redirect, and an incomplete callback recovered to the login surface.
+
+Limitations:
+- Live magic-link delivery/callback was not exercised because no project credentials or invited Auth identity were supplied.
+- `review` mode is intentionally not access control. `enforced` mode proves identity only and does not load or enforce project, role, congregation, or capability grants.
+- There are no schema/migration files, RLS policies, product tables, generated database types, product reads/writes, service-role operations, volunteer Auth/token access, or route-data migrations.
+- Calendar, questionnaire, volunteer, communications, and public preview data remain deterministic mocks.
+
+Next recommended step:
+- 11.4 Workspace Persistence Foundation. Keep the first persistence slice limited to project/workspace identity, project isolation, and tests; do not combine it with other product-data migrations.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

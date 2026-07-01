@@ -13,6 +13,7 @@
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
     "lucide-react": "^1.21.0",
     "next": "16.2.7",

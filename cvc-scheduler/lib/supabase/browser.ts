@@ -1,6 +1,7 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
 
@@ -15,5 +16,5 @@ export function createBrowserSupabaseClient(): SupabaseClient {
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
 
-  return createClient(config.url, config.anonKey);
+  return createBrowserClient(config.url, config.anonKey);
 }

@@ -96,7 +96,8 @@ Rough phases:
 - 10.7 Public Volunteer Portal Stabilization + Handoff Review. Completed.
 - 11.1 Supabase/Auth/Persistence Readiness Planning. Completed.
 - 11.2 Supabase Project Setup + Environment Skeleton. Completed; tooling and environment boundaries only, with no product-data integration.
-- 11.3 Auth Shell for Project Contacts. Next recommended step; keep it contact-only and do not combine it with schema or product-data migration.
+- 11.3 Auth Shell for Project Contacts. Completed; identity/session boundary only, with no project grants or product-data authorization.
+- 11.4 Workspace Persistence Foundation. Next recommended step; keep the first schema/persistence slice limited to project identity and isolation.
 
 ## 4. Mid-Term Roadmap
 
@@ -174,6 +175,7 @@ Rough phases:
 - 11.1 Supabase/Auth/Persistence Readiness Planning.
 - 11.2 Supabase Project Setup + Environment Skeleton.
 - 11.3 Auth Shell for Project Contacts.
+- 11.4 Workspace Persistence Foundation.
 
 ## 5. Later Roadmap
 
