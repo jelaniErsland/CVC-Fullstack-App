@@ -2822,6 +2822,39 @@ Limitations:
 Next recommended step:
 - 11.1 Supabase/Auth/Persistence Readiness Planning. This should remain a planning/readiness pass unless implementation is explicitly requested.
 
+## Iteration 11.1 — Supabase/Auth/Persistence Readiness Planning
+
+Summary:
+- Added a practical readiness document that reconciles the stable Calendar and public-volunteer handoffs before any real backend connection.
+- Defined first-pass boundaries for auth identities, projects, contacts, scoped grants, congregations, questionnaires, volunteer profiles, task presets, Calendar items, assignments/responses, communications/deliveries, follow-up, and audit history.
+- Documented a unified project capability model for main, assistant, on-site, volunteer, and future platform access without creating Food/Security mini-app permissions.
+- Established that volunteers remain account-free but production name/email lookup must not reveal schedules directly; secure access needs opaque, scoped, expiring/revocable credentials and privacy-preserving lookup behavior.
+- Carried forward the Calendar contract: presets and scheduled work remain separate, assignment/response rows drive coverage truth, schedule kinds stay explicit, true all-day work is rare, and overflow must reveal useful hidden work.
+- Proposed a gated migration order from narrow Supabase setup through contact auth, project isolation, intake, profiles, tasks, Calendar, assignments/responses, communications, follow-up, and finally secure public volunteer access.
+- Identified RLS/security boundaries and unresolved auth, token, intake, scheduling, communications, audit, retention, and governance decisions without writing policies or migrations.
+
+Changed files:
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed with all 72 static pages generated.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `git diff --check` passed.
+- No package, package script, environment variable, Supabase client, auth logic, schema, migration, database call, route behavior, Calendar implementation, or public interaction was changed.
+
+Limitations:
+- The entity map and access model are proposed boundaries, not final SQL, RLS policies, generated types, or mutation contracts.
+- Auth method, canonical project/workspace naming, on-site access, assistant congregation rules, volunteer token lifetime, remembered-device behavior, questionnaire/profile transitions, response concurrency, timezone policy, provider selection, audit retention, and cutover strategy still require decisions.
+- No Supabase project/client setup, secret handling, connectivity check, persistence, or production data migration exists yet.
+- Existing deterministic mocks remain the behavior reference until an explicitly isolated real-data slice replaces them.
+
+Next recommended step:
+- 11.2 Supabase Project Setup + Environment Skeleton. Keep it limited to approved tooling, environment handling, client/server boundaries, secret guidance, and a connectivity smoke test; do not combine it with full schema/auth/app migration.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

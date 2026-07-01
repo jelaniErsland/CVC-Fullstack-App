@@ -250,6 +250,7 @@ Upcoming UI direction:
 - The creation panel now gives Date its own full desktop row with Start/End paired beneath it, preventing the End field from clipping inside the existing drawer width. Mobile retains the same readable single-column sheet.
 - Creation validation remains local and calm: timed End must be later than Start, a no-specific-time End date cannot precede Date, Needed is clamped to 1-99, and custom one-day mode requires a non-empty name. Field messages use `aria-invalid`/descriptions, while the fixed footer explains that Schedule, Save draft, and Assign helpers remain unavailable in this preview.
 - Calendar model readiness is now documented separately from the UI implementation. Local draft types are explicitly named as preview state, Calendar timing is classified through one deterministic helper, and shared date/range intersection helpers keep all-day and multi-day selection rules consistent without adding persistence.
+- Supabase, authentication, persistence, and real-data migration readiness is documented in [`SUPABASE_AUTH_PERSISTENCE_READINESS.md`](./SUPABASE_AUTH_PERSISTENCE_READINESS.md). Iteration 11.1 defines proposed entities, project-scoped grants, account-free volunteer token boundaries, RLS/security responsibilities, migration order, open decisions, and narrow 11.x slices. It is planning only: no client, package, environment variable, schema, migration, auth flow, database call, or mutation exists.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -331,6 +332,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - No real auth.
 - No real database.
 - No Supabase yet.
+- The 11.1 readiness plan is not implementation. Contact authentication approach, project/role grants, volunteer token strategy, RLS policies, schema constraints, environment handling, and mock-to-real cutover remain unresolved until their dedicated slices.
 - No real persistence.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
@@ -377,4 +379,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-11.1 Supabase/Auth/Persistence Readiness Planning.
+11.2 Supabase Project Setup + Environment Skeleton. Keep this a narrow setup slice, not a full schema, auth, or app migration.

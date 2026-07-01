@@ -94,7 +94,8 @@ Rough phases:
 - 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish. Completed.
 - 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview. Completed.
 - 10.7 Public Volunteer Portal Stabilization + Handoff Review. Completed.
-- 11.1 Supabase/Auth/Persistence Readiness Planning. Next recommended step.
+- 11.1 Supabase/Auth/Persistence Readiness Planning. Completed.
+- 11.2 Supabase Project Setup + Environment Skeleton. Next recommended step; keep this narrow and do not turn it into full app migration.
 
 ## 4. Mid-Term Roadmap
 
@@ -170,6 +171,7 @@ Rough phases:
 - 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
 - 10.7 Public Volunteer Portal Stabilization + Handoff Review.
 - 11.1 Supabase/Auth/Persistence Readiness Planning.
+- 11.2 Supabase Project Setup + Environment Skeleton.
 
 ## 5. Later Roadmap
 
