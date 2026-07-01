@@ -2855,6 +2855,49 @@ Limitations:
 Next recommended step:
 - 11.2 Supabase Project Setup + Environment Skeleton. Keep it limited to approved tooling, environment handling, client/server boundaries, secret guidance, and a connectivity smoke test; do not combine it with full schema/auth/app migration.
 
+## Iteration 11.2 — Supabase Project Setup + Environment Skeleton
+
+Summary:
+- Added `@supabase/supabase-js` as the only new dependency and kept every client factory lazy and unused by application routes.
+- Added shared typed validation for the public project URL/key plus an optional server-only service-role value.
+- Added separate browser and `server-only` client factories. The server factory uses the public key without cookie/session persistence; no privileged service-role client exists.
+- Added `.env.example` and local setup guidance covering browser-visible values, server-only secrets, deployment separation, and intentionally unimplemented work.
+- Added `npm run supabase:check`, which loads Next.js-style local environment files and calls only `/auth/v1/health`; it never signs in or queries product data.
+- Preserved all existing deterministic mock routes and Calendar behavior.
+
+Changed files:
+- `.env.example`
+- `.gitignore`
+- `package.json`
+- `package-lock.json`
+- `lib/supabase/config.ts`
+- `lib/supabase/browser.ts`
+- `lib/supabase/server.ts`
+- `scripts/supabase-smoke.mjs`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/supabase-smoke.mjs` passed.
+- `npx tsc --noEmit` passed.
+- The smoke command's missing-environment failure path and successful Auth-health response path were verified with a disposable local endpoint; a live Supabase connectivity pass still requires real local project values.
+- `npm run lint` passed.
+- `npm run build` passed with all 72 static pages generated and no Supabase environment configured.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `git diff --check` passed.
+
+Limitations:
+- No live Supabase project credentials were added, so the health endpoint was not contacted during this iteration.
+- There are no product tables, generated database types, migrations, RLS policies, auth UI/session handling, protected routes, service-role operations, or product-data reads/writes.
+- No public volunteer security, Calendar persistence, questionnaire persistence, or mock-to-real cutover exists.
+- `npm install` reports two moderate dependency-audit findings; no forced/breaking audit remediation was applied in this scoped setup pass.
+
+Next recommended step:
+- 11.3 Auth Shell for Project Contacts. Keep it invite-oriented and contact-only; establish session and protected-route boundaries without migrating product data or creating volunteer accounts.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

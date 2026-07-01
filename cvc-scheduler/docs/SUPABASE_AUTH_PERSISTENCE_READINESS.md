@@ -2,7 +2,13 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-It is not a database schema, migration, RLS policy, environment guide, or authorization implementation. Iteration 11.1 adds no Supabase client, package, environment variable, database call, auth flow, migration, or mutation.
+It is not a database schema, migration, RLS policy, or authorization implementation. Iteration 11.2 established the environment/client skeleton described below, but still adds no product table, database call, auth flow, route migration, policy, migration, or mutation.
+
+## 11.2 setup boundary
+
+The repository now includes `@supabase/supabase-js`, lazy browser and server client factories, typed runtime environment validation, `.env.example`, and `npm run supabase:check`. The check calls only the Supabase Auth health endpoint; it does not sign in, create a session, or read a product table. Current builds and mock routes do not require Supabase variables because no application route imports either client factory.
+
+Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. There are still no generated database types because there is no reviewed product schema.
 
 ## 1. Current mock-prototype boundary
 
@@ -230,7 +236,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 
 ## 10. Recommended next 11.x slices
 
-- **11.2 Supabase Project Setup + Environment Skeleton:** install/configure only the approved client/tooling, define environment handling and server/client boundaries, prove a local connectivity check, and document secret handling. No broad app migration.
+- **11.2 Supabase Project Setup + Environment Skeleton — completed:** installed the approved client, defined lazy environment/client boundaries, and added a table-free connectivity check plus secret-handling guidance. No app route or product data migrated.
 - **11.3 Auth Shell for Project Contacts:** invite-only contact session, protected admin boundary, sign-out, and placeholder grant loading.
 - **11.4 Workspace Persistence Foundation:** project/workspace table and project-scoped read path, with isolation tests.
 - **11.5 Questionnaire Submission Persistence:** public insert plus authenticated review boundary; no automatic profile creation.
@@ -240,7 +246,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.9 Assignment/Response Persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
 - **11.10 Communications/Reminder Persistence Readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next recommended slice is 11.2. It should remain a narrow setup/environment skeleton and must not become a full schema, auth, or route migration.
+The next recommended slice is 11.3. It should remain an invite-oriented auth/session shell for project contacts and must not become a product-schema migration, broad authorization rollout, or volunteer account flow.
 
 ## Readiness exit criteria
 
