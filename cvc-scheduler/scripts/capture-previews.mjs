@@ -54,6 +54,14 @@ const captures = [
     auditPage: true,
     auditNoAssignments: true,
   },
+  {
+    route: "/v/demo/reminder/material-staging",
+    fileName: "volunteer-reminder.jpg",
+    viewport: desktopViewport,
+    auditPage: true,
+    auditReminder: true,
+    auditVolunteerConfirmation: true,
+  },
   { route: "/admin", fileName: "admin.jpg", viewport: desktopViewport },
   { route: "/admin/dashboard", fileName: "dashboard.jpg", viewport: desktopViewport },
   {
@@ -256,6 +264,14 @@ const captures = [
     auditNoAssignments: true,
     fullPageCapture: true,
   },
+  {
+    route: "/v/demo/reminder/material-staging",
+    fileName: "mobile-volunteer-reminder.jpg",
+    viewport: mobileViewport,
+    auditPage: true,
+    auditReminder: true,
+    fullPageCapture: true,
+  },
 ];
 
 function previewUrl(route) {
@@ -307,6 +323,7 @@ async function main() {
       auditAssignmentDetailLink,
       auditVolunteerConfirmation,
       auditNoAssignments,
+      auditReminder,
       fullPageCapture,
     } of selectedCaptures) {
       const browserErrors = [];
@@ -421,10 +438,11 @@ async function main() {
 
       if (auditVolunteerConfirmation) {
         await page.getByRole("button", { name: "Confirm", exact: true }).click();
-        await page.getByText("Preview updated: you can make this assignment.", { exact: false }).waitFor();
+        await page.getByText("this would mark you confirmed", { exact: false }).waitFor();
+        await page.getByRole("button", { name: "Change response" }).click();
         await page.getByRole("button", { name: "Can't make it", exact: true }).click();
-        await page.getByText("the project contact would be told", { exact: false }).waitFor();
-        await page.reload({ waitUntil: "domcontentloaded" });
+        await page.getByText("this would tell the project contact", { exact: false }).waitFor();
+        await page.getByRole("button", { name: "Change response" }).click();
         await page.getByText(
           "Let the project contact know whether you can make this assignment.",
           { exact: false },
@@ -440,6 +458,23 @@ async function main() {
         await page.getByText("The project contact may still be reviewing your availability.", {
           exact: false,
         }).waitFor();
+      }
+
+      if (auditReminder) {
+        await page.getByRole("heading", { name: "Material staging", level: 1 }).waitFor();
+        await page.getByRole("link", { name: "Back to my schedule" }).waitFor();
+        await page.getByRole("link", { name: "View full assignment details" }).waitFor();
+        await page.getByText("This is not a secure production link", { exact: false }).waitFor();
+
+        await page.goto(previewUrl("/v/demo/reminder/unknown-assignment"), {
+          waitUntil: "domcontentloaded",
+        });
+        await page.getByRole("heading", { name: "We could not find that reminder." }).waitFor();
+
+        await page.goto(previewUrl("/v/demo/reminder/material-staging"), {
+          waitUntil: "domcontentloaded",
+        });
+        await page.getByRole("heading", { name: "Material staging", level: 1 }).waitFor();
       }
 
       if (auditPage) {

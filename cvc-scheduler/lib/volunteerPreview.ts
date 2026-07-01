@@ -118,3 +118,11 @@ export const volunteerPreviewAssignments: VolunteerAssignmentPreview[] = [
 export function getVolunteerPreviewAssignment(slug: string) {
   return volunteerPreviewAssignments.find((assignment) => assignment.slug === slug);
 }
+
+export function getAssignmentDetailHref(slug: string) {
+  return `/v/demo/assignments/${slug}`;
+}
+
+export function getReminderAssignmentHref(slug: string) {
+  return `/v/demo/reminder/${slug}`;
+}

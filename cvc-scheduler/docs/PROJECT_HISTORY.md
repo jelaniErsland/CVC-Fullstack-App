@@ -2740,6 +2740,51 @@ Limitations:
 Next recommended step:
 - 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
 
+## Iteration 10.6 — Volunteer Schedule Response State Polish / Reminder Link Preview
+
+Summary:
+- Refined the shared response control into a clear reversible loop: Needs reply exposes Confirm / Can’t make it, responded states show one Change response action, and changing returns to the pending choice.
+- Updated response copy to describe what each choice would do while stating separately that the preview sends nothing and resets when the volunteer leaves.
+- Kept every state in the existing `aria-live` region and preserved large mobile actions without adding synchronization between schedule, detail, or reminder pages.
+- Added reusable `/v/demo/reminder/[assignmentId]` previews for all four deterministic assignments with Alex/Belgrade context, schedule summary, response controls, schedule/detail exits, and explicit non-secure/no-reminder-sent guidance.
+- Added a calm unknown-reminder recovery page and shared assignment/reminder href helpers.
+- Extended screenshot QA through the full response/change loop, valid/unknown reminder routes, reminder navigation links, nested-control checks, browser errors, and 390px overflow.
+
+Changed files:
+- `app/v/demo/reminder/[assignmentId]/page.tsx`
+- `components/VolunteerConfirmationPreview.tsx`
+- `lib/volunteerPreview.ts`
+- `scripts/capture-previews.mjs`
+- `docs/previews/latest/volunteer-home.jpg`
+- `docs/previews/latest/mobile-volunteer-home.jpg`
+- `docs/previews/latest/volunteer-assignment-detail.jpg`
+- `docs/previews/latest/mobile-volunteer-assignment-detail.jpg`
+- `docs/previews/latest/volunteer-reminder.jpg`
+- `docs/previews/latest/mobile-volunteer-reminder.jpg`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 72 static pages generated.
+- Production route checks returned 200 for `/`, `/v/demo`, no-assignments, Material staging, Drywall crew, assignment recovery, Material staging reminder, reminder recovery, the Belgrade questionnaire, admin dashboard, and admin Calendar.
+- Targeted Playwright capture passed for the response-bearing schedule/detail pages and new reminder previews on desktop/full-page 390px mobile with no console errors, page errors, hydration warnings, nested controls, or horizontal overflow.
+- Public QA exercised Confirm, Change response, Can’t make it, and Change response back to pending; reminder QA verified schedule/detail links, non-secure copy, and unknown recovery.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots were unchanged.
+
+Limitations:
+- Reminder routes are deterministic public previews with no secure token parsing, identity verification, real reminder email/text, or delivery state.
+- Responses remain local, unsent, unsynchronized between pages, and reset after navigation/reload.
+- Lookup still always resolves to Alex; there is no real identity resolution, remembered-device persistence, auth, Supabase, database, email, or secure link behavior.
+- Public schedule and reminder content do not sync with admin Calendar or Communications.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot inspection completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed.
+
+Next recommended step:
+- 10.7 Public Volunteer Portal Stabilization + Handoff Review.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -191,6 +191,8 @@ Upcoming UI direction:
 - The reusable `/v/demo/assignments/[assignmentId]` preview renders all four listed assignments from one shared public-preview schedule source. Each detail includes person/project context, work purpose, date/time, location/check-in, crew coverage, contact, preparation and lunch guidance, a schedule back path, and shared local-only response controls initialized from the assignment’s preview state. Unknown ids retain the calm recovery view.
 - Deterministic `/v/demo/no-assignments` shows the same remembered person/project context without treating an empty schedule as an error or rejection. It explains that availability may still be under review, keeps account-free return guidance plain, offers real questionnaire and lookup links, and avoids a fake refresh action.
 - Normal and empty volunteer schedule states share a compact divided project-information rail. The normal schedule includes questionnaire status, the next relevant lunch, a dated concise project update, and check-in help; the empty state removes duplicate questionnaire and irrelevant lunch sections, leaving only the project update and help guidance.
+- Public response controls now use a reversible three-state preview. `Needs reply` exposes Confirm and Can’t make it; either choice becomes a calm `Confirmed` or `Can’t make it` result with one `Change response` action. An `aria-live` region announces the state copy, and every state plainly says that nothing is sent and the choice resets when the volunteer leaves.
+- Deterministic `/v/demo/reminder/[assignmentId]` demonstrates the focused page a future email/text reminder could open for any of the four assignments. It includes person/project context, date/time, location/check-in, crew coverage, the shared response controls, schedule/detail links, explicit no-account language, and clear warnings that the link is neither secure nor sent. Unknown reminder ids receive a calm recovery state.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -268,6 +270,7 @@ Upcoming UI direction:
 - `/v/demo`: Remembered-volunteer schedule preview for Alex Rivera with one focused next assignment, three quieter upcoming assignments, local response controls, and other project information.
 - `/v/demo/no-assignments`: Reassuring deterministic schedule state for a found volunteer who has no assignments yet, with questionnaire/lookup actions and concise project guidance.
 - `/v/demo/assignments/[assignmentId]`: Reusable public detail preview for Material staging, Drywall crew, Lunch support, and Site cleanup; unknown ids show a calm recovery state.
+- `/v/demo/reminder/[assignmentId]`: Deterministic non-secure reminder-link preview for the same four assignments, with local response controls and unknown-id recovery.
 - `/admin`: Redirects to the default active Belgrade workspace dashboard.
 - `/admin/dashboard`: Mock Overview page inside Belgrade Major Remodel 2026 with compact project context, this-week Calendar rows, calm follow-up summary, quick links to Questionnaires/Calendar/Tasks/Communications, and light role-aware guidance.
 - `/admin/calendar`: Mock Calendar scheduling surface where task presets become dated/time-windowed scheduled instances with helpers, filled counts, status, notes, local filters, Day/Week/Month/List mock views, a full-surface clickable Week grid direction, a page-scrolling 24-hour Day timeline, a compact List companion, a click/tap-open item inspector for existing items, and a click/tap-open scheduled-task creator for empty grid slots. Desktop uses right-side inspector/filter/create panels; mobile uses bottom sheets. Calendar overlays are mutually exclusive, including coordination with mobile More.
@@ -296,7 +299,7 @@ Upcoming UI direction:
 
 Use `npm run build` and `npm run preview` for a production-like local preview, or `npm run dev` while actively developing. Then run `npm run preview:screenshots` while the app is available locally.
 
-The script captures the public Project Local landing, full volunteer schedule, no-assignment state, and representative assignment detail on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested interactive controls, or horizontal overflow; desktop audits exercise lookup, two detail routes, unknown recovery, both response choices, and the empty-state questionnaire/reassurance contract. Mobile schedule, empty, and detail captures are full-page for complete 390px review. Set `PREVIEW_BASE_URL` to override the base URL.
+The script captures the public Project Local landing, full schedule, no-assignment state, representative detail, and reminder link on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested controls, or overflow; audits exercise lookup, detail/unknown recovery, the full Confirm → Change → Can’t make it → Change loop, empty-state semantics, reminder exits, and unknown reminders. Mobile schedule, empty, detail, and reminder captures are full-page for complete 390px review. Set `PREVIEW_BASE_URL` to override the base URL.
 
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
@@ -363,7 +366,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic four-assignment preview; the no-assignment route is a separate fixed variant rather than a lookup result. Remembered-device identity is explanatory copy only, confirmation state resets on navigation, and public schedule/update content is not synchronized with admin Calendar or Communications data. Secure links, real identity resolution, and mutations are not implemented.
+- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic schedule; empty and reminder routes are fixed variants rather than lookup/email outcomes. Response state remains component-local and resets on navigation. Reminder paths have no token or identity verification, send no email/text, and public schedule/update content does not sync with admin Calendar or Communications. Auth, Supabase, real identity resolution, secure links, and mutations are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Current data is mock-only.
@@ -371,4 +374,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
+10.7 Public Volunteer Portal Stabilization + Handoff Review.
