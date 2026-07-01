@@ -30,7 +30,7 @@ function UnavailableQuestionnaireMessage({ projectName }: { projectName?: string
           <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-slate-600">
             {projectName
               ? `${projectName} is not accepting public questionnaire responses in this prototype.`
-              : "We could not find an open project workspace for this questionnaire link."}
+              : "We could not find an open project for this questionnaire link."}
           </p>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
             If you were given this link by a project contact, please check with them for the

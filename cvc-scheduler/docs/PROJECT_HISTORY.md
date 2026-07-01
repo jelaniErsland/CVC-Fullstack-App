@@ -2785,6 +2785,43 @@ Limitations:
 Next recommended step:
 - 10.7 Public Volunteer Portal Stabilization + Handoff Review.
 
+## Iteration 10.7 — Public Volunteer Portal Stabilization + Handoff Review
+
+Summary:
+- Audited the full Project Local public flow across landing, remembered schedule, no-assignment state, four assignment details, four reminder previews, unknown recovery, and the Belgrade questionnaire.
+- Confirmed the existing public screenshot harness already covers lookup, two detail routes, assignment/reminder recovery, empty-state semantics, the complete reversible response loop, nested controls, browser errors, hydration warnings, and responsive overflow.
+- Found and fixed one concrete copy leak: the public unavailable-questionnaire state now says `open project` instead of the admin-oriented `project workspace`.
+- Found no public layout, interaction, recovery, focus-label, duplication, sent/security-language, or 390px overflow defect requiring further product changes.
+- Regenerated the complete 10-preview public handoff matrix without visual diffs and left Calendar/admin screenshots untouched.
+- Marked the public volunteer portal stable as a mock prototype and moved the next step to persistence/security readiness planning rather than implementation.
+
+Changed files:
+- `app/questionnaire/[projectId]/page.tsx`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `node --check scripts/capture-previews.mjs` passed.
+- `npm run lint` passed.
+- `npm run build` passed with all 72 static pages generated.
+- Production route checks returned 200 for all 14 requested routes: landing, schedule, empty state, four assignment ids, assignment recovery, two reminder ids, reminder recovery, questionnaire, admin dashboard, and admin Calendar.
+- The targeted workflow regenerated all 10 public desktop/mobile previews and passed lookup, detail, recovery, empty-state, response-change, reminder-link, browser-error, hydration, nested-control, and horizontal-overflow checks.
+- Rendered desktop/mobile review found no cramped sections, card-wall drift, misleading account/sent/security language, repeated empty-state content, or missing recovery path.
+- `npm run test:calendar` passed all 17 desktop/mobile checks; Calendar code and screenshots remained unchanged.
+- `git diff --check` passed.
+
+Limitations:
+- The portal remains deterministic and mock-only: lookup always opens Alex, empty/reminder routes are fixed variants, and public assignments do not derive from admin Calendar.
+- Responses remain component-local, unsent, unsynchronized, and reset after navigation/reload.
+- Reminder links have no secure tokens, identity verification, delivery, or real email/text behavior.
+- There is no auth, Supabase, database persistence, remembered-device identity, real lookup, secure link, Calendar/Communications integration, or production mutation behavior.
+- The independent in-app browser backend was unavailable during QA; the production Playwright workflow and rendered screenshot audit completed successfully.
+- `CALENDAR_DATA_MODEL_READINESS.md` was not changed.
+
+Next recommended step:
+- 11.1 Supabase/Auth/Persistence Readiness Planning. This should remain a planning/readiness pass unless implementation is explicitly requested.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

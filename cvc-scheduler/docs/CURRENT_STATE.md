@@ -193,6 +193,7 @@ Upcoming UI direction:
 - Normal and empty volunteer schedule states share a compact divided project-information rail. The normal schedule includes questionnaire status, the next relevant lunch, a dated concise project update, and check-in help; the empty state removes duplicate questionnaire and irrelevant lunch sections, leaving only the project update and help guidance.
 - Public response controls now use a reversible three-state preview. `Needs reply` exposes Confirm and Can’t make it; either choice becomes a calm `Confirmed` or `Can’t make it` result with one `Change response` action. An `aria-live` region announces the state copy, and every state plainly says that nothing is sent and the choice resets when the volunteer leaves.
 - Deterministic `/v/demo/reminder/[assignmentId]` demonstrates the focused page a future email/text reminder could open for any of the four assignments. It includes person/project context, date/time, location/check-in, crew coverage, the shared response controls, schedule/detail links, explicit no-account language, and clear warnings that the link is neither secure nor sent. Unknown reminder ids receive a calm recovery state.
+- The 10.1–10.7 public volunteer sequence is now stable for mock-prototype handoff. The audited loop covers account-free lookup, remembered schedule, empty schedule, four reusable details, four reminder previews, calm unknown recovery, reversible local responses, questionnaire access, Special access separation, and desktop/full-page 390px QA. Future public work should begin from persistence/security readiness rather than another general UI expansion.
 - Volunteer foundation with mock volunteer questionnaire/profile data.
 - Project/workspace admin foundation.
 - Project-aware and module-aware `AdminNav`.
@@ -301,6 +302,8 @@ Use `npm run build` and `npm run preview` for a production-like local preview, o
 
 The script captures the public Project Local landing, full schedule, no-assignment state, representative detail, and reminder link on desktop/mobile, plus key admin routes and states from `http://127.0.0.1:3000` by default. Public captures fail on console/page errors, nested controls, or overflow; audits exercise lookup, detail/unknown recovery, the full Confirm → Change → Can’t make it → Change loop, empty-state semantics, reminder exits, and unknown reminders. Mobile schedule, empty, detail, and reminder captures are full-page for complete 390px review. Set `PREVIEW_BASE_URL` to override the base URL.
 
+The 10 public previews remain the intentional handoff matrix: landing, schedule, empty schedule, representative assignment detail, and reminder entry at desktop and mobile widths. The 10.7 audit regenerated all 10 without visual diffs and did not touch Calendar or admin screenshots.
+
 The mobile admin screenshots use viewport-sized captures so closed off-canvas sheets do not appear in clean preview states. The clean mobile Calendar capture focuses the Calendar workspace header so date navigation and the bottom tab navigation are visible together. Focused open states cover the legacy mobile drawer, mobile More, Calendar filters, and Calendar creation.
 
 Calendar view captures wait for the client interaction to be ready, verify that the requested Day/Week/Month/List control is pressed, and allow the shared control transition to settle before capturing.
@@ -374,4 +377,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-10.7 Public Volunteer Portal Stabilization + Handoff Review.
+11.1 Supabase/Auth/Persistence Readiness Planning.

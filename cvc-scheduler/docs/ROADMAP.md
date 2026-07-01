@@ -93,7 +93,8 @@ Rough phases:
 - 10.4 Volunteer Schedule List / Multiple Assignments Mock. Completed.
 - 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish. Completed.
 - 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview. Completed.
-- 10.7 Public Volunteer Portal Stabilization + Handoff Review. Next recommended step.
+- 10.7 Public Volunteer Portal Stabilization + Handoff Review. Completed.
+- 11.1 Supabase/Auth/Persistence Readiness Planning. Next recommended step.
 
 ## 4. Mid-Term Roadmap
 
@@ -168,6 +169,7 @@ Rough phases:
 - 10.5 Volunteer Schedule Empty/No Assignment States + Project Updates Polish.
 - 10.6 Volunteer Schedule Response State Polish / Reminder Link Preview.
 - 10.7 Public Volunteer Portal Stabilization + Handoff Review.
+- 11.1 Supabase/Auth/Persistence Readiness Planning.
 
 ## 5. Later Roadmap
 
