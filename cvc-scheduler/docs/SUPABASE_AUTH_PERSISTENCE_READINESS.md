@@ -108,7 +108,7 @@ Authentication proves only an identity. The 11.5 grant reader separately resolve
 
 The repository now includes `@supabase/supabase-js`, lazy browser and server client factories, typed runtime environment validation, `.env.example`, and `npm run supabase:check`. The check calls only the Supabase Auth health endpoint; it does not sign in, create a session, or read a product table. Current builds and mock routes do not require Supabase variables because no application route imports either client factory.
 
-Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Generated database types remain pending until the reviewed migration is applied to a linked or local schema.
+Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Reviewed public-schema types generated from the local 11.11 schema are available in `lib/supabase/database.types.ts`; client parameterization remains a separate follow-up.
 
 ## 1. Current mock-prototype boundary
 
@@ -346,7 +346,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.9 Calendar item persistence — completed:** explicit schedule kinds, workspace-derived timezone, preset-or-one-off snapshots, capability-scoped create/read/archive, and no route or assignment cutover.
 - **11.10 Assignment/response persistence — completed:** same-workspace assignment truth, one current response row, contact-only capability commands, derived future coverage, and no public token or route cutover.
 - **11.11 Public volunteer response authorization — completed:** database-generated opaque bearers, hash-only storage, expiry/revocation, minimal verification, scoped public response mutation, and no route/delivery cutover.
-- **Post-11.11 validation gate:** apply through 11.11 in non-production and exercise live issuance, expiry, revocation, forwarding, RLS, and concurrency before public route integration.
+- **Post-11.11 validation gate — passed 2026-07-02:** local migrations apply through 11.11; live RLS, capability, Calendar, assignment, response, token-storage, verification, expiry, revocation, inactive-state, public-scope, and concurrency checks pass. Public/contact overlap is scoped to the target response row, rejects the loser with SQLSTATE `40001`, and preserves only winner truth. Reviewed local public-schema types were generated after the successful gate.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 No public route integration should proceed until the full migration chain is applied in a non-production Supabase environment and live token/RLS behavior is exercised. Communications, reminder delivery, Needs Attention, remembered devices, lookup, and broad route cutovers remain separate later slices.

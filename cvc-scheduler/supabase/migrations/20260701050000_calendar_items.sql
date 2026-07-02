@@ -16,9 +16,12 @@ declare
   value_json jsonb;
 begin
   if jsonb_typeof(p_values) is distinct from 'object'
-    or jsonb_object_length(p_values) > 20
     or octet_length(p_values::text) > 16384
   then
+    return false;
+  end if;
+
+  if (select count(*) from jsonb_object_keys(p_values)) > 20 then
     return false;
   end if;
 

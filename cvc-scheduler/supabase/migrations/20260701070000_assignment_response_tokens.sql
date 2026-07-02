@@ -342,7 +342,7 @@ begin
     and volunteer.readiness_status = 'ready'
     and item.lifecycle = 'active'
     and workspace.lifecycle = 'active'
-  for update of token, response;
+  for update of token, response nowait;
 
   if verified_token_id is null
     or existing_response_status is null
@@ -378,6 +378,9 @@ begin
 
   return query
   select verified_assignment_id, p_response_status, recorded_at;
+exception
+  when lock_not_available then
+    raise exception 'Assignment response changed concurrently.' using errcode = '40001';
 end;
 $$;
 

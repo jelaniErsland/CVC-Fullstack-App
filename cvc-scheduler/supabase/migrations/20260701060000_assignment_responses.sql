@@ -341,7 +341,8 @@ begin
         and grant_row.valid_from <= now()
         and (grant_row.valid_until is null or grant_row.valid_until > now())
         and grant_row.capabilities @> array['assignments.edit']::text[]
-    );
+    )
+  for update of response nowait;
 
   if caller_user_id is null
     or current_status is null
@@ -384,6 +385,9 @@ begin
   end if;
 
   return updated_assignment_id;
+exception
+  when lock_not_available then
+    raise exception 'Assignment response changed concurrently.' using errcode = '40001';
 end;
 $$;
 

@@ -141,8 +141,10 @@ assert.match(migration, /p_response_status = current_status/i);
 assert.match(migration, /current_status = 'needs_response' and p_response_status in \('confirmed', 'declined'\)/i);
 assert.match(migration, /assignment\.lifecycle = 'active'/i);
 assert.match(migration, /response\.response_status = current_status/i);
+assert.match(migration, /for update of response nowait/i);
 assert.match(migration, /current_assignment\.lifecycle = 'active'/i);
 assert.match(migration, /Assignment response changed concurrently/i);
+assert.match(migration, /when lock_not_available then[\s\S]*errcode = '40001'/i);
 
 const createSignature = migration.match(
   /create function public\.create_calendar_assignment\(([\s\S]*?)\)\s*returns uuid/i,

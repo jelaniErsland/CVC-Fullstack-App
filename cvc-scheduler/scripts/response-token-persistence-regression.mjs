@@ -137,9 +137,10 @@ assert.ok(submitSignature);
 assert.doesNotMatch(submitSignature, /workspace|assignment_id|volunteer|source|hash|verifier|coverage|filled/i);
 assert.match(migration, /p_response_status not in \('confirmed', 'declined'\)/i);
 assert.match(migration, /response_source = 'public_token'/i);
-assert.match(migration, /for update of token, response/i);
+assert.match(migration, /for update of token, response nowait/i);
 assert.match(migration, /response\.response_status = existing_response_status/i);
 assert.match(migration, /set last_used_at = recorded_at/i);
+assert.match(migration, /when lock_not_available then[\s\S]*errcode = '40001'/i);
 assert.doesNotMatch(migration, /perform public\.update_assignment_response|select public\.update_assignment_response/i);
 
 assert.match(
