@@ -3329,6 +3329,41 @@ Limitations:
 Next recommended step:
 - Review the smallest safe link-delivery and abuse-control boundary separately before connecting any reminder or Communications workflow. Do not combine that work with broad lookup, remembered devices, or unrelated route cutovers.
 
+## Iteration 11.13 — Public Response Route Valid-Token QA Gate
+
+Summary:
+- Added `npm run test:response-route` and a local-only Playwright/PostgreSQL harness for the real `/respond/[token]` route.
+- The harness refuses non-loopback Supabase/preview URLs, requires a running local stack and production preview, creates a disposable local Auth identity plus minimum workspace-to-token fixture chain, and uses the reviewed authenticated RPCs for questionnaire conversion, task/Calendar/assignment creation, and token issuance.
+- It verifies only safe assignment context is rendered, sensitive/unrelated fixture markers stay hidden, the bearer is absent from visible and non-script markup, route submission records `confirmed` from `public_token`, `last_used_at` is populated, and the calm success state renders.
+- Cleanup runs in `finally`, removes token/response/assignment/Calendar/task/volunteer/questionnaire/grant/contact/workspace/Auth rows, and verifies zero residue. Two consecutive fresh-fixture runs passed.
+- The gate found two narrow route bugs: bound server-action arguments emitted the bearer in a hidden input, and an untouched note submitted `""` to a validator that requires `null` or non-empty text. The route now uses an encrypted inline server-action closure and normalizes blank notes to `null`.
+- No database migration, route link, delivery behavior, lookup, remembered-device behavior, admin generation UI, or mock route integration was added.
+
+Changed files:
+- `app/respond/[token]/actions.ts`
+- `app/respond/[token]/page.tsx`
+- `package.json`
+- `scripts/response-route-valid-token-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:response-route` passed twice with fresh disposable fixtures and complete cleanup.
+- `npm run supabase:check` passed against the local Auth health endpoint.
+- All workspace, grant, questionnaire, volunteer, task, Calendar-item, assignment, and response-token regression commands passed.
+- `npm run lint`, `npm run build`, `npm run test:calendar`, `npx tsc --noEmit`, and `git diff --check` passed.
+
+Limitations:
+- The harness requires an already running production preview and local Supabase/Docker; it does not start services or target hosted environments.
+- No email/reminder delivery, public lookup, remembered-device access, admin link generation, Calendar/Volunteers route cutover, Communications/Needs Attention persistence, seed data, or mock-to-real integration exists.
+
+Next recommended step:
+- Review link transport, abuse/rate-limit controls, and operational revocation separately before any delivery integration.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

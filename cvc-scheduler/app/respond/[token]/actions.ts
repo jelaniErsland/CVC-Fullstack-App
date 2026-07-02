@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { redirect } from "next/navigation";
 
@@ -13,7 +13,8 @@ export async function submitPublicAssignmentResponseAction(
 ) {
   const status = formData.get("response");
   const noteValue = formData.get("note");
-  const note = typeof noteValue === "string" ? noteValue : null;
+  const normalizedNote = typeof noteValue === "string" ? noteValue.trim() : "";
+  const note = normalizedNote || null;
   let outcome: string;
 
   try {

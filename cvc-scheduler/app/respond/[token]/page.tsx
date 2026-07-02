@@ -167,7 +167,10 @@ export default async function PublicAssignmentResponsePage({
     context.currentResponseStatus === outcome
       ? outcome
       : null;
-  const submitAction = submitPublicAssignmentResponseAction.bind(null, token);
+  async function submitAction(formData: FormData) {
+    "use server";
+    await submitPublicAssignmentResponseAction(token, formData);
+  }
   const startTime = formatTime(context.startTime);
   const endTime = formatTime(context.endTime);
   const timeLabel = startTime

@@ -59,6 +59,23 @@ The script loads the same local environment convention as Next.js and requests t
 
 Missing or invalid variables fail with a setup-oriented message. The command must be run deliberately; builds and current mock routes do not require Supabase configuration.
 
+## Public response route QA
+
+The 11.13 positive route gate requires the local Supabase stack, local public values in `.env.local`, Docker, and a current production preview. In one terminal run:
+
+```powershell
+npm run build
+npm run preview
+```
+
+Then, in another terminal, run:
+
+```powershell
+npm run test:response-route
+```
+
+The command refuses non-loopback Supabase and preview URLs. It creates disposable local Auth and product fixtures, issues one response bearer through the reviewed authenticated RPC, verifies the real route and `public_token` response persistence, and removes every fixture in `finally` with a zero-residue check. It does not read a service-role key, print a bearer or credential, create seed data, or target hosted projects. Run it again to confirm a fresh fixture set also passes.
+
 ## Workspace migration and type generation
 
 The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260701070000_assignment_response_tokens.sql`. Review them before applying them in timestamp order. The last migration enables `pgcrypto` in Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:

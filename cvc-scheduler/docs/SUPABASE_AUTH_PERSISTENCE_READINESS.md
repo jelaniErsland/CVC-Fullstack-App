@@ -2,7 +2,15 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.12 connects one direct `/respond/[token]` shell to the assignment-scoped 11.11 public verification/response commands. It is not a public volunteer portal, reminder delivery, Calendar, or Volunteers route cutover; it adds no lookup, email, remembered-device behavior, coverage counter, or broad schedule access.
+Iteration 11.13 adds local QA infrastructure for the direct `/respond/[token]` shell introduced in 11.12. It is not a public volunteer portal, reminder delivery, Calendar, or Volunteers route cutover; it adds no lookup, email, remembered-device behavior, coverage counter, seed data, or broad schedule access.
+
+## 11.13 public response route valid-token QA boundary
+
+`npm run test:response-route` is a local-only production-preview gate. It refuses non-loopback Supabase and preview URLs, requires the local stack and reviewed public environment values, creates a disposable local Auth contact plus the minimum workspace/grant/questionnaire/volunteer/task/Calendar/assignment/response/token chain, and issues the bearer through the authenticated 11.11 RPC. It never uses or reads a service-role key.
+
+The Playwright pass opens the real `/respond/[token]` route, checks the documented safe assignment projection, rejects sensitive and unrelated fixture markers, verifies the bearer is absent from visible and non-script markup, submits `confirmed` through the route action, and confirms `confirmed` / `public_token` / populated `last_used_at` in PostgreSQL. Cleanup runs in `finally`, deletes every disposable product/Auth row, and verifies zero residue. Two consecutive fresh-fixture runs passed.
+
+The gate found and fixed two route-shell issues without changing the database or RPC contract: plain server-action binding exposed the bearer in a hidden input, so the page now captures it in an encrypted inline server-action closure; an untouched optional note posted an empty string, so the server-only action helper normalizes blank text to `null` before existing validation. This remains QA/test infrastructure only and adds no link creation, link delivery, email/reminder sending, lookup, remembered devices, admin link generation, or route integration.
 
 ## 11.12 public assignment response route boundary
 
@@ -356,6 +364,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.11 Public volunteer response authorization — completed:** database-generated opaque bearers, hash-only storage, expiry/revocation, minimal verification, scoped public response mutation, and no route/delivery cutover.
 - **Post-11.11 validation gate — passed 2026-07-02:** local and hosted non-production migrations apply through `20260701070000`. All 16 hosted live RLS/RPC groups passed against `project-local-staging` (`kfuujcfxoayukywvtaeh`), including target-row concurrency with exactly one winner, one SQLSTATE `40001` loser, and final truth matching the winner. Disposable fixtures, Auth users, helpers, triggers, transient roles, passwords, and temporary files were removed. Hosted generated-type output differed only in remote PostgREST metadata, not schema structure.
 - **11.12 Public Assignment Response Route Shell — completed:** `/respond/[token]` uses only the verified public read/mutation helpers, renders their safe projection, and maps success, unavailable, configuration, concurrency, and generic error states without linking or cutting over any mock route.
+- **11.13 Public Response Route Valid-Token QA Gate — completed:** the local-only disposable harness passed twice, verified the real route and database mutation, confirmed safe projection/no non-script bearer exposure, and removed all fixture/Auth rows after each run.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

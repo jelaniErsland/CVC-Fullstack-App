@@ -38,6 +38,11 @@ const publicRouteStatePath = path.join(
 );
 const responsePagePath = path.join(root, "app", "respond", "[token]", "page.tsx");
 const responseActionPath = path.join(root, "app", "respond", "[token]", "actions.ts");
+const responseRouteQaPath = path.join(
+  root,
+  "scripts",
+  "response-route-valid-token-regression.mjs",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
@@ -46,6 +51,7 @@ const [
   publicRouteState,
   responsePage,
   responseAction,
+  responseRouteQa,
   environmentExample,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
@@ -54,6 +60,7 @@ const [
   readFile(publicRouteStatePath, "utf8"),
   readFile(responsePagePath, "utf8"),
   readFile(responseActionPath, "utf8"),
+  readFile(responseRouteQaPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -212,8 +219,12 @@ assert.match(publicRouteState, /sqlState === "40001"[\s\S]*return "changed"/);
 assert.match(publicRouteState, /sqlState === "42501"[\s\S]*return "unavailable"/);
 
 assert.match(responsePage, /loadPublicAssignmentResponseRoute\(token\)/);
+assert.match(responsePage, /async function submitAction\(formData: FormData\)[\s\S]*"use server"/);
+assert.doesNotMatch(responsePage, /\.bind\(null, token\)/);
+assert.match(responseAction, /^import "server-only";/);
 assert.match(responseAction, /submitPublicAssignmentResponseForRoute/);
 assert.match(responseAction, /classifyPublicAssignmentResponseSubmissionError/);
+assert.match(responseAction, /noteValue\.trim\(\)[\s\S]*normalizedNote \|\| null/);
 assert.doesNotMatch(responseAction, /\.rpc\(|updateAssignmentResponse|assignments\/server/);
 assert.doesNotMatch(
   `${responsePage}\n${responseAction}`,
@@ -226,6 +237,14 @@ assert.match(responsePage, /No account or password is needed/);
 assert.match(responsePage, /name="response"[\s\S]*value="confirmed"/);
 assert.match(responsePage, /name="response"[\s\S]*value="declined"/);
 assert.doesNotMatch(responsePage, /value="needs_response"/);
+assert.match(responseRouteQa, /isLoopbackUrl\(supabaseUrl\)/);
+assert.match(responseRouteQa, /isLoopbackUrl\(previewBaseUrl\)/);
+assert.match(responseRouteQa, /finally\s*\{[\s\S]*cleanupFixtures\(containerName\)/);
+assert.match(responseRouteQa, /response_source[\s\S]*last_used_at/);
+assert.doesNotMatch(
+  responseRouteQa,
+  /SUPABASE_SERVICE_ROLE_KEY|serviceRole|createClient\([^\n]+service|console\.(?:log|error)\(\s*(?:bearerToken|responseUrl|password|access_token)|\$\{(?:bearerToken|responseUrl|password|access_token)\}/i,
+);
 
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
 const tokenId = "550e8400-e29b-41d4-a716-446655440041";
