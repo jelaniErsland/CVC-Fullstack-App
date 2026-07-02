@@ -3364,6 +3364,41 @@ Limitations:
 Next recommended step:
 - Review link transport, abuse/rate-limit controls, and operational revocation separately before any delivery integration.
 
+## Iteration 11.14 — Project Contact Response Link Issuance Preview Boundary
+
+Summary:
+- Added server-only `issueAssignmentResponseLink` and `issueAssignmentResponseLinkWithClient` helpers that compose the existing reviewed token issuers instead of duplicating RPC calls.
+- Added strict runtime validation for assignment id, optional 1–720 hour TTL, and trusted application origin. Loopback HTTP and deployed HTTPS origins are supported; unsafe schemes, non-loopback HTTP, credentials, paths, queries, fragments, whitespace, and unknown fields are rejected.
+- The structured result contains one in-memory `/respond/[token]` URL, expiration metadata, and a redacted display URL. It exposes no separate bearer, token id, verifier/hash, workspace, volunteer, actor, source, or purpose and performs no logging or storage.
+- Added `npm run test:response-link`. Its local-only disposable harness authenticates a contact with `assignments.edit`, exercises the server-only orchestration, verifies route shape/public verification/hash-only storage, prints only a redacted URL, and proves zero-residue cleanup. Two fresh-fixture runs passed.
+- Added the standard `server-only` marker dependency so standalone regression execution can load the exact server-only module under the React server condition used by the QA command.
+- Static checks prove no route imports the issuer, the production wrapper makes no direct RPC/table call, diagnostics are redacted, and no service-role path exists.
+
+Changed files:
+- `lib/responseTokens/link.ts`
+- `lib/responseTokens/link.server.ts`
+- `scripts/response-link-issuance-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `package-lock.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:response-link` passed twice with fresh disposable fixtures and complete cleanup.
+- `npm run supabase:check`, every workspace-through-response-token regression, and the existing valid-token route QA passed.
+- `npm run lint`, `npm run build`, `npm run test:calendar`, `npx tsc --noEmit`, and `git diff --check` passed.
+
+Limitations:
+- No route, component, admin surface, Communications/reminder flow, or template imports the link issuer. Nothing creates or displays a link for a real user.
+- No email/reminder delivery, public lookup, remembered-device access, Calendar/Volunteers route cutover, Communications/Needs Attention persistence, seed data, service-role usage, or mock-to-real integration was added.
+
+Next recommended step:
+- Review the smallest visible project-contact issuance UX together with audit, abuse/rate-limit, revocation, and delivery boundaries before connecting this helper anywhere.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

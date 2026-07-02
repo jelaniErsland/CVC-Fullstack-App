@@ -2,7 +2,15 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.13 adds local QA infrastructure for the direct `/respond/[token]` shell introduced in 11.12. It is not a public volunteer portal, reminder delivery, Calendar, or Volunteers route cutover; it adds no lookup, email, remembered-device behavior, coverage counter, seed data, or broad schedule access.
+Iteration 11.14 adds one unused server-only project-contact boundary that can perform authorized token issuance and construct a `/respond/[token]` URL in memory. It is not visible admin UI or delivery and adds no lookup, email, remembered-device behavior, route cutover, seed data, or broad schedule access.
+
+## 11.14 project-contact response-link issuance boundary
+
+`issueAssignmentResponseLink` uses the cookie-aware `issueAssignmentResponseToken` helper; `issueAssignmentResponseLinkWithClient` uses the existing authenticated-client variant. Neither duplicates a direct RPC. Input is limited at runtime to assignment id, optional 1–720 hour TTL, and an application base origin. The database still derives workspace, volunteer, actor, purpose, and token scope and requires an effective `assignments.edit` grant.
+
+`validateResponseLinkBaseUrl` accepts loopback HTTP for local work and HTTPS origins for deployed callers. It rejects empty/malformed values, unsafe schemes, non-loopback HTTP, embedded credentials, paths, query strings, fragments, and unknown input fields. The structured result contains the full in-memory response URL, expiration timestamp, and `redactedUrl`; it does not expose the raw bearer separately, token id, verifier/hash, workspace, volunteer, actor, or source. `redactAssignmentResponseLink` never returns an unrecognized input unchanged.
+
+`npm run test:response-link` executes the server-only orchestration under the React server condition, authenticates a disposable local contact with `assignments.edit`, issues and verifies one token, confirms the token table has a 32-byte verifier and no raw-token column, prints only `/respond/[redacted]`, and removes every fixture/Auth row in `finally`. Two fresh-fixture runs passed. The helper is imported by no route, component, Calendar, Volunteers, Communications, Needs Attention, template, or mock surface; no link is displayed or delivered.
 
 ## 11.13 public response route valid-token QA boundary
 
@@ -365,6 +373,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **Post-11.11 validation gate — passed 2026-07-02:** local and hosted non-production migrations apply through `20260701070000`. All 16 hosted live RLS/RPC groups passed against `project-local-staging` (`kfuujcfxoayukywvtaeh`), including target-row concurrency with exactly one winner, one SQLSTATE `40001` loser, and final truth matching the winner. Disposable fixtures, Auth users, helpers, triggers, transient roles, passwords, and temporary files were removed. Hosted generated-type output differed only in remote PostgREST metadata, not schema structure.
 - **11.12 Public Assignment Response Route Shell — completed:** `/respond/[token]` uses only the verified public read/mutation helpers, renders their safe projection, and maps success, unavailable, configuration, concurrency, and generic error states without linking or cutting over any mock route.
 - **11.13 Public Response Route Valid-Token QA Gate — completed:** the local-only disposable harness passed twice, verified the real route and database mutation, confirmed safe projection/no non-script bearer exposure, and removed all fixture/Auth rows after each run.
+- **11.14 Project Contact Response Link Issuance Preview Boundary — completed:** server-only authorized issuance builds one validated response URL with expiration metadata and redacted diagnostics; the local hash-only/verification/cleanup QA passed twice, and no route imports the helper.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

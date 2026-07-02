@@ -15,6 +15,12 @@ import {
   validateRevokeAssignmentResponseTokenInput,
   validateSubmitAssignmentResponseByTokenInput,
 } from "../lib/responseTokens/token.ts";
+import {
+  ResponseLinkValidationError,
+  issueAssignmentResponseLinkWithIssuer,
+  redactAssignmentResponseLink,
+  validateResponseLinkBaseUrl,
+} from "../lib/responseTokens/link.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migrationPath = path.join(
@@ -43,6 +49,17 @@ const responseRouteQaPath = path.join(
   "scripts",
   "response-route-valid-token-regression.mjs",
 );
+const responseLinkBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "link.server.ts",
+);
+const responseLinkQaPath = path.join(
+  root,
+  "scripts",
+  "response-link-issuance-regression.mjs",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
@@ -52,6 +69,8 @@ const [
   responsePage,
   responseAction,
   responseRouteQa,
+  responseLinkBoundary,
+  responseLinkQa,
   environmentExample,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
@@ -61,6 +80,8 @@ const [
   readFile(responsePagePath, "utf8"),
   readFile(responseActionPath, "utf8"),
   readFile(responseRouteQaPath, "utf8"),
+  readFile(responseLinkBoundaryPath, "utf8"),
+  readFile(responseLinkQaPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -246,6 +267,23 @@ assert.doesNotMatch(
   /SUPABASE_SERVICE_ROLE_KEY|serviceRole|createClient\([^\n]+service|console\.(?:log|error)\(\s*(?:bearerToken|responseUrl|password|access_token)|\$\{(?:bearerToken|responseUrl|password|access_token)\}/i,
 );
 
+assert.match(responseLinkBoundary, /^import "server-only";/);
+assert.match(responseLinkBoundary, /issueAssignmentResponseTokenWithClient/);
+assert.match(responseLinkBoundary, /issueAssignmentResponseToken/);
+assert.match(responseLinkBoundary, /issueAssignmentResponseLinkWithIssuer/);
+assert.doesNotMatch(
+  responseLinkBoundary,
+  /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\./i,
+);
+assert.match(responseLinkQa, /isLoopbackUrl\(supabaseUrl\)/);
+assert.match(responseLinkQa, /isLoopbackUrl\(responseLinkBaseUrl\)/);
+assert.match(responseLinkQa, /finally\s*\{[\s\S]*cleanupFixtures\(containerName\)/);
+assert.match(responseLinkQa, /storedTokenState === "32\|assignment_response\|0"/);
+assert.doesNotMatch(
+  responseLinkQa,
+  /SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.(?:log|error)\(\s*(?:issuedBearer|responseUrl|password|access_token)|console\.(?:log|error)\([^\n]*\$\{(?:issuedBearer|responseUrl|password|access_token)\}/i,
+);
+
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
 const tokenId = "550e8400-e29b-41d4-a716-446655440041";
 const bearerToken = "A".repeat(43);
@@ -327,6 +365,60 @@ const responseResult = parsePublicAssignmentResponseResult([
 ]);
 assert.equal(responseResult.status, "confirmed");
 
+assert.equal(validateResponseLinkBaseUrl("http://127.0.0.1:3000"), "http://127.0.0.1:3000");
+assert.equal(validateResponseLinkBaseUrl("https://preview.example.test/"), "https://preview.example.test");
+for (const invalidBaseUrl of [
+  "",
+  "not-a-url",
+  "javascript:alert(1)",
+  "data:text/plain,hello",
+  "blob:https://example.test/id",
+  "file:///tmp/response",
+  "http://example.test",
+  "https://user:password@example.test",
+  "https://example.test/app",
+  "https://example.test/?next=respond",
+  " https://example.test",
+]) {
+  assert.throws(() => validateResponseLinkBaseUrl(invalidBaseUrl), ResponseLinkValidationError);
+}
+
+let linkIssuerInput;
+const issuedLink = await issueAssignmentResponseLinkWithIssuer(
+  {
+    assignmentId,
+    expiresInHours: 12,
+    baseUrl: "https://preview.example.test",
+  },
+  async (input) => {
+    linkIssuerInput = input;
+    return {
+      tokenId,
+      token: bearerToken,
+      expiresAt: "2026-07-03T12:00:00.000Z",
+    };
+  },
+);
+assert.deepEqual(linkIssuerInput, {
+  assignmentId,
+  expiresInHours: 12,
+  internalNote: null,
+});
+assert.equal(
+  issuedLink.responseUrl,
+  `https://preview.example.test/respond/${bearerToken}`,
+);
+assert.equal(issuedLink.redactedUrl, "https://preview.example.test/respond/[redacted]");
+assert.equal(redactAssignmentResponseLink(issuedLink.responseUrl), issuedLink.redactedUrl);
+assert.equal(redactAssignmentResponseLink("not-a-link"), "[invalid response link]");
+await assert.rejects(
+  issueAssignmentResponseLinkWithIssuer(
+    { assignmentId, baseUrl: "https://preview.example.test", workspaceId: "forbidden" },
+    async () => ({ tokenId, token: bearerToken, expiresAt: "2026-07-03T12:00:00.000Z" }),
+  ),
+  ResponseLinkValidationError,
+);
+
 const parsedStoredResponse = parseAssignmentResponse({
   id: "550e8400-e29b-41d4-a716-446655440044",
   workspace_id: "550e8400-e29b-41d4-a716-446655440045",
@@ -383,16 +475,25 @@ const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
   /\.(?:ts|tsx)$/.test(file),
 );
 const routeImports = [];
+const responseLinkRouteImports = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
   if (source.includes("lib/responseTokens/server")) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
+  }
+  if (source.includes("lib/responseTokens/link")) {
+    responseLinkRouteImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
 assert.deepEqual(
   routeImports,
   [],
   "Routes must not bypass the narrow public response-route boundary",
+);
+assert.deepEqual(
+  responseLinkRouteImports,
+  [],
+  "No public or admin route may import the project-contact link issuer",
 );
 
 console.log("Public assignment-response token checks passed.");

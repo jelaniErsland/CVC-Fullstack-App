@@ -76,6 +76,16 @@ npm run test:response-route
 
 The command refuses non-loopback Supabase and preview URLs. It creates disposable local Auth and product fixtures, issues one response bearer through the reviewed authenticated RPC, verifies the real route and `public_token` response persistence, and removes every fixture in `finally` with a zero-residue check. It does not read a service-role key, print a bearer or credential, create seed data, or target hosted projects. Run it again to confirm a fresh fixture set also passes.
 
+## Response-link issuance QA
+
+With local Supabase running and the local public values in `.env.local`, run:
+
+```powershell
+npm run test:response-link
+```
+
+This 11.14 command does not require a preview server. It refuses non-loopback Supabase and response-link base URLs, authenticates a disposable local project contact, exercises the server-only link orchestration with authorized token issuance, verifies the resulting route shape, redacted diagnostic, public token verification, and hash-only database row, then removes all fixtures and checks for zero residue. Run it twice to confirm fresh fixtures. `RESPONSE_LINK_BASE_URL` may override the default loopback origin for this local QA command, but the harness still rejects non-loopback values. No full response URL, bearer, verifier, password, or access token is printed.
+
 ## Workspace migration and type generation
 
 The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260701070000_assignment_response_tokens.sql`. Review them before applying them in timestamp order. The last migration enables `pgcrypto` in Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
