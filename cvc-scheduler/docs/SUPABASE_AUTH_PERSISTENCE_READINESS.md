@@ -2,7 +2,17 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.14 adds one unused server-only project-contact boundary that can perform authorized token issuance and construct a `/respond/[token]` URL in memory. It is not visible admin UI or delivery and adds no lookup, email, remembered-device behavior, route cutover, seed data, or broad schedule access.
+Iteration 11.15 adds one unlinked developer/admin diagnostic route over the 11.14 server-only issuer. It is not polished product UI or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+
+## 11.15 response-link admin diagnostic boundary
+
+`/admin/diagnostics/response-link` is dynamic, noindex, no-referrer, and deliberately absent from all navigation, landing, Calendar, Volunteers, Communications, template, and mock volunteer surfaces. The page calls `readProjectContactSession` itself, so a verified Supabase contact identity is required even when general mock admin routes use `ADMIN_AUTH_MODE=review`; enforced mode additionally retains the proxy gate.
+
+The browser can submit only assignment UUID and 1–720 hour TTL. `RESPONSE_LINK_BASE_URL` is a server-side trusted origin and is never a form field. `issueResponseLinkDiagnostic` calls only `issueAssignmentResponseLink`; the 11.14/11.11 layers still verify Auth and `assignments.edit` and derive workspace, volunteer, actor, purpose, source, and scope. Missing configuration, malformed input, unavailable/unauthorized issuance, and unexpected errors map to calm non-secret states.
+
+The mapper strips `responseUrl` before returning to the action. Success redirects with assignment/expiration metadata only and renders the fixed `/respond/[redacted]` path; no full link, bearer, token id, verifier/hash, volunteer data, or scope data reaches ordinary diagnostic output. The generated credential is not displayed, copied, logged, stored beyond its existing hash-only verifier row, or delivered. This means the route is an issuance diagnostic, not a usable link-generation workflow; unused-token cleanup/revocation must be designed before product use.
+
+Focused regression checks cover the authenticated-session call, server-only configuration, malformed/configuration states, noindex metadata, redacted-only output, no direct RPC/service-role access, and the absence of links/imports outside the route. Positive cookie-backed route automation was intentionally not duplicated: the 11.14 disposable local QA already proves authorized live issuance/hash-only storage/public verification/cleanup, while a full diagnostic route pass would repeat the 11.13 Auth/browser fixture framework.
 
 ## 11.14 project-contact response-link issuance boundary
 
@@ -374,6 +384,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.12 Public Assignment Response Route Shell — completed:** `/respond/[token]` uses only the verified public read/mutation helpers, renders their safe projection, and maps success, unavailable, configuration, concurrency, and generic error states without linking or cutting over any mock route.
 - **11.13 Public Response Route Valid-Token QA Gate — completed:** the local-only disposable harness passed twice, verified the real route and database mutation, confirmed safe projection/no non-script bearer exposure, and removed all fixture/Auth rows after each run.
 - **11.14 Project Contact Response Link Issuance Preview Boundary — completed:** server-only authorized issuance builds one validated response URL with expiration metadata and redacted diagnostics; the local hash-only/verification/cleanup QA passed twice, and no route imports the helper.
+- **11.15 Response Link Admin Diagnostic Preview — completed:** the unlinked authenticated route accepts only assignment id/TTL, uses the server-derived 11.14 boundary, and renders redacted diagnostic metadata only; no navigation or product route imports it.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

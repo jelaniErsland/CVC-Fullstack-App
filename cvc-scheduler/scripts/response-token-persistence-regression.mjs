@@ -60,6 +60,28 @@ const responseLinkQaPath = path.join(
   "scripts",
   "response-link-issuance-regression.mjs",
 );
+const responseLinkDiagnosticBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "diagnostic.server.ts",
+);
+const responseLinkDiagnosticPagePath = path.join(
+  root,
+  "app",
+  "admin",
+  "diagnostics",
+  "response-link",
+  "page.tsx",
+);
+const responseLinkDiagnosticActionPath = path.join(
+  root,
+  "app",
+  "admin",
+  "diagnostics",
+  "response-link",
+  "actions.ts",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
@@ -71,6 +93,9 @@ const [
   responseRouteQa,
   responseLinkBoundary,
   responseLinkQa,
+  responseLinkDiagnosticBoundary,
+  responseLinkDiagnosticPage,
+  responseLinkDiagnosticAction,
   environmentExample,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
@@ -82,6 +107,9 @@ const [
   readFile(responseRouteQaPath, "utf8"),
   readFile(responseLinkBoundaryPath, "utf8"),
   readFile(responseLinkQaPath, "utf8"),
+  readFile(responseLinkDiagnosticBoundaryPath, "utf8"),
+  readFile(responseLinkDiagnosticPagePath, "utf8"),
+  readFile(responseLinkDiagnosticActionPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -228,6 +256,7 @@ assert.deepEqual(
 assert.equal((serverBoundary.match(/supabase\.auth\.getUser\(\)/g) ?? []).length, 1);
 assert.doesNotMatch(serverBoundary, /\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\./i);
 assert.match(environmentExample, /^ADMIN_AUTH_MODE=review$/m);
+assert.match(environmentExample, /^RESPONSE_LINK_BASE_URL=$/m);
 
 assert.match(publicRouteBoundary, /^import "server-only";/);
 assert.match(publicRouteBoundary, /readAssignmentResponseByToken/);
@@ -282,6 +311,31 @@ assert.match(responseLinkQa, /storedTokenState === "32\|assignment_response\|0"/
 assert.doesNotMatch(
   responseLinkQa,
   /SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.(?:log|error)\(\s*(?:issuedBearer|responseUrl|password|access_token)|console\.(?:log|error)\([^\n]*\$\{(?:issuedBearer|responseUrl|password|access_token)\}/i,
+);
+
+assert.match(responseLinkDiagnosticBoundary, /^import "server-only";/);
+assert.match(responseLinkDiagnosticBoundary, /issueAssignmentResponseLink\(/);
+assert.match(responseLinkDiagnosticBoundary, /validateResponseLinkBaseUrl\(/);
+assert.match(responseLinkDiagnosticBoundary, /redactedUrl: issued\.redactedUrl/);
+assert.doesNotMatch(
+  responseLinkDiagnosticBoundary,
+  /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\./i,
+);
+assert.match(responseLinkDiagnosticPage, /readProjectContactSession\(\)/);
+assert.match(responseLinkDiagnosticPage, /robots: \{ index: false, follow: false \}/);
+assert.match(responseLinkDiagnosticPage, /\/respond\/\[redacted\]/);
+assert.match(responseLinkDiagnosticPage, /Response-link origin is not configured/);
+assert.match(responseLinkDiagnosticPage, /Check the diagnostic input/);
+assert.doesNotMatch(
+  responseLinkDiagnosticPage,
+  /responseUrl|bearer_token|token_verifier|serviceRole|SUPABASE_SERVICE_ROLE_KEY|mockData|volunteerPreview/i,
+);
+assert.match(responseLinkDiagnosticAction, /issueResponseLinkDiagnostic\(/);
+assert.match(responseLinkDiagnosticAction, /formData\.get\("assignmentId"\)/);
+assert.match(responseLinkDiagnosticAction, /formData\.get\("expiresInHours"\)/);
+assert.doesNotMatch(
+  responseLinkDiagnosticAction,
+  /\.rpc\(|issue_assignment_response_token|responseUrl|bearer|verifier|workspaceId|volunteerId|actor|source|purpose|serviceRole|SUPABASE_SERVICE_ROLE_KEY/i,
 );
 
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
@@ -418,6 +472,13 @@ await assert.rejects(
   ),
   ResponseLinkValidationError,
 );
+await assert.rejects(
+  issueAssignmentResponseLinkWithIssuer(
+    { assignmentId: "malformed", baseUrl: "https://preview.example.test" },
+    async () => ({ tokenId, token: bearerToken, expiresAt: "2026-07-03T12:00:00.000Z" }),
+  ),
+  ResponseLinkValidationError,
+);
 
 const parsedStoredResponse = parseAssignmentResponse({
   id: "550e8400-e29b-41d4-a716-446655440044",
@@ -494,6 +555,27 @@ assert.deepEqual(
   responseLinkRouteImports,
   [],
   "No public or admin route may import the project-contact link issuer",
+);
+
+const diagnosticRoutePath = "app/admin/diagnostics/response-link/";
+const linkedDiagnosticSources = [];
+for (const directory of ["app", "components", "lib"]) {
+  const files = (await collectFiles(path.join(root, directory))).filter((file) =>
+    /\.(?:ts|tsx)$/.test(file),
+  );
+  for (const file of files) {
+    const relative = path.relative(root, file).replaceAll("\\", "/");
+    if (relative.startsWith(diagnosticRoutePath)) continue;
+    const source = await readFile(file, "utf8");
+    if (source.includes("/admin/diagnostics/response-link")) {
+      linkedDiagnosticSources.push(relative);
+    }
+  }
+}
+assert.deepEqual(
+  linkedDiagnosticSources,
+  [],
+  "The response-link diagnostic must remain unlinked outside its own route",
 );
 
 console.log("Public assignment-response token checks passed.");

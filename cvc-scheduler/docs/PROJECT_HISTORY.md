@@ -3399,6 +3399,42 @@ Limitations:
 Next recommended step:
 - Review the smallest visible project-contact issuance UX together with audit, abuse/rate-limit, revocation, and delivery boundaries before connecting this helper anywhere.
 
+## Iteration 11.15 — Response Link Admin Diagnostic Preview
+
+Summary:
+- Added the dynamic, noindex, unlinked `/admin/diagnostics/response-link` developer/admin QA route.
+- The page explicitly requires `readProjectContactSession`; review mode does not bypass this diagnostic identity check, and enforced mode retains the existing proxy check.
+- Added `readResponseLinkDiagnosticConfiguration`, `issueResponseLinkDiagnostic`, and `issueResponseLinkDiagnosticAction`. The browser submits only assignment id/TTL; `RESPONSE_LINK_BASE_URL` is read and validated server-side.
+- Link creation calls only the 11.14 `issueAssignmentResponseLink` boundary. Database Auth, `assignments.edit`, and server-derived workspace/volunteer/actor/purpose/scope enforcement remain unchanged.
+- The mapper strips the full response URL. Success displays only assignment id, expiration, and `/respond/[redacted]`; failures use calm configuration/invalid/unavailable/generic states, and no link is sent.
+- Extended static regression coverage for noindex/session/configuration behavior, malformed input, redacted-only output, direct-RPC/service-role absence, and zero links/imports from nav, product, template, public, or mock surfaces.
+
+Changed files:
+- `.env.example`
+- `app/admin/diagnostics/response-link/actions.ts`
+- `app/admin/diagnostics/response-link/page.tsx`
+- `lib/responseTokens/diagnostic.server.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run supabase:check`, every workspace-through-response-token regression, the valid-token route QA, and the response-link issuance QA passed.
+- `npm run lint`, `npm run build`, `npm run test:calendar`, `npx tsc --noEmit`, and `git diff --check` passed.
+- Build output includes `/admin/diagnostics/response-link` as a dynamic route.
+- Positive route automation was intentionally skipped because a cookie-backed diagnostic pass would duplicate the 11.13 Auth/browser fixture framework; 11.14 continues to provide the positive live issuance/hash-only/verification/cleanup gate.
+
+Limitations:
+- This route is unlinked diagnostic infrastructure, not product UI. It deliberately discards the full link from its response, so it cannot deliver or copy a usable credential.
+- Issued-but-undelivered token cleanup/revocation, audit, abuse/rate limits, visible assignment selection, Communications/reminder integration, and product UX remain unresolved.
+- No email/reminder delivery, public lookup, remembered-device access, Calendar/Volunteers route cutover, Communications/Needs Attention persistence, seed data, service-role usage, or mock-to-real integration was added.
+
+Next recommended step:
+- Design audit and immediate cleanup/revocation semantics for diagnostic-only issuance before considering any product-facing generation or delivery surface.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

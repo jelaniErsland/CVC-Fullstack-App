@@ -22,6 +22,7 @@ Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only p
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Lazy client configuration and the explicit smoke check. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Auth client configuration and the explicit smoke check. It is not a service secret; future product-data safety still depends on reviewed RLS. |
 | `ADMIN_AUTH_MODE` | No | `review` leaves mock admin routes open; `enforced` requires a verified Auth user. Defaults to `review`. |
+| `RESPONSE_LINK_BASE_URL` | No | Trusted server-side application origin for the unlinked 11.15 response-link diagnostic. Use loopback HTTP locally and HTTPS when deployed; never accept it from a browser form. |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Typed server-only placeholder. No current client or route consumes it for privileged access. |
 
 Never prefix a service-role key, database password, provider secret, webhook secret, or token-signing secret with `NEXT_PUBLIC_`. Never import `lib/supabase/server.ts` from a Client Component. Never log keys or commit a populated environment file.
@@ -85,6 +86,8 @@ npm run test:response-link
 ```
 
 This 11.14 command does not require a preview server. It refuses non-loopback Supabase and response-link base URLs, authenticates a disposable local project contact, exercises the server-only link orchestration with authorized token issuance, verifies the resulting route shape, redacted diagnostic, public token verification, and hash-only database row, then removes all fixtures and checks for zero residue. Run it twice to confirm fresh fixtures. `RESPONSE_LINK_BASE_URL` may override the default loopback origin for this local QA command, but the harness still rejects non-loopback values. No full response URL, bearer, verifier, password, or access token is printed.
+
+The unlinked 11.15 route at `/admin/diagnostics/response-link` requires both a verified project-contact session and `RESPONSE_LINK_BASE_URL`. Use `http://127.0.0.1:3000` for local preview; deployed values must be HTTPS origins without credentials, paths, queries, or fragments. The browser supplies only assignment id and TTL. The route displays `/respond/[redacted]`, expiration, and assignment id; it never displays or copies the full link and sends nothing.
 
 ## Workspace migration and type generation
 
