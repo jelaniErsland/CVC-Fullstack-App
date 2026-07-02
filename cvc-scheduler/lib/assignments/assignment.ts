@@ -33,7 +33,7 @@ export type AssignmentResponse = Readonly<{
   workspaceId: string;
   assignmentId: string;
   status: AssignmentResponseStatus;
-  source: "project_contact";
+  source: "project_contact" | "public_token";
   note: string | null;
   respondedAt: string | null;
   updatedByAuthUserId: string | null;
@@ -194,7 +194,9 @@ export function parseAssignmentResponse(value: unknown): AssignmentResponse {
   if (!assignmentResponseStatuses.includes(status as AssignmentResponseStatus)) {
     issues.push("response_status is invalid.");
   }
-  if (source !== "project_contact") issues.push("response_source is invalid.");
+  if (source !== "project_contact" && source !== "public_token") {
+    issues.push("response_source is invalid.");
+  }
   const respondedAt = nullableText(value, "responded_at", issues);
   if (
     (status === "needs_response" && respondedAt !== null) ||
@@ -207,7 +209,7 @@ export function parseAssignmentResponse(value: unknown): AssignmentResponse {
     workspaceId: normalizeUuid(value.workspace_id, "workspace_id", issues),
     assignmentId: normalizeUuid(value.assignment_id, "assignment_id", issues),
     status: status as AssignmentResponseStatus,
-    source: source as "project_contact",
+    source: source as AssignmentResponse["source"],
     note: nullableText(value, "response_note", issues),
     respondedAt,
     updatedByAuthUserId: nullableUuid(

@@ -194,7 +194,9 @@ The persisted record adds a server-generated id, audit fields, and an optimistic
 
 Iteration 11.10 introduces `calendar_assignments` and one current `assignment_responses` row per assignment. Only active timed/date-based items and active, ready volunteer profiles can be linked. Same-workspace composite foreign keys prevent cross-project relationships, and a partial unique index prevents duplicate active volunteer/item pairs. This slice does not detect overlaps between different items.
 
-New assignments start at `needs_response`. Project contacts with `assignments.edit` may explicitly change the current row among `needs_response`, `confirmed`, and `declined`; concurrent changes are rejected rather than silently overwritten. Cancellation preserves response truth while removing the assignment from future active coverage calculations. Public volunteer response authorization and response history remain future boundaries.
+New assignments start at `needs_response`. Project contacts with `assignments.edit` may explicitly change the current row among `needs_response`, `confirmed`, and `declined`; concurrent changes are rejected rather than silently overwritten. Cancellation preserves response truth while removing the assignment from future active coverage calculations.
+
+Iteration 11.11 adds assignment-scoped bearer authorization without changing Calendar or assignment coverage fields. Public tokens are opaque 256-bit values returned once, stored only as SHA-256 verifiers, and constrained to the assignment/workspace/volunteer relationship. Valid, unrevoked, unexpired tokens may read a minimal task/schedule/response projection and set only `confirmed` or `declined`; source becomes `public_token`. No route, delivery mechanism, lookup, or response history is included.
 
 Assignment and response rows, not Calendar item counters or client calculations, must drive:
 
@@ -227,6 +229,6 @@ Calendar item lifecycle remains separate from assignment lifecycle, response sta
 - Add audit/history requirements for schedule edits, assignments, status changes, preset snapshots, and communications.
 - Define cross-item conflict handling, capacity changes, waitlisting/overbooking, public response authorization, history/audit, and command idempotency before routes or automation use these records.
 
-## Deliberately out of scope through 11.10
+## Deliberately out of scope through 11.11
 
-No route cutover, public volunteer token/response path, response history, coverage-counter persistence, conflict engine, recurrence engine, drag/drop save behavior, resizing mutation, URL date routing, Timeline UI, production List query contract, full audit model, or production scheduling engine is introduced through 11.10.
+No route cutover, bearer delivery/reminder path, broad lookup, remembered-device state, response history, coverage-counter persistence, conflict engine, recurrence engine, drag/drop save behavior, resizing mutation, URL date routing, Timeline UI, production List query contract, full audit model, or production scheduling engine is introduced through 11.11.

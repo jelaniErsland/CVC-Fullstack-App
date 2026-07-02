@@ -1,6 +1,6 @@
 # Supabase Local Setup Skeleton
 
-Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, 11.4 added workspace identity, 11.5 added project-contact/workspace grants, 11.6 added questionnaire submissions, 11.7 added volunteer-profile conversion, 11.8 added reusable task presets, 11.9 added Calendar items, and 11.10 adds assignment/current-response persistence. Product route data cutovers are not enabled.
+Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, 11.4 added workspace identity, 11.5 added project-contact/workspace grants, 11.6 added questionnaire submissions, 11.7 added volunteer-profile conversion, 11.8 added reusable task presets, 11.9 added Calendar items, 11.10 added assignments/current responses, and 11.11 adds assignment-scoped public response bearer authorization. Product route data cutovers are not enabled.
 
 ## Local environment
 
@@ -61,7 +61,7 @@ Missing or invalid variables fail with a setup-oriented message. The command mus
 
 ## Workspace migration and type generation
 
-The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260701060000_assignment_responses.sql`. Review them before applying them in timestamp order. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260701070000_assignment_response_tokens.sql`. Review them before applying them in timestamp order. The last migration enables `pgcrypto` in Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push
@@ -72,6 +72,7 @@ npm run test:volunteers
 npm run test:tasks
 npm run test:calendar-items
 npm run test:assignments
+npm run test:response-tokens
 ```
 
 The second migration creates only `public.project_contacts` and `public.workspace_contact_grants`; neither migration adds seed rows. Anon has no workspace table privilege. An authenticated user sees a workspace only when their active contact has an active, unrevoked, currently valid `workspace.read` grant for it. Authenticated roles receive no insert/update/delete grants.
@@ -88,6 +89,8 @@ The Calendar migration creates one `calendar_items` table plus authenticated cre
 
 The assignment migration creates `calendar_assignments` and `assignment_responses`. Composite foreign keys derive and enforce one workspace across the Calendar item, active/ready volunteer profile, assignment, and response. Only timed/date-based active items may receive assignments. One volunteer may have at most one active assignment per item, while separate items are not conflict-checked. Creation also creates one `needs_response` row; project contacts can move that current row explicitly among `needs_response`, `confirmed`, and `declined`. Reads require `assignments.view`; create/cancel/response commands require `assignments.edit`. Direct application writes and anon access are denied. No public token, response history, coverage counter, reminder, or seed row is added.
 
+The response-token migration creates one `assignment_response_tokens` table with no direct anon/authenticated table access. Issuance requires `assignments.edit`, resolves workspace and volunteer from an active assignment, creates 32 random bytes in PostgreSQL, returns the base64url bearer once, and stores only its SHA-256 verifier. TTL is 1–720 hours; tokens are revocable and successful public responses update `last_used_at`. The anon-executable verification function returns only workspace display name, assignment reference, task snapshot, schedule fields, and current response. The separate public mutation accepts only bearer, `confirmed`/`declined`, and a bounded note, resolves all scope server-side, locks token/response rows, and records source `public_token`. No route calls either function.
+
 After the migration exists in the linked database, generate real types rather than maintaining a handwritten database schema type:
 
 ```powershell
@@ -98,11 +101,11 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 
 ## Intentionally unimplemented
 
-- Product tables beyond workspace identity/authorization, questionnaire submissions, volunteer profiles, task presets, Calendar items, assignments, and current responses; generated database types; and seed data.
+- Product tables beyond workspace identity/authorization, questionnaire submissions, volunteer profiles, task presets, Calendar items, assignments/current responses, and assignment-response token verifiers; generated database types; and seed data.
 - Project-contact invitation/grant management UI, browser grant mutations, and audit history.
 - Capability enforcement beyond the implemented workspace/questionnaire/volunteer/task/Calendar/assignment capabilities; grant roles do not confer other product permissions.
 - Service-role operations.
-- Volunteer lookup, secure/reminder tokens, remembered-device behavior, and public volunteer response writes.
+- Volunteer lookup, reminder delivery/link transport, remembered-device behavior, and public route integration. The isolated assignment-response bearer RPCs are not a lookup or delivered reminder feature.
 - Questionnaire status mutations, volunteer profile edits, task preset general updates, Calendar general updates, assignment general edits/response history, communication, or follow-up persistence.
 - Any mock-to-real route cutover.
 

@@ -2,7 +2,17 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.10 implements only assignment truth and one current project-contact-entered response state behind capability-scoped server commands. It is not a Calendar, Tasks, Volunteers, or public route cutover; it adds no public token, reminder, coverage counter, conflict engine, recurrence, or drag/drop save path.
+Iteration 11.11 implements only an assignment-scoped opaque bearer foundation and narrow public verification/response commands. It is not a public volunteer, reminder, Calendar, or Volunteers route cutover; it adds no lookup, email, delivery, remembered-device behavior, coverage counter, or broad schedule access.
+
+## 11.11 public volunteer response authorization boundary
+
+`public.assignment_response_tokens` stores one workspace, assignment, volunteer profile, fixed `assignment_response` purpose, expiry/revocation/use timestamps, and a unique 32-byte SHA-256 verifier. The raw 256-bit base64url bearer is generated inside PostgreSQL, returned once from authenticated issuance, and never stored. A composite foreign key binds token scope to the assignment's actual workspace and volunteer.
+
+Issuance and revocation require an active contact/grant containing `assignments.edit`; adjacent roles or `workspace.read`, `calendar.view`, and `volunteers.view` are insufficient. Token rows have RLS enabled, no policies, and no anon/authenticated table privileges, so even authorized contacts cannot broadly select verifier hashes. The server helper never logs the returned bearer and no route imports it.
+
+The anon-executable verification function accepts only a correctly shaped bearer and returns workspace display name, opaque assignment reference, task title snapshot, schedule kind/date/time/timezone, and current response status. It returns no volunteer identity/contact data, questionnaire/emergency data, roster, notes, grants, verifier, or unrelated schedule rows.
+
+The separate public response command accepts only bearer, `confirmed`/`declined`, and a bounded note. It re-resolves the unexpired, unrevoked, correct-purpose token plus active assignment, volunteer, Calendar item, and workspace; locks the token/response rows; records source `public_token`; and updates `last_used_at`. It does not invoke the project-contact command. Bearers remain credentials until expiry/revocation and forwarded links carry the same authority. No delivery or public route exists yet.
 
 ## 11.10 assignment and response boundary
 
@@ -335,10 +345,11 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.8 Task preset persistence — completed:** reusable definitions, bounded custom fields, capability-scoped create/read/archive, and no scheduling fields or route cutover.
 - **11.9 Calendar item persistence — completed:** explicit schedule kinds, workspace-derived timezone, preset-or-one-off snapshots, capability-scoped create/read/archive, and no route or assignment cutover.
 - **11.10 Assignment/response persistence — completed:** same-workspace assignment truth, one current response row, contact-only capability commands, derived future coverage, and no public token or route cutover.
-- **11.11 Public volunteer response authorization:** design expiring, revocable, assignment-scoped bearer access before enabling account-free response mutation.
+- **11.11 Public volunteer response authorization — completed:** database-generated opaque bearers, hash-only storage, expiry/revocation, minimal verification, scoped public response mutation, and no route/delivery cutover.
+- **Post-11.11 validation gate:** apply through 11.11 in non-production and exercise live issuance, expiry, revocation, forwarding, RLS, and concurrency before public route integration.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.11 Public Volunteer Response Authorization Foundation. It must keep token material out of URLs/logs where possible, store only verifiers/hashes, scope access to one assignment, and define expiry/revocation before any public response route is connected. Communications, reminders, Needs Attention, and broad route cutovers remain separate later slices.
+No public route integration should proceed until the full migration chain is applied in a non-production Supabase environment and live token/RLS behavior is exercised. Communications, reminder delivery, Needs Attention, remembered devices, lookup, and broad route cutovers remain separate later slices.
 
 ## Readiness exit criteria
 

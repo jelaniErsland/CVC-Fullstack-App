@@ -104,7 +104,8 @@ Rough phases:
 - 11.8 Task Preset Persistence. Completed; capability-scoped reusable definitions and create/archive commands, with no route or Calendar cutover.
 - 11.9 Calendar Item Persistence. Completed; explicit schedule kinds, preset-or-one-off snapshots, workspace timezone enforcement, and capability-scoped create/read/archive with no route, assignment, or response cutover.
 - 11.10 Assignment + Volunteer Response Persistence. Completed; same-workspace assignment truth, one current response row, capability-scoped contact commands, and no Calendar counters or route cutover.
-- 11.11 Public Volunteer Response Authorization Foundation. Next proposed slice; design expiring assignment-scoped bearer access before any account-free response route is connected.
+- 11.11 Public Volunteer Response Authorization Foundation. Completed; database-generated opaque bearers, hash-only storage, expiry/revocation, narrow public verification/response RPCs, and no route or delivery cutover.
+- Post-11.11 gate. Apply the migrations to a non-production Supabase environment and exercise live token/RLS/concurrency behavior before any public route integration or link delivery.
 
 ## 4. Mid-Term Roadmap
 

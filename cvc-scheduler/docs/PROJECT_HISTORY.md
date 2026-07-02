@@ -3249,6 +3249,50 @@ Limitations:
 Next recommended step:
 - 11.11 Public Volunteer Response Authorization Foundation, if approved separately. Design high-entropy, hashed, expiring, revocable, assignment-scoped bearer access before connecting any account-free response route.
 
+## Iteration 11.11 — Public Volunteer Response Authorization Foundation
+
+Summary:
+- Added one `assignment_response_tokens` table scoped by workspace, assignment, volunteer profile, and fixed `assignment_response` purpose.
+- Added a composite assignment/workspace/volunteer foreign key, 1–720 hour expiry, revocation/use timestamps, bounded internal note, and creator metadata.
+- Issuance requires `assignments.edit`, generates 32 random bytes inside PostgreSQL, returns a base64url bearer once, and stores only a unique SHA-256 verifier. Token rows have no anon/authenticated table privileges or read policies.
+- Added anon-safe security-definer verification that returns only workspace display name, assignment reference, task title snapshot, schedule fields, timezone, and current response status.
+- Added a distinct bearer response command accepting only `confirmed`/`declined` plus a bounded note. It derives all scope from a valid unexpired/unrevoked token, verifies active workspace/item/assignment/volunteer relationships, locks token/response rows, records `public_token`, and updates `last_used_at`.
+- Added strict server-only issuance/revocation and public verification/response helpers. Inputs reject unknown keys, caller-supplied hashes/scope/source, lookup/query shapes, sensitive questionnaire/emergency data, and coverage counters.
+- Added `npm run test:response-tokens` for hash-only storage, entropy, expiry/revocation, capability issuance, direct-read denial, safe public projection, scoped mutation, validation, and route isolation.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701070000_assignment_response_tokens.sql`
+- `lib/assignments/assignment.ts`
+- `lib/responseTokens/token.ts`
+- `lib/responseTokens/server.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace`, `npm run test:grants`, `npm run test:questionnaires`, `npm run test:volunteers`, `npm run test:tasks`, `npm run test:calendar-items`, and `npm run test:assignments` passed.
+- `npm run test:response-tokens` passed.
+- `npx tsc --noEmit` passed.
+- `node --check scripts/response-token-persistence-regression.mjs` passed.
+- `git diff --check` passed.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/functions were not applied and live issuance, verification, revocation, expiry, public mutation isolation, or concurrency was not exercised.
+- There is no route consuming a token, link construction/transport, email/text sending, reminder delivery, broad lookup, remembered-device state, response history, rate-limit/abuse boundary, or token metadata UI.
+- The bearer remains authority until expiry or revocation and forwarding transfers that authority. Verification does not consume the token; a successful response updates `last_used_at`.
+- Existing public volunteer/reminder, Calendar, Volunteers, Communication, and Needs Attention routes remain deterministic mocks and import no token helper. No generated database type, service-role client, seed token, or secret is committed.
+
+Next recommended step:
+- Apply migrations 11.4–11.11 to a configured non-production Supabase project and exercise real two-user issuance isolation plus anon verification/response, expiry, revocation, forwarding, and concurrent mutation before any public route or delivery integration.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

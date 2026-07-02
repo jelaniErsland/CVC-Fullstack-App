@@ -258,6 +258,7 @@ Upcoming UI direction:
 - Iteration 11.8 adds one workspace-scoped `task_presets` table for reusable work definitions, `tasks.view` RLS, and authenticated `tasks.edit` create/archive functions. Presets store high-level type, default needed count, future volunteer visibility, system identity, lifecycle, and bounded custom-field definitions only. Ordinary creation cannot forge system presets; the schema can represent a trusted Lunch system preset with `system_key = 'lunch'` and a required `menu` field. No preset column or command stores scheduling, Calendar placement, assignments, coverage, recurrence, or responses. Existing Tasks routes remain mock-only.
 - Iteration 11.9 adds one workspace-scoped `calendar_items` table, `calendar.view` RLS, and authenticated `calendar.edit` create/archive functions. Each item references an active same-workspace task preset or carries a validated one-off title/type snapshot. The persisted schedule union supports `timed`, `date_based`, `multi_day_window`, and `milestone`; timezone is copied from and constrained to the workspace. Needed count is planned demand only, never coverage truth. Existing Calendar and Tasks routes remain mock-only and import none of these boundaries.
 - Iteration 11.10 adds workspace-scoped `calendar_assignments` and one-current-row `assignment_responses`. Same-workspace foreign keys connect active timed/date-based work to active, ready volunteer profiles; a partial unique index prevents duplicate active volunteer/item pairs. New assignments start at `needs_response`. `assignments.view` gates reads, while authenticated `assignments.edit` commands create/cancel assignments and apply explicit project-contact response transitions. Cancellation preserves response truth. No route imports these boundaries.
+- Iteration 11.11 adds `assignment_response_tokens` as an account-free bearer authorization foundation. Issuance generates 256-bit opaque base64url secrets inside PostgreSQL, stores only unique SHA-256 verifiers, derives workspace/volunteer scope from an active assignment, and requires `assignments.edit`. Tokens expire, can be revoked, and are scoped to the `assignment_response` purpose. Narrow anon-executable functions verify safe assignment context or submit only `confirmed`/`declined`; successful responses use `public_token` source and update `last_used_at`. No route imports these helpers and no link is sent.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a storage contract. Persisted assignment/current-response rows are the future source of confirmation, denial, and coverage truth once routes and coverage queries are implemented.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -337,10 +338,10 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 ## 8. Current Limitations
 
 - Supabase Auth identity is separate from project authorization. Workspace identity reads now have grant-backed RLS, but no authenticated product route is cut over.
-- The persisted schema boundaries are workspace identity, project contacts/grants, immutable questionnaire truth, volunteer profile snapshots, reusable task presets, Calendar item snapshots, assignments, and current assignment responses. They include no seed data or browser-side table writes.
+- The persisted schema boundaries are workspace identity, project contacts/grants, immutable questionnaire truth, volunteer profile snapshots, reusable task presets, Calendar item snapshots, assignments/current responses, and hashed assignment-response bearer verifiers. They include no seed data, raw stored tokens, or browser-side table writes.
 - Generated database types and live schema validation remain pending a configured linked/local Supabase database.
 - Capability enforcement additionally covers `tasks.view` / `tasks.edit`, `calendar.view` / `calendar.edit`, and `assignments.view` / `assignments.edit`; roles and adjacent read capabilities do not authorize assignment data.
-- The broader 11.1 readiness plan remains proposed. Volunteer token strategy, downstream schema constraints, product capabilities, and mock-to-real cutover remain unresolved until their dedicated slices.
+- The broader 11.1 readiness plan remains incremental. The first assignment-scoped token strategy now exists, but live token/RLS validation, delivery/link transport, route integration, downstream schemas, and mock-to-real cutover remain unresolved until dedicated slices.
 - Task preset persistence has no route cutover, general update command, Calendar placement, scheduling mutation, assignment behavior, or custom-field values.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
@@ -369,7 +370,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - No conversion from approved questionnaire submission to schedule-ready volunteer record yet.
 - No scheduling integration from questionnaire readiness yet.
 - Scheduling is mock-only; there is no scheduling engine yet.
-- No assignment or response UI workflow yet. The server-only boundary is unused by routes, performs no conflict detection, and has no public volunteer authorization.
+- No assignment or response UI workflow yet. Server-only contact and bearer boundaries are unused by routes and perform no conflict detection. The existing public reminder and assignment pages do not verify or consume persisted tokens.
 - Conflict/coverage detail pages are mock patterns only; there is no real detection logic yet.
 - Needs Attention is mock-only and does not resolve or save follow-up items yet.
 - No real conflict detection yet.
@@ -379,7 +380,7 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - Current Food and Security pages are legacy/prototype module explorations and may be folded into the unified Tasks + Calendar model.
 - On-site role homes are compact preview patterns, not full modules.
 - No platform owner/admin home yet.
-- The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic schedule; empty and reminder routes are fixed variants rather than lookup/email outcomes. Response state remains component-local and resets on navigation. Reminder paths have no token or identity verification, send no email/text, and public schedule/update content does not sync with admin Calendar or Communications. Auth, Supabase, real identity resolution, secure links, and mutations are not implemented.
+- The public volunteer portal remains a mock foundation. Lookup always opens Alex’s deterministic schedule; empty and reminder routes are fixed variants rather than lookup/email outcomes. Response state remains component-local and resets on navigation. The isolated 11.11 token functions are not connected to reminder paths, send no email/text, and do not sync route content with admin Calendar or Communications. Real lookup, secure route integration, delivery, and persisted UI mutations remain unimplemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
 - Existing application-route data remains mock-only. The persisted workspace schema/read foundation is intentionally not connected to a route.
@@ -387,4 +388,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-11.11 Public Volunteer Response Authorization Foundation, if separately approved. Design expiring, revocable, assignment-scoped bearer access before connecting any account-free public response route; do not treat name/email lookup or reminder paths as authorization.
+Before any public route integration, apply 11.4–11.11 to a configured non-production Supabase project and exercise real issuance, revocation, expiry, forwarded-bearer, and concurrent-response behavior. Keep email/reminder delivery and broad public lookup in separate reviewed slices.
