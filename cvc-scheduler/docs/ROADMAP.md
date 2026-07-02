@@ -103,7 +103,8 @@ Rough phases:
 - 11.7 Volunteer Profile Persistence. Completed; explicit capability-authorized conversion and project-scoped reads, with no route cutover.
 - 11.8 Task Preset Persistence. Completed; capability-scoped reusable definitions and create/archive commands, with no route or Calendar cutover.
 - 11.9 Calendar Item Persistence. Completed; explicit schedule kinds, preset-or-one-off snapshots, workspace timezone enforcement, and capability-scoped create/read/archive with no route, assignment, or response cutover.
-- 11.10 Assignment + Volunteer Response Persistence. Next proposed slice; define assignment truth, response transitions, and public authorization without storing coverage counters on Calendar items.
+- 11.10 Assignment + Volunteer Response Persistence. Completed; same-workspace assignment truth, one current response row, capability-scoped contact commands, and no Calendar counters or route cutover.
+- 11.11 Public Volunteer Response Authorization Foundation. Next proposed slice; design expiring assignment-scoped bearer access before any account-free response route is connected.
 
 ## 4. Mid-Term Roadmap
 

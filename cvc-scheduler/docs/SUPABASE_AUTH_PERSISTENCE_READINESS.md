@@ -2,7 +2,17 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.9 implements only persisted Calendar item snapshots and capability-scoped create/read/archive boundaries. It is not a Calendar or Tasks route cutover, assignment model, volunteer-response implementation, recurrence engine, or drag/drop save path.
+Iteration 11.10 implements only assignment truth and one current project-contact-entered response state behind capability-scoped server commands. It is not a Calendar, Tasks, Volunteers, or public route cutover; it adds no public token, reminder, coverage counter, conflict engine, recurrence, or drag/drop save path.
+
+## 11.10 assignment and response boundary
+
+`public.calendar_assignments` links one active `timed` or `date_based` Calendar item to one active, ready volunteer profile in the same workspace. Composite foreign keys enforce the workspace relationship in the database, and a partial unique index prevents duplicate active assignment of the same volunteer to the same item. The create command accepts only Calendar item id, volunteer profile id, and an optional bounded note; workspace and actor are derived server-side. Different Calendar items are not conflict-checked in this slice.
+
+`public.assignment_responses` holds exactly one current row per assignment with `needs_response`, `confirmed`, or `declined`. Assignment creation initializes `needs_response`. Authenticated project contacts can apply explicit transitions in either direction using `assignments.edit`; source is fixed to `project_contact`, timestamps/actor are server-owned, and a compare-and-set predicate rejects concurrent overwrites. Assignment cancellation changes assignment lifecycle but preserves its last response row.
+
+Anon has no table or function access. Authenticated reads of either table require `assignments.view`; creation, cancellation, and response changes require `assignments.edit`. `workspace.read`, `calendar.view`, `volunteers.view`, or a grant role alone is insufficient. Direct application table writes are denied, and the isolated helpers are imported by no route.
+
+Future account-free responses require a separate server-owned bearer-token boundary. A token must be high-entropy, stored hashed, expiring, revocable, and scoped to one assignment/volunteer action; successful verification may authorize only the permitted response transition. Name/email lookup, remembered-device state, and current reminder URL shapes are not authorization and must never call the contact-only command directly.
 
 ## 11.9 Calendar item boundary
 
@@ -324,10 +334,11 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.7 Volunteer profile persistence — completed:** explicit capability-authorized conversion, same-workspace provenance, sensitive-field separation, and `volunteers.view` reads; no route cutover.
 - **11.8 Task preset persistence — completed:** reusable definitions, bounded custom fields, capability-scoped create/read/archive, and no scheduling fields or route cutover.
 - **11.9 Calendar item persistence — completed:** explicit schedule kinds, workspace-derived timezone, preset-or-one-off snapshots, capability-scoped create/read/archive, and no route or assignment cutover.
-- **11.10 Assignment/response persistence:** authoritative assignment/response rows, derived coverage, and a deliberately scoped public response authorization boundary.
+- **11.10 Assignment/response persistence — completed:** same-workspace assignment truth, one current response row, contact-only capability commands, derived future coverage, and no public token or route cutover.
+- **11.11 Public volunteer response authorization:** design expiring, revocable, assignment-scoped bearer access before enabling account-free response mutation.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.10 Assignment + Volunteer Response Persistence. It must keep coverage truth off Calendar items, define valid response transitions, and design account-free public authorization before exposing mutation. Communications, reminders, Needs Attention, and broad route cutovers remain separate later slices.
+The next proposed slice is 11.11 Public Volunteer Response Authorization Foundation. It must keep token material out of URLs/logs where possible, store only verifiers/hashes, scope access to one assignment, and define expiry/revocation before any public response route is connected. Communications, reminders, Needs Attention, and broad route cutovers remain separate later slices.
 
 ## Readiness exit criteria
 

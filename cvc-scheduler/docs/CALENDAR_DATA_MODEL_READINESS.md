@@ -1,6 +1,6 @@
 # Calendar Data-Model Readiness
 
-This note records the production boundary behind the current mock Calendar. Iteration 11.9 now implements the first isolated schema and server commands, while every Calendar route remains local, preview-only UI.
+This note records the production boundary behind the current mock Calendar. Iterations 11.9–11.10 implement isolated Calendar item, assignment, and current-response schemas/server commands, while every Calendar and volunteer route remains local, preview-only UI.
 
 ## Iteration 11.9 persisted boundary
 
@@ -8,7 +8,7 @@ This note records the production boundary behind the current mock Calendar. Iter
 
 The persisted model uses local project dates/times plus a timezone copied from and constrained to the workspace. `timed` currently means a same-date interval with `end_time > start_time`; overnight work is rejected until a future unambiguous instant/end-date model is reviewed. `date_based` uses one date and no times. `multi_day_window` uses an inclusive start/end range with `end_date > start_date`, no times, and zero needed count. `milestone` uses one date, no times, and zero needed count.
 
-This slice does not implement assignment or response truth, authoritative coverage counters, recurrence/copy behavior, general edits, drag/drop saves, route reads, or UI conversion from the mock compatibility model. The contract sketch below remains guidance for those later extensions where it differs from the narrow implemented boundary.
+Iteration 11.9 itself did not implement assignment truth; 11.10 adds that separate boundary without changing Calendar item rows. Neither slice implements authoritative coverage counters, recurrence/copy behavior, general Calendar edits, drag/drop saves, route reads, or UI conversion from the mock compatibility model. The contract sketch below remains guidance for later extensions where it differs from the implemented boundary.
 
 ## Core boundaries
 
@@ -192,7 +192,11 @@ The persisted record adds a server-generated id, audit fields, and an optimistic
 
 ## Assignment and coverage truth
 
-Future `calendar_item_assignments` rows, not Calendar item counters or client calculations, must drive:
+Iteration 11.10 introduces `calendar_assignments` and one current `assignment_responses` row per assignment. Only active timed/date-based items and active, ready volunteer profiles can be linked. Same-workspace composite foreign keys prevent cross-project relationships, and a partial unique index prevents duplicate active volunteer/item pairs. This slice does not detect overlaps between different items.
+
+New assignments start at `needs_response`. Project contacts with `assignments.edit` may explicitly change the current row among `needs_response`, `confirmed`, and `declined`; concurrent changes are rejected rather than silently overwritten. Cancellation preserves response truth while removing the assignment from future active coverage calculations. Public volunteer response authorization and response history remain future boundaries.
+
+Assignment and response rows, not Calendar item counters or client calculations, must drive:
 
 - Filled count.
 - Confirmed count.
@@ -202,7 +206,7 @@ Future `calendar_item_assignments` rows, not Calendar item counters or client ca
 - Some/all-denied filter state.
 - Each volunteer's invitation, confirmation, denial, cancellation, or completion response state.
 
-Calendar item lifecycle remains separate from assignment response and derived coverage. Assignment changes need their own audit trail and concurrency rules.
+Calendar item lifecycle remains separate from assignment lifecycle, response state, and derived coverage. 11.10 adds actor ids and basic compare-and-set protection but not a full audit/history system. Coverage queries and capacity enforcement remain unimplemented.
 
 ## Follow-up persistence risks
 
@@ -221,8 +225,8 @@ Calendar item lifecycle remains separate from assignment response and derived co
 - Let a future Timeline / Work Plan express project windows and milestones without replacing Week or becoming the source of scheduling truth.
 - Decide whether view/date state belongs in the URL before shareable Calendar links are introduced.
 - Add audit/history requirements for schedule edits, assignments, status changes, preset snapshots, and communications.
-- Define assignment uniqueness, capacity changes, waitlisting/overbooking, authorization, concurrency, and mutation idempotency before create/update/delete actions become real.
+- Define cross-item conflict handling, capacity changes, waitlisting/overbooking, public response authorization, history/audit, and command idempotency before routes or automation use these records.
 
-## Deliberately out of scope for 11.9
+## Deliberately out of scope through 11.10
 
-No route cutover, volunteer assignment/response workflow, coverage-counter persistence, recurrence engine, drag/drop save behavior, resizing mutation, URL date routing, Timeline UI, production List query contract, audit model, or production scheduling engine is introduced by 11.9.
+No route cutover, public volunteer token/response path, response history, coverage-counter persistence, conflict engine, recurrence engine, drag/drop save behavior, resizing mutation, URL date routing, Timeline UI, production List query contract, full audit model, or production scheduling engine is introduced through 11.10.

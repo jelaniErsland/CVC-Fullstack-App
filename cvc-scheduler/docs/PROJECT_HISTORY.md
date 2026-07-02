@@ -3206,6 +3206,49 @@ Limitations:
 Next recommended step:
 - 11.10 Assignment + Volunteer Response Persistence, if approved separately. Make assignment/response rows authoritative for coverage and review account-free public authorization before adding any public mutation.
 
+## Iteration 11.10 — Assignment + Volunteer Response Persistence
+
+Summary:
+- Added workspace-scoped `calendar_assignments` and `assignment_responses` tables without changing Calendar item coverage columns.
+- Enforced the same workspace across active timed/date-based Calendar items, active/ready volunteer profiles, assignments, and responses through composite foreign keys and derived command scope.
+- Added a partial unique index preventing duplicate active assignment of one volunteer to one item while deliberately leaving cross-item conflict detection out of scope.
+- New assignments create one `needs_response` row. Project contacts can apply explicit `needs_response` / `confirmed` / `declined` transitions; actor/source/timestamps are server-owned, and compare-and-set protects against silent concurrent overwrite.
+- Added `assignments.view` read RLS and denied direct application writes. Authenticated create/cancel/response commands require `assignments.edit`; roles and adjacent workspace/Calendar/volunteer capabilities do not authorize assignment access.
+- Added strict server-only validators and read/create/cancel/response helpers. Caller input cannot supply workspace scope, response source, scheduling fields, counters, questionnaire/emergency data, or public bearer tokens.
+- Added `npm run test:assignments` for schema scope, relationship constraints, capabilities, transition rules, strict input rejection, isolation fixtures, Calendar counter absence, and route-cutover checks.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701060000_assignment_responses.sql`
+- `lib/assignments/assignment.ts`
+- `lib/assignments/server.ts`
+- `scripts/assignment-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace`, `npm run test:grants`, `npm run test:questionnaires`, `npm run test:volunteers`, `npm run test:tasks`, and `npm run test:calendar-items` passed.
+- `npm run test:assignments` passed.
+- `npx tsc --noEmit` passed.
+- `node --check scripts/assignment-persistence-regression.mjs` passed.
+- `git diff --check` passed.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/functions were not applied and live assignment/response RLS isolation was not exercised.
+- Only project-contact response mutation exists. There is no public token/verifier, public response source, reminder link authorization, public route, or volunteer account.
+- There is no response history, full audit event, assignment general edit/archive command, cross-item conflict check, capacity enforcement, waitlist/overbooking behavior, coverage query, seed row, generated database type, service-role client, or browser write.
+- Existing Calendar, Tasks, Volunteers, public volunteer, Communication, and Needs Attention routes remain deterministic mock UI and import no persisted assignment boundary. Drag/drop, recurrence, reminders, and broad mock-route behavior remain unchanged.
+
+Next recommended step:
+- 11.11 Public Volunteer Response Authorization Foundation, if approved separately. Design high-entropy, hashed, expiring, revocable, assignment-scoped bearer access before connecting any account-free response route.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

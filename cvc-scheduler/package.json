@@ -16,6 +16,7 @@
     "test:volunteers": "node --no-warnings --experimental-strip-types scripts/volunteer-persistence-regression.mjs",
     "test:tasks": "node --no-warnings --experimental-strip-types scripts/task-persistence-regression.mjs",
     "test:calendar-items": "node --no-warnings --experimental-strip-types scripts/calendar-item-persistence-regression.mjs",
+    "test:assignments": "node --no-warnings --experimental-strip-types scripts/assignment-persistence-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {
