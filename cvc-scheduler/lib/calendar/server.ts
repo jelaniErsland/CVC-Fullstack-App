@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
   parseCalendarItem,
   validateCreateCalendarItemInput,
@@ -9,6 +7,7 @@ import {
   type CreateCalendarItemInput,
 } from "@/lib/calendar/item";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
 export type CalendarItemMutationResult = Readonly<{ calendarItemId: string }>;
@@ -33,7 +32,7 @@ const calendarItemColumns = [
   "updated_at",
 ].join(",");
 
-async function requireAuthenticatedContact(supabase: SupabaseClient) {
+async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
   const {
     data: { user },
     error,
@@ -42,7 +41,7 @@ async function requireAuthenticatedContact(supabase: SupabaseClient) {
 }
 
 export async function readCalendarItemsWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly CalendarItem[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
@@ -62,27 +61,31 @@ export async function readCurrentContactCalendarItems(workspaceId: string) {
 }
 
 export async function createCalendarItemWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: CreateCalendarItemInput | unknown,
 ): Promise<CalendarItemMutationResult> {
   await requireAuthenticatedContact(supabase);
   const item = validateCreateCalendarItemInput(input);
   const presetSource = item.source.kind === "preset";
   const schedule = item.schedule;
-  const { data, error } = await supabase.rpc("create_calendar_item", {
-    p_workspace_id: item.workspaceId,
-    p_task_preset_id: presetSource ? item.source.taskPresetId : null,
-    p_one_off_title: presetSource ? null : item.source.title,
-    p_one_off_task_type: presetSource ? null : item.source.taskType,
-    p_schedule_kind: schedule.kind,
-    p_start_date: schedule.kind === "multi_day_window" ? schedule.startDate : schedule.date,
-    p_end_date: schedule.kind === "multi_day_window" ? schedule.endDate : null,
-    p_start_time: schedule.kind === "timed" ? schedule.startTime : null,
-    p_end_time: schedule.kind === "timed" ? schedule.endTime : null,
-    p_needed_count: item.neededCount,
-    p_schedule_notes: item.notes,
-    p_custom_values: item.customValues,
-  });
+  const { data, error } = await supabase.rpc(
+    "create_calendar_item",
+    {
+      p_workspace_id: item.workspaceId,
+      p_task_preset_id: presetSource ? item.source.taskPresetId : null,
+      p_one_off_title: presetSource ? null : item.source.title,
+      p_one_off_task_type: presetSource ? null : item.source.taskType,
+      p_schedule_kind: schedule.kind,
+      p_start_date:
+        schedule.kind === "multi_day_window" ? schedule.startDate : schedule.date,
+      p_end_date: schedule.kind === "multi_day_window" ? schedule.endDate : null,
+      p_start_time: schedule.kind === "timed" ? schedule.startTime : null,
+      p_end_time: schedule.kind === "timed" ? schedule.endTime : null,
+      p_needed_count: item.neededCount,
+      p_schedule_notes: item.notes ?? null,
+      p_custom_values: item.customValues,
+    } as PublicRpcArgs<"create_calendar_item">,
+  );
   if (error || typeof data !== "string") {
     throw new Error("Calendar item could not be created.", { cause: error });
   }
@@ -95,7 +98,7 @@ export async function createCalendarItem(input: CreateCalendarItemInput | unknow
 }
 
 export async function archiveCalendarItemWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   calendarItemId: string,
 ): Promise<CalendarItemMutationResult> {
   await requireAuthenticatedContact(supabase);
@@ -113,4 +116,3 @@ export async function archiveCalendarItem(calendarItemId: string) {
   const supabase = await createServerSupabaseClient();
   return archiveCalendarItemWithClient(supabase, calendarItemId);
 }
-

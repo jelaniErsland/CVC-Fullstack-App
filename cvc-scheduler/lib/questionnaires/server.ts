@@ -1,13 +1,12 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
   questionnaireAnswerVersion,
   validateQuestionnaireSubmissionPayload,
   type QuestionnaireAnswersV1,
 } from "@/lib/questionnaires/payload";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
 export type QuestionnaireSubmission = Readonly<{
@@ -78,17 +77,18 @@ export function validatePublicQuestionnaireSubmissionPayload(payload: unknown) {
 }
 
 export async function submitPublicQuestionnaireWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceKey: string,
   payload: unknown,
 ): Promise<PublicQuestionnaireSubmissionReceipt> {
   const key = normalizeWorkspaceReference({ key: workspaceKey }).value;
   const answers = validatePublicQuestionnaireSubmissionPayload(payload);
-  const { data, error } = await supabase.rpc("submit_questionnaire_submission", {
+  const args = {
     p_workspace_key: key,
     p_answers: answers,
     p_questionnaire_version: questionnaireAnswerVersion,
-  });
+  } as unknown as PublicRpcArgs<"submit_questionnaire_submission">;
+  const { data, error } = await supabase.rpc("submit_questionnaire_submission", args);
 
   if (error || typeof data !== "string") {
     throw new Error("Questionnaire submission could not be accepted.", { cause: error });
@@ -108,7 +108,7 @@ export async function submitPublicQuestionnaire(
 }
 
 export async function readQuestionnaireSubmissionsWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly QuestionnaireSubmission[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;

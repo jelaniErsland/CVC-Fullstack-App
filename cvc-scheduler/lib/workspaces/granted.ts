@@ -1,8 +1,7 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient } from "@/lib/supabase/types";
 import {
   parseWorkspaceIdentity,
   type WorkspaceIdentity,
@@ -25,7 +24,7 @@ const grantedWorkspaceColumns = [
  * RLS, not a client-supplied workspace id, determines the returned set.
  */
 export async function readGrantedWorkspacesWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
 ): Promise<readonly WorkspaceIdentity[]> {
   const { data, error } = await supabase
     .from("workspaces")
@@ -44,4 +43,3 @@ export async function readCurrentUserGrantedWorkspaces() {
 
   return readGrantedWorkspacesWithClient(supabase);
 }
-

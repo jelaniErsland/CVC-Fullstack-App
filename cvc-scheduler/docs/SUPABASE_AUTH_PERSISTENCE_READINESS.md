@@ -108,7 +108,7 @@ Authentication proves only an identity. The 11.5 grant reader separately resolve
 
 The repository now includes `@supabase/supabase-js`, lazy browser and server client factories, typed runtime environment validation, `.env.example`, and `npm run supabase:check`. The check calls only the Supabase Auth health endpoint; it does not sign in, create a session, or read a product table. Current builds and mock routes do not require Supabase variables because no application route imports either client factory.
 
-Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Reviewed public-schema types generated from the local 11.11 schema are available in `lib/supabase/database.types.ts`; client parameterization remains a separate follow-up.
+Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Reviewed public-schema types generated from the local 11.11 schema are available in `lib/supabase/database.types.ts` and parameterize the shared browser/server/proxy clients and isolated persistence helpers without replacing runtime validation or enabling a route cutover.
 
 ## 1. Current mock-prototype boundary
 

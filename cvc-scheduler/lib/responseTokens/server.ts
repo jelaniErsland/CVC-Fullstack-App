@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
   parseIssuedAssignmentResponseToken,
   parsePublicAssignmentResponseContext,
@@ -16,9 +14,10 @@ import {
   type SubmitAssignmentResponseByTokenInput,
 } from "@/lib/responseTokens/token";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
-async function requireAuthenticatedContact(supabase: SupabaseClient) {
+async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
   const {
     data: { user },
     error,
@@ -27,16 +26,19 @@ async function requireAuthenticatedContact(supabase: SupabaseClient) {
 }
 
 export async function issueAssignmentResponseTokenWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: IssueAssignmentResponseTokenInput | unknown,
 ) {
   await requireAuthenticatedContact(supabase);
   const tokenRequest = validateIssueAssignmentResponseTokenInput(input);
-  const { data, error } = await supabase.rpc("issue_assignment_response_token", {
-    p_assignment_id: tokenRequest.assignmentId,
-    p_ttl_hours: tokenRequest.expiresInHours,
-    p_internal_note: tokenRequest.internalNote,
-  });
+  const { data, error } = await supabase.rpc(
+    "issue_assignment_response_token",
+    {
+      p_assignment_id: tokenRequest.assignmentId,
+      p_ttl_hours: tokenRequest.expiresInHours,
+      p_internal_note: tokenRequest.internalNote,
+    } as PublicRpcArgs<"issue_assignment_response_token">,
+  );
   if (error) throw new Error("Assignment response token could not be issued.", { cause: error });
   return parseIssuedAssignmentResponseToken(data);
 }
@@ -49,7 +51,7 @@ export async function issueAssignmentResponseToken(
 }
 
 export async function revokeAssignmentResponseTokenWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: RevokeAssignmentResponseTokenInput | unknown,
 ) {
   await requireAuthenticatedContact(supabase);
@@ -71,7 +73,7 @@ export async function revokeAssignmentResponseToken(
 }
 
 export async function readAssignmentResponseByTokenWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: ReadAssignmentResponseByTokenInput | unknown,
 ) {
   const tokenRequest = validateReadAssignmentResponseByTokenInput(input);
@@ -90,15 +92,18 @@ export async function readAssignmentResponseByToken(
 }
 
 export async function submitAssignmentResponseByTokenWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: SubmitAssignmentResponseByTokenInput | unknown,
 ) {
   const response = validateSubmitAssignmentResponseByTokenInput(input);
-  const { data, error } = await supabase.rpc("submit_assignment_response_by_token", {
-    p_bearer_token: response.token,
-    p_response_status: response.status,
-    p_response_note: response.note,
-  });
+  const { data, error } = await supabase.rpc(
+    "submit_assignment_response_by_token",
+    {
+      p_bearer_token: response.token,
+      p_response_status: response.status,
+      p_response_note: response.note ?? null,
+    } as PublicRpcArgs<"submit_assignment_response_by_token">,
+  );
   if (error) throw new Error("Assignment response could not be recorded.", { cause: error });
   return parsePublicAssignmentResponseResult(data);
 }

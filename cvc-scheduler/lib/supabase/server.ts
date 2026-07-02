@@ -1,10 +1,11 @@
 import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 import { readSupabaseServerConfig } from "@/lib/supabase/config";
+import type { Database } from "@/lib/supabase/database.types";
+import type { AppSupabaseClient } from "@/lib/supabase/types";
 
 export function getSupabaseServerConfig() {
   return readSupabaseServerConfig({
@@ -18,11 +19,11 @@ export function getSupabaseServerConfig() {
  * Creates the cookie-aware server client used by the contact auth shell.
  * Product data and authorization remain outside this boundary.
  */
-export async function createServerSupabaseClient(): Promise<SupabaseClient> {
+export async function createServerSupabaseClient(): Promise<AppSupabaseClient> {
   const config = getSupabaseServerConfig();
   const cookieStore = await cookies();
 
-  return createServerClient(config.url, config.anonKey, {
+  return createServerClient<Database>(config.url, config.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

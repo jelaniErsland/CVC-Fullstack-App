@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
   parseAssignmentResponse,
   parseCalendarAssignment,
@@ -13,6 +11,7 @@ import {
   type UpdateAssignmentResponseInput,
 } from "@/lib/assignments/assignment";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
 export type AssignmentMutationResult = Readonly<{ assignmentId: string }>;
@@ -46,7 +45,7 @@ const responseColumns = [
   "updated_at",
 ].join(",");
 
-async function requireAuthenticatedContact(supabase: SupabaseClient) {
+async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
   const {
     data: { user },
     error,
@@ -55,7 +54,7 @@ async function requireAuthenticatedContact(supabase: SupabaseClient) {
 }
 
 export async function readAssignmentsWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly CalendarAssignment[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
@@ -69,7 +68,7 @@ export async function readAssignmentsWithClient(
 }
 
 export async function readAssignmentResponsesWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly AssignmentResponse[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
@@ -83,7 +82,7 @@ export async function readAssignmentResponsesWithClient(
 }
 
 export async function readAssignmentStateWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<AssignmentState> {
   const [assignments, responses] = await Promise.all([
@@ -99,16 +98,19 @@ export async function readCurrentContactAssignmentState(workspaceId: string) {
 }
 
 export async function createAssignmentWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: CreateAssignmentInput | unknown,
 ): Promise<AssignmentMutationResult> {
   await requireAuthenticatedContact(supabase);
   const assignment = validateCreateAssignmentInput(input);
-  const { data, error } = await supabase.rpc("create_calendar_assignment", {
-    p_calendar_item_id: assignment.calendarItemId,
-    p_volunteer_profile_id: assignment.volunteerProfileId,
-    p_assignment_note: assignment.note,
-  });
+  const { data, error } = await supabase.rpc(
+    "create_calendar_assignment",
+    {
+      p_calendar_item_id: assignment.calendarItemId,
+      p_volunteer_profile_id: assignment.volunteerProfileId,
+      p_assignment_note: assignment.note ?? null,
+    } as PublicRpcArgs<"create_calendar_assignment">,
+  );
   if (error || typeof data !== "string") {
     throw new Error("Assignment could not be created.", { cause: error });
   }
@@ -121,7 +123,7 @@ export async function createAssignment(input: CreateAssignmentInput | unknown) {
 }
 
 export async function cancelAssignmentWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   assignmentId: string,
 ): Promise<AssignmentMutationResult> {
   await requireAuthenticatedContact(supabase);
@@ -141,16 +143,19 @@ export async function cancelAssignment(assignmentId: string) {
 }
 
 export async function updateAssignmentResponseWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: UpdateAssignmentResponseInput | unknown,
 ): Promise<AssignmentMutationResult> {
   await requireAuthenticatedContact(supabase);
   const response = validateUpdateAssignmentResponseInput(input);
-  const { data, error } = await supabase.rpc("update_assignment_response", {
-    p_assignment_id: response.assignmentId,
-    p_response_status: response.status,
-    p_response_note: response.note,
-  });
+  const { data, error } = await supabase.rpc(
+    "update_assignment_response",
+    {
+      p_assignment_id: response.assignmentId,
+      p_response_status: response.status,
+      p_response_note: response.note ?? null,
+    } as PublicRpcArgs<"update_assignment_response">,
+  );
   if (error || typeof data !== "string") {
     throw new Error("Assignment response could not be updated.", { cause: error });
   }

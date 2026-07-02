@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { readSupabasePublicConfig } from "@/lib/supabase/config";
+import type { Database } from "@/lib/supabase/database.types";
 
 export async function refreshProjectContactSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -9,7 +10,7 @@ export async function refreshProjectContactSession(request: NextRequest) {
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   });
-  const supabase = createServerClient(config.url, config.anonKey, {
+  const supabase = createServerClient<Database>(config.url, config.anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

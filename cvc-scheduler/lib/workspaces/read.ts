@@ -1,8 +1,7 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient } from "@/lib/supabase/types";
 import {
   normalizeWorkspaceReference,
   parseWorkspaceIdentity,
@@ -29,7 +28,7 @@ const workspaceIdentityColumns = [
  * Auth user has an active project contact and workspace.read grant.
  */
 export async function readWorkspaceIdentityWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   reference: WorkspaceReference,
 ): Promise<WorkspaceIdentity | null> {
   const { column, value } = normalizeWorkspaceReference(reference);

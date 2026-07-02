@@ -1,8 +1,7 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient } from "@/lib/supabase/types";
 import { parseVolunteerProfile, type VolunteerProfile } from "@/lib/volunteers/profile";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
@@ -29,7 +28,7 @@ const volunteerProfileColumns = [
 ].join(",");
 
 export async function convertQuestionnaireSubmissionWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   submissionId: string,
 ): Promise<VolunteerProfileConversionResult> {
   const {
@@ -66,7 +65,7 @@ export async function convertQuestionnaireSubmissionToVolunteerProfile(
 }
 
 export async function readVolunteerProfilesWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly VolunteerProfile[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
@@ -87,4 +86,3 @@ export async function readCurrentContactVolunteerProfiles(workspaceId: string) {
   const supabase = await createServerSupabaseClient();
   return readVolunteerProfilesWithClient(supabase, workspaceId);
 }
-

@@ -1,8 +1,7 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import {
   parseTaskPreset,
   validateCreateTaskPresetInput,
@@ -29,7 +28,7 @@ const taskPresetColumns = [
   "updated_at",
 ].join(",");
 
-async function requireAuthenticatedContact(supabase: SupabaseClient) {
+async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
   const {
     data: { user },
     error,
@@ -40,7 +39,7 @@ async function requireAuthenticatedContact(supabase: SupabaseClient) {
 }
 
 export async function readTaskPresetsWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly TaskPreset[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
@@ -62,20 +61,23 @@ export async function readCurrentContactTaskPresets(workspaceId: string) {
 }
 
 export async function createTaskPresetWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   input: CreateTaskPresetInput | unknown,
 ): Promise<TaskPresetMutationResult> {
   await requireAuthenticatedContact(supabase);
   const preset = validateCreateTaskPresetInput(input);
-  const { data, error } = await supabase.rpc("create_task_preset", {
-    p_workspace_id: preset.workspaceId,
-    p_name: preset.name,
-    p_description: preset.description,
-    p_task_type: preset.taskType,
-    p_default_needed_count: preset.defaultNeededCount,
-    p_volunteer_visible: preset.volunteerVisible,
-    p_custom_field_definitions: preset.customFields,
-  });
+  const { data, error } = await supabase.rpc(
+    "create_task_preset",
+    {
+      p_workspace_id: preset.workspaceId,
+      p_name: preset.name,
+      p_description: preset.description ?? null,
+      p_task_type: preset.taskType,
+      p_default_needed_count: preset.defaultNeededCount,
+      p_volunteer_visible: preset.volunteerVisible,
+      p_custom_field_definitions: preset.customFields,
+    } as unknown as PublicRpcArgs<"create_task_preset">,
+  );
   if (error || typeof data !== "string") {
     throw new Error("Task preset could not be created.", { cause: error });
   }
@@ -88,7 +90,7 @@ export async function createTaskPreset(input: CreateTaskPresetInput | unknown) {
 }
 
 export async function archiveTaskPresetWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   presetId: string,
 ): Promise<TaskPresetMutationResult> {
   await requireAuthenticatedContact(supabase);
@@ -106,4 +108,3 @@ export async function archiveTaskPreset(presetId: string) {
   const supabase = await createServerSupabaseClient();
   return archiveTaskPresetWithClient(supabase, presetId);
 }
-

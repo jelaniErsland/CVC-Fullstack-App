@@ -1,13 +1,12 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
   isEffectiveWorkspaceReadGrant,
   parseProjectContactGrant,
   type ProjectContactGrant,
 } from "@/lib/auth/grant";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { AppSupabaseClient } from "@/lib/supabase/types";
 
 export type { ProjectContactGrant } from "@/lib/auth/grant";
 
@@ -22,7 +21,7 @@ export type ProjectContactGrantState = Readonly<{
  * session. The explicit user id must match the verified session identity.
  */
 export async function loadProjectContactGrantsWithClient(
-  supabase: SupabaseClient,
+  supabase: AppSupabaseClient,
   authenticatedUserId: string,
 ): Promise<ProjectContactGrantState> {
   const {
