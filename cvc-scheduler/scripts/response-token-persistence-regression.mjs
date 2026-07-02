@@ -24,10 +24,36 @@ const migrationPath = path.join(
   "20260701070000_assignment_response_tokens.sql",
 );
 const serverBoundaryPath = path.join(root, "lib", "responseTokens", "server.ts");
+const publicRouteBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "publicRoute.ts",
+);
+const publicRouteStatePath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "publicRouteState.ts",
+);
+const responsePagePath = path.join(root, "app", "respond", "[token]", "page.tsx");
+const responseActionPath = path.join(root, "app", "respond", "[token]", "actions.ts");
 const environmentExamplePath = path.join(root, ".env.example");
-const [migration, serverBoundary, environmentExample] = await Promise.all([
+const [
+  migration,
+  serverBoundary,
+  publicRouteBoundary,
+  publicRouteState,
+  responsePage,
+  responseAction,
+  environmentExample,
+] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
+  readFile(publicRouteBoundaryPath, "utf8"),
+  readFile(publicRouteStatePath, "utf8"),
+  readFile(responsePagePath, "utf8"),
+  readFile(responseActionPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -175,6 +201,32 @@ assert.equal((serverBoundary.match(/supabase\.auth\.getUser\(\)/g) ?? []).length
 assert.doesNotMatch(serverBoundary, /\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\./i);
 assert.match(environmentExample, /^ADMIN_AUTH_MODE=review$/m);
 
+assert.match(publicRouteBoundary, /^import "server-only";/);
+assert.match(publicRouteBoundary, /readAssignmentResponseByToken/);
+assert.match(publicRouteBoundary, /submitAssignmentResponseByToken/);
+assert.doesNotMatch(
+  publicRouteBoundary,
+  /issueAssignmentResponseToken|revokeAssignmentResponseToken|\.from\(|\.rpc\(|serviceRole|SUPABASE_SERVICE_ROLE_KEY|console\.|logger\./i,
+);
+assert.match(publicRouteState, /sqlState === "40001"[\s\S]*return "changed"/);
+assert.match(publicRouteState, /sqlState === "42501"[\s\S]*return "unavailable"/);
+
+assert.match(responsePage, /loadPublicAssignmentResponseRoute\(token\)/);
+assert.match(responseAction, /submitPublicAssignmentResponseForRoute/);
+assert.match(responseAction, /classifyPublicAssignmentResponseSubmissionError/);
+assert.doesNotMatch(responseAction, /\.rpc\(|updateAssignmentResponse|assignments\/server/);
+assert.doesNotMatch(
+  `${responsePage}\n${responseAction}`,
+  /volunteerPreview|mockData|serviceRole|SUPABASE_SERVICE_ROLE_KEY|console\.|logger\.|token_verifier|bearer_token|questionnaire|emergency_contact|workspaceId|assignmentId|volunteerId|responseSource/i,
+);
+assert.doesNotMatch(responsePage, /assignmentReference/);
+assert.match(responsePage, /This link is expired or unavailable/);
+assert.match(responsePage, /This response changed\./);
+assert.match(responsePage, /No account or password is needed/);
+assert.match(responsePage, /name="response"[\s\S]*value="confirmed"/);
+assert.match(responsePage, /name="response"[\s\S]*value="declined"/);
+assert.doesNotMatch(responsePage, /value="needs_response"/);
+
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
 const tokenId = "550e8400-e29b-41d4-a716-446655440041";
 const bearerToken = "A".repeat(43);
@@ -185,6 +237,10 @@ assert.deepEqual(validateRevokeAssignmentResponseTokenInput({ tokenId }), { toke
 assert.deepEqual(validateReadAssignmentResponseByTokenInput({ token: bearerToken }), {
   token: bearerToken,
 });
+assert.throws(
+  () => validateReadAssignmentResponseByTokenInput({ token: "malformed" }),
+  ResponseTokenValidationError,
+);
 assert.equal(
   validateSubmitAssignmentResponseByTokenInput({
     token: bearerToken,
@@ -314,7 +370,11 @@ for (const file of routeFiles) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
-assert.deepEqual(routeImports, [], "Existing public and admin routes must remain mock-only");
+assert.deepEqual(
+  routeImports,
+  [],
+  "Routes must not bypass the narrow public response-route boundary",
+);
 
 console.log("Public assignment-response token checks passed.");
-console.log("Confirmed hashed opaque bearers, narrow public RPCs, no direct token reads, and no route cutover.");
+console.log("Confirmed hashed opaque bearers, narrow public RPCs, and the isolated response route shell.");

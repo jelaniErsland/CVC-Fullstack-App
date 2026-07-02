@@ -3293,6 +3293,42 @@ Limitations:
 Next recommended step:
 - Apply migrations 11.4–11.11 to a configured non-production Supabase project and exercise real two-user issuance isolation plus anon verification/response, expiry, revocation, forwarding, and concurrent mutation before any public route or delivery integration.
 
+## Iteration 11.12 — Public Assignment Response Route Shell
+
+Summary:
+- Added the dynamic `/respond/[token]` route as the first narrow consumer of the validated 11.11 public-token boundary.
+- Verification calls only `readAssignmentResponseByToken`; submission calls only `submitAssignmentResponseByToken` and accepts `confirmed`/`declined` plus the existing bounded optional note. The browser supplies no workspace, assignment, volunteer, source, actor, or scope.
+- Added server-only route mapping that projects only workspace display name, task snapshot, schedule kind/date/time/timezone, and current response status. It maps malformed/unavailable links, missing configuration, SQLSTATE `40001` concurrency, success, and unexpected errors to calm non-specific states.
+- Added a server action with no direct RPC/table access, no service-role access, and no bearer logging. The page is dynamic, non-indexed, and no-referrer; success remains on the direct response route.
+- Expanded `test:response-tokens` to enforce the route/helper boundary, allowed statuses, malformed-token state, safe copy, mock-data isolation, and absence of service-role/sensitive-field imports.
+- Kept the existing landing page, volunteer/reminder previews, Calendar, Volunteers, Communications, and Needs Attention routes unchanged and mock-only.
+
+Changed files:
+- `app/respond/[token]/actions.ts`
+- `app/respond/[token]/page.tsx`
+- `lib/responseTokens/publicRoute.ts`
+- `lib/responseTokens/publicRouteState.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- `npm run supabase:check` passed against the configured local Auth health endpoint.
+- `npm run test:workspace`, `npm run test:grants`, `npm run test:questionnaires`, `npm run test:volunteers`, `npm run test:tasks`, `npm run test:calendar-items`, `npm run test:assignments`, and `npm run test:response-tokens` passed.
+- `npm run lint`, `npm run build`, and `npx tsc --noEmit` passed; the build emitted `/respond/[token]` as a dynamic route.
+- `npm run test:calendar` passed all 17 desktop/mobile checks against the production preview.
+- `git diff --check` passed.
+
+Limitations:
+- No link is created, sent, delivered, or added to an existing route. A future delivery slice must separately review transport, abuse/rate limits, operational revocation, and bearer-forwarding risk.
+- There is no broad volunteer lookup, remembered-device access, admin assignment UI, response history, coverage workflow, or mock volunteer-portal replacement.
+- Calendar, Volunteers, Communications, and Needs Attention remain mock-only and do not import the response route boundary.
+
+Next recommended step:
+- Review the smallest safe link-delivery and abuse-control boundary separately before connecting any reminder or Communications workflow. Do not combine that work with broad lookup, remembered devices, or unrelated route cutovers.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

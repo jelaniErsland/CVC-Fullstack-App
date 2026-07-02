@@ -2,7 +2,15 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.11 implements only an assignment-scoped opaque bearer foundation and narrow public verification/response commands. It is not a public volunteer, reminder, Calendar, or Volunteers route cutover; it adds no lookup, email, delivery, remembered-device behavior, coverage counter, or broad schedule access.
+Iteration 11.12 connects one direct `/respond/[token]` shell to the assignment-scoped 11.11 public verification/response commands. It is not a public volunteer portal, reminder delivery, Calendar, or Volunteers route cutover; it adds no lookup, email, remembered-device behavior, coverage counter, or broad schedule access.
+
+## 11.12 public assignment response route boundary
+
+`/respond/[token]` treats its path segment as a bearer credential and passes it only through a server-only route mapper. Verification uses `readAssignmentResponseByToken`; mutation uses `submitAssignmentResponseByToken`, never the project-contact command. The page renders only workspace display name, task title snapshot, schedule kind/date/time/timezone, and current response status. It accepts only `confirmed` or `declined` plus the existing bounded optional note; workspace, assignment, volunteer, source, actor, and scope remain server-resolved.
+
+Malformed and unavailable tokens share calm non-specific states. Missing public Supabase configuration, unexpected failures, and SQLSTATE `40001` concurrency receive separate safe copy without internal error details. Successful submission stays on the direct response page. The route is dynamic, non-indexed, carries a no-referrer policy, logs no bearer, and exposes no verifier/hash, volunteer identity/contact data, questionnaire data, roster, grants, or unrelated schedule rows.
+
+This shell is not linked from the landing page, mock volunteer schedule, reminder preview, admin navigation, Communications, or templates. It does not create, send, or deliver links; provide lookup or remembered-device access; replace the mock volunteer portal; or connect Calendar, Volunteers, Communications, or Needs Attention routes to persisted data.
 
 ## 11.11 public volunteer response authorization boundary
 
@@ -12,7 +20,7 @@ Issuance and revocation require an active contact/grant containing `assignments.
 
 The anon-executable verification function accepts only a correctly shaped bearer and returns workspace display name, opaque assignment reference, task title snapshot, schedule kind/date/time/timezone, and current response status. It returns no volunteer identity/contact data, questionnaire/emergency data, roster, notes, grants, verifier, or unrelated schedule rows.
 
-The separate public response command accepts only bearer, `confirmed`/`declined`, and a bounded note. It re-resolves the unexpired, unrevoked, correct-purpose token plus active assignment, volunteer, Calendar item, and workspace; locks the token/response rows; records source `public_token`; and updates `last_used_at`. It does not invoke the project-contact command. Bearers remain credentials until expiry/revocation and forwarded links carry the same authority. No delivery or public route exists yet.
+The separate public response command accepts only bearer, `confirmed`/`declined`, and a bounded note. It re-resolves the unexpired, unrevoked, correct-purpose token plus active assignment, volunteer, Calendar item, and workspace; locks the token/response rows; records source `public_token`; and updates `last_used_at`. It does not invoke the project-contact command. Bearers remain credentials until expiry/revocation and forwarded links carry the same authority. The 11.12 shell is its only route consumer; delivery remains unimplemented.
 
 ## 11.10 assignment and response boundary
 
@@ -108,7 +116,7 @@ Authentication proves only an identity. The 11.5 grant reader separately resolve
 
 The repository now includes `@supabase/supabase-js`, lazy browser and server client factories, typed runtime environment validation, `.env.example`, and `npm run supabase:check`. The check calls only the Supabase Auth health endpoint; it does not sign in, create a session, or read a product table. Current builds and mock routes do not require Supabase variables because no application route imports either client factory.
 
-Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Reviewed public-schema types generated from the local 11.11 schema are available in `lib/supabase/database.types.ts` and parameterize the shared browser/server/proxy clients and isolated persistence helpers without replacing runtime validation or enabling a route cutover.
+Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Reviewed public-schema types generated from the local 11.11 schema are available in `lib/supabase/database.types.ts` and parameterize the shared browser/server/proxy clients and isolated persistence helpers without replacing runtime validation. Only the narrow 11.12 public response shell consumes persisted product data.
 
 ## 1. Current mock-prototype boundary
 
@@ -347,6 +355,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.10 Assignment/response persistence — completed:** same-workspace assignment truth, one current response row, contact-only capability commands, derived future coverage, and no public token or route cutover.
 - **11.11 Public volunteer response authorization — completed:** database-generated opaque bearers, hash-only storage, expiry/revocation, minimal verification, scoped public response mutation, and no route/delivery cutover.
 - **Post-11.11 validation gate — passed 2026-07-02:** local and hosted non-production migrations apply through `20260701070000`. All 16 hosted live RLS/RPC groups passed against `project-local-staging` (`kfuujcfxoayukywvtaeh`), including target-row concurrency with exactly one winner, one SQLSTATE `40001` loser, and final truth matching the winner. Disposable fixtures, Auth users, helpers, triggers, transient roles, passwords, and temporary files were removed. Hosted generated-type output differed only in remote PostgREST metadata, not schema structure.
+- **11.12 Public Assignment Response Route Shell — completed:** `/respond/[token]` uses only the verified public read/mutation helpers, renders their safe projection, and maps success, unavailable, configuration, concurrency, and generic error states without linking or cutting over any mock route.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

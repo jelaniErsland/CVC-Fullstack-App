@@ -106,6 +106,7 @@ Rough phases:
 - 11.10 Assignment + Volunteer Response Persistence. Completed; same-workspace assignment truth, one current response row, capability-scoped contact commands, and no Calendar counters or route cutover.
 - 11.11 Public Volunteer Response Authorization Foundation. Completed; database-generated opaque bearers, hash-only storage, expiry/revocation, narrow public verification/response RPCs, and no route or delivery cutover.
 - Post-11.11 gate. Completed 2026-07-02 locally and against hosted non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260701070000`. All 16 hosted live RLS/RPC groups passed, including one-winner/one-`40001`-loser concurrency with final truth matching the winner; cleanup completed and reviewed generated types remained structurally unchanged. This validation-only milestone does not connect routes to persisted data. Route cutovers, public lookup, remembered devices, email/reminder delivery, Communications persistence, and Needs Attention persistence remain later slices.
+- 11.12 Public Assignment Response Route Shell. Completed; `/respond/[token]` verifies one bearer and submits only `confirmed`/`declined` through the 11.11 public helpers. It is not linked from or mixed into the mock volunteer portal and adds no lookup, remembered devices, email/reminder delivery, Calendar/Volunteers cutover, Communications/Needs Attention persistence, or admin assignment UI.
 
 ## 4. Mid-Term Roadmap
 
