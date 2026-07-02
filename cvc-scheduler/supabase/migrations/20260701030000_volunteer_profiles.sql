@@ -22,6 +22,7 @@ create table public.volunteer_profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
+  constraint volunteer_profiles_workspace_id_id_unique unique (workspace_id, id),
   constraint volunteer_profiles_source_submission_unique unique (source_submission_id),
   constraint volunteer_profiles_source_workspace_fk foreign key (
     workspace_id,
