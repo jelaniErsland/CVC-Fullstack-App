@@ -3120,6 +3120,49 @@ Limitations:
 Next recommended step:
 - 11.8 Task Preset Persistence, if approved separately. Persist reusable work definitions without Calendar placement or assignment behavior.
 
+## Iteration 11.8 — Task Preset Persistence
+
+Summary:
+- Added one workspace-scoped `task_presets` table for reusable work definitions only.
+- Added high-level task type, description, default needed count, future volunteer visibility, system identity, bounded custom-field definitions, lifecycle, and timestamps.
+- Excluded dates, times, Calendar placement, assigned volunteers, filled counts, confirmation state, recurrence, and response data from the schema and commands.
+- Added `tasks.view` read RLS and denied direct application writes.
+- Added authenticated `tasks.edit` create/archive functions. Create validates and creates non-system presets only; archive accepts only a preset UUID and refuses system presets.
+- Added schema support for a future trusted Lunch system preset with a required Menu definition, without seed data or scheduling behavior.
+- Added strict server-only validation and read/create/archive helpers with no route imports.
+- Added `npm run test:tasks` for schema scope, validation, capabilities, system boundaries, deterministic isolation, and route-cutover checks.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701040000_task_presets.sql`
+- `lib/tasks/preset.ts`
+- `lib/tasks/server.ts`
+- `scripts/task-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:tasks` passed.
+- `npx tsc --noEmit` passed.
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace`, `npm run test:grants`, `npm run test:questionnaires`, and `npm run test:volunteers` passed.
+- `node --check scripts/task-persistence-regression.mjs` passed.
+- `git diff --check` passed with only Git's existing LF-to-CRLF checkout warnings.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/functions were not applied and live task-preset read/write isolation was not exercised.
+- There is no general update command, system-preset provisioning command, seed preset, generated database type, service-role client, or audit event.
+- The existing `/admin/tasks` route remains deterministic mock UI and imports no persisted task boundary.
+- Calendar, Assignment, Communication, Needs Attention, public volunteer access, and reminder-token behavior remain unchanged and unpersisted.
+
+Next recommended step:
+- 11.9 Calendar Item Persistence, if approved separately. Persist scheduled occurrences without assignment or volunteer-response mutations.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

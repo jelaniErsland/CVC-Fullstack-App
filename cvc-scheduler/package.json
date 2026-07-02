@@ -14,6 +14,7 @@
     "test:grants": "node --no-warnings --experimental-strip-types scripts/grants-authorization-regression.mjs",
     "test:questionnaires": "node --no-warnings --experimental-strip-types scripts/questionnaire-persistence-regression.mjs",
     "test:volunteers": "node --no-warnings --experimental-strip-types scripts/volunteer-persistence-regression.mjs",
+    "test:tasks": "node --no-warnings --experimental-strip-types scripts/task-persistence-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {

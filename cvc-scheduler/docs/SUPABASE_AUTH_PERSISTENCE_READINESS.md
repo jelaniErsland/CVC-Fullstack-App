@@ -2,7 +2,19 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.7 implements only persisted volunteer profiles, capability-scoped reads, and explicit questionnaire-to-profile conversion. It is not a route cutover, profile management UI, scheduling integration, or cross-project person model.
+Iteration 11.8 implements only reusable task-preset definitions and capability-scoped create/read/archive boundaries. It is not a Tasks route cutover, Calendar implementation, scheduling mutation, assignment model, or volunteer-response implementation.
+
+## 11.8 task preset boundary
+
+`public.task_presets` stores workspace-scoped reusable work definitions: name/description, high-level `general`/`food`/`security`/`custom` type, default needed count, future volunteer-visibility configuration, trusted system identity, bounded custom-field definitions, lifecycle, and timestamps. It intentionally contains no date, start/end time, Calendar placement, assigned volunteer, filled count, confirmation, recurrence, or response fields.
+
+The schema can represent Lunch as a future trusted system preset using `system_key = 'lunch'`, `task_type = 'food'`, and a required `menu` field definition. Ordinary application creation always sets `is_system_preset = false` and cannot supply a system key. This slice creates no seed preset and no lunch menu, scheduling, or volunteer-facing behavior.
+
+Anon has no table or function access. Authenticated reads require an effective grant containing `tasks.view`; workspace visibility alone is insufficient. Direct application writes are denied. The authenticated security-definer create/archive functions verify `auth.uid()`, active workspace/contact/grant validity, and `tasks.edit`. Create accepts only validated reusable-definition fields. Archive accepts only a preset UUID and refuses system presets. General updates remain deferred.
+
+The server-only validator rejects unknown input keys—including scheduling/assignment-shaped keys—plus invalid names, types, needed counts, duplicate fields/options, unsupported custom-field shapes, and oversized definitions. Read/create/archive helpers remain unused by `/admin/tasks` and all other routes, so persisted presets are not mixed with mock Tasks or Calendar data.
+
+`npm run test:tasks` checks schema/column scope, category/default/custom-field constraints, `tasks.view`/`tasks.edit` predicates, direct-write denial, system-preset boundaries, strict validation, Lunch representability, deterministic authorization fixtures, service-role absence, and route isolation. Without configured Supabase this is a contract regression, not a live task read/write RLS claim.
 
 ## 11.7 volunteer profile boundary
 
@@ -41,7 +53,7 @@ The authorization layers are deliberately distinct:
 - **Supabase Auth identity:** proves which invited user owns the cookie-backed session. It grants no workspace by itself.
 - **Project-contact record:** maps that Auth user into the application and can deactivate the contact globally. Its existence grants no workspace by itself.
 - **Workspace grant:** scopes one active contact to one `workspaces.id`, role label, capability array, and validity window.
-- **Capability authorization:** 11.5 recognizes `workspace.read`; 11.6 adds `questionnaires.review`; 11.7 adds `volunteers.view` plus conversion-only `volunteers.edit`. A role label or arbitrary future capability name has no implemented product effect.
+- **Capability authorization:** implemented capabilities are `workspace.read`, `questionnaires.review`, `volunteers.view`, conversion-only `volunteers.edit`, `tasks.view`, and `tasks.edit`. A role label or arbitrary future capability name has no implemented product effect.
 - **Future product-data authorization:** each later project-owned table must carry the canonical workspace UUID and add its own RLS plus server-owned capability/business validation. Workspace visibility must never become blanket access to questionnaires, volunteers, tasks, Calendar, assignments, communications, or other data.
 
 `npm run test:grants` statically checks the migration/policies/read boundaries and evaluates deterministic anon, no-grant, user-A, user-B, expired, revoked, inactive-grant, and inactive-contact fixtures. This is a focused contract regression, not a live Postgres RLS exercise. Real cross-user isolation still must be run against a configured local or linked Supabase database before production claims are made.
@@ -302,12 +314,12 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.5 Project Contact Grants + Workspace Authorization — completed:** active project contacts/grants, workspace-read RLS, server-only readers, and focused authorization contract checks; no product-route migration.
 - **11.6 Questionnaire submission persistence — completed:** controlled public creation, immutable answer snapshots, `questionnaires.review` reads, and focused contract checks; no route cutover or profile creation.
 - **11.7 Volunteer profile persistence — completed:** explicit capability-authorized conversion, same-workspace provenance, sensitive-field separation, and `volunteers.view` reads; no route cutover.
-- **11.8 Task preset persistence:** unified task definitions/types/custom fields.
-- **Later Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
+- **11.8 Task preset persistence — completed:** reusable definitions, bounded custom fields, capability-scoped create/read/archive, and no scheduling fields or route cutover.
+- **11.9 Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
 - **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.8 task preset persistence. It should persist reusable workspace-scoped work definitions without scheduling them, assigning volunteers, or changing the Calendar. Assignments, communications, reminders, Needs Attention, and the public portal remain separate later slices.
+The next proposed slice is 11.9 Calendar item persistence. It must keep scheduled occurrences separate from task definitions, use explicit schedule kinds/timezone rules, and initially add no assignment or response mutation. Communications, reminders, Needs Attention, and the public portal remain separate later slices.
 
 ## Readiness exit criteria
 

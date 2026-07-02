@@ -101,7 +101,8 @@ Rough phases:
 - 11.5 Project Contact Grants + Workspace Authorization. Completed; active contact/grant RLS and server-only readers, with no product-route cutover.
 - 11.6 Questionnaire Submission Persistence. Completed; immutable public intake boundary and `questionnaires.review` reads, with no route cutover or profile conversion.
 - 11.7 Volunteer Profile Persistence. Completed; explicit capability-authorized conversion and project-scoped reads, with no route cutover.
-- 11.8 Task Preset Persistence. Next proposed slice; persist reusable work definitions without Calendar or assignment behavior.
+- 11.8 Task Preset Persistence. Completed; capability-scoped reusable definitions and create/archive commands, with no route or Calendar cutover.
+- 11.9 Calendar Item Persistence. Next proposed slice; persist scheduled occurrences without assignments or responses.
 
 ## 4. Mid-Term Roadmap
 
@@ -184,6 +185,7 @@ Rough phases:
 - 11.6 Questionnaire Submission Persistence.
 - 11.7 Volunteer Profile Persistence.
 - 11.8 Task Preset Persistence.
+- 11.9 Calendar Item Persistence.
 
 ## 5. Later Roadmap
 
