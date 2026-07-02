@@ -2,7 +2,25 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.4 implements only the workspace identity schema and read boundary described below. It is not a grant, per-user authorization, route-data migration, or product mutation implementation.
+Iteration 11.5 implements only project-contact grants and workspace-read authorization. It is not a product route-data migration or product mutation implementation.
+
+## 11.5 project-contact grant boundary
+
+`public.project_contacts` maps one Supabase Auth user to one application contact lifecycle record. `public.workspace_contact_grants` links that contact to the canonical `workspaces.id`, records one of the existing contact-role labels, requires `workspace.read`, and carries active/inactive/revoked plus validity timestamps. Neither table has an authenticated write policy; provisioning remains a trusted setup/admin concern outside the browser.
+
+Workspace RLS now permits `select` only to `authenticated`, and only when `auth.uid()` resolves through an active contact to an active, unrevoked, currently valid grant for that exact workspace. Anon has no workspace table privilege or policy. The contact and grant tables expose only the signed-in user's own contact row and currently effective grants. Expired, future, inactive, and revoked grants do not authorize a workspace read.
+
+`loadProjectContactGrants` verifies that its explicit user id matches `auth.getUser()` and reads only RLS-visible grants. `readCurrentUserGrantedWorkspaces` lists workspace identities allowed by RLS, while the 11.4 lookup-by-id/key reader automatically inherits the same policy. These boundaries are `server-only`; no mock product/workspace route imports them. The existing `/admin/login` Auth shell is the sole route allowed to display grant status, and it does not use persisted workspace data.
+
+The authorization layers are deliberately distinct:
+
+- **Supabase Auth identity:** proves which invited user owns the cookie-backed session. It grants no workspace by itself.
+- **Project-contact record:** maps that Auth user into the application and can deactivate the contact globally. Its existence grants no workspace by itself.
+- **Workspace grant:** scopes one active contact to one `workspaces.id`, role label, capability array, and validity window.
+- **Capability authorization:** 11.5 recognizes only `workspace.read`. A role label or arbitrary future capability name has no implemented product effect.
+- **Future product-data authorization:** each later project-owned table must carry the canonical workspace UUID and add its own RLS plus server-owned capability/business validation. Workspace visibility must never become blanket access to questionnaires, volunteers, tasks, Calendar, assignments, communications, or other data.
+
+`npm run test:grants` statically checks the migration/policies/read boundaries and evaluates deterministic anon, no-grant, user-A, user-B, expired, revoked, inactive-grant, and inactive-contact fixtures. This is a focused contract regression, not a live Postgres RLS exercise. Real cross-user isolation still must be run against a configured local or linked Supabase database before production claims are made.
 
 ## 11.4 workspace persistence boundary
 
@@ -10,9 +28,9 @@ Iteration 11.4 implements only the workspace identity schema and read boundary d
 
 The table is deliberately small: identity, display name, `draft`/`active`/`archived` lifecycle, timezone, optional project dates, a public-intake configuration flag, and timestamps. No contact, grant, questionnaire, volunteer, task, Calendar, assignment, response, communication, reminder, or follow-up table is part of this migration. The flag is configuration only and does not expose a public intake read or submission path.
 
-RLS is enabled and forced, and 11.4 creates no policy. Anon and authenticated roles retain only table-level `select`, which RLS reduces to zero visible rows. This proves the safe default—Auth identity alone cannot list or fetch a workspace—but does not prove per-user project isolation. Table owners, superusers, and bypass-RLS roles are outside that claim. The application uses no service-role client.
+RLS was enabled and forced with no allow policy in 11.4. Iteration 11.5 replaces that initial authenticated deny-all posture with the narrow active-grant policy above; table owners, superusers, and bypass-RLS roles remain outside its claim. The application uses no service-role client.
 
-`lib/workspaces/read.ts` is a `server-only` boundary that selects the identity/config columns by validated UUID or stable key using the caller's cookie-aware Supabase client. Under the current deny-by-default policy it returns no row. No route imports it. A future grants slice must add membership-backed RLS and test two users with different grants before an authenticated route can rely on it.
+`lib/workspaces/read.ts` is a `server-only` boundary that selects the identity/config columns by validated UUID or stable key using the caller's cookie-aware Supabase client. It now inherits the 11.5 grant policy. No route imports it.
 
 No generated database types were available from a linked/local Supabase schema during implementation. The boundary therefore validates the returned row at runtime and keeps its narrow application type in `lib/workspaces/identity.ts`; it does not pretend that handwritten types are generated. The generation workflow is documented in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md).
 
@@ -20,7 +38,7 @@ No generated database types were available from a linked/local Supabase schema d
 
 Invited project contacts can request a Supabase Auth magic link; unknown emails cannot self-register. The callback exchanges the one-time code for a cookie-backed session, sign-out clears that local session, and the Next.js proxy can require a verified Auth user when `ADMIN_AUTH_MODE=enforced`. The default `review` mode leaves existing mock admin routes open and makes no per-route Auth request.
 
-Authentication proves only an identity. `loadProjectContactGrants` returns a typed empty `not_implemented` result and never queries a table. Therefore an Auth user currently has no persisted project, role, congregation, or capability grant. The enforced proxy is a session boundary, not final product authorization. Public volunteer/questionnaire routes remain outside Supabase Auth.
+Authentication proves only an identity. The 11.5 grant reader separately resolves active workspace access; the enforced proxy remains a session boundary, not final product authorization. Public volunteer/questionnaire routes remain outside Supabase Auth.
 
 ## 11.2 setup boundary
 
@@ -257,15 +275,15 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.2 Supabase Project Setup + Environment Skeleton — completed:** installed the approved client, defined lazy environment/client boundaries, and added a table-free connectivity check plus secret-handling guidance. No app route or product data migrated.
 - **11.3 Auth Shell for Project Contacts — completed:** invite-only magic-link sign-in, cookie session/callback, POST sign-out, optional enforced admin boundary, and empty placeholder grant loading. No product authorization or data migration.
 - **11.4 Workspace Persistence Foundation — completed:** one workspace identity table, deny-by-default RLS, an unused server-only reader, and focused isolation checks.
-- **11.5 Project Contact Grants + Workspace Authorization:** active project membership/grants, reviewed RLS, and cross-user isolation tests; do not broaden this into product-route migration.
-- **Later questionnaire submission persistence:** public insert plus authenticated review boundary; no automatic profile creation.
+- **11.5 Project Contact Grants + Workspace Authorization — completed:** active project contacts/grants, workspace-read RLS, server-only readers, and focused authorization contract checks; no product-route migration.
+- **11.6 Questionnaire submission persistence:** public insert plus authenticated review boundary; no automatic profile creation.
 - **Later volunteer profile persistence:** explicit review-to-profile workflow and sensitive-field authorization.
 - **Later task preset persistence:** unified task definitions/types/custom fields.
 - **Later Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
 - **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next recommended slice is the dedicated 11.5 grants/workspace-authorization boundary. It must prove that distinct authenticated users see only explicitly granted workspace ids before any authenticated product route is cut over. Calendar, volunteers, questionnaires, assignments, communications, and the public portal remain separate later slices.
+The next proposed slice is 11.6 questionnaire submission persistence. It must design anonymous creation separately from grant-authorized review and must not automatically create volunteer profiles. Calendar, volunteers, tasks, assignments, communications, and the public portal remain separate later slices.
 
 ## Readiness exit criteria
 

@@ -16,12 +16,10 @@ const migrationPath = path.join(
   "20260701000000_workspace_identity.sql",
 );
 const readBoundaryPath = path.join(root, "lib", "workspaces", "read.ts");
-const grantsPath = path.join(root, "lib", "auth", "project-contact-grants.ts");
 
-const [migration, readBoundary, grants] = await Promise.all([
+const [migration, readBoundary] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(readBoundaryPath, "utf8"),
-  readFile(grantsPath, "utf8"),
 ]);
 
 assert.match(migration, /create table public\.workspaces\s*\(/i);
@@ -49,8 +47,6 @@ assert.equal(
   "The read boundary may query only workspace identity",
 );
 assert.doesNotMatch(readBoundary, /SUPABASE_SERVICE_ROLE_KEY|serviceRole/i);
-assert.match(grants, /status:\s*"not_implemented"/);
-assert.doesNotMatch(grants, /\.from\(/);
 
 assert.deepEqual(normalizeWorkspaceReference({ key: "belgrade-remodel-2026" }), {
   column: "workspace_key",
@@ -102,4 +98,4 @@ assert.equal(
 );
 
 console.log("Workspace persistence regression checks passed.");
-console.log("Confirmed deny-by-default RLS, one-table scope, and no route cutover.");
+console.log("Confirmed the 11.4 base migration is deny-by-default with no route cutover.");

@@ -25,8 +25,8 @@ const workspaceIdentityColumns = [
 
 /**
  * Executes the narrow workspace-identity read with the caller's Supabase
- * session. RLS remains authoritative: in 11.4 it returns no rows because no
- * contact-grant policy exists yet.
+ * session. RLS remains authoritative: the row is visible only when the current
+ * Auth user has an active project contact and workspace.read grant.
  */
 export async function readWorkspaceIdentityWithClient(
   supabase: SupabaseClient,
@@ -58,4 +58,3 @@ export async function readWorkspaceIdentity(
 
   return readWorkspaceIdentityWithClient(supabase, reference);
 }
-

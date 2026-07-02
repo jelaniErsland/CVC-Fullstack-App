@@ -2989,6 +2989,51 @@ Limitations:
 Next recommended step:
 - 11.5 Project Contact Grants + Workspace Authorization. Add explicit project membership/grants and prove cross-user workspace isolation before any authenticated product route cutover.
 
+## Iteration 11.5 — Project Contact Grants + Workspace Authorization
+
+Summary:
+- Added `project_contacts` as the explicit application mapping to Supabase Auth and `workspace_contact_grants` as the canonical workspace-scoped role/capability grant.
+- Added active/inactive/revoked status, validity windows, revocation consistency, `workspace.read`, and foreign keys to `auth.users` and the 11.4 workspace UUID.
+- Added authenticated read-only RLS. Anon has no workspace privilege; signed-in users see only their own effective grants and workspaces authorized by those grants.
+- Connected `loadProjectContactGrants` narrowly: it verifies the requested user against `auth.getUser()`, relies on RLS, validates rows, and returns no authorization when verification/querying fails.
+- Added a server-only current-user granted-workspace list reader. Existing lookup-by-id/key automatically inherits workspace RLS.
+- Kept `/admin/login` as the only route that inspects grant status. No mock product/workspace route reads persisted workspaces or grants.
+- Added `npm run test:grants` for policy/schema checks, deterministic isolation fixtures, server-only/service-role checks, and route-import isolation.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701010000_project_contact_grants.sql`
+- `lib/auth/grant.ts`
+- `lib/auth/project-contact-grants.ts`
+- `lib/workspaces/granted.ts`
+- `lib/workspaces/read.ts`
+- `scripts/grants-authorization-regression.mjs`
+- `scripts/workspace-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:workspace` passed.
+- `npm run test:grants` passed.
+- `npx tsc --noEmit` passed.
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `node --check scripts/grants-authorization-regression.mjs` passed.
+- `git diff --check` passed with only Git's existing LF-to-CRLF checkout warnings.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so migrations were not applied and real Postgres two-user RLS isolation was not exercised. The regression is a policy/contract check, not a live database claim.
+- `workspace.read` authorizes workspace identity/config only. It does not authorize any future product table or mutation.
+- There is no grant/invitation management UI, app grant mutation, seed data, generated database type, service-role client, or audit log.
+- All Calendar, Task, Volunteer, Questionnaire, Assignment, Communication, Needs Attention, public volunteer, reminder-token, and mock application routes remain on existing behavior/data.
+
+Next recommended step:
+- 11.6 Questionnaire Submission Persistence, if approved as a separate slice. Keep anonymous creation and grant-authorized review separate and do not create volunteer profiles automatically.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

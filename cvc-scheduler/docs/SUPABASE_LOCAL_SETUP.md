@@ -1,6 +1,6 @@
 # Supabase Local Setup Skeleton
 
-Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, and 11.4 adds one workspace identity migration plus an unused server-only reader. Project grants and route data cutovers are not enabled.
+Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, 11.4 added workspace identity, and 11.5 adds project-contact/workspace grants plus read-only RLS. Product route data cutovers are not enabled.
 
 ## Local environment
 
@@ -36,7 +36,7 @@ Deployment values belong in the deployment platform's encrypted environment sett
 - `lib/supabase/config.ts` validates required public values and keeps the optional service-role value typed and server-only.
 - Generated database types are not committed yet because this repository has no linked/local schema output. The narrow workspace reader validates its result at runtime until real generated types replace the untyped client boundary.
 
-Authentication answers who the contact is. `loadProjectContactGrants` deliberately returns an empty `not_implemented` state; it performs no query. A future grant slice must separately decide which projects and capabilities that identity may use before any product-data request is authorized.
+Authentication answers which Supabase user is signed in. `loadProjectContactGrants` verifies that session identity and reads only active grants exposed by RLS. A matching `project_contacts` row still grants nothing by itself; workspace access requires a current `workspace_contact_grants` row containing `workspace.read`. Future product tables need their own capability policies and server validation.
 
 ## Contact auth behavior
 
@@ -44,7 +44,7 @@ Authentication answers who the contact is. `loadProjectContactGrants` deliberate
 - `/admin/auth/callback` exchanges the one-time code for a cookie-backed session and accepts only sanitized local admin return paths.
 - `/admin/auth/sign-out` is POST-only and clears the local Auth session.
 - `review` mode preserves the current mock admin experience and offers a Prototype review entry.
-- `enforced` mode redirects anonymous admin requests to sign-in. It checks identity only; it does not assert a project role or grant.
+- `enforced` mode redirects anonymous admin requests to sign-in. The proxy checks identity only; individual real-data boundaries must still enforce grants/capabilities.
 - Public volunteer and questionnaire routes do not import or use this Auth boundary. Volunteers still do not create accounts.
 
 ## Connectivity smoke check
@@ -61,14 +61,17 @@ Missing or invalid variables fail with a setup-oriented message. The command mus
 
 ## Workspace migration and type generation
 
-The migration is `supabase/migrations/20260701000000_workspace_identity.sql`. Review it before applying it. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` and `supabase/migrations/20260701010000_project_contact_grants.sql`. Review both before applying them in order. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push
 npm run test:workspace
+npm run test:grants
 ```
 
-The migration creates only `public.workspaces`; it adds no seed row. RLS is forced with no policy, so normal anon/authenticated reads return zero rows until the grants slice. Applying the migration does not authorize the signed-in contact.
+The second migration creates only `public.project_contacts` and `public.workspace_contact_grants`; neither migration adds seed rows. Anon has no workspace table privilege. An authenticated user sees a workspace only when their active contact has an active, unrevoked, currently valid `workspace.read` grant for it. Authenticated roles receive no insert/update/delete grants.
+
+Provisioning Auth users, contact records, and grants is intentionally an administrator-owned database/setup operation in this slice; there is no browser or admin UI mutation path. Use trusted Supabase administration for a non-production environment, never expose a service-role key to browser code, and record real provisioning/audit workflow requirements before production use.
 
 After the migration exists in the linked database, generate real types rather than maintaining a handwritten database schema type:
 
@@ -80,9 +83,9 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 
 ## Intentionally unimplemented
 
-- Product tables beyond workspace identity, generated database types, seed data, and allow policies.
-- Project-contact grants and membership-backed workspace policies; current workspace RLS intentionally reveals no rows.
-- Project-contact invitation management UI, project grants, role/capability enforcement, and persisted authorization.
+- Product tables beyond workspace identity/authorization, generated database types, and seed data.
+- Project-contact invitation/grant management UI, browser grant mutations, and audit history.
+- Capability enforcement beyond `workspace.read`; grant roles do not yet confer product permissions.
 - Service-role operations.
 - Volunteer lookup, secure/reminder tokens, remembered-device behavior, and response writes.
 - Questionnaire, task, Calendar, assignment, communication, or follow-up persistence.
