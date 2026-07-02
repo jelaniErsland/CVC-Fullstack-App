@@ -2948,6 +2948,47 @@ Limitations:
 Next recommended step:
 - 11.4 Workspace Persistence Foundation. Keep the first persistence slice limited to project/workspace identity, project isolation, and tests; do not combine it with other product-data migrations.
 
+## Iteration 11.4 — Workspace Persistence Foundation
+
+Summary:
+- Added one `public.workspaces` migration containing only canonical UUID/key identity, display name, lifecycle, timezone, optional date range, public-intake configuration, and timestamps.
+- Made the workspace UUID the canonical scope key for future project-owned rows; stable human-readable lookup uses `workspace_key` and never acts as authorization.
+- Enabled and forced RLS without an allow policy. Normal anon/authenticated sessions can select the table at the privilege layer but see zero rows, so Auth identity alone grants nothing.
+- Added a server-only, session-owned workspace identity reader by UUID or stable key. No application route imports it and no service-role client is used.
+- Added runtime input/row validation and `npm run test:workspace` checks for schema scope, deny-by-default isolation, unchanged grant placeholders, and absence of route cutovers.
+- Documented migration application and future generated-type workflow. No invented generated database types were committed because no linked/local generated output was available.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701000000_workspace_identity.sql`
+- `lib/workspaces/identity.ts`
+- `lib/workspaces/read.ts`
+- `scripts/workspace-persistence-regression.mjs`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+
+Verification:
+- `npm run test:workspace` passed.
+- `npx tsc --noEmit` passed.
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `node --check scripts/workspace-persistence-regression.mjs` passed.
+- `git diff --check` passed with only Git's existing LF-to-CRLF checkout warnings.
+- A live migration/RLS exercise was not run because no `.env.local` or `supabase/config.toml` is present; `npm run test:workspace` validated the checked-in migration contract instead.
+
+Limitations:
+- Deny-by-default proves that ordinary sessions currently see no workspace rows; it does not prove real per-user project isolation. That requires persisted grants, membership-backed policies, and cross-user tests.
+- The reader is intentionally unused by routes. Existing Calendar, task, volunteer, questionnaire, assignment, communication, Needs Attention, public volunteer, reminder, and mock admin routes remain deterministic mocks.
+- `public_intake_enabled` is configuration only. It creates no anonymous read, questionnaire submission, volunteer lookup, or token behavior.
+- No service-role operation, seed data, workspace mutation command, grant query, or generated database type was added.
+
+Next recommended step:
+- 11.5 Project Contact Grants + Workspace Authorization. Add explicit project membership/grants and prove cross-user workspace isolation before any authenticated product route cutover.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

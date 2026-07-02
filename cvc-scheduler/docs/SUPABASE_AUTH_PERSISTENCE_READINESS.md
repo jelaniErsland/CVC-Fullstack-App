@@ -2,7 +2,19 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-It is not a database schema, migration, RLS policy, or product-data authorization implementation. Iteration 11.3 adds the contact Auth/session shell described below, but still adds no product table, grant query, product database call, route-data migration, policy, migration, or mutation.
+Iteration 11.4 implements only the workspace identity schema and read boundary described below. It is not a grant, per-user authorization, route-data migration, or product mutation implementation.
+
+## 11.4 workspace persistence boundary
+
+`public.workspaces` is now the canonical scope root for one real-world project. Its immutable UUID is the project scope key that later questionnaire submissions, volunteer profiles, task presets, Calendar items, assignments, communications, grants, and other project-owned rows must reference through a foreign key. `workspace_key` is the stable human-readable lookup key; `display_name` is presentation and may change. Neither a key nor a UUID is proof of access.
+
+The table is deliberately small: identity, display name, `draft`/`active`/`archived` lifecycle, timezone, optional project dates, a public-intake configuration flag, and timestamps. No contact, grant, questionnaire, volunteer, task, Calendar, assignment, response, communication, reminder, or follow-up table is part of this migration. The flag is configuration only and does not expose a public intake read or submission path.
+
+RLS is enabled and forced, and 11.4 creates no policy. Anon and authenticated roles retain only table-level `select`, which RLS reduces to zero visible rows. This proves the safe default—Auth identity alone cannot list or fetch a workspace—but does not prove per-user project isolation. Table owners, superusers, and bypass-RLS roles are outside that claim. The application uses no service-role client.
+
+`lib/workspaces/read.ts` is a `server-only` boundary that selects the identity/config columns by validated UUID or stable key using the caller's cookie-aware Supabase client. Under the current deny-by-default policy it returns no row. No route imports it. A future grants slice must add membership-backed RLS and test two users with different grants before an authenticated route can rely on it.
+
+No generated database types were available from a linked/local Supabase schema during implementation. The boundary therefore validates the returned row at runtime and keeps its narrow application type in `lib/workspaces/identity.ts`; it does not pretend that handwritten types are generated. The generation workflow is documented in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md).
 
 ## 11.3 contact Auth boundary
 
@@ -14,7 +26,7 @@ Authentication proves only an identity. `loadProjectContactGrants` returns a typ
 
 The repository now includes `@supabase/supabase-js`, lazy browser and server client factories, typed runtime environment validation, `.env.example`, and `npm run supabase:check`. The check calls only the Supabase Auth health endpoint; it does not sign in, create a session, or read a product table. Current builds and mock routes do not require Supabase variables because no application route imports either client factory.
 
-Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. There are still no generated database types because there is no reviewed product schema.
+Local setup and secret-handling rules live in [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md). `SUPABASE_SERVICE_ROLE_KEY` is an optional typed server-only placeholder and has no privileged client factory or current consumer. Generated database types remain pending until the reviewed migration is applied to a linked or local schema.
 
 ## 1. Current mock-prototype boundary
 
@@ -177,7 +189,7 @@ Mock and real data should not be silently mixed on one route. Use an explicit sl
 
 Actual policies belong in later reviewed migrations. The policy model should start deny-by-default and cover:
 
-- **Project isolation:** an authenticated user reads/writes project rows only through an active grant for that project.
+- **Project isolation:** 11.4 denies all normal workspace rows. A future grant policy must allow an authenticated user to read project rows only through an active grant for that project.
 - **Role/capability scope:** write access depends on capability, not merely membership. Sensitive volunteer/questionnaire fields have narrower read access than schedule summaries.
 - **Assistant congregation scope:** enforce congregation predicates at the data boundary. Decide how cross-congregation assignments and unscoped volunteers behave before enabling it.
 - **Platform scope:** cross-project administration requires an explicit platform grant and audit trail; never infer it from a client route.
@@ -244,15 +256,16 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 
 - **11.2 Supabase Project Setup + Environment Skeleton — completed:** installed the approved client, defined lazy environment/client boundaries, and added a table-free connectivity check plus secret-handling guidance. No app route or product data migrated.
 - **11.3 Auth Shell for Project Contacts — completed:** invite-only magic-link sign-in, cookie session/callback, POST sign-out, optional enforced admin boundary, and empty placeholder grant loading. No product authorization or data migration.
-- **11.4 Workspace Persistence Foundation:** project/workspace table and project-scoped read path, with isolation tests.
-- **11.5 Questionnaire Submission Persistence:** public insert plus authenticated review boundary; no automatic profile creation.
-- **11.6 Volunteer Profile Persistence:** explicit review-to-profile workflow and sensitive-field authorization.
-- **11.7 Task Preset Persistence:** unified task definitions/types/custom fields.
-- **11.8 Calendar Item Persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
-- **11.9 Assignment/Response Persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
-- **11.10 Communications/Reminder Persistence Readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
+- **11.4 Workspace Persistence Foundation — completed:** one workspace identity table, deny-by-default RLS, an unused server-only reader, and focused isolation checks.
+- **11.5 Project Contact Grants + Workspace Authorization:** active project membership/grants, reviewed RLS, and cross-user isolation tests; do not broaden this into product-route migration.
+- **Later questionnaire submission persistence:** public insert plus authenticated review boundary; no automatic profile creation.
+- **Later volunteer profile persistence:** explicit review-to-profile workflow and sensitive-field authorization.
+- **Later task preset persistence:** unified task definitions/types/custom fields.
+- **Later Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
+- **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
+- **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next recommended slice is 11.4. It should establish the smallest project/workspace persistence boundary with reviewed isolation tests; it must not migrate Calendar, volunteers, questionnaire submissions, or the public portal at the same time.
+The next recommended slice is the dedicated 11.5 grants/workspace-authorization boundary. It must prove that distinct authenticated users see only explicitly granted workspace ids before any authenticated product route is cut over. Calendar, volunteers, questionnaires, assignments, communications, and the public portal remain separate later slices.
 
 ## Readiness exit criteria
 

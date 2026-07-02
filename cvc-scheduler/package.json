@@ -10,6 +10,7 @@
     "lint": "eslint",
     "preview:screenshots": "node scripts/capture-previews.mjs",
     "supabase:check": "node scripts/supabase-smoke.mjs",
+    "test:workspace": "node --no-warnings --experimental-strip-types scripts/workspace-persistence-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {

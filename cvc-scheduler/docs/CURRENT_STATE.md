@@ -251,6 +251,7 @@ Upcoming UI direction:
 - Creation validation remains local and calm: timed End must be later than Start, a no-specific-time End date cannot precede Date, Needed is clamped to 1-99, and custom one-day mode requires a non-empty name. Field messages use `aria-invalid`/descriptions, while the fixed footer explains that Schedule, Save draft, and Assign helpers remain unavailable in this preview.
 - Calendar model readiness is now documented separately from the UI implementation. Local draft types are explicitly named as preview state, Calendar timing is classified through one deterministic helper, and shared date/range intersection helpers keep all-day and multi-day selection rules consistent without adding persistence.
 - Supabase, authentication, persistence, and real-data migration readiness is documented in [`SUPABASE_AUTH_PERSISTENCE_READINESS.md`](./SUPABASE_AUTH_PERSISTENCE_READINESS.md). Iteration 11.3 adds an invite-only project-contact magic-link shell, cookie callback/session handling, POST sign-out, and an optional admin proxy boundary. `ADMIN_AUTH_MODE=review` remains the default so current mock admin routes stay reviewable; `enforced` requires a verified Auth identity. Authentication does not grant project access: the grant loader returns a typed empty placeholder and performs no query. [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md) documents setup and redirect configuration.
+- Iteration 11.4 adds the first product schema boundary: one `public.workspaces` table for immutable workspace id, stable key, display name, lifecycle, timezone, optional date range, public-intake configuration, and timestamps. Its UUID is the canonical project scope key for every later project-owned row. RLS is enabled and forced with no policy, so anon and authenticated sessions see no workspace rows; no contact grant or route cutover is implied. A server-only reader can query identity by UUID or stable key with the caller's session, while all existing routes continue using deterministic mocks. `npm run test:workspace` checks schema scope, deny-by-default isolation, reference/row validation, the untouched grant placeholder, and absence of route imports.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -329,11 +330,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 8. Current Limitations
 
-- No real auth.
-- No real database.
-- Supabase Auth has a project-contact session shell, but no product integration exists. There are no product tables, generated database types, migrations, RLS policies, project grant reads, role enforcement, product database reads/writes, or mock-to-real cutovers.
-- The 11.1 readiness plan remains a proposed contract. Contact authentication approach, project/role grants, volunteer token strategy, schema constraints, and mock-to-real cutover remain unresolved until their dedicated slices.
-- No real persistence.
+- Supabase Auth has a project-contact identity/session shell, not project authorization. There are no project grant reads, role/capability enforcement, or authenticated product-route cutovers.
+- The only product schema is the unapplied-by-default workspace identity migration. It has no seed data or allow policy, and no existing route reads it.
+- Generated database types and live schema validation remain pending a configured linked/local Supabase database.
+- The broader 11.1 readiness plan remains proposed. Project/role grants, volunteer token strategy, downstream schema constraints, and mock-to-real cutover remain unresolved until their dedicated slices.
+- No product persistence exists beyond the isolated workspace identity foundation.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
 - No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
@@ -374,9 +375,9 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 - The public volunteer portal is a mock foundation only. Lookup always opens Alex’s deterministic schedule; empty and reminder routes are fixed variants rather than lookup/email outcomes. Response state remains component-local and resets on navigation. Reminder paths have no token or identity verification, send no email/text, and public schedule/update content does not sync with admin Calendar or Communications. Auth, Supabase, real identity resolution, secure links, and mutations are not implemented.
 - Some non-workspace routes such as `/admin/login` and `/admin/onboarding` intentionally remain outside the shared workspace admin shell.
 - Intake flow screenshots are still prototype QA artifacts, not product approvals.
-- Current data is mock-only.
+- Existing application-route data remains mock-only. The persisted workspace schema/read foundation is intentionally not connected to a route.
 - Belgrade remains the production workflow in Sheets/App Script for now.
 
 ## 9. Next Recommended Step
 
-11.4 Workspace Persistence Foundation. Persist only the minimal project/workspace boundary with project isolation and tests; do not combine it with Calendar, volunteer, questionnaire, or public-portal migration.
+A dedicated project-contact grants/workspace-authorization slice. It should add reviewed membership policies and prove per-user workspace isolation before any authenticated product route cutover; it must not infer access from Auth identity alone.

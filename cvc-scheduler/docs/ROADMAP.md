@@ -97,7 +97,8 @@ Rough phases:
 - 11.1 Supabase/Auth/Persistence Readiness Planning. Completed.
 - 11.2 Supabase Project Setup + Environment Skeleton. Completed; tooling and environment boundaries only, with no product-data integration.
 - 11.3 Auth Shell for Project Contacts. Completed; identity/session boundary only, with no project grants or product-data authorization.
-- 11.4 Workspace Persistence Foundation. Next recommended step; keep the first schema/persistence slice limited to project identity and isolation.
+- 11.4 Workspace Persistence Foundation. Completed; one deny-by-default workspace identity table and an unused server-owned read boundary, with no route cutover or project grants.
+- 11.5 Project Contact Grants + Workspace Authorization. Next recommended step; add explicit membership/grant policies and prove per-user workspace isolation before authenticated product reads.
 
 ## 4. Mid-Term Roadmap
 
@@ -176,6 +177,7 @@ Rough phases:
 - 11.2 Supabase Project Setup + Environment Skeleton.
 - 11.3 Auth Shell for Project Contacts.
 - 11.4 Workspace Persistence Foundation.
+- 11.5 Project Contact Grants + Workspace Authorization.
 
 ## 5. Later Roadmap
 
