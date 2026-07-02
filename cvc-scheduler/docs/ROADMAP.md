@@ -102,7 +102,8 @@ Rough phases:
 - 11.6 Questionnaire Submission Persistence. Completed; immutable public intake boundary and `questionnaires.review` reads, with no route cutover or profile conversion.
 - 11.7 Volunteer Profile Persistence. Completed; explicit capability-authorized conversion and project-scoped reads, with no route cutover.
 - 11.8 Task Preset Persistence. Completed; capability-scoped reusable definitions and create/archive commands, with no route or Calendar cutover.
-- 11.9 Calendar Item Persistence. Next proposed slice; persist scheduled occurrences without assignments or responses.
+- 11.9 Calendar Item Persistence. Completed; explicit schedule kinds, preset-or-one-off snapshots, workspace timezone enforcement, and capability-scoped create/read/archive with no route, assignment, or response cutover.
+- 11.10 Assignment + Volunteer Response Persistence. Next proposed slice; define assignment truth, response transitions, and public authorization without storing coverage counters on Calendar items.
 
 ## 4. Mid-Term Roadmap
 

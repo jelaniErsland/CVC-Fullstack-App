@@ -2,7 +2,15 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.8 implements only reusable task-preset definitions and capability-scoped create/read/archive boundaries. It is not a Tasks route cutover, Calendar implementation, scheduling mutation, assignment model, or volunteer-response implementation.
+Iteration 11.9 implements only persisted Calendar item snapshots and capability-scoped create/read/archive boundaries. It is not a Calendar or Tasks route cutover, assignment model, volunteer-response implementation, recurrence engine, or drag/drop save path.
+
+## 11.9 Calendar item boundary
+
+`public.calendar_items` stores workspace-scoped scheduled work and deliberate project-context items. An item has exactly one task source: an active same-workspace task-preset reference whose name/type are snapshotted at creation, or a validated one-off name/type snapshot that does not create a preset. `calendar.view` authorizes RLS reads and `calendar.edit` authorizes the server-owned create/archive functions; roles and `workspace.read` alone authorize neither.
+
+The schedule is an explicit union of `timed`, `date_based`, `multi_day_window`, and `milestone`. The database derives and enforces the workspace timezone instead of accepting it from a caller. This first slice stores local dates/times and intentionally rejects overnight timed ranges; a future slice must add an unambiguous instant/end-date model before overnight work is accepted. Multi-day windows require a later end date and are informational. Milestones and windows carry a zero planned needed count, while timed/date-based items accept 1–99.
+
+`needed_count` records planned demand only. There are no assigned-volunteer ids, filled/confirmed/denied/waiting/open counters, or response states on Calendar items. Future assignment and response rows must become coverage truth. Direct application writes are denied, no recurrence/copy metadata is stored, and the isolated helpers are imported by no route.
 
 ## 11.8 task preset boundary
 
@@ -103,7 +111,7 @@ Public lookup does not resolve an identity. Reminder paths have no token or secu
 
 The admin prototype includes Overview, Calendar, Tasks, Volunteers, Communications, Settings, questionnaire review, Needs Attention, workspace/project setup, legacy `/admin/schedule`, and Food/Security research surfaces. Admin login and role-aware pages are presentation previews; they do not authenticate or enforce authorization.
 
-Calendar creation, inspection, filtering, view state, date navigation, response counts, and assignment coverage are mock UI. Calendar-specific persistence guidance remains in [`CALENDAR_DATA_MODEL_READINESS.md`](./CALENDAR_DATA_MODEL_READINESS.md).
+Calendar creation, inspection, filtering, view state, date navigation, response counts, and assignment coverage remain mock UI. The isolated 11.9 Calendar item boundary is not connected to those routes. Calendar-specific persistence assumptions are recorded in [`CALENDAR_DATA_MODEL_READINESS.md`](./CALENDAR_DATA_MODEL_READINESS.md).
 
 ### Boundary rule
 
@@ -218,7 +226,7 @@ The Calendar contract remains:
 - The Project context band should be reconsidered later and may become rare, collapsible, or removable.
 - Every `+N` overflow must reveal useful hidden work. Month/Week may open Day or a fuller List; Day must not navigate to itself.
 
-Before Calendar persistence, resolve timezone/storage rules, overnight work, inclusive date ranges, preset snapshot behavior, assignment uniqueness/capacity, response transitions, recurrence/copy provenance, audit history, and mutation idempotency. Do not accept client-derived counters or authorization scope in create/update commands.
+Iteration 11.9 resolves only the first narrow storage choices: workspace-derived timezone, local date/time fields, inclusive project windows, and immutable name/type snapshots at creation. Overnight work, assignment uniqueness/capacity, response transitions, recurrence/copy provenance, audit history, general edits, and mutation idempotency remain unresolved. Commands must not accept client-derived counters or authorization scope.
 
 ## 7. Recommended data migration order
 
@@ -315,11 +323,11 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.6 Questionnaire submission persistence — completed:** controlled public creation, immutable answer snapshots, `questionnaires.review` reads, and focused contract checks; no route cutover or profile creation.
 - **11.7 Volunteer profile persistence — completed:** explicit capability-authorized conversion, same-workspace provenance, sensitive-field separation, and `volunteers.view` reads; no route cutover.
 - **11.8 Task preset persistence — completed:** reusable definitions, bounded custom fields, capability-scoped create/read/archive, and no scheduling fields or route cutover.
-- **11.9 Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
-- **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
+- **11.9 Calendar item persistence — completed:** explicit schedule kinds, workspace-derived timezone, preset-or-one-off snapshots, capability-scoped create/read/archive, and no route or assignment cutover.
+- **11.10 Assignment/response persistence:** authoritative assignment/response rows, derived coverage, and a deliberately scoped public response authorization boundary.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.9 Calendar item persistence. It must keep scheduled occurrences separate from task definitions, use explicit schedule kinds/timezone rules, and initially add no assignment or response mutation. Communications, reminders, Needs Attention, and the public portal remain separate later slices.
+The next proposed slice is 11.10 Assignment + Volunteer Response Persistence. It must keep coverage truth off Calendar items, define valid response transitions, and design account-free public authorization before exposing mutation. Communications, reminders, Needs Attention, and broad route cutovers remain separate later slices.
 
 ## Readiness exit criteria
 

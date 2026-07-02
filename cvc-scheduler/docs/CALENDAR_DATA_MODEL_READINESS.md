@@ -1,6 +1,14 @@
 # Calendar Data-Model Readiness
 
-This note records the likely production boundary behind the current mock Calendar. It is a readiness guide, not a database schema or an implementation plan. The Calendar remains local, preview-only UI.
+This note records the production boundary behind the current mock Calendar. Iteration 11.9 now implements the first isolated schema and server commands, while every Calendar route remains local, preview-only UI.
+
+## Iteration 11.9 persisted boundary
+
+`public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.
+
+The persisted model uses local project dates/times plus a timezone copied from and constrained to the workspace. `timed` currently means a same-date interval with `end_time > start_time`; overnight work is rejected until a future unambiguous instant/end-date model is reviewed. `date_based` uses one date and no times. `multi_day_window` uses an inclusive start/end range with `end_date > start_date`, no times, and zero needed count. `milestone` uses one date, no times, and zero needed count.
+
+This slice does not implement assignment or response truth, authoritative coverage counters, recurrence/copy behavior, general edits, drag/drop saves, route reads, or UI conversion from the mock compatibility model. The contract sketch below remains guidance for those later extensions where it differs from the narrow implemented boundary.
 
 ## Core boundaries
 
@@ -50,7 +58,7 @@ The recommended production vocabulary is deliberately small:
 
 | Kind | Meaning | Typical examples | Coverage expectation |
 | --- | --- | --- | --- |
-| `timed` | Work with an exact start and end instant. It may cross midnight and remains timed work when it does. | Gate attendant shift, lunch service, night watch | May require helpers. |
+| `timed` | Work with an exact local date/start/end interval. Iteration 11.9 accepts same-date intervals only; a future instant model must preserve timed semantics for overnight work. | Gate attendant shift, lunch service, night watch | May require helpers. |
 | `date_based` | Work tied to one project date with no meaningful clock time. It does not mean a 24-hour shift. | Flexible cleanup day, materials receiving day | May require helpers when the whole item has one headcount target. |
 | `multi_day_window` | A date range that communicates an ongoing project phase, availability window, or constraint. It is not an aggregate volunteer shift. | Concrete cure window, site-support week, access restriction | Informational by default. Create child timed or date-based work when volunteers need distinct assignments. |
 | `milestone` | A dated project marker or context item with no work duration. | Inspection, delivery deadline, phase handoff | Informational only. |
@@ -130,7 +138,7 @@ Iteration 09.42 adds automated interaction protection for the current mock Calen
 ## Recommended schedule rules
 
 - A scheduled item should reference exactly one reusable preset or carry one one-off task snapshot. The create boundary should reject ambiguous records containing both or neither.
-- `timed` work uses unambiguous `startsAt` and `endsAt` instants with `endsAt > startsAt`. An overnight shift remains `timed`; it is not a project window.
+- `timed` work in 11.9 uses one local project date with start/end times and requires end after start. A future instant/end-date extension must keep overnight shifts `timed`; they must not be reclassified as project windows.
 - `date_based` work uses one date and no clock values.
 - `multi_day_window` uses an inclusive project-facing `startDate` and `endDate`, with `endDate > startDate`, and no clock values.
 - `milestone` uses one date, no end date, and no clock values.
@@ -145,9 +153,9 @@ The future create operation should translate validated draft values into a narro
 
 A future mutation should create the Calendar item first and assignments separately. It should not accept client-calculated coverage counts as authoritative.
 
-## Persistence contract sketch
+## Extended persistence contract sketch
 
-This is a contract-level shape, not a migration or final TypeScript API:
+This is guidance for later extensions, not the exact 11.9 migration or final TypeScript API:
 
 ```ts
 type CalendarSchedule =
@@ -196,7 +204,7 @@ Future `calendar_item_assignments` rows, not Calendar item counters or client ca
 
 Calendar item lifecycle remains separate from assignment response and derived coverage. Assignment changes need their own audit trail and concurrency rules.
 
-## Migration risks to resolve before persistence
+## Follow-up persistence risks
 
 - Classify current `allDay` compatibility records explicitly as `date_based`, `multi_day_window`, or `milestone`; do not infer meaning from date span alone. Replace ambiguous visible wording in a later UI pass.
 - Support overnight `timed` work with real instants without reclassifying it as a multi-day project window.
@@ -215,6 +223,6 @@ Calendar item lifecycle remains separate from assignment response and derived co
 - Add audit/history requirements for schedule edits, assignments, status changes, preset snapshots, and communications.
 - Define assignment uniqueness, capacity changes, waitlisting/overbooking, authorization, concurrency, and mutation idempotency before create/update/delete actions become real.
 
-## Deliberately out of scope
+## Deliberately out of scope for 11.9
 
-No schema migration, Supabase client, authentication, persistence, mutation, volunteer assignment workflow, recurrence engine, drag/drop, resizing, URL date routing, Timeline UI, production List query contract, or production scheduling engine is introduced by this readiness guidance.
+No route cutover, volunteer assignment/response workflow, coverage-counter persistence, recurrence engine, drag/drop save behavior, resizing mutation, URL date routing, Timeline UI, production List query contract, audit model, or production scheduling engine is introduced by 11.9.

@@ -3163,6 +3163,49 @@ Limitations:
 Next recommended step:
 - 11.9 Calendar Item Persistence, if approved separately. Persist scheduled occurrences without assignment or volunteer-response mutations.
 
+## Iteration 11.9 — Calendar Item Persistence
+
+Summary:
+- Added one workspace-scoped `calendar_items` table for scheduled work and deliberate project-context items only.
+- Added the explicit `timed`, `date_based`, `multi_day_window`, and `milestone` schedule shapes. Timed items use one local project date and a same-date start/end interval in this slice; multi-day windows use a later inclusive end date.
+- Added a same-workspace task-preset foreign key. Creation accepts exactly one active preset reference or one validated one-off snapshot, derives preset title/type and workspace timezone in the database, and never creates a reusable preset.
+- Added `calendar.view` read RLS and denied direct application writes. Authenticated create/archive functions require an effective `calendar.edit` grant; roles and workspace visibility alone do not authorize Calendar data.
+- Kept planned `needed_count` separate from future assignment and response truth. The schema contains no assigned-volunteer ids or filled/confirmed/denied/waiting/open counters.
+- Added strict server-only validation and read/create/archive helpers with no route imports.
+- Added `npm run test:calendar-items` for schema scope, schedule/source validation, capability isolation, inactive/expired/revoked grants, and route-cutover checks.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701050000_calendar_items.sql`
+- `lib/calendar/item.ts`
+- `lib/calendar/server.ts`
+- `scripts/calendar-item-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace`, `npm run test:grants`, `npm run test:questionnaires`, `npm run test:volunteers`, and `npm run test:tasks` passed.
+- `npm run test:calendar-items` passed.
+- `npx tsc --noEmit` passed.
+- `node --check scripts/calendar-item-persistence-regression.mjs` passed.
+- `git diff --check` passed.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/functions were not applied and live Calendar item read/write isolation was not exercised.
+- The first timed shape intentionally rejects overnight ranges until an unambiguous instant/end-date model is reviewed.
+- There is no Calendar general-update/cancel command, assignment or response row, coverage calculation, recurrence/copy model, audit event, seed item, generated database type, service-role client, or browser write.
+- Existing Calendar and Tasks routes remain deterministic mock UI and import no persisted Calendar boundary. Assignment, volunteer response, Communication, Needs Attention, public volunteer access, reminder-token, drag/drop, and broad mock-route behavior remain unchanged.
+
+Next recommended step:
+- 11.10 Assignment + Volunteer Response Persistence, if approved separately. Make assignment/response rows authoritative for coverage and review account-free public authorization before adding any public mutation.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
