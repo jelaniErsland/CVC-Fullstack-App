@@ -253,6 +253,7 @@ Upcoming UI direction:
 - Supabase, authentication, persistence, and real-data migration readiness is documented in [`SUPABASE_AUTH_PERSISTENCE_READINESS.md`](./SUPABASE_AUTH_PERSISTENCE_READINESS.md). Iteration 11.3 adds an invite-only project-contact magic-link shell, cookie callback/session handling, POST sign-out, and an optional admin proxy boundary. `ADMIN_AUTH_MODE=review` remains the default so current mock admin routes stay reviewable; `enforced` requires a verified Auth identity but does not itself grant project access. [`SUPABASE_LOCAL_SETUP.md`](./SUPABASE_LOCAL_SETUP.md) documents setup and redirect configuration.
 - Iteration 11.4 adds the first product schema boundary: one `public.workspaces` table for immutable workspace id, stable key, display name, lifecycle, timezone, optional date range, public-intake configuration, and timestamps. Its UUID is the canonical project scope key for every later project-owned row. A server-only reader can query identity by UUID or stable key with the caller's session, while all existing product routes continue using deterministic mocks.
 - Iteration 11.5 adds `project_contacts` and `workspace_contact_grants`, read-only authenticated RLS, and server-only current-user grant/workspace readers. Workspace visibility requires the Auth user to map to an active contact and an active, unrevoked, currently valid grant containing `workspace.read`. Auth identity, contact existence, and role name alone are insufficient. The existing Auth login shell may report grant status; no mock workspace or product route imports the real readers. `npm run test:grants` checks policy structure, isolation fixtures, and the route-import boundary. Real two-user database execution still requires a configured Supabase instance.
+- Iteration 11.6 adds one immutable `questionnaire_submissions` table keyed by `workspaces.id`, a controlled public submission function, versioned runtime payload validation, and a server-only review reader. Anon receives no submission table privileges; the function accepts only structurally valid version-1 answers for active workspaces with `public_intake_enabled`. Authenticated reads require an effective workspace grant containing `questionnaires.review`. The existing public questionnaire and admin review routes remain mock-only and import none of these boundaries.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -332,11 +333,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 ## 8. Current Limitations
 
 - Supabase Auth identity is separate from project authorization. Workspace identity reads now have grant-backed RLS, but no authenticated product route is cut over.
-- The only persisted schema boundaries are workspace identity, project contacts, and workspace contact grants. They include no seed data or browser-side writes.
+- The persisted schema boundaries are workspace identity, project contacts/grants, and immutable questionnaire submission truth. They include no seed data or browser-side writes.
 - Generated database types and live schema validation remain pending a configured linked/local Supabase database.
-- Capability enforcement currently covers only `workspace.read`; roles and extra capability names do not authorize future product data.
+- Capability enforcement covers `workspace.read` and `questionnaires.review` only; roles and extra capability names do not authorize future product data.
 - The broader 11.1 readiness plan remains proposed. Volunteer token strategy, downstream schema constraints, product capabilities, and mock-to-real cutover remain unresolved until their dedicated slices.
-- No product persistence exists beyond workspace/contact/grant authorization foundations.
+- Questionnaire persistence has no route cutover, review mutation, approval action, or volunteer-profile conversion.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
 - No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
@@ -382,4 +383,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-11.6 Questionnaire Submission Persistence, if separately approved. Keep public creation and authenticated review authorization isolated, add no automatic volunteer profile creation, and do not mix mocks with real data on an existing route.
+11.7 Volunteer Profile Persistence, if separately approved. Keep profile truth distinct from original questionnaire submissions and require an explicit authorized conversion workflow rather than automatic profile creation.

@@ -2,7 +2,19 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.5 implements only project-contact grants and workspace-read authorization. It is not a product route-data migration or product mutation implementation.
+Iteration 11.6 implements only public questionnaire creation and grant-authorized submission reads. It is not a route cutover, review mutation, approval workflow, or volunteer-profile implementation.
+
+## 11.6 questionnaire submission boundary
+
+`public.questionnaire_submissions` stores one required `workspaces.id`, controlled status/source, questionnaire version, a bounded JSON answer snapshot, and submission timestamps. The answer JSON preserves the accepted original intake truth in versioned sections; sensitive answers are not copied onto workspace, schedule, or grant rows. A later volunteer profile must be a separate record created through an explicit authorized review/conversion workflow, never an alias for or mutation of the original submission.
+
+Public creation uses the narrowly executable `submit_questionnaire_submission` database function. Anon has no table privileges or submission RLS policy, so it cannot list, read, update, delete, or directly choose status/source/timestamps. The function fixes those fields, validates version/basic structure and size, and inserts only when the stable workspace key resolves to an active workspace with `public_intake_enabled = true`. The server-only application boundary performs stricter field, choice, length, email, duplicate, and payload-size validation before invoking it.
+
+Authenticated contacts may select submissions only when an active, unrevoked, currently valid workspace grant contains `questionnaires.review` for that submission's workspace. `workspace.read` alone is insufficient. There is no insert/update/delete table privilege for authenticated application sessions, no review command, and no automatic `approved` transition. Status values beyond `submitted` are read-model preparation only.
+
+`submitPublicQuestionnaire` and `readCurrentContactQuestionnaireSubmissions` are isolated `server-only` boundaries. No application route imports them: `/questionnaire/[projectId]`, `/admin/questionnaires`, and questionnaire detail pages retain their deterministic mock behavior, preventing hidden mock/real mixing.
+
+`npm run test:questionnaires` validates payload behavior, migration/function constraints, anon table denial, intake-open rules, `questionnaires.review` predicates, deterministic grant isolation, service-role absence, and the no-route-import boundary. Without a configured Supabase database this remains a contract regression, not a live public insert or two-user review-isolation claim.
 
 ## 11.5 project-contact grant boundary
 
@@ -17,7 +29,7 @@ The authorization layers are deliberately distinct:
 - **Supabase Auth identity:** proves which invited user owns the cookie-backed session. It grants no workspace by itself.
 - **Project-contact record:** maps that Auth user into the application and can deactivate the contact globally. Its existence grants no workspace by itself.
 - **Workspace grant:** scopes one active contact to one `workspaces.id`, role label, capability array, and validity window.
-- **Capability authorization:** 11.5 recognizes only `workspace.read`. A role label or arbitrary future capability name has no implemented product effect.
+- **Capability authorization:** 11.5 recognizes `workspace.read`; 11.6 adds `questionnaires.review` only for persisted submission reads. A role label or arbitrary future capability name has no implemented product effect.
 - **Future product-data authorization:** each later project-owned table must carry the canonical workspace UUID and add its own RLS plus server-owned capability/business validation. Workspace visibility must never become blanket access to questionnaires, volunteers, tasks, Calendar, assignments, communications, or other data.
 
 `npm run test:grants` statically checks the migration/policies/read boundaries and evaluates deterministic anon, no-grant, user-A, user-B, expired, revoked, inactive-grant, and inactive-contact fixtures. This is a focused contract regression, not a live Postgres RLS exercise. Real cross-user isolation still must be run against a configured local or linked Supabase database before production claims are made.
@@ -61,7 +73,7 @@ The following routes are deterministic public previews:
 
 `lib/volunteerPreview.ts` supplies the public schedule, person, project-information, assignment-detail, and reminder-preview content. `lib/mockData.ts` supplies the broader project, questionnaire, volunteer, task, Calendar, communications, and admin preview records.
 
-Public lookup does not resolve an identity. Reminder paths have no token or security. `VolunteerConfirmationPreview` stores response state only in React component memory; it sends nothing, does not synchronize between routes, and resets on navigation or reload. Questionnaire submission is also local-only.
+Public lookup does not resolve an identity. Reminder paths have no token or security. `VolunteerConfirmationPreview` stores response state only in React component memory; it sends nothing, does not synchronize between routes, and resets on navigation or reload. The existing questionnaire route submission remains local-only; the 11.6 persistence boundary is intentionally unused by routes.
 
 ### Admin surfaces
 
@@ -276,14 +288,14 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.3 Auth Shell for Project Contacts — completed:** invite-only magic-link sign-in, cookie session/callback, POST sign-out, optional enforced admin boundary, and empty placeholder grant loading. No product authorization or data migration.
 - **11.4 Workspace Persistence Foundation — completed:** one workspace identity table, deny-by-default RLS, an unused server-only reader, and focused isolation checks.
 - **11.5 Project Contact Grants + Workspace Authorization — completed:** active project contacts/grants, workspace-read RLS, server-only readers, and focused authorization contract checks; no product-route migration.
-- **11.6 Questionnaire submission persistence:** public insert plus authenticated review boundary; no automatic profile creation.
-- **Later volunteer profile persistence:** explicit review-to-profile workflow and sensitive-field authorization.
+- **11.6 Questionnaire submission persistence — completed:** controlled public creation, immutable answer snapshots, `questionnaires.review` reads, and focused contract checks; no route cutover or profile creation.
+- **11.7 Volunteer profile persistence:** explicit review-to-profile workflow and sensitive-field authorization.
 - **Later task preset persistence:** unified task definitions/types/custom fields.
 - **Later Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
 - **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.6 questionnaire submission persistence. It must design anonymous creation separately from grant-authorized review and must not automatically create volunteer profiles. Calendar, volunteers, tasks, assignments, communications, and the public portal remain separate later slices.
+The next proposed slice is 11.7 volunteer profile persistence. It must preserve immutable submission truth, require explicit authorized conversion, and define sensitive-field access without turning approval into an automatic side effect. Calendar, tasks, assignments, communications, and the public portal remain separate later slices.
 
 ## Readiness exit criteria
 

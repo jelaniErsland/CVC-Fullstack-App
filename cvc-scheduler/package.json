@@ -12,6 +12,7 @@
     "supabase:check": "node scripts/supabase-smoke.mjs",
     "test:workspace": "node --no-warnings --experimental-strip-types scripts/workspace-persistence-regression.mjs",
     "test:grants": "node --no-warnings --experimental-strip-types scripts/grants-authorization-regression.mjs",
+    "test:questionnaires": "node --no-warnings --experimental-strip-types scripts/questionnaire-persistence-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {

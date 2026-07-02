@@ -3034,6 +3034,49 @@ Limitations:
 Next recommended step:
 - 11.6 Questionnaire Submission Persistence, if approved as a separate slice. Keep anonymous creation and grant-authorized review separate and do not create volunteer profiles automatically.
 
+## Iteration 11.6 — Questionnaire Submission Persistence
+
+Summary:
+- Added one `questionnaire_submissions` table keyed to the canonical workspace UUID, with controlled lifecycle/source, questionnaire version, bounded JSON answer truth, and timestamps.
+- Added a narrow security-definer public submission function. Anon has no table privileges; the function controls metadata and inserts only for active intake-enabled workspaces after structural validation.
+- Added strict version-1 application payload validation for the existing questionnaire field vocabulary without connecting the mock form.
+- Added authenticated review RLS requiring an effective workspace grant with `questionnaires.review`; `workspace.read` alone cannot read submissions.
+- Added server-only public-submit and current-contact review-read boundaries. No application route imports them.
+- Kept submissions immutable to application roles. Review/update/approval actions and volunteer profile conversion remain unimplemented.
+- Added `npm run test:questionnaires` covering validation, migration/function scope, public denial/read boundaries, review capability isolation, and route isolation.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701020000_questionnaire_submissions.sql`
+- `lib/questionnaires/payload.ts`
+- `lib/questionnaires/server.ts`
+- `scripts/questionnaire-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:questionnaires` passed.
+- `npx tsc --noEmit` passed.
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace` passed.
+- `npm run test:grants` passed.
+- `node --check scripts/questionnaire-persistence-regression.mjs` passed.
+- `git diff --check` passed with only Git's existing LF-to-CRLF checkout warnings.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/function were not applied and live anon insert or authenticated two-user review isolation was not exercised.
+- The existing public questionnaire, admin queue, and detail routes remain deterministic mocks; there is no real-data preview route.
+- There is no review mutation, approval action, submission-to-volunteer conversion, volunteer profile table, seed submission, generated database type, service-role client, or audit event.
+- Calendar, Task, Assignment, Communication, Needs Attention, public volunteer access, and reminder-token behavior remain unchanged and unpersisted.
+
+Next recommended step:
+- 11.7 Volunteer Profile Persistence, if approved separately. Preserve original submission truth and require an explicit authorized conversion workflow.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
