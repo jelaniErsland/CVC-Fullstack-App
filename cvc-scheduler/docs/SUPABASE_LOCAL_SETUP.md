@@ -34,7 +34,7 @@ Deployment values belong in the deployment platform's encrypted environment sett
 - `lib/supabase/server.ts` is protected by `server-only` and provides the cookie-aware client used by callback, sign-out, and server session inspection.
 - `proxy.ts` refreshes/verifies the user only when `ADMIN_AUTH_MODE=enforced`; review mode makes no Auth request for admin pages.
 - `lib/supabase/config.ts` validates required public values and keeps the optional service-role value typed and server-only.
-- Generated database types are not committed yet because this repository has no linked/local schema output. The narrow workspace reader validates its result at runtime until real generated types replace the untyped client boundary.
+- Reviewed generated public-schema types live in `lib/supabase/database.types.ts` and parameterize the shared Supabase clients and isolated persistence helpers. Runtime validation remains in place at helper boundaries.
 
 Authentication answers which Supabase user is signed in. `loadProjectContactGrants` verifies that session identity and reads only active grants exposed by RLS. A matching `project_contacts` row still grants nothing by itself; workspace access requires a current `workspace_contact_grants` row containing `workspace.read`. Future product tables need their own capability policies and server validation.
 
@@ -77,6 +77,8 @@ npm run test:response-tokens
 
 The second migration creates only `public.project_contacts` and `public.workspace_contact_grants`; neither migration adds seed rows. Anon has no workspace table privilege. An authenticated user sees a workspace only when their active contact has an active, unrevoked, currently valid `workspace.read` grant for it. Authenticated roles receive no insert/update/delete grants.
 
+The hosted non-production gate passed on 2026-07-02 against `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260701070000`. It exercised all 16 live RLS/RPC groups with disposable records and removed every fixture and temporary helper afterward. That project is for validation only, contains no real Belgrade production data, and must not be treated as a route-integration or production target.
+
 Provisioning Auth users, contact records, and grants is intentionally an administrator-owned database/setup operation in this slice; there is no browser or admin UI mutation path. Use trusted Supabase administration for a non-production environment, never expose a service-role key to browser code, and record real provisioning/audit workflow requirements before production use.
 
 The questionnaire migration creates one `questionnaire_submissions` table and the `submit_questionnaire_submission` function. Anon/authenticated callers can execute that function, but anon receives no table privileges and cannot list, read, update, or delete submissions. The security-definer function has an empty search path, fixes status/source/timestamps itself, validates the version and basic answer structure, and resolves only an active intake-enabled workspace. Review reads additionally require an effective grant containing `questionnaires.review`. No seed submission is added.
@@ -101,7 +103,7 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 
 ## Intentionally unimplemented
 
-- Product tables beyond workspace identity/authorization, questionnaire submissions, volunteer profiles, task presets, Calendar items, assignments/current responses, and assignment-response token verifiers; generated database types; and seed data.
+- Product tables beyond workspace identity/authorization, questionnaire submissions, volunteer profiles, task presets, Calendar items, assignments/current responses, and assignment-response token verifiers; and seed data.
 - Project-contact invitation/grant management UI, browser grant mutations, and audit history.
 - Capability enforcement beyond the implemented workspace/questionnaire/volunteer/task/Calendar/assignment capabilities; grant roles do not confer other product permissions.
 - Service-role operations.

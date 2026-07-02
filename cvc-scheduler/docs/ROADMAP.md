@@ -105,7 +105,7 @@ Rough phases:
 - 11.9 Calendar Item Persistence. Completed; explicit schedule kinds, preset-or-one-off snapshots, workspace timezone enforcement, and capability-scoped create/read/archive with no route, assignment, or response cutover.
 - 11.10 Assignment + Volunteer Response Persistence. Completed; same-workspace assignment truth, one current response row, capability-scoped contact commands, and no Calendar counters or route cutover.
 - 11.11 Public Volunteer Response Authorization Foundation. Completed; database-generated opaque bearers, hash-only storage, expiry/revocation, narrow public verification/response RPCs, and no route or delivery cutover.
-- Post-11.11 gate. Completed 2026-07-02: local RLS, capability, Calendar, assignment, response-token lifecycle, public scope, and controlled concurrency checks pass; reviewed local public-schema types were generated. Public route integration and link delivery remain separate future slices.
+- Post-11.11 gate. Completed 2026-07-02 locally and against hosted non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260701070000`. All 16 hosted live RLS/RPC groups passed, including one-winner/one-`40001`-loser concurrency with final truth matching the winner; cleanup completed and reviewed generated types remained structurally unchanged. This validation-only milestone does not connect routes to persisted data. Route cutovers, public lookup, remembered devices, email/reminder delivery, Communications persistence, and Needs Attention persistence remain later slices.
 
 ## 4. Mid-Term Roadmap
 
