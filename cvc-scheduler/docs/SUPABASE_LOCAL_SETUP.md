@@ -1,6 +1,6 @@
 # Supabase Local Setup Skeleton
 
-Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, 11.4 added workspace identity, 11.5 added project-contact/workspace grants, and 11.6 adds immutable questionnaire submission persistence. Product route data cutovers are not enabled.
+Iteration 11.2 added environment/client boundaries, 11.3 added the invite-only project-contact Auth/session shell, 11.4 added workspace identity, 11.5 added project-contact/workspace grants, 11.6 added immutable questionnaire submissions, and 11.7 adds explicit volunteer-profile conversion. Product route data cutovers are not enabled.
 
 ## Local environment
 
@@ -61,13 +61,14 @@ Missing or invalid variables fail with a setup-oriented message. The command mus
 
 ## Workspace migration and type generation
 
-The migrations are `supabase/migrations/20260701000000_workspace_identity.sql`, `supabase/migrations/20260701010000_project_contact_grants.sql`, and `supabase/migrations/20260701020000_questionnaire_submissions.sql`. Review them before applying them in order. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql`, `supabase/migrations/20260701010000_project_contact_grants.sql`, `supabase/migrations/20260701020000_questionnaire_submissions.sql`, and `supabase/migrations/20260701030000_volunteer_profiles.sql`. Review them before applying them in order. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push
 npm run test:workspace
 npm run test:grants
 npm run test:questionnaires
+npm run test:volunteers
 ```
 
 The second migration creates only `public.project_contacts` and `public.workspace_contact_grants`; neither migration adds seed rows. Anon has no workspace table privilege. An authenticated user sees a workspace only when their active contact has an active, unrevoked, currently valid `workspace.read` grant for it. Authenticated roles receive no insert/update/delete grants.
@@ -75,6 +76,8 @@ The second migration creates only `public.project_contacts` and `public.workspac
 Provisioning Auth users, contact records, and grants is intentionally an administrator-owned database/setup operation in this slice; there is no browser or admin UI mutation path. Use trusted Supabase administration for a non-production environment, never expose a service-role key to browser code, and record real provisioning/audit workflow requirements before production use.
 
 The questionnaire migration creates one `questionnaire_submissions` table and the `submit_questionnaire_submission` function. Anon/authenticated callers can execute that function, but anon receives no table privileges and cannot list, read, update, or delete submissions. The security-definer function has an empty search path, fixes status/source/timestamps itself, validates the version and basic answer structure, and resolves only an active intake-enabled workspace. Review reads additionally require an effective grant containing `questionnaires.review`. No seed submission is added.
+
+The volunteer migration creates one `volunteer_profiles` table and the authenticated-only `convert_questionnaire_submission_to_volunteer_profile` function. Application roles have no direct insert/update/delete privilege. Conversion accepts only a submission UUID, verifies `auth.uid()`, requires `questionnaires.review` plus `volunteers.edit` on the source workspace, accepts only a still-`submitted` version-1 source, derives every profile/scope value from that row, and leaves it unchanged. A composite foreign key and unique source constraint enforce same-workspace provenance and one conversion per submission. Profile reads require `volunteers.view`. Emergency-contact answers are not copied; they remain protected questionnaire truth.
 
 After the migration exists in the linked database, generate real types rather than maintaining a handwritten database schema type:
 
@@ -86,12 +89,12 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 
 ## Intentionally unimplemented
 
-- Product tables beyond workspace identity/authorization and questionnaire submissions, generated database types, and seed data.
+- Product tables beyond workspace identity/authorization, questionnaire submissions, and volunteer profiles; generated database types; and seed data.
 - Project-contact invitation/grant management UI, browser grant mutations, and audit history.
-- Capability enforcement beyond `workspace.read` and `questionnaires.review`; grant roles do not confer other product permissions.
+- Capability enforcement beyond `workspace.read`, `questionnaires.review`, `volunteers.view`, and conversion-only `volunteers.edit`; grant roles do not confer other product permissions.
 - Service-role operations.
 - Volunteer lookup, secure/reminder tokens, remembered-device behavior, and response writes.
-- Questionnaire review mutations/profile conversion, task, Calendar, assignment, communication, or follow-up persistence.
+- Questionnaire status mutations, volunteer profile edits, task, Calendar, assignment, communication, or follow-up persistence.
 - Any mock-to-real route cutover.
 
 The existing deterministic mock application remains the behavior reference. The next slice must not treat a successful health check as permission to query or mutate product data.

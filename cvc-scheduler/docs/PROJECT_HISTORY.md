@@ -3077,6 +3077,49 @@ Limitations:
 Next recommended step:
 - 11.7 Volunteer Profile Persistence, if approved separately. Preserve original submission truth and require an explicit authorized conversion workflow.
 
+## Iteration 11.7 — Volunteer Profile Persistence
+
+Summary:
+- Added one project-scoped `volunteer_profiles` table for approved/schedule-ready profile truth, separate from immutable questionnaire submissions.
+- Added same-workspace composite provenance, one-profile-per-submission uniqueness, lifecycle/readiness, contact/congregation fields, availability and skills/help snapshots, profile notes, and timestamps.
+- Kept emergency-contact answers out of the profile so `volunteers.view` does not broaden access to sensitive questionnaire truth.
+- Added authenticated `volunteers.view` RLS and denied all anon/profile write access.
+- Added an authenticated-only conversion function accepting only a submission UUID. It verifies Auth, a still-`submitted` version-1 source, and one effective grant containing both `questionnaires.review` and `volunteers.edit`.
+- Conversion derives workspace and profile values from the source, creates one `active`/`ready` snapshot, and never updates/deletes the submission.
+- Added server-only conversion and current-contact profile readers with no route imports.
+- Added `npm run test:volunteers` for schema, provenance, duplicate, authorization, conversion, sensitive-field, parsing, and route-isolation checks.
+
+Changed files:
+- `package.json`
+- `supabase/migrations/20260701030000_volunteer_profiles.sql`
+- `lib/volunteers/profile.ts`
+- `lib/volunteers/server.ts`
+- `scripts/volunteer-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:volunteers` passed.
+- `npx tsc --noEmit` passed.
+- `npm run lint` passed.
+- `npm run build` passed with 74 generated pages/routes.
+- `npm run test:calendar` passed all 17 desktop/mobile checks.
+- `npm run test:workspace`, `npm run test:grants`, and `npm run test:questionnaires` passed.
+- `node --check scripts/volunteer-persistence-regression.mjs` passed.
+- `git diff --check` passed with only Git's existing LF-to-CRLF checkout warnings.
+
+Limitations:
+- No `.env.local` or `supabase/config.toml` is present, so the migration/function were not applied and live profile conversion or authenticated two-user profile isolation was not exercised.
+- The source submission remains `submitted`; the explicit conversion command is the approval decision for this narrow slice. No questionnaire-status mutation or approval UI exists.
+- There is no profile edit/archive command, emergency-contact profile field, cross-project person identity, seed profile, generated database type, service-role client, or audit event.
+- Existing volunteer/questionnaire routes, Calendar, Task, Assignment, Communication, Needs Attention, public volunteer access, and reminder-token behavior remain unchanged.
+
+Next recommended step:
+- 11.8 Task Preset Persistence, if approved separately. Persist reusable work definitions without Calendar placement or assignment behavior.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

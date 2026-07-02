@@ -2,7 +2,19 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.6 implements only public questionnaire creation and grant-authorized submission reads. It is not a route cutover, review mutation, approval workflow, or volunteer-profile implementation.
+Iteration 11.7 implements only persisted volunteer profiles, capability-scoped reads, and explicit questionnaire-to-profile conversion. It is not a route cutover, profile management UI, scheduling integration, or cross-project person model.
+
+## 11.7 volunteer profile boundary
+
+`public.volunteer_profiles` is approved project-scoped volunteer truth keyed by the canonical `workspaces.id`. It stores one immutable source-submission reference, active/inactive/archived lifecycle, ready/on-hold readiness, basic contact/congregation fields, availability and skills/help snapshots, profile-owned notes, and timestamps. It is deliberately not a broad person identity shared across projects.
+
+Questionnaire truth remains separate and unchanged. The conversion snapshot copies only accepted name/contact/congregation, availability, skills, and other-help sections. Emergency-contact answers remain exclusively in the questionnaire boundary because `volunteers.view` is broader than sensitive questionnaire review. The composite source/workspace foreign key proves same-workspace provenance, and the unique source constraint permits at most one profile per submission in this slice.
+
+Direct profile inserts, updates, and deletes are denied to anon/authenticated roles. The authenticated-only `convert_questionnaire_submission_to_volunteer_profile` function accepts only a submission UUID; callers cannot supply workspace ids or profile values. It verifies `auth.uid()`, source status/version, active contact/grant validity, and both `questionnaires.review` and `volunteers.edit` for the source workspace. A still-`submitted` version-1 source is the only usable conversion state because 11.6 intentionally has no status-mutation workflow. The explicit command is the approval/conversion decision, creates an `active`/`ready` snapshot, and does not update the submission.
+
+Authenticated profile reads require an effective grant containing `volunteers.view`; workspace visibility or `questionnaires.review` alone is insufficient. The server-only conversion and current-contact read helpers remain unused by `/admin/volunteers`, volunteer detail, questionnaire queue, and questionnaire detail routes, so mock and real data are not mixed.
+
+`npm run test:volunteers` checks schema scope, provenance/duplicate constraints, capability predicates, source status/version, Auth verification, sensitive-field separation, direct-write denial, parser behavior, conversion fixtures, and route isolation. Without configured Supabase this is a contract regression, not a live conversion or live two-user RLS claim.
 
 ## 11.6 questionnaire submission boundary
 
@@ -29,7 +41,7 @@ The authorization layers are deliberately distinct:
 - **Supabase Auth identity:** proves which invited user owns the cookie-backed session. It grants no workspace by itself.
 - **Project-contact record:** maps that Auth user into the application and can deactivate the contact globally. Its existence grants no workspace by itself.
 - **Workspace grant:** scopes one active contact to one `workspaces.id`, role label, capability array, and validity window.
-- **Capability authorization:** 11.5 recognizes `workspace.read`; 11.6 adds `questionnaires.review` only for persisted submission reads. A role label or arbitrary future capability name has no implemented product effect.
+- **Capability authorization:** 11.5 recognizes `workspace.read`; 11.6 adds `questionnaires.review`; 11.7 adds `volunteers.view` plus conversion-only `volunteers.edit`. A role label or arbitrary future capability name has no implemented product effect.
 - **Future product-data authorization:** each later project-owned table must carry the canonical workspace UUID and add its own RLS plus server-owned capability/business validation. Workspace visibility must never become blanket access to questionnaires, volunteers, tasks, Calendar, assignments, communications, or other data.
 
 `npm run test:grants` statically checks the migration/policies/read boundaries and evaluates deterministic anon, no-grant, user-A, user-B, expired, revoked, inactive-grant, and inactive-contact fixtures. This is a focused contract regression, not a live Postgres RLS exercise. Real cross-user isolation still must be run against a configured local or linked Supabase database before production claims are made.
@@ -289,13 +301,13 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.4 Workspace Persistence Foundation — completed:** one workspace identity table, deny-by-default RLS, an unused server-only reader, and focused isolation checks.
 - **11.5 Project Contact Grants + Workspace Authorization — completed:** active project contacts/grants, workspace-read RLS, server-only readers, and focused authorization contract checks; no product-route migration.
 - **11.6 Questionnaire submission persistence — completed:** controlled public creation, immutable answer snapshots, `questionnaires.review` reads, and focused contract checks; no route cutover or profile creation.
-- **11.7 Volunteer profile persistence:** explicit review-to-profile workflow and sensitive-field authorization.
-- **Later task preset persistence:** unified task definitions/types/custom fields.
+- **11.7 Volunteer profile persistence — completed:** explicit capability-authorized conversion, same-workspace provenance, sensitive-field separation, and `volunteers.view` reads; no route cutover.
+- **11.8 Task preset persistence:** unified task definitions/types/custom fields.
 - **Later Calendar item persistence:** explicit schedule kinds and server-owned item commands, initially without assignment mutation.
 - **Later assignment/response persistence:** authoritative assignment/response rows, derived coverage, and scoped public response command.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
-The next proposed slice is 11.7 volunteer profile persistence. It must preserve immutable submission truth, require explicit authorized conversion, and define sensitive-field access without turning approval into an automatic side effect. Calendar, tasks, assignments, communications, and the public portal remain separate later slices.
+The next proposed slice is 11.8 task preset persistence. It should persist reusable workspace-scoped work definitions without scheduling them, assigning volunteers, or changing the Calendar. Assignments, communications, reminders, Needs Attention, and the public portal remain separate later slices.
 
 ## Readiness exit criteria
 

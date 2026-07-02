@@ -254,6 +254,7 @@ Upcoming UI direction:
 - Iteration 11.4 adds the first product schema boundary: one `public.workspaces` table for immutable workspace id, stable key, display name, lifecycle, timezone, optional date range, public-intake configuration, and timestamps. Its UUID is the canonical project scope key for every later project-owned row. A server-only reader can query identity by UUID or stable key with the caller's session, while all existing product routes continue using deterministic mocks.
 - Iteration 11.5 adds `project_contacts` and `workspace_contact_grants`, read-only authenticated RLS, and server-only current-user grant/workspace readers. Workspace visibility requires the Auth user to map to an active contact and an active, unrevoked, currently valid grant containing `workspace.read`. Auth identity, contact existence, and role name alone are insufficient. The existing Auth login shell may report grant status; no mock workspace or product route imports the real readers. `npm run test:grants` checks policy structure, isolation fixtures, and the route-import boundary. Real two-user database execution still requires a configured Supabase instance.
 - Iteration 11.6 adds one immutable `questionnaire_submissions` table keyed by `workspaces.id`, a controlled public submission function, versioned runtime payload validation, and a server-only review reader. Anon receives no submission table privileges; the function accepts only structurally valid version-1 answers for active workspaces with `public_intake_enabled`. Authenticated reads require an effective workspace grant containing `questionnaires.review`. The existing public questionnaire and admin review routes remain mock-only and import none of these boundaries.
+- Iteration 11.7 adds one project-scoped `volunteer_profiles` table, `volunteers.view` RLS, and an authenticated provenance-only conversion function. Conversion accepts only a submission UUID, requires one effective grant containing both `questionnaires.review` and `volunteers.edit`, derives workspace/profile values from a still-`submitted` version-1 source, creates an `active`/`ready` snapshot, and never changes the source submission. One source can create only one profile. Emergency-contact answers are deliberately not copied into the profile. Server-only conversion/read helpers remain unused by every route.
 - The audit treats `filledCount`, assigned volunteer id arrays, coverage labels, repeat/copy labels, and deterministic colors as mock or derived fields rather than a proposed storage contract. Future assignment records must become the source of confirmation, denial, and coverage truth.
 - The future scheduling contract distinguishes `timed`, `date_based`, `multi_day_window`, and `milestone`. Visible Calendar language now uses `Plan project work`, `Project context`, `No specific time`, and `Project window`; the current `allDay` flag and mock `All day` time-window values remain internal preview compatibility only.
 - Coverage is planned as an explicit capability rather than something inferred from schedule kind. Timed and date-based work may require helpers, multi-day project windows are informational by default, and milestones are informational only.
@@ -333,11 +334,11 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 ## 8. Current Limitations
 
 - Supabase Auth identity is separate from project authorization. Workspace identity reads now have grant-backed RLS, but no authenticated product route is cut over.
-- The persisted schema boundaries are workspace identity, project contacts/grants, and immutable questionnaire submission truth. They include no seed data or browser-side writes.
+- The persisted schema boundaries are workspace identity, project contacts/grants, immutable questionnaire truth, and approved project-scoped volunteer profile snapshots. They include no seed data or browser-side table writes.
 - Generated database types and live schema validation remain pending a configured linked/local Supabase database.
-- Capability enforcement covers `workspace.read` and `questionnaires.review` only; roles and extra capability names do not authorize future product data.
+- Capability enforcement covers `workspace.read`, `questionnaires.review`, `volunteers.view`, and conversion-only `volunteers.edit`; roles and extra capability names do not authorize future product data.
 - The broader 11.1 readiness plan remains proposed. Volunteer token strategy, downstream schema constraints, product capabilities, and mock-to-real cutover remain unresolved until their dedicated slices.
-- Questionnaire persistence has no route cutover, review mutation, approval action, or volunteer-profile conversion.
+- Volunteer persistence has no route cutover, profile edit/archive command, broad approval UI, assignment integration, or cross-project person model.
 - No email sending.
 - No real announcement sending, recipient resolution, reminder scheduling, template-to-draft creation, unsubscribe/suppression logic, notification delivery, or delivery tracking.
 - No real food persistence, food ordering, inventory tracking, helper assignment mutations, or production food workflows.
@@ -383,4 +384,4 @@ Latest generated screenshots are written to `docs/previews/latest/`. A normal ru
 
 ## 9. Next Recommended Step
 
-11.7 Volunteer Profile Persistence, if separately approved. Keep profile truth distinct from original questionnaire submissions and require an explicit authorized conversion workflow rather than automatic profile creation.
+11.8 Task Preset Persistence, if separately approved. Keep reusable project work definitions distinct from Calendar items and add no scheduling or assignment persistence.
