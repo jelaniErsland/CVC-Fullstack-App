@@ -3568,6 +3568,35 @@ Limitations:
 Next recommended step:
 - Keep the hosted gate as an explicit release check while designing the future audited product reveal and delivery boundary separately.
 
+## Iteration 11.20 — Audited Response Link Reveal Boundary Planning
+
+Summary:
+- Added server-only `responseLinkRevealPolicy`, `describeResponseLinkRevealPrerequisites`, `canCurrentSurfaceRevealFullResponseLink`, and `evaluateFutureResponseLinkReveal` guardrails.
+- Defined the only eligible future surface and its required verified contact, database `assignments.edit`, atomic replacement, trusted server origin, explicit POST action, dynamic/no-store response, bounded TTL, audit-write, logging, and clipboard sequencing rules.
+- Added a planned `response_link_revealed` audit-event type/field contract. It retains scope/actor/token ids, surface/mode, expiry/time, and bounded metadata while explicitly prohibiting bearer, full URL, verifier, credentials, and sensitive volunteer data.
+- Kept `RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE` false because no audit table/command exists. Even an otherwise-ready future request remains blocked with `audit_persistence_boundary_missing`; every current route/surface returns false.
+- Extended focused static checks for no full-link/reveal helper route imports, no unsafe credential output, no clipboard/copy-link UI, diagnostic redaction/immediate revocation, hosted-gate opt-in, no service-role path, and no token deletion.
+
+Changed files:
+- `lib/responseTokens/revealPolicy.server.ts`
+- `lib/responseTokens/policy.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The full local Supabase, workspace-through-response-token, valid-token route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was not rerun because 11.20 changes no migration, generated type, replacement RPC, or hosted gate behavior.
+
+Limitations:
+- No audit persistence boundary exists, so no current or future runtime path can pass the reveal policy yet.
+- No full-link route, copy control, email/reminder delivery, lookup, remembered-device behavior, route cutover, seed, service-role path, token deletion, job, or mock-to-real integration was added.
+
+Next recommended step:
+- Design the narrow authenticated audit persistence command and its failure/transaction relationship to replacement before creating any reveal UI.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

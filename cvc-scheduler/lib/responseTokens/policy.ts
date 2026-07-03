@@ -36,8 +36,14 @@ export const FULL_RESPONSE_LINK_EXPOSURE_POLICY = {
     "atomic_replacement_completed",
     "verified_project_contact",
     "assignments_edit_authorized",
+    "trusted_server_origin",
     "explicit_credential_reveal",
+    "audit_event_persisted",
     "automatic_logging_disabled",
+    "post_request",
+    "dynamic_no_store_response",
+    "clipboard_deferred_until_reveal",
+    "product_ttl_bounded",
   ],
   diagnosticBehavior: "redacted_only_and_immediately_revoked",
 } as const;
@@ -92,15 +98,25 @@ export function mayExposeFullAssignmentResponseLink(input: Readonly<{
   atomicReplacementCompleted: boolean;
   verifiedProjectContact: boolean;
   assignmentsEditAuthorized: boolean;
+  trustedServerOrigin: boolean;
   explicitCredentialReveal: boolean;
+  auditEventPersisted: boolean;
   automaticLoggingDisabled: boolean;
+  postRequest: boolean;
+  dynamicNoStoreResponse: boolean;
+  clipboardDeferredUntilReveal: boolean;
 }>) {
   return (
     input.surface === "future_product_issuance" &&
     input.atomicReplacementCompleted &&
     input.verifiedProjectContact &&
     input.assignmentsEditAuthorized &&
+    input.trustedServerOrigin &&
     input.explicitCredentialReveal &&
-    input.automaticLoggingDisabled
+    input.auditEventPersisted &&
+    input.automaticLoggingDisabled &&
+    input.postRequest &&
+    input.dynamicNoStoreResponse &&
+    input.clipboardDeferredUntilReveal
   );
 }

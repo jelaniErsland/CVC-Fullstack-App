@@ -2,7 +2,17 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.19 validates the authenticated atomic replacement backend on hosted non-production staging. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+Iteration 11.20 defines a fail-closed audited reveal policy for a future response-link product surface. It is not product UI, audit persistence, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+
+## 11.20 audited response-link reveal boundary
+
+The sole eligible future surface is `future_project_contact_assignment_response_reveal`. It must be a deliberate project-contact POST/server-action flow with dynamic/no-store output. Before revealing a credential it must have a verified contact session, database-enforced `assignments.edit`, a successful atomic `replace_assignment_response_token` result, a server-configured trusted origin, explicit user action, a bounded 11.17 product TTL, disabled automatic logging, and a successfully persisted audit event. Clipboard access may occur only after that audited response; GET, static, cached, automatic, diagnostic, validation, public-response, Calendar, Volunteers, Communications, Needs Attention, and mock volunteer surfaces are ineligible.
+
+The planned `response_link_revealed` audit event contains workspace, assignment, response-token, and actor/project-contact ids; reveal surface; copy/email/reminder mode; expiration and occurrence timestamps; and bounded note/metadata. It must never contain the bearer, full response URL, verifier hash, password, access/refresh token, service-role key, emergency contact, or questionnaire answers. Token rows continue to retain only verifier/lifecycle metadata.
+
+`RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE` is deliberately `false`. `evaluateFutureResponseLinkReveal` therefore returns `audit_persistence_boundary_missing` even when every other prerequisite is true, and `canCurrentSurfaceRevealFullResponseLink` returns false for every existing surface. Atomic replacement is necessary but is not permission to display or deliver a link. A reviewed audit persistence/command boundary, transaction/failure semantics tying audit success to reveal, and the later explicit product surface remain required.
+
+Static regression checks prove no route imports the replacement-link or reveal-policy helpers, no current route exposes response URL/bearer/verifier fields, no clipboard/copy-link UI exists, the hosted gate remains explicit opt-in validation, and the diagnostic remains unlinked, redacted-only, fixed at one hour, and immediately revoked. No migration or generated-type change is part of 11.20.
 
 ## 11.19 hosted staging replacement validation
 
@@ -427,6 +437,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.17 Response Link Product Lifecycle Policy — completed:** product TTL, fail-closed replacement, audit retention, full-link exposure, and delivery prerequisites are explicit server-only policy.
 - **11.18 Atomic Response Link Replacement RPC — completed locally:** authenticated `assignments.edit` replacement locks one assignment, revokes older unrevoked response tokens, inserts one hash-only replacement atomically, and leaves exactly one usable token under concurrency.
 - **11.19 Hosted Staging Migration + Atomic Replacement Validation Gate — passed:** non-production staging is at `20260702000000`; two fresh disposable runs prove authorization, rollback, replacement, public use, TTL rejection, hash-only storage, concurrency safety, and zero residue.
+- **11.20 Audited Response Link Reveal Boundary Planning — completed:** fail-closed server policy and a credential-free audit-event contract define the future reveal prerequisites; missing audit persistence keeps every current surface, copy UI, and delivery path blocked.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

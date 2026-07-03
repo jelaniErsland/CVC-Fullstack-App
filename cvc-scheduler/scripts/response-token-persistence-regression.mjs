@@ -34,6 +34,18 @@ import {
   mayExposeFullAssignmentResponseLink,
   normalizeResponseLinkTtlHours,
 } from "../lib/responseTokens/policy.ts";
+import {
+  RESPONSE_LINK_REVEAL_AUDIT_EVENT_FIELDS,
+  RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS,
+  RESPONSE_LINK_REVEAL_AUDIT_METADATA_VALUE_MAX_LENGTH,
+  RESPONSE_LINK_REVEAL_AUDIT_NOTE_MAX_LENGTH,
+  RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE,
+  RESPONSE_LINK_REVEAL_AUDIT_PROHIBITED_FIELDS,
+  canCurrentSurfaceRevealFullResponseLink,
+  describeResponseLinkRevealPrerequisites,
+  evaluateFutureResponseLinkReveal,
+  responseLinkRevealPolicy,
+} from "../lib/responseTokens/revealPolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migrationPath = path.join(
@@ -112,6 +124,12 @@ const responseLinkPolicyPath = path.join(
   "responseTokens",
   "policy.ts",
 );
+const responseLinkRevealPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "revealPolicy.server.ts",
+);
 const responseTokenReplacementBoundaryPath = path.join(
   root,
   "lib",
@@ -142,6 +160,7 @@ const [
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
   responseLinkPolicy,
+  responseLinkRevealPolicySource,
   responseTokenReplacementBoundary,
   responseLinkReplacementBoundary,
   environmentExample,
@@ -162,6 +181,7 @@ const [
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
   readFile(responseLinkPolicyPath, "utf8"),
+  readFile(responseLinkRevealPolicyPath, "utf8"),
   readFile(responseTokenReplacementBoundaryPath, "utf8"),
   readFile(responseLinkReplacementBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
@@ -475,6 +495,11 @@ assert.doesNotMatch(
   responseLinkPolicy,
   /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
 );
+assert.match(responseLinkRevealPolicySource, /^import "server-only";/);
+assert.doesNotMatch(
+  responseLinkRevealPolicySource,
+  /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createClient|console\.|logger\.|delete\s+from/i,
+);
 assert.match(responseTokenReplacementBoundary, /^import "server-only";/);
 assert.match(responseTokenReplacementBoundary, /normalizeResponseLinkTtlHours/);
 assert.match(responseTokenReplacementBoundary, /supabase\.auth\.getUser\(\)/);
@@ -546,8 +571,13 @@ const exposureConditions = {
   atomicReplacementCompleted: true,
   verifiedProjectContact: true,
   assignmentsEditAuthorized: true,
+  trustedServerOrigin: true,
   explicitCredentialReveal: true,
+  auditEventPersisted: true,
   automaticLoggingDisabled: true,
+  postRequest: true,
+  dynamicNoStoreResponse: true,
+  clipboardDeferredUntilReveal: true,
 };
 assert.equal(
   mayExposeFullAssignmentResponseLink({
@@ -579,6 +609,84 @@ assert.equal(
   }),
   true,
 );
+assert.equal(RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_REVEAL_AUDIT_NOTE_MAX_LENGTH, 500);
+assert.equal(RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS, 10);
+assert.equal(RESPONSE_LINK_REVEAL_AUDIT_METADATA_VALUE_MAX_LENGTH, 200);
+assert.equal(
+  responseLinkRevealPolicy.currentStatus,
+  "blocked_audit_persistence_boundary_missing",
+);
+assert.equal(responseLinkRevealPolicy.requestMethod, "POST");
+assert.equal(responseLinkRevealPolicy.rendering, "dynamic_no_store");
+assert.equal(
+  describeResponseLinkRevealPrerequisites().auditPersistenceAvailable,
+  false,
+);
+for (const surface of responseLinkRevealPolicy.currentDisallowedSurfaces) {
+  assert.equal(canCurrentSurfaceRevealFullResponseLink(surface), false);
+}
+for (const requiredField of [
+  "workspaceId",
+  "assignmentId",
+  "responseTokenId",
+  "actorProjectContactId",
+  "action",
+  "revealSurface",
+  "mode",
+  "expiresAt",
+  "occurredAt",
+  "note",
+  "metadata",
+]) {
+  assert.ok(RESPONSE_LINK_REVEAL_AUDIT_EVENT_FIELDS.includes(requiredField));
+}
+for (const prohibitedField of [
+  "rawBearer",
+  "fullResponseUrl",
+  "tokenVerifierHash",
+  "password",
+  "accessToken",
+  "refreshToken",
+  "serviceRoleKey",
+  "volunteerEmergencyContact",
+  "questionnaireAnswers",
+]) {
+  assert.ok(RESPONSE_LINK_REVEAL_AUDIT_PROHIBITED_FIELDS.includes(prohibitedField));
+}
+const otherwiseReadyReveal = evaluateFutureResponseLinkReveal({
+  surface: "future_project_contact_assignment_response_reveal",
+  verifiedProjectContactSession: true,
+  assignmentsEditAuthorizedByDatabase: true,
+  atomicReplacementCompleted: true,
+  trustedServerOrigin: true,
+  explicitUserAction: true,
+  auditEventPersisted: true,
+  automaticLoggingDisabled: true,
+  postRequest: true,
+  dynamicNoStoreResponse: true,
+  clipboardDeferredUntilReveal: true,
+  expiresInHours: 72,
+});
+assert.equal(otherwiseReadyReveal.allowed, false);
+assert.deepEqual(otherwiseReadyReveal.blockers, ["audit_persistence_boundary_missing"]);
+const unsafeReveal = evaluateFutureResponseLinkReveal({
+  surface: "future_project_contact_assignment_response_reveal",
+  verifiedProjectContactSession: false,
+  assignmentsEditAuthorizedByDatabase: false,
+  atomicReplacementCompleted: false,
+  trustedServerOrigin: false,
+  explicitUserAction: false,
+  auditEventPersisted: false,
+  automaticLoggingDisabled: false,
+  postRequest: false,
+  dynamicNoStoreResponse: false,
+  clipboardDeferredUntilReveal: false,
+  expiresInHours: 169,
+});
+assert.equal(unsafeReveal.allowed, false);
+assert.ok(unsafeReveal.blockers.includes("audit_event_write_required"));
+assert.ok(unsafeReveal.blockers.includes("product_ttl_invalid"));
 
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
 const tokenId = "550e8400-e29b-41d4-a716-446655440041";
@@ -809,6 +917,8 @@ const routeImports = [];
 const responseLinkRouteImports = [];
 const responseLinkPolicyRouteImports = [];
 const responseTokenReplacementRouteImports = [];
+const responseLinkRevealPolicyRouteImports = [];
+const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
   if (source.includes("lib/responseTokens/server")) {
@@ -824,6 +934,18 @@ for (const file of routeFiles) {
     responseTokenReplacementRouteImports.push(
       path.relative(root, file).replaceAll("\\", "/"),
     );
+  }
+  if (source.includes("lib/responseTokens/revealPolicy")) {
+    responseLinkRevealPolicyRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
+  if (
+    /issueReplacementAssignmentResponseLink|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
+      source,
+    )
+  ) {
+    unsafeCredentialRouteOutputs.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
 assert.deepEqual(
@@ -846,6 +968,30 @@ assert.deepEqual(
   [],
   "No route may import response-token replacement or full-link helpers",
 );
+assert.deepEqual(
+  responseLinkRevealPolicyRouteImports,
+  [],
+  "No current route may import the future reveal policy",
+);
+assert.deepEqual(
+  unsafeCredentialRouteOutputs,
+  [],
+  "No current route may expose replacement-link credential fields",
+);
+
+const unsafeClipboardSources = [];
+for (const directory of ["app", "components"]) {
+  const files = (await collectFiles(path.join(root, directory))).filter((file) =>
+    /\.(?:ts|tsx)$/.test(file),
+  );
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    if (/navigator\.clipboard|clipboard\.writeText|Copy full (?:response )?link/i.test(source)) {
+      unsafeClipboardSources.push(path.relative(root, file).replaceAll("\\", "/"));
+    }
+  }
+}
+assert.deepEqual(unsafeClipboardSources, [], "No copy-link UI may exist in current routes");
 
 const diagnosticRoutePath = "app/admin/diagnostics/response-link/";
 const linkedDiagnosticSources = [];
