@@ -113,6 +113,7 @@ Rough phases:
 - 11.16 Response Token Cleanup and Revocation Readiness Guardrail. Completed; diagnostic-issued tokens are immediately revoked through the existing authorized helper, retained hash-only for audit, and rejected by public verification/response. Live QA covers denied/authorized revocation and no deletion, UI, delivery, cron, or service-role path was added.
 - 11.17 Response Link Product Lifecycle Policy. Completed; future product links default to 72 hours with a 168-hour maximum, replacement requires atomic same-assignment/purpose revocation, revocation failure fails closed, and only a future explicit audited product surface may reveal a full link. Diagnostic issuance stays fixed at one hour, redacted-only, and immediately revoked.
 - 11.18 Atomic Response Link Replacement RPC. Completed locally; authenticated `assignments.edit` replacement revokes older same-assignment/purpose tokens and issues one hash-only replacement atomically. Assignment-row locking makes concurrent calls leave exactly one usable token. Full-link UI, delivery, lookup, route cutover, deletion, jobs, and service-role access remain absent.
+- 11.19 Hosted Staging Migration + Atomic Replacement Validation Gate. Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through `20260702000000`; two disposable runs passed authorization, rollback, replacement, public verification/submission, TTL, hash-only storage, concurrency, and zero-residue checks. This validation does not connect product routes or add delivery/UI.
 
 ## 4. Mid-Term Roadmap
 

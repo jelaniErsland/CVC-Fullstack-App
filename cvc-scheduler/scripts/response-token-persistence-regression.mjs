@@ -79,6 +79,11 @@ const responseLinkQaPath = path.join(
   "scripts",
   "response-link-issuance-regression.mjs",
 );
+const hostedResponseReplacementQaPath = path.join(
+  root,
+  "scripts",
+  "hosted-response-replacement-regression.mjs",
+);
 const responseLinkDiagnosticBoundaryPath = path.join(
   root,
   "lib",
@@ -120,6 +125,7 @@ const responseLinkReplacementBoundaryPath = path.join(
   "replacementLink.server.ts",
 );
 const environmentExamplePath = path.join(root, ".env.example");
+const packagePath = path.join(root, "package.json");
 const [
   migration,
   replacementMigration,
@@ -131,6 +137,7 @@ const [
   responseRouteQa,
   responseLinkBoundary,
   responseLinkQa,
+  hostedResponseReplacementQa,
   responseLinkDiagnosticBoundary,
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
@@ -138,6 +145,7 @@ const [
   responseTokenReplacementBoundary,
   responseLinkReplacementBoundary,
   environmentExample,
+  packageSource,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(replacementMigrationPath, "utf8"),
@@ -149,6 +157,7 @@ const [
   readFile(responseRouteQaPath, "utf8"),
   readFile(responseLinkBoundaryPath, "utf8"),
   readFile(responseLinkQaPath, "utf8"),
+  readFile(hostedResponseReplacementQaPath, "utf8"),
   readFile(responseLinkDiagnosticBoundaryPath, "utf8"),
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
@@ -156,6 +165,7 @@ const [
   readFile(responseTokenReplacementBoundaryPath, "utf8"),
   readFile(responseLinkReplacementBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
+  readFile(packagePath, "utf8"),
 ]);
 
 const createdTables = [...migration.matchAll(/create table\s+public\.([a-z_]+)/gi)].map(
@@ -401,6 +411,32 @@ assert.match(responseLinkQa, /storedTokenState === "32\|assignment_response\|0"/
 assert.doesNotMatch(
   responseLinkQa,
   /SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.(?:log|error)\(\s*(?:issuedBearer|responseUrl|password|access_token)|console\.(?:log|error)\([^\n]*\$\{(?:issuedBearer|responseUrl|password|access_token)\}/i,
+);
+assert.match(
+  packageSource,
+  /"test:response-replacement:hosted":\s*"node scripts\/hosted-response-replacement-regression\.mjs"/,
+);
+assert.match(hostedResponseReplacementQa, /const expectedRef = "kfuujcfxoayukywvtaeh"/);
+assert.match(hostedResponseReplacementQa, /const expectedName = "project-local-staging"/);
+assert.match(
+  hostedResponseReplacementQa,
+  /RUN_HOSTED_RESPONSE_REPLACEMENT_VALIDATION === expectedConfirmation/,
+);
+assert.match(hostedResponseReplacementQa, /supabase[\s\S]*\.temp[\s\S]*project-ref/);
+assert.match(hostedResponseReplacementQa, /entry\.name === "anon"/);
+assert.doesNotMatch(hostedResponseReplacementQa, /--reveal|service_role|SUPABASE_SERVICE_ROLE_KEY/);
+assert.match(hostedResponseReplacementQa, /finally\s*\{[\s\S]*cleanupFixtures\(\)/);
+assert.match(hostedResponseReplacementQa, /Hosted disposable fixture and Auth residue: 0/);
+assert.match(hostedResponseReplacementQa, /replace_assignment_response_token/);
+assert.match(hostedResponseReplacementQa, /p_ttl_hours: 169/);
+assert.match(hostedResponseReplacementQa, /Promise\.all\(\[/);
+assert.doesNotMatch(
+  hostedResponseReplacementQa,
+  /console\.(?:log|error)\(\s*(?:oldBearer|replacementBearer|concurrentBearers|password|access_token|refresh_token|api_key)\b/i,
+);
+assert.doesNotMatch(
+  hostedResponseReplacementQa,
+  /console\.(?:log|error)\(\s*`[^`]*\$\{(?:oldBearer|replacementBearer|concurrentBearers|password|access_token|refresh_token|api_key)\}/i,
 );
 
 assert.match(responseLinkDiagnosticBoundary, /^import "server-only";/);

@@ -2,7 +2,15 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.18 adds the authenticated atomic replacement backend required by the 11.17 lifecycle policy. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+Iteration 11.19 validates the authenticated atomic replacement backend on hosted non-production staging. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+
+## 11.19 hosted staging replacement validation
+
+`project-local-staging` (`kfuujcfxoayukywvtaeh`) is migrated through `20260702000000`. The explicit-opt-in `npm run test:response-replacement:hosted` gate refuses any other linked ref/name, requires `RUN_HOSTED_RESPONSE_REPLACEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`, uses the linked CLI management query path only for disposable setup/cleanup, and uses an anon-key client plus a disposable real Auth session for RPC behavior. It creates no helper functions, roles, triggers, seed rows, service-role client, or committed secret.
+
+Two fresh hosted runs passed. They prove `assignments.edit` denial preserves the existing token; authorized replacement revokes old verification/submission; the replacement verifies and submits; only a 32-byte verifier is stored; 169 hours is rejected without state change; and overlapping replacements leave exactly one usable token while preserving response truth. Cleanup runs in `finally`, removes all product/Auth fixtures, and exact-run plus namespace residue checks return zero.
+
+Hosted linked type generation matches the reviewed local public schema structurally, including `replace_assignment_response_token`. Its only output difference is remote `__InternalSupabase.PostgrestVersion` metadata, so `lib/supabase/database.types.ts` was not overwritten. No full response URL or bearer is displayed or logged. Full-link display/delivery still requires a future explicit audited product surface and delivery/audit boundary.
 
 ## 11.18 atomic response-token replacement
 
@@ -418,6 +426,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.16 Response Token Cleanup and Revocation Readiness Guardrail — completed:** discarded diagnostic credentials are revoked in `finally` through the existing `assignments.edit` helper; live QA proves denied/authorized revocation, public rejection, retained hash-only audit rows, and unchanged response truth.
 - **11.17 Response Link Product Lifecycle Policy — completed:** product TTL, fail-closed replacement, audit retention, full-link exposure, and delivery prerequisites are explicit server-only policy.
 - **11.18 Atomic Response Link Replacement RPC — completed locally:** authenticated `assignments.edit` replacement locks one assignment, revokes older unrevoked response tokens, inserts one hash-only replacement atomically, and leaves exactly one usable token under concurrency.
+- **11.19 Hosted Staging Migration + Atomic Replacement Validation Gate — passed:** non-production staging is at `20260702000000`; two fresh disposable runs prove authorization, rollback, replacement, public use, TTL rejection, hash-only storage, concurrency safety, and zero residue.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

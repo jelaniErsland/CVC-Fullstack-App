@@ -3537,6 +3537,37 @@ Limitations:
 Next recommended step:
 - Design the explicit audited product reveal and delivery boundary before exposing any usable replacement link.
 
+## Iteration 11.19 — Hosted Staging Migration + Atomic Replacement Validation Gate
+
+Summary:
+- Reconfirmed the linked target as healthy non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) and applied only `20260702000000_atomic_response_token_replacement.sql` without reset or seed data.
+- Added explicit-opt-in `npm run test:response-replacement:hosted`. It refuses any other ref/name, verifies hosted migration state, uses disposable `qa-11-19-*` records, redacts credentials, and cleans product/Auth rows in `finally`.
+- Two fresh hosted runs proved real Auth/`assignments.edit` authorization, denied-operation rollback, old-token verification/submission rejection, replacement verification/submission, hash-only storage, 169-hour rejection, and concurrent single-active-token state.
+- Per-run cleanup and a final namespace audit both reported zero workspace/Auth residue. No temporary database helper, trigger, role, password file, or tracked artifact was created.
+- Reviewed hosted generated types. They structurally match the local public schema and replacement RPC; the only difference is remote PostgREST metadata, so the tracked generated file remains unchanged.
+
+Changed files:
+- `scripts/hosted-response-replacement-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Hosted migration history reports `20260702000000` locally and remotely.
+- Hosted replacement validation passed twice with zero residue.
+- The complete local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+
+Limitations:
+- This is hosted non-production validation only. No route reads staging data, and no usable full-link UI or delivery path exists.
+- No email/reminder delivery, public lookup, remembered-device behavior, copy-link UI, Calendar/Volunteers cutover, Communications/Needs Attention persistence, seed data, service-role usage, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Keep the hosted gate as an explicit release check while designing the future audited product reveal and delivery boundary separately.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
