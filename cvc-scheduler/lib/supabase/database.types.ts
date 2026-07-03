@@ -631,6 +631,14 @@ export type Database = {
           workspace_display_name: string
         }[]
       }
+      replace_assignment_response_token: {
+        Args: { p_assignment_id: string; p_ttl_hours: number }
+        Returns: {
+          bearer_token: string
+          token_expires_at: string
+          token_id: string
+        }[]
+      }
       revoke_assignment_response_token: {
         Args: { p_token_id: string }
         Returns: string

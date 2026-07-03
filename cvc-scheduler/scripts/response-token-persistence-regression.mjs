@@ -42,6 +42,12 @@ const migrationPath = path.join(
   "migrations",
   "20260701070000_assignment_response_tokens.sql",
 );
+const replacementMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260702000000_atomic_response_token_replacement.sql",
+);
 const serverBoundaryPath = path.join(root, "lib", "responseTokens", "server.ts");
 const publicRouteBoundaryPath = path.join(
   root,
@@ -101,9 +107,22 @@ const responseLinkPolicyPath = path.join(
   "responseTokens",
   "policy.ts",
 );
+const responseTokenReplacementBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "replacement.server.ts",
+);
+const responseLinkReplacementBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "replacementLink.server.ts",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
+  replacementMigration,
   serverBoundary,
   publicRouteBoundary,
   publicRouteState,
@@ -116,9 +135,12 @@ const [
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
   responseLinkPolicy,
+  responseTokenReplacementBoundary,
+  responseLinkReplacementBoundary,
   environmentExample,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
+  readFile(replacementMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(publicRouteBoundaryPath, "utf8"),
   readFile(publicRouteStatePath, "utf8"),
@@ -131,6 +153,8 @@ const [
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
   readFile(responseLinkPolicyPath, "utf8"),
+  readFile(responseTokenReplacementBoundaryPath, "utf8"),
+  readFile(responseLinkReplacementBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -280,6 +304,35 @@ assert.match(
 assert.doesNotMatch(migration, /service_role/i);
 assert.doesNotMatch(migration, /delete from public\.assignment_response_tokens/i);
 
+assert.match(
+  replacementMigration,
+  /create function public\.replace_assignment_response_token\(\s*p_assignment_id uuid,\s*p_ttl_hours integer\s*\)/i,
+);
+assert.match(replacementMigration, /language plpgsql\s*security definer\s*set search_path = ''/i);
+assert.match(replacementMigration, /p_ttl_hours not between 1 and 168/i);
+assert.match(replacementMigration, /auth\.uid\(\)/i);
+assert.match(replacementMigration, /grant_row\.capabilities @> array\['assignments\.edit'\]::text\[\]/i);
+assert.match(replacementMigration, /for update of assignment/i);
+assert.match(
+  replacementMigration,
+  /update public\.assignment_response_tokens as token[\s\S]*token\.assignment_id = p_assignment_id[\s\S]*token\.purpose = 'assignment_response'[\s\S]*token\.revoked_at is null/i,
+);
+assert.match(replacementMigration, /set revoked_at = replacement_time/i);
+assert.match(replacementMigration, /extensions\.gen_random_bytes\(32\)/i);
+assert.match(replacementMigration, /extensions\.digest\(replacement_bearer_token, 'sha256'\)/i);
+assert.match(
+  replacementMigration,
+  /returns table \(\s*token_id uuid,\s*bearer_token text,\s*token_expires_at timestamptz/i,
+);
+assert.match(
+  replacementMigration,
+  /grant execute on function public\.replace_assignment_response_token\(uuid, integer\) to authenticated/i,
+);
+assert.doesNotMatch(
+  replacementMigration,
+  /delete from|service_role|create policy|grant (?:select|insert|update|delete|all).*assignment_response_tokens/i,
+);
+
 assert.match(serverBoundary, /^import "server-only";/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
@@ -386,6 +439,23 @@ assert.doesNotMatch(
   responseLinkPolicy,
   /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
 );
+assert.match(responseTokenReplacementBoundary, /^import "server-only";/);
+assert.match(responseTokenReplacementBoundary, /normalizeResponseLinkTtlHours/);
+assert.match(responseTokenReplacementBoundary, /supabase\.auth\.getUser\(\)/);
+assert.match(responseTokenReplacementBoundary, /"replace_assignment_response_token"/);
+assert.match(responseTokenReplacementBoundary, /parseIssuedAssignmentResponseToken/);
+assert.doesNotMatch(
+  responseTokenReplacementBoundary,
+  /\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete/i,
+);
+assert.match(responseLinkReplacementBoundary, /^import "server-only";/);
+assert.match(responseLinkReplacementBoundary, /issueAssignmentResponseLinkWithIssuer/);
+assert.match(responseLinkReplacementBoundary, /replaceAssignmentResponseTokenWithClient/);
+assert.match(responseLinkReplacementBoundary, /replaceAssignmentResponseToken\(/);
+assert.doesNotMatch(
+  responseLinkReplacementBoundary,
+  /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\./i,
+);
 assert.equal(PRODUCT_RESPONSE_LINK_DEFAULT_TTL_HOURS, 72);
 assert.equal(PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS, 168);
 assert.equal(DIAGNOSTIC_RESPONSE_LINK_TTL_HOURS, 1);
@@ -412,7 +482,11 @@ assert.equal(
 );
 assert.equal(
   RESPONSE_LINK_REPLACEMENT_POLICY.enforcement,
-  "future_atomic_database_command_required",
+  "atomic_database_command_enforced",
+);
+assert.equal(
+  RESPONSE_LINK_REPLACEMENT_POLICY.databaseCommand,
+  "replace_assignment_response_token",
 );
 assert.equal(
   RESPONSE_LINK_REPLACEMENT_POLICY.revocationFailure,
@@ -427,11 +501,7 @@ assert.deepEqual(RESPONSE_LINK_AUDIT_RETENTION.prohibitedValues, [
   "raw_bearer",
   "full_response_url",
 ]);
-assert.ok(
-  RESPONSE_LINK_DELIVERY_PREREQUISITES.includes(
-    "atomic_same_assignment_purpose_replacement_command",
-  ),
-);
+assert.ok(RESPONSE_LINK_DELIVERY_PREREQUISITES.includes("delivery_provider_boundary_and_delivery_audit"));
 assert.equal(
   FULL_RESPONSE_LINK_EXPOSURE_POLICY.allowedLayer,
   "future_explicit_product_issuance_surface",
@@ -702,6 +772,7 @@ const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
 const routeImports = [];
 const responseLinkRouteImports = [];
 const responseLinkPolicyRouteImports = [];
+const responseTokenReplacementRouteImports = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
   if (source.includes("lib/responseTokens/server")) {
@@ -712,6 +783,11 @@ for (const file of routeFiles) {
   }
   if (source.includes("lib/responseTokens/policy")) {
     responseLinkPolicyRouteImports.push(path.relative(root, file).replaceAll("\\", "/"));
+  }
+  if (source.includes("lib/responseTokens/replacement")) {
+    responseTokenReplacementRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
   }
 }
 assert.deepEqual(
@@ -728,6 +804,11 @@ assert.deepEqual(
   responseLinkPolicyRouteImports,
   [],
   "No route may import response-link exposure policy helpers",
+);
+assert.deepEqual(
+  responseTokenReplacementRouteImports,
+  [],
+  "No route may import response-token replacement or full-link helpers",
 );
 
 const diagnosticRoutePath = "app/admin/diagnostics/response-link/";

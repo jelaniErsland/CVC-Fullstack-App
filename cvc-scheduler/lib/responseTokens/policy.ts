@@ -6,7 +6,8 @@ export const DIAGNOSTIC_RESPONSE_LINK_TTL_HOURS = 1;
 
 export const RESPONSE_LINK_REPLACEMENT_POLICY = {
   rule: "revoke_active_same_assignment_and_purpose_before_replacement",
-  enforcement: "future_atomic_database_command_required",
+  enforcement: "atomic_database_command_enforced",
+  databaseCommand: "replace_assignment_response_token",
   revocationFailure: "fail_closed_without_issuing_or_revealing_a_replacement",
 } as const;
 
@@ -42,7 +43,6 @@ export const FULL_RESPONSE_LINK_EXPOSURE_POLICY = {
 } as const;
 
 export const RESPONSE_LINK_DELIVERY_PREREQUISITES = [
-  "atomic_same_assignment_purpose_replacement_command",
   "explicit_audited_product_reveal_surface",
   "delivery_provider_boundary_and_delivery_audit",
   "revocation_failure_recovery",

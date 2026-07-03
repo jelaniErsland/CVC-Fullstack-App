@@ -3502,6 +3502,41 @@ Limitations:
 Next recommended step:
 - Add the reviewed atomic replacement migration/RPC before building any usable product reveal or delivery surface.
 
+## Iteration 11.18 — Atomic Response Link Replacement RPC
+
+Summary:
+- Added `replace_assignment_response_token(uuid, integer)` as an authenticated security-definer RPC. It requires an active `assignments.edit` grant, derives all scope, revokes older unrevoked same-assignment/purpose tokens, inserts one hash-only replacement, and returns its bearer once in one transaction.
+- Replacement locks the target assignment row. Concurrent calls serialize per assignment; a later replacement revokes the earlier replacement, leaving exactly one usable token without global locking.
+- Added `replaceAssignmentResponseToken`, `replaceAssignmentResponseTokenWithClient`, `issueReplacementAssignmentResponseLink`, and `issueReplacementAssignmentResponseLinkWithClient` as server-only typed boundaries. No route imports them.
+- Updated the 11.17 policy from future-required to atomically enforced while retaining fail-closed behavior, the 72-hour default, 168-hour maximum, hash-only audit retention, and explicit future full-link exposure requirements.
+- Extended local live QA to prove authorization rollback, old-token rejection, replacement verification/submission, TTL rejection rollback, hash-only storage, and concurrent single-active-token state. Two fresh disposable runs passed with zero residue.
+
+Changed files:
+- `supabase/migrations/20260702000000_atomic_response_token_replacement.sql`
+- `lib/responseTokens/replacement.server.ts`
+- `lib/responseTokens/replacementLink.server.ts`
+- `lib/responseTokens/policy.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `scripts/response-link-issuance-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Fresh local migrations applied without seed data through `20260702000000`.
+- The full workspace-through-response-token regression matrix, valid-token route QA, response-link/replacement QA twice, lint, production build, Calendar browser regression, TypeScript check, and diff check passed.
+- No bearer, full response URL, verifier, password, or access token was logged by the QA harnesses.
+
+Limitations:
+- The replacement/link helpers remain unused by visible routes. No full-link display, copy control, email/reminder delivery, lookup, route cutover, token deletion, job, or service-role path exists.
+- Product link display/delivery still requires a deliberate audited surface, delivery audit/provider boundary, failure recovery, and abuse/rate-limit controls.
+
+Next recommended step:
+- Design the explicit audited product reveal and delivery boundary before exposing any usable replacement link.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

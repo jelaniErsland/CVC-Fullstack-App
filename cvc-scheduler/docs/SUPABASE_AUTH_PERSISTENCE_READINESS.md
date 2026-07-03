@@ -2,17 +2,27 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.17 adds a server-only product lifecycle policy for future response links. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+Iteration 11.18 adds the authenticated atomic replacement backend required by the 11.17 lifecycle policy. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+
+## 11.18 atomic response-token replacement
+
+`replace_assignment_response_token(assignment_id, ttl_hours)` accepts only assignment id and a 1–168 hour TTL. It derives workspace, volunteer, actor, fixed `assignment_response` purpose, and scope server-side; requires a real authenticated active contact/grant containing `assignments.edit`; and returns token id, expiration, and one database-generated raw bearer. Only its SHA-256 verifier is stored. The RPC grants execute only to `authenticated` and adds no token-table policy or read privilege.
+
+The function locks the active target assignment row before changing token state. Within that same database transaction it revokes every older unrevoked token for the assignment/purpose, generates 32 random bytes, inserts one replacement verifier, and returns the bearer once. Authorization or TTL failure happens before mutation. Any update/insert failure rolls the transaction back. Concurrent calls serialize on the assignment row; a later call revokes the earlier replacement, so final state contains exactly one active usable token without a global lock.
+
+`replaceAssignmentResponseToken` / `replaceAssignmentResponseTokenWithClient` provide the typed server-only token boundary. `issueReplacementAssignmentResponseLink` / `issueReplacementAssignmentResponseLinkWithClient` compose that boundary with the existing validated URL builder, remain unused by routes, and apply the 72-hour default/168-hour maximum. The diagnostic continues using its one-hour preview path, renders only `/respond/[redacted]`, and immediately revokes its token.
+
+Live local QA passed twice with disposable fixtures. It proves denied replacement preserves the old token, authorized replacement invalidates old verification/submission, the replacement verifies and submits, hash-only storage persists, a 169-hour request changes nothing, and two overlapping replacements leave one usable token and unchanged response truth. Fixture and Auth residue is zero.
 
 ## 11.17 response-link product lifecycle policy
 
 Future usable response links default to 72 hours and are capped at 168 hours. `normalizeResponseLinkTtlHours` enforces those bounds before the 11.14 link issuer is called. Diagnostic issuance has a separate fixed one-hour policy, remains redacted-only, and still revokes the discarded token in `finally` before success returns.
 
-Product replacement policy is conservative: issuing a replacement must atomically revoke every older active `assignment_response` token for the same assignment and purpose, then issue exactly one replacement. Any revocation failure must fail closed without issuing or revealing a new credential. The current token-id revocation RPC cannot find and replace all matching tokens atomically, so this policy is not yet enforceable as a product operation. A future reviewed migration/transaction command is required; the existing preview issuer must not be treated as that command.
+Product replacement policy is conservative: issuing a replacement must atomically revoke every older active `assignment_response` token for the same assignment and purpose, then issue exactly one replacement. Any revocation failure must fail closed without issuing or revealing a new credential. Iteration 11.18 now enforces this through the dedicated replacement RPC; the older preview issuer remains non-product and must not substitute for it.
 
 Hash-only token rows remain the audit record. Retained metadata is token id, workspace/assignment/volunteer scope, purpose, verifier hash, creator, creation/expiry/revocation/use timestamps, and bounded internal note. Raw bearers and full response URLs must never be retained, and no automatic deletion policy is introduced.
 
-Only a future explicit product issuance surface may intentionally reveal a full link, and only after atomic replacement succeeds, with a verified project contact, database-enforced `assignments.edit`, an explicit credential reveal, and automatic logging disabled. Diagnostics and the public response route are not eligible. Before email/reminder delivery, the project still needs the atomic replacement command, an explicit audited reveal surface, a delivery provider boundary and delivery audit, revocation-failure recovery, and rate-limit/abuse controls. Calendar, Volunteers, Communications, and Needs Attention remain mock-only/unconnected.
+Only a future explicit product issuance surface may intentionally reveal a full link, and only after atomic replacement succeeds, with a verified project contact, database-enforced `assignments.edit`, an explicit credential reveal, and automatic logging disabled. Diagnostics and the public response route are not eligible. Before email/reminder delivery, the project still needs an explicit audited reveal surface, a delivery provider boundary and delivery audit, revocation-failure recovery, and rate-limit/abuse controls. Calendar, Volunteers, Communications, and Needs Attention remain mock-only/unconnected.
 
 ## 11.16 response-token cleanup and revocation guardrail
 
@@ -406,6 +416,8 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.14 Project Contact Response Link Issuance Preview Boundary — completed:** server-only authorized issuance builds one validated response URL with expiration metadata and redacted diagnostics; the local hash-only/verification/cleanup QA passed twice, and no route imports the helper.
 - **11.15 Response Link Admin Diagnostic Preview — completed:** the unlinked authenticated route accepts only assignment id/TTL, uses the server-derived 11.14 boundary, and renders redacted diagnostic metadata only; no navigation or product route imports it.
 - **11.16 Response Token Cleanup and Revocation Readiness Guardrail — completed:** discarded diagnostic credentials are revoked in `finally` through the existing `assignments.edit` helper; live QA proves denied/authorized revocation, public rejection, retained hash-only audit rows, and unchanged response truth.
+- **11.17 Response Link Product Lifecycle Policy — completed:** product TTL, fail-closed replacement, audit retention, full-link exposure, and delivery prerequisites are explicit server-only policy.
+- **11.18 Atomic Response Link Replacement RPC — completed locally:** authenticated `assignments.edit` replacement locks one assignment, revokes older unrevoked response tokens, inserts one hash-only replacement atomically, and leaves exactly one usable token under concurrency.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

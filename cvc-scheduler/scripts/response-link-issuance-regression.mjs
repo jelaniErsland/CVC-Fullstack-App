@@ -504,6 +504,204 @@ where id = '${result.tokenId}'::uuid;`,
   return result.redactedUrl;
 }
 
+async function verifyAtomicReplacement(containerName) {
+  const anonymousClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
+  });
+  const initialIssue = await authenticatedClient.rpc("issue_assignment_response_token", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 24,
+    p_internal_note: null,
+  });
+  assert(
+    !initialIssue.error && Array.isArray(initialIssue.data) && initialIssue.data.length === 1,
+    "Replacement setup token issuance failed.",
+  );
+  const oldTokenId = expectUuid(initialIssue.data[0]?.token_id, "Replacement setup issuance");
+  const oldBearer = initialIssue.data[0]?.bearer_token;
+  assert(bearerPattern.test(oldBearer), "Replacement setup returned an invalid bearer.");
+  secrets.add(oldBearer);
+
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const deniedReplacement = await authenticatedClient.rpc(
+    "replace_assignment_response_token",
+    { p_assignment_id: fixture.assignmentId, p_ttl_hours: 72 },
+  );
+  assert(
+    deniedReplacement.error?.code === "42501" && deniedReplacement.data === null,
+    "Response-token replacement succeeded without assignments.edit.",
+  );
+
+  const validAfterDeniedReplacement = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: oldBearer },
+  );
+  assert(
+    !validAfterDeniedReplacement.error && validAfterDeniedReplacement.data?.length === 1,
+    "Denied replacement changed the existing active token.",
+  );
+
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read', 'assignments.edit']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const replacementStartedAt = Date.now();
+  const replacement = await authenticatedClient.rpc("replace_assignment_response_token", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 72,
+  });
+  assert(
+    !replacement.error && Array.isArray(replacement.data) && replacement.data.length === 1,
+    "Authorized atomic response-token replacement failed.",
+  );
+  const replacementTokenId = expectUuid(
+    replacement.data[0]?.token_id,
+    "Atomic response-token replacement",
+  );
+  const replacementBearer = replacement.data[0]?.bearer_token;
+  assert(bearerPattern.test(replacementBearer), "Replacement returned an invalid bearer.");
+  secrets.add(replacementBearer);
+  const replacementTtlHours =
+    (Date.parse(replacement.data[0]?.token_expires_at) - replacementStartedAt) / 3_600_000;
+  assert(
+    replacementTtlHours > 71.9 && replacementTtlHours <= 72.1,
+    "Replacement did not use the 72-hour product default supplied by the policy boundary.",
+  );
+
+  const revokedOldVerification = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: oldBearer },
+  );
+  assert(
+    !revokedOldVerification.error && revokedOldVerification.data?.length === 0,
+    "Atomic replacement left the older token publicly valid.",
+  );
+  const revokedOldSubmission = await anonymousClient.rpc(
+    "submit_assignment_response_by_token",
+    {
+      p_bearer_token: oldBearer,
+      p_response_status: "declined",
+      p_response_note: null,
+    },
+  );
+  assert(
+    revokedOldSubmission.error?.code === "42501" && revokedOldSubmission.data === null,
+    "An older replaced token still submitted a response.",
+  );
+
+  const replacementVerification = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: replacementBearer },
+  );
+  assert(
+    !replacementVerification.error && replacementVerification.data?.length === 1,
+    "The new replacement token did not verify publicly.",
+  );
+  const replacementSubmission = await anonymousClient.rpc(
+    "submit_assignment_response_by_token",
+    {
+      p_bearer_token: replacementBearer,
+      p_response_status: "confirmed",
+      p_response_note: null,
+    },
+  );
+  assert(
+    !replacementSubmission.error && replacementSubmission.data?.[0]?.current_response_status === "confirmed",
+    "The new replacement token could not submit a public response.",
+  );
+
+  const persistedReplacementState = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select (revoked_at is not null)::text from public.assignment_response_tokens where id = '${oldTokenId}'::uuid),
+  (select octet_length(token_verifier_hash)::text from public.assignment_response_tokens where id = '${replacementTokenId}'::uuid),
+  (select response_status from public.assignment_responses where assignment_id = '${fixture.assignmentId}'::uuid),
+  (select response_source from public.assignment_responses where assignment_id = '${fixture.assignmentId}'::uuid),
+  (select (last_used_at is not null)::text from public.assignment_response_tokens where id = '${replacementTokenId}'::uuid),
+  (select count(*)::text from information_schema.columns where table_schema = 'public' and table_name = 'assignment_response_tokens' and column_name in ('token', 'raw_token', 'bearer_token'))
+);`,
+  );
+  assert(
+    persistedReplacementState === "true|32|confirmed|public_token|true|0",
+    "Replacement did not preserve hash-only storage and public response truth.",
+  );
+
+  const excessiveTtl = await authenticatedClient.rpc("replace_assignment_response_token", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 169,
+  });
+  assert(
+    excessiveTtl.error?.code === "42501" && excessiveTtl.data === null,
+    "The replacement RPC accepted a TTL above the 168-hour product maximum.",
+  );
+  const validAfterRejectedTtl = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: replacementBearer },
+  );
+  assert(
+    !validAfterRejectedTtl.error && validAfterRejectedTtl.data?.length === 1,
+    "A rejected replacement TTL changed the active token.",
+  );
+
+  const concurrentResults = await Promise.all([
+    authenticatedClient.rpc("replace_assignment_response_token", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+    }),
+    authenticatedClient.rpc("replace_assignment_response_token", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+    }),
+  ]);
+  const concurrentTokens = concurrentResults.map((result, index) => {
+    assert(
+      !result.error && Array.isArray(result.data) && result.data.length === 1,
+      `Concurrent replacement ${index + 1} failed unexpectedly.`,
+    );
+    const tokenId = expectUuid(result.data[0]?.token_id, `Concurrent replacement ${index + 1}`);
+    const bearer = result.data[0]?.bearer_token;
+    assert(bearerPattern.test(bearer), `Concurrent replacement ${index + 1} returned an invalid bearer.`);
+    secrets.add(bearer);
+    return { tokenId, bearer };
+  });
+
+  const concurrentVerification = await Promise.all(
+    concurrentTokens.map(({ bearer }) =>
+      anonymousClient.rpc("read_assignment_response_by_token", { p_bearer_token: bearer }),
+    ),
+  );
+  const usableConcurrentTokens = concurrentVerification.filter(
+    (result) => !result.error && result.data?.length === 1,
+  );
+  assert(
+    usableConcurrentTokens.length === 1,
+    "Concurrent replacements left more than one usable token.",
+  );
+  const finalDatabaseState = runPsql(
+    containerName,
+    `select concat_ws('|',
+  count(*) filter (where revoked_at is null and expires_at > clock_timestamp())::text,
+  count(*) filter (where revoked_at is not null)::text,
+  (select response_status from public.assignment_responses where assignment_id = '${fixture.assignmentId}'::uuid)
+)
+from public.assignment_response_tokens
+where workspace_id = '${fixture.workspaceId}'::uuid
+  and assignment_id = '${fixture.assignmentId}'::uuid
+  and purpose = 'assignment_response';`,
+  );
+  const [activeCount, revokedCount, responseStatus] = finalDatabaseState.split("|");
+  assert(activeCount === "1", "Concurrent replacement did not leave exactly one active token.");
+  assert(Number(revokedCount) >= 4, "Concurrent replacement did not revoke earlier token rows.");
+  assert(responseStatus === "confirmed", "Concurrent replacement changed assignment response truth.");
+}
+
 async function cleanupFixtures(containerName) {
   if (authenticatedClient) {
     await authenticatedClient.auth.signOut({ scope: "local" }).catch(() => undefined);
@@ -553,6 +751,7 @@ async function main() {
   try {
     await createFixtures(containerName);
     redactedUrl = await issueAndVerifyLink(containerName);
+    await verifyAtomicReplacement(containerName);
   } finally {
     await cleanupFixtures(containerName);
   }
@@ -561,7 +760,7 @@ async function main() {
   console.log("Project-contact response-link issuance QA passed.");
   console.log(`Safe diagnostic: ${redactedUrl}`);
   console.log(
-    "Verified assignments.edit revocation authorization and revoked-token rejection for public verification and response.",
+    "Verified assignments.edit revocation/replacement authorization, atomic replacement, and concurrent single-active-token behavior.",
   );
   console.log(
     "Created and removed disposable local Auth, workspace, grant, questionnaire, volunteer, task, Calendar, assignment, response, and token fixtures.",
