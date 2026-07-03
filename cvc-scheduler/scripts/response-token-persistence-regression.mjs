@@ -162,6 +162,13 @@ assert.match(migration, /response_source in \('project_contact', 'public_token'\
 assert.match(migration, /create function public\.issue_assignment_response_token\(/i);
 assert.match(migration, /create function public\.revoke_assignment_response_token\(p_token_id uuid\)/i);
 assert.match(migration, /grant_row\.capabilities @> array\['assignments\.edit'\]::text\[\]/i);
+const revokeFunction = migration.match(
+  /create function public\.revoke_assignment_response_token\(p_token_id uuid\)([\s\S]*?)\$\$;/i,
+)?.[1];
+assert.ok(revokeFunction);
+assert.match(revokeFunction, /set revoked_at = now\(\)/i);
+assert.match(revokeFunction, /grant_row\.capabilities @> array\['assignments\.edit'\]::text\[\]/i);
+assert.doesNotMatch(revokeFunction, /delete from/i);
 assert.match(migration, /assignment\.lifecycle = 'active'/i);
 assert.match(migration, /volunteer\.readiness_status = 'ready'/i);
 assert.match(migration, /p_ttl_hours not between 1 and 720/i);
@@ -210,6 +217,10 @@ for (const tokenPredicate of [
   assert.ok(migration.toLowerCase().includes(tokenPredicate), `Missing: ${tokenPredicate}`);
 }
 assert.match(migration, /token\.token_verifier_hash = extensions\.digest\(p_bearer_token, 'sha256'\)/i);
+assert.match(
+  migration,
+  /create function public\.read_assignment_response_by_token\(p_bearer_token text\)[\s\S]*?token\.revoked_at is null[\s\S]*?\$\$;/i,
+);
 
 assert.match(migration, /create function public\.submit_assignment_response_by_token\(/i);
 const submitSignature = migration.match(
@@ -219,6 +230,10 @@ assert.ok(submitSignature);
 assert.doesNotMatch(submitSignature, /workspace|assignment_id|volunteer|source|hash|verifier|coverage|filled/i);
 assert.match(migration, /p_response_status not in \('confirmed', 'declined'\)/i);
 assert.match(migration, /response_source = 'public_token'/i);
+assert.match(
+  migration,
+  /create function public\.submit_assignment_response_by_token\([\s\S]*?token\.revoked_at is null[\s\S]*?\$\$;/i,
+);
 assert.match(migration, /for update of token, response nowait/i);
 assert.match(migration, /response\.response_status = existing_response_status/i);
 assert.match(migration, /set last_used_at = recorded_at/i);
@@ -242,6 +257,7 @@ assert.match(
   /grant execute on function public\.submit_assignment_response_by_token\(text, text, text\) to anon, authenticated/i,
 );
 assert.doesNotMatch(migration, /service_role/i);
+assert.doesNotMatch(migration, /delete from public\.assignment_response_tokens/i);
 
 assert.match(serverBoundary, /^import "server-only";/);
 assert.deepEqual(
@@ -315,6 +331,10 @@ assert.doesNotMatch(
 
 assert.match(responseLinkDiagnosticBoundary, /^import "server-only";/);
 assert.match(responseLinkDiagnosticBoundary, /issueAssignmentResponseLink\(/);
+assert.match(
+  responseLinkDiagnosticBoundary,
+  /finally\s*\{[\s\S]*revokeAssignmentResponseToken\(\{ tokenId: issued\.tokenId \}\)/,
+);
 assert.match(responseLinkDiagnosticBoundary, /validateResponseLinkBaseUrl\(/);
 assert.match(responseLinkDiagnosticBoundary, /redactedUrl: issued\.redactedUrl/);
 assert.doesNotMatch(
@@ -328,14 +348,14 @@ assert.match(responseLinkDiagnosticPage, /Response-link origin is not configured
 assert.match(responseLinkDiagnosticPage, /Check the diagnostic input/);
 assert.doesNotMatch(
   responseLinkDiagnosticPage,
-  /responseUrl|bearer_token|token_verifier|serviceRole|SUPABASE_SERVICE_ROLE_KEY|mockData|volunteerPreview/i,
+  /responseUrl|bearer_token|token_verifier|tokenId|token_id|serviceRole|SUPABASE_SERVICE_ROLE_KEY|mockData|volunteerPreview/i,
 );
 assert.match(responseLinkDiagnosticAction, /issueResponseLinkDiagnostic\(/);
 assert.match(responseLinkDiagnosticAction, /formData\.get\("assignmentId"\)/);
 assert.match(responseLinkDiagnosticAction, /formData\.get\("expiresInHours"\)/);
 assert.doesNotMatch(
   responseLinkDiagnosticAction,
-  /\.rpc\(|issue_assignment_response_token|responseUrl|bearer|verifier|workspaceId|volunteerId|actor|source|purpose|serviceRole|SUPABASE_SERVICE_ROLE_KEY/i,
+  /\.rpc\(|issue_assignment_response_token|responseUrl|bearer|verifier|tokenId|token_id|workspaceId|volunteerId|actor|source|purpose|serviceRole|SUPABASE_SERVICE_ROLE_KEY/i,
 );
 
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
@@ -462,6 +482,7 @@ assert.equal(
   issuedLink.responseUrl,
   `https://preview.example.test/respond/${bearerToken}`,
 );
+assert.equal(issuedLink.tokenId, tokenId);
 assert.equal(issuedLink.redactedUrl, "https://preview.example.test/respond/[redacted]");
 assert.equal(redactAssignmentResponseLink(issuedLink.responseUrl), issuedLink.redactedUrl);
 assert.equal(redactAssignmentResponseLink("not-a-link"), "[invalid response link]");

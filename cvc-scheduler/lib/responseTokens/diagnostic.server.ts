@@ -5,6 +5,7 @@ import {
   validateResponseLinkBaseUrl,
 } from "@/lib/responseTokens/link";
 import { issueAssignmentResponseLink } from "@/lib/responseTokens/link.server";
+import { revokeAssignmentResponseToken } from "@/lib/responseTokens/server";
 
 type ResponseLinkDiagnosticEnvironment = Readonly<{
   RESPONSE_LINK_BASE_URL?: string;
@@ -62,16 +63,19 @@ export async function issueResponseLinkDiagnostic(
       expiresInHours: input.expiresInHours,
       baseUrl: configuration.baseUrl,
     });
+    try {
+      if (!issued.redactedUrl.endsWith("/respond/[redacted]")) {
+        throw new Error("Unexpected redacted response link.");
+      }
 
-    if (!issued.redactedUrl.endsWith("/respond/[redacted]")) {
-      throw new Error("Unexpected redacted response link.");
+      return {
+        assignmentId: String(input.assignmentId).trim().toLowerCase(),
+        expiresAt: issued.expiresAt,
+        redactedUrl: issued.redactedUrl,
+      } as const;
+    } finally {
+      await revokeAssignmentResponseToken({ tokenId: issued.tokenId });
     }
-
-    return {
-      assignmentId: String(input.assignmentId).trim().toLowerCase(),
-      expiresAt: issued.expiresAt,
-      redactedUrl: issued.redactedUrl,
-    } as const;
   } catch (error) {
     if (error instanceof ResponseLinkValidationError) {
       throw new ResponseLinkDiagnosticError("invalid");

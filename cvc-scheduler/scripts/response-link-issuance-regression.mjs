@@ -365,9 +365,10 @@ async function issueAndVerifyLink(containerName) {
   secrets.add(result.responseUrl);
 
   assert(
-    Object.keys(result).sort().join(",") === "expiresAt,redactedUrl,responseUrl",
+    Object.keys(result).sort().join(",") === "expiresAt,redactedUrl,responseUrl,tokenId",
     "The response-link result exposed an unexpected field.",
   );
+  assert(result.tokenId === issuedTokenId, "The response-link result used the wrong token id.");
   const parsed = new URL(result.responseUrl);
   assert(parsed.origin === new URL(responseLinkBaseUrl).origin, "The response link used the wrong origin.");
   assert(parsed.pathname === `/respond/${issuedBearer}`, "The response link used the wrong route.");
@@ -417,6 +418,87 @@ where id = '${issuedTokenId}'::uuid;`,
   assert(
     storedTokenState === "32|assignment_response|0",
     "The issued token row did not preserve hash-only storage.",
+  );
+
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const unauthorizedRevocation = await authenticatedClient.rpc(
+    "revoke_assignment_response_token",
+    { p_token_id: result.tokenId },
+  );
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read', 'assignments.edit']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  assert(
+    unauthorizedRevocation.error?.code === "42501" && unauthorizedRevocation.data === null,
+    "Token revocation succeeded without assignments.edit.",
+  );
+
+  const stillValidAfterDeniedRevocation = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: issuedBearer },
+  );
+  assert(
+    !stillValidAfterDeniedRevocation.error &&
+      Array.isArray(stillValidAfterDeniedRevocation.data) &&
+      stillValidAfterDeniedRevocation.data.length === 1,
+    "Denied revocation changed the public token state.",
+  );
+
+  const authorizedRevocation = await authenticatedClient.rpc(
+    "revoke_assignment_response_token",
+    { p_token_id: result.tokenId },
+  );
+  assert(
+    !authorizedRevocation.error && authorizedRevocation.data === result.tokenId,
+    "Authorized token revocation failed.",
+  );
+
+  const revokedVerification = await anonymousClient.rpc(
+    "read_assignment_response_by_token",
+    { p_bearer_token: issuedBearer },
+  );
+  assert(
+    !revokedVerification.error &&
+      Array.isArray(revokedVerification.data) &&
+      revokedVerification.data.length === 0,
+    "A revoked token still verified publicly.",
+  );
+
+  const revokedSubmission = await anonymousClient.rpc(
+    "submit_assignment_response_by_token",
+    {
+      p_bearer_token: issuedBearer,
+      p_response_status: "confirmed",
+      p_response_note: null,
+    },
+  );
+  assert(
+    revokedSubmission.error?.code === "42501" && revokedSubmission.data === null,
+    "A revoked token still submitted a public response.",
+  );
+
+  const revokedTokenState = runPsql(
+    containerName,
+    `select concat_ws('|',
+  octet_length(token_verifier_hash)::text,
+  purpose,
+  (revoked_at is not null)::text,
+  (select response_status from public.assignment_responses where assignment_id = '${fixture.assignmentId}'::uuid)
+)
+from public.assignment_response_tokens
+where id = '${result.tokenId}'::uuid;`,
+  );
+  assert(
+    revokedTokenState === "32|assignment_response|true|needs_response",
+    "Revocation did not preserve the hash-only token row and response truth.",
   );
 
   return result.redactedUrl;
@@ -478,6 +560,9 @@ async function main() {
   assert(cleanupCompleted, "Disposable response-link fixture cleanup did not complete.");
   console.log("Project-contact response-link issuance QA passed.");
   console.log(`Safe diagnostic: ${redactedUrl}`);
+  console.log(
+    "Verified assignments.edit revocation authorization and revoked-token rejection for public verification and response.",
+  );
   console.log(
     "Created and removed disposable local Auth, workspace, grant, questionnaire, volunteer, task, Calendar, assignment, response, and token fixtures.",
   );

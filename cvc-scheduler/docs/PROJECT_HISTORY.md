@@ -3435,6 +3435,40 @@ Limitations:
 Next recommended step:
 - Design audit and immediate cleanup/revocation semantics for diagnostic-only issuance before considering any product-facing generation or delivery surface.
 
+## Iteration 11.16 — Response Token Cleanup and Revocation Readiness Guardrail
+
+Summary:
+- Audited the existing 11.11 revocation helper/RPC and retained it as the only revocation path: authenticated token-id input, active `assignments.edit` grant, `revoked_at` mutation, and no deletion.
+- Extended the server-only response-link result with token id solely for lifecycle control. Raw bearer storage and route exposure remain prohibited.
+- Tightened `issueResponseLinkDiagnostic` so every diagnostic-issued token is revoked in `finally` before redacted success returns. The mapper still strips token id/full URL from the action and page.
+- Extended live local `test:response-link` coverage: revocation is denied without `assignments.edit`, succeeds with it, revoked tokens fail public verification and response, response truth remains unchanged, and the hash-only revoked row remains for audit.
+- Added static checks prohibiting token deletion and token-id/verifier/bearer/full-URL exposure from the unlinked 11.15 route.
+- Added no helper for deletion/listing, cleanup script, cron, job, product UI, copy-link behavior, delivery, or service-role access.
+
+Changed files:
+- `lib/responseTokens/link.ts`
+- `lib/responseTokens/diagnostic.server.ts`
+- `scripts/response-link-issuance-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Live local revocation authorization, revoked verification rejection, revoked response rejection, response preservation, retained hash-only row, and fixture cleanup passed.
+- `npm run supabase:check`, every workspace-through-response-token regression, valid-token route QA, and response-link QA passed.
+- `npm run lint`, `npm run build`, `npm run test:calendar`, `npx tsc --noEmit`, and `git diff --check` passed.
+
+Limitations:
+- Immediate revocation applies only to the redacted diagnostic that discards its credential. There is no general expired-token scanner, background cleanup, deletion policy, or UI.
+- Product use still needs deliberate full-link display authority, replacement/revocation rules, delivery audit, retention/cleanup policy, abuse controls, and recovery from revocation failure.
+- No email/reminder delivery, public lookup, remembered-device behavior, copy-link UI, Calendar/Volunteers route cutover, Communications/Needs Attention persistence, seed data, service-role usage, or mock-to-real integration was added.
+
+Next recommended step:
+- Define the product token lifecycle and delivery audit contract before exposing any usable full link.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -12,6 +12,7 @@ export type IssueAssignmentResponseLinkInput = Readonly<{
 }>;
 
 export type IssuedAssignmentResponseLink = Readonly<{
+  tokenId: string;
   responseUrl: string;
   redactedUrl: string;
   expiresAt: string;
@@ -146,6 +147,8 @@ export async function issueAssignmentResponseLinkWithIssuer(
 
   if (
     !issued ||
+    typeof issued.tokenId !== "string" ||
+    !uuidPattern.test(issued.tokenId) ||
     typeof issued.token !== "string" ||
     !bearerPattern.test(issued.token) ||
     typeof issued.expiresAt !== "string" ||
@@ -160,6 +163,7 @@ export async function issueAssignmentResponseLinkWithIssuer(
   ).toString();
 
   return {
+    tokenId: issued.tokenId.toLowerCase(),
     responseUrl,
     redactedUrl: redactAssignmentResponseLink(responseUrl),
     expiresAt: issued.expiresAt,
