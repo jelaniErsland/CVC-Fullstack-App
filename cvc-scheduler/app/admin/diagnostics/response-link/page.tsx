@@ -158,7 +158,7 @@ export default async function ResponseLinkDiagnosticPage({
                 {result === "invalid" ? (
                   <DiagnosticNotice
                     title="Check the diagnostic input"
-                    message="Use one assignment UUID and a TTL from 1 to 720 hours. No response link was issued."
+                    message="Use one assignment UUID and the fixed one-hour diagnostic TTL. No response link was issued."
                   />
                 ) : null}
                 {result === "unavailable" ? (
@@ -198,10 +198,11 @@ export default async function ResponseLinkDiagnosticPage({
                       name="expiresInHours"
                       type="number"
                       min={1}
-                      max={720}
+                      max={1}
                       step={1}
                       defaultValue={1}
                       required
+                      readOnly
                       className="mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                     />
                   </div>

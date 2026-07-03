@@ -4,6 +4,10 @@ import type {
   IssueAssignmentResponseTokenInput,
   IssuedAssignmentResponseToken,
 } from "@/lib/responseTokens/token";
+import {
+  normalizeResponseLinkTtlHours,
+  ResponseLinkPolicyError,
+} from "./policy.ts";
 
 export type IssueAssignmentResponseLinkInput = Readonly<{
   assignmentId: string;
@@ -90,15 +94,15 @@ function validateInput(input: unknown) {
     issues.push("assignmentId must be a UUID.");
   }
 
-  const expiresInHours = input.expiresInHours;
-  if (
-    expiresInHours !== undefined &&
-    (typeof expiresInHours !== "number" ||
-      !Number.isInteger(expiresInHours) ||
-      expiresInHours < 1 ||
-      expiresInHours > 720)
-  ) {
-    issues.push("expiresInHours must be an integer from 1 to 720.");
+  let expiresInHours: number | undefined;
+  try {
+    expiresInHours = normalizeResponseLinkTtlHours("product", input.expiresInHours);
+  } catch (error) {
+    if (error instanceof ResponseLinkPolicyError) {
+      issues.push("expiresInHours exceeds the response-link product policy.");
+    } else {
+      throw error;
+    }
   }
 
   let baseUrl = "";
@@ -112,7 +116,7 @@ function validateInput(input: unknown) {
   if (issues.length > 0) throw new ResponseLinkValidationError(issues);
   return {
     assignmentId: (assignmentId as string).trim().toLowerCase(),
-    expiresInHours: expiresInHours as number | undefined,
+    expiresInHours,
     baseUrl,
   };
 }

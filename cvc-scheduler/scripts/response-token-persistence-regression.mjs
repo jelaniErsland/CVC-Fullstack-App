@@ -21,6 +21,19 @@ import {
   redactAssignmentResponseLink,
   validateResponseLinkBaseUrl,
 } from "../lib/responseTokens/link.ts";
+import {
+  DIAGNOSTIC_RESPONSE_LINK_TTL_HOURS,
+  FULL_RESPONSE_LINK_EXPOSURE_POLICY,
+  PRODUCT_RESPONSE_LINK_DEFAULT_TTL_HOURS,
+  PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS,
+  RESPONSE_LINK_AUDIT_RETENTION,
+  RESPONSE_LINK_DELIVERY_PREREQUISITES,
+  RESPONSE_LINK_REPLACEMENT_POLICY,
+  ResponseLinkPolicyError,
+  describeResponseLinkReplacementPolicy,
+  mayExposeFullAssignmentResponseLink,
+  normalizeResponseLinkTtlHours,
+} from "../lib/responseTokens/policy.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migrationPath = path.join(
@@ -82,6 +95,12 @@ const responseLinkDiagnosticActionPath = path.join(
   "response-link",
   "actions.ts",
 );
+const responseLinkPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "policy.ts",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
@@ -96,6 +115,7 @@ const [
   responseLinkDiagnosticBoundary,
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
+  responseLinkPolicy,
   environmentExample,
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
@@ -110,6 +130,7 @@ const [
   readFile(responseLinkDiagnosticBoundaryPath, "utf8"),
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
+  readFile(responseLinkPolicyPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -346,9 +367,11 @@ assert.match(responseLinkDiagnosticPage, /robots: \{ index: false, follow: false
 assert.match(responseLinkDiagnosticPage, /\/respond\/\[redacted\]/);
 assert.match(responseLinkDiagnosticPage, /Response-link origin is not configured/);
 assert.match(responseLinkDiagnosticPage, /Check the diagnostic input/);
+assert.match(responseLinkDiagnosticPage, /max=\{1\}/);
+assert.match(responseLinkDiagnosticPage, /readOnly/);
 assert.doesNotMatch(
   responseLinkDiagnosticPage,
-  /responseUrl|bearer_token|token_verifier|tokenId|token_id|serviceRole|SUPABASE_SERVICE_ROLE_KEY|mockData|volunteerPreview/i,
+  /responseUrl|bearer_token|token_verifier|tokenId|token_id|serviceRole|SUPABASE_SERVICE_ROLE_KEY|mockData|volunteerPreview|navigator\.clipboard|writeText\(|Copy full/i,
 );
 assert.match(responseLinkDiagnosticAction, /issueResponseLinkDiagnostic\(/);
 assert.match(responseLinkDiagnosticAction, /formData\.get\("assignmentId"\)/);
@@ -356,6 +379,99 @@ assert.match(responseLinkDiagnosticAction, /formData\.get\("expiresInHours"\)/);
 assert.doesNotMatch(
   responseLinkDiagnosticAction,
   /\.rpc\(|issue_assignment_response_token|responseUrl|bearer|verifier|tokenId|token_id|workspaceId|volunteerId|actor|source|purpose|serviceRole|SUPABASE_SERVICE_ROLE_KEY/i,
+);
+
+assert.match(responseLinkPolicy, /^import "server-only";/);
+assert.doesNotMatch(
+  responseLinkPolicy,
+  /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
+);
+assert.equal(PRODUCT_RESPONSE_LINK_DEFAULT_TTL_HOURS, 72);
+assert.equal(PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS, 168);
+assert.equal(DIAGNOSTIC_RESPONSE_LINK_TTL_HOURS, 1);
+assert.ok(PRODUCT_RESPONSE_LINK_DEFAULT_TTL_HOURS < PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS);
+assert.ok(PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS <= 168);
+assert.equal(normalizeResponseLinkTtlHours("product"), 72);
+assert.equal(normalizeResponseLinkTtlHours("product", 24), 24);
+assert.equal(normalizeResponseLinkTtlHours("product", 168), 168);
+assert.equal(normalizeResponseLinkTtlHours("diagnostic"), 1);
+assert.equal(normalizeResponseLinkTtlHours("diagnostic", 1), 1);
+for (const invalidTtl of [0, 169, 1.5, "72"]) {
+  assert.throws(
+    () => normalizeResponseLinkTtlHours("product", invalidTtl),
+    ResponseLinkPolicyError,
+  );
+}
+assert.throws(
+  () => normalizeResponseLinkTtlHours("diagnostic", 2),
+  ResponseLinkPolicyError,
+);
+assert.equal(
+  describeResponseLinkReplacementPolicy(),
+  RESPONSE_LINK_REPLACEMENT_POLICY,
+);
+assert.equal(
+  RESPONSE_LINK_REPLACEMENT_POLICY.enforcement,
+  "future_atomic_database_command_required",
+);
+assert.equal(
+  RESPONSE_LINK_REPLACEMENT_POLICY.revocationFailure,
+  "fail_closed_without_issuing_or_revealing_a_replacement",
+);
+assert.equal(
+  RESPONSE_LINK_AUDIT_RETENTION.strategy,
+  "retain_hash_only_token_rows_without_automatic_deletion",
+);
+assert.ok(RESPONSE_LINK_AUDIT_RETENTION.fields.includes("token_verifier_hash"));
+assert.deepEqual(RESPONSE_LINK_AUDIT_RETENTION.prohibitedValues, [
+  "raw_bearer",
+  "full_response_url",
+]);
+assert.ok(
+  RESPONSE_LINK_DELIVERY_PREREQUISITES.includes(
+    "atomic_same_assignment_purpose_replacement_command",
+  ),
+);
+assert.equal(
+  FULL_RESPONSE_LINK_EXPOSURE_POLICY.allowedLayer,
+  "future_explicit_product_issuance_surface",
+);
+const exposureConditions = {
+  atomicReplacementCompleted: true,
+  verifiedProjectContact: true,
+  assignmentsEditAuthorized: true,
+  explicitCredentialReveal: true,
+  automaticLoggingDisabled: true,
+};
+assert.equal(
+  mayExposeFullAssignmentResponseLink({
+    surface: "diagnostic",
+    ...exposureConditions,
+  }),
+  false,
+);
+assert.equal(
+  mayExposeFullAssignmentResponseLink({
+    surface: "future_product_issuance",
+    ...exposureConditions,
+    atomicReplacementCompleted: false,
+  }),
+  false,
+);
+assert.equal(
+  mayExposeFullAssignmentResponseLink({
+    surface: "future_product_issuance",
+    ...exposureConditions,
+    assignmentsEditAuthorized: false,
+  }),
+  false,
+);
+assert.equal(
+  mayExposeFullAssignmentResponseLink({
+    surface: "future_product_issuance",
+    ...exposureConditions,
+  }),
+  true,
 );
 
 const assignmentId = "550e8400-e29b-41d4-a716-446655440040";
@@ -486,6 +602,33 @@ assert.equal(issuedLink.tokenId, tokenId);
 assert.equal(issuedLink.redactedUrl, "https://preview.example.test/respond/[redacted]");
 assert.equal(redactAssignmentResponseLink(issuedLink.responseUrl), issuedLink.redactedUrl);
 assert.equal(redactAssignmentResponseLink("not-a-link"), "[invalid response link]");
+let defaultPolicyIssuerInput;
+await issueAssignmentResponseLinkWithIssuer(
+  { assignmentId, baseUrl: "https://preview.example.test" },
+  async (input) => {
+    defaultPolicyIssuerInput = input;
+    return {
+      tokenId,
+      token: bearerToken,
+      expiresAt: "2026-07-05T12:00:00.000Z",
+    };
+  },
+);
+assert.equal(
+  defaultPolicyIssuerInput.expiresInHours,
+  PRODUCT_RESPONSE_LINK_DEFAULT_TTL_HOURS,
+);
+await assert.rejects(
+  issueAssignmentResponseLinkWithIssuer(
+    {
+      assignmentId,
+      expiresInHours: PRODUCT_RESPONSE_LINK_MAXIMUM_TTL_HOURS + 1,
+      baseUrl: "https://preview.example.test",
+    },
+    async () => ({ tokenId, token: bearerToken, expiresAt: "2026-07-03T12:00:00.000Z" }),
+  ),
+  ResponseLinkValidationError,
+);
 await assert.rejects(
   issueAssignmentResponseLinkWithIssuer(
     { assignmentId, baseUrl: "https://preview.example.test", workspaceId: "forbidden" },
@@ -558,6 +701,7 @@ const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
 );
 const routeImports = [];
 const responseLinkRouteImports = [];
+const responseLinkPolicyRouteImports = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
   if (source.includes("lib/responseTokens/server")) {
@@ -565,6 +709,9 @@ for (const file of routeFiles) {
   }
   if (source.includes("lib/responseTokens/link")) {
     responseLinkRouteImports.push(path.relative(root, file).replaceAll("\\", "/"));
+  }
+  if (source.includes("lib/responseTokens/policy")) {
+    responseLinkPolicyRouteImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
 assert.deepEqual(
@@ -576,6 +723,11 @@ assert.deepEqual(
   responseLinkRouteImports,
   [],
   "No public or admin route may import the project-contact link issuer",
+);
+assert.deepEqual(
+  responseLinkPolicyRouteImports,
+  [],
+  "No route may import response-link exposure policy helpers",
 );
 
 const diagnosticRoutePath = "app/admin/diagnostics/response-link/";

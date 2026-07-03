@@ -3469,6 +3469,39 @@ Limitations:
 Next recommended step:
 - Define the product token lifecycle and delivery audit contract before exposing any usable full link.
 
+## Iteration 11.17 — Response Link Product Lifecycle Policy
+
+Summary:
+- Added a server-only response-link policy module with a 72-hour product default, 168-hour product maximum, fixed one-hour diagnostic TTL, fail-closed replacement rules, hash-only audit retention, full-link exposure conditions, and delivery prerequisites.
+- Applied the product TTL policy to the existing 11.14 link boundary and the fixed diagnostic policy to 11.15. Diagnostic redaction and immediate revocation are unchanged.
+- Recorded that product replacement must atomically revoke older active tokens for the same assignment/purpose before issuing one replacement. The current database cannot perform that transaction, so product display/delivery remains blocked pending a future migration/RPC.
+- Extended focused regression coverage for TTL bounds/defaults, fail-closed policy, audit fields, diagnostic redaction/revocation, no route policy imports, no copy-link path, no service-role path, and no token deletion.
+
+Changed files:
+- `lib/responseTokens/policy.ts`
+- `lib/responseTokens/link.ts`
+- `lib/responseTokens/diagnostic.server.ts`
+- `app/admin/diagnostics/response-link/page.tsx`
+- `scripts/response-token-persistence-regression.mjs`
+- `tsconfig.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The full workspace-through-response-token regression matrix, valid-token route QA, response-link issuance/revocation QA, lint, production build, Calendar browser regression, TypeScript check, and diff check passed.
+- Live-local QA used disposable fixtures and removed them in `finally`; no bearer, full response URL, verifier, password, or access token was logged.
+
+Limitations:
+- No atomic same-assignment/purpose replacement command exists yet. The policy is fail-closed and does not claim product replacement is ready.
+- Full-link display/delivery still requires a deliberate future slice with an explicit audited surface, delivery audit, failure recovery, and abuse controls.
+- No email/reminder delivery, public lookup, remembered-device behavior, copy-link UI, Calendar/Volunteers route cutover, Communications/Needs Attention persistence, seed data, service-role usage, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Add the reviewed atomic replacement migration/RPC before building any usable product reveal or delivery surface.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

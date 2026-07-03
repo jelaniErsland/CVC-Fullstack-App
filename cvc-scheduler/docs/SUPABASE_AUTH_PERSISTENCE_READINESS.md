@@ -2,7 +2,17 @@
 
 This document is the implementation-readiness bridge between the stable Project Local mock prototype and a future real-data phase. It records proposed boundaries, sequencing, and decisions that must be resolved before code is connected to Supabase.
 
-Iteration 11.16 adds a server-only cleanup/revocation readiness guardrail for the unlinked diagnostic issuer. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+Iteration 11.17 adds a server-only product lifecycle policy for future response links. It is not product UI, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
+
+## 11.17 response-link product lifecycle policy
+
+Future usable response links default to 72 hours and are capped at 168 hours. `normalizeResponseLinkTtlHours` enforces those bounds before the 11.14 link issuer is called. Diagnostic issuance has a separate fixed one-hour policy, remains redacted-only, and still revokes the discarded token in `finally` before success returns.
+
+Product replacement policy is conservative: issuing a replacement must atomically revoke every older active `assignment_response` token for the same assignment and purpose, then issue exactly one replacement. Any revocation failure must fail closed without issuing or revealing a new credential. The current token-id revocation RPC cannot find and replace all matching tokens atomically, so this policy is not yet enforceable as a product operation. A future reviewed migration/transaction command is required; the existing preview issuer must not be treated as that command.
+
+Hash-only token rows remain the audit record. Retained metadata is token id, workspace/assignment/volunteer scope, purpose, verifier hash, creator, creation/expiry/revocation/use timestamps, and bounded internal note. Raw bearers and full response URLs must never be retained, and no automatic deletion policy is introduced.
+
+Only a future explicit product issuance surface may intentionally reveal a full link, and only after atomic replacement succeeds, with a verified project contact, database-enforced `assignments.edit`, an explicit credential reveal, and automatic logging disabled. Diagnostics and the public response route are not eligible. Before email/reminder delivery, the project still needs the atomic replacement command, an explicit audited reveal surface, a delivery provider boundary and delivery audit, revocation-failure recovery, and rate-limit/abuse controls. Calendar, Volunteers, Communications, and Needs Attention remain mock-only/unconnected.
 
 ## 11.16 response-token cleanup and revocation guardrail
 
@@ -18,7 +28,7 @@ This guardrail solves only discarded diagnostic credentials. Product use still n
 
 `/admin/diagnostics/response-link` is dynamic, noindex, no-referrer, and deliberately absent from all navigation, landing, Calendar, Volunteers, Communications, template, and mock volunteer surfaces. The page calls `readProjectContactSession` itself, so a verified Supabase contact identity is required even when general mock admin routes use `ADMIN_AUTH_MODE=review`; enforced mode additionally retains the proxy gate.
 
-The browser can submit only assignment UUID and 1–720 hour TTL. `RESPONSE_LINK_BASE_URL` is a server-side trusted origin and is never a form field. `issueResponseLinkDiagnostic` calls only `issueAssignmentResponseLink`; the 11.14/11.11 layers still verify Auth and `assignments.edit` and derive workspace, volunteer, actor, purpose, source, and scope. Missing configuration, malformed input, unavailable/unauthorized issuance, and unexpected errors map to calm non-secret states.
+The browser can submit only assignment UUID and the fixed one-hour diagnostic TTL. `RESPONSE_LINK_BASE_URL` is a server-side trusted origin and is never a form field. `issueResponseLinkDiagnostic` calls only `issueAssignmentResponseLink`; the 11.14/11.11 layers still verify Auth and `assignments.edit` and derive workspace, volunteer, actor, purpose, source, and scope. Missing configuration, malformed input, unavailable/unauthorized issuance, and unexpected errors map to calm non-secret states.
 
 The mapper strips `responseUrl` and token id before returning to the action. It immediately revokes the diagnostic-issued token before success redirects with assignment/expiration metadata and renders the fixed `/respond/[redacted]` path. No full link, bearer, token id, verifier/hash, volunteer data, or scope data reaches ordinary diagnostic output. The credential is not displayed, copied, logged, or delivered, and its revoked hash-only row is retained for auditability.
 
@@ -26,7 +36,7 @@ Focused regression checks cover the authenticated-session call, server-only conf
 
 ## 11.14 project-contact response-link issuance boundary
 
-`issueAssignmentResponseLink` uses the cookie-aware `issueAssignmentResponseToken` helper; `issueAssignmentResponseLinkWithClient` uses the existing authenticated-client variant. Neither duplicates a direct RPC. Input is limited at runtime to assignment id, optional 1–720 hour TTL, and an application base origin. The database still derives workspace, volunteer, actor, purpose, and token scope and requires an effective `assignments.edit` grant.
+`issueAssignmentResponseLink` uses the cookie-aware `issueAssignmentResponseToken` helper; `issueAssignmentResponseLinkWithClient` uses the existing authenticated-client variant. Neither duplicates a direct RPC. Input is limited at runtime to assignment id, a product-policy TTL of 1–168 hours (72 by default), and an application base origin. The database still derives workspace, volunteer, actor, purpose, and token scope and requires an effective `assignments.edit` grant.
 
 `validateResponseLinkBaseUrl` accepts loopback HTTP for local work and HTTPS origins for deployed callers. It rejects empty/malformed values, unsafe schemes, non-loopback HTTP, embedded credentials, paths, query strings, fragments, and unknown input fields. The server-only structured result contains token id, full in-memory response URL, expiration timestamp, and `redactedUrl`; it does not expose the raw bearer separately, verifier/hash, workspace, volunteer, actor, or source. Token id exists for authorized lifecycle actions and must be stripped before route output. `redactAssignmentResponseLink` never returns an unrecognized input unchanged.
 

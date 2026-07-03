@@ -5,6 +5,10 @@ import {
   validateResponseLinkBaseUrl,
 } from "@/lib/responseTokens/link";
 import { issueAssignmentResponseLink } from "@/lib/responseTokens/link.server";
+import {
+  normalizeResponseLinkTtlHours,
+  ResponseLinkPolicyError,
+} from "@/lib/responseTokens/policy";
 import { revokeAssignmentResponseToken } from "@/lib/responseTokens/server";
 
 type ResponseLinkDiagnosticEnvironment = Readonly<{
@@ -58,9 +62,13 @@ export async function issueResponseLinkDiagnostic(
   }
 
   try {
+    const expiresInHours = normalizeResponseLinkTtlHours(
+      "diagnostic",
+      input.expiresInHours,
+    );
     const issued = await issueAssignmentResponseLink({
       assignmentId: input.assignmentId,
-      expiresInHours: input.expiresInHours,
+      expiresInHours,
       baseUrl: configuration.baseUrl,
     });
     try {
@@ -77,7 +85,10 @@ export async function issueResponseLinkDiagnostic(
       await revokeAssignmentResponseToken({ tokenId: issued.tokenId });
     }
   } catch (error) {
-    if (error instanceof ResponseLinkValidationError) {
+    if (
+      error instanceof ResponseLinkValidationError ||
+      error instanceof ResponseLinkPolicyError
+    ) {
       throw new ResponseLinkDiagnosticError("invalid");
     }
     if (error instanceof ResponseLinkDiagnosticError) throw error;
