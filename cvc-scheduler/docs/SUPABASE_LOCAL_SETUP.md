@@ -107,7 +107,7 @@ npm run test:response-tokens
 
 The second migration creates only `public.project_contacts` and `public.workspace_contact_grants`; neither migration adds seed rows. Anon has no workspace table privilege. An authenticated user sees a workspace only when their active contact has an active, unrevoked, currently valid `workspace.read` grant for it. Authenticated roles receive no insert/update/delete grants.
 
-The hosted non-production gate passed on 2026-07-02 against `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260701070000`. Iteration 11.19 subsequently applied and validated `20260702000000` there. That project is for validation only, contains no real Belgrade production data, and must not be treated as a route-integration or production target.
+The hosted non-production gate passed on 2026-07-02 against `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260701070000`. Iteration 11.19 validated atomic replacement through `20260702000000`; iteration 11.22 validated reveal-audit persistence through `20260703000000`. That project is for validation only, contains no real Belgrade production data, and must not be treated as a route-integration or production target.
 
 To rerun only the hosted atomic replacement gate, first confirm the linked project name/ref, then set the exact opt-in for the current shell and run:
 
@@ -118,6 +118,16 @@ Remove-Item Env:RUN_HOSTED_RESPONSE_REPLACEMENT_VALIDATION
 ```
 
 The command refuses any other target, creates uniquely named disposable `qa-11-19-*` Auth/product fixtures, prints only summarized redacted results, and removes fixtures in `finally` with zero-residue checks. Run it twice for repeatability. It does not use a service-role client or write hosted secrets to the repository.
+
+To rerun the hosted reveal-audit gate, reconfirm the linked staging project, then use the separate exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_RESPONSE_REVEAL_AUDIT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:response-reveal-audit:hosted
+Remove-Item Env:RUN_HOSTED_RESPONSE_REVEAL_AUDIT_VALIDATION
+```
+
+This command uses disposable `qa-11-22-*` Auth/product fixtures, validates audit denial and safe persistence plus replacement compatibility, and removes all fixtures in `finally`. Output is summarized and credential-free; exact-run and namespace residue checks must both return zero.
 
 Provisioning Auth users, contact records, and grants is intentionally an administrator-owned database/setup operation in this slice; there is no browser or admin UI mutation path. Use trusted Supabase administration for a non-production environment, never expose a service-role key to browser code, and record real provisioning/audit workflow requirements before production use.
 

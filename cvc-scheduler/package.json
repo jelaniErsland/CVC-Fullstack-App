@@ -21,6 +21,7 @@
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",
     "test:response-replacement:hosted": "node scripts/hosted-response-replacement-regression.mjs",
+    "test:response-reveal-audit:hosted": "node scripts/hosted-response-reveal-audit-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs"
   },
   "dependencies": {

@@ -103,6 +103,11 @@ const hostedResponseReplacementQaPath = path.join(
   "scripts",
   "hosted-response-replacement-regression.mjs",
 );
+const hostedResponseRevealAuditQaPath = path.join(
+  root,
+  "scripts",
+  "hosted-response-reveal-audit-regression.mjs",
+);
 const responseLinkDiagnosticBoundaryPath = path.join(
   root,
   "lib",
@@ -170,6 +175,7 @@ const [
   responseLinkBoundary,
   responseLinkQa,
   hostedResponseReplacementQa,
+  hostedResponseRevealAuditQa,
   responseLinkDiagnosticBoundary,
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
@@ -193,6 +199,7 @@ const [
   readFile(responseLinkBoundaryPath, "utf8"),
   readFile(responseLinkQaPath, "utf8"),
   readFile(hostedResponseReplacementQaPath, "utf8"),
+  readFile(hostedResponseRevealAuditQaPath, "utf8"),
   readFile(responseLinkDiagnosticBoundaryPath, "utf8"),
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
@@ -536,6 +543,31 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   hostedResponseReplacementQa,
   /console\.(?:log|error)\(\s*`[^`]*\$\{(?:oldBearer|replacementBearer|concurrentBearers|password|access_token|refresh_token|api_key)\}/i,
+);
+assert.match(
+  packageSource,
+  /"test:response-reveal-audit:hosted":\s*"node scripts\/hosted-response-reveal-audit-regression\.mjs"/,
+);
+assert.match(hostedResponseRevealAuditQa, /const expectedRef = "kfuujcfxoayukywvtaeh"/);
+assert.match(hostedResponseRevealAuditQa, /const expectedName = "project-local-staging"/);
+assert.match(
+  hostedResponseRevealAuditQa,
+  /RUN_HOSTED_RESPONSE_REVEAL_AUDIT_VALIDATION === expectedConfirmation/,
+);
+assert.match(hostedResponseRevealAuditQa, /latestMigration === "20260703000000"/);
+assert.match(hostedResponseRevealAuditQa, /record_assignment_response_link_reveal_event/);
+assert.match(hostedResponseRevealAuditQa, /assignment_response_link_reveal_events/);
+assert.match(hostedResponseRevealAuditQa, /replace_assignment_response_token/);
+assert.match(hostedResponseRevealAuditQa, /qa-11-22-%/);
+assert.match(hostedResponseRevealAuditQa, /finally\s*\{[\s\S]*cleanupFixtures\(\)/);
+assert.match(hostedResponseRevealAuditQa, /Hosted disposable fixture and Auth residue: 0/);
+assert.doesNotMatch(
+  hostedResponseRevealAuditQa,
+  /--reveal|SUPABASE_SERVICE_ROLE_KEY|entry\.name === "service_role"|delete\s+from\s+public\.assignment_response_tokens\s+where\s+id\s*=/i,
+);
+assert.doesNotMatch(
+  hostedResponseRevealAuditQa,
+  /console\.(?:log|error)\(\s*(?:oldBearer|replacementBearer|concurrentBearers|password|access_token|refresh_token|api_key)\b/i,
 );
 
 assert.match(responseLinkDiagnosticBoundary, /^import "server-only";/);

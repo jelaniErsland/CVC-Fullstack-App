@@ -3633,6 +3633,37 @@ Limitations:
 Next recommended step:
 - Run a dedicated hosted non-production migration/audit validation gate before designing the explicit product reveal transaction.
 
+## Iteration 11.22 — Hosted Staging Migration + Reveal Audit Validation Gate
+
+Summary:
+- Reconfirmed healthy non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) and applied only pending `20260703000000_response_link_reveal_audit.sql`, without reset or seed data.
+- Added exact-opt-in `npm run test:response-reveal-audit:hosted`; it refuses every other target, verifies migration state, uses disposable `qa-11-22-*` product/Auth fixtures, suppresses credential output, and cleans in `finally`.
+- Two fresh hosted runs proved direct anon/authenticated table denial, Auth plus `assignments.edit`, wrong-assignment/revoked/expired-token rejection, metadata allowlisting/bounds, correctly scoped credential-free event persistence, and existing atomic-replacement compatibility.
+- Exact-run and namespace cleanup checks returned zero residue. Hosted generated types matched the local schema structurally; only remote PostgREST metadata differed, so tracked types were not overwritten.
+
+Changed files:
+- `scripts/hosted-response-reveal-audit-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Hosted migration history reports `20260703000000` locally and remotely.
+- The hosted audit gate passed twice with product/Auth residue `0` each time.
+- The complete local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+
+Limitations:
+- This is hosted non-production validation only. It reveals, copies, displays, emails, and sends no response link, and no route reads staging data.
+- Product reveal remains blocked until a future explicit server action coordinates atomic replacement, successful audit persistence, and one-time credential response.
+- No delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Design the explicit transactional product reveal server action separately; keep current routes fail-closed.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

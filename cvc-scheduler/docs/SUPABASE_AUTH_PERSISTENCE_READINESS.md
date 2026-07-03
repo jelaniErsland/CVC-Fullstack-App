@@ -4,6 +4,12 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.22 hosted staging reveal-audit validation
+
+Non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is migrated through `20260703000000`. The exact-opt-in `npm run test:response-reveal-audit:hosted` gate refuses every other project and requires `RUN_HOSTED_RESPONSE_REVEAL_AUDIT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Two fresh `qa-11-22-*` runs passed direct anon/authenticated table denial, unauthenticated and missing-capability RPC denial, wrong-assignment/revoked/expired-token rejection, metadata allowlisting/bounds, one correctly scoped credential-free event, atomic-replacement compatibility, and exact-run plus namespace zero-residue checks for product/Auth fixtures. Hosted generated types are structurally unchanged; only remote PostgREST metadata differs. The gate does not reveal, copy, display, email, or send a link, and current routes remain ineligible until a future explicit server action coordinates atomic replacement, successful audit persistence, and one-time credential response.
+
 ## 11.21 response-link reveal audit persistence
 
 `public.assignment_response_link_reveal_events` is an immutable command-only audit table. A composite foreign key binds workspace, assignment, and response-token id to the same token row; actor references the project contact. Action is fixed to `response_link_revealed`, surface is fixed to the planned project-contact reveal surface, and mode is constrained to `copy_link`, `email_delivery`, or `reminder_delivery` without performing any of those actions. Expiry must follow occurrence. There is no free-form note. Metadata permits only `reason_code` (a lowercase 1–50 character code), `delivery_requested` (boolean), and `request_correlation_id` (UUID), with at most three keys and 2,000 serialized bytes.
@@ -449,6 +455,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.19 Hosted Staging Migration + Atomic Replacement Validation Gate — passed:** non-production staging is at `20260702000000`; two fresh disposable runs prove authorization, rollback, replacement, public use, TTL rejection, hash-only storage, concurrency safety, and zero residue.
 - **11.20 Audited Response Link Reveal Boundary Planning — completed:** fail-closed server policy and a credential-free audit-event contract define the future reveal prerequisites; missing audit persistence keeps every current surface, copy UI, and delivery path blocked.
 - **11.21 Response Link Reveal Audit Persistence — completed locally:** credential-free command-only audit storage and an authenticated `assignments.edit` RPC pass live RLS, scope, lifecycle, bounds, safe-shape, and cleanup checks; reveal remains blocked because no product surface coordinates replacement, audit, and credential response.
+- **11.22 Hosted Staging Migration + Reveal Audit Validation Gate — passed:** non-production staging is at `20260703000000`; two disposable hosted runs prove table denial, Auth/capability and token lifecycle enforcement, metadata bounds, credential-free persistence, replacement compatibility, and zero residue. No product route or reveal/delivery surface was added.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
