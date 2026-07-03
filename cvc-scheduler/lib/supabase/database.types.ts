@@ -9,6 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assignment_response_link_reveal_events: {
+        Row: {
+          action: string
+          actor_project_contact_id: string
+          assignment_id: string
+          expires_at: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          response_token_id: string
+          reveal_mode: string
+          reveal_surface: string
+          workspace_id: string
+        }
+        Insert: {
+          action?: string
+          actor_project_contact_id: string
+          assignment_id: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          response_token_id: string
+          reveal_mode: string
+          reveal_surface: string
+          workspace_id: string
+        }
+        Update: {
+          action?: string
+          actor_project_contact_id?: string
+          assignment_id?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          response_token_id?: string
+          reveal_mode?: string
+          reveal_surface?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_response_link_reveal_e_actor_project_contact_id_fkey"
+            columns: ["actor_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_response_link_reveal_events_token_scope_fk"
+            columns: ["workspace_id", "assignment_id", "response_token_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_response_tokens"
+            referencedColumns: ["workspace_id", "assignment_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_response_link_reveal_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_response_tokens: {
         Row: {
           assignment_id: string
@@ -631,6 +695,28 @@ export type Database = {
           workspace_display_name: string
         }[]
       }
+      record_assignment_response_link_reveal_event: {
+        Args: {
+          p_assignment_id: string
+          p_expires_at: string
+          p_metadata: Json
+          p_response_token_id: string
+          p_reveal_mode: string
+          p_reveal_surface: string
+        }
+        Returns: {
+          actor_project_contact_reference: string
+          assignment_reference: string
+          event_action: string
+          event_id: string
+          event_metadata: Json
+          event_occurred_at: string
+          event_reveal_mode: string
+          event_reveal_surface: string
+          response_token_reference: string
+          token_expires_at: string
+        }[]
+      }
       replace_assignment_response_token: {
         Args: { p_assignment_id: string; p_ttl_hours: number }
         Returns: {
@@ -638,6 +724,10 @@ export type Database = {
           token_expires_at: string
           token_id: string
         }[]
+      }
+      response_link_reveal_metadata_is_valid: {
+        Args: { p_metadata: Json }
+        Returns: boolean
       }
       revoke_assignment_response_token: {
         Args: { p_token_id: string }

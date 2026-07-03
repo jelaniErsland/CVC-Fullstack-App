@@ -504,6 +504,240 @@ where id = '${result.tokenId}'::uuid;`,
   return result.redactedUrl;
 }
 
+async function verifyRevealAudit(
+  containerName,
+  anonymousClient,
+  { oldTokenId, oldExpiresAt, replacementTokenId, replacementExpiresAt },
+) {
+  const tableName = "assignment_response_link_reveal_events";
+  const directAnonChecks = await Promise.all([
+    anonymousClient.from(tableName).select("*"),
+    anonymousClient.from(tableName).insert({}),
+    anonymousClient.from(tableName).update({ reveal_mode: "copy_link" }).eq("id", randomUUID()),
+    anonymousClient.from(tableName).delete().eq("id", randomUUID()),
+  ]);
+  assert(
+    directAnonChecks.every((result) => result.error?.code === "42501"),
+    "Anon received direct audit-table access.",
+  );
+  const anonymousAudit = await anonymousClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: {},
+    },
+  );
+  assert(
+    anonymousAudit.error?.code === "42501" && anonymousAudit.data === null,
+    "Reveal audit RPC succeeded without real Auth.",
+  );
+
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const deniedAudit = await authenticatedClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: {},
+    },
+  );
+  assert(
+    deniedAudit.error?.code === "42501" && deniedAudit.data === null,
+    "Reveal audit succeeded without assignments.edit.",
+  );
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read', 'assignments.edit']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+
+  const wrongAssignmentAudit = await authenticatedClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.calendarItemId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: {},
+    },
+  );
+  assert(
+    wrongAssignmentAudit.error?.code === "42501" && wrongAssignmentAudit.data === null,
+    "Reveal audit accepted a token outside the requested assignment.",
+  );
+
+  const revokedAudit = await authenticatedClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: oldTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: oldExpiresAt,
+      p_metadata: {},
+    },
+  );
+  assert(
+    revokedAudit.error?.code === "42501" && revokedAudit.data === null,
+    "Reveal audit accepted a revoked token.",
+  );
+
+  const expiredTokenId = randomUUID();
+  const expiredTokenExpiry = runPsql(
+    containerName,
+    `insert into public.assignment_response_tokens (
+  id, workspace_id, assignment_id, volunteer_profile_id,
+  token_verifier_hash, purpose, expires_at, created_by_auth_user_id,
+  created_at, updated_at
+) values (
+  '${expiredTokenId}'::uuid,
+  '${fixture.workspaceId}'::uuid,
+  '${fixture.assignmentId}'::uuid,
+  '${fixture.volunteerId}'::uuid,
+  extensions.digest('qa-11-21-expired-${expiredTokenId}', 'sha256'),
+  'assignment_response',
+  clock_timestamp() - interval '1 hour',
+  '${authUserId}'::uuid,
+  clock_timestamp() - interval '2 hours',
+  clock_timestamp() - interval '2 hours'
+)
+returning to_char(expires_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"');`,
+  );
+  const expiredAudit = await authenticatedClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: expiredTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: expiredTokenExpiry,
+      p_metadata: {},
+    },
+  );
+  assert(
+    expiredAudit.error?.code === "42501" && expiredAudit.data === null,
+    "Reveal audit accepted an expired token.",
+  );
+
+  const excessiveMetadata = Object.fromEntries(
+    Array.from({ length: 11 }, (_, index) => [`key${index}`, index]),
+  );
+  const boundedFailures = await Promise.all([
+    authenticatedClient.rpc("record_assignment_response_link_reveal_event", {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: excessiveMetadata,
+    }),
+    authenticatedClient.rpc("record_assignment_response_link_reveal_event", {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: { reason_code: "x".repeat(51) },
+    }),
+  ]);
+  assert(
+    boundedFailures.every((result) => result.error?.code === "42501"),
+    "Reveal audit accepted non-allowlisted or out-of-bounds metadata.",
+  );
+
+  const requestCorrelationId = randomUUID();
+  const recorded = await authenticatedClient.rpc(
+    "record_assignment_response_link_reveal_event",
+    {
+      p_assignment_id: fixture.assignmentId,
+      p_response_token_id: replacementTokenId,
+      p_reveal_surface: "future_project_contact_assignment_response_reveal",
+      p_reveal_mode: "copy_link",
+      p_expires_at: replacementExpiresAt,
+      p_metadata: {
+        reason_code: "qa_validation",
+        delivery_requested: false,
+        request_correlation_id: requestCorrelationId,
+      },
+    },
+  );
+  assert(
+    !recorded.error &&
+      recorded.data?.length === 1 &&
+      recorded.data[0]?.assignment_reference === fixture.assignmentId &&
+      recorded.data[0]?.response_token_reference === replacementTokenId &&
+      recorded.data[0]?.actor_project_contact_reference === fixture.contactId &&
+      recorded.data[0]?.event_action === "response_link_revealed" &&
+      recorded.data[0]?.event_reveal_surface ===
+        "future_project_contact_assignment_response_reveal" &&
+      recorded.data[0]?.event_reveal_mode === "copy_link",
+    "Valid credential-free reveal audit was not recorded safely.",
+  );
+  const eventId = expectUuid(recorded.data[0]?.event_id, "Reveal audit event");
+
+  const directAuthenticatedChecks = await Promise.all([
+    authenticatedClient.from(tableName).select("*"),
+    authenticatedClient.from(tableName).insert({}),
+    authenticatedClient
+      .from(tableName)
+      .update({ reveal_mode: "email_delivery" })
+      .eq("id", eventId),
+    authenticatedClient.from(tableName).delete().eq("id", eventId),
+  ]);
+  assert(
+    directAuthenticatedChecks.every((result) => result.error?.code === "42501"),
+    "Authenticated callers received direct audit-table access.",
+  );
+
+  const storedAuditState = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select count(*)::text from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid),
+  workspace_id::text,
+  assignment_id::text,
+  response_token_id::text,
+  actor_project_contact_id::text,
+  action,
+  reveal_surface,
+  reveal_mode,
+  (expires_at = '${replacementExpiresAt}'::timestamptz)::text,
+  metadata::text,
+  (
+    select count(*)::text
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'assignment_response_link_reveal_events'
+      and column_name in (
+        'token', 'raw_token', 'bearer_token', 'full_url', 'response_url',
+        'token_verifier_hash', 'password', 'access_token', 'refresh_token',
+        'service_role_key', 'questionnaire_answers', 'emergency_contact'
+      )
+  )
+)
+from public.assignment_response_link_reveal_events
+where id = '${eventId}'::uuid;`,
+  );
+  assert(
+    storedAuditState ===
+      `1|${fixture.workspaceId}|${fixture.assignmentId}|${replacementTokenId}|${fixture.contactId}|response_link_revealed|future_project_contact_assignment_response_reveal|copy_link|true|{"reason_code": "qa_validation", "delivery_requested": false, "request_correlation_id": "${requestCorrelationId}"}|0`,
+    "Stored reveal audit contained incorrect scope or credential-capable columns.",
+  );
+}
+
 async function verifyAtomicReplacement(containerName) {
   const anonymousClient = createClient(supabaseUrl, anonKey, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
@@ -519,6 +753,7 @@ async function verifyAtomicReplacement(containerName) {
   );
   const oldTokenId = expectUuid(initialIssue.data[0]?.token_id, "Replacement setup issuance");
   const oldBearer = initialIssue.data[0]?.bearer_token;
+  const oldExpiresAt = initialIssue.data[0]?.token_expires_at;
   assert(bearerPattern.test(oldBearer), "Replacement setup returned an invalid bearer.");
   secrets.add(oldBearer);
 
@@ -604,6 +839,12 @@ where id = '${fixture.grantId}'::uuid;`,
     !replacementVerification.error && replacementVerification.data?.length === 1,
     "The new replacement token did not verify publicly.",
   );
+  await verifyRevealAudit(containerName, anonymousClient, {
+    oldTokenId,
+    oldExpiresAt,
+    replacementTokenId,
+    replacementExpiresAt: replacement.data[0]?.token_expires_at,
+  });
   const replacementSubmission = await anonymousClient.rpc(
     "submit_assignment_response_by_token",
     {
@@ -709,6 +950,7 @@ async function cleanupFixtures(containerName) {
   runPsql(
     containerName,
     `begin;
+delete from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid;
 delete from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid;
 delete from public.assignment_responses where workspace_id = '${fixture.workspaceId}'::uuid;
 delete from public.calendar_assignments where workspace_id = '${fixture.workspaceId}'::uuid;
@@ -735,7 +977,8 @@ commit;`,
   (select count(*) from public.calendar_items where workspace_id = '${fixture.workspaceId}'::uuid) +
   (select count(*) from public.calendar_assignments where workspace_id = '${fixture.workspaceId}'::uuid) +
   (select count(*) from public.assignment_responses where workspace_id = '${fixture.workspaceId}'::uuid) +
-  (select count(*) from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid)
+  (select count(*) from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid) +
+  (select count(*) from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid)
   ${authUserId ? `+ (select count(*) from auth.users where id = '${authUserId}'::uuid) + (select count(*) from auth.identities where user_id = '${authUserId}'::uuid)` : ""}
 )::text;`,
   );
@@ -761,6 +1004,9 @@ async function main() {
   console.log(`Safe diagnostic: ${redactedUrl}`);
   console.log(
     "Verified assignments.edit revocation/replacement authorization, atomic replacement, and concurrent single-active-token behavior.",
+  );
+  console.log(
+    "Verified credential-free reveal-audit RLS, Auth/capability/scope/lifecycle checks, bounds, and safe persistence.",
   );
   console.log(
     "Created and removed disposable local Auth, workspace, grant, questionnaire, volunteer, task, Calendar, assignment, response, and token fixtures.",

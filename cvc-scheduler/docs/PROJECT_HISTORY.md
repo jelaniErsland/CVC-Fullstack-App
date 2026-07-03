@@ -3597,6 +3597,42 @@ Limitations:
 Next recommended step:
 - Design the narrow authenticated audit persistence command and its failure/transaction relationship to replacement before creating any reveal UI.
 
+## Iteration 11.21 — Response Link Reveal Audit Persistence
+
+Summary:
+- Added migration `20260703000000_response_link_reveal_audit.sql` with command-only `assignment_response_link_reveal_events`, composite token scope, fixed action/surface/modes, tightly allowlisted metadata, no free-form note, RLS, and no anon/authenticated table privileges.
+- Added authenticated security-definer `record_assignment_response_link_reveal_event`. It requires an active `assignments.edit` grant, derives workspace and actor, locks and validates a live matching token/expiry, and returns only credential-free event metadata.
+- Added `recordAssignmentResponseLinkRevealAudit` and `recordAssignmentResponseLinkRevealAuditWithClient` with strict runtime input/result validation and no full-link helper import.
+- Set audit persistence availability true while adding a separate false product-surface flag. Reveal remains fail-closed with `explicit_product_surface_missing`; current routes remain ineligible.
+- Extended local live QA for anon/authenticated table denial, real Auth/capability, wrong-scope/revoked/expired rejection, metadata allowlisting/bounds, exact safe persistence, replacement/public response compatibility, and zero residue.
+- Regenerated and reviewed local public-schema types for the new table, validator, and RPC.
+
+Changed files:
+- `supabase/migrations/20260703000000_response_link_reveal_audit.sql`
+- `lib/responseTokens/revealAudit.server.ts`
+- `lib/responseTokens/revealPolicy.server.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `scripts/response-link-issuance-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Fresh local migrations applied without seed data through `20260703000000`.
+- The full local Supabase, workspace-through-response-token, valid-token route, response-link/audit, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally deferred; staging remains at the previously validated `20260702000000` until a dedicated 11.21 hosted gate.
+
+Limitations:
+- Audit persistence does not reveal, copy, display, email, or send a response link. No current route imports the command.
+- A future reviewed product server action must still coordinate atomic replacement, successful audit, and one-time credential response with explicit failure semantics.
+- No email/reminder delivery, lookup, remembered-device behavior, copy UI, route cutover, seed, service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Run a dedicated hosted non-production migration/audit validation gate before designing the explicit product reveal transaction.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

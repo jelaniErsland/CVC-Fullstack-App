@@ -5,10 +5,10 @@ import {
   ResponseLinkPolicyError,
 } from "./policy.ts";
 
-export const RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE = false;
-export const RESPONSE_LINK_REVEAL_AUDIT_NOTE_MAX_LENGTH = 500;
-export const RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS = 10;
-export const RESPONSE_LINK_REVEAL_AUDIT_METADATA_VALUE_MAX_LENGTH = 200;
+export const RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE = true;
+export const RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE = false;
+export const RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS = 3;
+export const RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH = 50;
 
 export const RESPONSE_LINK_REVEAL_AUDIT_EVENT_FIELDS = [
   "workspaceId",
@@ -20,7 +20,6 @@ export const RESPONSE_LINK_REVEAL_AUDIT_EVENT_FIELDS = [
   "mode",
   "expiresAt",
   "occurredAt",
-  "note",
   "metadata",
 ] as const;
 
@@ -36,10 +35,16 @@ export const RESPONSE_LINK_REVEAL_AUDIT_PROHIBITED_FIELDS = [
   "questionnaireAnswers",
 ] as const;
 
+export const RESPONSE_LINK_REVEAL_MODES = [
+  "copy_link",
+  "email_delivery",
+  "reminder_delivery",
+] as const;
+
 export const responseLinkRevealPolicy = {
   allowedFutureSurface: "future_project_contact_assignment_response_reveal",
   auditAction: "response_link_revealed",
-  currentStatus: "blocked_audit_persistence_boundary_missing",
+  currentStatus: "blocked_explicit_product_surface_missing",
   requestMethod: "POST",
   rendering: "dynamic_no_store",
   credentialResponse: "explicit_server_action_response_only",
@@ -58,7 +63,8 @@ export const responseLinkRevealPolicy = {
   ],
 } as const;
 
-export type PlannedResponseLinkRevealMode = "copy" | "email" | "reminder";
+export type PlannedResponseLinkRevealMode =
+  (typeof RESPONSE_LINK_REVEAL_MODES)[number];
 
 export type PlannedResponseLinkRevealAuditEvent = Readonly<{
   workspaceId: string;
@@ -70,8 +76,11 @@ export type PlannedResponseLinkRevealAuditEvent = Readonly<{
   mode: PlannedResponseLinkRevealMode;
   expiresAt: string;
   occurredAt: string;
-  note: string | null;
-  metadata: Readonly<Record<string, string | number | boolean | null>> | null;
+  metadata: Readonly<{
+    reason_code?: string;
+    delivery_requested?: boolean;
+    request_correlation_id?: string;
+  }>;
 }>;
 
 export type CurrentResponseLinkSurface =
@@ -96,10 +105,10 @@ export function describeResponseLinkRevealPrerequisites() {
   return {
     policy: responseLinkRevealPolicy,
     auditPersistenceAvailable: RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE,
+    productSurfaceAvailable: RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE,
     auditBounds: {
-      noteMaxLength: RESPONSE_LINK_REVEAL_AUDIT_NOTE_MAX_LENGTH,
       metadataMaxKeys: RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS,
-      metadataValueMaxLength: RESPONSE_LINK_REVEAL_AUDIT_METADATA_VALUE_MAX_LENGTH,
+      reasonCodeMaxLength: RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH,
     },
     auditEventFields: RESPONSE_LINK_REVEAL_AUDIT_EVENT_FIELDS,
     prohibitedAuditFields: RESPONSE_LINK_REVEAL_AUDIT_PROHIBITED_FIELDS,
@@ -145,6 +154,9 @@ export function evaluateFutureResponseLinkReveal(
 
   if (!RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE) {
     blockers.push("audit_persistence_boundary_missing");
+  }
+  if (!RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE) {
+    blockers.push("explicit_product_surface_missing");
   }
 
   return {
