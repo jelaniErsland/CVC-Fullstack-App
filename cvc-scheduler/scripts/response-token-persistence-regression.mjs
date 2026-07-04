@@ -42,6 +42,7 @@ import {
   RESPONSE_LINK_REVEAL_AUDIT_PROHIBITED_FIELDS,
   RESPONSE_LINK_REVEAL_MODES,
   RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE,
+  RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE,
   canCurrentSurfaceRevealFullResponseLink,
   describeResponseLinkRevealPrerequisites,
   evaluateFutureResponseLinkReveal,
@@ -66,6 +67,12 @@ const revealAuditMigrationPath = path.join(
   "supabase",
   "migrations",
   "20260703000000_response_link_reveal_audit.sql",
+);
+const auditedRevealMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260704000000_audited_response_link_reveal.sql",
 );
 const serverBoundaryPath = path.join(root, "lib", "responseTokens", "server.ts");
 const publicRouteBoundaryPath = path.join(
@@ -148,6 +155,12 @@ const responseLinkRevealAuditBoundaryPath = path.join(
   "responseTokens",
   "revealAudit.server.ts",
 );
+const auditedResponseLinkRevealBoundaryPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "auditedReveal.server.ts",
+);
 const responseTokenReplacementBoundaryPath = path.join(
   root,
   "lib",
@@ -166,6 +179,7 @@ const [
   migration,
   replacementMigration,
   revealAuditMigration,
+  auditedRevealMigration,
   serverBoundary,
   publicRouteBoundary,
   publicRouteState,
@@ -182,6 +196,7 @@ const [
   responseLinkPolicy,
   responseLinkRevealPolicySource,
   responseLinkRevealAuditBoundary,
+  auditedResponseLinkRevealBoundary,
   responseTokenReplacementBoundary,
   responseLinkReplacementBoundary,
   environmentExample,
@@ -190,6 +205,7 @@ const [
   readFile(migrationPath, "utf8"),
   readFile(replacementMigrationPath, "utf8"),
   readFile(revealAuditMigrationPath, "utf8"),
+  readFile(auditedRevealMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(publicRouteBoundaryPath, "utf8"),
   readFile(publicRouteStatePath, "utf8"),
@@ -206,6 +222,7 @@ const [
   readFile(responseLinkPolicyPath, "utf8"),
   readFile(responseLinkRevealPolicyPath, "utf8"),
   readFile(responseLinkRevealAuditBoundaryPath, "utf8"),
+  readFile(auditedResponseLinkRevealBoundaryPath, "utf8"),
   readFile(responseTokenReplacementBoundaryPath, "utf8"),
   readFile(responseLinkReplacementBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
@@ -449,6 +466,39 @@ assert.match(
   /grant execute on function public\.record_assignment_response_link_reveal_event\([\s\S]*?\) to authenticated/i,
 );
 
+assert.match(
+  auditedRevealMigration,
+  /create function public\.reveal_assignment_response_link\(\s*p_assignment_id uuid,\s*p_ttl_hours integer,\s*p_reveal_mode text,\s*p_metadata jsonb\s*\)/i,
+);
+assert.match(auditedRevealMigration, /language plpgsql\s*security definer\s*set search_path = ''/i);
+assert.match(auditedRevealMigration, /auth\.uid\(\)/i);
+assert.match(auditedRevealMigration, /p_ttl_hours not between 1 and 168/i);
+assert.match(auditedRevealMigration, /response_link_reveal_metadata_is_valid\(normalized_metadata\)/i);
+assert.match(auditedRevealMigration, /grant_row\.capabilities @> array\['assignments\.edit'\]::text\[\]/i);
+assert.match(auditedRevealMigration, /for update of assignment/i);
+assert.match(
+  auditedRevealMigration,
+  /update public\.assignment_response_tokens as token[\s\S]*token\.assignment_id = p_assignment_id[\s\S]*token\.purpose = 'assignment_response'[\s\S]*token\.revoked_at is null/i,
+);
+assert.match(auditedRevealMigration, /extensions\.gen_random_bytes\(32\)/i);
+assert.match(auditedRevealMigration, /extensions\.digest\(replacement_bearer_token, 'sha256'\)/i);
+assert.match(
+  auditedRevealMigration,
+  /insert into public\.assignment_response_link_reveal_events[\s\S]*replacement_token_id[\s\S]*target_actor_project_contact_id/i,
+);
+assert.match(
+  auditedRevealMigration,
+  /returns table \(\s*response_token_id uuid,\s*audit_event_id uuid,\s*token_expires_at timestamptz,\s*bearer_token text,\s*event_reveal_surface text,\s*event_reveal_mode text/i,
+);
+assert.match(
+  auditedRevealMigration,
+  /grant execute on function public\.reveal_assignment_response_link\(uuid, integer, text, jsonb\) to authenticated/i,
+);
+assert.doesNotMatch(
+  auditedRevealMigration,
+  /delete from|service_role|create policy|grant (?:select|insert|update|delete|all).*assignment_response/i,
+);
+
 assert.match(serverBoundary, /^import "server-only";/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
@@ -618,6 +668,16 @@ assert.doesNotMatch(
   responseLinkRevealAuditBoundary,
   /issueAssignmentResponseLink|issueReplacementAssignmentResponseLink|responseUrl|bearer|verifier|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|\.from\(|delete/i,
 );
+assert.match(auditedResponseLinkRevealBoundary, /^import "server-only";/);
+assert.match(auditedResponseLinkRevealBoundary, /"reveal_assignment_response_link"/);
+assert.match(auditedResponseLinkRevealBoundary, /supabase\.auth\.getUser\(\)/);
+assert.match(auditedResponseLinkRevealBoundary, /normalizeResponseLinkTtlHours\("product"/);
+assert.match(auditedResponseLinkRevealBoundary, /validateResponseLinkBaseUrl/);
+assert.match(auditedResponseLinkRevealBoundary, /redactAssignmentResponseLink/);
+assert.doesNotMatch(
+  auditedResponseLinkRevealBoundary,
+  /replace_assignment_response_token|record_assignment_response_link_reveal_event|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete/i,
+);
 assert.match(responseTokenReplacementBoundary, /^import "server-only";/);
 assert.match(responseTokenReplacementBoundary, /normalizeResponseLinkTtlHours/);
 assert.match(responseTokenReplacementBoundary, /supabase\.auth\.getUser\(\)/);
@@ -728,6 +788,7 @@ assert.equal(
   true,
 );
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS, 3);
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH, 50);
@@ -739,6 +800,10 @@ assert.equal(responseLinkRevealPolicy.requestMethod, "POST");
 assert.equal(responseLinkRevealPolicy.rendering, "dynamic_no_store");
 assert.equal(
   describeResponseLinkRevealPrerequisites().auditPersistenceAvailable,
+  true,
+);
+assert.equal(
+  describeResponseLinkRevealPrerequisites().transactionalCommandAvailable,
   true,
 );
 assert.deepEqual(RESPONSE_LINK_REVEAL_MODES, [
@@ -1041,6 +1106,7 @@ const responseLinkPolicyRouteImports = [];
 const responseTokenReplacementRouteImports = [];
 const responseLinkRevealPolicyRouteImports = [];
 const responseLinkRevealAuditRouteImports = [];
+const auditedResponseLinkRevealRouteImports = [];
 const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
@@ -1068,8 +1134,13 @@ for (const file of routeFiles) {
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
+  if (source.includes("lib/responseTokens/auditedReveal")) {
+    auditedResponseLinkRevealRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
   if (
-    /issueReplacementAssignmentResponseLink|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
+    /issueReplacementAssignmentResponseLink|createAuditedAssignmentResponseLinkReveal|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
       source,
     )
   ) {
@@ -1105,6 +1176,11 @@ assert.deepEqual(
   responseLinkRevealAuditRouteImports,
   [],
   "No current route may import the reveal-audit command helper",
+);
+assert.deepEqual(
+  auditedResponseLinkRevealRouteImports,
+  [],
+  "No current route may import the transactional audited-reveal helper",
 );
 assert.deepEqual(
   unsafeCredentialRouteOutputs,

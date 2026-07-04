@@ -943,6 +943,244 @@ where workspace_id = '${fixture.workspaceId}'::uuid
   assert(responseStatus === "confirmed", "Concurrent replacement changed assignment response truth.");
 }
 
+async function verifyAuditedReveal(containerName) {
+  const anonymousClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
+  });
+  const unauthenticated = await anonymousClient.rpc("reveal_assignment_response_link", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 72,
+    p_reveal_mode: "copy_link",
+    p_metadata: {},
+  });
+  assert(
+    unauthenticated.error?.code === "42501" && unauthenticated.data === null,
+    "Audited reveal RPC succeeded without real Auth.",
+  );
+  const setup = await authenticatedClient.rpc("replace_assignment_response_token", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 24,
+  });
+  assert(!setup.error && setup.data?.length === 1, "Audited reveal setup failed.");
+  const oldTokenId = expectUuid(setup.data[0]?.token_id, "Audited reveal setup token");
+  const oldBearer = setup.data[0]?.bearer_token;
+  assert(bearerPattern.test(oldBearer), "Audited reveal setup bearer was invalid.");
+  secrets.add(oldBearer);
+
+  const stateBeforeDenied = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid and revoked_at is null)
+);`,
+  );
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const denied = await authenticatedClient.rpc("reveal_assignment_response_link", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 72,
+    p_reveal_mode: "copy_link",
+    p_metadata: { reason_code: "qa_validation" },
+  });
+  assert(
+    denied.error?.code === "42501" && denied.data === null,
+    "Audited reveal succeeded without assignments.edit.",
+  );
+  const stateAfterDenied = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid and revoked_at is null)
+);`,
+  );
+  assert(stateAfterDenied === stateBeforeDenied, "Denied audited reveal mutated token or audit state.");
+  const oldAfterDenied = await anonymousClient.rpc("read_assignment_response_by_token", {
+    p_bearer_token: oldBearer,
+  });
+  assert(!oldAfterDenied.error && oldAfterDenied.data?.length === 1, "Denied audited reveal revoked the old token.");
+
+  runPsql(
+    containerName,
+    `update public.workspace_contact_grants
+set capabilities = array['workspace.read', 'assignments.edit']::text[]
+where id = '${fixture.grantId}'::uuid;`,
+  );
+  const rejectedInputs = await Promise.all([
+    authenticatedClient.rpc("reveal_assignment_response_link", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 169,
+      p_reveal_mode: "copy_link",
+      p_metadata: {},
+    }),
+    authenticatedClient.rpc("reveal_assignment_response_link", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+      p_reveal_mode: "unsupported",
+      p_metadata: {},
+    }),
+    authenticatedClient.rpc("reveal_assignment_response_link", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+      p_reveal_mode: "copy_link",
+      p_metadata: { unexpected: true },
+    }),
+  ]);
+  assert(
+    rejectedInputs.every((result) => result.error?.code === "42501" && result.data === null),
+    "Audited reveal accepted an invalid TTL, mode, or metadata object.",
+  );
+  const stateAfterRejectedInputs = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_link_reveal_events where workspace_id = '${fixture.workspaceId}'::uuid),
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid and revoked_at is null)
+);`,
+  );
+  assert(
+    stateAfterRejectedInputs === stateBeforeDenied,
+    "Rejected audited reveal input mutated token or audit state.",
+  );
+
+  const correlationId = randomUUID();
+  const revealStartedAt = Date.now();
+  const revealResult = await authenticatedClient.rpc("reveal_assignment_response_link", {
+    p_assignment_id: fixture.assignmentId,
+    p_ttl_hours: 72,
+    p_reveal_mode: "copy_link",
+    p_metadata: {
+      reason_code: "qa_validation",
+      delivery_requested: false,
+      request_correlation_id: correlationId,
+    },
+  });
+  assert(!revealResult.error && revealResult.data?.length === 1, "Valid audited reveal failed.");
+  const revealRow = revealResult.data[0];
+  const responseUrl = new URL(
+    `/respond/${encodeURIComponent(revealRow?.bearer_token)}`,
+    responseLinkBaseUrl,
+  ).toString();
+  const revealed = {
+    responseUrl,
+    redactedUrl: redactAssignmentResponseLink(responseUrl),
+    expiresAt: revealRow?.token_expires_at,
+    responseTokenId: revealRow?.response_token_id,
+    auditEventId: revealRow?.audit_event_id,
+    revealMode: revealRow?.event_reveal_mode,
+  };
+  secrets.add(revealed.responseUrl);
+  const revealedUrl = new URL(revealed.responseUrl);
+  const revealedBearer = decodeURIComponent(revealedUrl.pathname.split("/").at(-1) ?? "");
+  assert(bearerPattern.test(revealedBearer), "Audited reveal helper returned an invalid bearer URL.");
+  secrets.add(revealedBearer);
+  assert(
+    revealed.redactedUrl === `${new URL(responseLinkBaseUrl).origin}/respond/[redacted]` &&
+      revealed.revealMode === "copy_link" &&
+      uuidPattern.test(revealed.responseTokenId) &&
+      uuidPattern.test(revealed.auditEventId),
+    "Audited reveal helper returned an invalid safe result shape.",
+  );
+  const revealTtlHours = (Date.parse(revealed.expiresAt) - revealStartedAt) / 3_600_000;
+  assert(
+    revealTtlHours > 71.9 && revealTtlHours <= 72.1,
+    "Audited reveal did not use the 72-hour product TTL default.",
+  );
+
+  const oldVerification = await anonymousClient.rpc("read_assignment_response_by_token", {
+    p_bearer_token: oldBearer,
+  });
+  const oldSubmission = await anonymousClient.rpc("submit_assignment_response_by_token", {
+    p_bearer_token: oldBearer,
+    p_response_status: "declined",
+    p_response_note: null,
+  });
+  assert(
+    !oldVerification.error && oldVerification.data?.length === 0 &&
+      oldSubmission.error?.code === "42501" && oldSubmission.data === null,
+    "Audited reveal left the older bearer usable.",
+  );
+  const newVerification = await anonymousClient.rpc("read_assignment_response_by_token", {
+    p_bearer_token: revealedBearer,
+  });
+  assert(!newVerification.error && newVerification.data?.length === 1, "Audited reveal bearer did not verify publicly.");
+
+  const persisted = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select (revoked_at is not null)::text from public.assignment_response_tokens where id = '${oldTokenId}'::uuid),
+  (select octet_length(token_verifier_hash)::text from public.assignment_response_tokens where id = '${revealed.responseTokenId}'::uuid),
+  (select count(*)::text from public.assignment_response_link_reveal_events where id = '${revealed.auditEventId}'::uuid and response_token_id = '${revealed.responseTokenId}'::uuid and workspace_id = '${fixture.workspaceId}'::uuid and assignment_id = '${fixture.assignmentId}'::uuid and actor_project_contact_id = '${fixture.contactId}'::uuid and reveal_surface = 'future_project_contact_assignment_response_reveal' and reveal_mode = 'copy_link' and metadata = '{"reason_code":"qa_validation","delivery_requested":false,"request_correlation_id":"${correlationId}"}'::jsonb),
+  (select count(*)::text from information_schema.columns where table_schema = 'public' and table_name = 'assignment_response_link_reveal_events' and column_name in ('token', 'raw_token', 'bearer_token', 'full_url', 'response_url', 'token_verifier_hash', 'password', 'access_token', 'refresh_token', 'service_role_key', 'questionnaire_answers', 'emergency_contact'))
+);`,
+  );
+  assert(
+    persisted === "true|32|1|0",
+    "Audited reveal did not atomically persist one credential-free audit for its hash-only token.",
+  );
+
+  const newSubmission = await anonymousClient.rpc("submit_assignment_response_by_token", {
+    p_bearer_token: revealedBearer,
+    p_response_status: "declined",
+    p_response_note: null,
+  });
+  assert(
+    !newSubmission.error && newSubmission.data?.[0]?.current_response_status === "declined",
+    "Audited reveal bearer could not submit a public response.",
+  );
+
+  const concurrent = await Promise.all([
+    authenticatedClient.rpc("reveal_assignment_response_link", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+      p_reveal_mode: "copy_link",
+      p_metadata: { reason_code: "qa_concurrency" },
+    }),
+    authenticatedClient.rpc("reveal_assignment_response_link", {
+      p_assignment_id: fixture.assignmentId,
+      p_ttl_hours: 72,
+      p_reveal_mode: "copy_link",
+      p_metadata: { reason_code: "qa_concurrency" },
+    }),
+  ]);
+  const concurrentResults = concurrent.map((result, index) => {
+    assert(!result.error && result.data?.length === 1, `Concurrent audited reveal ${index + 1} failed.`);
+    const bearer = result.data[0]?.bearer_token;
+    assert(bearerPattern.test(bearer), `Concurrent audited reveal ${index + 1} returned an invalid bearer.`);
+    secrets.add(bearer);
+    return {
+      tokenId: expectUuid(result.data[0]?.response_token_id, `Concurrent audited reveal ${index + 1} token`),
+      auditId: expectUuid(result.data[0]?.audit_event_id, `Concurrent audited reveal ${index + 1} audit`),
+      bearer,
+    };
+  });
+  const concurrentVerification = await Promise.all(
+    concurrentResults.map(({ bearer }) =>
+      anonymousClient.rpc("read_assignment_response_by_token", { p_bearer_token: bearer }),
+    ),
+  );
+  assert(
+    concurrentVerification.filter((result) => !result.error && result.data?.length === 1).length === 1,
+    "Concurrent audited reveals left more than one usable token.",
+  );
+  const concurrentState = runPsql(
+    containerName,
+    `select concat_ws('|',
+  (select count(*)::text from public.assignment_response_tokens where workspace_id = '${fixture.workspaceId}'::uuid and assignment_id = '${fixture.assignmentId}'::uuid and revoked_at is null and expires_at > clock_timestamp()),
+  (select count(*)::text from public.assignment_response_link_reveal_events where id in ('${concurrentResults[0].auditId}'::uuid, '${concurrentResults[1].auditId}'::uuid) and response_token_id in ('${concurrentResults[0].tokenId}'::uuid, '${concurrentResults[1].tokenId}'::uuid))
+);`,
+  );
+  assert(
+    concurrentState === "1|2",
+    "Concurrent audited reveals did not leave one active token and one audit per successful command.",
+  );
+}
+
 async function cleanupFixtures(containerName) {
   if (authenticatedClient) {
     await authenticatedClient.auth.signOut({ scope: "local" }).catch(() => undefined);
@@ -995,6 +1233,7 @@ async function main() {
     await createFixtures(containerName);
     redactedUrl = await issueAndVerifyLink(containerName);
     await verifyAtomicReplacement(containerName);
+    await verifyAuditedReveal(containerName);
   } finally {
     await cleanupFixtures(containerName);
   }
@@ -1007,6 +1246,9 @@ async function main() {
   );
   console.log(
     "Verified credential-free reveal-audit RLS, Auth/capability/scope/lifecycle checks, bounds, and safe persistence.",
+  );
+  console.log(
+    "Verified transactional audited reveal rollback, replacement, one-audit coupling, public use, and concurrent single-active-token behavior.",
   );
   console.log(
     "Created and removed disposable local Auth, workspace, grant, questionnaire, volunteer, task, Calendar, assignment, response, and token fixtures.",

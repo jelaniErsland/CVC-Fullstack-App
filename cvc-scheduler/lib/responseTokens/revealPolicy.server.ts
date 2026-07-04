@@ -6,6 +6,7 @@ import {
 } from "./policy.ts";
 
 export const RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE = true;
+export const RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE = true;
 export const RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE = false;
 export const RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS = 3;
 export const RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH = 50;
@@ -105,6 +106,7 @@ export function describeResponseLinkRevealPrerequisites() {
   return {
     policy: responseLinkRevealPolicy,
     auditPersistenceAvailable: RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE,
+    transactionalCommandAvailable: RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE,
     productSurfaceAvailable: RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE,
     auditBounds: {
       metadataMaxKeys: RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS,
@@ -154,6 +156,9 @@ export function evaluateFutureResponseLinkReveal(
 
   if (!RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE) {
     blockers.push("audit_persistence_boundary_missing");
+  }
+  if (!RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE) {
+    blockers.push("transactional_reveal_command_missing");
   }
   if (!RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE) {
     blockers.push("explicit_product_surface_missing");

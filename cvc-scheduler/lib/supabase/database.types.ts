@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -728,6 +728,22 @@ export type Database = {
       response_link_reveal_metadata_is_valid: {
         Args: { p_metadata: Json }
         Returns: boolean
+      }
+      reveal_assignment_response_link: {
+        Args: {
+          p_assignment_id: string
+          p_metadata: Json
+          p_reveal_mode: string
+          p_ttl_hours: number
+        }
+        Returns: {
+          audit_event_id: string
+          bearer_token: string
+          event_reveal_mode: string
+          event_reveal_surface: string
+          response_token_id: string
+          token_expires_at: string
+        }[]
       }
       revoke_assignment_response_token: {
         Args: { p_token_id: string }

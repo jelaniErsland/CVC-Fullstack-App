@@ -3664,6 +3664,41 @@ Limitations:
 Next recommended step:
 - Design the explicit transactional product reveal server action separately; keep current routes fail-closed.
 
+## Iteration 11.23 — Audited Product Reveal Server Action Contract
+
+Summary:
+- Added `20260704000000_audited_response_link_reveal.sql` with authenticated security-definer `reveal_assignment_response_link`.
+- The assignment-scoped transaction derives scope/actor, enforces active `assignments.edit`, revokes older response tokens, creates one hash-only replacement, writes its credential-free audit event, and returns the bearer only after both mutations succeed.
+- Added unused server-only `createAuditedAssignmentResponseLinkReveal` / `createAuditedAssignmentResponseLinkRevealWithClient` helpers for policy-bounded TTL, mode/metadata, trusted-origin validation, in-memory URL construction, and redacted diagnostics.
+- Added transactional-command policy readiness while preserving false product-surface readiness and the `explicit_product_surface_missing` blocker for every current route.
+- Extended live local QA for Auth/capability denial with no mutation, TTL/mode/metadata rollback, old-token revocation, new-token public verification/submission, exact credential-free audit coupling, and concurrent single-active-token behavior.
+
+Changed files:
+- `supabase/migrations/20260704000000_audited_response_link_reveal.sql`
+- `lib/responseTokens/auditedReveal.server.ts`
+- `lib/responseTokens/revealPolicy.server.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `scripts/response-link-issuance-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Fresh local migrations applied without seed data through `20260704000000`.
+- Focused static and disposable live reveal checks passed with zero fixture residue.
+- The full local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally deferred to a later gate; staging remains at validated `20260703000000`.
+
+Limitations:
+- No current route imports the helper or can reveal/copy a full link. The bearer/full URL exists only transiently in the server-only return value and is never stored or logged.
+- No delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Run a dedicated hosted non-production migration and transactional reveal validation gate before designing any explicit product surface.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
