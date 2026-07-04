@@ -3731,6 +3731,34 @@ Limitations:
 Next recommended step:
 - Design any future explicit reveal surface as a separate reviewed product slice; keep current routes fail-closed.
 
+## Iteration 11.25 — Response Link Product Surface Readiness Review
+
+Summary:
+- Added a server-only, route-unused product-surface planning contract. It selects a future persisted project-contact assignment-detail action as the first eligible reveal location and keeps implementation availability false.
+- Defined the future action as verified-contact, database-`assignments.edit`, POST-only, dynamic/no-store, explicit-action-only, trusted-origin-only, and non-prefetchable. Route code must use the transactional audited-reveal helper as one boundary.
+- Restricted browser inputs to assignment id and optional TTL; workspace/actor/volunteer/token/bearer/verifier/origin/mode/audit metadata remain prohibited or server-derived.
+- Defined warning, visible-expiry, post-success-only manual-copy, no automatic clipboard, no credential logging, and no render/page-load/prefetch reveal requirements.
+- Strengthened static checks for no audited-reveal/replacement-link/RPC use in routes or components, no active copy-link text/clipboard behavior, false product-surface flags, and continued diagnostic isolation.
+
+Changed files:
+- `lib/responseTokens/productSurfacePolicy.server.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The full local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally skipped because 11.25 changes no migration, generated type, hosted gate, or database behavior.
+
+Limitations:
+- No current route can reveal or copy a full link. `RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE` remains false.
+- No email/reminder delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Build and review the persisted project-contact assignment-detail context and its POST-only action in a separate slice; do not enable product reveal until its warning, expiry, no-prefetch, logging, and browser-security checks pass.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

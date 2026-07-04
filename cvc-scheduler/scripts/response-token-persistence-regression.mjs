@@ -48,6 +48,14 @@ import {
   evaluateFutureResponseLinkReveal,
   responseLinkRevealPolicy,
 } from "../lib/responseTokens/revealPolicy.server.ts";
+import {
+  FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
+  RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE,
+  describeResponseLinkProductSurfaceReadiness,
+  getFutureResponseLinkProductSurfaceRequirements,
+  isResponseLinkProductSurfaceAvailable,
+  responseLinkProductSurfaceContract,
+} from "../lib/responseTokens/productSurfacePolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migrationPath = path.join(
@@ -154,6 +162,12 @@ const responseLinkRevealPolicyPath = path.join(
   "responseTokens",
   "revealPolicy.server.ts",
 );
+const responseLinkProductSurfacePolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productSurfacePolicy.server.ts",
+);
 const responseLinkRevealAuditBoundaryPath = path.join(
   root,
   "lib",
@@ -201,6 +215,7 @@ const [
   responseLinkDiagnosticAction,
   responseLinkPolicy,
   responseLinkRevealPolicySource,
+  responseLinkProductSurfacePolicySource,
   responseLinkRevealAuditBoundary,
   auditedResponseLinkRevealBoundary,
   responseTokenReplacementBoundary,
@@ -228,6 +243,7 @@ const [
   readFile(responseLinkDiagnosticActionPath, "utf8"),
   readFile(responseLinkPolicyPath, "utf8"),
   readFile(responseLinkRevealPolicyPath, "utf8"),
+  readFile(responseLinkProductSurfacePolicyPath, "utf8"),
   readFile(responseLinkRevealAuditBoundaryPath, "utf8"),
   readFile(auditedResponseLinkRevealBoundaryPath, "utf8"),
   readFile(responseTokenReplacementBoundaryPath, "utf8"),
@@ -694,6 +710,21 @@ assert.doesNotMatch(
   responseLinkRevealPolicySource,
   /\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createClient|console\.|logger\.|delete\s+from/i,
 );
+assert.match(responseLinkProductSurfacePolicySource, /^import "server-only";/);
+assert.match(
+  responseLinkProductSurfacePolicySource,
+  /RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE = false/,
+);
+assert.match(responseLinkProductSurfacePolicySource, /requestMethod: "POST"/);
+assert.match(responseLinkProductSurfacePolicySource, /rendering: "dynamic_no_store"/);
+assert.match(
+  responseLinkProductSurfacePolicySource,
+  /credentialBoundary: "createAuditedAssignmentResponseLinkReveal_only"/,
+);
+assert.doesNotMatch(
+  responseLinkProductSurfacePolicySource,
+  /createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
+);
 assert.match(responseLinkRevealAuditBoundary, /^import "server-only";/);
 assert.match(responseLinkRevealAuditBoundary, /"record_assignment_response_link_reveal_event"/);
 assert.match(responseLinkRevealAuditBoundary, /supabase\.auth\.getUser\(\)/);
@@ -823,6 +854,47 @@ assert.equal(
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(isResponseLinkProductSurfaceAvailable(), false);
+assert.equal(
+  FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
+  "future_project_contact_assignment_response_reveal",
+);
+assert.equal(
+  responseLinkProductSurfaceContract.intendedLocation,
+  "future_persisted_project_contact_assignment_detail_action",
+);
+assert.equal(responseLinkProductSurfaceContract.requiredServerAction.requestMethod, "POST");
+assert.equal(
+  responseLinkProductSurfaceContract.requiredServerAction.rendering,
+  "dynamic_no_store",
+);
+assert.equal(
+  responseLinkProductSurfaceContract.requiredServerAction.credentialBoundary,
+  "createAuditedAssignmentResponseLinkReveal_only",
+);
+assert.deepEqual(responseLinkProductSurfaceContract.browserAllowedInputs, [
+  "assignmentId",
+  "expiresInHours",
+]);
+for (const prohibitedInput of [
+  "workspaceId",
+  "actorId",
+  "volunteerId",
+  "responseTokenId",
+  "bearer",
+  "responseUrl",
+  "tokenVerifierHash",
+  "origin",
+]) {
+  assert.ok(responseLinkProductSurfaceContract.browserProhibitedInputs.includes(prohibitedInput));
+}
+assert.equal(describeResponseLinkProductSurfaceReadiness().available, false);
+assert.ok(
+  getFutureResponseLinkProductSurfaceRequirements().includes(
+    "persisted_project_contact_assignment_detail_context",
+  ),
+);
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS, 3);
 assert.equal(RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH, 50);
 assert.equal(
@@ -1140,6 +1212,7 @@ const responseTokenReplacementRouteImports = [];
 const responseLinkRevealPolicyRouteImports = [];
 const responseLinkRevealAuditRouteImports = [];
 const auditedResponseLinkRevealRouteImports = [];
+const responseLinkProductSurfacePolicyRouteImports = [];
 const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
@@ -1172,8 +1245,13 @@ for (const file of routeFiles) {
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
+  if (source.includes("lib/responseTokens/productSurfacePolicy")) {
+    responseLinkProductSurfacePolicyRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
   if (
-    /issueReplacementAssignmentResponseLink|createAuditedAssignmentResponseLinkReveal|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
+    /issueReplacementAssignmentResponseLink|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
       source,
     )
   ) {
@@ -1216,24 +1294,46 @@ assert.deepEqual(
   "No current route may import the transactional audited-reveal helper",
 );
 assert.deepEqual(
+  responseLinkProductSurfacePolicyRouteImports,
+  [],
+  "No current route may import the future product-surface planning policy",
+);
+assert.deepEqual(
   unsafeCredentialRouteOutputs,
   [],
   "No current route may expose replacement-link credential fields",
 );
 
 const unsafeClipboardSources = [];
+const unsafeProductRevealSources = [];
 for (const directory of ["app", "components"]) {
   const files = (await collectFiles(path.join(root, directory))).filter((file) =>
     /\.(?:ts|tsx)$/.test(file),
   );
   for (const file of files) {
     const source = await readFile(file, "utf8");
-    if (/navigator\.clipboard|clipboard\.writeText|Copy full (?:response )?link/i.test(source)) {
+    if (
+      /navigator\.clipboard|clipboard\.writeText|Copy full (?:response )?link|Copy response link/i.test(
+        source,
+      )
+    ) {
       unsafeClipboardSources.push(path.relative(root, file).replaceAll("\\", "/"));
+    }
+    if (
+      /lib\/responseTokens\/(?:auditedReveal|replacementLink)|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
+        source,
+      )
+    ) {
+      unsafeProductRevealSources.push(path.relative(root, file).replaceAll("\\", "/"));
     }
   }
 }
 assert.deepEqual(unsafeClipboardSources, [], "No copy-link UI may exist in current routes");
+assert.deepEqual(
+  unsafeProductRevealSources,
+  [],
+  "No route or component may consume the full-link reveal boundaries",
+);
 
 const diagnosticRoutePath = "app/admin/diagnostics/response-link/";
 const linkedDiagnosticSources = [];
