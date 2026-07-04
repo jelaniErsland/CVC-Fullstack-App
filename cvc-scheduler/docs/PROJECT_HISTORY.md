@@ -3699,6 +3699,38 @@ Limitations:
 Next recommended step:
 - Run a dedicated hosted non-production migration and transactional reveal validation gate before designing any explicit product surface.
 
+## Iteration 11.24 — Hosted Staging Migration + Audited Reveal Validation Gate
+
+Summary:
+- Reconfirmed healthy non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) and applied only pending `20260704000000_audited_response_link_reveal.sql`, without reset or seed data.
+- Added exact-opt-in `npm run test:response-reveal:hosted`; it refuses every other target, verifies migration state, uses disposable `qa-11-24-*` product/Auth fixtures, suppresses credential output, and cleans in `finally`.
+- Two fresh hosted runs proved unauthenticated and missing-capability denial, TTL/mode/metadata rollback without mutation, old-token revocation, one hash-only replacement plus one credential-free audit, public verification/submission, and concurrent single-active-token behavior.
+- Existing hosted replacement and reveal-audit checks remained compatible. Exact-run and namespace cleanup checks returned zero residue.
+- Hosted generated types matched the local schema structurally; only remote PostgREST metadata differed, so tracked types were not overwritten.
+
+Changed files:
+- `scripts/hosted-response-reveal-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Hosted migration history reports `20260704000000` locally and remotely.
+- The hosted audited-reveal gate passed twice with product/Auth residue `0` each time.
+- The complete local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+
+Limitations:
+- This is hosted non-production validation only. It reveals, copies, displays, emails, and sends no response link through product UI, and no route reads staging data.
+- Product reveal remains blocked until a future explicit reviewed product surface is added.
+- No delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Design any future explicit reveal surface as a separate reviewed product slice; keep current routes fail-closed.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

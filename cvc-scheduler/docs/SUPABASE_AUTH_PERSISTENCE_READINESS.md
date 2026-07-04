@@ -4,6 +4,12 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.24 hosted staging transactional reveal validation
+
+Non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is migrated through `20260704000000`. The exact-opt-in `npm run test:response-reveal:hosted` gate refuses every other project and requires `RUN_HOSTED_AUDITED_RESPONSE_REVEAL_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Two fresh `qa-11-24-*` runs passed unauthenticated and missing-capability denial, invalid TTL/mode/metadata rejection with unchanged token/audit state, old-token revocation, one 32-byte hash-only replacement plus one correctly scoped credential-free audit, returned-bearer public verification/submission, concurrent single-active-token behavior, existing replacement/audit compatibility, and exact-run plus namespace zero-residue checks. Hosted generated types are structurally unchanged; only remote PostgREST metadata differs. No product surface reveals, copies, displays, emails, or sends a link, and `RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE` remains false.
+
 ## 11.23 transactional audited reveal contract
 
 Local migration `20260704000000_audited_response_link_reveal.sql` adds authenticated security-definer `reveal_assignment_response_link`. It locks one assignment, derives workspace/volunteer/actor server-side, requires active `assignments.edit`, revokes older same-purpose tokens, stores one SHA-256 verifier, inserts exactly one credential-free reveal audit, and returns the new bearer once only after both writes succeed in the same transaction. Invalid Auth, capability, TTL, mode, or metadata fails without token revocation, issuance, or audit insertion; concurrent calls serialize on the assignment and leave one usable token.
@@ -463,6 +469,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.21 Response Link Reveal Audit Persistence — completed locally:** credential-free command-only audit storage and an authenticated `assignments.edit` RPC pass live RLS, scope, lifecycle, bounds, safe-shape, and cleanup checks; reveal remains blocked because no product surface coordinates replacement, audit, and credential response.
 - **11.22 Hosted Staging Migration + Reveal Audit Validation Gate — passed:** non-production staging is at `20260703000000`; two disposable hosted runs prove table denial, Auth/capability and token lifecycle enforcement, metadata bounds, credential-free persistence, replacement compatibility, and zero residue. No product route or reveal/delivery surface was added.
 - **11.23 Audited Product Reveal Server Action Contract — completed locally:** one transactional RPC now couples authorized replacement and audit before returning a bearer once; its trusted-origin server helper is unused by routes. Product-surface readiness remains false and hosted validation through `20260704000000` is pending.
+- **11.24 Hosted Staging Migration + Audited Reveal Validation Gate — passed:** non-production staging is at `20260704000000`; two disposable hosted runs prove rollback, Auth/capability enforcement, atomic replacement/audit coupling, public use, concurrency, safe storage, compatibility, and zero residue. No product reveal surface was added.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
