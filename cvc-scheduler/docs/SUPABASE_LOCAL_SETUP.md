@@ -89,9 +89,19 @@ This 11.14–11.23 command does not require a preview server. It refuses non-loo
 
 The unlinked 11.15 route at `/admin/diagnostics/response-link` requires both a verified project-contact session and `RESPONSE_LINK_BASE_URL`. Use `http://127.0.0.1:3000` for local preview; deployed values must be HTTPS origins without credentials, paths, queries, or fragments. The browser supplies only assignment id and the fixed one-hour diagnostic TTL. The route displays `/respond/[redacted]`, expiration, and assignment id; it never displays or copies the full link, sends nothing, and immediately revokes the discarded diagnostic credential through the existing authorized helper. The 11.17 product policy does not make this a usable link surface.
 
+## Assignment-detail context QA
+
+With local Supabase running, run:
+
+```powershell
+npm run test:assignment-detail-context
+```
+
+The 11.26 command creates disposable local contacts in separate workspaces and proves that `assignments.view` alone can read one safe active assignment projection while under-capability, cross-workspace, missing, and canceled contexts return no row. It verifies edit is a boolean, product reveal remains false, no token/intake fields exist in the result, no route imports the helper, and cleanup leaves zero residue. It uses no service-role client and prints no credentials.
+
 ## Workspace migration and type generation
 
-The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260704000000_audited_response_link_reveal.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260705000000_assignment_detail_context.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push

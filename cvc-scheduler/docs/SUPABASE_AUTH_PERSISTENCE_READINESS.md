@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.26 persisted assignment-detail context
+
+Local migration `20260705000000_assignment_detail_context.sql` adds authenticated security-definer `read_assignment_detail_context(assignment_id)`. A narrow command is necessary because safe assignment detail needs selected Calendar and volunteer labels while existing table RLS correctly reserves broad table reads for `calendar.view` and `volunteers.view`. The RPC instead derives one assignment's workspace/item/volunteer/current response server-side and requires an active, valid `assignments.view` grant for that workspace.
+
+Only active assignment, workspace, item, and ready active volunteer context returns. Missing, unauthorized, cross-workspace, canceled, archived, or inactive context produces no row, avoiding existence leaks. The result contains safe identifiers/labels/schedule/response fields, an `assignments.edit` boolean, false product-surface availability, and the planned future surface name. It contains no capability array, token row/id/scope/verifier, link, credentials, emergency contact, questionnaire answers, or unrelated rows.
+
+`readAssignmentDetailContext` and `readAssignmentDetailContextWithClient` are server-only and unused by every route. `RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE` is true, while `RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE` and `RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE` remain false. This adds no route or UI and never calls the audited reveal helper/RPC; the future copy action still requires its own reviewed POST-only product slice. Hosted migration validation is pending.
+
 ## 11.25 product-surface readiness review
 
 The first future eligible reveal surface is `future_project_contact_assignment_response_reveal`, located only in a future persisted project-contact assignment-detail action—not the diagnostic, mock Calendar inspector, mock volunteer profile, mock Communications preview, Needs Attention, public response/volunteer routes, or hosted validation gates. This review adds no UI or executable route action.
@@ -479,6 +487,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.23 Audited Product Reveal Server Action Contract — completed locally:** one transactional RPC now couples authorized replacement and audit before returning a bearer once; its trusted-origin server helper is unused by routes. Product-surface readiness remains false and hosted validation through `20260704000000` is pending.
 - **11.24 Hosted Staging Migration + Audited Reveal Validation Gate — passed:** non-production staging is at `20260704000000`; two disposable hosted runs prove rollback, Auth/capability enforcement, atomic replacement/audit coupling, public use, concurrency, safe storage, compatibility, and zero residue. No product reveal surface was added.
 - **11.25 Response Link Product Surface Readiness Review — completed:** planning/static policy selects a future persisted project-contact assignment-detail POST action and defines its no-store, trusted-origin, explicit-action, audit/logging, warning, expiry, and no-prefetch constraints. Availability remains false and no UI or route consumes reveal helpers.
+- **11.26 Persisted Assignment Detail Context Readiness — completed locally:** authenticated `assignments.view` RPC/helper returns one safe active assignment projection, collapses edit to a boolean, reads no token/intake rows, and remains unused by routes. Product reveal stays false; hosted validation through `20260705000000` is pending.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

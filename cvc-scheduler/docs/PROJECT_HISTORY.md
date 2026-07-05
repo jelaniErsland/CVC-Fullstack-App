@@ -3759,6 +3759,43 @@ Limitations:
 Next recommended step:
 - Build and review the persisted project-contact assignment-detail context and its POST-only action in a separate slice; do not enable product reveal until its warning, expiry, no-prefetch, logging, and browser-security checks pass.
 
+## Iteration 11.26 — Persisted Assignment Detail Context Readiness
+
+Summary:
+- Added `20260705000000_assignment_detail_context.sql` with authenticated security-definer `read_assignment_detail_context(uuid)`.
+- The command enforces an active `assignments.view` grant and returns one safe active assignment projection across workspace, Calendar item, volunteer label, and current response without requiring broad `calendar.view` or `volunteers.view`.
+- Added server-only `readAssignmentDetailContext` / `readAssignmentDetailContextWithClient` with exact assignment-id input and strict runtime result validation.
+- Added `RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE = true`; product-surface implementation and reveal availability remain false.
+- Added disposable local `npm run test:assignment-detail-context` coverage for Auth, capability, cross-workspace, missing/canceled context, safe field shape, edit boolean, route isolation, and zero residue.
+- Regenerated local public-schema types for the new RPC.
+
+Changed files:
+- `supabase/migrations/20260705000000_assignment_detail_context.sql`
+- `lib/assignments/detailContext.server.ts`
+- `lib/responseTokens/productSurfacePolicy.server.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/assignment-detail-context-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Fresh local migrations applied without seed data through `20260705000000`.
+- Focused assignment-detail live/static QA passed with zero fixture/Auth residue.
+- The complete local Supabase, persistence, route, response-link, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally deferred to 11.27 because this slice adds a migration/RPC.
+
+Limitations:
+- No route imports the helper; current mock routes remain mock-only. The command reads no response-token or questionnaire table and performs no reveal action.
+- No email/reminder delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Run a dedicated hosted non-production migration and assignment-detail validation gate before designing the separate reviewed reveal POST action/UI.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

@@ -680,6 +680,33 @@ export type Database = {
           token_id: string
         }[]
       }
+      read_assignment_detail_context: {
+        Args: { p_assignment_id: string }
+        Returns: {
+          assignment_lifecycle: string
+          assignment_reference: string
+          calendar_item_reference: string
+          can_edit_assignment: boolean
+          current_response_source: string
+          current_response_status: string
+          current_response_updated_at: string
+          future_response_link_surface: string
+          planned_needed_count: number
+          response_link_product_surface_available: boolean
+          schedule_kind: string
+          schedule_timezone: string
+          scheduled_date: string
+          scheduled_end_date: string
+          scheduled_end_time: string
+          scheduled_start_time: string
+          task_title: string
+          volunteer_congregation: string
+          volunteer_display_name: string
+          volunteer_profile_reference: string
+          workspace_display_name: string
+          workspace_reference: string
+        }[]
+      }
       read_assignment_response_by_token: {
         Args: { p_bearer_token: string }
         Returns: {

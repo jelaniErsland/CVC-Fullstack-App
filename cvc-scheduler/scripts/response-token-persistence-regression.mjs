@@ -50,6 +50,7 @@ import {
 } from "../lib/responseTokens/revealPolicy.server.ts";
 import {
   FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
+  RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE,
   describeResponseLinkProductSurfaceReadiness,
   getFutureResponseLinkProductSurfaceRequirements,
@@ -855,6 +856,7 @@ assert.equal(RESPONSE_LINK_REVEAL_AUDIT_PERSISTENCE_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(isResponseLinkProductSurfaceAvailable(), false);
 assert.equal(
   FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
@@ -1213,6 +1215,7 @@ const responseLinkRevealPolicyRouteImports = [];
 const responseLinkRevealAuditRouteImports = [];
 const auditedResponseLinkRevealRouteImports = [];
 const responseLinkProductSurfacePolicyRouteImports = [];
+const persistedAssignmentDetailRouteImports = [];
 const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
@@ -1247,6 +1250,11 @@ for (const file of routeFiles) {
   }
   if (source.includes("lib/responseTokens/productSurfacePolicy")) {
     responseLinkProductSurfacePolicyRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
+  if (source.includes("lib/assignments/detailContext")) {
+    persistedAssignmentDetailRouteImports.push(
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
@@ -1297,6 +1305,11 @@ assert.deepEqual(
   responseLinkProductSurfacePolicyRouteImports,
   [],
   "No current route may import the future product-surface planning policy",
+);
+assert.deepEqual(
+  persistedAssignmentDetailRouteImports,
+  [],
+  "No current route may import the persisted assignment-detail context",
 );
 assert.deepEqual(
   unsafeCredentialRouteOutputs,

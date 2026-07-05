@@ -4,6 +4,7 @@ export const FUTURE_RESPONSE_LINK_PRODUCT_SURFACE =
   "future_project_contact_assignment_response_reveal" as const;
 
 export const RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE = false;
+export const RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE = true;
 
 export const responseLinkProductSurfaceContract = {
   intendedLocation: "future_persisted_project_contact_assignment_detail_action",
@@ -85,6 +86,7 @@ export function describeResponseLinkProductSurfaceReadiness() {
   return {
     surface: FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
     available: RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE,
+    assignmentDetailContextAvailable: RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE,
     contract: responseLinkProductSurfaceContract,
     nextSlice:
       "persisted_project_contact_assignment_detail_with_reviewed_post_only_reveal_action",
