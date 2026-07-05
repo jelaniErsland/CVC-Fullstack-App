@@ -809,6 +809,27 @@ assert.doesNotMatch(
   responseLinkProductActionPolicySource,
   /createAuditedAssignmentResponseLinkReveal\(|readAssignmentDetailContext\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
 );
+assert.match(assignmentDetailRoutePolicySource, /^import "server-only";/);
+assert.match(
+  assignmentDetailRoutePolicySource,
+  /ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE = true/,
+);
+assert.match(
+  assignmentDetailRoutePolicySource,
+  /ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE = false/,
+);
+assert.match(
+  assignmentDetailRoutePolicySource,
+  /ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION = false/,
+);
+assert.match(
+  assignmentDetailRoutePolicySource,
+  /routePathPattern: "\/admin\/assignments\/\[assignmentId\]"/,
+);
+assert.doesNotMatch(
+  assignmentDetailRoutePolicySource,
+  /readAssignmentDetailContext\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.from\(\s*["']assignment_response_tokens["']|\.rpc\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|service-role|console\.|logger\.|delete\s+from/i,
+);
 assert.match(responseLinkRevealAuditBoundary, /^import "server-only";/);
 assert.match(responseLinkRevealAuditBoundary, /"record_assignment_response_link_reveal_event"/);
 assert.match(responseLinkRevealAuditBoundary, /supabase\.auth\.getUser\(\)/);
@@ -943,6 +964,39 @@ assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
+assert.equal(
+  describeAssignmentDetailRouteContract().contract.routePathPattern,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(assignmentDetailRouteContract.requiredCapability, "assignments.view");
+assert.equal(
+  assignmentDetailRouteContract.eligibleDataBoundary,
+  "readAssignmentDetailContext_only",
+);
+assert.equal(assignmentDetailRouteContract.rendering.cache, "no_store");
+assert.ok(
+  getFutureAssignmentDetailRouteRequirements().includes(
+    "reviewed_unlinked_dynamic_assignment_detail_route_shell",
+  ),
+);
+const otherwiseReadyAssignmentDetailRoute = evaluateAssignmentDetailRouteReadiness({
+  unlinkedRouteShellReviewed: true,
+  persistedContextOnly: true,
+  dynamicNoStoreProven: true,
+  uniformUnavailableStateProven: true,
+  noExistenceLeakProven: true,
+  noMockFallbackProven: true,
+  importAndCacheChecksProven: true,
+});
+assert.equal(otherwiseReadyAssignmentDetailRoute.allowed, false);
+assert.ok(
+  otherwiseReadyAssignmentDetailRoute.blockers.includes(
+    "assignment_detail_route_implementation_unavailable",
+  ),
+);
 assert.equal(describeResponseLinkProductActionContract().contractAvailable, true);
 assert.equal(describeResponseLinkProductActionContract().implementationAvailable, false);
 assert.equal(describeResponseLinkProductActionContract().uiAvailable, false);
@@ -1345,6 +1399,10 @@ async function collectFiles(directory) {
   );
   return nested.flat();
 }
+await assert.rejects(
+  access(path.join(root, "app", "admin", "assignments", "[assignmentId]")),
+  "The persisted assignment-detail route must not exist during readiness review",
+);
 const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
   /\.(?:ts|tsx)$/.test(file),
 );
@@ -1358,6 +1416,7 @@ const auditedResponseLinkRevealRouteImports = [];
 const responseLinkProductSurfacePolicyRouteImports = [];
 const responseLinkProductActionPolicyRouteImports = [];
 const persistedAssignmentDetailRouteImports = [];
+const assignmentDetailRoutePolicyImports = [];
 const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
@@ -1402,6 +1461,11 @@ for (const file of routeFiles) {
   }
   if (source.includes("lib/assignments/detailContext")) {
     persistedAssignmentDetailRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
+  if (source.includes("lib/assignments/detailRoutePolicy")) {
+    assignmentDetailRoutePolicyImports.push(
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
@@ -1464,6 +1528,11 @@ assert.deepEqual(
   "No current route may import the persisted assignment-detail context",
 );
 assert.deepEqual(
+  assignmentDetailRoutePolicyImports,
+  [],
+  "No current route may import the future assignment-detail route policy",
+);
+assert.deepEqual(
   unsafeCredentialRouteOutputs,
   [],
   "No current route may expose replacement-link credential fields",
@@ -1485,7 +1554,7 @@ for (const directory of ["app", "components"]) {
       unsafeClipboardSources.push(path.relative(root, file).replaceAll("\\", "/"));
     }
     if (
-      /lib\/responseTokens\/(?:auditedReveal|replacementLink|productActionPolicy)|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
+      /lib\/(?:responseTokens\/(?:auditedReveal|replacementLink|productActionPolicy)|assignments\/(?:detailContext|detailRoutePolicy))|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
         source,
       )
     ) {
@@ -1509,6 +1578,7 @@ for (const directory of ["app", "components", "lib"]) {
   for (const file of files) {
     const relative = path.relative(root, file).replaceAll("\\", "/");
     if (relative.startsWith(diagnosticRoutePath)) continue;
+    if (relative === "lib/assignments/detailRoutePolicy.server.ts") continue;
     const source = await readFile(file, "utf8");
     if (source.includes("/admin/diagnostics/response-link")) {
       linkedDiagnosticSources.push(relative);

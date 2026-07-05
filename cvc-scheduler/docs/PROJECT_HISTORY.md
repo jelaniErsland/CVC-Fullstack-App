@@ -3857,6 +3857,34 @@ Limitations:
 Next recommended step:
 - Plan the persisted project-contact assignment-detail route surface, then implement the POST action separately while keeping it unlinked/unavailable until warning, expiry, no-prefetch, redaction, and browser tests pass.
 
+## Iteration 11.29 — Persisted Assignment Detail Route Surface Readiness Review
+
+Summary:
+- Added route-unused server-only `detailRoutePolicy.server.ts` and selected `/admin/assignments/[assignmentId]` as the future persisted assignment-detail route.
+- Limited the future route to verified project contacts, `assignments.view`, and the existing `readAssignmentDetailContext` projection; edit readiness remains boolean-only.
+- Required dynamic/no-store rendering and one calm non-disclosing state for missing, unauthorized, cross-workspace, canceled, archived, inactive, or unavailable context.
+- Kept mock Calendar, Volunteers, Needs Attention, Communications, diagnostic, public, and validation surfaces ineligible.
+- Extended static checks to prove the route does not exist, no current route imports persisted detail/action/reveal boundaries, no copy UI exists, and all implementation/navigation/reveal flags remain false.
+
+Changed files:
+- `lib/assignments/detailRoutePolicy.server.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The complete local Supabase, persistence, response-route/link, assignment-detail, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally skipped because 11.29 changes no migration, generated type, RPC, or hosted gate behavior.
+
+Limitations:
+- No route, navigation link, action, UI, clipboard behavior, or credential response was added. Product-action implementation/UI, product-surface implementation, reveal availability, and product-navigation linkage remain false.
+- No email/reminder delivery, lookup, remembered device, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Add and review an unlinked dynamic/no-store `/admin/assignments/[assignmentId]` route shell that reads only `readAssignmentDetailContext`, presents the uniform unavailable state, and contains no response-link action.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
