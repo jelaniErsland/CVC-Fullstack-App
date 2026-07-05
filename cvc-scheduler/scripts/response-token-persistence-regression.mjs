@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,6 +57,24 @@ import {
   isResponseLinkProductSurfaceAvailable,
   responseLinkProductSurfaceContract,
 } from "../lib/responseTokens/productSurfacePolicy.server.ts";
+import {
+  RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE,
+  describeResponseLinkProductActionContract,
+  evaluateResponseLinkProductActionReadiness,
+  getFutureResponseLinkProductActionRequirements,
+  responseLinkProductActionContract,
+} from "../lib/responseTokens/productActionPolicy.server.ts";
+import {
+  ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE,
+  ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE,
+  ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION,
+  assignmentDetailRouteContract,
+  describeAssignmentDetailRouteContract,
+  evaluateAssignmentDetailRouteReadiness,
+  getFutureAssignmentDetailRouteRequirements,
+} from "../lib/assignments/detailRoutePolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migrationPath = path.join(
@@ -174,6 +192,18 @@ const responseLinkProductSurfacePolicyPath = path.join(
   "responseTokens",
   "productSurfacePolicy.server.ts",
 );
+const responseLinkProductActionPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionPolicy.server.ts",
+);
+const assignmentDetailRoutePolicyPath = path.join(
+  root,
+  "lib",
+  "assignments",
+  "detailRoutePolicy.server.ts",
+);
 const responseLinkRevealAuditBoundaryPath = path.join(
   root,
   "lib",
@@ -223,6 +253,8 @@ const [
   responseLinkPolicy,
   responseLinkRevealPolicySource,
   responseLinkProductSurfacePolicySource,
+  responseLinkProductActionPolicySource,
+  assignmentDetailRoutePolicySource,
   responseLinkRevealAuditBoundary,
   auditedResponseLinkRevealBoundary,
   responseTokenReplacementBoundary,
@@ -252,6 +284,8 @@ const [
   readFile(responseLinkPolicyPath, "utf8"),
   readFile(responseLinkRevealPolicyPath, "utf8"),
   readFile(responseLinkProductSurfacePolicyPath, "utf8"),
+  readFile(responseLinkProductActionPolicyPath, "utf8"),
+  readFile(assignmentDetailRoutePolicyPath, "utf8"),
   readFile(responseLinkRevealAuditBoundaryPath, "utf8"),
   readFile(auditedResponseLinkRevealBoundaryPath, "utf8"),
   readFile(responseTokenReplacementBoundaryPath, "utf8"),
@@ -756,6 +790,25 @@ assert.doesNotMatch(
   responseLinkProductSurfacePolicySource,
   /createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
 );
+assert.match(responseLinkProductActionPolicySource, /^import "server-only";/);
+assert.match(
+  responseLinkProductActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE = true/,
+);
+assert.match(
+  responseLinkProductActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE = false/,
+);
+assert.match(
+  responseLinkProductActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE = false/,
+);
+assert.match(responseLinkProductActionPolicySource, /method: "POST"/);
+assert.match(responseLinkProductActionPolicySource, /rendering: "dynamic_no_store"/);
+assert.doesNotMatch(
+  responseLinkProductActionPolicySource,
+  /createAuditedAssignmentResponseLinkReveal\(|readAssignmentDetailContext\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|console\.|logger\.|delete\s+from/i,
+);
 assert.match(responseLinkRevealAuditBoundary, /^import "server-only";/);
 assert.match(responseLinkRevealAuditBoundary, /"record_assignment_response_link_reveal_event"/);
 assert.match(responseLinkRevealAuditBoundary, /supabase\.auth\.getUser\(\)/);
@@ -887,6 +940,64 @@ assert.equal(RESPONSE_LINK_REVEAL_TRANSACTIONAL_COMMAND_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
+assert.equal(describeResponseLinkProductActionContract().contractAvailable, true);
+assert.equal(describeResponseLinkProductActionContract().implementationAvailable, false);
+assert.equal(describeResponseLinkProductActionContract().uiAvailable, false);
+assert.deepEqual(responseLinkProductActionContract.browserAllowedInputs, [
+  "assignmentId",
+  "expiresInHours",
+]);
+for (const forbiddenInput of [
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseId",
+  "responseTokenId",
+  "bearer",
+  "responseUrl",
+  "redactedUrl",
+  "tokenVerifierHash",
+  "origin",
+  "copyMode",
+  "auditMetadata",
+  "grant",
+  "capabilities",
+]) {
+  assert.ok(responseLinkProductActionContract.browserForbiddenInputs.includes(forbiddenInput));
+}
+assert.ok(
+  responseLinkProductActionContract.requiredServerSequence.includes(
+    "read_assignment_detail_context_first",
+  ),
+);
+assert.ok(
+  responseLinkProductActionContract.requiredServerSequence.includes(
+    "call_createAuditedAssignmentResponseLinkReveal_once",
+  ),
+);
+assert.ok(
+  getFutureResponseLinkProductActionRequirements().includes(
+    "product_owner_explicit_enablement_approval",
+  ),
+);
+const otherwiseReadyProductAction = evaluateResponseLinkProductActionReadiness({
+  persistedAssignmentDetailSurface: true,
+  reviewedPostOnlyAction: true,
+  reviewedWarningAndExpirationUi: true,
+  dynamicNoStoreProven: true,
+  noPrefetchProven: true,
+  logRedactionProven: true,
+  noCredentialBeforeSuccessProven: true,
+  productOwnerApproved: true,
+});
+assert.equal(otherwiseReadyProductAction.allowed, false);
+assert.ok(
+  otherwiseReadyProductAction.blockers.includes("product_action_implementation_unavailable"),
+);
+assert.ok(otherwiseReadyProductAction.blockers.includes("product_action_ui_unavailable"));
 assert.equal(isResponseLinkProductSurfaceAvailable(), false);
 assert.equal(
   FUTURE_RESPONSE_LINK_PRODUCT_SURFACE,
@@ -1245,6 +1356,7 @@ const responseLinkRevealPolicyRouteImports = [];
 const responseLinkRevealAuditRouteImports = [];
 const auditedResponseLinkRevealRouteImports = [];
 const responseLinkProductSurfacePolicyRouteImports = [];
+const responseLinkProductActionPolicyRouteImports = [];
 const persistedAssignmentDetailRouteImports = [];
 const unsafeCredentialRouteOutputs = [];
 for (const file of routeFiles) {
@@ -1280,6 +1392,11 @@ for (const file of routeFiles) {
   }
   if (source.includes("lib/responseTokens/productSurfacePolicy")) {
     responseLinkProductSurfacePolicyRouteImports.push(
+      path.relative(root, file).replaceAll("\\", "/"),
+    );
+  }
+  if (source.includes("lib/responseTokens/productActionPolicy")) {
+    responseLinkProductActionPolicyRouteImports.push(
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
@@ -1337,6 +1454,11 @@ assert.deepEqual(
   "No current route may import the future product-surface planning policy",
 );
 assert.deepEqual(
+  responseLinkProductActionPolicyRouteImports,
+  [],
+  "No current route may import the future product-action policy",
+);
+assert.deepEqual(
   persistedAssignmentDetailRouteImports,
   [],
   "No current route may import the persisted assignment-detail context",
@@ -1363,7 +1485,7 @@ for (const directory of ["app", "components"]) {
       unsafeClipboardSources.push(path.relative(root, file).replaceAll("\\", "/"));
     }
     if (
-      /lib\/responseTokens\/(?:auditedReveal|replacementLink)|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
+      /lib\/responseTokens\/(?:auditedReveal|replacementLink|productActionPolicy)|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
         source,
       )
     ) {

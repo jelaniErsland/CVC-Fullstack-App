@@ -3828,6 +3828,35 @@ Limitations:
 Next recommended step:
 - Design the separate explicit project-contact assignment-detail POST action/UI while keeping reveal availability fail closed until its review passes.
 
+## Iteration 11.28 — Response Link Product Action Readiness Review
+
+Summary:
+- Added route-unused server-only `productActionPolicy.server.ts` with true contract availability and false implementation/UI availability.
+- Defined the future action as persisted-assignment-detail-only, verified-contact, explicit POST, dynamic/no-store, trusted-origin, and non-prefetchable.
+- Limited browser input to assignment id and optional TTL; all workspace/actor/volunteer/response/token/credential/origin/mode/audit/grant data remains forbidden or server-derived.
+- Required assignment-detail read and edit boolean before one `createAuditedAssignmentResponseLinkReveal` call; direct RPC or manual replacement/audit sequencing is prohibited.
+- Defined success warning/expiration and failure/no-leak behavior plus explicit prerequisites before any availability flag can change.
+- Extended route/component static checks for no policy, assignment-detail, audited-reveal, direct-RPC, or copy/clipboard consumption.
+
+Changed files:
+- `lib/responseTokens/productActionPolicy.server.ts`
+- `scripts/response-token-persistence-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The complete local Supabase, persistence, response-route/link, assignment-detail, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+- Hosted validation was intentionally skipped because 11.28 changes no migration, generated type, RPC, or hosted gate behavior.
+
+Limitations:
+- No executable action, route, UI, clipboard behavior, or credential response exists. Implementation, UI, product-surface, and reveal availability remain false.
+- No email/reminder delivery, lookup, remembered device, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Plan the persisted project-contact assignment-detail route surface, then implement the POST action separately while keeping it unlinked/unavailable until warning, expiry, no-prefetch, redaction, and browser tests pass.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.
