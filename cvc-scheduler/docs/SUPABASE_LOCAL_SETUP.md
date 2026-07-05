@@ -99,6 +99,16 @@ npm run test:assignment-detail-context
 
 The 11.26 command creates disposable local contacts in separate workspaces and proves that `assignments.view` alone can read one safe active assignment projection while under-capability, cross-workspace, missing, and canceled contexts return no row. It verifies edit is a boolean, product reveal remains false, no token/intake fields exist in the result, no route imports the helper, and cleanup leaves zero residue. It uses no service-role client and prints no credentials.
 
+To rerun the hosted non-production assignment-detail gate, reconfirm the linked staging project, then use its exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_ASSIGNMENT_DETAIL_CONTEXT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:assignment-detail-context:hosted
+Remove-Item Env:RUN_HOSTED_ASSIGNMENT_DETAIL_CONTEXT_VALIDATION
+```
+
+The command refuses every other target, uses disposable `qa-11-27-*` Auth/product fixtures, validates assignments-only safe projection and unavailable-context handling, and cleans exact-run plus namespace residue in `finally`. It issues no response token or link and outputs no credentials or intake values.
+
 ## Workspace migration and type generation
 
 The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260705000000_assignment_detail_context.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:

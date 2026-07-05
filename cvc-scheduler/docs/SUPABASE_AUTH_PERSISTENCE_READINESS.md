@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.27 hosted staging assignment-detail validation
+
+Non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is migrated through `20260705000000`. The exact-opt-in `npm run test:assignment-detail-context:hosted` gate refuses every other project and requires `RUN_HOSTED_ASSIGNMENT_DETAIL_CONTEXT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Two fresh `qa-11-27-*` runs passed unauthenticated execute denial; under-capability, cross-workspace, missing, canceled, archived, inactive-workspace/item/volunteer no-row behavior; and one exact safe active assignment projection for a grant containing only `workspace.read` and `assignments.view`. Adding `assignments.edit` changes only `can_edit_assignment`; product reveal remains false. The projection has no capability array, token/link/verifier/credential, emergency, questionnaire, or sensitive intake field. Exact-run and namespace product/Auth residue are zero.
+
+Hosted generated types are structurally unchanged; only remote PostgREST metadata differs. The gate creates no token and performs no reveal, copy, display, delivery, or route integration. The future reviewed POST action/UI remains a separate blocked slice.
+
 ## 11.26 persisted assignment-detail context
 
 Local migration `20260705000000_assignment_detail_context.sql` adds authenticated security-definer `read_assignment_detail_context(assignment_id)`. A narrow command is necessary because safe assignment detail needs selected Calendar and volunteer labels while existing table RLS correctly reserves broad table reads for `calendar.view` and `volunteers.view`. The RPC instead derives one assignment's workspace/item/volunteer/current response server-side and requires an active, valid `assignments.view` grant for that workspace.
@@ -488,6 +496,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.24 Hosted Staging Migration + Audited Reveal Validation Gate — passed:** non-production staging is at `20260704000000`; two disposable hosted runs prove rollback, Auth/capability enforcement, atomic replacement/audit coupling, public use, concurrency, safe storage, compatibility, and zero residue. No product reveal surface was added.
 - **11.25 Response Link Product Surface Readiness Review — completed:** planning/static policy selects a future persisted project-contact assignment-detail POST action and defines its no-store, trusted-origin, explicit-action, audit/logging, warning, expiry, and no-prefetch constraints. Availability remains false and no UI or route consumes reveal helpers.
 - **11.26 Persisted Assignment Detail Context Readiness — completed locally:** authenticated `assignments.view` RPC/helper returns one safe active assignment projection, collapses edit to a boolean, reads no token/intake rows, and remains unused by routes. Product reveal stays false; hosted validation through `20260705000000` is pending.
+- **11.27 Hosted Staging Migration + Assignment Detail Context Validation Gate — passed:** non-production staging is at `20260705000000`; two disposable hosted runs prove assignments-only safe reads, capability/workspace/lifecycle isolation, edit boolean, forbidden-field exclusion, route isolation, and zero residue. No reveal or product cutover was added.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

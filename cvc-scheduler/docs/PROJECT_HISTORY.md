@@ -3796,6 +3796,38 @@ Limitations:
 Next recommended step:
 - Run a dedicated hosted non-production migration and assignment-detail validation gate before designing the separate reviewed reveal POST action/UI.
 
+## Iteration 11.27 — Hosted Staging Migration + Assignment Detail Context Validation Gate
+
+Summary:
+- Reconfirmed healthy non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) and applied only pending `20260705000000_assignment_detail_context.sql`, without reset or seed data.
+- Added exact-opt-in `npm run test:assignment-detail-context:hosted`; it refuses every other target, verifies migration state, uses disposable `qa-11-27-*` product/Auth fixtures, suppresses credential output, and cleans in `finally`.
+- Two fresh hosted runs proved unauthenticated denial; under-capability, cross-workspace, missing, canceled, archived, and inactive-context no-row behavior; assignments-only safe projection without Calendar/Volunteers capabilities; edit-as-boolean; and forbidden-field exclusion.
+- No response token or link was created. Exact-run and namespace cleanup checks returned zero residue.
+- Hosted generated types matched the local schema structurally; only remote PostgREST metadata differed, so tracked types were not overwritten.
+
+Changed files:
+- `scripts/hosted-assignment-detail-context-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Hosted migration history reports `20260705000000` locally and remotely.
+- The hosted assignment-detail gate passed twice with product/Auth residue `0` each time.
+- The complete local Supabase, persistence, route, response-link, assignment-detail, lint, build, Calendar browser, TypeScript, and diff baseline passed.
+
+Limitations:
+- This is hosted non-production validation only. No route reads staging data, and no token/link reveal, copy, display, email, or send action exists.
+- Product reveal remains blocked until a future explicit reviewed POST action and UI surface.
+- No delivery, lookup, remembered device, copy UI, route cutover, seed data, app service-role path, token deletion, background job, or mock-to-real integration was added.
+
+Next recommended step:
+- Design the separate explicit project-contact assignment-detail POST action/UI while keeping reveal availability fail closed until its review passes.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

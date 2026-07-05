@@ -129,6 +129,11 @@ const hostedAuditedResponseRevealQaPath = path.join(
   "scripts",
   "hosted-response-reveal-regression.mjs",
 );
+const hostedAssignmentDetailContextQaPath = path.join(
+  root,
+  "scripts",
+  "hosted-assignment-detail-context-regression.mjs",
+);
 const responseLinkDiagnosticBoundaryPath = path.join(
   root,
   "lib",
@@ -211,6 +216,7 @@ const [
   hostedResponseReplacementQa,
   hostedResponseRevealAuditQa,
   hostedAuditedResponseRevealQa,
+  hostedAssignmentDetailContextQa,
   responseLinkDiagnosticBoundary,
   responseLinkDiagnosticPage,
   responseLinkDiagnosticAction,
@@ -239,6 +245,7 @@ const [
   readFile(hostedResponseReplacementQaPath, "utf8"),
   readFile(hostedResponseRevealAuditQaPath, "utf8"),
   readFile(hostedAuditedResponseRevealQaPath, "utf8"),
+  readFile(hostedAssignmentDetailContextQaPath, "utf8"),
   readFile(responseLinkDiagnosticBoundaryPath, "utf8"),
   readFile(responseLinkDiagnosticPagePath, "utf8"),
   readFile(responseLinkDiagnosticActionPath, "utf8"),
@@ -668,6 +675,29 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   hostedAuditedResponseRevealQa,
   /console\.(?:log|error)\(\s*(?:oldBearer|bearer|concurrentBearer|password|access_token|refresh_token|api_key)\b/i,
+);
+assert.match(
+  packageSource,
+  /"test:assignment-detail-context:hosted":\s*"node scripts\/hosted-assignment-detail-context-regression\.mjs"/,
+);
+assert.match(hostedAssignmentDetailContextQa, /const expectedRef = "kfuujcfxoayukywvtaeh"/);
+assert.match(hostedAssignmentDetailContextQa, /const expectedName = "project-local-staging"/);
+assert.match(
+  hostedAssignmentDetailContextQa,
+  /RUN_HOSTED_ASSIGNMENT_DETAIL_CONTEXT_VALIDATION === expectedConfirmation/,
+);
+assert.match(hostedAssignmentDetailContextQa, /latestMigration === "20260705000000"/);
+assert.match(hostedAssignmentDetailContextQa, /read_assignment_detail_context/);
+assert.match(hostedAssignmentDetailContextQa, /qa-11-27-%/);
+assert.match(hostedAssignmentDetailContextQa, /finally\s*\{[\s\S]*cleanupFixtures\(\)/);
+assert.match(hostedAssignmentDetailContextQa, /Hosted disposable product and Auth residue: 0/);
+assert.doesNotMatch(
+  hostedAssignmentDetailContextQa,
+  /--reveal|SUPABASE_SERVICE_ROLE_KEY|entry\.name === "service_role"|assignment_response_tokens|\.rpc\("reveal_assignment_response_link"/i,
+);
+assert.doesNotMatch(
+  hostedAssignmentDetailContextQa,
+  /console\.(?:log|error)\(\s*(?:password|access_token|refresh_token|api_key|answers|emergency)\b/i,
 );
 
 assert.match(responseLinkDiagnosticBoundary, /^import "server-only";/);
