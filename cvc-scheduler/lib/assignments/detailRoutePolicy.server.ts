@@ -1,7 +1,7 @@
 import "server-only";
 
 export const ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE = true;
-export const ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE = false;
+export const ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE = true;
 export const ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION = false;
 
 export const assignmentDetailRouteContract = {

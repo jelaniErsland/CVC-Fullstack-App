@@ -313,13 +313,21 @@ async function verifyStaticBoundaries() {
     routeFiles.push(...(await collectFiles(path.join(root, directory))).filter((file) => /\.(?:ts|tsx)$/.test(file)));
   }
   const unsafe = [];
+  const expectedRoute = "app/admin/assignments/[assignmentId]/page.tsx";
   for (const file of routeFiles) {
     const source = await readFile(file, "utf8");
-    if (/assignments\/detailContext|readAssignmentDetailContext|auditedReveal|reveal_assignment_response_link|navigator\.clipboard|clipboard\.writeText|Copy response link/i.test(source)) {
-      unsafe.push(path.relative(root, file).replaceAll("\\", "/"));
+    const relative = path.relative(root, file).replaceAll("\\", "/");
+    const usesApprovedContext =
+      /assignments\/detailContext|readAssignmentDetailContext/.test(source);
+    const usesForbiddenBehavior =
+      /auditedReveal|reveal_assignment_response_link|navigator\.clipboard|clipboard\.writeText|Copy response link/i.test(
+        source,
+      );
+    if ((usesApprovedContext && relative !== expectedRoute) || usesForbiddenBehavior) {
+      unsafe.push(relative);
     }
   }
-  assert(unsafe.length === 0, "A current route/component imports persisted detail or reveal behavior.");
+  assert(unsafe.length === 0, "A route/component outside the approved shell imports persisted detail or reveal behavior.");
 }
 
 async function cleanupFixtures(containerName) {

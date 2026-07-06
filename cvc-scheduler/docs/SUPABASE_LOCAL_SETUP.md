@@ -97,7 +97,15 @@ With local Supabase running, run:
 npm run test:assignment-detail-context
 ```
 
-The 11.26 command creates disposable local contacts in separate workspaces and proves that `assignments.view` alone can read one safe active assignment projection while under-capability, cross-workspace, missing, and canceled contexts return no row. It verifies edit is a boolean, product reveal remains false, no token/intake fields exist in the result, no route imports the helper, and cleanup leaves zero residue. It uses no service-role client and prints no credentials.
+The 11.26 command creates disposable local contacts in separate workspaces and proves that `assignments.view` alone can read one safe active assignment projection while under-capability, cross-workspace, missing, and canceled contexts return no row. It verifies edit is a boolean, product reveal remains false, no token/intake fields exist in the result, only the approved 11.30 route may import the helper, and cleanup leaves zero residue. It uses no service-role client and prints no credentials.
+
+After 11.30, run the route-isolation guardrail as well:
+
+```powershell
+npm run test:assignment-detail-route
+```
+
+This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior, and keeps every response-link product action/UI/reveal flag false.
 
 To rerun the hosted non-production assignment-detail gate, reconfirm the linked staging project, then use its exact opt-in:
 

@@ -3885,6 +3885,41 @@ Limitations:
 Next recommended step:
 - Add and review an unlinked dynamic/no-store `/admin/assignments/[assignmentId]` route shell that reads only `readAssignmentDetailContext`, presents the uniform unavailable state, and contains no response-link action.
 
+## Iteration 11.30 — Unlinked Persisted Assignment Detail Route Shell
+
+Summary:
+- Added the force-dynamic/no-store `/admin/assignments/[assignmentId]` route as the first read-only persisted admin detail shell.
+- Kept the route outside `AdminShell` so no mock workspace/navigation data is mixed into the persisted projection.
+- Required a verified project-contact session and read assignment data only through `readAssignmentDetailContext`; `assignments.view` remains database-enforced.
+- Rendered only safe assignment, workspace label, task, schedule, volunteer label/congregation, response, planned count, and edit-boolean fields.
+- Collapsed malformed, missing, unauthorized, cross-workspace, canceled, archived, inactive, and unavailable cases into one calm state.
+- Added `npm run test:assignment-detail-route` and updated existing static suites to allow exactly this one approved context importer while preserving every reveal/copy/delivery prohibition.
+
+Changed files:
+- `app/admin/assignments/[assignmentId]/page.tsx`
+- `lib/assignments/detailRoutePolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-context-regression.mjs`
+- `scripts/response-token-persistence-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- Local Supabase smoke, workspace/grant/questionnaire/volunteer/task/Calendar/assignment/response-token/link/detail-context suites passed.
+- The new route-isolation suite, lint, 74-static-page production build with the new route marked dynamic, TypeScript, response-route browser QA, Calendar browser QA, and diff checks passed.
+- Hosted validation was intentionally skipped because no migration, RPC, generated type, or hosted validation behavior changed.
+
+Limitations:
+- The route is unlinked and read-only. It adds no action, copy control, credential display, email/reminder behavior, mock fallback, service-role access, or product-route cutover.
+- Product-action implementation/UI, product-surface implementation, reveal availability, and navigation linkage remain false.
+
+Next recommended step:
+- Review the unlinked shell’s visual/unavailable behavior or implement the still-unlinked POST action in a separate fail-closed slice; do not enable navigation, copy UI, or reveal availability yet.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

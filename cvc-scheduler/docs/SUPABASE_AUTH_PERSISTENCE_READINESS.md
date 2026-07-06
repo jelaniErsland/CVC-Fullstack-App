@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.30 unlinked persisted assignment-detail route shell
+
+`/admin/assignments/[assignmentId]` is now the first read-only persisted admin route. It is force-dynamic/no-store, requires a verified project-contact session, and calls only `readAssignmentDetailContext`; the RPC continues to enforce `assignments.view` and derive all scope server-side. Malformed, missing, unauthorized, cross-workspace, canceled, archived, inactive, and otherwise unavailable contexts share one calm non-disclosing state.
+
+The shell renders only the reviewed assignment/workspace/task/schedule/volunteer-label/current-response projection plus the safe edit boolean. It imports no mock data, token/replacement/reveal/audit helper, service-role path, or delivery boundary. It contains no response-link action or active copy affordance and is not linked from navigation, Calendar, Volunteers, Needs Attention, Communications, Overview, public volunteer pages, or `/respond/[token]`.
+
+`ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE` is true. `ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION`, product-action implementation/UI, product-surface implementation, and reveal-product availability remain false. The new `npm run test:assignment-detail-route` static gate proves route isolation and the unchanged fail-closed flags.
+
 ## 11.29 persisted assignment-detail route-surface contract
 
 The route-unused server-only contract selects `/admin/assignments/[assignmentId]` because an assignment is its own persisted object and may later receive separately reviewed entry points from Calendar, Volunteers, Needs Attention, or Communications. No route or navigation link exists yet. A future route must be dynamic/no-store, require a verified project contact and `assignments.view`, and read only `readAssignmentDetailContext`; it may expose edit readiness only as a boolean.
@@ -515,6 +523,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.27 Hosted Staging Migration + Assignment Detail Context Validation Gate — passed:** non-production staging is at `20260705000000`; two disposable hosted runs prove assignments-only safe reads, capability/workspace/lifecycle isolation, edit boolean, forbidden-field exclusion, route isolation, and zero residue. No reveal or product cutover was added.
 - **11.28 Response Link Product Action Readiness Review — completed:** route-unused server policy defines the future assignment-detail POST action's inputs, sequence, success/failure, warning/expiry, no-prefetch, and logging constraints. Contract availability is true; implementation, UI, and reveal availability remain false.
 - **11.29 Persisted Assignment Detail Route Surface Readiness Review — completed:** route-unused policy selects `/admin/assignments/[assignmentId]`, limits it to the authenticated `assignments.view` detail-context boundary, requires dynamic/no-store and uniform non-disclosing unavailable states, and keeps route implementation, navigation, action/UI, and reveal availability false.
+- **11.30 Unlinked Persisted Assignment Detail Route Shell — completed:** one dynamic/no-store read-only route now consumes only the validated detail-context helper. It remains unlinked and has no mock fallback, token/reveal/action imports, copy UI, mutation, or delivery; only route implementation readiness changed to true.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

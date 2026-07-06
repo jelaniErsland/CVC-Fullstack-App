@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -816,7 +816,7 @@ assert.match(
 );
 assert.match(
   assignmentDetailRoutePolicySource,
-  /ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE = false/,
+  /ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE = true/,
 );
 assert.match(
   assignmentDetailRoutePolicySource,
@@ -965,7 +965,7 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
-assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
 assert.equal(
   describeAssignmentDetailRouteContract().contract.routePathPattern,
@@ -991,12 +991,8 @@ const otherwiseReadyAssignmentDetailRoute = evaluateAssignmentDetailRouteReadine
   noMockFallbackProven: true,
   importAndCacheChecksProven: true,
 });
-assert.equal(otherwiseReadyAssignmentDetailRoute.allowed, false);
-assert.ok(
-  otherwiseReadyAssignmentDetailRoute.blockers.includes(
-    "assignment_detail_route_implementation_unavailable",
-  ),
-);
+assert.equal(otherwiseReadyAssignmentDetailRoute.allowed, true);
+assert.deepEqual(otherwiseReadyAssignmentDetailRoute.blockers, []);
 assert.equal(describeResponseLinkProductActionContract().contractAvailable, true);
 assert.equal(describeResponseLinkProductActionContract().implementationAvailable, false);
 assert.equal(describeResponseLinkProductActionContract().uiAvailable, false);
@@ -1399,10 +1395,7 @@ async function collectFiles(directory) {
   );
   return nested.flat();
 }
-await assert.rejects(
-  access(path.join(root, "app", "admin", "assignments", "[assignmentId]")),
-  "The persisted assignment-detail route must not exist during readiness review",
-);
+const assignmentDetailRoutePage = "app/admin/assignments/[assignmentId]/page.tsx";
 const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
   /\.(?:ts|tsx)$/.test(file),
 );
@@ -1524,8 +1517,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
   persistedAssignmentDetailRouteImports,
-  [],
-  "No current route may import the persisted assignment-detail context",
+  [assignmentDetailRoutePage],
+  "Only the unlinked persisted assignment-detail route may import its context",
 );
 assert.deepEqual(
   assignmentDetailRoutePolicyImports,
@@ -1554,7 +1547,7 @@ for (const directory of ["app", "components"]) {
       unsafeClipboardSources.push(path.relative(root, file).replaceAll("\\", "/"));
     }
     if (
-      /lib\/(?:responseTokens\/(?:auditedReveal|replacementLink|productActionPolicy)|assignments\/(?:detailContext|detailRoutePolicy))|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
+      /lib\/(?:responseTokens\/(?:auditedReveal|replacementLink|productActionPolicy)|assignments\/detailRoutePolicy)|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link/.test(
         source,
       )
     ) {
