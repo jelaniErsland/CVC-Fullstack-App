@@ -10,6 +10,8 @@
 
 ## 2. Real-World Readiness Plan
 
+[`PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md`](./PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md) is the canonical product-planning baseline as of 2026-07-05. Earlier prototype notes remain implementation history; where they conflict, the canonical requirements control. The practical MVP must preserve volunteer schedule lookup, Confirm/Deny, calendar-first scheduling/admin, and enough Communications/reminders to notify volunteers and track responses.
+
 Rough phases:
 
 - Mock prototype foundation.
@@ -128,7 +130,7 @@ Rough phases:
 ## 4. Mid-Term Roadmap
 
 - 06 Scheduling foundation.
-- 06.5 Role Landing Page UX Alignment for Primary CVC, Assistant CVC, Primary Food Contact, Primary Security Contact, and possible On-site Contact homes.
+- 06.5 Access Experience Alignment for Main Contacts, scoped Assistant Contacts, separate on-site personnel, and volunteers.
 - 06.6 Role-home visual QA/stabilization.
 - 07 Needs Attention / Conflicts.
 - 07.2 Conflict/coverage detail patterns.
@@ -219,21 +221,23 @@ Rough phases:
 
 ## 6. Real-World MVP Definition
 
-For the next project, the app should eventually support:
+For the next project, MVP/core must support:
 
 - Create project workspace.
-- Configure modules.
-- Invite/add primary contacts.
+- Configure supporting congregations and Main Contacts.
 - Send volunteer questionnaire link.
 - Review questionnaire submissions.
 - Create volunteer profiles.
-- Create reusable task presets.
-- Schedule task presets onto the calendar as dated work.
-- Let volunteers confirm/deny.
-- Show needs-attention items.
-- Send reminder emails.
-- Support lunch, security, cleanup, construction, and custom work as task categories and calendar filters.
+- Create reusable task templates and first-class custom scheduled items.
+- Schedule and publish work from the Calendar as the primary workflow.
+- Assign multiple volunteers and derive `0/6 assigned`-style counts from assignments.
+- Let volunteers look up their own schedule and Confirm, Deny, or Confirm All under the 48-hour cutoff rules.
+- Queue assignment email, send schedule-change email, and run/log automatic reminders.
+- Show response/staffing Needs Attention items on the defined three-week/two-week timing.
+- Support optional General, Food, and Security workflow categories without separate mini-app models.
 - Archive project when done.
+
+V1 then adds Availability Blocks, `.ics` export, broader Communications, Meals, scoped assistant/on-site experiences, richer volunteer management, private Notes, and dismissal/accepted-exception workflows. See the canonical requirements for detailed behavior and explicit later items.
 
 ## 7. Build Discipline
 
@@ -285,13 +289,16 @@ available.
 
 Scheduling is still mock-only. Future scheduling work still needs:
 
-- Unified Calendar model where task presets become scheduled instances.
+- Unified scheduled-item model where templates become scheduled instances and custom items remain first-class.
+- Calendar-first creation/publication; do not substitute a list/form-only builder.
 - Real scheduling engine.
 - Assignment creation and editing.
 - Conflict and coverage logic.
 - Volunteer confirmation / denial workflow.
 - Real persistence.
 - Role-specific schedule landing pages.
+
+Canonical alignment: created items require explicit calendar placement; drafts are saved private/unpublished items, not floating ideas. Needed count may be zero, coverage uses **assigned** language, and every item receives a Follow-up Contact.
 
 ## 10. Role Home Notes
 
@@ -310,7 +317,7 @@ Role homes are preview/mock-only. Future role work still needs:
 - Real role permissions and scoped data.
 - Real persistence.
 - Food and Security research surfaces folded into Tasks + Calendar.
-- On-site contact workflows.
+- A separate on-site personnel access mode; on-site personnel are not a contact role.
 - Platform owner/admin homes.
 
 ## 11. Needs Attention / Conflicts Notes
@@ -335,6 +342,8 @@ Needs Attention is mock-only. Future work still needs:
 - Notification logic.
 - Role-scoped follow-up views.
 - Real persistence.
+
+Canonical timing is three weeks for pending/denied assignments and two weeks for underfilled published items. Needs Attention is a primary-navigation action inbox with per-user dismissal and Main Contact global accepted-exception behavior.
 
 ## 12. Emails and Announcements Notes
 
@@ -377,6 +386,8 @@ Communications are mock-only. Future work still needs:
 - Delivery tracking.
 - Real persistence.
 
+Canonical MVP delivery includes queued assignment batches, one-click Confirm links, date/start/end schedule-change email, automatic pending reminders every three days, confirmed reminders at one month/one week/three days/one day, grouping by volunteer, project-level reminder pause, and Communications history. Deny never appears in email.
+
 ## 13. Food Module Notes
 
 09.1 added a mock Food module foundation at `/admin/food`. The overview shows
@@ -396,10 +407,10 @@ placeholder-only actions.
 the overview and detail pages, shorter related-link language, and a compact
 accessible mobile menu icon in the shared admin shell.
 
-Food is mock-only. Future work still needs:
+Food is mock-only. Future product direction is **Meals / Food Menu** inside Calendar rather than a separate heavy Food application. Future work still needs:
 
-- Fold Food research surfaces into task presets and calendar items.
-- Treat lunch as a system task preset with a predefined Menu field.
+- Fold Food research surfaces into special breakfast/lunch Calendar entries within the unified scheduled-item concept.
+- Support independent project breakfast/lunch toggles, provider assignment, Menu TBD, and volunteer meal cards.
 - Real helper assignment actions through Calendar.
 - Real persistence.
 - Food contact communication workflows through Communications.
@@ -448,7 +459,7 @@ or calendar placement. A task preset may include:
 - Task id.
 - Workspace/project id.
 - Task name.
-- Category/type such as general, lunch, security, cleanup, construction, or custom.
+- Optional category/type: General, Food, or Security. Construction, cleanup, and similar work roll into General.
 - Needed count.
 - Visibility settings.
 - Optional custom fields.
@@ -461,12 +472,13 @@ Task duplication should use the original name plus a number suffix:
 - Night watch (1).
 - Night watch (2).
 
-Lunch is a predefined/system task preset. Lunch has one predefined field,
-Menu, and may also have custom fields below it. This lets the system later
-recognize lunch and generate a volunteer-facing lunch schedule/menu view.
+Earlier prototype work treated Lunch as a predefined system preset. Canonical
+planning replaces that future assumption with Calendar-owned Meals supporting
+independently enabled Breakfast/Lunch entries and typed meal details. Existing
+mock Lunch data remains implementation history until a reviewed slice replaces it.
 
-Calendar items are scheduled instances. They may include task preset id, date,
-time/window, assigned volunteers/helpers, filled count such as 0/3, notes,
+Calendar items are scheduled instances from a template or first-class custom definition. They may include task preset id, date,
+time/window, assigned volunteers/helpers, assigned count such as `0/3 assigned`, notes,
 repeat rule, copy/paste/bulk creation metadata, and optional one-off custom
 task data.
 
@@ -616,34 +628,32 @@ opening their own panel. This remains UI-only and mock-only.
 Target desktop sidebar:
 
 - Overview.
-- Calendar.
 - Tasks.
-- Volunteers.
-- Communications.
-- Settings.
+- Calendar.
+- Needs Attention.
+- More.
 
-Desktop should keep the persistent left sidebar. Needs Attention and Conflicts
-should become Overview/Calendar follow-up concepts. Food and Security should
-be task categories/presets/calendar filters. Emails and Announcements should be
-absorbed into Communications.
+Desktop should keep a calm persistent sidebar. Needs Attention is a primary
+action inbox, not buried under More. Food and Security remain workflow
+categories within Tasks/Calendar. More contains Volunteers, Communications,
+Settings, Contacts/Roles, project setup, Help, workspace switching, and Notes.
 
 Target mobile bottom navigation:
 
 - Overview / Home.
 - Tasks.
 - Calendar.
-- Volunteers.
+- Needs Attention.
 - More.
 
-Calendar should be the emphasized center tab/action on mobile. More should
-contain Communications, Settings, Workspaces, Needs Attention/follow-ups if
-not surfaced on Overview, and other secondary admin/support tools as needed.
+Calendar should remain the emphasized scheduling action on mobile. More holds
+Volunteers, Communications, Settings, Contacts/Roles, project setup, Help,
+workspace switching, and Notes.
 
 Trusted main project contacts should share one main app experience. The app
 should still distinguish project/main contacts, assistant contacts, on-site
-contacts, and volunteers, but should not split Primary CVC, Primary Food
-Contact, and Primary Security Contact into separate main-contact sign-in
-experiences.
+personnel, and volunteers, but should not split Main Contact, Main Food Service
+Contact, and Main Security Contact into separate main-contact sign-in experiences.
 
 Upcoming UI direction:
 

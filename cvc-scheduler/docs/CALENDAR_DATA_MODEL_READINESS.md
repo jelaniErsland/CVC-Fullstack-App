@@ -2,6 +2,16 @@
 
 This note records the production boundary behind the current mock Calendar. Iterations 11.9–11.10 implement isolated Calendar item, assignment, and current-response schemas/server commands, while every Calendar and volunteer route remains local, preview-only UI.
 
+## Canonical product alignment (2026-07-05)
+
+[`PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md`](./PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md) now controls future product behavior where older sketches differ. The Calendar remains the primary scheduling surface, and one unified scheduled-item concept covers volunteer tasks, crew blocks, Security, food-support work, informational blocks, and custom one-offs. The schedule kinds below are temporal representations within that concept, not separate task/event models.
+
+Every created item has explicit Calendar placement: timed work has date/start/end, while date-based context has an explicit date or range. Draft means saved private/unpublished, never floating or unscheduled. There is no V1 draft tray; unscheduled ideas remain task templates.
+
+Needed count is non-negative and may be zero. Use `0/0 assigned` for informational items and **assigned** language everywhere; do not use “spots.” Pending plus confirmed assignments form the active assigned count, while denied/removed assignments do not. Every item also needs a Follow-up Contact, inherited from its template when available and otherwise defaulted to its creator.
+
+Meals/Breakfast/Lunch are special Calendar-owned entries in the unified model, not a permanent Food mini-app or a Lunch-only system-preset assumption. Their detailed schema remains future work. Current migrations and mock routes are unchanged by this planning alignment.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.
@@ -50,7 +60,7 @@ The current `CalendarCreationDraft` in `app/admin/calendar/page.tsx` is intentio
 - `timeWindow`, `repeatLabel`, and `copyLabel` are display strings rather than authoritative scheduling or recurrence data.
 - Category/type filters are derived presentation groupings. Avoid storing competing item and preset categories unless a deliberate historical snapshot is required.
 - Deterministic event color is presentation state derived from stable identity. It need not be stored unless admins later receive an explicit color choice.
-- Lunch `menuSummary` and preset custom fields overlap. Production should choose an authoritative item custom-field value model or a clearly typed meal detail, not both implicitly.
+- Existing Lunch `menuSummary` and preset custom fields overlap. Future Meals should use one authoritative typed breakfast/lunch detail rather than preserve a Lunch-only preset assumption or two implicit sources.
 
 ## Scheduling semantics
 
@@ -171,7 +181,7 @@ type CalendarItemInput = {
     | { taskPresetId?: never; oneOffSnapshot: CalendarOneOffTaskSnapshot };
   schedule: CalendarSchedule;
   coverageMode: "none" | "item";
-  neededCount: number | null;
+  neededCount: number;
   scheduleNotes?: string;
   customFieldValues?: Record<string, unknown>;
   lifecycleState: "draft" | "published" | "cancelled" | "completed";
@@ -188,7 +198,7 @@ The persisted record adds a server-generated id, audit fields, and an optimistic
 
 `workspaceId` is the scheduling-scope key in the sketch. If a future workspace can contain more than one real-world project, add a separate `projectId` and enforce that it belongs to the workspace rather than using the two ids interchangeably.
 
-`neededCount` is required and positive when `coverageMode` is `item`; it is `null` when coverage is `none`. A multi-day window should not use one ambiguous aggregate helper count. If the project needs volunteers on several dates or shifts inside a window, create related timed/date-based items or introduce a deliberate child-occurrence model later.
+`neededCount` is required and non-negative. It is zero when `coverageMode` is `none`; positive counts represent assignable work. A multi-day window should not use one ambiguous aggregate volunteer count. If the project needs volunteers on several dates or shifts inside a window, create related timed/date-based items or introduce a deliberate child-occurrence model later.
 
 ## Assignment and coverage truth
 
@@ -200,10 +210,10 @@ Iteration 11.11 adds assignment-scoped bearer authorization without changing Cal
 
 Assignment and response rows, not Calendar item counters or client calculations, must drive:
 
-- Filled count.
+- Assigned count (pending plus confirmed).
 - Confirmed count.
 - Denied count.
-- Open spots.
+- Unassigned count.
 - Waiting-on-confirmation state.
 - Some/all-denied filter state.
 - Each volunteer's invitation, confirmation, denial, cancellation, or completion response state.

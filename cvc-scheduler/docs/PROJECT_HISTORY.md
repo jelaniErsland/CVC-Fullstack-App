@@ -3885,6 +3885,33 @@ Limitations:
 Next recommended step:
 - Add and review an unlinked dynamic/no-store `/admin/assignments/[assignmentId]` route shell that reads only `readAssignmentDetailContext`, presents the uniform unavailable state, and contains no response-link action.
 
+## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
+
+Summary:
+- Added `PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md` as the canonical planning baseline for Project Local as a general volunteer/project coordination product, not a CVC-only application.
+- Defined MVP/core around volunteer schedule lookup, Confirm/Deny/Confirm All, calendar-first scheduling/admin, assignment email, schedule-change email, automatic reminders, and response/staffing follow-up.
+- Recorded detailed V1/later contracts for unified scheduled items, templates/custom items, Follow-up Contact, publishing, Availability Blocks, Volunteers, Communications, Meals, Needs Attention, Questionnaire, permissions, on-site personnel, Notes, navigation, and UX.
+- Reconciled older planning language: assigned counts replace “spots”; zero-count informational items are valid; Lunch-as-system-preset gives way to Calendar-owned Meals; Needs Attention becomes primary navigation; Volunteers/Communications move under More; and on-site personnel are a separate access type rather than a contact role.
+- Preserved current mock routes and implementation history. No UI, route, schema, migration, component, feature code, or product behavior changed.
+
+Changed files:
+- `docs/PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md`
+- `docs/ROADMAP.md`
+- `docs/CURRENT_STATE.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/PROJECT_HISTORY.md`
+
+Open questions retained:
+- On-site shared access identity versus individual lightweight identity.
+- Optional per-item reminder disabling and bulk `.ics` scope.
+- Volunteer-specific Follow-up Contact overrides and future Notes sharing.
+- Production email provider/deliverability/retry rules.
+- Calendar timezone/DST, overnight work, recurrence, and schedule-edit audit details.
+
+Verification:
+- Documentation links, headings, conflict markers, and `git diff --check` were reviewed.
+- No application test suite was required because this update changes documentation only.
+
 ## Documentation Maintenance Rules
 
 - Every future Codex iteration should update `PROJECT_HISTORY.md` with a concise entry.

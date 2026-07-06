@@ -2,23 +2,24 @@
 
 ## 1. App Overview
 
-CVC Scheduler is the full-stack successor to the Belgrade Remodel Sheets/App Script tool. It is being built as a project-centered workspace system where each workspace is centered around one real-world CVC project.
+Project Local is the full-stack successor to the Belgrade Remodel Sheets/App Script tool. Belgrade is its primary research case, but the product is a general volunteer/project coordination system rather than a CVC-only application.
 
 The current target admin mental model is:
 
 Admin user/account -> assigned project workspace -> one real-world project -> enabled modules inside that workspace.
 
-The product model is being realigned around:
+The implemented prototype currently exposes several direct admin destinations. The canonical future product model is calendar-first and uses:
 
 - Overview: role-aware project home and follow-up summary.
-- Tasks: reusable predefined blocks/presets.
-- Calendar: scheduled instances of task presets.
-- Volunteers: people, questionnaires, readiness.
-- Communications: announcements, emails, reminders, templates.
-- Settings: project/workspace/module setup.
+- Tasks: reusable templates/presets.
+- Calendar: the primary scheduling surface for template-derived and custom scheduled items.
+- Needs Attention: the main action inbox.
+- More: Volunteers, Communications, Settings, Contacts/Roles, project setup, Help, workspace switching, and private Notes.
 
-Tasks and Calendar are separate things. A task preset is a reusable block. A
-calendar item is a scheduled instance of a task preset.
+Templates and scheduled items are separate things. A template is reusable; a
+scheduled item is one calendar-placed occurrence created from a template or as
+a first-class custom item. Volunteer tasks, crew blocks, Security, food-support
+work, and informational blocks share this scheduled-item concept.
 
 Belgrade Major Remodel 2026 is the current blueprint and case study. The current app is a mock/prototype foundation only; it does not use real production data yet.
 
@@ -33,6 +34,7 @@ Belgrade Major Remodel 2026 is the current blueprint and case study. The current
 - Volunteer intake should feel like a simple questionnaire, not profile creation.
 - Never punish someone for wanting to help.
 - Belgrade is the research/testing blueprint; the target is readiness for the next project.
+- Treat [`PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md`](./PROJECT_LOCAL_PRODUCT_REQUIREMENTS.md) as the canonical future-product baseline. It reconciles older prototype decisions without changing current route behavior.
 
 ## 3. Mental Model
 
@@ -53,7 +55,7 @@ The `/admin/projects` route can remain for now, but visible UI language should s
 
 Task preset = reusable block.
 
-Calendar item = scheduled instance of a task preset.
+Scheduled item = one Calendar occurrence created from a task template or as a first-class custom item.
 
 Tasks do not include the calendar. Calendar does not replace Tasks. They are
 separate entities that work together to create the full project schedule.
@@ -63,7 +65,7 @@ Task presets may include:
 - Task id.
 - Workspace/project id.
 - Task name.
-- Category/type such as general, lunch, security, cleanup, construction, or custom.
+- Optional category/type: General, Food, or Security. Construction, cleanup, and similar work roll into General.
 - Needed count.
 - Visibility settings.
 - Optional custom fields with name/label/type.
@@ -76,10 +78,11 @@ or calendar placement.
 Task duplication should append a number suffix to the original task name, such
 as Night watch, Night watch (1), Night watch (2).
 
-Lunch is a predefined/system task preset. Lunch has one predefined field:
-Menu. Lunch may also have custom fields below that. The reason Lunch is special
-is so the system can later recognize it and generate a volunteer-facing lunch
-schedule/menu view.
+Earlier mock work explored Lunch as a predefined system preset. Canonical
+planning replaces that assumption with Calendar-owned Meals: independently
+enabled Breakfast/Lunch entries with typed meal details and a separate
+volunteer meal-card presentation. Existing mock Food/Lunch code remains
+prototype history until a reviewed implementation slice replaces it.
 
 Calendar items may include:
 
@@ -87,7 +90,7 @@ Calendar items may include:
 - Date.
 - Time/window.
 - Assigned volunteers/helpers.
-- Filled count such as 0/3, 1/3, or 2/2.
+- Assigned count such as `0/3 assigned`, `1/3 assigned`, or `2/2 assigned`, derived from assignment rows.
 - Schedule-specific notes.
 - Repeat rule.
 - Copy/paste/bulk creation metadata.
@@ -95,9 +98,11 @@ Calendar items may include:
 
 The production boundary and unresolved migration rules are summarized in
 [`CALENDAR_DATA_MODEL_READINESS.md`](./CALENDAR_DATA_MODEL_READINESS.md).
-Creation drafts remain local UI state; they are not Calendar item records.
+Current creation drafts remain local UI state; they are not Calendar item records.
 Future assignment rows should be the source of volunteer response and coverage
 truth rather than the current mock item counters and volunteer id arrays.
+Future saved drafts are real calendar-placed private/unpublished scheduled
+items, not floating ideas or an unscheduled tray.
 
 Future Calendar work should support day/week/month views, a Filter button with
 a drawer/sheet, task search, helper coverage filters, drag/drop placement,
@@ -133,42 +138,38 @@ types.
 Target desktop sidebar:
 
 - Overview.
-- Calendar.
 - Tasks.
-- Volunteers.
-- Communications.
-- Settings.
+- Calendar.
+- Needs Attention.
+- More.
 
 Desktop should keep the persistent left sidebar. Do not replace desktop
 navigation with bottom navigation.
 
-Communications should absorb Emails and Announcements. Needs Attention and
-Conflicts should become Overview/Calendar follow-up concepts rather than
-permanent top-level sidebar siblings. Food and Security should become task
-categories/presets/calendar filters rather than permanent top-level sidebar
-siblings.
+Communications absorbs Emails and Announcements. Needs Attention is a primary
+action inbox. Food and Security are workflow categories, not permanent
+top-level mini-apps. More contains Volunteers, Communications, Settings,
+Contacts/Roles, project setup, Help, workspace switching, and private Notes.
 
 Target mobile 5-tab bottom navigation:
 
 - Overview / Home.
 - Tasks.
 - Calendar.
-- Volunteers.
+- Needs Attention.
 - More.
 
-Calendar should be the emphasized center tab/action on mobile. More should
-contain secondary destinations such as Communications, Settings, Workspaces,
-Needs Attention/follow-ups if not surfaced on Overview, and other admin/support
-tools as needed.
+Calendar should be the emphasized center tab/action on mobile. More contains
+Volunteers, Communications, Settings, Contacts/Roles, project setup, Help,
+workspace switching, and Notes.
 
 Mobile can still use a drawer or More menu for secondary links, but the
 long-term primary mobile navigation should be the 5-tab bottom bar.
 
 Trusted main project contacts should share one main app experience. The app
 should still distinguish project/main contacts, assistant contacts, on-site
-contacts, and volunteers, but should not split Primary CVC, Primary Food
-Contact, and Primary Security Contact into separate main-contact sign-in
-experiences.
+personnel, and volunteers, but should not split Main Contact, Main Food Service
+Contact, and Main Security Contact into separate main-contact sign-in experiences.
 
 Upcoming UI direction:
 
