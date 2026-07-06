@@ -107,6 +107,17 @@ npm run test:assignment-detail-route
 
 This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior, and keeps every response-link product action/UI/reveal flag false.
 
+For the 11.31 visual/behavior gate, start a local production preview after building, then run:
+
+```powershell
+npm run build
+npm run preview
+# In another local shell:
+npm run test:assignment-detail-route:browser
+```
+
+The browser command accepts only loopback Supabase and preview URLs. It creates a disposable authenticated contact with `assignments.view`, renders safe success and unavailable states at desktop/mobile widths, checks forbidden fields and unrelated rows, and removes all Auth/product fixtures in `finally`. It writes no screenshot or credential artifact and requires no hosted environment.
+
 To rerun the hosted non-production assignment-detail gate, reconfirm the linked staging project, then use its exact opt-in:
 
 ```powershell

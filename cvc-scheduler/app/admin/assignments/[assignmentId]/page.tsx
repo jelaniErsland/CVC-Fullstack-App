@@ -100,15 +100,21 @@ function formatUpdatedAt(value: string, timezone: string) {
   if (!Number.isFinite(date.getTime())) return "Recently updated";
   try {
     return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       timeZone: timezone,
       timeZoneName: "short",
     }).format(date);
   } catch {
     return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
       timeZone: "UTC",
       timeZoneName: "short",
     }).format(date);
@@ -146,7 +152,9 @@ function UnavailableState({ signInHref }: Readonly<{ signInHref?: string }>) {
           Assignment unavailable
         </h1>
         <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600">
-          Sign in with an authorized project-contact account, or return to the project workspace. This assignment may no longer be available.
+          {signInHref
+            ? "Sign in with an authorized project-contact account to view assignment details."
+            : "This assignment is not available from your current project-contact access. Return to the project workspace to continue."}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           {signInHref ? (
@@ -185,7 +193,9 @@ function DetailItem({
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
           {label}
         </p>
-        <div className="mt-1 text-sm font-semibold leading-6 text-slate-800">{value}</div>
+        <div className="mt-1 break-words text-sm font-semibold leading-6 text-slate-800">
+          {value}
+        </div>
       </div>
     </div>
   );
@@ -227,12 +237,14 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
         <header className="rounded-2xl border border-white/70 bg-white/35 px-5 py-6 backdrop-blur-xl sm:px-7 sm:py-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-sky-700">{context.workspaceDisplayName}</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl">
+              <p className="break-words text-sm font-semibold text-sky-700">
+                {context.workspaceDisplayName}
+              </p>
+              <h1 className="mt-2 break-words text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl">
                 {context.taskTitle}
               </h1>
-              <p className="mt-3 break-all font-mono text-xs text-slate-400">
-                Assignment {context.assignmentId}
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Assignment reference {context.assignmentId.slice(0, 8).toUpperCase()}
               </p>
             </div>
             <span className="inline-flex min-h-8 w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700">
@@ -310,10 +322,10 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                 Future assignment tools
               </p>
               <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-                Response-link actions are not available
+                Response link actions are not available in this route yet.
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                This page is read-only. Link generation and delivery require a separate reviewed product action and interface.
+                Assignment details are read-only here. Link actions require a later reviewed action and warning flow.
               </p>
             </GlassCard>
           </div>

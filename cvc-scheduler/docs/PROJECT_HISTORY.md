@@ -3920,6 +3920,38 @@ Limitations:
 Next recommended step:
 - Review the unlinked shell’s visual/unavailable behavior or implement the still-unlinked POST action in a separate fail-closed slice; do not enable navigation, copy UI, or reveal availability yet.
 
+## Iteration 11.31 — Assignment Detail Route Visual/Behavior QA
+
+Summary:
+- Added loopback-only `npm run test:assignment-detail-route:browser` using disposable local Auth/product fixtures and the existing production-preview browser utilities.
+- Verified anonymous sign-in, authorized safe detail, authenticated unavailable, desktop, and 390px states with no horizontal overflow, browser errors, credential/intake leakage, unrelated-row leakage, active buttons, or response/diagnostic links.
+- Hardened unavailable-state copy for anonymous versus already-authenticated contacts, shortened the displayed assignment reference, improved long-label wrapping, and made the future response-link area plainly non-actionable.
+- Fixed the authorized route’s runtime-only timestamp failure by replacing an invalid `Intl.DateTimeFormat` option combination with explicit date/time fields and timezone fallback.
+- Preserved the route’s dynamic/no-store, read-only, persisted-context-only, unlinked boundary and every fail-closed response-link availability flag.
+
+Changed files:
+- `app/admin/assignments/[assignmentId]/page.tsx`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `scripts/assignment-detail-route-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The complete local Supabase/persistence/response/detail-context/detail-route suite passed.
+- The new browser gate passed with zero product/Auth residue, along with lint, dynamic production build, TypeScript, response-route browser QA, Calendar desktop/mobile QA, and diff checks.
+- Hosted validation was intentionally skipped because no migration, RPC, generated type, or hosted gate behavior changed.
+
+Limitations:
+- No product action, copy/clipboard UI, delivery, mutation, inbound navigation link, mock fallback, service-role client, or route cutover was added.
+- The in-app side-by-side browser surface was unavailable in this session; the checked-in local Playwright gate supplied the repeatable render/behavior coverage.
+
+Next recommended step:
+- Choose a separate still-unlinked product-action implementation slice or a route-entry planning review; keep action UI, reveal availability, and product navigation false until their own review.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

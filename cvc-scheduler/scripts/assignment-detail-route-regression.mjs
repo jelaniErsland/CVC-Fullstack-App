@@ -47,7 +47,7 @@ assert.match(routeSource, /readAssignmentDetailContext\(\{\s*assignmentId:/s);
 assert.match(routeSource, /readProjectContactSession\(\)/);
 assert.match(routeSource, /session\.status !== "authenticated"/);
 assert.match(routeSource, /Assignment unavailable/);
-assert.match(routeSource, /This page is read-only/);
+assert.match(routeSource, /Assignment details are read-only here/);
 assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(

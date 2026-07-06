@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.31 assignment-detail route visual/behavior QA
+
+`npm run test:assignment-detail-route:browser` now creates disposable local Auth/workspace/grant/questionnaire/volunteer/task/Calendar/assignment/response fixtures, transfers only that user’s SSR session cookies into a loopback production-preview browser, and cleans every row in `finally`. It refuses non-loopback Supabase/preview targets and prints no credential or sensitive fixture value.
+
+The gate verifies the anonymous sign-in state, one authorized safe projection, the authenticated unavailable state, absence of token/link/audit/intake/credential and unrelated-row content, no actionable buttons or response/diagnostic links, and no horizontal overflow at desktop or 390px. It found and fixed an invalid runtime `Intl.DateTimeFormat` option combination that had caused the authorized route to return 500; the timestamp now uses explicit date/time fields with the safe workspace timezone and UTC fallback.
+
+The route remains dynamic/no-store, unlinked, read-only, and limited to `readAssignmentDetailContext`. Product-action implementation/UI, product-surface implementation, reveal availability, and navigation linkage remain false. No hosted validation was run because schema, RPCs, generated types, and hosted gates are unchanged.
+
 ## 11.30 unlinked persisted assignment-detail route shell
 
 `/admin/assignments/[assignmentId]` is now the first read-only persisted admin route. It is force-dynamic/no-store, requires a verified project-contact session, and calls only `readAssignmentDetailContext`; the RPC continues to enforce `assignments.view` and derive all scope server-side. Malformed, missing, unauthorized, cross-workspace, canceled, archived, inactive, and otherwise unavailable contexts share one calm non-disclosing state.
@@ -524,6 +532,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.28 Response Link Product Action Readiness Review — completed:** route-unused server policy defines the future assignment-detail POST action's inputs, sequence, success/failure, warning/expiry, no-prefetch, and logging constraints. Contract availability is true; implementation, UI, and reveal availability remain false.
 - **11.29 Persisted Assignment Detail Route Surface Readiness Review — completed:** route-unused policy selects `/admin/assignments/[assignmentId]`, limits it to the authenticated `assignments.view` detail-context boundary, requires dynamic/no-store and uniform non-disclosing unavailable states, and keeps route implementation, navigation, action/UI, and reveal availability false.
 - **11.30 Unlinked Persisted Assignment Detail Route Shell — completed:** one dynamic/no-store read-only route now consumes only the validated detail-context helper. It remains unlinked and has no mock fallback, token/reveal/action imports, copy UI, mutation, or delivery; only route implementation readiness changed to true.
+- **11.31 Assignment Detail Route Visual/Behavior QA — completed:** a loopback-only disposable browser gate proves sign-in/success/unavailable behavior, safe fields, desktop/mobile overflow, and zero residue; it also caught and fixed the response timestamp formatter’s runtime-only failure. All action/UI/reveal/navigation flags remain fail closed.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
