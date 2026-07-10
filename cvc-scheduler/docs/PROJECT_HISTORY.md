@@ -3014,6 +3014,7 @@ Changed files:
 - `docs/ROADMAP.md`
 - `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
 - `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
 
 Verification:
 - `npm run test:workspace` passed.
@@ -3951,6 +3952,39 @@ Limitations:
 
 Next recommended step:
 - Choose a separate still-unlinked product-action implementation slice or a route-entry planning review; keep action UI, reveal availability, and product navigation false until their own review.
+
+## Iteration 11.32 — Assignment Detail Product Action Server Boundary
+
+Summary:
+- Added a server-only, route-unused product-action boundary for the future `/admin/assignments/[assignmentId]` response-link reveal flow.
+- The boundary accepts only assignment id and optional policy-bounded TTL, reads `readAssignmentDetailContext` first, requires matching assignment context plus `canEditAssignment`, derives `copy_link` mode, audit metadata, and `RESPONSE_LINK_BASE_URL` server-side, and calls `createAuditedAssignmentResponseLinkReveal` as the one transactional reveal boundary.
+- Invalid input, missing configuration, unavailable context, read-only context, mismatched assignment context, and audited-reveal errors all fail closed without returning a URL.
+- Product action implementation/UI, product-surface implementation, reveal availability, and navigation linkage remain false. `/admin/assignments/[assignmentId]` remains unlinked, read-only, and does not import the new boundary.
+
+Changed files:
+- `lib/responseTokens/productAction.server.ts`
+- `lib/responseTokens/productActionPolicy.server.ts`
+- `lib/responseTokens/auditedReveal.server.ts`
+- `lib/assignments/detailContext.server.ts`
+- `lib/supabase/server.ts`
+- `lib/supabase/types.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The assignment-detail route regression now proves route isolation, no navigation/import cutover, no mock fallback, no token-table/direct-RPC/manual replacement-audit sequencing, and fail-closed product-action boundary behavior.
+- The full local verification matrix passed, including Supabase smoke, workspace-through-response-link suites, assignment-detail context/route/browser gates, Calendar regression, lint, TypeScript, production build, and diff checks.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No visible copy-link UI, clipboard action, response-link button, email/reminder delivery, public lookup, remembered-device behavior, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The boundary can return a full URL only to a future explicit server action response; no current route renders, logs, stores, or writes it.
+
+Next recommended step:
+- Review whether the next slice should wire a still-unavailable POST action into the assignment-detail route without UI, or first plan the warning/expiry/copy interaction. Keep reveal availability and product navigation false until a separate reviewed UI slice.
 
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 

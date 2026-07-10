@@ -3,9 +3,9 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { readSupabaseServerConfig } from "@/lib/supabase/config";
-import type { Database } from "@/lib/supabase/database.types";
-import type { AppSupabaseClient } from "@/lib/supabase/types";
+import { readSupabaseServerConfig } from "./config.ts";
+import type { Database } from "./database.types.ts";
+import type { AppSupabaseClient } from "./types.ts";
 
 export function getSupabaseServerConfig() {
   return readSupabaseServerConfig({

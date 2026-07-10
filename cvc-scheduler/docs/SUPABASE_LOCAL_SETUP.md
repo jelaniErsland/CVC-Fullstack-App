@@ -105,7 +105,7 @@ After 11.30, run the route-isolation guardrail as well:
 npm run test:assignment-detail-route
 ```
 
-This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior, and keeps every response-link product action/UI/reveal flag false.
+This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior. After 11.32 it also proves the route-unused product-action server boundary fails closed before reveal, while product action implementation/UI and reveal availability remain false.
 
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 

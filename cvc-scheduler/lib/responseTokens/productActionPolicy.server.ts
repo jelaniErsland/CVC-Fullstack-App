@@ -1,6 +1,7 @@
 import "server-only";
 
 export const RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE = true;
+export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE = true;
 export const RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE = false;
 export const RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE = false;
 
@@ -38,6 +39,7 @@ export const responseLinkProductActionContract = {
     "read_assignment_detail_context_first",
     "require_context_can_edit_assignment",
     "use_server_configured_response_link_origin",
+    "derive_reveal_mode_and_audit_metadata_server_side",
     "call_createAuditedAssignmentResponseLinkReveal_once",
     "return_credential_only_in_successful_explicit_action_response",
   ],
@@ -73,7 +75,8 @@ export const responseLinkProductActionContract = {
   ],
   prerequisitesBeforeEnablement: [
     "persisted_assignment_detail_route_surface",
-    "reviewed_post_only_server_action_implementation",
+    "reviewed_post_only_server_action_boundary",
+    "reviewed_post_only_route_action_wiring",
     "reviewed_warning_and_expiration_ui",
     "proven_dynamic_no_store_and_no_prefetch",
     "proven_log_redaction_and_static_guards",
@@ -96,6 +99,7 @@ export type ResponseLinkProductActionReadiness = Readonly<{
 export function describeResponseLinkProductActionContract() {
   return {
     contractAvailable: RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE,
+    serverBoundaryAvailable: RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE,
     implementationAvailable: RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE,
     uiAvailable: RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE,
     contract: responseLinkProductActionContract,

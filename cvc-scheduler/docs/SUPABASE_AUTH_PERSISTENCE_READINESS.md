@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.32 assignment-detail product-action server boundary
+
+`lib/responseTokens/productAction.server.ts` adds the route-unused server-only boundary for a future `/admin/assignments/[assignmentId]` response-link action. The browser-shaped input is limited to assignment id and optional policy-bounded TTL; workspace, volunteer, actor, origin, reveal mode, audit metadata, token id, bearer, verifier, and capability data remain server-derived or forbidden.
+
+The boundary verifies the persisted assignment-detail context before reveal by calling `readAssignmentDetailContext`, requiring the returned assignment id to match and requiring `canEditAssignment` to be true. Only after those checks does it derive `copy_link` mode, credential-free metadata, and `RESPONSE_LINK_BASE_URL`, then call `createAuditedAssignmentResponseLinkReveal` as the single transactional replacement-plus-audit reveal boundary. Invalid, missing, unauthorized, read-only, mismatched, unconfigured, or reveal-error states fail closed without returning a URL.
+
+`RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE` is true, while product-action implementation/UI, product-surface implementation, reveal-product availability, and assignment-detail route navigation linkage remain false. No current route imports the boundary, no page-load/GET/prefetch reveal exists, and `/admin/assignments/[assignmentId]` remains read-only, unlinked, and free of response-link controls.
+
 ## 11.31 assignment-detail route visual/behavior QA
 
 `npm run test:assignment-detail-route:browser` now creates disposable local Auth/workspace/grant/questionnaire/volunteer/task/Calendar/assignment/response fixtures, transfers only that user’s SSR session cookies into a loopback production-preview browser, and cleans every row in `finally`. It refuses non-loopback Supabase/preview targets and prints no credential or sensitive fixture value.
@@ -533,6 +541,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.29 Persisted Assignment Detail Route Surface Readiness Review — completed:** route-unused policy selects `/admin/assignments/[assignmentId]`, limits it to the authenticated `assignments.view` detail-context boundary, requires dynamic/no-store and uniform non-disclosing unavailable states, and keeps route implementation, navigation, action/UI, and reveal availability false.
 - **11.30 Unlinked Persisted Assignment Detail Route Shell — completed:** one dynamic/no-store read-only route now consumes only the validated detail-context helper. It remains unlinked and has no mock fallback, token/reveal/action imports, copy UI, mutation, or delivery; only route implementation readiness changed to true.
 - **11.31 Assignment Detail Route Visual/Behavior QA — completed:** a loopback-only disposable browser gate proves sign-in/success/unavailable behavior, safe fields, desktop/mobile overflow, and zero residue; it also caught and fixed the response timestamp formatter’s runtime-only failure. All action/UI/reveal/navigation flags remain fail closed.
+- **11.32 Assignment Detail Product Action Server Boundary — completed:** route-unused server boundary validates assignment id plus bounded TTL, verifies persisted assignment-detail context and edit readiness before reveal, derives origin/mode/metadata server-side, and delegates to the audited reveal helper exactly once. Product action implementation/UI and reveal availability remain false; no route imports it.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

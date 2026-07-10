@@ -1,7 +1,7 @@
 import "server-only";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
+import { createServerSupabaseClient } from "../supabase/server.ts";
+import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 
 export type ReadAssignmentDetailContextInput = Readonly<{
   assignmentId: string;

@@ -3,19 +3,19 @@ import "server-only";
 import {
   redactAssignmentResponseLink,
   validateResponseLinkBaseUrl,
-} from "@/lib/responseTokens/link";
+} from "./link.ts";
 import {
   normalizeResponseLinkTtlHours,
-} from "@/lib/responseTokens/policy";
+} from "./policy.ts";
 import {
   RESPONSE_LINK_REVEAL_AUDIT_METADATA_MAX_KEYS,
   RESPONSE_LINK_REVEAL_AUDIT_REASON_CODE_MAX_LENGTH,
   RESPONSE_LINK_REVEAL_MODES,
   responseLinkRevealPolicy,
   type PlannedResponseLinkRevealMode,
-} from "@/lib/responseTokens/revealPolicy.server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
+} from "./revealPolicy.server.ts";
+import { createServerSupabaseClient } from "../supabase/server.ts";
+import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 
 export type CreateAuditedAssignmentResponseLinkRevealInput = Readonly<{
   assignmentId: string;

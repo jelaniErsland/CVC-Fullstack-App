@@ -15,14 +15,25 @@ import {
 import {
   RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE,
 } from "../lib/responseTokens/productActionPolicy.server.ts";
+import {
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REASON_CODE,
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REVEAL_MODE,
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_ROUTE_CONTEXT,
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_WARNING,
+  createAssignmentDetailResponseLinkProductActionWithDependencies,
+} from "../lib/responseTokens/productAction.server.ts";
 import { RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE } from "../lib/responseTokens/revealPolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const routeRelativePath = "app/admin/assignments/[assignmentId]/page.tsx";
 const routePath = path.join(root, ...routeRelativePath.split("/"));
 const routeSource = await readFile(routePath, "utf8");
+const productActionPath = path.join(root, "lib", "responseTokens", "productAction.server.ts");
+const productActionSource = await readFile(productActionPath, "utf8");
+const exampleAssignmentId = "11111111-1111-4111-8111-111111111111";
 
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -56,11 +67,28 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   routeSource,
-  /SUPABASE_SERVICE_ROLE_KEY|serviceRole|createServiceRole|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link/i,
+  /SUPABASE_SERVICE_ROLE_KEY|serviceRole|createServiceRole|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|Send reminder|Email volunteer/i,
 );
 assert.doesNotMatch(
   routeSource,
-  /rawBearer|fullResponseUrl|redactedResponseUrl|responseTokenId|tokenVerifierHash|tokenScope|accessToken|refreshToken|serviceRoleKey|emergencyContact|questionnaireAnswers|sensitiveIntakeData|auditInternals/,
+  /rawBearer|bearerToken|fullResponseUrl|redactedResponseUrl|responseUrl|responseTokenId|tokenId|tokenVerifierHash|verifier|tokenScope|accessToken|refreshToken|password|apiKey|serviceRoleKey|emergencyContact|questionnaireAnswers|sensitiveIntakeData|auditInternals/,
+);
+
+assert.match(productActionSource, /^import "server-only";/);
+assert.match(productActionSource, /readAssignmentDetailContext/);
+assert.match(productActionSource, /createAuditedAssignmentResponseLinkReveal/);
+assert.match(productActionSource, /normalizeResponseLinkTtlHours\("product"/);
+assert.match(productActionSource, /validateResponseLinkBaseUrl/);
+assert.match(productActionSource, /RESPONSE_LINK_BASE_URL/);
+assert.match(
+  productActionSource,
+  /reason_code: ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REASON_CODE/,
+);
+assert.match(productActionSource, /delivery_requested: false/);
+assert.match(productActionSource, /return \{ status: "unavailable" \}/);
+assert.doesNotMatch(
+  productActionSource,
+  /replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|issueAssignmentResponseLink|replace_assignment_response_token|record_assignment_response_link_reveal_event|reveal_assignment_response_link|assignment_response_tokens|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|createServiceRole|console\.|logger\.|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link/i,
 );
 
 const appAndComponentFiles = [];
@@ -95,10 +123,107 @@ assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
+assert.equal(
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_ROUTE_CONTEXT,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REVEAL_MODE, "copy_link");
+assert.equal(
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REASON_CODE,
+  "assignment_detail_product_action",
+);
+
+async function exerciseAction(input, readContextResult, revealResult = undefined) {
+  let readContextCalls = 0;
+  let revealCalls = 0;
+  let revealInput = null;
+  const result = await createAssignmentDetailResponseLinkProductActionWithDependencies(input, {
+    environment: { RESPONSE_LINK_BASE_URL: "https://preview.example.test" },
+    readContext: async (request) => {
+      readContextCalls += 1;
+      assert.deepEqual(Object.keys(request), ["assignmentId"]);
+      return readContextResult;
+    },
+    reveal: async (request) => {
+      revealCalls += 1;
+      revealInput = request;
+      if (revealResult instanceof Error) throw revealResult;
+      return (
+        revealResult ?? {
+          responseUrl: "[synthetic action response credential]",
+          expiresAt: "2026-07-05T12:00:00.000Z",
+        }
+      );
+    },
+  });
+  return { result, readContextCalls, revealCalls, revealInput };
+}
+
+const malformed = await exerciseAction(
+  { assignmentId: exampleAssignmentId, workspaceId: "forbidden" },
+  { assignmentId: exampleAssignmentId, canEditAssignment: true },
+);
+assert.deepEqual(malformed.result, { status: "invalid" });
+assert.equal(malformed.readContextCalls, 0);
+assert.equal(malformed.revealCalls, 0);
+
+const missingContext = await exerciseAction({ assignmentId: exampleAssignmentId }, null);
+assert.deepEqual(missingContext.result, { status: "unavailable" });
+assert.equal(missingContext.readContextCalls, 1);
+assert.equal(missingContext.revealCalls, 0);
+
+const readOnlyContext = await exerciseAction(
+  { assignmentId: exampleAssignmentId, expiresInHours: 24 },
+  { assignmentId: exampleAssignmentId, canEditAssignment: false },
+);
+assert.deepEqual(readOnlyContext.result, { status: "unavailable" });
+assert.equal(readOnlyContext.readContextCalls, 1);
+assert.equal(readOnlyContext.revealCalls, 0);
+
+const mismatchedContext = await exerciseAction(
+  { assignmentId: exampleAssignmentId },
+  {
+    assignmentId: "22222222-2222-4222-8222-222222222222",
+    canEditAssignment: true,
+  },
+);
+assert.deepEqual(mismatchedContext.result, { status: "unavailable" });
+assert.equal(mismatchedContext.revealCalls, 0);
+
+const revealFailure = await exerciseAction(
+  { assignmentId: exampleAssignmentId },
+  { assignmentId: exampleAssignmentId, canEditAssignment: true },
+  new Error("denied"),
+);
+assert.deepEqual(revealFailure.result, { status: "unavailable" });
+assert.equal(revealFailure.revealCalls, 1);
+
+const success = await exerciseAction(
+  { assignmentId: exampleAssignmentId, expiresInHours: 72 },
+  { assignmentId: exampleAssignmentId, canEditAssignment: true },
+);
+assert.equal(success.result.status, "issued");
+assert.equal(success.result.expiresAt, "2026-07-05T12:00:00.000Z");
+assert.equal(success.result.warning, ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_WARNING);
+assert.equal(success.revealCalls, 1);
+assert.deepEqual(success.revealInput, {
+  assignmentId: exampleAssignmentId,
+  expiresInHours: 72,
+  revealMode: "copy_link",
+  metadata: {
+    reason_code: "assignment_detail_product_action",
+    delivery_requested: false,
+  },
+  baseUrl: "https://preview.example.test",
+});
+assert.equal("responseTokenId" in success.result, false);
+assert.equal("auditEventId" in success.result, false);
+assert.equal("bearer" in success.result, false);
 
 console.log("Persisted assignment-detail route shell checks passed.");
-console.log("Confirmed one approved context importer, no inbound product links, and no response-link behavior.");
+console.log("Confirmed one approved context importer, no inbound product links, and fail-closed product action boundary.");
