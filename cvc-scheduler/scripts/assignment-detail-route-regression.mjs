@@ -19,6 +19,15 @@ import {
   RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE,
 } from "../lib/responseTokens/productActionPolicy.server.ts";
 import {
+  RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_UI_READINESS_REVIEW_AVAILABLE,
+  describeResponseLinkProductActionUiContract,
+  evaluateResponseLinkProductActionUiReadiness,
+  responseLinkProductActionUiContract,
+} from "../lib/responseTokens/productActionUiPolicy.server.ts";
+import {
   ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REASON_CODE,
   ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REVEAL_MODE,
   ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_ROUTE_CONTEXT,
@@ -33,6 +42,13 @@ const routePath = path.join(root, ...routeRelativePath.split("/"));
 const routeSource = await readFile(routePath, "utf8");
 const productActionPath = path.join(root, "lib", "responseTokens", "productAction.server.ts");
 const productActionSource = await readFile(productActionPath, "utf8");
+const productActionUiPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionUiPolicy.server.ts",
+);
+const productActionUiPolicySource = await readFile(productActionUiPolicyPath, "utf8");
 const exampleAssignmentId = "11111111-1111-4111-8111-111111111111";
 
 async function collectFiles(directory) {
@@ -63,7 +79,7 @@ assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productAction|productActionUi|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -91,6 +107,35 @@ assert.doesNotMatch(
   /replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|issueAssignmentResponseLink|replace_assignment_response_token|record_assignment_response_link_reveal_event|reveal_assignment_response_link|assignment_response_tokens|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole|createServiceRole|console\.|logger\.|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link/i,
 );
 
+assert.match(productActionUiPolicySource, /^import "server-only";/);
+assert.match(productActionUiPolicySource, /RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE = true/);
+assert.match(
+  productActionUiPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE = false/,
+);
+assert.match(
+  productActionUiPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE = false/,
+);
+assert.match(productActionUiPolicySource, /eligibleSurface: "\/admin\/assignments\/\[assignmentId\]"/);
+assert.match(productActionUiPolicySource, /required: "deliberate_click_or_tap"/);
+assert.match(productActionUiPolicySource, /"GET"/);
+assert.match(productActionUiPolicySource, /"page_load"/);
+assert.match(productActionUiPolicySource, /"prefetch"/);
+assert.match(productActionUiPolicySource, /"hover"/);
+assert.match(productActionUiPolicySource, /"focus"/);
+assert.match(productActionUiPolicySource, /"automatic_effect"/);
+assert.match(productActionUiPolicySource, /warn_link_grants_response_access_for_this_assignment/);
+assert.match(productActionUiPolicySource, /show_expiration_before_action/);
+assert.match(productActionUiPolicySource, /show_expiration_after_action/);
+assert.match(productActionUiPolicySource, /allow_manual_copy_only_after_success/);
+assert.match(productActionUiPolicySource, /never_auto_copy_to_clipboard/);
+assert.match(productActionUiPolicySource, /successful_explicit_action_response_only/);
+assert.doesNotMatch(
+  productActionUiPolicySource,
+  /createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|assignment_response_tokens|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
+);
+
 const appAndComponentFiles = [];
 for (const directory of ["app", "components"]) {
   appAndComponentFiles.push(
@@ -102,6 +147,7 @@ for (const directory of ["app", "components"]) {
 
 const contextImporters = [];
 const inboundLinks = [];
+const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
   const source = await readFile(file, "utf8");
@@ -114,10 +160,18 @@ for (const file of appAndComponentFiles) {
   if (relative !== routeRelativePath && source.includes("/admin/assignments/")) {
     inboundLinks.push(relative);
   }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionUiPolicy|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+      source,
+    )
+  ) {
+    unsafeCurrentRouteOrComponentUi.push(relative);
+  }
 }
 
 assert.deepEqual(contextImporters, [routeRelativePath]);
 assert.deepEqual(inboundLinks, []);
+assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
@@ -126,6 +180,10 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_READINESS_REVIEW_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 assert.equal(
@@ -137,6 +195,84 @@ assert.equal(
   ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_REASON_CODE,
   "assignment_detail_product_action",
 );
+assert.equal(
+  describeResponseLinkProductActionUiContract().contract.eligibleSurface,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(
+  responseLinkProductActionUiContract.assignmentDataBoundary,
+  "readAssignmentDetailContext_only",
+);
+assert.equal(
+  responseLinkProductActionUiContract.currentRouteImport,
+  "prohibited_until_reviewed_ui_slice",
+);
+assert.equal(responseLinkProductActionUiContract.trigger.required, "deliberate_click_or_tap");
+for (const prohibitedTrigger of [
+  "render",
+  "GET",
+  "page_load",
+  "prefetch",
+  "hover",
+  "focus",
+  "automatic_effect",
+]) {
+  assert.ok(responseLinkProductActionUiContract.trigger.prohibited.includes(prohibitedTrigger));
+}
+for (const requiredDisclosure of [
+  "warn_link_grants_response_access_for_this_assignment",
+  "show_expiration_before_action",
+  "state_manual_copy_available_only_after_audited_success",
+]) {
+  assert.ok(
+    responseLinkProductActionUiContract.preActionDisclosure.includes(requiredDisclosure),
+  );
+}
+for (const requiredPostSuccessRule of [
+  "show_full_url_only_in_successful_explicit_action_response",
+  "show_expiration_after_action",
+  "allow_manual_copy_only_after_success",
+  "never_auto_copy_to_clipboard",
+]) {
+  assert.ok(
+    responseLinkProductActionUiContract.postSuccessDisplay.includes(
+      requiredPostSuccessRule,
+    ),
+  );
+}
+for (const prohibitedErrorField of [
+  "fullResponseUrl",
+  "rawBearer",
+  "tokenVerifierHash",
+  "responseTokenId",
+  "rawAuditData",
+  "credential",
+  "sqlDetail",
+  "sensitiveFixtureValue",
+  "accessToken",
+  "password",
+  "serviceRoleKey",
+]) {
+  assert.ok(
+    responseLinkProductActionUiContract.prohibitedErrorStateFields.includes(
+      prohibitedErrorField,
+    ),
+  );
+}
+const otherwiseReadyUi = evaluateResponseLinkProductActionUiReadiness({
+  reviewedRouteActionWiring: true,
+  reviewedWarningAndExpirationCopy: true,
+  noUrlBeforeSuccessProven: true,
+  noImplicitRevealProven: true,
+  manualCopyAfterSuccessOnlyProven: true,
+  logRedactionReviewed: true,
+  productOwnerApproved: true,
+});
+assert.equal(otherwiseReadyUi.allowed, false);
+assert.ok(
+  otherwiseReadyUi.blockers.includes("product_action_ui_implementation_unavailable"),
+);
+assert.ok(otherwiseReadyUi.blockers.includes("copy_affordance_unavailable"));
 
 async function exerciseAction(input, readContextResult, revealResult = undefined) {
   let readContextCalls = 0;

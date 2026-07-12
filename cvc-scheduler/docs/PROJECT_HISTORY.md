@@ -3986,6 +3986,36 @@ Limitations:
 Next recommended step:
 - Review whether the next slice should wire a still-unavailable POST action into the assignment-detail route without UI, or first plan the warning/expiry/copy interaction. Keep reveal availability and product navigation false until a separate reviewed UI slice.
 
+## Iteration 11.33 — Assignment Detail Product Action UI Readiness Review
+
+Summary:
+- Added a server-only, route-unused UI readiness policy for the future assignment-detail response-link control.
+- Defined `/admin/assignments/[assignmentId]` as the only eligible surface and preserved the requirement that assignment data comes only from `readAssignmentDetailContext`.
+- Required a deliberate click/tap, assignment-specific credential warning, visible expiration before and after success, no reveal on render/GET/page load/prefetch/hover/focus/effects, no automatic clipboard write, and manual copy only after audited success.
+- Explicitly prohibited full URL, bearer, verifier, token id, raw audit data, credentials, SQL detail, and sensitive fixture values in error states.
+- Kept product-action UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage false. The current route imports no product-action UI, action, or reveal helper.
+
+Changed files:
+- `lib/responseTokens/productActionUiPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the route remains the only detail-context importer, has no inbound links, no mock fallback, no service-role path, no token/reveal/action/UI imports, no clipboard/copy behavior, and no credential-bearing render fields.
+- The full local verification matrix passed, including Supabase smoke, workspace-through-response-link suites, assignment-detail context/route/browser gates, Calendar regression, lint, TypeScript, production build, and diff checks.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No visible response-link control, copy/clipboard UI, delivery, mutation, inbound navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The policy is planning/static guardrail only; the future UI and route action still require their own reviewed slices before reveal availability can change.
+
+Next recommended step:
+- Decide whether to implement still-invisible route action wiring or first review the warning/expiry/manual-copy visual pattern; keep UI, reveal, navigation, and delivery unavailable until separately approved.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

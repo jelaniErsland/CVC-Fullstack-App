@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.33 assignment-detail product-action UI readiness review
+
+`lib/responseTokens/productActionUiPolicy.server.ts` records the future UI contract without rendering or importing it into any route. The only eligible surface is `/admin/assignments/[assignmentId]`, and it remains bound to the persisted assignment-detail context plus the 11.32 server action boundary.
+
+The future control must require a deliberate click/tap. It may not reveal on render, GET, page load, prefetch, hover, focus, or automatic effect. It must warn that the generated credential grants response access for that specific assignment, show expiration before and after the action, avoid automatic clipboard writes, and allow manual copy only after audited success returns a full URL.
+
+Error states may not include a full URL, bearer, verifier, token id, raw audit data, credentials, SQL detail, or sensitive fixture value. The full URL may exist only in the successful explicit action response and only long enough for post-success display/copy. Product-action UI implementation, copy affordance, product-surface implementation, reveal-product availability, and product navigation linkage remain false; the current assignment-detail route still imports no action/UI/reveal helper.
+
 ## 11.32 assignment-detail product-action server boundary
 
 `lib/responseTokens/productAction.server.ts` adds the route-unused server-only boundary for a future `/admin/assignments/[assignmentId]` response-link action. The browser-shaped input is limited to assignment id and optional policy-bounded TTL; workspace, volunteer, actor, origin, reveal mode, audit metadata, token id, bearer, verifier, and capability data remain server-derived or forbidden.
@@ -542,6 +550,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.30 Unlinked Persisted Assignment Detail Route Shell — completed:** one dynamic/no-store read-only route now consumes only the validated detail-context helper. It remains unlinked and has no mock fallback, token/reveal/action imports, copy UI, mutation, or delivery; only route implementation readiness changed to true.
 - **11.31 Assignment Detail Route Visual/Behavior QA — completed:** a loopback-only disposable browser gate proves sign-in/success/unavailable behavior, safe fields, desktop/mobile overflow, and zero residue; it also caught and fixed the response timestamp formatter’s runtime-only failure. All action/UI/reveal/navigation flags remain fail closed.
 - **11.32 Assignment Detail Product Action Server Boundary — completed:** route-unused server boundary validates assignment id plus bounded TTL, verifies persisted assignment-detail context and edit readiness before reveal, derives origin/mode/metadata server-side, and delegates to the audited reveal helper exactly once. Product action implementation/UI and reveal availability remain false; no route imports it.
+- **11.33 Assignment Detail Product Action UI Readiness Review — completed:** route-unused policy defines the future warning/expiration/click/no-prefetch/no-auto-copy UI contract while keeping UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
