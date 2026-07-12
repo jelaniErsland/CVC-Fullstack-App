@@ -4111,6 +4111,37 @@ Limitations:
 Next recommended step:
 - Review a still-unavailable route entry implementation slice or continue product action wiring planning; keep all entry, navigation, copy, product-surface, and reveal flags false until an explicit source surface is persisted, authorized, and separately tested.
 
+## Iteration 11.37 - Assignment Detail Enablement Checklist Review
+
+Summary:
+- Added route-unused server-only `detailResponseLinkEnablementChecklist.server.ts` to consolidate the final activation prerequisites for assignment-detail response-link reveal/copy/linking.
+- Grouped prerequisites into route safety, entry safety, action safety, UI safety, credential/log safety, browser proof, and product-owner checkpoint.
+- Explicitly kept active response-link reveal, active copy, and active entry-linking unavailable even when prerequisite booleans are otherwise true.
+- Extended the assignment-detail route static regression to prove the checklist exists, all groups are represented, and no route/component imports the checklist, route-entry policy, action-wiring policy, product-action boundary, audited reveal helper, token helper, service-role path, clipboard behavior, form action, or product navigation link.
+- Preserved `/admin/assignments/[assignmentId]` as read-only, unlinked, dynamic/no-store, persisted-context-only, and limited to `readAssignmentDetailContext`.
+
+Changed files:
+- `lib/assignments/detailResponseLinkEnablementChecklist.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the enablement checklist blocks active reveal/copy/linking and keeps every current entry/linkage, product-action UI, copy affordance, product-surface, reveal, and navigation flag false.
+- The static gate still proves no current app route/component links to `/admin/assignments/[assignmentId]`, no current route imports the persisted detail context except the assignment-detail route, and no Calendar, Volunteers, Needs Attention, Communications, public, diagnostic, response-token, or mock surface links to the route.
+- The browser gate remains the same local disposable-fixture proof for sign-in, safe success, inert shell, unavailable state, desktop/mobile overflow, forbidden fields, and zero residue.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No entry point, product navigation link, Calendar link, Volunteers link, Needs Attention link, Communications link, public link, route cutover, active response-link control, form, server action wiring, clipboard behavior, URL reveal, delivery, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The visible response-link shell remains inert and cannot reveal, submit, copy, display, email, send, or log a response link.
+
+Next recommended step:
+- Use the checklist as the gate for any future activation. Do not enable entry links, product action UI, copy affordance, product-surface implementation, or reveal availability until every checklist group has concrete proof and a later explicit approval slice flips the active flags.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

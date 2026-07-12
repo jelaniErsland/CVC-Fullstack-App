@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.37 assignment-detail enablement checklist review
+
+`lib/assignments/detailResponseLinkEnablementChecklist.server.ts` consolidates the remaining prerequisites for any future assignment-detail response-link activation. It is server-only, route-unused, and explicitly records that active reveal, copy, and entry linking remain blocked until every checklist group is satisfied and a later reviewed slice flips active availability.
+
+The checklist groups the blockers by route safety, entry safety, action safety, UI safety, credential/log safety, browser proof, and product-owner checkpoint. It requires the route to stay dynamic/no-store, verified-contact-only, persisted-context-only, non-disclosing, and mock-free; future entries must come from persisted authorized assignment context and carry only `/admin/assignments/[assignmentId]`; future actions must be explicit POST/server-action only and call only the 11.32 product-action boundary; future UI must warn about assignment-specific credential access, show expiration, avoid automatic clipboard writes, and allow manual copy only after audited success.
+
+Credential and log states may not include full URL, bearer, verifier, token id, access/refresh token, password, service-role key, local/hosted secrets, SQL detail, sensitive intake data, or unrelated rows. Browser proof must show no URL before success, no desktop or 390px mobile overflow/errors, and no response-link capability detail in unavailable states. Explicit product-owner approval remains required before any active flag flips.
+
+`ASSIGNMENT_DETAIL_RESPONSE_LINK_ENABLEMENT_CHECKLIST_AVAILABLE` is true. Active reveal, active copy, active route-entry linking, Calendar/Volunteers/Needs Attention/Communications/public/diagnostic/response-token entry linkage, product-action UI, copy affordance, product-surface, reveal availability, and product navigation remain false. The current `/admin/assignments/[assignmentId]` route imports no checklist, route-entry policy, action-wiring policy, product-action boundary, or reveal helper.
+
 ## 11.36 assignment-detail route entry readiness review
 
 `lib/assignments/detailRouteEntryPolicy.server.ts` records the future entry-point contract without linking any current route to `/admin/assignments/[assignmentId]`. The assignment-detail route remains a secure direct-access fallback/deep-link surface for verified project contacts; routine assignment details should usually stay contextual in inspectors, drawers, or modals.
@@ -582,6 +592,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.34 Assignment Detail Inert Product Action UI Shell — completed:** the unlinked persisted assignment-detail route now shows only an inert response-link readiness panel, with no form/action binding, enabled button, URL, token metadata, clipboard behavior, delivery, or navigation link.
 - **11.35 Assignment Detail Action Wiring Readiness Review — completed:** route-unused policy defines future explicit POST/server-action wiring from the inert panel to the 11.32 boundary, including credential-free render, post-success-only URL/copy, no direct reveal/RPC/token route usage, and no secret-bearing logs/errors. Route wiring implementation remains false.
 - **11.36 Assignment Detail Route Entry Readiness Review — completed:** route-unused policy defines future persisted authorized entry points from Calendar, Volunteers, Needs Attention, and Communications contexts while keeping public, diagnostic, mock, arbitrary-id, broad directory/search, and response-token surfaces ineligible. All entry/linkage flags remain false.
+- **11.37 Assignment Detail Enablement Checklist Review — completed:** route-unused server-only checklist consolidates route, entry, action, UI, credential/log, browser-proof, and product-owner prerequisites. Active reveal, copy, entry-linking, product-action UI, product-surface, reveal, and navigation availability remain false; the current route imports none of these planning/policy modules.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

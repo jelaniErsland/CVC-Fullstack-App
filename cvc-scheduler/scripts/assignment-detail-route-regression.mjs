@@ -23,6 +23,16 @@ import {
   evaluateAssignmentDetailRouteEntryReadiness,
 } from "../lib/assignments/detailRouteEntryPolicy.server.ts";
 import {
+  ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE,
+  ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE,
+  ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE,
+  ASSIGNMENT_DETAIL_RESPONSE_LINK_ENABLEMENT_CHECKLIST_AVAILABLE,
+  assignmentDetailResponseLinkEnablementChecklist,
+  describeAssignmentDetailResponseLinkEnablementChecklist,
+  evaluateAssignmentDetailResponseLinkEnablement,
+  getAssignmentDetailResponseLinkEnablementPrerequisiteGroups,
+} from "../lib/assignments/detailResponseLinkEnablementChecklist.server.ts";
+import {
   RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE,
 } from "../lib/responseTokens/productSurfacePolicy.server.ts";
@@ -69,6 +79,13 @@ const routeEntryPolicyPath = path.join(
   "detailRouteEntryPolicy.server.ts",
 );
 const routeEntryPolicySource = await readFile(routeEntryPolicyPath, "utf8");
+const enablementChecklistPath = path.join(
+  root,
+  "lib",
+  "assignments",
+  "detailResponseLinkEnablementChecklist.server.ts",
+);
+const enablementChecklistSource = await readFile(enablementChecklistPath, "utf8");
 const productActionPath = path.join(root, "lib", "responseTokens", "productAction.server.ts");
 const productActionSource = await readFile(productActionPath, "utf8");
 const productActionUiPolicyPath = path.join(
@@ -125,7 +142,7 @@ assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -197,6 +214,76 @@ assert.match(routeEntryPolicySource, /capabilities/);
 assert.doesNotMatch(
   routeEntryPolicySource,
   /readAssignmentDetailContext\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
+);
+
+assert.match(enablementChecklistSource, /^import "server-only";/);
+assert.match(
+  enablementChecklistSource,
+  /ASSIGNMENT_DETAIL_RESPONSE_LINK_ENABLEMENT_CHECKLIST_AVAILABLE = true/,
+);
+assert.match(
+  enablementChecklistSource,
+  /ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE = false/,
+);
+assert.match(
+  enablementChecklistSource,
+  /ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE = false/,
+);
+assert.match(
+  enablementChecklistSource,
+  /ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE = false/,
+);
+assert.match(enablementChecklistSource, /currentStatus: "active_reveal_copy_and_linking_blocked"/);
+assert.match(
+  enablementChecklistSource,
+  /activationRule: "all_prerequisite_groups_must_be_true_before_any_active_flag_flips"/,
+);
+for (const requiredGroup of [
+  "routeSafety",
+  "entrySafety",
+  "actionSafety",
+  "uiSafety",
+  "credentialLogSafety",
+  "browserProof",
+  "productOwnerCheckpoint",
+]) {
+  assert.match(enablementChecklistSource, new RegExp(requiredGroup));
+}
+for (const requiredChecklistItem of [
+  "assignment_detail_route_remains_dynamic_no_store",
+  "verified_project_contact_session_required",
+  "persisted_assignment_detail_context_only",
+  "non_disclosing_unavailable_state",
+  "no_mock_fallback",
+  "future_entry_point_comes_from_persisted_authorized_assignment_context",
+  "no_public_volunteer_respond_diagnostic_mock_or_anonymous_entry",
+  "href_carries_only_admin_assignments_assignment_id_path",
+  "no_query_hash_scope_token_capability_workspace_or_volunteer_data",
+  "explicit_post_server_action_only",
+  "no_render_get_page_load_prefetch_hover_focus_or_effect_reveal",
+  "browser_input_assignment_id_plus_optional_bounded_ttl_only",
+  "route_calls_only_11_32_product_action_boundary",
+  "no_direct_audited_reveal_rpc_token_replacement_table_or_service_role_path",
+  "assignment_specific_credential_warning",
+  "visible_expiration",
+  "disabled_unavailable_states_credential_free",
+  "no_automatic_clipboard_write",
+  "manual_copy_only_after_audited_success",
+  "no_full_url_bearer_verifier_or_token_id_in_render_error_or_logs",
+  "no_access_refresh_token_password_or_service_role_key_in_render_error_or_logs",
+  "no_local_or_hosted_secrets_in_render_error_or_logs",
+  "no_sql_detail_in_user_facing_errors",
+  "no_sensitive_intake_or_unrelated_row_data_in_render_error_or_logs",
+  "browser_test_proves_no_url_before_success",
+  "desktop_and_390px_mobile_have_no_overflow_or_errors",
+  "unavailable_state_reveals_no_response_link_capability_detail",
+  "explicit_later_product_owner_approval_required_before_active_flags_flip",
+]) {
+  assert.match(enablementChecklistSource, new RegExp(requiredChecklistItem));
+}
+assert.doesNotMatch(
+  enablementChecklistSource,
+  /readAssignmentDetailContext\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|assignment_response_tokens|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
 assert.match(productActionSource, /^import "server-only";/);
@@ -306,6 +393,7 @@ for (const directory of ["app", "components"]) {
 const contextImporters = [];
 const inboundLinks = [];
 const routeEntryPolicyImporters = [];
+const enablementChecklistImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -326,7 +414,13 @@ for (const file of appAndComponentFiles) {
     routeEntryPolicyImporters.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+    source.includes("detailResponseLinkEnablementChecklist") ||
+    source.includes("assignmentDetailResponseLinkEnablement")
+  ) {
+    enablementChecklistImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
       source,
     )
   ) {
@@ -337,6 +431,7 @@ for (const file of appAndComponentFiles) {
 assert.deepEqual(contextImporters, [routeRelativePath]);
 assert.deepEqual(inboundLinks, []);
 assert.deepEqual(routeEntryPolicyImporters, []);
+assert.deepEqual(enablementChecklistImporters, []);
 assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
@@ -350,6 +445,10 @@ assert.equal(ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_DIAGNOSTIC_ROUTE_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_RESPONSE_LINK_ENABLEMENT_CHECKLIST_AVAILABLE, true);
+assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
@@ -469,6 +568,135 @@ assert.equal(otherwiseReadyEntry.allowed, false);
 assert.ok(
   otherwiseReadyEntry.blockers.includes(
     "assignment_detail_route_entry_implementation_unavailable",
+  ),
+);
+const enablementDescription = describeAssignmentDetailResponseLinkEnablementChecklist();
+assert.equal(enablementDescription.checklistAvailable, true);
+assert.equal(enablementDescription.activeRevealAvailable, false);
+assert.equal(enablementDescription.activeCopyAvailable, false);
+assert.equal(enablementDescription.activeEntryLinkingAvailable, false);
+assert.equal(
+  enablementDescription.checklist.currentStatus,
+  "active_reveal_copy_and_linking_blocked",
+);
+assert.equal(
+  enablementDescription.checklist.activationRule,
+  "all_prerequisite_groups_must_be_true_before_any_active_flag_flips",
+);
+assert.equal(
+  assignmentDetailResponseLinkEnablementChecklist.route,
+  "/admin/assignments/[assignmentId]",
+);
+for (const requiredActiveFalseFlag of [
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
+  "RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
+]) {
+  assert.ok(
+    assignmentDetailResponseLinkEnablementChecklist.activeFlagsThatMustRemainFalse.includes(
+      requiredActiveFalseFlag,
+    ),
+  );
+}
+const enablementPrerequisiteGroups =
+  getAssignmentDetailResponseLinkEnablementPrerequisiteGroups();
+assert.deepEqual(Object.keys(enablementPrerequisiteGroups), [
+  "routeSafety",
+  "entrySafety",
+  "actionSafety",
+  "uiSafety",
+  "credentialLogSafety",
+  "browserProof",
+  "productOwnerCheckpoint",
+]);
+for (const [groupName, items] of Object.entries(enablementPrerequisiteGroups)) {
+  assert.ok(items.length > 0, `${groupName} must have checklist items`);
+}
+for (const requiredRouteSafetyItem of [
+  "assignment_detail_route_remains_dynamic_no_store",
+  "verified_project_contact_session_required",
+  "persisted_assignment_detail_context_only",
+  "non_disclosing_unavailable_state",
+  "no_mock_fallback",
+]) {
+  assert.ok(enablementPrerequisiteGroups.routeSafety.includes(requiredRouteSafetyItem));
+}
+for (const requiredEntrySafetyItem of [
+  "future_entry_point_comes_from_persisted_authorized_assignment_context",
+  "no_public_volunteer_respond_diagnostic_mock_or_anonymous_entry",
+  "href_carries_only_admin_assignments_assignment_id_path",
+  "no_query_hash_scope_token_capability_workspace_or_volunteer_data",
+]) {
+  assert.ok(enablementPrerequisiteGroups.entrySafety.includes(requiredEntrySafetyItem));
+}
+for (const requiredActionSafetyItem of [
+  "explicit_post_server_action_only",
+  "no_render_get_page_load_prefetch_hover_focus_or_effect_reveal",
+  "browser_input_assignment_id_plus_optional_bounded_ttl_only",
+  "route_calls_only_11_32_product_action_boundary",
+  "no_direct_audited_reveal_rpc_token_replacement_table_or_service_role_path",
+]) {
+  assert.ok(enablementPrerequisiteGroups.actionSafety.includes(requiredActionSafetyItem));
+}
+for (const requiredUiSafetyItem of [
+  "assignment_specific_credential_warning",
+  "visible_expiration",
+  "disabled_unavailable_states_credential_free",
+  "no_automatic_clipboard_write",
+  "manual_copy_only_after_audited_success",
+]) {
+  assert.ok(enablementPrerequisiteGroups.uiSafety.includes(requiredUiSafetyItem));
+}
+for (const requiredCredentialLogSafetyItem of [
+  "no_full_url_bearer_verifier_or_token_id_in_render_error_or_logs",
+  "no_access_refresh_token_password_or_service_role_key_in_render_error_or_logs",
+  "no_local_or_hosted_secrets_in_render_error_or_logs",
+  "no_sql_detail_in_user_facing_errors",
+  "no_sensitive_intake_or_unrelated_row_data_in_render_error_or_logs",
+]) {
+  assert.ok(
+    enablementPrerequisiteGroups.credentialLogSafety.includes(
+      requiredCredentialLogSafetyItem,
+    ),
+  );
+}
+for (const requiredBrowserProofItem of [
+  "browser_test_proves_no_url_before_success",
+  "desktop_and_390px_mobile_have_no_overflow_or_errors",
+  "unavailable_state_reveals_no_response_link_capability_detail",
+]) {
+  assert.ok(enablementPrerequisiteGroups.browserProof.includes(requiredBrowserProofItem));
+}
+assert.ok(
+  enablementPrerequisiteGroups.productOwnerCheckpoint.includes(
+    "explicit_later_product_owner_approval_required_before_active_flags_flip",
+  ),
+);
+const otherwiseReadyEnablement = evaluateAssignmentDetailResponseLinkEnablement({
+  routeSafety: true,
+  entrySafety: true,
+  actionSafety: true,
+  uiSafety: true,
+  credentialLogSafety: true,
+  browserProof: true,
+  productOwnerCheckpoint: true,
+});
+assert.equal(otherwiseReadyEnablement.allowed, false);
+assert.ok(
+  otherwiseReadyEnablement.blockers.includes("active_response_link_reveal_unavailable"),
+);
+assert.ok(
+  otherwiseReadyEnablement.blockers.includes("active_response_link_copy_unavailable"),
+);
+assert.ok(
+  otherwiseReadyEnablement.blockers.includes(
+    "active_response_link_entry_linking_unavailable",
   ),
 );
 assert.equal(
