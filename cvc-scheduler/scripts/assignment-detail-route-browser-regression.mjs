@@ -445,8 +445,16 @@ async function exerciseBrowserRoute() {
     "Confirmed",
     "Project contact",
     "Permission available",
-    "Response link actions are not available in this route yet.",
+    "Response link",
+    "Link actions are not available yet.",
     "Assignment details are read-only here.",
+    "future link would grant response access for this assignment",
+    "will expire",
+    "explicit click or tap",
+    "Unavailable in this read-only shell",
+    "No link is generated on page load.",
+    "No email or reminder is sent from this page.",
+    "Manual copying will only be available after an audited success",
   ]) {
     assert(
       visibleTextLower.includes(expected.toLowerCase()),
@@ -474,9 +482,15 @@ async function exerciseBrowserRoute() {
     "assignments.edit",
     "workspace.read",
     "response_token_id",
+    "response token id",
     "token_verifier_hash",
+    "verifier",
     "token scope",
     "audit internals",
+    "audit event",
+    "credential",
+    "[redacted]",
+    "/respond/",
     "Copy response link",
     "Copy full link",
     "Generate link",
@@ -494,7 +508,38 @@ async function exerciseBrowserRoute() {
   for (const secret of secrets) {
     assert(!pageHtml.includes(secret), "The assignment page HTML exposed a credential.");
   }
+  for (const forbiddenHtml of [
+    "<form",
+    "formaction",
+    'type="submit"',
+    'type="hidden"',
+    "navigator.clipboard",
+    "clipboard.writeText",
+    "/respond/",
+    "[redacted]",
+    "responseUrl",
+    "fullResponseUrl",
+    "redactedResponseUrl",
+    "responseTokenId",
+    "tokenVerifierHash",
+    "bearerToken",
+    "rawBearer",
+  ]) {
+    assert(
+      !pageHtml.includes(forbiddenHtml),
+      "The assignment page HTML exposed action, clipboard, or credential-bearing markup.",
+    );
+  }
   assert((await page.locator("button").count()) === 0, "The read-only route rendered an active button.");
+  assert((await page.locator("form").count()) === 0, "The read-only route rendered a form.");
+  assert(
+    (await page.locator('input[type="hidden"], [formaction]').count()) === 0,
+    "The read-only route rendered hidden action metadata.",
+  );
+  assert(
+    (await page.locator('[aria-disabled="true"]').count()) >= 1,
+    "The inert response-link shell did not expose a disabled visual state.",
+  );
   assert(
     (await page.locator('a[href^="/respond/"], a[href*="diagnostics/response-link"]').count()) === 0,
     "The read-only route linked to a response or diagnostic surface.",
@@ -518,6 +563,17 @@ async function exerciseBrowserRoute() {
   );
   assert(!missingText.includes("Sign in as a project contact"), "The signed-in unavailable state offered redundant sign-in.");
   assert(!missingText.includes(fixture.taskTitle), "The unavailable state leaked target assignment context.");
+  for (const forbiddenUnavailableCopy of [
+    "Response link",
+    "future link would grant response access",
+    "Manual copying",
+    "No link is generated",
+  ]) {
+    assert(
+      !missingText.includes(forbiddenUnavailableCopy),
+      "The unavailable state exposed response-link-specific capability details.",
+    );
+  }
   await assertNoHorizontalOverflow(page, "Mobile unavailable state");
   assert(browserErrors.length === 0, "The unavailable assignment route emitted a browser error.");
   await context.close();

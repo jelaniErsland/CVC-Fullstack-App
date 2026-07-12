@@ -4016,6 +4016,38 @@ Limitations:
 Next recommended step:
 - Decide whether to implement still-invisible route action wiring or first review the warning/expiry/manual-copy visual pattern; keep UI, reveal, navigation, and delivery unavailable until separately approved.
 
+## Iteration 11.34 — Assignment Detail Inert Product Action UI Shell
+
+Summary:
+- Added a visible but fully inert response-link readiness panel to the authorized `/admin/assignments/[assignmentId]` success state.
+- The panel explains the future safety model: a link would grant assignment response access, expire, require an explicit reviewed click/tap action, and allow manual copying only after audited success.
+- The route still reads persisted data only through `readAssignmentDetailContext` and imports no product-action, audited-reveal, replacement, token, diagnostic, delivery, mock, or service-role boundary.
+- The unavailable assignment state remains generic and does not expose response-link-specific capability details.
+- Added `RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE = true` while keeping product-action UI implementation, copy affordance, product-surface implementation, reveal availability, and product navigation linkage false.
+
+Changed files:
+- `app/admin/assignments/[assignmentId]/page.tsx`
+- `lib/responseTokens/productActionUiPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the visible response-link panel is inert: no form, enabled button, hidden action metadata, clipboard behavior, generated URL field, token-table read, direct reveal RPC, manual replacement/audit sequence, service-role path, diagnostic dependency, or mock fallback exists.
+- The browser gate continues to verify local disposable-fixture sign-in, safe success, unavailable, desktop, and 390px states, and now also checks the inert shell copy, disabled visual state, absence of action markup, and absence of response-link-specific unavailable-state details.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No response link is revealed, copied, displayed, emailed, sent, logged, or generated. No copy-link UI, route cutover, product navigation link, delivery, seed data, cron/background job, service-role usage, token deletion, or mock-to-real mixing was added.
+- Product-action UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage remain false.
+
+Next recommended step:
+- Review still-unavailable action wiring or route-entry planning separately; do not enable reveal/copy/delivery until the explicit product action and UI slices pass their own browser and redaction gates.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

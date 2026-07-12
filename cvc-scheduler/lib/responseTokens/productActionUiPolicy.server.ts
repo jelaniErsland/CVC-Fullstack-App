@@ -2,6 +2,7 @@ import "server-only";
 
 export const RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE = true;
 export const RESPONSE_LINK_PRODUCT_ACTION_UI_READINESS_REVIEW_AVAILABLE = true;
+export const RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE = true;
 export const RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE = false;
 export const RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE = false;
 
@@ -67,6 +68,25 @@ export const responseLinkProductActionUiContract = {
     "do_not_import_action_boundary_yet",
     "do_not_render_copy_or_reveal_control",
   ],
+  currentInertShell: {
+    eligibleSurface: "/admin/assignments/[assignmentId]",
+    status: "visible_but_inert",
+    allowedVisibleCopy: [
+      "future_link_grants_response_access_for_this_assignment",
+      "future_link_will_expire",
+      "future_action_requires_explicit_click_or_tap",
+      "manual_copy_after_audited_success_only",
+    ],
+    prohibitedMechanics: [
+      "form",
+      "server_action_binding",
+      "enabled_button",
+      "hidden_credential_or_action_metadata",
+      "clipboard_call",
+      "generated_link_field",
+      "full_or_redacted_live_url",
+    ],
+  },
   prerequisitesBeforeUiAvailability: [
     "reviewed_route_action_wiring",
     "reviewed_warning_and_expiration_copy",
@@ -92,6 +112,7 @@ export function describeResponseLinkProductActionUiContract() {
   return {
     contractAvailable: RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE,
     readinessReviewAvailable: RESPONSE_LINK_PRODUCT_ACTION_UI_READINESS_REVIEW_AVAILABLE,
+    inertShellAvailable: RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE,
     implementationAvailable: RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE,
     copyAffordanceAvailable: RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE,
     contract: responseLinkProductActionUiContract,

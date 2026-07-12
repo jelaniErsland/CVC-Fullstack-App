@@ -105,7 +105,7 @@ After 11.30, run the route-isolation guardrail as well:
 npm run test:assignment-detail-route
 ```
 
-This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior. After 11.32 it also proves the route-unused product-action server boundary fails closed before reveal. After 11.33 it proves the future UI policy requires warning copy, visible expiration, explicit click/tap, no implicit reveal, and post-success-only manual copy while product action UI, copy affordance, and reveal availability remain false.
+This static command requires no hosted data or preview server. It verifies the dynamic/no-store route exists, is the only route importing the approved detail-context helper, has no inbound product links, mock fallback, token/reveal/action imports, service-role path, or copy behavior. After 11.32 it also proves the route-unused product-action server boundary fails closed before reveal. After 11.33 it proves the future UI policy requires warning copy, visible expiration, explicit click/tap, no implicit reveal, and post-success-only manual copy while product action UI, copy affordance, and reveal availability remain false. After 11.34 it also proves the visible response-link shell is inert: no form, enabled button, hidden action metadata, clipboard behavior, generated URL field, token-table read, direct reveal RPC, or action binding exists.
 
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
@@ -116,7 +116,7 @@ npm run preview
 npm run test:assignment-detail-route:browser
 ```
 
-The browser command accepts only loopback Supabase and preview URLs. It creates a disposable authenticated contact with `assignments.view`, renders safe success and unavailable states at desktop/mobile widths, checks forbidden fields and unrelated rows, and removes all Auth/product fixtures in `finally`. It writes no screenshot or credential artifact and requires no hosted environment.
+The browser command accepts only loopback Supabase and preview URLs. It creates a disposable authenticated contact with `assignments.view`, renders safe success and unavailable states at desktop/mobile widths, checks forbidden fields and unrelated rows, verifies the inert response-link shell has no submit/copy/action markup and is absent from unavailable states, and removes all Auth/product fixtures in `finally`. It writes no screenshot or credential artifact and requires no hosted environment.
 
 To rerun the hosted non-production assignment-detail gate, reconfirm the linked staging project, then use its exact opt-in:
 

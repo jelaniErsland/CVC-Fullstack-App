@@ -19,6 +19,7 @@ import {
   RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE,
 } from "../lib/responseTokens/productActionPolicy.server.ts";
 import {
+  RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE,
@@ -75,6 +76,13 @@ assert.match(routeSource, /readProjectContactSession\(\)/);
 assert.match(routeSource, /session\.status !== "authenticated"/);
 assert.match(routeSource, /Assignment unavailable/);
 assert.match(routeSource, /Assignment details are read-only here/);
+assert.match(routeSource, /Response link/);
+assert.match(routeSource, /Link actions are not available yet/);
+assert.match(routeSource, /future link would grant\s+response access for this assignment/s);
+assert.match(routeSource, /will\s+expire/s);
+assert.match(routeSource, /explicit click or tap/);
+assert.match(routeSource, /Manual copying will only be available after an audited\s+success/s);
+assert.match(routeSource, /No link is generated on page load/);
 assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
@@ -88,6 +96,10 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   routeSource,
   /rawBearer|bearerToken|fullResponseUrl|redactedResponseUrl|responseUrl|responseTokenId|tokenId|tokenVerifierHash|verifier|tokenScope|accessToken|refreshToken|password|apiKey|serviceRoleKey|emergencyContact|questionnaireAnswers|sensitiveIntakeData|auditInternals/,
+);
+assert.doesNotMatch(
+  routeSource,
+  /<form\b|<button\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormStatus|useTransition/,
 );
 
 assert.match(productActionSource, /^import "server-only";/);
@@ -111,6 +123,10 @@ assert.match(productActionUiPolicySource, /^import "server-only";/);
 assert.match(productActionUiPolicySource, /RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE = true/);
 assert.match(
   productActionUiPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE = true/,
+);
+assert.match(
+  productActionUiPolicySource,
   /RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE = false/,
 );
 assert.match(
@@ -131,6 +147,14 @@ assert.match(productActionUiPolicySource, /show_expiration_after_action/);
 assert.match(productActionUiPolicySource, /allow_manual_copy_only_after_success/);
 assert.match(productActionUiPolicySource, /never_auto_copy_to_clipboard/);
 assert.match(productActionUiPolicySource, /successful_explicit_action_response_only/);
+assert.match(productActionUiPolicySource, /status: "visible_but_inert"/);
+assert.match(productActionUiPolicySource, /future_link_grants_response_access_for_this_assignment/);
+assert.match(productActionUiPolicySource, /future_link_will_expire/);
+assert.match(productActionUiPolicySource, /future_action_requires_explicit_click_or_tap/);
+assert.match(productActionUiPolicySource, /manual_copy_after_audited_success_only/);
+assert.match(productActionUiPolicySource, /server_action_binding/);
+assert.match(productActionUiPolicySource, /hidden_credential_or_action_metadata/);
+assert.match(productActionUiPolicySource, /full_or_redacted_live_url/);
 assert.doesNotMatch(
   productActionUiPolicySource,
   /createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|assignment_response_tokens|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
@@ -182,6 +206,7 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_READINESS_REVIEW_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
@@ -199,6 +224,7 @@ assert.equal(
   describeResponseLinkProductActionUiContract().contract.eligibleSurface,
   "/admin/assignments/[assignmentId]",
 );
+assert.equal(describeResponseLinkProductActionUiContract().inertShellAvailable, true);
 assert.equal(
   responseLinkProductActionUiContract.assignmentDataBoundary,
   "readAssignmentDetailContext_only",
@@ -208,6 +234,38 @@ assert.equal(
   "prohibited_until_reviewed_ui_slice",
 );
 assert.equal(responseLinkProductActionUiContract.trigger.required, "deliberate_click_or_tap");
+assert.equal(responseLinkProductActionUiContract.currentInertShell.status, "visible_but_inert");
+assert.equal(
+  responseLinkProductActionUiContract.currentInertShell.eligibleSurface,
+  "/admin/assignments/[assignmentId]",
+);
+for (const requiredShellCopy of [
+  "future_link_grants_response_access_for_this_assignment",
+  "future_link_will_expire",
+  "future_action_requires_explicit_click_or_tap",
+  "manual_copy_after_audited_success_only",
+]) {
+  assert.ok(
+    responseLinkProductActionUiContract.currentInertShell.allowedVisibleCopy.includes(
+      requiredShellCopy,
+    ),
+  );
+}
+for (const prohibitedShellMechanic of [
+  "form",
+  "server_action_binding",
+  "enabled_button",
+  "hidden_credential_or_action_metadata",
+  "clipboard_call",
+  "generated_link_field",
+  "full_or_redacted_live_url",
+]) {
+  assert.ok(
+    responseLinkProductActionUiContract.currentInertShell.prohibitedMechanics.includes(
+      prohibitedShellMechanic,
+    ),
+  );
+}
 for (const prohibitedTrigger of [
   "render",
   "GET",

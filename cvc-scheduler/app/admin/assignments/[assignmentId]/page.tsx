@@ -319,14 +319,32 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
 
             <GlassCard className="border-slate-200/80 bg-slate-50/72 p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Future assignment tools
+                Response link
               </p>
               <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-                Response link actions are not available in this route yet.
+                Link actions are not available yet.
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Assignment details are read-only here. Link actions require a later reviewed action and warning flow.
+                Assignment details are read-only here. A future link would grant
+                response access for this assignment and will expire. It will
+                require an explicit click or tap after a reviewed warning flow.
               </p>
+              <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/55 p-4">
+                <span
+                  aria-disabled="true"
+                  className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-500"
+                >
+                  Unavailable in this read-only shell
+                </span>
+                <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
+                  <li>No link is generated on page load.</li>
+                  <li>No email or reminder is sent from this page.</li>
+                  <li>
+                    Manual copying will only be available after an audited
+                    success in a later reviewed slice.
+                  </li>
+                </ul>
+              </div>
             </GlassCard>
           </div>
         </section>

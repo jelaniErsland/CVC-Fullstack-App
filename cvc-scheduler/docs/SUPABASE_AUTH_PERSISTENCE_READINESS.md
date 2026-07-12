@@ -4,6 +4,14 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.34 assignment-detail inert response-link shell
+
+`/admin/assignments/[assignmentId]` now renders a visible response-link readiness panel only after the verified persisted assignment detail context is available. The route remains force-dynamic/no-store, unlinked, read-only, and limited to `readAssignmentDetailContext`; unavailable assignment states do not show response-link-specific capability details.
+
+The panel is intentionally inert. It explains that a future link would grant response access for this assignment, expire, require an explicit reviewed click/tap action, and allow manual copying only after audited success. It contains no form, enabled button, hidden action metadata, clipboard behavior, generated field, URL, bearer, verifier, token id, audit event id, credential, or server-action binding.
+
+`RESPONSE_LINK_PRODUCT_ACTION_INERT_UI_SHELL_AVAILABLE` is true. Product-action UI implementation, copy affordance, product-surface implementation, reveal-product availability, and product navigation linkage remain false. No route imports the product-action boundary or audited reveal helper, and no email/reminder/public lookup behavior was added.
+
 ## 11.33 assignment-detail product-action UI readiness review
 
 `lib/responseTokens/productActionUiPolicy.server.ts` records the future UI contract without rendering or importing it into any route. The only eligible surface is `/admin/assignments/[assignmentId]`, and it remains bound to the persisted assignment-detail context plus the 11.32 server action boundary.
