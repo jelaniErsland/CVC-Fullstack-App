@@ -4048,6 +4048,37 @@ Limitations:
 Next recommended step:
 - Review still-unavailable action wiring or route-entry planning separately; do not enable reveal/copy/delivery until the explicit product action and UI slices pass their own browser and redaction gates.
 
+## Iteration 11.35 — Assignment Detail Action Wiring Readiness Review
+
+Summary:
+- Added route-unused server-only `productActionWiringPolicy.server.ts` for the future wiring between `/admin/assignments/[assignmentId]`, the 11.34 inert panel, the 11.32 product-action boundary, and a later post-success manual-copy state.
+- Defined future wiring as explicit POST/server-action only. Render, GET, page load, prefetch, hover, focus, and automatic effects remain prohibited execution paths.
+- Limited future browser input to assignment id and optional bounded TTL; workspace, volunteer, actor, origin, response token id, bearer, full/redacted URL, verifier, audit metadata, copy mode, and capabilities remain forbidden or server-derived.
+- Required future route code to call only `createAssignmentDetailResponseLinkProductAction`, never audited reveal helpers, reveal RPCs, replacement/token helpers, token tables, diagnostics, service-role clients, or manual replacement-plus-audit sequencing.
+- Kept full URL and manual copy post-success-only. Error/log states may not contain full URL, bearer, verifier, token id, audit internals, SQL detail, credentials, local/hosted secrets, sensitive intake, or unrelated row data.
+- Kept route wiring implementation, product-action UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage false.
+
+Changed files:
+- `lib/responseTokens/productActionWiringPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the wiring contract exists while route wiring remains unavailable, and still proves the route imports no product action, reveal, token, diagnostic, service-role, mock, clipboard, form-action, hidden metadata, or navigation-link behavior.
+- The browser gate remains the same local disposable-fixture proof for sign-in, safe success, inert shell, unavailable state, desktop/mobile overflow, forbidden fields, and zero residue.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No route wiring, server action binding, form, enabled response-link control, clipboard behavior, URL generation, email/reminder delivery, public lookup, remembered-device behavior, route cutover, navigation link, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The 11.34 visible shell remains inert and current routes cannot reveal, submit, copy, display, email, send, or log a response link.
+
+Next recommended step:
+- Review a still-unavailable POST action wiring slice or route-entry planning separately; keep copy affordance, UI implementation, product-surface implementation, reveal availability, and navigation linkage false until browser proof and product approval are complete.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

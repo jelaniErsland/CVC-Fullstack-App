@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.35 assignment-detail action wiring readiness review
+
+`lib/responseTokens/productActionWiringPolicy.server.ts` records the future wiring contract without importing it into `/admin/assignments/[assignmentId]` or attaching it to the inert panel. The route render remains credential-free, dynamic/no-store, read-only before any future POST, unlinked from product navigation, and limited to the persisted assignment-detail context.
+
+Future wiring must be explicit POST/server-action only. It may not execute on render, GET, page load, prefetch, hover, focus, or automatic effect. Browser input remains limited to assignment id and optional bounded TTL; workspace, volunteer, actor, origin, token id, bearer, full/redacted URL, verifier, audit metadata, copy mode, and capabilities remain forbidden or server-derived.
+
+If a later slice wires the action, route code may call only `createAssignmentDetailResponseLinkProductAction`; it may not call audited reveal helpers, reveal RPCs, replacement/token helpers, token tables, diagnostics, service-role clients, or manual replacement-plus-audit sequencing. A full URL may appear only in the successful explicit action response. Error and log states may not contain full URL, bearer, verifier, token id, audit internals, SQL detail, access/refresh token, password, service-role key, local/hosted secrets, sensitive intake data, or unrelated row data.
+
+`RESPONSE_LINK_PRODUCT_ACTION_WIRING_CONTRACT_AVAILABLE` is true and `RESPONSE_LINK_PRODUCT_ACTION_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE` is false. Product-action UI implementation, copy affordance, product-surface implementation, reveal-product availability, and navigation linkage remain false; the 11.34 shell stays inert.
+
 ## 11.34 assignment-detail inert response-link shell
 
 `/admin/assignments/[assignmentId]` now renders a visible response-link readiness panel only after the verified persisted assignment detail context is available. The route remains force-dynamic/no-store, unlinked, read-only, and limited to `readAssignmentDetailContext`; unavailable assignment states do not show response-link-specific capability details.
@@ -559,6 +569,8 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.31 Assignment Detail Route Visual/Behavior QA — completed:** a loopback-only disposable browser gate proves sign-in/success/unavailable behavior, safe fields, desktop/mobile overflow, and zero residue; it also caught and fixed the response timestamp formatter’s runtime-only failure. All action/UI/reveal/navigation flags remain fail closed.
 - **11.32 Assignment Detail Product Action Server Boundary — completed:** route-unused server boundary validates assignment id plus bounded TTL, verifies persisted assignment-detail context and edit readiness before reveal, derives origin/mode/metadata server-side, and delegates to the audited reveal helper exactly once. Product action implementation/UI and reveal availability remain false; no route imports it.
 - **11.33 Assignment Detail Product Action UI Readiness Review — completed:** route-unused policy defines the future warning/expiration/click/no-prefetch/no-auto-copy UI contract while keeping UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage false.
+- **11.34 Assignment Detail Inert Product Action UI Shell — completed:** the unlinked persisted assignment-detail route now shows only an inert response-link readiness panel, with no form/action binding, enabled button, URL, token metadata, clipboard behavior, delivery, or navigation link.
+- **11.35 Assignment Detail Action Wiring Readiness Review — completed:** route-unused policy defines future explicit POST/server-action wiring from the inert panel to the 11.32 boundary, including credential-free render, post-success-only URL/copy, no direct reveal/RPC/token route usage, and no secret-bearing logs/errors. Route wiring implementation remains false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
