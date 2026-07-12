@@ -4079,6 +4079,38 @@ Limitations:
 Next recommended step:
 - Review a still-unavailable POST action wiring slice or route-entry planning separately; keep copy affordance, UI implementation, product-surface implementation, reveal availability, and navigation linkage false until browser proof and product approval are complete.
 
+## Iteration 11.36 — Assignment Detail Route Entry Readiness Review
+
+Summary:
+- Added route-unused server-only `detailRouteEntryPolicy.server.ts` for future entry points into `/admin/assignments/[assignmentId]`.
+- Defined eligible future sources as persisted authorized Calendar item/assignment context, admin volunteer assignment context, Needs Attention staffing/response rows, and Communications/reminder preview context.
+- Kept public volunteer routes, `/respond/[token]`, diagnostics, mock-only routes, anonymous pages, arbitrary typed ids, and broad assignment directory/search surfaces ineligible.
+- Required future hrefs to carry only the assignment path segment and no workspace, volunteer, response token, bearer, verifier, URL, audit id, response-link metadata, grant, or capability data.
+- Reaffirmed that routine assignment details should stay contextual in inspectors/drawers/modals, while the persisted route is a secure direct-access fallback/deep-link for verified project contacts.
+- Kept Calendar, Volunteers, Needs Attention, Communications, public volunteer, response-token, diagnostic, product-navigation, product-action UI, copy affordance, product-surface, and reveal linkage flags false.
+
+Changed files:
+- `lib/assignments/detailRouteEntryPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the route-entry contract exists while every current entry/linkage flag remains false.
+- The static gate still proves no current app route/component links to `/admin/assignments/[assignmentId]`, no other route imports the persisted detail context, and no Calendar, Volunteers, Needs Attention, Communications, public, diagnostic, response-token, or mock surface links to the route.
+- The browser gate remains the same local disposable-fixture proof for sign-in, safe success, inert shell, unavailable state, desktop/mobile overflow, forbidden fields, and zero residue.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No entry point, product navigation link, Calendar link, Volunteers link, Needs Attention link, Communications link, public link, route cutover, active response-link control, form, server action, clipboard behavior, URL reveal, delivery, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- `/admin/assignments/[assignmentId]` remains read-only, unlinked, dynamic/no-store, persisted-context-only, and limited to `readAssignmentDetailContext`.
+
+Next recommended step:
+- Review a still-unavailable route entry implementation slice or continue product action wiring planning; keep all entry, navigation, copy, product-surface, and reveal flags false until an explicit source surface is persisted, authorized, and separately tested.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

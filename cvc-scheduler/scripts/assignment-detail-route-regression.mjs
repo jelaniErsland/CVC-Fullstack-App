@@ -9,6 +9,20 @@ import {
   ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION,
 } from "../lib/assignments/detailRoutePolicy.server.ts";
 import {
+  ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_DIAGNOSTIC_ROUTE_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE,
+  ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE,
+  ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE,
+  ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE,
+  assignmentDetailRouteEntryContract,
+  describeAssignmentDetailRouteEntryContract,
+  evaluateAssignmentDetailRouteEntryReadiness,
+} from "../lib/assignments/detailRouteEntryPolicy.server.ts";
+import {
   RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE,
 } from "../lib/responseTokens/productSurfacePolicy.server.ts";
@@ -48,6 +62,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const routeRelativePath = "app/admin/assignments/[assignmentId]/page.tsx";
 const routePath = path.join(root, ...routeRelativePath.split("/"));
 const routeSource = await readFile(routePath, "utf8");
+const routeEntryPolicyPath = path.join(
+  root,
+  "lib",
+  "assignments",
+  "detailRouteEntryPolicy.server.ts",
+);
+const routeEntryPolicySource = await readFile(routeEntryPolicyPath, "utf8");
 const productActionPath = path.join(root, "lib", "responseTokens", "productAction.server.ts");
 const productActionSource = await readFile(productActionPath, "utf8");
 const productActionUiPolicyPath = path.join(
@@ -104,7 +125,7 @@ assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productAction|productActionUi|productActionWiring|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -117,6 +138,65 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   routeSource,
   /<form\b|<button\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormStatus|useTransition/,
+);
+
+assert.match(routeEntryPolicySource, /^import "server-only";/);
+assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE = true/);
+assert.match(
+  routeEntryPolicySource,
+  /ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE = false/,
+);
+assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE = false/);
+assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE = false/);
+assert.match(
+  routeEntryPolicySource,
+  /ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE = false/,
+);
+assert.match(
+  routeEntryPolicySource,
+  /ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE = false/,
+);
+assert.match(
+  routeEntryPolicySource,
+  /ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE = false/,
+);
+assert.match(
+  routeEntryPolicySource,
+  /ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE = false/,
+);
+assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_DIAGNOSTIC_ROUTE_LINKAGE_AVAILABLE = false/);
+assert.match(routeEntryPolicySource, /routePathPattern: "\/admin\/assignments\/\[assignmentId\]"/);
+assert.match(routeEntryPolicySource, /secure_project_contact_direct_access_fallback/);
+assert.match(
+  routeEntryPolicySource,
+  /routine_assignment_details_should_remain_contextual_in_inspectors_drawers_or_modals/,
+);
+assert.match(routeEntryPolicySource, /calendar_item_inspector_or_assignment_list_context/);
+assert.match(routeEntryPolicySource, /volunteer_profile_admin_assignment_context/);
+assert.match(routeEntryPolicySource, /needs_attention_staffing_or_response_row/);
+assert.match(routeEntryPolicySource, /communications_or_reminder_preview_context/);
+assert.match(routeEntryPolicySource, /public_volunteer_routes/);
+assert.match(routeEntryPolicySource, /\/respond\/\[token\]/);
+assert.match(routeEntryPolicySource, /diagnostic_routes/);
+assert.match(routeEntryPolicySource, /mock_only_routes/);
+assert.match(routeEntryPolicySource, /anonymous_or_unauthenticated_pages/);
+assert.match(routeEntryPolicySource, /browser_typed_arbitrary_assignment_id_surfaces/);
+assert.match(routeEntryPolicySource, /broad_assignment_directory_or_search/);
+assert.match(routeEntryPolicySource, /derive_assignment_id_from_already_authorized_persisted_context/);
+assert.match(routeEntryPolicySource, /link_only_to_existing_dynamic_no_store_assignment_detail_route/);
+assert.match(routeEntryPolicySource, /avoid_implying_volunteers_should_use_admin_route/);
+assert.match(routeEntryPolicySource, /hrefAllowedShape/);
+assert.match(routeEntryPolicySource, /query: "none"/);
+assert.match(routeEntryPolicySource, /hash: "none"/);
+assert.match(routeEntryPolicySource, /responseTokenId/);
+assert.match(routeEntryPolicySource, /rawBearer/);
+assert.match(routeEntryPolicySource, /tokenVerifierHash/);
+assert.match(routeEntryPolicySource, /fullResponseUrl/);
+assert.match(routeEntryPolicySource, /auditEventId/);
+assert.match(routeEntryPolicySource, /capabilities/);
+assert.doesNotMatch(
+  routeEntryPolicySource,
+  /readAssignmentDetailContext\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
 assert.match(productActionSource, /^import "server-only";/);
@@ -225,6 +305,7 @@ for (const directory of ["app", "components"]) {
 
 const contextImporters = [];
 const inboundLinks = [];
+const routeEntryPolicyImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -239,7 +320,13 @@ for (const file of appAndComponentFiles) {
     inboundLinks.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionUiPolicy|productActionWiringPolicy|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+    source.includes("detailRouteEntryPolicy") ||
+    source.includes("assignmentDetailRouteEntry")
+  ) {
+    routeEntryPolicyImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
       source,
     )
   ) {
@@ -249,10 +336,20 @@ for (const file of appAndComponentFiles) {
 
 assert.deepEqual(contextImporters, [routeRelativePath]);
 assert.deepEqual(inboundLinks, []);
+assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE, true);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_DIAGNOSTIC_ROUTE_LINKAGE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
@@ -267,6 +364,113 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_WIRING_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
+assert.equal(
+  describeAssignmentDetailRouteEntryContract().contract.routePathPattern,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(describeAssignmentDetailRouteEntryContract().implementationAvailable, false);
+assert.equal(describeAssignmentDetailRouteEntryContract().calendarEntryLinkageAvailable, false);
+assert.equal(describeAssignmentDetailRouteEntryContract().volunteersEntryLinkageAvailable, false);
+assert.equal(
+  describeAssignmentDetailRouteEntryContract().needsAttentionEntryLinkageAvailable,
+  false,
+);
+assert.equal(
+  describeAssignmentDetailRouteEntryContract().communicationsEntryLinkageAvailable,
+  false,
+);
+assert.equal(
+  describeAssignmentDetailRouteEntryContract().publicVolunteerEntryLinkageAvailable,
+  false,
+);
+assert.equal(
+  describeAssignmentDetailRouteEntryContract().responseTokenRouteLinkageAvailable,
+  false,
+);
+assert.equal(describeAssignmentDetailRouteEntryContract().diagnosticRouteLinkageAvailable, false);
+assert.equal(
+  assignmentDetailRouteEntryContract.routeRole,
+  "secure_project_contact_direct_access_fallback",
+);
+assert.equal(
+  assignmentDetailRouteEntryContract.currentImplementation,
+  "no_entry_points_link_to_route",
+);
+for (const futureSurface of [
+  "calendar_item_inspector_or_assignment_list_context",
+  "volunteer_profile_admin_assignment_context",
+  "needs_attention_staffing_or_response_row",
+  "communications_or_reminder_preview_context",
+]) {
+  assert.ok(
+    assignmentDetailRouteEntryContract.futureEligibleEntrySurfaces.some(
+      (entry) => entry.surface === futureSurface,
+    ),
+  );
+}
+for (const ineligibleSurface of [
+  "public_volunteer_routes",
+  "/respond/[token]",
+  "diagnostic_routes",
+  "mock_only_routes",
+  "anonymous_or_unauthenticated_pages",
+  "browser_typed_arbitrary_assignment_id_surfaces",
+  "broad_assignment_directory_or_search",
+]) {
+  assert.ok(
+    assignmentDetailRouteEntryContract.ineligibleEntrySurfaces.includes(
+      ineligibleSurface,
+    ),
+  );
+}
+for (const futureRequirement of [
+  "derive_assignment_id_from_already_authorized_persisted_context",
+  "link_only_to_existing_dynamic_no_store_assignment_detail_route",
+  "preserve_non_disclosing_unavailable_state_for_stale_or_unauthorized_ids",
+  "avoid_broad_assignment_directory_or_search_surface",
+  "avoid_implying_volunteers_should_use_admin_route",
+  "keep_entry_points_minimal_and_specific",
+]) {
+  assert.ok(
+    assignmentDetailRouteEntryContract.futureEntryRequirements.includes(
+      futureRequirement,
+    ),
+  );
+}
+assert.deepEqual(assignmentDetailRouteEntryContract.hrefAllowedShape, {
+  path: "/admin/assignments/[assignmentId]",
+  query: "none",
+  hash: "none",
+});
+for (const forbiddenHrefData of [
+  "workspaceId",
+  "volunteerId",
+  "responseTokenId",
+  "rawBearer",
+  "tokenVerifierHash",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "auditEventId",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+]) {
+  assert.ok(assignmentDetailRouteEntryContract.hrefForbiddenData.includes(forbiddenHrefData));
+}
+const otherwiseReadyEntry = evaluateAssignmentDetailRouteEntryReadiness({
+  persistedAuthorizedSourceContext: true,
+  noMockFallbackForAssignmentIds: true,
+  hrefCarriesOnlyAssignmentPathSegment: true,
+  unavailableFallbackReviewed: true,
+  staticAndBrowserLinkageGuardsPassed: true,
+  productOwnerApprovedEntrySurface: true,
+});
+assert.equal(otherwiseReadyEntry.allowed, false);
+assert.ok(
+  otherwiseReadyEntry.blockers.includes(
+    "assignment_detail_route_entry_implementation_unavailable",
+  ),
+);
 assert.equal(
   ASSIGNMENT_DETAIL_RESPONSE_LINK_ACTION_ROUTE_CONTEXT,
   "/admin/assignments/[assignmentId]",

@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.36 assignment-detail route entry readiness review
+
+`lib/assignments/detailRouteEntryPolicy.server.ts` records the future entry-point contract without linking any current route to `/admin/assignments/[assignmentId]`. The assignment-detail route remains a secure direct-access fallback/deep-link surface for verified project contacts; routine assignment details should usually stay contextual in inspectors, drawers, or modals.
+
+Future entry points may come from Calendar item inspectors or assignment lists, admin volunteer assignment contexts, Needs Attention staffing/response rows, and Communications/reminder preview contexts only after those surfaces derive assignment ids from already-authorized persisted data. Public volunteer routes, `/respond/[token]`, diagnostic routes, mock-only routes, anonymous pages, browser-typed arbitrary ids, and broad assignment directory/search surfaces remain ineligible.
+
+Future hrefs may link only to `/admin/assignments/[assignmentId]` with no query string or hash. They may not carry workspace id, volunteer id, response token id, bearer, verifier, full/redacted URL, audit id, response-link metadata, grant, or capability data. Missing, stale, or unauthorized assignments must continue to fall into the route's non-disclosing unavailable state.
+
+`ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE` is true. Calendar, Volunteers, Needs Attention, Communications, public volunteer, response-token route, diagnostic route, product navigation, product-action UI, copy affordance, product-surface, and reveal availability flags remain false.
+
 ## 11.35 assignment-detail action wiring readiness review
 
 `lib/responseTokens/productActionWiringPolicy.server.ts` records the future wiring contract without importing it into `/admin/assignments/[assignmentId]` or attaching it to the inert panel. The route render remains credential-free, dynamic/no-store, read-only before any future POST, unlinked from product navigation, and limited to the persisted assignment-detail context.
@@ -571,6 +581,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.33 Assignment Detail Product Action UI Readiness Review — completed:** route-unused policy defines the future warning/expiration/click/no-prefetch/no-auto-copy UI contract while keeping UI implementation, copy affordance, product-surface implementation, reveal availability, and navigation linkage false.
 - **11.34 Assignment Detail Inert Product Action UI Shell — completed:** the unlinked persisted assignment-detail route now shows only an inert response-link readiness panel, with no form/action binding, enabled button, URL, token metadata, clipboard behavior, delivery, or navigation link.
 - **11.35 Assignment Detail Action Wiring Readiness Review — completed:** route-unused policy defines future explicit POST/server-action wiring from the inert panel to the 11.32 boundary, including credential-free render, post-success-only URL/copy, no direct reveal/RPC/token route usage, and no secret-bearing logs/errors. Route wiring implementation remains false.
+- **11.36 Assignment Detail Route Entry Readiness Review — completed:** route-unused policy defines future persisted authorized entry points from Calendar, Volunteers, Needs Attention, and Communications contexts while keeping public, diagnostic, mock, arbitrary-id, broad directory/search, and response-token surfaces ineligible. All entry/linkage flags remain false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.
