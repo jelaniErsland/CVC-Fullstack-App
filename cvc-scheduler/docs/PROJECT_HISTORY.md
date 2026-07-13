@@ -4336,6 +4336,38 @@ Limitations:
 Next recommended step:
 - Keep the disabled route import non-invoking until a later reviewed slice proves a safe disabled form/action binding or final active approval. Any active slice still needs warning/expiration UI, post-success-only manual copy, browser proof, log redaction, and explicit approval.
 
+## Iteration 11.44 - Disabled Route Wiring Browser/Security Hardening Review
+
+Summary:
+- Hardened the 11.43 disabled route-import state without activating response-link generation.
+- Extended `scripts/assignment-detail-route-regression.mjs` to prove `/admin/assignments/[assignmentId]` remains the only app route importing `createDisabledAssignmentResponseLinkServerAction`, never calls it, never binds it to a form/action, never passes it as a JSX/action/client prop, and renders no response-link form, submit control, hidden assignment id, hidden TTL, hidden action metadata, generated URL field, copy affordance, redirect, revalidation, or cookie mutation.
+- Extended `scripts/assignment-detail-route-browser-regression.mjs` to monitor the authorized response-link panel in production preview. The browser gate now verifies the panel is visible only in the authorized safe state, absent from unavailable states, and inert across click, hover, focus/tab interactions.
+- Browser monitoring fails on interaction-triggered POSTs to the assignment route, `/respond/` requests, diagnostic response-link requests, response-link/reveal/copy/audit/token-like network traffic, navigation, generated URL fields, copy buttons, hidden metadata, browser errors, and 390px overflow.
+- No route code, database migration, RPC, generated type, hosted gate, or product behavior changed.
+
+Changed files:
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the inert stub import is not called, bound, passed, hidden, or paired with response-link action markup, and that all active flags remain false.
+- `npm run test:assignment-detail-server-action` still proves the stub is server-only, adapter-only, disabled by default, and credential-free while allowing only the reviewed inert route import.
+- `npm run test:assignment-detail-route:browser` proves authorized desktop/mobile rendering remains safe, unavailable states are non-disclosing, the response-link panel stays disabled/inert, interactions do not submit/navigate/reveal/copy or trigger forbidden response-link network traffic, and no console errors or mobile overflow appear.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was hardening only, not activation.
+- No final approval, active route server action, enabled or disabled wired form, submit button, usable response-link generation, URL reveal, copy behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The disabled server-action stub and disabled adapter remain disabled by default and credential-free.
+
+Next recommended step:
+- Continue using the hardened static/browser gates before any later disabled form/action binding or active approval slice. Any future activation still needs explicit final approval, warning/expiration UI, post-success-only manual copy, log redaction, and product-owner review.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

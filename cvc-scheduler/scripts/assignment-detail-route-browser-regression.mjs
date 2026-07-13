@@ -391,6 +391,53 @@ async function assertNoHorizontalOverflow(page, stage) {
   );
 }
 
+function isForbiddenResponseLinkNetworkRequest(request, options = {}) {
+  const method = request.method().toUpperCase();
+  const url = request.url();
+  const lowerUrl = url.toLowerCase();
+
+  if (
+    lowerUrl.includes("/respond/") ||
+    lowerUrl.includes("/admin/diagnostics/response-link")
+  ) {
+    return true;
+  }
+
+  if (
+    /response-link|response_link|reveal|copy|bearer|verifier|audit|fullresponseurl|redactedresponseurl|responsetoken|tokenverifier/.test(
+      lowerUrl,
+    )
+  ) {
+    return true;
+  }
+
+  if (options.includeGenericTokenTerm && lowerUrl.includes("token")) {
+    return true;
+  }
+
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    try {
+      const parsedRequestUrl = new URL(url);
+      const parsedPreviewUrl = new URL(previewBaseUrl);
+      if (
+        parsedRequestUrl.origin === parsedPreviewUrl.origin &&
+        parsedRequestUrl.pathname.startsWith("/admin/assignments/")
+      ) {
+        return true;
+      }
+    } catch {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function assertNoForbiddenRequests(requests, startIndex, message) {
+  const offending = requests.slice(startIndex);
+  assert(offending.length === 0, message);
+}
+
 async function exerciseBrowserRoute() {
   browser = await chromium.launch(
     browserExecutable ? { executablePath: browserExecutable } : undefined,
@@ -417,9 +464,19 @@ async function exerciseBrowserRoute() {
   await context.addCookies(browserCookieValues());
   const page = await context.newPage();
   const browserErrors = [];
+  const forbiddenLoadRequests = [];
+  const forbiddenInteractionRequests = [];
   page.on("pageerror", () => browserErrors.push("pageerror"));
   page.on("console", (message) => {
     if (message.type() === "error") browserErrors.push("console-error");
+  });
+  page.on("request", (request) => {
+    if (isForbiddenResponseLinkNetworkRequest(request)) {
+      forbiddenLoadRequests.push(`${request.method()} ${redact(request.url())}`);
+    }
+    if (isForbiddenResponseLinkNetworkRequest(request, { includeGenericTokenTerm: true })) {
+      forbiddenInteractionRequests.push(`${request.method()} ${redact(request.url())}`);
+    }
   });
 
   const navigation = await page.goto(
@@ -541,9 +598,51 @@ async function exerciseBrowserRoute() {
     (await page.locator('[aria-disabled="true"]').count()) >= 1,
     "The inert response-link shell did not expose a disabled visual state.",
   );
+  const responseLinkPanel = page
+    .locator("div")
+    .filter({ hasText: "Link actions are not available yet." })
+    .last();
+  assert(
+    (await responseLinkPanel.count()) === 1,
+    "The authorized route did not render exactly one response-link readiness panel.",
+  );
+  assert(
+    (await responseLinkPanel.locator("form").count()) === 0,
+    "The response-link panel rendered a form.",
+  );
+  assert(
+    (await responseLinkPanel.locator("button").count()) === 0,
+    "The response-link panel rendered a submit-capable button.",
+  );
+  assert(
+    (await responseLinkPanel.locator('input, textarea, select, [formaction]').count()) === 0,
+    "The response-link panel rendered browser-controlled action metadata.",
+  );
   assert(
     (await page.locator('a[href^="/respond/"], a[href*="diagnostics/response-link"]').count()) === 0,
     "The read-only route linked to a response or diagnostic surface.",
+  );
+  assertNoForbiddenRequests(
+    forbiddenLoadRequests,
+    0,
+    "Page load or hydration triggered response-link network traffic.",
+  );
+  const interactionStart = forbiddenInteractionRequests.length;
+  const pageUrlBeforeInteraction = page.url();
+  await responseLinkPanel.hover();
+  await page.waitForTimeout(100);
+  await responseLinkPanel.click({ position: { x: 8, y: 8 } });
+  await page.waitForTimeout(150);
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(100);
+  assert(
+    page.url() === pageUrlBeforeInteraction,
+    "Interacting with the disabled response-link panel navigated away.",
+  );
+  assertNoForbiddenRequests(
+    forbiddenInteractionRequests,
+    interactionStart,
+    "Interacting with the disabled response-link panel triggered response-link network traffic.",
   );
   assert(browserErrors.length === 0, "The authorized assignment route emitted a browser error.");
   await assertNoHorizontalOverflow(page, "Desktop assignment detail");

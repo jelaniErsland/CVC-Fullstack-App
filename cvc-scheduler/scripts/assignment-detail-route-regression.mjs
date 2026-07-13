@@ -232,6 +232,14 @@ assert.doesNotMatch(
   routeSource,
   /createDisabledAssignmentResponseLinkServerAction\([^)]/,
 );
+assert.doesNotMatch(
+  routeSource,
+  /action=\{?\s*createDisabledAssignmentResponseLinkServerAction|formAction=\{?\s*createDisabledAssignmentResponseLinkServerAction|createDisabledAssignmentResponseLinkServerAction\.bind|useActionState\(\s*createDisabledAssignmentResponseLinkServerAction|useFormState\(\s*createDisabledAssignmentResponseLinkServerAction/s,
+);
+assert.doesNotMatch(
+  routeSource,
+  /<[^>]+createDisabledAssignmentResponseLinkServerAction|createDisabledAssignmentResponseLinkServerAction=\{|serverAction=\{createDisabledAssignmentResponseLinkServerAction|actionProp=\{createDisabledAssignmentResponseLinkServerAction/s,
+);
 assert.match(routeSource, /readProjectContactSession\(\)/);
 assert.match(routeSource, /session\.status !== "authenticated"/);
 assert.match(routeSource, /Assignment unavailable/);
@@ -260,6 +268,14 @@ assert.doesNotMatch(
 assert.doesNotMatch(
   routeSource,
   /<form\b|<button\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormStatus|useTransition/,
+);
+assert.doesNotMatch(
+  routeSource,
+  /<input\b|<textarea\b|<select\b|name=["'](?:assignmentId|expiresInHours|workspaceId|volunteerId|actorId|tokenId|bearer|verifier|origin|fullResponseUrl|redactedResponseUrl|auditEventId|capabilities|grant|redirectPath|returnPath|hiddenMetadata)["']|value=\{assignmentId\}|defaultValue=\{assignmentId\}/,
+);
+assert.doesNotMatch(
+  routeSource,
+  /redirect\(|permanentRedirect\(|revalidatePath\(|revalidateTag\(|cookies\(\)\.set|cookies\(\)\.delete|NextResponse\.redirect/,
 );
 
 assert.match(routeEntryPolicySource, /^import "server-only";/);

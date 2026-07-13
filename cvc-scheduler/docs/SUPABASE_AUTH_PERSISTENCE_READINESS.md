@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.44 disabled route wiring browser/security hardening review
+
+Iteration 11.44 does not activate response-link reveal. It hardens the reviewed 11.43 route import state for `/admin/assignments/[assignmentId]`.
+
+`npm run test:assignment-detail-route` now proves the assignment-detail route remains the only app route importing `createDisabledAssignmentResponseLinkServerAction`, and that the import is not called, bound to a form/action, passed as a JSX/action/client prop, hidden in metadata, or paired with response-link form markup, submit controls, hidden assignment id/TTL/action metadata, generated URL fields, copy affordances, redirects, revalidation, cookie mutation, direct adapter/product-action/reveal/RPC/token/replacement/diagnostic/service-role paths, or product navigation links.
+
+`npm run test:assignment-detail-route:browser` now also monitors the authorized response-link panel in production preview. It verifies the safe persisted projection at desktop and 390px mobile widths, confirms the response-link panel is visible only in the authorized state and absent from unavailable states, and proves click, hover, focus/tab interaction does not submit, navigate, reveal, copy, POST to the assignment route, request `/respond/`, request diagnostics, or emit response-link/reveal/copy/audit/token-like network traffic. The browser gate continues to fail on full URLs, bearers, verifiers, token/audit ids, access/refresh tokens, passwords, API keys, service-role keys, SQL/internal RPC detail, sensitive intake values, unrelated rows, console/page errors, or mobile overflow.
+
+Disabled route-wiring/import flags remain true from 11.43. Final approval, active reveal, active copy, route server-action implementation, product-action UI, copy affordance, product surface, reveal availability, entry linkage, and navigation remain false.
+
 ## 11.43 assignment-detail disabled route wiring implementation
 
 `/admin/assignments/[assignmentId]` now imports `createDisabledAssignmentResponseLinkServerAction` from `lib/responseTokens/productActionServerAction.server.ts` as the first reviewed route import of the disabled server-action seam. The route uses it only as an inert reviewed-seam reference in the authorized response-link panel; there is no form, action prop, enabled or disabled wired submit control, hidden metadata, generated URL field, copy button, clipboard behavior, redirect, revalidation, cookie mutation, email, reminder, or navigation generation.
