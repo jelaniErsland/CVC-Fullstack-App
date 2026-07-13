@@ -120,6 +120,17 @@ import {
   responseLinkProductActionDisabledResultRendererPolicy,
 } from "../lib/responseTokens/productActionDisabledResultRendererPolicy.server.ts";
 import {
+  RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_APPROVED,
+  RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT_ELIGIBLE_SURFACE,
+  RESPONSE_LINK_PRODUCT_ACTION_DELIVERY_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_PUBLIC_LOOKUP_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_REMEMBERED_DEVICE_AVAILABLE,
+  describeResponseLinkProductActionActivationCheckpoint,
+  evaluateResponseLinkProductActionActivationCheckpoint,
+  responseLinkProductActionActivationCheckpoint,
+} from "../lib/responseTokens/productActionActivationCheckpoint.server.ts";
+import {
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE,
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE,
@@ -245,6 +256,16 @@ const productActionDisabledResultRendererPolicySource = await readFile(
   productActionDisabledResultRendererPolicyPath,
   "utf8",
 );
+const productActionActivationCheckpointPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionActivationCheckpoint.server.ts",
+);
+const productActionActivationCheckpointSource = await readFile(
+  productActionActivationCheckpointPath,
+  "utf8",
+);
 const productActionServerActionHarnessPath = path.join(
   root,
   "scripts",
@@ -352,7 +373,7 @@ assert.match(routeSource, /reviewed server-action seam is present but remains\s+
 assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionDisabledRouteActionBinding|productActionDisabledResultState|productActionDisabledResultRenderer|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionDisabledRouteActionBinding|productActionDisabledResultState|productActionDisabledResultRenderer|productActionActivationCheckpoint|activationCheckpoint|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -364,7 +385,7 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   routeSource,
-  /<form\b|<button\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormState|useFormStatus|useTransition|resultRenderer|resultComponent|actionResult|disabledResult|not_approved|checklist_blocked|malformed_input|action_error|retry|download|open link|send affordance/i,
+  /<form\b|<button\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormState|useFormStatus|useTransition|resultRenderer|resultComponent|actionResult|disabledResult|activationCheckpoint|checkpoint_only_activation_blocked|not_approved|checklist_blocked|malformed_input|action_error|retry|download|open link|send affordance/i,
 );
 assert.doesNotMatch(
   routeSource,
@@ -391,6 +412,10 @@ assert.match(supabaseLocalSetupSource, /After 11\.48 it proves the disabled resu
 assert.match(supabaseReadinessSource, /11\.49 disabled result renderer readiness review/i);
 assert.match(supabaseReadinessSource, /fixed allowlisted copy map keyed by safe state codes/i);
 assert.match(supabaseLocalSetupSource, /After 11\.49 it proves the disabled result-renderer contract exists/i);
+assert.match(supabaseReadinessSource, /11\.50 assignment response link activation checkpoint review/i);
+assert.match(supabaseReadinessSource, /remaining blockers before active reveal/i);
+assert.match(supabaseReadinessSource, /safe next implementation options/i);
+assert.match(supabaseLocalSetupSource, /After 11\.50 it proves the activation checkpoint exists/i);
 
 const trackedTextFiles = await collectTrackedTextFiles();
 const actualLookingSecretPatterns = [
@@ -1521,6 +1546,124 @@ assert.doesNotMatch(
   /["']use server["']|createDisabledAssignmentResponseLinkServerAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
+assert.match(productActionActivationCheckpointSource, /^import "server-only";/);
+assert.match(
+  productActionActivationCheckpointSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT_AVAILABLE = true/,
+);
+assert.match(
+  productActionActivationCheckpointSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_APPROVED = false/,
+);
+assert.match(productActionActivationCheckpointSource, /RESPONSE_LINK_PRODUCT_ACTION_DELIVERY_AVAILABLE = false/);
+assert.match(
+  productActionActivationCheckpointSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_PUBLIC_LOOKUP_AVAILABLE = false/,
+);
+assert.match(
+  productActionActivationCheckpointSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_REMEMBERED_DEVICE_AVAILABLE = false/,
+);
+assert.match(productActionActivationCheckpointSource, /"\/admin\/assignments\/\[assignmentId\]"/);
+assert.match(productActionActivationCheckpointSource, /checkpoint_only_activation_blocked/);
+assert.match(productActionActivationCheckpointSource, /readAssignmentDetailContext_only/);
+assert.match(productActionActivationCheckpointSource, /assignmentDataReader: "readAssignmentDetailContext"/);
+assert.match(productActionActivationCheckpointSource, /assignment_detail_context_only/);
+assert.match(productActionActivationCheckpointSource, /server_derived_trusted_origin_only/);
+for (const provenFoundation of [
+  "public_response_token_tables_and_rpcs_exist_and_were_locally_and_hosted_validated",
+  "atomic_replacement_exists_and_was_hosted_validated",
+  "reveal_audit_persistence_exists_and_was_hosted_validated",
+  "transactional_audited_reveal_exists_and_was_hosted_validated",
+  "persisted_assignment_detail_context_exists_and_was_hosted_validated",
+  "assignment_detail_route_exists_unlinked_dynamic_no_store_read_only_persisted",
+  "assignment_detail_route_reads_only_readAssignmentDetailContext",
+  "assignment_detail_route_has_exactly_one_route_derived_disabled_binding_to_11_41_stub",
+  "disabled_server_action_stub_remains_disabled_by_default_and_credential_free",
+  "disabled_result_state_policy_exists_and_remains_route_unused",
+  "disabled_result_renderer_policy_exists_and_remains_route_unused",
+  "static_guards_prove_no_active_route_behavior",
+  "browser_guards_prove_no_url_copy_result_renderer_form_hidden_metadata_or_delivery",
+  "server_action_guards_prove_disabled_adapter_only_credential_free_behavior",
+  "redirected_redacted_supabase_diagnostic_guardrail_remains_intact",
+]) {
+  assert.match(productActionActivationCheckpointSource, new RegExp(provenFoundation));
+}
+for (const remainingBlocker of [
+  "explicit_product_owner_approval_and_final_approval_flag",
+  "reviewed_active_server_action_implementation_decision",
+  "reviewed_active_success_result_state_contract",
+  "reviewed_active_success_renderer_contract",
+  "reviewed_url_bearing_success_renderer_implementation",
+  "reviewed_post_success_manual_copy_ui_implementation",
+  "browser_proof_no_url_before_success_and_url_only_after_deliberate_action",
+  "log_output_proof_no_full_url_bearer_verifier_token_id_audit_id",
+  "no_prefetch_no_render_no_hover_no_focus_no_hydration_execution_proof",
+  "unavailable_state_non_disclosure_proof",
+  "product_entry_link_decision_from_persisted_authorized_contexts_only",
+  "abuse_recovery_rate_limit_operational_policy_for_generated_links",
+  "delivery_policy_separate_and_blocked",
+  "public_lookup_separate_and_blocked",
+  "remembered_devices_separate_and_blocked",
+  "hosted_validation_only_if_db_rpc_generated_type_or_hosted_behavior_changes",
+  "active_surface_remains_assignment_detail_context_only_with_trusted_server_origin",
+]) {
+  assert.match(productActionActivationCheckpointSource, new RegExp(remainingBlocker));
+}
+for (const safeNextOption of [
+  "disabled_result_renderer_implementation_still_non_interactive_and_credential_free",
+  "active_success_result_state_readiness_contract_still_route_unused",
+  "active_success_renderer_readiness_contract_still_route_unused",
+  "route_entry_link_readiness_re_review_from_persisted_calendar_volunteers_needs_attention_communications_contexts",
+  "pause_response_link_work_and_return_to_higher_priority_mvp_scheduling_assignment_flows",
+]) {
+  assert.match(productActionActivationCheckpointSource, new RegExp(safeNextOption));
+}
+for (const nonNegotiable of [
+  "no_active_reveal",
+  "no_active_copy",
+  "no_product_surface_availability",
+  "no_navigation_entry_linkage",
+  "no_delivery",
+  "no_public_lookup",
+  "no_remembered_device_behavior",
+  "no_service_role_usage",
+  "no_mock_to_real_mixing",
+  "no_route_import_of_policy_checkpoint_modules",
+  "no_direct_route_import_or_call_of_disabled_adapter_product_action_boundary_audited_reveal_rpc_token_helper_replacement_helper_diagnostic_helper_token_table_direct_supabase_helper_or_service_role_path",
+]) {
+  assert.match(productActionActivationCheckpointSource, new RegExp(nonNegotiable));
+}
+for (const forbiddenActivationRouteImport of [
+  "createAssignmentDetailResponseLinkDisabledAdapter",
+  "createAssignmentDetailResponseLinkProductAction",
+  "createAuditedAssignmentResponseLinkReveal",
+  "reveal_assignment_response_link",
+  "replaceAssignmentResponseToken",
+  "recordAssignmentResponseLinkRevealAudit",
+  "issueAssignmentResponseLink",
+  "diagnostic_response_link_dependency",
+  "assignment_response_tokens",
+  "direct_supabase_mutation_helper",
+  "service_role_client",
+  "productActionDisabledResultStatePolicy",
+  "productActionDisabledResultRendererPolicy",
+  "productActionActivationCheckpoint",
+]) {
+  assert.match(productActionActivationCheckpointSource, new RegExp(forbiddenActivationRouteImport));
+}
+assert.match(
+  productActionActivationCheckpointSource,
+  /hosted_validation_not_required_unless_db_rpc_generated_type_or_hosted_behavior_changes/,
+);
+assert.match(productActionActivationCheckpointSource, /redirect_supabase_diagnostics_to_temp_files/);
+assert.match(productActionActivationCheckpointSource, /redact_key_like_values_before_displaying_excerpts/);
+assert.match(productActionActivationCheckpointSource, /do_not_commit_secrets_local_env_values_fixture_credentials_or_generated_keys/);
+assert.doesNotMatch(
+  productActionActivationCheckpointSource,
+  /["']use server["']|createDisabledAssignmentResponseLinkServerAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
+);
+
 const appAndComponentFiles = [];
 for (const directory of ["app", "components"]) {
   appAndComponentFiles.push(
@@ -1541,6 +1684,7 @@ const disabledRouteWiringPolicyImporters = [];
 const disabledActionBindingPolicyImporters = [];
 const disabledResultStatePolicyImporters = [];
 const disabledResultRendererPolicyImporters = [];
+const activationCheckpointImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -1615,7 +1759,14 @@ for (const file of appAndComponentFiles) {
     disabledResultRendererPolicyImporters.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerAction\.server|createDisabledAssignmentResponseLinkServerAction|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionDisabledRouteWiringPolicy|responseLinkProductActionDisabledRouteWiring|productActionDisabledRouteActionBindingPolicy|responseLinkProductActionDisabledRouteActionBinding|productActionDisabledResultStatePolicy|responseLinkProductActionDisabledResultState|productActionDisabledResultRendererPolicy|responseLinkProductActionDisabledResultRenderer|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer|resultRenderer|resultComponent|actionResult|disabledResult|retry_affordance|download_affordance|open_link_affordance|send_affordance/i.test(
+    source.includes("productActionActivationCheckpoint") ||
+    source.includes("responseLinkProductActionActivationCheckpoint") ||
+    source.includes("RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT")
+  ) {
+    activationCheckpointImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerAction\.server|createDisabledAssignmentResponseLinkServerAction|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionDisabledRouteWiringPolicy|responseLinkProductActionDisabledRouteWiring|productActionDisabledRouteActionBindingPolicy|responseLinkProductActionDisabledRouteActionBinding|productActionDisabledResultStatePolicy|responseLinkProductActionDisabledResultState|productActionDisabledResultRendererPolicy|responseLinkProductActionDisabledResultRenderer|productActionActivationCheckpoint|responseLinkProductActionActivationCheckpoint|activationCheckpoint|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer|resultRenderer|resultComponent|actionResult|disabledResult|retry_affordance|download_affordance|open_link_affordance|send_affordance/i.test(
       source,
     )
   ) {
@@ -1634,6 +1785,7 @@ assert.deepEqual(disabledRouteWiringPolicyImporters, []);
 assert.deepEqual(disabledActionBindingPolicyImporters, []);
 assert.deepEqual(disabledResultStatePolicyImporters, []);
 assert.deepEqual(disabledResultRendererPolicyImporters, []);
+assert.deepEqual(activationCheckpointImporters, []);
 assert.deepEqual(
   unsafeCurrentRouteOrComponentUi.filter((relative) => relative !== routeRelativePath),
   [],
@@ -1688,6 +1840,15 @@ assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_RESULT_RENDERER_ELIGIBLE_ROUTE,
   "/admin/assignments/[assignmentId]",
 );
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_APPROVED, false);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_CHECKPOINT_ELIGIBLE_SURFACE,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DELIVERY_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_PUBLIC_LOOKUP_AVAILABLE, false);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_REMEMBERED_DEVICE_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_DEFAULT_STATE, "disabled");
 assert.equal(
@@ -3805,6 +3966,225 @@ for (const requiredDisabledResultRendererBlocker of [
       requiredDisabledResultRendererBlocker,
     ),
   );
+}
+
+const activationCheckpointDescription =
+  describeResponseLinkProductActionActivationCheckpoint();
+assert.equal(activationCheckpointDescription.checkpointAvailable, true);
+assert.equal(activationCheckpointDescription.activationApproved, false);
+assert.equal(activationCheckpointDescription.finalApprovalAvailable, false);
+assert.equal(activationCheckpointDescription.assignmentDetailContextAvailable, true);
+assert.equal(
+  activationCheckpointDescription.assignmentDetailRouteImplementationAvailable,
+  true,
+);
+assert.equal(
+  activationCheckpointDescription.disabledActionBindingImplementationAvailable,
+  true,
+);
+assert.equal(activationCheckpointDescription.serverActionStubAvailable, true);
+assert.equal(activationCheckpointDescription.disabledResultStateContractAvailable, true);
+assert.equal(
+  activationCheckpointDescription.disabledResultRendererContractAvailable,
+  true,
+);
+assert.equal(activationCheckpointDescription.routeServerActionImplementationAvailable, false);
+assert.equal(
+  activationCheckpointDescription.disabledResultRendererImplementationAvailable,
+  false,
+);
+assert.equal(
+  activationCheckpointDescription.activeResultRendererImplementationAvailable,
+  false,
+);
+assert.equal(
+  activationCheckpointDescription.activeSuccessRendererImplementationAvailable,
+  false,
+);
+assert.equal(activationCheckpointDescription.activeRevealAvailable, false);
+assert.equal(activationCheckpointDescription.activeCopyAvailable, false);
+assert.equal(activationCheckpointDescription.activeEntryLinkingAvailable, false);
+assert.equal(activationCheckpointDescription.productActionUiImplementationAvailable, false);
+assert.equal(activationCheckpointDescription.copyAffordanceAvailable, false);
+assert.equal(activationCheckpointDescription.productSurfaceImplementationAvailable, false);
+assert.equal(activationCheckpointDescription.revealProductSurfaceAvailable, false);
+assert.equal(activationCheckpointDescription.assignmentDetailNavigationLinked, false);
+assert.equal(activationCheckpointDescription.deliveryAvailable, false);
+assert.equal(activationCheckpointDescription.publicLookupAvailable, false);
+assert.equal(activationCheckpointDescription.rememberedDeviceAvailable, false);
+assert.equal(
+  responseLinkProductActionActivationCheckpoint.eligibleFutureProductRevealSurface,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(
+  responseLinkProductActionActivationCheckpoint.currentStatus,
+  "checkpoint_only_activation_blocked",
+);
+assert.deepEqual(
+  responseLinkProductActionActivationCheckpoint.routeRequirements.rendering,
+  ["dynamic", "no_store"],
+);
+assert.equal(
+  responseLinkProductActionActivationCheckpoint.routeRequirements.assignmentDataReader,
+  "readAssignmentDetailContext",
+);
+assert.equal(
+  responseLinkProductActionActivationCheckpoint.routeRequirements.futureActiveSurfaceScope,
+  "assignment_detail_context_only",
+);
+for (const foundationGroup of [
+  "persistenceAndReveal",
+  "routeAndDisabledSeams",
+  "guardrails",
+]) {
+  assert.ok(
+    Object.hasOwn(responseLinkProductActionActivationCheckpoint.provenFoundations, foundationGroup),
+  );
+}
+for (const provenFoundation of [
+  "public_response_token_tables_and_rpcs_exist_and_were_locally_and_hosted_validated",
+  "atomic_replacement_exists_and_was_hosted_validated",
+  "reveal_audit_persistence_exists_and_was_hosted_validated",
+  "transactional_audited_reveal_exists_and_was_hosted_validated",
+  "persisted_assignment_detail_context_exists_and_was_hosted_validated",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.provenFoundations.persistenceAndReveal.includes(
+      provenFoundation,
+    ),
+  );
+}
+for (const provenFoundation of [
+  "assignment_detail_route_exists_unlinked_dynamic_no_store_read_only_persisted",
+  "assignment_detail_route_reads_only_readAssignmentDetailContext",
+  "assignment_detail_route_has_exactly_one_route_derived_disabled_binding_to_11_41_stub",
+  "disabled_server_action_stub_remains_disabled_by_default_and_credential_free",
+  "disabled_result_state_policy_exists_and_remains_route_unused",
+  "disabled_result_renderer_policy_exists_and_remains_route_unused",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.provenFoundations.routeAndDisabledSeams.includes(
+      provenFoundation,
+    ),
+  );
+}
+for (const provenFoundation of [
+  "static_guards_prove_no_active_route_behavior",
+  "browser_guards_prove_no_url_copy_result_renderer_form_hidden_metadata_or_delivery",
+  "server_action_guards_prove_disabled_adapter_only_credential_free_behavior",
+  "redirected_redacted_supabase_diagnostic_guardrail_remains_intact",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.provenFoundations.guardrails.includes(
+      provenFoundation,
+    ),
+  );
+}
+for (const remainingBlocker of [
+  "explicit_product_owner_approval_and_final_approval_flag",
+  "reviewed_active_server_action_implementation_decision",
+  "reviewed_active_success_result_state_contract",
+  "reviewed_active_success_renderer_contract",
+  "reviewed_url_bearing_success_renderer_implementation",
+  "reviewed_post_success_manual_copy_ui_implementation",
+  "browser_proof_no_url_before_success_and_url_only_after_deliberate_action",
+  "log_output_proof_no_full_url_bearer_verifier_token_id_audit_id_access_token_refresh_token_password_api_key_service_role_key_sql_detail_rpc_detail_sensitive_intake_emergency_contact_questionnaire_answer_raw_grant_capability_provider_dump_stack_trace_raw_exception_or_unrelated_row_leak",
+  "no_prefetch_no_render_no_hover_no_focus_no_hydration_execution_proof",
+  "unavailable_state_non_disclosure_proof",
+  "product_entry_link_decision_from_persisted_authorized_contexts_only",
+  "abuse_recovery_rate_limit_operational_policy_for_generated_links",
+  "delivery_policy_separate_and_blocked",
+  "public_lookup_separate_and_blocked",
+  "remembered_devices_separate_and_blocked",
+  "hosted_validation_only_if_db_rpc_generated_type_or_hosted_behavior_changes",
+  "active_surface_remains_assignment_detail_context_only_with_trusted_server_origin",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.remainingBlockersBeforeActiveReveal.includes(
+      remainingBlocker,
+    ),
+  );
+}
+for (const safeNextOption of [
+  "disabled_result_renderer_implementation_still_non_interactive_and_credential_free",
+  "active_success_result_state_readiness_contract_still_route_unused",
+  "active_success_renderer_readiness_contract_still_route_unused",
+  "route_entry_link_readiness_re_review_from_persisted_calendar_volunteers_needs_attention_communications_contexts",
+  "pause_response_link_work_and_return_to_higher_priority_mvp_scheduling_assignment_flows",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.safeNextImplementationOptionsWithoutAuthorization.includes(
+      safeNextOption,
+    ),
+  );
+}
+for (const currentNonNegotiable of [
+  "no_active_reveal",
+  "no_active_copy",
+  "no_product_surface_availability",
+  "no_navigation_entry_linkage",
+  "no_delivery",
+  "no_public_lookup",
+  "no_remembered_device_behavior",
+  "no_service_role_usage",
+  "no_mock_to_real_mixing",
+  "no_route_import_of_policy_checkpoint_modules",
+  "no_direct_route_import_or_call_of_disabled_adapter_product_action_boundary_audited_reveal_rpc_token_helper_replacement_helper_diagnostic_helper_token_table_direct_supabase_helper_or_service_role_path",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.currentNonNegotiables.includes(
+      currentNonNegotiable,
+    ),
+  );
+}
+for (const requiredActivationFalseFlag of [
+  "RESPONSE_LINK_PRODUCT_ACTION_ACTIVATION_APPROVED",
+  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_RESULT_RENDERER_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ACTIVE_RESULT_RENDERER_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ACTIVE_SUCCESS_RESULT_RENDERER_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
+  "RESPONSE_LINK_PRODUCT_ACTION_DELIVERY_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_PUBLIC_LOOKUP_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_REMEMBERED_DEVICE_AVAILABLE",
+]) {
+  assert.ok(
+    responseLinkProductActionActivationCheckpoint.activeFlagsThatMustRemainFalse.includes(
+      requiredActivationFalseFlag,
+    ),
+  );
+}
+const activationCheckpointEvaluation =
+  evaluateResponseLinkProductActionActivationCheckpoint();
+assert.equal(activationCheckpointEvaluation.allowed, false);
+for (const requiredActivationBlocker of [
+  "activation_approval_unavailable",
+  "final_approval_unavailable",
+  "active_reveal_unavailable",
+  "active_copy_unavailable",
+  "route_server_action_implementation_unavailable",
+  "disabled_result_renderer_implementation_unavailable",
+  "active_result_renderer_implementation_unavailable",
+  "active_success_result_renderer_implementation_unavailable",
+  "product_action_ui_implementation_unavailable",
+  "copy_affordance_unavailable",
+  "product_surface_implementation_unavailable",
+  "reveal_availability_unavailable",
+  "entry_linkage_unavailable",
+  "navigation_linkage_unavailable",
+  "delivery_unavailable",
+  "public_lookup_unavailable",
+  "remembered_device_unavailable",
+]) {
+  assert.ok(activationCheckpointEvaluation.blockers.includes(requiredActivationBlocker));
 }
 
 async function exerciseAction(input, readContextResult, revealResult = undefined) {
