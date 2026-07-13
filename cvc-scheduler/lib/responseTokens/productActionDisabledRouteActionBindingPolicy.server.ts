@@ -28,14 +28,14 @@ import { RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE } from "./revealPolicy.s
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_CONTRACT_AVAILABLE =
   true;
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE =
-  false;
+  true;
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_ELIGIBLE_ROUTE =
   "/admin/assignments/[assignmentId]" as const;
 
 export const responseLinkProductActionDisabledRouteActionBindingPolicy = {
   eligibleRoute:
     RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_ELIGIBLE_ROUTE,
-  currentStatus: "contract_only_route_unused_no_action_binding",
+  currentStatus: "disabled_route_action_binding_without_enabled_submit",
   routeRequirements: {
     rendering: ["dynamic", "no_store"],
     dataBoundary: "readAssignmentDetailContext_only",
@@ -173,7 +173,6 @@ export const responseLinkProductActionDisabledRouteActionBindingPolicy = {
     automaticClipboardWrite: "forbidden",
   },
   activeFlagsThatMustRemainFalse: [
-    "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE",
     "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
     "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
     "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",

@@ -4399,6 +4399,44 @@ Limitations:
 Next recommended step:
 - Keep the action-binding policy route-unused until a later reviewed disabled binding slice proves a safe non-active binding, or until a separate active slice explicitly proves final approval, warning/expiration UI, post-success-only manual copy, log redaction, and browser guardrails.
 
+## Iteration 11.46 - Disabled Route Action Binding Implementation
+
+Summary:
+- Added the first reviewed disabled action binding on `/admin/assignments/[assignmentId]` without activating response-link generation.
+- The route now creates one route-derived binding to `createDisabledAssignmentResponseLinkServerAction` after the authorized persisted assignment context is available.
+- The binding is not rendered as a browser-submittable form/action prop and has no enabled submit button, hidden assignment id, hidden TTL, hidden action metadata, result renderer, generated URL field, copy button, clipboard behavior, redirect, revalidation, cookie mutation, delivery, or navigation link.
+- The route still reads assignment data only through `readAssignmentDetailContext` and does not import/call the disabled adapter, product-action boundary, audited reveal/RPC helper, token helper, replacement helper, diagnostic helper, token-table/direct Supabase helper, service-role path, route-entry policy, enablement checklist, server-action shape policy, disabled route-wiring policy, or disabled action-binding policy directly.
+- The 11.41 stub is now route-bound in a reviewed disabled way rather than route-unused, but it remains disabled by default, adapter-only, and credential-free.
+
+Changed files:
+- `app/admin/assignments/[assignmentId]/page.tsx`
+- `lib/responseTokens/productActionDisabledRouteActionBindingPolicy.server.ts`
+- `lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts`
+- `lib/responseTokens/productActionServerAction.server.ts`
+- `lib/responseTokens/productActionUiPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-server-action-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the route has exactly the reviewed route-derived disabled binding, remains dynamic/no-store and persisted-context-only, imports only the 11.41 stub for response-link wiring, renders no form/action prop/hidden metadata/submit control/URL/copy affordance, has no inbound product links, and keeps final approval, route server-action implementation, active reveal/copy, product UI/surface, reveal availability, and navigation flags false.
+- `npm run test:assignment-detail-server-action` proves the stub remains server-only, adapter-only, disabled by default, credential-free, and not normally user-submittable despite the reviewed route binding.
+- `npm run test:assignment-detail-route:browser` covers the loopback production-preview state: authorized desktop/mobile rendering remains safe, unavailable states expose no response-link panel/capability detail, the disabled panel exposes no submit/copy/URL/hidden metadata path, and interactions do not submit, navigate, reveal, copy, POST, hit `/respond/`, hit diagnostics, or trigger response-link/reveal/copy/audit/token-like requests.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was disabled binding only, not active reveal or product activation.
+- No full or redacted response URL, bearer, verifier, token id, audit id, access/refresh token, password, API key, service-role key, SQL/internal RPC detail, sensitive intake value, or unrelated row data is rendered, returned, logged, stored, or written.
+- No email/reminder delivery, public lookup, remembered-device behavior, active copy-link UI, route cutover, product navigation link, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+
+Next recommended step:
+- Keep the disabled binding non-submittable until a later reviewed slice decides whether to add a still-disabled browser control or move toward active approval with warning/expiration UI, post-success-only manual copy, log redaction, and explicit product-owner approval.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

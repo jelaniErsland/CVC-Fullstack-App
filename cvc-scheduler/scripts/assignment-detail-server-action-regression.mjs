@@ -116,7 +116,7 @@ assert.match(serverActionSource, /^import "server-only";/);
 assert.match(serverActionSource, /"use server";/);
 assert.match(serverActionSource, /createAssignmentDetailResponseLinkDisabledAdapterWithDependencies/);
 assert.match(serverActionSource, /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE = true/);
-assert.match(serverActionSource, /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = true/);
+assert.match(serverActionSource, /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = false/);
 assert.match(
   serverActionSource,
   /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE =\s*\r?\n\s*false/,
@@ -160,11 +160,15 @@ assert.match(
 );
 assert.match(
   routeSource,
-  /getDisabledResponseLinkWiringState\(\s*createDisabledAssignmentResponseLinkServerAction,\s*\)/s,
+  /getDisabledResponseLinkWiringState\(\s*disabledResponseLinkAction,\s*\)/s,
 );
 assert.doesNotMatch(
   routeSource,
   /createDisabledAssignmentResponseLinkServerAction\([^)]|<form\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|navigator\.clipboard|clipboard\.writeText/i,
+);
+assert.match(
+  routeSource,
+  /const disabledResponseLinkAction =\s*createDisabledAssignmentResponseLinkServerAction\.bind\(null, normalizedAssignmentId\);/s,
 );
 assert.match(
   packageSource,
@@ -203,14 +207,14 @@ assert.deepEqual(assignmentDetailInboundLinks, []);
 
 const description = describeDisabledAssignmentResponseLinkServerAction();
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE, true);
-assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE, "disabled");
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE,
   false,
 );
 assert.equal(description.stubAvailable, true);
-assert.equal(description.routeUnused, true);
+assert.equal(description.routeUnused, false);
 assert.equal(description.defaultState, "disabled");
 assert.equal(description.finalApprovalAvailable, false);
 assert.equal(description.eligibleRoute, "/admin/assignments/[assignmentId]");
@@ -409,4 +413,4 @@ assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 
 console.log("Assignment-detail disabled server-action stub regression passed.");
-console.log("Confirmed disabled route import without invocation and disabled-adapter-only execution.");
+console.log("Confirmed disabled route binding without normal user submission and disabled-adapter-only execution.");

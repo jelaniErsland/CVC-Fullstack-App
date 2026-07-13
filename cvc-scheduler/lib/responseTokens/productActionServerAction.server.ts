@@ -7,7 +7,7 @@ import type {
 import { createAssignmentDetailResponseLinkDisabledAdapterWithDependencies } from "./productActionDisabledAdapter.server.ts";
 
 export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE = true;
-export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = true;
+export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = false;
 export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE =
   "disabled";
 export const RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE =

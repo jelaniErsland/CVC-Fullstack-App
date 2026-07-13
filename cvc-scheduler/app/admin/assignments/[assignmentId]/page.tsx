@@ -122,10 +122,11 @@ function formatUpdatedAt(value: string, timezone: string) {
   }
 }
 
-function getDisabledResponseLinkWiringState(disabledServerActionImport: unknown) {
-  void disabledServerActionImport;
+function getDisabledResponseLinkWiringState(disabledServerActionBinding: unknown) {
+  void disabledServerActionBinding;
   return {
     reviewedDisabledServerActionImport: true,
+    reviewedDisabledActionBinding: true,
     enabled: false,
   } as const;
 }
@@ -236,12 +237,14 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
     }
   }
 
-  if (!context) {
+  if (!normalizedAssignmentId || !context) {
     return <UnavailableState />;
   }
 
+  const disabledResponseLinkAction =
+    createDisabledAssignmentResponseLinkServerAction.bind(null, normalizedAssignmentId);
   const responseLinkWiringState = getDisabledResponseLinkWiringState(
-    createDisabledAssignmentResponseLinkServerAction,
+    disabledResponseLinkAction,
   );
 
   return (
@@ -357,6 +360,13 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                     <li>
                       The reviewed server-action seam is present but remains
                       disabled here.
+                    </li>
+                  ) : null}
+                  {responseLinkWiringState.reviewedDisabledActionBinding &&
+                  !responseLinkWiringState.enabled ? (
+                    <li>
+                      A disabled action binding is present but cannot be
+                      submitted from this page.
                     </li>
                   ) : null}
                   <li>

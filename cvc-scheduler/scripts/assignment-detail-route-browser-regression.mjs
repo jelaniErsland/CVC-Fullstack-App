@@ -512,6 +512,7 @@ async function exerciseBrowserRoute() {
     "No link is generated on page load.",
     "No email or reminder is sent from this page.",
     "The reviewed server-action seam is present but remains disabled here.",
+    "A disabled action binding is present but cannot be submitted from this page.",
     "Manual copying will only be available after an audited success",
   ]) {
     assert(
@@ -667,6 +668,7 @@ async function exerciseBrowserRoute() {
     "Response link",
     "future link would grant response access",
     "Manual copying",
+    "disabled action binding",
     "reviewed server-action seam",
     "No link is generated",
   ]) {

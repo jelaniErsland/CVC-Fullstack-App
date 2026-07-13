@@ -37,7 +37,7 @@ export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE =
 
 export const responseLinkProductActionDisabledRouteWiringPolicy = {
   eligibleRoute: RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE,
-  currentStatus: "disabled_route_import_without_form_or_action_binding",
+  currentStatus: "disabled_route_import_with_disabled_action_binding",
   currentPanel: "11.34_inert_response_link_shell",
   routeImport: "prohibited_until_later_reviewed_disabled_wiring_slice",
   routeRequirements: {
@@ -120,7 +120,7 @@ export const responseLinkProductActionDisabledRouteWiringPolicy = {
     ],
   },
   disabledRenderingRules: {
-    currentPanelState: "disabled_import_wiring_without_form_or_action_binding",
+    currentPanelState: "disabled_import_wiring_with_disabled_action_binding",
     futureDisabledPanelCopy:
       "response_link_generation_unavailable_until_later_reviewed_enablement",
     disabledAndErrorStates: [

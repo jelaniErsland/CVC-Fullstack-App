@@ -244,15 +244,23 @@ assert.match(
 assert.match(routeSource, /readAssignmentDetailContext\(\{\s*assignmentId:/s);
 assert.match(
   routeSource,
-  /getDisabledResponseLinkWiringState\(\s*createDisabledAssignmentResponseLinkServerAction,\s*\)/s,
+  /getDisabledResponseLinkWiringState\(\s*disabledResponseLinkAction,\s*\)/s,
 );
 assert.doesNotMatch(
   routeSource,
   /createDisabledAssignmentResponseLinkServerAction\([^)]/,
 );
+assert.match(
+  routeSource,
+  /const disabledResponseLinkAction =\s*createDisabledAssignmentResponseLinkServerAction\.bind\(null, normalizedAssignmentId\);/s,
+);
+assert.match(
+  routeSource,
+  /getDisabledResponseLinkWiringState\(\s*disabledResponseLinkAction,\s*\)/s,
+);
 assert.doesNotMatch(
   routeSource,
-  /action=\{?\s*createDisabledAssignmentResponseLinkServerAction|formAction=\{?\s*createDisabledAssignmentResponseLinkServerAction|createDisabledAssignmentResponseLinkServerAction\.bind|useActionState\(\s*createDisabledAssignmentResponseLinkServerAction|useFormState\(\s*createDisabledAssignmentResponseLinkServerAction/s,
+  /action=\{?\s*createDisabledAssignmentResponseLinkServerAction|formAction=\{?\s*createDisabledAssignmentResponseLinkServerAction|useActionState\(\s*createDisabledAssignmentResponseLinkServerAction|useFormState\(\s*createDisabledAssignmentResponseLinkServerAction/s,
 );
 assert.doesNotMatch(
   routeSource,
@@ -552,12 +560,13 @@ assert.match(productActionUiPolicySource, /show_expiration_after_action/);
 assert.match(productActionUiPolicySource, /allow_manual_copy_only_after_success/);
 assert.match(productActionUiPolicySource, /never_auto_copy_to_clipboard/);
 assert.match(productActionUiPolicySource, /successful_explicit_action_response_only/);
-assert.match(productActionUiPolicySource, /status: "visible_but_inert"/);
+assert.match(productActionUiPolicySource, /status: "visible_with_disabled_action_binding"/);
+assert.match(productActionUiPolicySource, /route_derived_disabled_action_binding_reference/);
+assert.match(productActionUiPolicySource, /non_submittable_disabled_panel_copy_only/);
 assert.match(productActionUiPolicySource, /future_link_grants_response_access_for_this_assignment/);
 assert.match(productActionUiPolicySource, /future_link_will_expire/);
 assert.match(productActionUiPolicySource, /future_action_requires_explicit_click_or_tap/);
 assert.match(productActionUiPolicySource, /manual_copy_after_audited_success_only/);
-assert.match(productActionUiPolicySource, /server_action_binding/);
 assert.match(productActionUiPolicySource, /hidden_credential_or_action_metadata/);
 assert.match(productActionUiPolicySource, /full_or_redacted_live_url/);
 assert.doesNotMatch(
@@ -746,7 +755,7 @@ assert.match(
 );
 assert.match(
   productActionServerActionSource,
-  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = true/,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = false/,
 );
 assert.match(
   productActionServerActionSource,
@@ -801,7 +810,7 @@ assert.match(
 assert.match(productActionServerActionHarnessSource, /adapterCallCount/);
 assert.match(
   productActionServerActionHarnessSource,
-  /Confirmed disabled route import without invocation and disabled-adapter-only execution/,
+  /Confirmed disabled route binding without normal user submission and disabled-adapter-only execution/,
 );
 
 assert.match(productActionDisabledRouteWiringPolicySource, /^import "server-only";/);
@@ -934,7 +943,7 @@ assert.match(
 );
 assert.match(
   productActionDisabledRouteActionBindingPolicySource,
-  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*false/,
+  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*true/,
 );
 assert.match(
   productActionDisabledRouteActionBindingPolicySource,
@@ -1206,7 +1215,7 @@ assert.equal(
 );
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE,
-  false,
+  true,
 );
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_ELIGIBLE_ROUTE,
@@ -1261,12 +1270,12 @@ assert.equal(
   "/admin/assignments/[assignmentId]",
 );
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE, true);
-assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE, "disabled");
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE, false);
 const serverActionStubDescription = describeDisabledAssignmentResponseLinkServerAction();
 assert.equal(serverActionStubDescription.stubAvailable, true);
-assert.equal(serverActionStubDescription.routeUnused, true);
+assert.equal(serverActionStubDescription.routeUnused, false);
 assert.equal(serverActionStubDescription.defaultState, "disabled");
 assert.equal(serverActionStubDescription.finalApprovalAvailable, false);
 assert.equal(
@@ -1298,7 +1307,7 @@ assert.equal(
   true,
 );
 assert.equal(disabledRouteWiringDescription.serverActionStubAvailable, true);
-assert.equal(disabledRouteWiringDescription.serverActionStubRouteUnused, true);
+assert.equal(disabledRouteWiringDescription.serverActionStubRouteUnused, false);
 assert.equal(
   disabledRouteWiringDescription.routeServerActionImplementationAvailable,
   false,
@@ -1757,7 +1766,10 @@ assert.equal(
   "prohibited_until_reviewed_ui_slice",
 );
 assert.equal(responseLinkProductActionUiContract.trigger.required, "deliberate_click_or_tap");
-assert.equal(responseLinkProductActionUiContract.currentInertShell.status, "visible_but_inert");
+assert.equal(
+  responseLinkProductActionUiContract.currentInertShell.status,
+  "visible_with_disabled_action_binding",
+);
 assert.equal(
   responseLinkProductActionUiContract.currentInertShell.eligibleSurface,
   "/admin/assignments/[assignmentId]",
@@ -1776,7 +1788,8 @@ for (const requiredShellCopy of [
 }
 for (const prohibitedShellMechanic of [
   "form",
-  "server_action_binding",
+  "server_action_form_binding",
+  "enabled_form_submission",
   "enabled_button",
   "hidden_credential_or_action_metadata",
   "clipboard_call",
@@ -2274,7 +2287,7 @@ assert.equal(
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.currentStatus,
-  "disabled_route_import_without_form_or_action_binding",
+  "disabled_route_import_with_disabled_action_binding",
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.currentPanel,
@@ -2405,7 +2418,7 @@ for (const prohibitedDisabledRouteCall of [
 }
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.disabledRenderingRules.currentPanelState,
-  "disabled_import_wiring_without_form_or_action_binding",
+  "disabled_import_wiring_with_disabled_action_binding",
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.disabledRenderingRules.stateDisclosure,
@@ -2510,7 +2523,7 @@ const disabledActionBindingDescription =
 assert.equal(disabledActionBindingDescription.contractAvailable, true);
 assert.equal(
   disabledActionBindingDescription.disabledActionBindingImplementationAvailable,
-  false,
+  true,
 );
 assert.equal(disabledActionBindingDescription.serverActionStubAvailable, true);
 assert.equal(
@@ -2542,7 +2555,7 @@ assert.equal(
 );
 assert.equal(
   responseLinkProductActionDisabledRouteActionBindingPolicy.currentStatus,
-  "contract_only_route_unused_no_action_binding",
+  "disabled_route_action_binding_without_enabled_submit",
 );
 assert.deepEqual(
   responseLinkProductActionDisabledRouteActionBindingPolicy.routeRequirements.rendering,
@@ -2748,7 +2761,6 @@ assert.equal(
   "forbidden",
 );
 for (const requiredActionBindingFalseFlag of [
-  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
@@ -2782,7 +2794,6 @@ const otherwiseReadyDisabledActionBinding =
   });
 assert.equal(otherwiseReadyDisabledActionBinding.allowed, false);
 for (const requiredActionBindingBlocker of [
-  "disabled_action_binding_implementation_unavailable",
   "route_server_action_implementation_unavailable",
   "final_approval_unavailable",
   "active_response_link_reveal_unavailable",
