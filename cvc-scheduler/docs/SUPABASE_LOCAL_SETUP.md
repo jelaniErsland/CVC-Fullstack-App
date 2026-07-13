@@ -131,6 +131,14 @@ npm run test:assignment-detail-server-action
 
 This command requires no preview server, hosted Supabase target, or service-role key. It proves the server-action stub is server-only, accepts only route-derived assignment id plus optional bounded TTL FormData, rejects unknown and forbidden browser-shaped fields, calls only the disabled adapter seam, returns only credential-free disabled states while final approval is false, and does not expose a URL, bearer, verifier, token/audit id, credential, SQL/internal RPC detail, sensitive intake value, or unrelated row marker. After 11.46 it also distinguishes the reviewed route-derived disabled binding from active invocation: the stub is route-bound but remains disabled by default and not normally user-submittable. After 11.48 and 11.49, disabled result rendering remains unimplemented; impossible success is still reduced to credential-free disabled states, and renderer readiness remains route-unused.
 
+After 12.1, run the MVP cutover sequencing guardrail when changing real-data cutover planning:
+
+```powershell
+npm run test:mvp-cutover-plan
+```
+
+This static command requires no preview server, hosted Supabase target, or service-role key. It proves the MVP cutover plan exists, is server-only and route-unused, lists available persisted foundations and current mock-only prototype surfaces, keeps Calendar/Tasks/Volunteers/Public Volunteer/Communications cutover flags false, keeps reminder delivery false, keeps response-link activation paused after 11.50, forbids mock-to-real mixing and service-role cutover, verifies no app route/component imports the plan or new persisted Calendar/Tasks/Volunteers read helpers, and confirms `12.2 Persisted Calendar Read Model Contract` as the next recommended implementation slice.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

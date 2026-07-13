@@ -4503,6 +4503,37 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.1 - MVP Real-Data Cutover Sequencing Review
+
+Summary:
+- Paused the response-link activation ladder after 11.50 and added a server-only, route-unused MVP real-data cutover sequencing checkpoint.
+- The checkpoint lists available persisted foundations, current mock-only prototype surfaces, a recommended ten-step cutover sequence, non-negotiable cutover rules, and explicitly blocked areas.
+- It keeps all route cutover flags false, including Calendar, Tasks, Volunteers, Public Volunteer lookup, Communications, reminder delivery, response-link activation reopening, mock-to-real mixing, and service-role cutover.
+- It recommends `12.2 Persisted Calendar Read Model Contract` as the next implementation slice, still route-unused and without cutting over `/admin/calendar`.
+
+Changed files:
+- `lib/readiness/mvpRealDataCutoverPlan.server.ts`
+- `scripts/mvp-real-data-cutover-plan-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:mvp-cutover-plan` proves the new checkpoint exists, is server-only and route-unused, lists persisted foundations, mock-only surfaces, the recommended sequence, false cutover flags, and `12.2 Persisted Calendar Read Model Contract` as the next slice.
+- Existing assignment-detail and response-link guardrails continue to prove response-link activation remains paused after 11.50.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was planning/static hardening only, not a route cutover, persistence implementation, UI integration, delivery implementation, public lookup, remembered-device behavior, or response-link activation.
+- No product route was converted from mock data to persisted data. No Calendar, Tasks, Volunteers, Public Volunteer, or Communications cutover was implemented.
+- No route links to `/admin/assignments/[assignmentId]`, seed data, service-role usage, hosted validation, or mock-to-real mixing were added.
+
+Next recommended step:
+- Implement `12.2 Persisted Calendar Read Model Contract`: a route-unused, server-only Calendar read model contract for persisted `calendar_items`, assignment-derived counts, and safe workspace/contact grants, without cutting over `/admin/calendar`.
+
 ## Iteration 11.50 - Assignment Response Link Activation Checkpoint Review
 
 Summary:
