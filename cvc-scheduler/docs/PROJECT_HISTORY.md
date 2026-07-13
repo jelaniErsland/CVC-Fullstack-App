@@ -4437,6 +4437,38 @@ Limitations:
 Next recommended step:
 - Keep the disabled binding non-submittable until a later reviewed slice decides whether to add a still-disabled browser control or move toward active approval with warning/expiration UI, post-success-only manual copy, log redaction, and explicit product-owner approval.
 
+## Iteration 11.47 - Disabled Action Binding Security Regression Review
+
+Summary:
+- Hardened the 11.46 disabled binding state without activating response-link generation.
+- Extended the assignment-detail static regression to prove `/admin/assignments/[assignmentId]` still creates exactly one route-derived disabled binding to `createDisabledAssignmentResponseLinkServerAction`, remains the only app route importing that stub, and does not render it as a form action, JSX `action`, `formAction`, callback prop, client prop, hidden input, data attribute, browser metadata, submit path, result renderer, generated URL field, or copy affordance.
+- Added a tracked-file guardrail that fails on actual-looking Supabase keys, JWTs, and credentialed Postgres URLs so accidental local CLI diagnostic output cannot land in committed files unnoticed.
+- Strengthened browser assertions for the authorized response-link panel: it may mention the reviewed disabled binding, but no rendered form, action metadata, hidden input, enabled/disabled wired submit control, generated URL field, copy button, clipboard behavior, or forbidden response-link network traffic may appear.
+- Documented the operational rule that local Supabase troubleshooting must use redirected and redacted diagnostics and prefer Docker/container status, port checks, and health endpoints over raw Supabase env blocks.
+
+Changed files:
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the route binding remains exactly one route-derived disabled binding, has no browser-rendered action/hidden metadata path, keeps unavailable states free of response-link capability details, keeps active flags false, and verifies the new operational secret-output guardrail.
+- `npm run test:assignment-detail-server-action` continues to prove the stub is server-only, adapter-only, disabled by default, and credential-free while route-bound in the reviewed disabled way.
+- `npm run test:assignment-detail-route:browser` proves the authorized panel is disabled/unavailable, absent from unavailable states, and inert across click/hover/focus/tab/page-load behavior with no response-link requests, submit/copy affordance, credential leakage, browser errors, or 390px overflow.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was hardening only, not active reveal or product activation.
+- No full or redacted response URL, bearer, verifier, token id, audit id, access/refresh token, password, API key, service-role key, SQL/internal RPC detail, sensitive intake value, or unrelated row data is rendered, returned, logged, stored, or written.
+- No form, enabled or disabled wired submit button, hidden assignment id, hidden TTL, hidden action metadata, result renderer, copy behavior, delivery, public lookup, remembered-device behavior, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+
+Next recommended step:
+- Keep the disabled binding non-submittable and continue using the hardened static/browser gates before any later slice considers a still-disabled browser control or active reveal approval.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

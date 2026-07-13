@@ -29,6 +29,14 @@ Never prefix a service-role key, database password, provider secret, webhook sec
 
 Deployment values belong in the deployment platform's encrypted environment settings. Use separate Supabase projects and credentials for local/development, preview, and production environments once those environments exist.
 
+Operational diagnostics after 11.47:
+
+- Do not print raw Supabase CLI/status/start output in a transcript when it may include generated keys, JWTs, access tokens, refresh tokens, database URLs, or local connection strings.
+- Redirect Supabase start/status output to a temporary file when startup diagnostics are needed.
+- Redact key-like values before displaying diagnostics.
+- Prefer Docker/container status, port checks, and health endpoints for local troubleshooting instead of full Supabase environment blocks.
+- Do not store diagnostic output files in the repository, docs, fixtures, screenshots, or test artifacts.
+
 ## Client boundary
 
 - `lib/supabase/browser.ts` creates the cookie-compatible client used only by the contact sign-in form.

@@ -572,6 +572,13 @@ async function exerciseBrowserRoute() {
     "formaction",
     'type="submit"',
     'type="hidden"',
+    "data-assignment-id",
+    "data-token-id",
+    "data-audit-id",
+    "data-response-url",
+    "data-bearer",
+    "data-verifier",
+    "__next_action",
     "navigator.clipboard",
     "clipboard.writeText",
     "/respond/",
@@ -594,6 +601,10 @@ async function exerciseBrowserRoute() {
   assert(
     (await page.locator('input[type="hidden"], [formaction]').count()) === 0,
     "The read-only route rendered hidden action metadata.",
+  );
+  assert(
+    (await page.locator('[action], [formaction], [data-assignment-id], [data-token-id], [data-audit-id], [data-response-url], [data-bearer], [data-verifier]').count()) === 0,
+    "The read-only route rendered browser-discoverable action or credential metadata.",
   );
   assert(
     (await page.locator('[aria-disabled="true"]').count()) >= 1,
@@ -620,6 +631,10 @@ async function exerciseBrowserRoute() {
     "The response-link panel rendered browser-controlled action metadata.",
   );
   assert(
+    (await responseLinkPanel.locator('[action], [formaction], [data-assignment-id], [data-token-id], [data-audit-id], [data-response-url], [data-bearer], [data-verifier]').count()) === 0,
+    "The response-link panel exposed action or credential metadata.",
+  );
+  assert(
     (await page.locator('a[href^="/respond/"], a[href*="diagnostics/response-link"]').count()) === 0,
     "The read-only route linked to a response or diagnostic surface.",
   );
@@ -636,6 +651,22 @@ async function exerciseBrowserRoute() {
   await page.waitForTimeout(150);
   await page.keyboard.press("Tab");
   await page.waitForTimeout(100);
+  const activeElementSummary = await page.evaluate(() => {
+    const activeElement = document.activeElement;
+    if (!activeElement) return { interactive: false, text: "" };
+    const tagName = activeElement.tagName.toLowerCase();
+    const role = activeElement.getAttribute("role") ?? "";
+    return {
+      interactive:
+        ["a", "button", "input", "select", "textarea"].includes(tagName) ||
+        ["button", "link", "menuitem"].includes(role),
+      text: activeElement.textContent ?? "",
+    };
+  });
+  assert(
+    !activeElementSummary.interactive || !/copy|submit|generate|reveal/i.test(activeElementSummary.text),
+    "Tabbing exposed an active response-link submit or copy affordance.",
+  );
   assert(
     page.url() === pageUrlBeforeInteraction,
     "Interacting with the disabled response-link panel navigated away.",

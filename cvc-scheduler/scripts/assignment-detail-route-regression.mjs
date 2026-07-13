@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -216,6 +217,14 @@ const productActionServerActionHarnessSource = await readFile(
   productActionServerActionHarnessPath,
   "utf8",
 );
+const supabaseLocalSetupSource = await readFile(
+  path.join(root, "docs", "SUPABASE_LOCAL_SETUP.md"),
+  "utf8",
+);
+const supabaseReadinessSource = await readFile(
+  path.join(root, "docs", "SUPABASE_AUTH_PERSISTENCE_READINESS.md"),
+  "utf8",
+);
 const exampleAssignmentId = "11111111-1111-4111-8111-111111111111";
 
 async function collectFiles(directory) {
@@ -227,6 +236,27 @@ async function collectFiles(directory) {
     }),
   );
   return nested.flat();
+}
+
+function countMatches(source, pattern) {
+  return [...source.matchAll(pattern)].length;
+}
+
+async function collectTrackedTextFiles() {
+  const result = spawnSync("git", ["ls-files"], {
+    cwd: root,
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  assert.equal(result.status, 0, "Unable to list tracked files for secret guardrail.");
+  return result.stdout
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .filter((relative) =>
+      /\.(?:cjs|css|env|example|html|js|json|jsx|md|mjs|sql|toml|ts|tsx|txt|yml|yaml)$/i.test(
+        relative,
+      ),
+    );
 }
 
 assert.match(routeSource, /export const dynamic = "force-dynamic"/);
@@ -253,6 +283,10 @@ assert.doesNotMatch(
 assert.match(
   routeSource,
   /const disabledResponseLinkAction =\s*createDisabledAssignmentResponseLinkServerAction\.bind\(null, normalizedAssignmentId\);/s,
+);
+assert.equal(
+  countMatches(routeSource, /createDisabledAssignmentResponseLinkServerAction\.bind\(null, normalizedAssignmentId\)/g),
+  1,
 );
 assert.match(
   routeSource,
@@ -301,8 +335,38 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   routeSource,
-  /redirect\(|permanentRedirect\(|revalidatePath\(|revalidateTag\(|cookies\(\)\.set|cookies\(\)\.delete|NextResponse\.redirect/,
+  /data-(?:assignment|assignment-id|ttl|expires|action|token|audit|url|bearer|verifier|workspace|volunteer|actor|capability|grant|redirect|return|metadata)|query\??\.|searchParams|URLSearchParams|params\.assignmentId/s,
 );
+assert.doesNotMatch(
+  routeSource,
+  /redirect\(|permanentRedirect\(|revalidatePath\(|revalidateTag\(|cookies\(\)\.set|cookies\(\)\.delete|NextResponse\.redirect|sendEmail|sendReminder|enqueue|cron|seed/i,
+);
+
+assert.match(supabaseLocalSetupSource, /Do not print raw Supabase CLI\/status\/start output/);
+assert.match(supabaseLocalSetupSource, /Redirect Supabase start\/status output to a temporary file/);
+assert.match(supabaseLocalSetupSource, /Redact key-like values before displaying diagnostics/);
+assert.match(supabaseLocalSetupSource, /Prefer Docker\/container status, port checks, and health endpoints/);
+assert.match(supabaseReadinessSource, /11\.47 disabled action binding security regression review/i);
+assert.match(supabaseReadinessSource, /redirected and redacted Supabase diagnostics/i);
+
+const trackedTextFiles = await collectTrackedTextFiles();
+const actualLookingSecretPatterns = [
+  { name: "jwt", pattern: /\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\b/ },
+  { name: "supabase_secret_key", pattern: new RegExp("sb_" + "secret_[A-Za-z0-9_-]{20,}") },
+  { name: "supabase_publishable_key", pattern: new RegExp("sb_" + "publishable_[A-Za-z0-9_-]{20,}") },
+  {
+    name: "credentialed_postgres_url",
+    pattern: /postgres(?:ql)?:\/\/[^:\s/@]{2,}:[^@\s]{6,}@/i,
+  },
+];
+const trackedSecretFindings = [];
+for (const relative of trackedTextFiles) {
+  const source = await readFile(path.join(root, relative), "utf8");
+  for (const { name, pattern } of actualLookingSecretPatterns) {
+    if (pattern.test(source)) trackedSecretFindings.push(`${relative}:${name}`);
+  }
+}
+assert.deepEqual(trackedSecretFindings, []);
 
 assert.match(routeEntryPolicySource, /^import "server-only";/);
 assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE = true/);
