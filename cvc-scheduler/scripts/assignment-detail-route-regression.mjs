@@ -94,6 +94,14 @@ import {
   responseLinkProductActionDisabledRouteWiringPolicy,
 } from "../lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts";
 import {
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_CONTRACT_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_ELIGIBLE_ROUTE,
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE,
+  describeResponseLinkProductActionDisabledRouteActionBindingPolicy,
+  evaluateResponseLinkProductActionDisabledRouteActionBindingReadiness,
+  responseLinkProductActionDisabledRouteActionBindingPolicy,
+} from "../lib/responseTokens/productActionDisabledRouteActionBindingPolicy.server.ts";
+import {
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE,
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE,
@@ -189,6 +197,16 @@ const productActionDisabledRouteWiringPolicySource = await readFile(
   productActionDisabledRouteWiringPolicyPath,
   "utf8",
 );
+const productActionDisabledRouteActionBindingPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionDisabledRouteActionBindingPolicy.server.ts",
+);
+const productActionDisabledRouteActionBindingPolicySource = await readFile(
+  productActionDisabledRouteActionBindingPolicyPath,
+  "utf8",
+);
 const productActionServerActionHarnessPath = path.join(
   root,
   "scripts",
@@ -255,7 +273,7 @@ assert.match(routeSource, /reviewed server-action seam is present but remains\s+
 assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionDisabledRouteActionBinding|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -909,6 +927,164 @@ assert.doesNotMatch(
   /["']use server["']|createDisabledAssignmentResponseLinkServerAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
+assert.match(productActionDisabledRouteActionBindingPolicySource, /^import "server-only";/);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_CONTRACT_AVAILABLE =\s*\r?\n\s*true/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*false/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /"\/admin\/assignments\/\[assignmentId\]"/,
+);
+assert.match(productActionDisabledRouteActionBindingPolicySource, /dynamic/);
+assert.match(productActionDisabledRouteActionBindingPolicySource, /no_store/);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /readAssignmentDetailContext_only/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /assignmentDataReader: "readAssignmentDetailContext"/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /onlyAllowedFutureCallable: "createDisabledAssignmentResponseLinkServerAction"/,
+);
+for (const prohibitedActionBindingRouteCall of [
+  "createAssignmentDetailResponseLinkDisabledAdapter",
+  "createAssignmentDetailResponseLinkProductAction",
+  "createAuditedAssignmentResponseLinkReveal",
+  "reveal_assignment_response_link",
+  "replace_assignment_response_token",
+  "replaceAssignmentResponseToken",
+  "recordAssignmentResponseLinkRevealAudit",
+  "issueAssignmentResponseLink",
+  "assignment_response_tokens",
+  "token_table_read",
+  "direct_supabase_mutation_helper",
+  "diagnostic_response_link_dependency",
+  "service_role_client",
+  "detailRouteEntryPolicy",
+  "detailResponseLinkEnablementChecklist",
+  "productActionServerActionPolicy",
+  "productActionDisabledRouteWiringPolicy",
+  "productActionDisabledRouteActionBindingPolicy",
+]) {
+  assert.match(
+    productActionDisabledRouteActionBindingPolicySource,
+    new RegExp(prohibitedActionBindingRouteCall),
+  );
+}
+for (const allowedActionBindingTrigger of [
+  "deliberate_click",
+  "deliberate_tap",
+  "deliberate_submit",
+]) {
+  assert.match(
+    productActionDisabledRouteActionBindingPolicySource,
+    new RegExp(allowedActionBindingTrigger),
+  );
+}
+for (const prohibitedActionBindingTrigger of [
+  "render",
+  "GET",
+  "page_load",
+  "prefetch",
+  "hover",
+  "focus",
+  "client_effect",
+  "hydration",
+  "unavailable_state_render",
+  "panel_mount",
+  "tab_navigation",
+]) {
+  assert.match(
+    productActionDisabledRouteActionBindingPolicySource,
+    new RegExp(prohibitedActionBindingTrigger),
+  );
+}
+for (const forbiddenActionBindingAssignmentIdSource of [
+  "browser_input",
+  "query_params",
+  "hidden_field",
+  "arbitrary_typed_id",
+  "client_component_prop",
+  "data_attribute",
+  "metadata",
+]) {
+  assert.match(
+    productActionDisabledRouteActionBindingPolicySource,
+    new RegExp(forbiddenActionBindingAssignmentIdSource),
+  );
+}
+assert.match(productActionDisabledRouteActionBindingPolicySource, /"expiresInHours"/);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /bounded_by_existing_response_link_product_ttl_policy/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /do_not_hide_ttl_if_ambiguous_server_default_must_be_used_when_no_user_control_exists/,
+);
+for (const forbiddenActionBindingInput of [
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseId",
+  "responseTokenId",
+  "tokenId",
+  "bearer",
+  "rawBearer",
+  "verifier",
+  "tokenVerifierHash",
+  "origin",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "auditEventId",
+  "auditMetadata",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+  "copyMode",
+  "serviceRoleClient",
+  "supabaseClient",
+  "redirectPath",
+  "returnPath",
+  "hiddenMetadata",
+  "arbitraryHiddenMetadata",
+  "unknownFields",
+]) {
+  assert.match(
+    productActionDisabledRouteActionBindingPolicySource,
+    new RegExp(forbiddenActionBindingInput),
+  );
+}
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /non_disclosing_beyond_existing_authorized_assignment_detail_context/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /later_separately_reviewed_active_success_slice_after_audited_success_and_explicit_approval_only/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /later_separately_reviewed_post_success_slice_only/,
+);
+assert.match(
+  productActionDisabledRouteActionBindingPolicySource,
+  /automaticClipboardWrite: "forbidden"/,
+);
+assert.doesNotMatch(
+  productActionDisabledRouteActionBindingPolicySource,
+  /["']use server["']|createDisabledAssignmentResponseLinkServerAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
+);
+
 const appAndComponentFiles = [];
 for (const directory of ["app", "components"]) {
   appAndComponentFiles.push(
@@ -926,6 +1102,7 @@ const disabledAdapterImporters = [];
 const serverActionPolicyImporters = [];
 const serverActionStubImporters = [];
 const disabledRouteWiringPolicyImporters = [];
+const disabledActionBindingPolicyImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -979,7 +1156,14 @@ for (const file of appAndComponentFiles) {
     disabledRouteWiringPolicyImporters.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerAction\.server|createDisabledAssignmentResponseLinkServerAction|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionDisabledRouteWiringPolicy|responseLinkProductActionDisabledRouteWiring|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+    source.includes("productActionDisabledRouteActionBindingPolicy") ||
+    source.includes("responseLinkProductActionDisabledRouteActionBinding") ||
+    source.includes("RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING")
+  ) {
+    disabledActionBindingPolicyImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerAction\.server|createDisabledAssignmentResponseLinkServerAction|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionDisabledRouteWiringPolicy|responseLinkProductActionDisabledRouteWiring|productActionDisabledRouteActionBindingPolicy|responseLinkProductActionDisabledRouteActionBinding|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
       source,
     )
   ) {
@@ -995,6 +1179,7 @@ assert.deepEqual(disabledAdapterImporters, []);
 assert.deepEqual(serverActionPolicyImporters, []);
 assert.deepEqual(serverActionStubImporters, [routeRelativePath]);
 assert.deepEqual(disabledRouteWiringPolicyImporters, []);
+assert.deepEqual(disabledActionBindingPolicyImporters, []);
 assert.deepEqual(
   unsafeCurrentRouteOrComponentUi.filter((relative) => relative !== routeRelativePath),
   [],
@@ -1015,6 +1200,18 @@ assert.equal(ASSIGNMENT_DETAIL_RESPONSE_LINK_ENABLEMENT_CHECKLIST_AVAILABLE, tru
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE, false);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_CONTRACT_AVAILABLE,
+  true,
+);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE,
+  false,
+);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_ELIGIBLE_ROUTE,
+  "/admin/assignments/[assignmentId]",
+);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_DEFAULT_STATE, "disabled");
 assert.equal(
@@ -2304,6 +2501,302 @@ for (const requiredDisabledRouteWiringBlocker of [
   assert.ok(
     otherwiseReadyDisabledRouteWiring.blockers.includes(
       requiredDisabledRouteWiringBlocker,
+    ),
+  );
+}
+
+const disabledActionBindingDescription =
+  describeResponseLinkProductActionDisabledRouteActionBindingPolicy();
+assert.equal(disabledActionBindingDescription.contractAvailable, true);
+assert.equal(
+  disabledActionBindingDescription.disabledActionBindingImplementationAvailable,
+  false,
+);
+assert.equal(disabledActionBindingDescription.serverActionStubAvailable, true);
+assert.equal(
+  disabledActionBindingDescription.routeServerActionImplementationAvailable,
+  false,
+);
+assert.equal(disabledActionBindingDescription.finalApprovalAvailable, false);
+assert.equal(disabledActionBindingDescription.activeRevealAvailable, false);
+assert.equal(disabledActionBindingDescription.activeCopyAvailable, false);
+assert.equal(disabledActionBindingDescription.activeEntryLinkingAvailable, false);
+assert.equal(
+  disabledActionBindingDescription.routeWiringImplementationAvailable,
+  false,
+);
+assert.equal(
+  disabledActionBindingDescription.productActionUiImplementationAvailable,
+  false,
+);
+assert.equal(disabledActionBindingDescription.copyAffordanceAvailable, false);
+assert.equal(
+  disabledActionBindingDescription.productSurfaceImplementationAvailable,
+  false,
+);
+assert.equal(disabledActionBindingDescription.revealProductSurfaceAvailable, false);
+assert.equal(disabledActionBindingDescription.assignmentDetailNavigationLinked, false);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.eligibleRoute,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.currentStatus,
+  "contract_only_route_unused_no_action_binding",
+);
+assert.deepEqual(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.routeRequirements.rendering,
+  ["dynamic", "no_store"],
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.routeRequirements.dataBoundary,
+  "readAssignmentDetailContext_only",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.routeRequirements.assignmentDataReader,
+  "readAssignmentDetailContext",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.routeCallableSeam
+    .onlyAllowedFutureCallable,
+  "createDisabledAssignmentResponseLinkServerAction",
+);
+for (const prohibitedActionBindingRouteImport of [
+  "createAssignmentDetailResponseLinkDisabledAdapter",
+  "createAssignmentDetailResponseLinkProductAction",
+  "createAuditedAssignmentResponseLinkReveal",
+  "reveal_assignment_response_link",
+  "replace_assignment_response_token",
+  "replaceAssignmentResponseToken",
+  "recordAssignmentResponseLinkRevealAudit",
+  "issueAssignmentResponseLink",
+  "assignment_response_tokens",
+  "token_table_read",
+  "direct_supabase_mutation_helper",
+  "diagnostic_response_link_dependency",
+  "service_role_client",
+  "detailRouteEntryPolicy",
+  "detailResponseLinkEnablementChecklist",
+  "productActionServerActionPolicy",
+  "productActionDisabledRouteWiringPolicy",
+  "productActionDisabledRouteActionBindingPolicy",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.routeCallableSeam.prohibitedDirectRouteImportsOrCalls.includes(
+      prohibitedActionBindingRouteImport,
+    ),
+  );
+}
+for (const allowedActionBindingTrigger of [
+  "deliberate_click",
+  "deliberate_tap",
+  "deliberate_submit",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.invocationRules.allowedTriggers.includes(
+      allowedActionBindingTrigger,
+    ),
+  );
+}
+for (const prohibitedActionBindingTrigger of [
+  "render",
+  "GET",
+  "page_load",
+  "prefetch",
+  "hover",
+  "focus",
+  "client_effect",
+  "hydration",
+  "unavailable_state_render",
+  "panel_mount",
+  "tab_navigation",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.invocationRules.prohibitedTriggers.includes(
+      prohibitedActionBindingTrigger,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.assignmentIdRules.source,
+  "server_derived_from_route_segment_or_same_route_reviewed_server_binding",
+);
+for (const forbiddenActionBindingIdSource of [
+  "browser_input",
+  "query_params",
+  "hidden_field",
+  "arbitrary_typed_id",
+  "client_component_prop",
+  "data_attribute",
+  "metadata",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.assignmentIdRules.forbiddenBrowserSources.includes(
+      forbiddenActionBindingIdSource,
+    ),
+  );
+}
+assert.deepEqual(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.ttlRules
+    .optionalBrowserControlledFields,
+  ["expiresInHours"],
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.ttlRules.ttlPolicy,
+  "bounded_by_existing_response_link_product_ttl_policy",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.ttlRules.hiddenTtlPolicy,
+  "do_not_hide_ttl_if_ambiguous_server_default_must_be_used_when_no_user_control_exists",
+);
+for (const forbiddenActionBindingBrowserInput of [
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseId",
+  "responseTokenId",
+  "tokenId",
+  "bearer",
+  "rawBearer",
+  "verifier",
+  "tokenVerifierHash",
+  "origin",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "auditEventId",
+  "auditMetadata",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+  "copyMode",
+  "serviceRoleClient",
+  "supabaseClient",
+  "redirectPath",
+  "returnPath",
+  "hiddenMetadata",
+  "arbitraryHiddenMetadata",
+  "unknownFields",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.forbiddenBrowserFields.includes(
+      forbiddenActionBindingBrowserInput,
+    ),
+  );
+}
+for (const credentialFreeActionBindingState of [
+  "disabled",
+  "not_approved",
+  "checklist_blocked",
+  "malformed",
+  "action_error",
+  "unavailable",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.disabledResultRules.credentialFreeStates.includes(
+      credentialFreeActionBindingState,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.disabledResultRules.stateDisclosure,
+  "non_disclosing_beyond_existing_authorized_assignment_detail_context",
+);
+for (const prohibitedActionBindingResultField of [
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "rawBearer",
+  "bearer",
+  "verifier",
+  "tokenVerifierHash",
+  "responseTokenId",
+  "tokenId",
+  "auditEventId",
+  "auditMetadata",
+  "auditInternals",
+  "sqlDetail",
+  "internalRpcDetail",
+  "accessToken",
+  "refreshToken",
+  "password",
+  "apiKey",
+  "serviceRoleKey",
+  "localOrHostedSecret",
+  "sensitiveIntakeData",
+  "unrelatedRowData",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.disabledResultRules.prohibitedFields.includes(
+      prohibitedActionBindingResultField,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.futureActiveSuccessRules
+    .fullUrlAvailability,
+  "later_separately_reviewed_active_success_slice_after_audited_success_and_explicit_approval_only",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.futureActiveSuccessRules
+    .manualCopyAvailability,
+  "later_separately_reviewed_post_success_slice_only",
+);
+assert.equal(
+  responseLinkProductActionDisabledRouteActionBindingPolicy.futureActiveSuccessRules
+    .automaticClipboardWrite,
+  "forbidden",
+);
+for (const requiredActionBindingFalseFlag of [
+  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_ACTION_BINDING_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
+]) {
+  assert.ok(
+    responseLinkProductActionDisabledRouteActionBindingPolicy.activeFlagsThatMustRemainFalse.includes(
+      requiredActionBindingFalseFlag,
+    ),
+  );
+}
+const otherwiseReadyDisabledActionBinding =
+  evaluateResponseLinkProductActionDisabledRouteActionBindingReadiness({
+    routeReviewedForDisabledActionBinding: true,
+    dynamicNoStoreProven: true,
+    persistedContextOnlyProven: true,
+    serverActionStubOnlyProven: true,
+    deliberateTriggerOnlyProven: true,
+    noImplicitExecutionProven: true,
+    serverDerivedAssignmentIdProven: true,
+    browserInputShapeProven: true,
+    credentialFreeDisabledResultsProven: true,
+    productOwnerApproved: true,
+  });
+assert.equal(otherwiseReadyDisabledActionBinding.allowed, false);
+for (const requiredActionBindingBlocker of [
+  "disabled_action_binding_implementation_unavailable",
+  "route_server_action_implementation_unavailable",
+  "final_approval_unavailable",
+  "active_response_link_reveal_unavailable",
+  "active_response_link_copy_unavailable",
+  "route_wiring_implementation_unavailable",
+  "product_action_ui_implementation_unavailable",
+  "copy_affordance_unavailable",
+  "product_surface_implementation_unavailable",
+  "reveal_product_surface_unavailable",
+  "assignment_detail_navigation_linkage_unavailable",
+]) {
+  assert.ok(
+    otherwiseReadyDisabledActionBinding.blockers.includes(
+      requiredActionBindingBlocker,
     ),
   );
 }

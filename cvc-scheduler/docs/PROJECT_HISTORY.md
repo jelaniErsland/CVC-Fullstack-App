@@ -4368,6 +4368,37 @@ Limitations:
 Next recommended step:
 - Continue using the hardened static/browser gates before any later disabled form/action binding or active approval slice. Any future activation still needs explicit final approval, warning/expiration UI, post-success-only manual copy, log redaction, and product-owner review.
 
+## Iteration 11.45 - Disabled Route Action Binding Readiness Review
+
+Summary:
+- Added `lib/responseTokens/productActionDisabledRouteActionBindingPolicy.server.ts` as a server-only, route-unused policy for a future disabled action binding between the authorized assignment-detail response-link panel and the 11.41 disabled server-action stub.
+- The policy keeps `/admin/assignments/[assignmentId]` as the only eligible route, requires dynamic/no-store rendering, limits assignment data reads to `readAssignmentDetailContext`, and allows only `createDisabledAssignmentResponseLinkServerAction` as the future callable route seam.
+- It forbids direct route calls/imports to the disabled adapter, product-action boundary, audited reveal/RPC helper, token helper, replacement helper, diagnostic helper, token table/direct Supabase mutation helper, service-role path, route-entry policy, enablement checklist, server-action shape policy, disabled route-wiring policy, or the action-binding policy itself.
+- It requires deliberate click/tap/submit only and forbids render, GET, page load, prefetch, hover, focus, client effect, hydration, unavailable-state rendering, panel mount, and tab navigation.
+- It requires server-derived route assignment id only, permits optional bounded TTL only, forbids hidden/browser metadata, keeps disabled/error results credential-free and non-disclosing, and reserves full URL/manual copy for later separately reviewed active-success/post-success slices.
+
+Changed files:
+- `lib/responseTokens/productActionDisabledRouteActionBindingPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the new policy exists, is server-only, route-unused, names `/admin/assignments/[assignmentId]` as the only eligible route, requires persisted context and the 11.41 stub only, forbids hidden/browser metadata and direct reveal/token/service-role paths, and keeps implementation/final approval/active flags false.
+- The same regression continues to prove the current assignment-detail route imports no policy module, never calls/binds/passes the inert stub, has no form/action/submit/hidden metadata/URL/copy behavior, and has no inbound product links.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was readiness/static hardening only, not activation.
+- No route action binding, form, action prop, formAction prop, submit control, hidden metadata, hidden assignment id, hidden TTL, result renderer, URL reveal, generated URL field, copy button, clipboard behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The disabled server-action stub and disabled adapter remain disabled by default and credential-free.
+
+Next recommended step:
+- Keep the action-binding policy route-unused until a later reviewed disabled binding slice proves a safe non-active binding, or until a separate active slice explicitly proves final approval, warning/expiration UI, post-success-only manual copy, log redaction, and browser guardrails.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:
