@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.42 assignment-detail disabled route wiring readiness review
+
+`lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts` records the future disabled wiring contract between `/admin/assignments/[assignmentId]` and the 11.41 server-action stub. It is server-only, route-unused, and not imported by the assignment-detail route or any current route/component.
+
+The policy says a later disabled wiring slice may only use the existing dynamic/no-store assignment-detail route, keep reading persisted assignment data through `readAssignmentDetailContext`, and invoke only `createDisabledAssignmentResponseLinkServerAction` after a deliberate submit/click/tap. Assignment id must come from the same route segment or reviewed same-route server binding; the only optional browser-controlled field is bounded TTL.
+
+Render, GET, page load, prefetch, hover, focus, client effect, hydration, unavailable-state execution, hidden/browser metadata, workspace/volunteer/actor/token/bearer/verifier/origin/URL/audit/capability/copy-mode/service-role/redirect/return fields, direct route calls to the disabled adapter/product-action/audited reveal/RPC/token/replacement/diagnostic/service-role paths, manual replacement-plus-audit sequencing, and credential-bearing disabled/error UI remain prohibited.
+
+Disabled route-wiring implementation, route server-action implementation, final approval, active reveal, active copy, product-action UI, copy affordance, product surface, reveal availability, entry/navigation linkage, and product navigation remain false. This slice adds no migration, route wiring, form, submit control, copy behavior, delivery, route cutover, or hosted validation requirement.
+
 ## 11.41 route-unused disabled assignment response link server action stub
 
 `lib/responseTokens/productActionServerAction.server.ts` adds the first executable server-action seam for future assignment-detail response-link wiring, but it remains route-unused and disabled. It is not imported by `/admin/assignments/[assignmentId]` or any current route/component.

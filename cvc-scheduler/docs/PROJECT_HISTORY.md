@@ -4269,6 +4269,38 @@ Limitations:
 Next recommended step:
 - Keep the server-action stub route-unused until a later reviewed slice decides whether to plan still-disabled form wiring or continue activation-readiness proof. Do not import the stub into the route or flip active flags before final approval, UI warning/expiration behavior, and post-success-only manual copy are reviewed.
 
+## Iteration 11.42 - Assignment Detail Disabled Route Wiring Readiness Review
+
+Summary:
+- Added `lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts` as a server-only, route-unused readiness contract for a future disabled connection between `/admin/assignments/[assignmentId]` and the 11.41 server-action stub.
+- The policy keeps the eligible route limited to the dynamic/no-store assignment-detail route, requires persisted assignment-detail context only, requires deliberate submit/click/tap invocation only, and forbids render/GET/page-load/prefetch/hover/focus/effect/hydration/unavailable-state execution.
+- Future disabled wiring may call only `createDisabledAssignmentResponseLinkServerAction` from route code. Direct route calls to the disabled adapter, 11.32 product-action boundary, audited reveal helper/RPC, token/replacement helpers, diagnostic helpers, token tables, service-role paths, or manual replacement-plus-audit sequencing remain prohibited.
+- Disabled/error UI states must stay non-disclosing and credential-free. A full response URL and manual copy remain reserved for later reviewed active-success/post-success slices.
+- Disabled route-wiring implementation, route server-action implementation, final approval, active reveal, active copy, product-action UI, copy affordance, product-surface implementation, reveal availability, entry linkage, and product navigation remain false.
+- Extended the assignment-detail route regression to prove the new policy is route-unused and that no route/component imports it, imports the 11.41 stub, wires a form/action/button, or links to the assignment-detail route.
+
+Changed files:
+- `lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the disabled route-wiring policy exists, is server-only, names `/admin/assignments/[assignmentId]` as the only eligible route, requires dynamic/no-store and persisted-context-only behavior, limits future route calls to the 11.41 server-action stub, forbids direct adapter/product-action/reveal/RPC/token/replacement/diagnostic/service-role access, and keeps all active flags false.
+- The same regression continues to prove `/admin/assignments/[assignmentId]` imports only `readAssignmentDetailContext` for persisted data and no product action boundary, disabled adapter, server-action stub, disabled route-wiring policy, server-action policy, route-entry policy, action-wiring policy, enablement checklist, reveal helper, token helper, direct RPC caller, diagnostic dependency, service-role path, clipboard behavior, form action, hidden action metadata, or product navigation link.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- No executable route action, form, enabled or disabled wired button, URL reveal, copy behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The visible response-link shell remains inert and cannot reveal, submit, or copy anything.
+- The server-action stub and disabled adapter remain route-unused and disabled by default.
+
+Next recommended step:
+- Keep `/admin/assignments/[assignmentId]` free of server-action imports until a later reviewed slice proves safe disabled wiring or final approval. Any future route wiring must call only the 11.41 server-action stub and continue to keep reveal/copy/product availability false until a separate active-success UI review.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:
