@@ -4469,6 +4469,40 @@ Limitations:
 Next recommended step:
 - Keep the disabled binding non-submittable and continue using the hardened static/browser gates before any later slice considers a still-disabled browser control or active reveal approval.
 
+## Iteration 11.48 - Disabled Action Result-State Contract Review
+
+Summary:
+- Added a server-only, route-unused disabled result-state policy for a future assignment-detail response-link result renderer.
+- The contract keeps `/admin/assignments/[assignmentId]` as the only eligible future route, requires dynamic/no-store rendering, and keeps persisted assignment data reads limited to `readAssignmentDetailContext`.
+- Future disabled result rendering may only be driven by `createDisabledAssignmentResponseLinkServerAction` or a reviewed successor; route code may not import or call the disabled adapter, product-action boundary, audited reveal/RPC helper, token/replacement/diagnostic/service-role paths, route-entry policy, enablement checklist, server-action shape policy, disabled route-wiring policy, disabled action-binding policy, or the result-state policy directly.
+- Current result states are limited to credential-free disabled/error-like states. Full/redacted URLs, bearers, verifiers, token/audit ids, credentials/secrets, database URLs, SQL/RPC details, sensitive intake, emergency contacts, questionnaire answers, raw grants/capabilities, provider dumps, stack traces, raw exceptions, and unrelated rows remain forbidden.
+- Result copy must stay generic and non-disclosing for unavailable, unauthorized, cross-workspace, inactive, canceled, archived, missing, malformed, and stale contexts. It may not imply a usable link exists or suggest copying, sending, emailing, texting, or delivering a link.
+
+Changed files:
+- `lib/responseTokens/productActionDisabledResultStatePolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `scripts/assignment-detail-server-action-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the new policy exists, is server-only and route-unused, names only the assignment-detail route, preserves dynamic/no-store and persisted-context-only requirements, limits result source to the 11.41 stub or reviewed successor, forbids credential/sensitive/internal fields, reserves URL-bearing success for a later active-success slice, and keeps disabled/active result renderer implementation plus all active reveal/copy/product/navigation flags false.
+- `npm run test:assignment-detail-server-action` continues to prove the server-action stub is server-only, adapter-only, disabled by default, credential-free, and not normally user-submittable while route-bound in the reviewed disabled way.
+- `npm run test:assignment-detail-route:browser` continues to prove the authorized panel is inert and now also fails on result-state markup; unavailable states expose no response-link action/capability/binding/result detail.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was planning/static hardening only, not active reveal, product activation, result rendering implementation, copy UI, or delivery.
+- No result renderer, form, action prop, hidden metadata, submit control, URL reveal, generated URL field, copy button, clipboard behavior, navigation link, redirect, revalidation, cookie mutation, email/reminder delivery, public lookup, remembered-device behavior, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- Disabled result renderer implementation, active result renderer implementation, route server-action implementation, final approval, active reveal/copy, product-action UI, copy affordance, product surface, reveal availability, entry linkage, and navigation remain false.
+
+Next recommended step:
+- Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

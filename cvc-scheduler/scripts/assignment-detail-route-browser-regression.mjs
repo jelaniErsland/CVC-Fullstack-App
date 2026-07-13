@@ -590,6 +590,14 @@ async function exerciseBrowserRoute() {
     "tokenVerifierHash",
     "bearerToken",
     "rawBearer",
+    "data-action-result",
+    "data-result-state",
+    "actionResult",
+    "resultRenderer",
+    "not_approved",
+    "checklist_blocked",
+    "malformed_input",
+    "action_error",
   ]) {
     assert(
       !pageHtml.includes(forbiddenHtml),
@@ -637,6 +645,10 @@ async function exerciseBrowserRoute() {
   assert(
     (await page.locator('a[href^="/respond/"], a[href*="diagnostics/response-link"]').count()) === 0,
     "The read-only route linked to a response or diagnostic surface.",
+  );
+  assert(
+    (await page.locator('[data-action-result], [data-result-state], [aria-live*="result"]').count()) === 0,
+    "The read-only route rendered a response-link result state.",
   );
   assertNoForbiddenRequests(
     forbiddenLoadRequests,
@@ -700,6 +712,11 @@ async function exerciseBrowserRoute() {
     "future link would grant response access",
     "Manual copying",
     "disabled action binding",
+    "disabled result",
+    "not approved",
+    "checklist blocked",
+    "malformed input",
+    "action error",
     "reviewed server-action seam",
     "No link is generated",
   ]) {

@@ -164,7 +164,7 @@ assert.match(
 );
 assert.doesNotMatch(
   routeSource,
-  /createDisabledAssignmentResponseLinkServerAction\([^)]|<form\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|navigator\.clipboard|clipboard\.writeText/i,
+  /createDisabledAssignmentResponseLinkServerAction\([^)]|<form\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|useActionState|useFormState|resultRenderer|actionResult|disabledResult|not_approved|checklist_blocked|navigator\.clipboard|clipboard\.writeText/i,
 );
 assert.match(
   routeSource,
