@@ -108,6 +108,16 @@ const productActionDisabledAdapterSource = await readFile(
   productActionDisabledAdapterPath,
   "utf8",
 );
+const productActionDisabledAdapterHarnessPath = path.join(
+  root,
+  "scripts",
+  "assignment-detail-action-adapter-regression.mjs",
+);
+const productActionDisabledAdapterHarnessSource = await readFile(
+  productActionDisabledAdapterHarnessPath,
+  "utf8",
+);
+const packageSource = await readFile(path.join(root, "package.json"), "utf8");
 const productActionUiPolicyPath = path.join(
   root,
   "lib",
@@ -388,6 +398,21 @@ assert.match(productActionDisabledAdapterSource, /await action\(request\)/);
 assert.doesNotMatch(
   productActionDisabledAdapterSource,
   /createAuditedAssignmentResponseLinkReveal\(|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|replace_assignment_response_token|record_assignment_response_link_reveal_event|assignment_response_tokens|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link/i,
+);
+
+assert.match(
+  packageSource,
+  /"test:assignment-detail-action-adapter": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/assignment-detail-action-adapter-regression\.mjs"/,
+);
+assert.match(
+  productActionDisabledAdapterHarnessSource,
+  /createAssignmentDetailResponseLinkDisabledAdapterWithDependencies/,
+);
+assert.match(productActionDisabledAdapterHarnessSource, /productActionCallCount/);
+assert.match(productActionDisabledAdapterHarnessSource, /Confirmed credential-free disabled states and zero product-action calls/);
+assert.doesNotMatch(
+  productActionDisabledAdapterHarnessSource,
+  /app\/admin\/assignments|@\/app|readAssignmentDetailContext|createAssignmentDetailResponseLinkProductActionWithDependencies|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|fullResponseUrl:|responseUrl: "https?:|rawBearer:|bearer:|tokenVerifierHash:|accessToken:|password:|serviceRoleKey:|sqlDetail:|sensitiveIntakeValue:|unrelatedRowMarker:/i,
 );
 
 assert.match(productActionUiPolicySource, /^import "server-only";/);

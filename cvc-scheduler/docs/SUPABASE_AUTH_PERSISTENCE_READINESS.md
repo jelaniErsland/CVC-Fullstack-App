@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.39 assignment-detail disabled adapter unit harness
+
+`npm run test:assignment-detail-action-adapter` adds a preview-free local unit-style harness for `lib/responseTokens/productActionDisabledAdapter.server.ts`. It does not require hosted Supabase, a service-role key, or a production preview.
+
+The harness proves valid assignment id input and bounded TTLs return credential-free disabled/not-approved results while final approval is false. Malformed assignment ids, unknown fields, forbidden browser-shaped fields, and out-of-range TTLs fail closed. It also verifies checklist-blocked paths remain credential-free and a product-action spy is called zero times while final approval is false.
+
+The harness output is summarized and contains no full response URL, bearer, verifier, token id, access/refresh token, password, service-role key, SQL detail, sensitive intake value, or unrelated row marker. `npm run test:assignment-detail-route` also checks that the harness/package script remain test-only and do not import behavior into `/admin/assignments/[assignmentId]`.
+
+No route, UI, navigation link, response-link action, copy affordance, delivery path, migration, hosted gate, or product-surface flag changed.
+
 ## 11.38 assignment-detail disabled action adapter
 
 `lib/responseTokens/productActionDisabledAdapter.server.ts` adds a route-unused, server-only disabled adapter for the future assignment-detail response-link action. It is not imported by `/admin/assignments/[assignmentId]` and does not attach a form, server action, enabled button, copy behavior, or reveal behavior to the visible route.
@@ -604,6 +614,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.36 Assignment Detail Route Entry Readiness Review — completed:** route-unused policy defines future persisted authorized entry points from Calendar, Volunteers, Needs Attention, and Communications contexts while keeping public, diagnostic, mock, arbitrary-id, broad directory/search, and response-token surfaces ineligible. All entry/linkage flags remain false.
 - **11.37 Assignment Detail Enablement Checklist Review — completed:** route-unused server-only checklist consolidates route, entry, action, UI, credential/log, browser-proof, and product-owner prerequisites. Active reveal, copy, entry-linking, product-action UI, product-surface, reveal, and navigation availability remain false; the current route imports none of these planning/policy modules.
 - **11.38 Assignment Detail Disabled Action Adapter — completed:** route-unused server-only adapter accepts only assignment id plus optional bounded TTL, rejects forbidden browser fields, checks the 11.37 checklist, and keeps the 11.32 product-action boundary behind a false final-approval flag. It returns only credential-free disabled states today, and the current route imports no adapter/action/reveal helper.
+- **11.39 Assignment Detail Disabled Adapter Unit Harness — completed:** preview-free `npm run test:assignment-detail-action-adapter` proves valid disabled/not-approved behavior, TTL bounds, malformed/forbidden input rejection, credential-free disabled results, false activation flags, and zero product-action boundary calls while final approval is false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

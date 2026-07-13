@@ -4173,6 +4173,39 @@ Limitations:
 Next recommended step:
 - Keep the adapter disabled until a later slice provides concrete browser proof, warning/expiry/copy behavior, persisted authorized entry points, and explicit product-owner approval. Do not import the adapter into the route or flip active flags before that review.
 
+## Iteration 11.39 - Assignment Detail Disabled Adapter Unit Harness
+
+Summary:
+- Added `scripts/assignment-detail-action-adapter-regression.mjs` and `npm run test:assignment-detail-action-adapter`.
+- The harness runs without preview, hosted Supabase, or service-role credentials.
+- It proves valid assignment id input and in-range TTLs return credential-free disabled/not-approved results while final approval is false.
+- It proves malformed ids, unknown fields, forbidden browser-shaped fields, and out-of-range TTLs fail closed without calling the product-action boundary.
+- It verifies active reveal, active copy, route wiring, product-action UI, copy affordance, product surface, reveal availability, and navigation/linkage flags remain false.
+- Extended the assignment-detail route regression to verify the new harness/package script stay test-only and do not create route imports or active behavior.
+
+Changed files:
+- `scripts/assignment-detail-action-adapter-regression.mjs`
+- `scripts/assignment-detail-route-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The new adapter harness proves credential-free disabled states and zero product-action calls while final approval is false.
+- The assignment-detail route regression continues to prove `/admin/assignments/[assignmentId]` imports only `readAssignmentDetailContext` for persisted data and no adapter/action/reveal/checklist/wiring/entry helper.
+- The browser gate remains the same local disposable-fixture proof for sign-in, safe success, inert shell, unavailable state, desktop/mobile overflow, forbidden fields, and zero residue.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No enabled response-link control, form, server action wiring, copy behavior, URL reveal, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The adapter remains route-unused and disabled by default.
+
+Next recommended step:
+- Keep using the adapter harness and route/browser guardrails before any later activation slice. Do not import the adapter into the route or flip active flags until final approval, visible UI, warning/expiry/copy behavior, and route-entry proof are reviewed together.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

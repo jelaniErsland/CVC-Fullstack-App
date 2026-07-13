@@ -19,6 +19,7 @@
     "test:assignments": "node --no-warnings --experimental-strip-types scripts/assignment-persistence-regression.mjs",
     "test:assignment-detail-context": "node scripts/assignment-detail-context-regression.mjs",
     "test:assignment-detail-route": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-route-regression.mjs",
+    "test:assignment-detail-action-adapter": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-action-adapter-regression.mjs",
     "test:assignment-detail-route:browser": "node scripts/assignment-detail-route-browser-regression.mjs",
     "test:assignment-detail-context:hosted": "node scripts/hosted-assignment-detail-context-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
