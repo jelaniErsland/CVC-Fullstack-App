@@ -28,6 +28,20 @@ Future Calendar inspectors must stay inside the same read-model boundary and mus
 
 Mock-to-real rules remain strict: one route may not silently combine mock and persisted Calendar items, a route may not read persisted Calendar data and fall back to mock data in the same user-facing truth source, and the existing mock Calendar regression remains the product UI behavior reference until a separate cutover slice.
 
+## 12.3 Route-Unused Calendar Read Model Helper
+
+Iteration 12.3 adds `lib/calendar/readModel.server.ts` as a server-only, route-unused helper/query-shape module. It is not a live product query, not a Calendar route cutover, not UI integration, not a mutation boundary, not an assignment picker, not delivery, and not response-link activation.
+
+The helper normalizes the future read input shape: workspace id, actor/contact id, explicit start/end date range, trusted workspace timezone, period kind, optional safe filters, and capabilities. It rejects invalid dates, end-before-start ranges, ranges broader than the bounded guard, invalid timezones, and missing/invalid caller scope. There is no unbounded workspace-wide Calendar read shape.
+
+The main coverage-bearing query shape requires `calendar.view` and `assignments.view`. Missing `calendar.view` fails before item shell projection, and missing `assignments.view` fails closed instead of producing misleading zero coverage. This preserves the 12.2 stricter current-safe capability rule.
+
+The query-shape plan names only safe future sources: Calendar item shell rows, optional task-preset label/type data, and assignment/current-response aggregate rows. It explicitly forbids volunteer contact rows, questionnaire answers, emergency contacts, response-token rows, reveal/audit rows, broad grant/capability arrays, and unrelated workspace rows.
+
+The pure coverage function follows the contract rules: active `needs_response` plus `confirmed` assignments count toward assigned count; active denied/declined assignments count toward denied but not assigned; removed/canceled/archived assignments do not count toward assigned; unassigned count never drops below zero; zero-needed informational items use `0/0 assigned`; and multi-day windows/milestones remain non-assignable until a later child-occurrence model is reviewed.
+
+The row mapper projects only safe Calendar read-model fields and does not carry volunteer contact values, emergency contact details, questionnaire answers, response URLs, bearer/verifier/token/audit ids, credentials, SQL/RPC details, raw grants/capability arrays, provider dumps, stack traces, raw exception messages, or unrelated rows.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

@@ -147,6 +147,14 @@ npm run test:calendar-read-model-contract
 
 This static command requires no preview server, hosted Supabase target, or service-role key. It proves the persisted Calendar read model contract exists, is server-only and route-unused, keeps `/admin/calendar` mock-only, requires explicit workspace/contact/capability scope and bounded date ranges, documents `calendar.view` for Calendar item shells, requires the stricter current-safe `calendar.view` plus `assignments.view` rule for assignment-derived counts, derives coverage from assignment/current-response rows rather than Calendar counters, assigned volunteer arrays, mock `filledCount`, or client calculations, and keeps route cutover, writes, assignment picker, assignment-detail linking, response-link reopening, service-role reads, seed data, hosted validation, and mock-to-real mixing false.
 
+After 12.3, run the route-unused Calendar read model helper guardrail when changing helper/query-shape code:
+
+```powershell
+npm run test:calendar-read-model-helper
+```
+
+This static/unit command requires no preview server, hosted Supabase target, or service-role key. It proves the helper is server-only and route-unused, no route/component imports it, `/admin/calendar` remains mock-only, input requires workspace/contact/capability scope plus bounded date ranges and trusted workspace timezone, the coverage-bearing shape requires both `calendar.view` and `assignments.view`, invalid/unbounded ranges fail closed, missing assignment visibility does not silently produce zero counts, coverage is derived from in-memory assignment/current-response rows, unsafe fields are not projected, and all cutover/write/assignment-picker/detail-linking/response-link/service-role/seed flags remain false.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

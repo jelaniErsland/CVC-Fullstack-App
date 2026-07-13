@@ -4503,6 +4503,40 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.3 - Route-Unused Calendar Read Model Helper or Query-Shape Review
+
+Summary:
+- Added `lib/calendar/readModel.server.ts` as a server-only, route-unused Calendar read model helper/query-shape module.
+- The helper provides pure input normalization, explicit bounded date-range validation, trusted workspace-timezone validation, strict capability evaluation, selector/query-shape description, assignment-derived coverage summarization, and safe row-to-read-model projection.
+- The main coverage-bearing shape requires both `calendar.view` and `assignments.view`. Missing `calendar.view` fails before item shell projection, and missing `assignments.view` fails closed rather than returning misleading zero coverage.
+- Coverage is derived from assignment/current-response rows: active `needs_response` plus `confirmed` count as assigned; active denied/declined count as denied but not assigned; removed/canceled/archived assignments do not count toward assigned; unassigned never drops below zero; zero-needed informational items use `0/0 assigned`; and multi-day windows/milestones remain non-assignable.
+- The mapper projects only safe Calendar read-model fields and excludes volunteer contact values, emergency contacts, questionnaire answers, response URLs, bearer/verifier/token/audit ids, credentials, SQL/RPC details, raw grants/capabilities, provider dumps, stack traces, raw exceptions, and unrelated rows.
+
+Changed files:
+- `lib/calendar/readModel.server.ts`
+- `scripts/calendar-read-model-helper-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run test:calendar-read-model-helper` proves the helper exists, is server-only and route-unused, keeps live query/cutover/write/assignment-picker/detail-linking/response-link/service-role/seed flags false, rejects invalid or unbounded ranges, enforces strict capability behavior, uses in-memory coverage fixtures, preserves `0/0 assigned` informational behavior, and proves no app route/component imports the helper.
+- `npm run test:calendar-read-model-contract` keeps the 12.2 contract intact.
+- `npm run test:mvp-cutover-plan` keeps the 12.1 cutover checkpoint intact.
+- Existing Calendar UI, Calendar item, assignment, response-link, and assignment-detail guardrails remain unchanged.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was route-unused helper/query-shape work only, not a Calendar route cutover, live product query integration, UI integration, Calendar mutation, assignment picker, delivery, public lookup, remembered-device behavior, response-link activation, service-role usage, seed data, hosted validation, or mock-to-real mixing.
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+
+Next recommended step:
+- If the helper/query-shape remains clean, consider `12.4 Route-Unused Calendar Read Helper QA Harness or Disposable Local Data Validation`. Otherwise revise 12.3 first. Do not cut over `/admin/calendar` in 12.4.
+
 ## Iteration 12.2 - Persisted Calendar Read Model Contract
 
 Summary:
