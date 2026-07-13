@@ -163,6 +163,14 @@ npm run test:calendar-read-model-helper:qa
 
 This QA command requires no preview server, hosted Supabase target, service-role key, local disposable database fixture, or raw Supabase CLI output. It exercises `lib/calendar/readModel.server.ts` with in-memory database-shaped fixtures only. It proves the helper remains server-only, route-unused, unimported by app routes/components, free of Supabase client creation, `.from`, `.rpc`, service-role/config paths, mock Calendar imports, and response-token/reveal/product-action imports. It also proves strict workspace/contact/timezone/date-range/capability behavior, scoped assignment/current-response coverage math, safe projections, pure filter/sort behavior, mock-to-real separation, false cutover/write/assignment-picker/detail-link/response-link/service-role/seed flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
 
+After 12.5, run the route-unused Calendar read model disposable local data validation when changing persisted row-shape translation or local-read compatibility:
+
+```powershell
+npm run test:calendar-read-model:local
+```
+
+This local command requires local Supabase and Docker but no preview server, hosted Supabase target, service-role key, generated type change, or production data. It refuses non-loopback Supabase URLs, creates disposable `qa-12-5-*` Auth/product fixtures, translates real local `calendar_items`, `task_presets`, `calendar_assignments`, and current `assignment_responses` rows into the pure 12.3 helper inputs, validates strict `calendar.view` plus `assignments.view` coverage behavior, checks safe projection and wrong-workspace/wrong-item non-bleed, and removes every fixture in `finally` with a zero-residue namespace check. Do not paste raw `npx supabase start`, `npx supabase status`, or raw Supabase CLI output while preparing this command; redirect diagnostics to temp files and redact key-like values before showing excerpts.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

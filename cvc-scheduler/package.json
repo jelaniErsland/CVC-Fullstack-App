@@ -27,6 +27,7 @@
     "test:calendar-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-contract-regression.mjs",
     "test:calendar-read-model-helper": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-helper-regression.mjs",
     "test:calendar-read-model-helper:qa": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-helper-qa-regression.mjs",
+    "test:calendar-read-model:local": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-local-data-validation.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",
