@@ -155,6 +155,14 @@ npm run test:calendar-read-model-helper
 
 This static/unit command requires no preview server, hosted Supabase target, or service-role key. It proves the helper is server-only and route-unused, no route/component imports it, `/admin/calendar` remains mock-only, input requires workspace/contact/capability scope plus bounded date ranges and trusted workspace timezone, the coverage-bearing shape requires both `calendar.view` and `assignments.view`, invalid/unbounded ranges fail closed, missing assignment visibility does not silently produce zero counts, coverage is derived from in-memory assignment/current-response rows, unsafe fields are not projected, and all cutover/write/assignment-picker/detail-linking/response-link/service-role/seed flags remain false.
 
+After 12.4, run the route-unused Calendar read model helper QA harness when changing helper mapping, coverage, filtering, sorting, or query-shape guardrails:
+
+```powershell
+npm run test:calendar-read-model-helper:qa
+```
+
+This QA command requires no preview server, hosted Supabase target, service-role key, local disposable database fixture, or raw Supabase CLI output. It exercises `lib/calendar/readModel.server.ts` with in-memory database-shaped fixtures only. It proves the helper remains server-only, route-unused, unimported by app routes/components, free of Supabase client creation, `.from`, `.rpc`, service-role/config paths, mock Calendar imports, and response-token/reveal/product-action imports. It also proves strict workspace/contact/timezone/date-range/capability behavior, scoped assignment/current-response coverage math, safe projections, pure filter/sort behavior, mock-to-real separation, false cutover/write/assignment-picker/detail-link/response-link/service-role/seed flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

@@ -42,6 +42,18 @@ The pure coverage function follows the contract rules: active `needs_response` p
 
 The row mapper projects only safe Calendar read-model fields and does not carry volunteer contact values, emergency contact details, questionnaire answers, response URLs, bearer/verifier/token/audit ids, credentials, SQL/RPC details, raw grants/capability arrays, provider dumps, stack traces, raw exception messages, or unrelated rows.
 
+## 12.4 Route-Unused Calendar Read Model Helper QA Harness
+
+Iteration 12.4 adds `scripts/calendar-read-model-helper-qa-regression.mjs` and `npm run test:calendar-read-model-helper:qa` as a focused QA harness for the 12.3 helper. It is not a Calendar route cutover, not UI integration, not live product query integration, not local disposable database validation, not hosted validation, not Calendar mutation, not an assignment picker, not delivery, and not response-link activation.
+
+The harness uses in-memory database-shaped fixtures only. It proves `lib/calendar/readModel.server.ts` remains server-only, route-unused, unimported by app routes/components, and free of Supabase client creation, `.from`, `.rpc`, service-role/config paths, mock Calendar data imports, response-token/reveal/product-action imports, and app-route loaders.
+
+The QA coverage exercises the helper's workspace/contact/timezone/date-range/capability guard behavior, including invalid dates, end-before-start ranges, broader-than-bounded ranges, rejected unknown filter values, and the strict `calendar.view` plus `assignments.view` rule for coverage-bearing output. Role/title strings alone still do not imply read authority.
+
+Coverage QA uses scoped in-memory assignment/current-response rows and proves `needs_response` plus `confirmed` count toward assigned, denied/declined count toward denied but not assigned, removed/canceled/archived rows do not count, other-workspace and other-calendar-item rows do not bleed into an item summary, unassigned never drops below zero, zero-needed informational items remain `0/0 assigned`, and multi-day windows/milestones remain non-assignable. The helper also exposes a pure route-unused filter/sort helper so task-name, type, coverage, lifecycle, and stable date/kind/time/label/id ordering can be checked without touching `/admin/calendar`.
+
+The QA harness keeps `/admin/calendar` mock-only and behaviorally unchanged. It proves no route mixes mock Calendar data with persisted Calendar truth, no route links to `/admin/assignments/[assignmentId]`, no Calendar writes, assignment picker, assignment mutation, delivery, public lookup, remembered-device behavior, seed data, service-role usage, local disposable DB validation, hosted validation, response-link activation, or mock-to-real mixing was added. If 12.4 remains clean, the recommended next slice is `12.5 Route-Unused Calendar Read Model Disposable Local Data Validation`; otherwise revise 12.4 first.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

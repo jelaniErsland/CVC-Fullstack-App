@@ -87,6 +87,8 @@ export type CalendarReadModelInputResult =
 
 export type CalendarAssignmentCoverageRow = Readonly<{
   assignmentId: string;
+  workspaceId?: string;
+  calendarItemId?: string;
   assignmentLifecycle: "active" | "removed" | "canceled" | "archived";
   currentResponseStatus: "needs_response" | "confirmed" | "declined" | "denied";
 }>;
@@ -144,6 +146,11 @@ export type CalendarReadModelItem = Readonly<{
   taskPresetType: CalendarReadModelDisplayType | null;
   coverage: CalendarCoverageSummary;
   assignedFractionLabel: string;
+}>;
+
+export type CalendarAssignmentCoverageScope = Readonly<{
+  workspaceId?: string;
+  calendarItemId?: string;
 }>;
 
 const uuidPattern =
@@ -412,6 +419,7 @@ export function summarizeCalendarAssignmentCoverage(
   neededCount: number,
   scheduleKind: CalendarReadModelScheduleKind,
   assignments: readonly CalendarAssignmentCoverageRow[],
+  scope: CalendarAssignmentCoverageScope = {},
 ): CalendarCoverageSummary {
   const assignable =
     scheduleKind === "timed" || scheduleKind === "date_based";
@@ -433,7 +441,17 @@ export function summarizeCalendarAssignmentCoverage(
     };
   }
 
-  const activeResponses = assignments.filter(
+  const scopedAssignments = assignments.filter(
+    (assignment) =>
+      (scope.workspaceId === undefined ||
+        assignment.workspaceId === undefined ||
+        assignment.workspaceId === scope.workspaceId) &&
+      (scope.calendarItemId === undefined ||
+        assignment.calendarItemId === undefined ||
+        assignment.calendarItemId === scope.calendarItemId),
+  );
+
+  const activeResponses = scopedAssignments.filter(
     (assignment) => assignment.assignmentLifecycle === "active",
   );
   const confirmedCount = activeResponses.filter(
@@ -487,6 +505,7 @@ export function mapCalendarReadModelItem(
     row.neededCount,
     row.scheduleKind,
     assignments,
+    { workspaceId: row.workspaceId, calendarItemId: row.id },
   );
   const taskPresetLabel = row.taskPresetLabel ?? null;
   const oneOffTaskLabel = row.oneOffTaskLabel ?? null;
@@ -516,6 +535,63 @@ export function mapCalendarReadModelItem(
     coverage,
     assignedFractionLabel: coverage.assignedFractionLabel,
   };
+}
+
+const scheduleKindSortOrder: Record<CalendarReadModelScheduleKind, number> = {
+  timed: 0,
+  date_based: 1,
+  multi_day_window: 2,
+  milestone: 3,
+};
+
+function coverageFilterMatches(
+  coverageState: CalendarCoverageState,
+  coverageFilter: CalendarReadModelCoverageFilter,
+) {
+  if (coverageFilter === "someDenied") return coverageState === "some_denied";
+  if (coverageFilter === "allDenied") return coverageState === "all_denied";
+  return coverageState === coverageFilter;
+}
+
+export function filterAndSortCalendarReadModelItems(
+  items: readonly CalendarReadModelItem[],
+  filters: unknown = {},
+): readonly CalendarReadModelItem[] {
+  const normalizedFilters = normalizeFilters(filters);
+  if (!normalizedFilters) return [];
+
+  const taskNameSearch = normalizedFilters.taskNameSearch?.toLowerCase();
+  return [...items]
+    .filter((item) => {
+      if (
+        taskNameSearch &&
+        !item.taskSourceLabel.toLowerCase().includes(taskNameSearch)
+      ) {
+        return false;
+      }
+      if (normalizedFilters.type && item.displayType !== normalizedFilters.type) {
+        return false;
+      }
+      if (
+        normalizedFilters.coverage &&
+        !coverageFilterMatches(item.coverage.coverageState, normalizedFilters.coverage)
+      ) {
+        return false;
+      }
+      if (normalizedFilters.lifecycle && item.lifecycle !== normalizedFilters.lifecycle) {
+        return false;
+      }
+      return true;
+    })
+    .sort(
+      (left, right) =>
+        left.startDate.localeCompare(right.startDate) ||
+        scheduleKindSortOrder[left.scheduleKind] -
+          scheduleKindSortOrder[right.scheduleKind] ||
+        (left.startTime ?? "").localeCompare(right.startTime ?? "") ||
+        left.taskSourceLabel.localeCompare(right.taskSourceLabel) ||
+        left.calendarItemId.localeCompare(right.calendarItemId),
+    );
 }
 
 export const calendarReadModelForbiddenOutputFields = [
