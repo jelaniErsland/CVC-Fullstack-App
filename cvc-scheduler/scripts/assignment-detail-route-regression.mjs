@@ -84,6 +84,13 @@ import {
   evaluateResponseLinkProductActionServerActionReadiness,
   responseLinkProductActionServerActionPolicy,
 } from "../lib/responseTokens/productActionServerActionPolicy.server.ts";
+import {
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED,
+  describeDisabledAssignmentResponseLinkServerAction,
+} from "../lib/responseTokens/productActionServerAction.server.ts";
 import { RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE } from "../lib/responseTokens/revealPolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -153,6 +160,25 @@ const productActionServerActionPolicySource = await readFile(
   productActionServerActionPolicyPath,
   "utf8",
 );
+const productActionServerActionPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionServerAction.server.ts",
+);
+const productActionServerActionSource = await readFile(
+  productActionServerActionPath,
+  "utf8",
+);
+const productActionServerActionHarnessPath = path.join(
+  root,
+  "scripts",
+  "assignment-detail-server-action-regression.mjs",
+);
+const productActionServerActionHarnessSource = await readFile(
+  productActionServerActionHarnessPath,
+  "utf8",
+);
 const exampleAssignmentId = "11111111-1111-4111-8111-111111111111";
 
 async function collectFiles(directory) {
@@ -190,7 +216,7 @@ assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productAction|productActionDisabledAdapter|productActionServerAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|createDisabledAssignmentResponseLinkServerAction|productAction|productActionDisabledAdapter|productActionServerAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -647,6 +673,72 @@ assert.doesNotMatch(
   /["']use server["']|createAssignmentDetailResponseLinkProductAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
+assert.match(productActionServerActionSource, /^import "server-only";/);
+assert.match(productActionServerActionSource, /"use server";/);
+assert.match(
+  productActionServerActionSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE = true/,
+);
+assert.match(
+  productActionServerActionSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED = true/,
+);
+assert.match(
+  productActionServerActionSource,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE =\s*\r?\n\s*false/,
+);
+assert.match(productActionServerActionSource, /createAssignmentDetailResponseLinkDisabledAdapterWithDependencies/);
+assert.match(productActionServerActionSource, /routeUnusedServerActionChecklistReadiness/);
+assert.match(productActionServerActionSource, /"\/admin\/assignments\/\[assignmentId\]"/);
+assert.match(productActionServerActionSource, /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_ALLOWED_FORM_FIELDS/);
+assert.match(productActionServerActionSource, /"expiresInHours"/);
+for (const forbiddenServerActionField of [
+  "assignmentId",
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseTokenId",
+  "tokenId",
+  "bearer",
+  "rawBearer",
+  "verifier",
+  "tokenVerifierHash",
+  "origin",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "auditEventId",
+  "auditMetadata",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+  "copyMode",
+  "serviceRoleClient",
+  "supabaseClient",
+  "redirectPath",
+  "returnPath",
+  "hiddenMetadata",
+]) {
+  assert.match(productActionServerActionSource, new RegExp(forbiddenServerActionField));
+}
+assert.doesNotMatch(
+  productActionServerActionSource,
+  /from "\.\/productAction\.server|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|replaceAssignmentResponseToken|replace_assignment_response_token|issueAssignmentResponseLink|recordAssignmentResponseLinkRevealAudit|assignment_response_tokens|\.rpc\(|(?<!Array)\.from\(|redirect\(|permanentRedirect\(|revalidatePath\(|revalidateTag\(|cookies\(|headers\(|NextResponse|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText|sendEmail|sendReminder|enqueue/i,
+);
+assert.match(
+  packageSource,
+  /"test:assignment-detail-server-action": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/assignment-detail-server-action-regression\.mjs"/,
+);
+assert.match(
+  productActionServerActionHarnessSource,
+  /createDisabledAssignmentResponseLinkServerActionWithDependencies/,
+);
+assert.match(productActionServerActionHarnessSource, /adapterCallCount/);
+assert.match(
+  productActionServerActionHarnessSource,
+  /Confirmed route-unused disabled results and disabled-adapter-only execution/,
+);
+
 const appAndComponentFiles = [];
 for (const directory of ["app", "components"]) {
   appAndComponentFiles.push(
@@ -662,6 +754,7 @@ const routeEntryPolicyImporters = [];
 const enablementChecklistImporters = [];
 const disabledAdapterImporters = [];
 const serverActionPolicyImporters = [];
+const serverActionStubImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -701,7 +794,14 @@ for (const file of appAndComponentFiles) {
     serverActionPolicyImporters.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+    source.includes("productActionServerAction.server") ||
+    source.includes("createDisabledAssignmentResponseLinkServerAction") ||
+    source.includes("RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB")
+  ) {
+    serverActionStubImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerAction\.server|createDisabledAssignmentResponseLinkServerAction|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
       source,
     )
   ) {
@@ -715,6 +815,7 @@ assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
 assert.deepEqual(disabledAdapterImporters, []);
 assert.deepEqual(serverActionPolicyImporters, []);
+assert.deepEqual(serverActionStubImporters, []);
 assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
@@ -778,6 +879,19 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_SHAPE_CONTRACT_AVAILABLE
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_ELIGIBLE_ROUTE,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_DEFAULT_STATE, "disabled");
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_FINAL_APPROVAL_AVAILABLE, false);
+const serverActionStubDescription = describeDisabledAssignmentResponseLinkServerAction();
+assert.equal(serverActionStubDescription.stubAvailable, true);
+assert.equal(serverActionStubDescription.routeUnused, true);
+assert.equal(serverActionStubDescription.defaultState, "disabled");
+assert.equal(serverActionStubDescription.finalApprovalAvailable, false);
+assert.equal(
+  serverActionStubDescription.eligibleRoute,
   "/admin/assignments/[assignmentId]",
 );
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);

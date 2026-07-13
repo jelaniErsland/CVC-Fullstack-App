@@ -4,6 +4,18 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.41 route-unused disabled assignment response link server action stub
+
+`lib/responseTokens/productActionServerAction.server.ts` adds the first executable server-action seam for future assignment-detail response-link wiring, but it remains route-unused and disabled. It is not imported by `/admin/assignments/[assignmentId]` or any current route/component.
+
+The exported `createDisabledAssignmentResponseLinkServerAction` accepts only a route-derived assignment id plus optional `expiresInHours` FormData. Workspace, volunteer, actor, response/token ids, bearer, verifier, origin, full/redacted URL, audit id/metadata, response-link metadata, capability/grant data, copy mode, service-role/client input, redirect/return paths, arbitrary hidden metadata, and unknown fields fail closed before the adapter can run.
+
+The stub calls only the 11.38 disabled adapter seam. It does not call the 11.32 product-action boundary directly and does not import reveal/RPC/token/replacement helpers. While final approval remains false, valid input returns only credential-free disabled/not-approved states; malformed, out-of-range, forbidden, checklist-blocked, adapter-error, and impossible success paths are reduced to credential-free disabled states. It never redirects, revalidates, sets cookies, logs, sends email, enqueues reminders, writes clipboard, generates navigation, returns a URL, or exposes token/audit identifiers.
+
+`npm run test:assignment-detail-server-action` is preview-free, hosted-free, and service-role-free. It proves the module is server-only, route-unused, adapter-only, and credential-free across valid, malformed, out-of-range, forbidden-field, adapter-error, and impossible-success cases.
+
+No migration, hosted validation, route wiring, visible control, copy behavior, delivery, route cutover, or product availability flag changed.
+
 ## 11.40 assignment-detail server-action shape readiness review
 
 `lib/responseTokens/productActionServerActionPolicy.server.ts` defines the route-unused contract for a future assignment-detail response-link server action. It is not an executable `use server` action and is not imported by `/admin/assignments/[assignmentId]`.
@@ -626,6 +638,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.38 Assignment Detail Disabled Action Adapter — completed:** route-unused server-only adapter accepts only assignment id plus optional bounded TTL, rejects forbidden browser fields, checks the 11.37 checklist, and keeps the 11.32 product-action boundary behind a false final-approval flag. It returns only credential-free disabled states today, and the current route imports no adapter/action/reveal helper.
 - **11.39 Assignment Detail Disabled Adapter Unit Harness — completed:** preview-free `npm run test:assignment-detail-action-adapter` proves valid disabled/not-approved behavior, TTL bounds, malformed/forbidden input rejection, credential-free disabled results, false activation flags, and zero product-action boundary calls while final approval is false.
 - **11.40 Assignment Detail Server-Action Shape Readiness Review — completed:** route-unused server-only policy defines a future explicit POST/server-action shape for `/admin/assignments/[assignmentId]` only, through the disabled adapter/reviewed successor only, with credential-free disabled/error states and all active implementation/reveal/copy/navigation flags still false.
+- **11.41 Route-Unused Disabled Assignment Response Link Server Action Stub — completed:** route-unused executable server-action seam accepts only route-derived assignment id plus optional TTL FormData, delegates only to the disabled adapter, returns credential-free disabled states while final approval is false, and is covered by preview-free `npm run test:assignment-detail-server-action`.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

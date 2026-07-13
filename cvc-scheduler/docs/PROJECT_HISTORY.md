@@ -4235,6 +4235,40 @@ Limitations:
 Next recommended step:
 - Keep the route free of server-action imports until a later reviewed slice proves final approval, route form/action wiring, warning/expiration UI, post-success-only manual copy, log redaction, and browser evidence together.
 
+## Iteration 11.41 - Route-Unused Disabled Assignment Response Link Server Action Stub
+
+Summary:
+- Added `lib/responseTokens/productActionServerAction.server.ts` as the first executable server-action seam for future assignment-detail response-link generation.
+- The exported `createDisabledAssignmentResponseLinkServerAction` includes a server-action directive but remains route-unused and disabled by default.
+- The action accepts only route-derived assignment id plus optional `expiresInHours` FormData, rejects malformed ids, out-of-range TTLs, unknown fields, and forbidden browser-shaped fields, and calls only the 11.38 disabled adapter seam.
+- Current valid input returns credential-free disabled/not-approved because final approval remains false. Malformed, forbidden, checklist-blocked, adapter-error, and impossible-success paths are reduced to credential-free disabled states with no URL, bearer, verifier, token/audit id, credential, SQL/internal RPC detail, sensitive intake, or unrelated row data.
+- Added `scripts/assignment-detail-server-action-regression.mjs` and `npm run test:assignment-detail-server-action` as a preview-free, hosted-free, service-role-free harness for the stub.
+- Extended the assignment-detail route regression to prove no route/component imports the stub or wires a form/action/button to it.
+
+Changed files:
+- `lib/responseTokens/productActionServerAction.server.ts`
+- `scripts/assignment-detail-server-action-regression.mjs`
+- `scripts/assignment-detail-route-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The new server-action harness proves valid and in-range TTL input calls only the disabled adapter seam, malformed/out-of-range/unknown/forbidden fields fail before the adapter, disabled/error results are credential-free, and an impossible adapter-issued response still does not return a URL.
+- The assignment-detail route regression continues to prove `/admin/assignments/[assignmentId]` imports only `readAssignmentDetailContext` for persisted data and no product action boundary, disabled adapter, server-action stub/policy, wiring policy, route-entry policy, enablement checklist, reveal helper, token helper, direct RPC caller, diagnostic dependency, service-role path, clipboard behavior, form action, hidden action metadata, or product navigation link.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- No active route server action, form, enabled response-link control, URL reveal, copy behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The visible response-link shell remains inert and cannot reveal, submit, or copy anything.
+- The disabled adapter remains route-unused and disabled by default.
+
+Next recommended step:
+- Keep the server-action stub route-unused until a later reviewed slice decides whether to plan still-disabled form wiring or continue activation-readiness proof. Do not import the stub into the route or flip active flags before final approval, UI warning/expiration behavior, and post-success-only manual copy are reviewed.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:
