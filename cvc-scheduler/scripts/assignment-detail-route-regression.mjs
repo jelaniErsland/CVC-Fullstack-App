@@ -76,6 +76,14 @@ import {
   createAssignmentDetailResponseLinkDisabledAdapterWithDependencies,
   describeAssignmentDetailResponseLinkDisabledAdapter,
 } from "../lib/responseTokens/productActionDisabledAdapter.server.ts";
+import {
+  RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_ELIGIBLE_ROUTE,
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_SHAPE_CONTRACT_AVAILABLE,
+  describeResponseLinkProductActionServerActionPolicy,
+  evaluateResponseLinkProductActionServerActionReadiness,
+  responseLinkProductActionServerActionPolicy,
+} from "../lib/responseTokens/productActionServerActionPolicy.server.ts";
 import { RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE } from "../lib/responseTokens/revealPolicy.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -135,6 +143,16 @@ const productActionWiringPolicySource = await readFile(
   productActionWiringPolicyPath,
   "utf8",
 );
+const productActionServerActionPolicyPath = path.join(
+  root,
+  "lib",
+  "responseTokens",
+  "productActionServerActionPolicy.server.ts",
+);
+const productActionServerActionPolicySource = await readFile(
+  productActionServerActionPolicyPath,
+  "utf8",
+);
 const exampleAssignmentId = "11111111-1111-4111-8111-111111111111";
 
 async function collectFiles(directory) {
@@ -172,7 +190,7 @@ assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
 assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|productAction|productActionDisabledAdapter|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productAction|productActionDisabledAdapter|productActionServerAction|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -493,6 +511,142 @@ assert.doesNotMatch(
   /createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
 );
 
+assert.match(productActionServerActionPolicySource, /^import "server-only";/);
+assert.match(
+  productActionServerActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_SHAPE_CONTRACT_AVAILABLE =\s*\r?\n\s*true/,
+);
+assert.match(
+  productActionServerActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*false/,
+);
+assert.match(
+  productActionServerActionPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_ELIGIBLE_ROUTE =\s*\r?\n\s*"\/admin\/assignments\/\[assignmentId\]"/,
+);
+assert.match(productActionServerActionPolicySource, /contract_only_route_unused_non_executable/);
+assert.match(productActionServerActionPolicySource, /executableActionInThisSlice: false/);
+for (const requiredServerActionRequirement of [
+  "explicit_server_action",
+  "POST",
+  "same_route_assignment_context",
+  "deliberate_submit",
+  "deliberate_click",
+  "deliberate_tap",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(requiredServerActionRequirement));
+}
+for (const prohibitedServerActionTrigger of [
+  "render",
+  "GET",
+  "page_load",
+  "prefetch",
+  "hover",
+  "focus",
+  "client_effect",
+  "hydration",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(prohibitedServerActionTrigger));
+}
+assert.match(productActionServerActionPolicySource, /route_context_or_reviewed_same_route_binding_only/);
+assert.match(productActionServerActionPolicySource, /"assignmentId"/);
+assert.match(productActionServerActionPolicySource, /"expiresInHours"/);
+assert.match(productActionServerActionPolicySource, /"control"/);
+for (const forbiddenServerActionInput of [
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseId",
+  "responseTokenId",
+  "tokenId",
+  "bearer",
+  "rawBearer",
+  "verifier",
+  "tokenVerifierHash",
+  "origin",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "auditEventId",
+  "auditMetadata",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+  "copyMode",
+  "serviceRoleClient",
+  "supabaseClient",
+  "redirectPath",
+  "returnPath",
+  "hiddenMetadata",
+  "arbitraryHiddenMetadata",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(forbiddenServerActionInput));
+}
+for (const requiredAllowedBoundary of [
+  "createAssignmentDetailResponseLinkDisabledAdapter",
+  "reviewed_active_successor_adapter",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(requiredAllowedBoundary));
+}
+for (const prohibitedRouteActionBoundary of [
+  "createAuditedAssignmentResponseLinkReveal",
+  "reveal_assignment_response_link",
+  "replace_assignment_response_token",
+  "replaceAssignmentResponseToken",
+  "recordAssignmentResponseLinkRevealAudit",
+  "issueAssignmentResponseLink",
+  "assignment_response_tokens",
+  "token_table_read",
+  "manual_replacement_audit_sequence",
+  "service_role_client",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(prohibitedRouteActionBoundary));
+}
+for (const credentialFreeResultState of [
+  "disabled",
+  "unavailable",
+  "not_approved",
+  "checklist_blocked",
+  "malformed",
+  "action_error",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(credentialFreeResultState));
+}
+for (const prohibitedServerActionResultField of [
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "rawBearer",
+  "bearer",
+  "verifier",
+  "tokenVerifierHash",
+  "responseTokenId",
+  "tokenId",
+  "auditEventId",
+  "sqlDetail",
+  "internalRpcDetail",
+  "accessToken",
+  "refreshToken",
+  "password",
+  "apiKey",
+  "serviceRoleKey",
+  "localOrHostedSecret",
+  "sensitiveIntakeData",
+  "unrelatedRowData",
+]) {
+  assert.match(productActionServerActionPolicySource, new RegExp(prohibitedServerActionResultField));
+}
+assert.match(
+  productActionServerActionPolicySource,
+  /successful_explicit_action_response_after_audited_success_in_later_active_slice_only/,
+);
+assert.match(productActionServerActionPolicySource, /after_successful_explicit_action_response_only/);
+assert.match(productActionServerActionPolicySource, /automaticClipboardWrite: "forbidden"/);
+assert.doesNotMatch(
+  productActionServerActionPolicySource,
+  /["']use server["']|createAssignmentDetailResponseLinkProductAction\(|createAssignmentDetailResponseLinkDisabledAdapter\(|createAuditedAssignmentResponseLinkReveal\(|reveal_assignment_response_link\s*\(|replaceAssignmentResponseToken\(|issueAssignmentResponseLink\(|recordAssignmentResponseLinkRevealAudit\(|\.rpc\(|\.from\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText/i,
+);
+
 const appAndComponentFiles = [];
 for (const directory of ["app", "components"]) {
   appAndComponentFiles.push(
@@ -507,6 +661,7 @@ const inboundLinks = [];
 const routeEntryPolicyImporters = [];
 const enablementChecklistImporters = [];
 const disabledAdapterImporters = [];
+const serverActionPolicyImporters = [];
 const unsafeCurrentRouteOrComponentUi = [];
 for (const file of appAndComponentFiles) {
   const relative = path.relative(root, file).replaceAll("\\", "/");
@@ -539,7 +694,14 @@ for (const file of appAndComponentFiles) {
     disabledAdapterImporters.push(relative);
   }
   if (
-    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
+    source.includes("productActionServerActionPolicy") ||
+    source.includes("responseLinkProductActionServerAction") ||
+    source.includes("RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION")
+  ) {
+    serverActionPolicyImporters.push(relative);
+  }
+  if (
+    /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productActionServerActionPolicy|responseLinkProductActionServerAction|productActionUiPolicy|productActionWiringPolicy|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|assignment_response_tokens|navigator\.clipboard|clipboard\.writeText|Copy response link|Copy full link|Generate link|Reveal link|fullResponseUrl|responseUrl|responseTokenId|tokenVerifierHash|bearerToken|rawBearer/i.test(
       source,
     )
   ) {
@@ -552,6 +714,7 @@ assert.deepEqual(inboundLinks, []);
 assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
 assert.deepEqual(disabledAdapterImporters, []);
+assert.deepEqual(serverActionPolicyImporters, []);
 assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
@@ -611,6 +774,12 @@ for (const forbiddenAdapterInput of [
     ),
   );
 }
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_SHAPE_CONTRACT_AVAILABLE, true);
+assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_ELIGIBLE_ROUTE,
+  "/admin/assignments/[assignmentId]",
+);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
@@ -1293,6 +1462,275 @@ assert.ok(
     "product_action_route_wiring_implementation_unavailable",
   ),
 );
+
+const serverActionDescription = describeResponseLinkProductActionServerActionPolicy();
+assert.equal(serverActionDescription.contractAvailable, true);
+assert.equal(serverActionDescription.routeServerActionImplementationAvailable, false);
+assert.equal(serverActionDescription.disabledAdapterAvailable, true);
+assert.equal(serverActionDescription.finalApprovalAvailable, false);
+assert.equal(serverActionDescription.enablementChecklistAvailable, true);
+assert.equal(serverActionDescription.activeRevealAvailable, false);
+assert.equal(serverActionDescription.activeCopyAvailable, false);
+assert.equal(serverActionDescription.activeEntryLinkingAvailable, false);
+assert.equal(serverActionDescription.routeWiringImplementationAvailable, false);
+assert.equal(serverActionDescription.productActionUiImplementationAvailable, false);
+assert.equal(serverActionDescription.copyAffordanceAvailable, false);
+assert.equal(serverActionDescription.productSurfaceImplementationAvailable, false);
+assert.equal(serverActionDescription.revealProductSurfaceAvailable, false);
+assert.equal(serverActionDescription.assignmentDetailNavigationLinked, false);
+assert.equal(
+  responseLinkProductActionServerActionPolicy.eligibleRoute,
+  "/admin/assignments/[assignmentId]",
+);
+assert.equal(
+  responseLinkProductActionServerActionPolicy.currentStatus,
+  "contract_only_route_unused_non_executable",
+);
+assert.equal(responseLinkProductActionServerActionPolicy.executableActionInThisSlice, false);
+for (const requiredServerActionMethod of [
+  "explicit_server_action",
+  "POST",
+  "same_route_assignment_context",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.methodShape.required.includes(
+      requiredServerActionMethod,
+    ),
+  );
+}
+for (const requiredTrigger of [
+  "deliberate_submit",
+  "deliberate_click",
+  "deliberate_tap",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.methodShape.trigger.includes(
+      requiredTrigger,
+    ),
+  );
+}
+for (const prohibitedServerActionTrigger of [
+  "render",
+  "GET",
+  "page_load",
+  "prefetch",
+  "hover",
+  "focus",
+  "client_effect",
+  "hydration",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.methodShape.prohibited.includes(
+      prohibitedServerActionTrigger,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionServerActionPolicy.inputShape.assignmentIdSource,
+  "route_context_or_reviewed_same_route_binding_only",
+);
+assert.deepEqual(responseLinkProductActionServerActionPolicy.inputShape.browserAllowedInputs, [
+  "assignmentId",
+  "expiresInHours",
+]);
+assert.deepEqual(
+  responseLinkProductActionServerActionPolicy.inputShape.futureFormDataAllowedFields,
+  ["expiresInHours", "control"],
+);
+for (const forbiddenServerActionInput of [
+  "workspaceId",
+  "volunteerId",
+  "actorId",
+  "responseId",
+  "responseTokenId",
+  "tokenId",
+  "bearer",
+  "rawBearer",
+  "verifier",
+  "tokenVerifierHash",
+  "origin",
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "auditEventId",
+  "auditMetadata",
+  "responseLinkMetadata",
+  "capabilities",
+  "grant",
+  "copyMode",
+  "serviceRoleClient",
+  "supabaseClient",
+  "redirectPath",
+  "returnPath",
+  "hiddenMetadata",
+  "arbitraryHiddenMetadata",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.inputShape.browserForbiddenInputs.includes(
+      forbiddenServerActionInput,
+    ),
+  );
+}
+for (const allowedServerActionBoundary of [
+  "createAssignmentDetailResponseLinkDisabledAdapter",
+  "reviewed_active_successor_adapter",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.actionBoundary.allowed.includes(
+      allowedServerActionBoundary,
+    ),
+  );
+}
+for (const prohibitedServerActionBoundary of [
+  "createAuditedAssignmentResponseLinkReveal",
+  "reveal_assignment_response_link",
+  "replace_assignment_response_token",
+  "replaceAssignmentResponseToken",
+  "recordAssignmentResponseLinkRevealAudit",
+  "issueAssignmentResponseLink",
+  "assignment_response_tokens",
+  "token_table_read",
+  "manual_replacement_audit_sequence",
+  "service_role_client",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.actionBoundary.prohibited.includes(
+      prohibitedServerActionBoundary,
+    ),
+  );
+}
+for (const requiredServerSideRecheck of [
+  "enablement_checklist",
+  "final_approval",
+  "route_context_assignment_id",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.actionBoundary.serverSideRechecks.includes(
+      requiredServerSideRecheck,
+    ),
+  );
+}
+for (const credentialFreeState of [
+  "disabled",
+  "unavailable",
+  "not_approved",
+  "checklist_blocked",
+  "malformed",
+  "action_error",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.resultShape.credentialFreeStates.includes(
+      credentialFreeState,
+    ),
+  );
+}
+for (const prohibitedErrorOrLogField of [
+  "fullResponseUrl",
+  "redactedResponseUrl",
+  "responseUrl",
+  "rawBearer",
+  "bearer",
+  "verifier",
+  "tokenVerifierHash",
+  "responseTokenId",
+  "tokenId",
+  "auditEventId",
+  "internalRpcDetail",
+  "accessToken",
+  "refreshToken",
+  "password",
+  "apiKey",
+  "serviceRoleKey",
+  "localOrHostedSecret",
+  "sensitiveIntakeData",
+  "unrelatedRowData",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.resultShape.prohibitedErrorAndLogFields.includes(
+      prohibitedErrorOrLogField,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionServerActionPolicy.resultShape.existenceLeakPolicy,
+  "do_not_distinguish_sensitive_existence_or_capability_internals",
+);
+assert.equal(
+  responseLinkProductActionServerActionPolicy.fullUrlRules.allowedLocation,
+  "successful_explicit_action_response_after_audited_success_in_later_active_slice_only",
+);
+for (const prohibitedUrlLocation of [
+  "route_render",
+  "GET_response",
+  "page_load",
+  "prefetch_response",
+  "initial_html",
+  "disabled_state",
+  "error_state",
+  "logs",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.fullUrlRules.prohibitedLocations.includes(
+      prohibitedUrlLocation,
+    ),
+  );
+}
+assert.equal(
+  responseLinkProductActionServerActionPolicy.copyRules.manualCopyAvailability,
+  "after_successful_explicit_action_response_only",
+);
+assert.equal(
+  responseLinkProductActionServerActionPolicy.copyRules.automaticClipboardWrite,
+  "forbidden",
+);
+assert.equal(
+  responseLinkProductActionServerActionPolicy.copyRules.preSuccessCopyAffordance,
+  "forbidden",
+);
+for (const requiredFalseFlag of [
+  "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
+  "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
+  "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
+  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
+]) {
+  assert.ok(
+    responseLinkProductActionServerActionPolicy.activeFlagsThatMustRemainFalse.includes(
+      requiredFalseFlag,
+    ),
+  );
+}
+const otherwiseReadyServerAction =
+  evaluateResponseLinkProductActionServerActionReadiness({
+    routeReviewedForServerAction: true,
+    explicitPostOnlyProven: true,
+    noRenderGetPrefetchRevealProven: true,
+    browserInputShapeProven: true,
+    adapterBoundaryOnlyProven: true,
+    credentialFreeDisabledAndErrorStatesProven: true,
+    productOwnerApproved: true,
+  });
+assert.equal(otherwiseReadyServerAction.allowed, false);
+for (const requiredServerActionBlocker of [
+  "route_server_action_implementation_unavailable",
+  "final_approval_unavailable",
+  "active_response_link_reveal_unavailable",
+  "active_response_link_copy_unavailable",
+  "route_wiring_implementation_unavailable",
+  "product_action_ui_implementation_unavailable",
+  "copy_affordance_unavailable",
+  "product_surface_implementation_unavailable",
+  "reveal_product_surface_unavailable",
+  "assignment_detail_navigation_linkage_unavailable",
+]) {
+  assert.ok(otherwiseReadyServerAction.blockers.includes(requiredServerActionBlocker));
+}
 
 async function exerciseAction(input, readContextResult, revealResult = undefined) {
   let readContextCalls = 0;

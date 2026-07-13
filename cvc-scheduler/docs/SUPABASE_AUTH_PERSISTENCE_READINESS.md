@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.40 assignment-detail server-action shape readiness review
+
+`lib/responseTokens/productActionServerActionPolicy.server.ts` defines the route-unused contract for a future assignment-detail response-link server action. It is not an executable `use server` action and is not imported by `/admin/assignments/[assignmentId]`.
+
+The future shape is limited to the existing dynamic/no-store `/admin/assignments/[assignmentId]` route, explicit POST/server-action submit/click/tap behavior, route-derived assignment id plus optional bounded TTL, and execution through the 11.38 disabled adapter or a later reviewed successor. It explicitly forbids render, GET, page-load, prefetch, hover, focus, client-effect, or hydration reveal.
+
+Browser-shaped input remains tightly bounded. Workspace, volunteer, actor, token, bearer, verifier, origin, full/redacted URL, audit id/metadata, response-link metadata, capability/grant data, copy mode, service-role/client input, redirect/return paths, and arbitrary hidden metadata are forbidden. Disabled/error result states remain credential-free and may not return or log full URLs, bearers, verifiers, token/audit ids, access/refresh tokens, passwords, API keys, service-role keys, SQL/internal RPC details, local/hosted secrets, sensitive intake data, or unrelated row data.
+
+Route server-action implementation, final approval, active reveal, active copy, route wiring, product-action UI, copy affordance, product-surface implementation, reveal availability, assignment-detail entry linkage, and product navigation remain false. This slice adds no migration and needs no hosted validation.
+
 ## 11.39 assignment-detail disabled adapter unit harness
 
 `npm run test:assignment-detail-action-adapter` adds a preview-free local unit-style harness for `lib/responseTokens/productActionDisabledAdapter.server.ts`. It does not require hosted Supabase, a service-role key, or a production preview.
@@ -615,6 +625,7 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.37 Assignment Detail Enablement Checklist Review — completed:** route-unused server-only checklist consolidates route, entry, action, UI, credential/log, browser-proof, and product-owner prerequisites. Active reveal, copy, entry-linking, product-action UI, product-surface, reveal, and navigation availability remain false; the current route imports none of these planning/policy modules.
 - **11.38 Assignment Detail Disabled Action Adapter — completed:** route-unused server-only adapter accepts only assignment id plus optional bounded TTL, rejects forbidden browser fields, checks the 11.37 checklist, and keeps the 11.32 product-action boundary behind a false final-approval flag. It returns only credential-free disabled states today, and the current route imports no adapter/action/reveal helper.
 - **11.39 Assignment Detail Disabled Adapter Unit Harness — completed:** preview-free `npm run test:assignment-detail-action-adapter` proves valid disabled/not-approved behavior, TTL bounds, malformed/forbidden input rejection, credential-free disabled results, false activation flags, and zero product-action boundary calls while final approval is false.
+- **11.40 Assignment Detail Server-Action Shape Readiness Review — completed:** route-unused server-only policy defines a future explicit POST/server-action shape for `/admin/assignments/[assignmentId]` only, through the disabled adapter/reviewed successor only, with credential-free disabled/error states and all active implementation/reveal/copy/navigation flags still false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

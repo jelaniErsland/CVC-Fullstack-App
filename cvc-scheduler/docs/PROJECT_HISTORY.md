@@ -4206,6 +4206,35 @@ Limitations:
 Next recommended step:
 - Keep using the adapter harness and route/browser guardrails before any later activation slice. Do not import the adapter into the route or flip active flags until final approval, visible UI, warning/expiry/copy behavior, and route-entry proof are reviewed together.
 
+## Iteration 11.40 - Assignment Detail Server-Action Shape Readiness Review
+
+Summary:
+- Added `lib/responseTokens/productActionServerActionPolicy.server.ts` as a server-only, route-unused policy/contract for a future assignment-detail response-link server action.
+- The policy permits only `/admin/assignments/[assignmentId]`, explicit POST/server-action submit/click/tap behavior, route-derived assignment id plus optional bounded TTL, and execution through the 11.38 disabled adapter or a later reviewed successor.
+- It forbids render/GET/page-load/prefetch/hover/focus/effect/hydration reveal, direct audited reveal/RPC/token/replacement helpers from route code, browser-supplied workspace/volunteer/actor/token/origin/audit/capability/redirect metadata, automatic clipboard writes, and credential-bearing disabled/error/log states.
+- Route server-action implementation, final approval, active reveal/copy, route wiring, product-action UI, copy affordance, product-surface implementation, reveal availability, entry linkage, and product navigation remain false.
+- Extended the assignment-detail route regression to prove the new policy is route-unused, non-executable from current UI, and does not weaken the existing route/static guardrails.
+
+Changed files:
+- `lib/responseTokens/productActionServerActionPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Verification:
+- The assignment-detail route regression proves the policy is server-only, names `/admin/assignments/[assignmentId]` as the only future route, requires explicit POST/server-action behavior, forbids implicit reveal triggers, bounds browser input to assignment id plus optional TTL, requires adapter-only execution, and keeps disabled/error states credential-free.
+- The same regression continues to prove `/admin/assignments/[assignmentId]` imports only `readAssignmentDetailContext` for persisted data and no product action boundary, disabled adapter, server-action policy, wiring policy, route-entry policy, enablement checklist, reveal helper, token helper, direct RPC caller, diagnostic dependency, service-role path, clipboard behavior, form action, hidden action metadata, or product navigation link.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- No active server action, form, enabled response-link control, URL reveal, copy behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The disabled adapter remains route-unused and disabled by default.
+
+Next recommended step:
+- Keep the route free of server-action imports until a later reviewed slice proves final approval, route form/action wiring, warning/expiration UI, post-success-only manual copy, log redaction, and browser evidence together.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:
