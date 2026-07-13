@@ -139,6 +139,14 @@ npm run test:mvp-cutover-plan
 
 This static command requires no preview server, hosted Supabase target, or service-role key. It proves the MVP cutover plan exists, is server-only and route-unused, lists available persisted foundations and current mock-only prototype surfaces, keeps Calendar/Tasks/Volunteers/Public Volunteer/Communications cutover flags false, keeps reminder delivery false, keeps response-link activation paused after 11.50, forbids mock-to-real mixing and service-role cutover, verifies no app route/component imports the plan or new persisted Calendar/Tasks/Volunteers read helpers, and confirms `12.2 Persisted Calendar Read Model Contract` as the next recommended implementation slice.
 
+After 12.2, run the Calendar read model contract guardrail when changing future Calendar real-data read planning:
+
+```powershell
+npm run test:calendar-read-model-contract
+```
+
+This static command requires no preview server, hosted Supabase target, or service-role key. It proves the persisted Calendar read model contract exists, is server-only and route-unused, keeps `/admin/calendar` mock-only, requires explicit workspace/contact/capability scope and bounded date ranges, documents `calendar.view` for Calendar item shells, requires the stricter current-safe `calendar.view` plus `assignments.view` rule for assignment-derived counts, derives coverage from assignment/current-response rows rather than Calendar counters, assigned volunteer arrays, mock `filledCount`, or client calculations, and keeps route cutover, writes, assignment picker, assignment-detail linking, response-link reopening, service-role reads, seed data, hosted validation, and mock-to-real mixing false.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

@@ -24,6 +24,7 @@
     "test:assignment-detail-route:browser": "node scripts/assignment-detail-route-browser-regression.mjs",
     "test:assignment-detail-context:hosted": "node scripts/hosted-assignment-detail-context-regression.mjs",
     "test:mvp-cutover-plan": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/mvp-real-data-cutover-plan-regression.mjs",
+    "test:calendar-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-contract-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",

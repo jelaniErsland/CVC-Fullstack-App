@@ -4503,6 +4503,40 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.2 - Persisted Calendar Read Model Contract
+
+Summary:
+- Added a server-only, route-unused persisted Calendar read model contract for future real-data Calendar list/detail reads.
+- The contract defines authenticated project-contact, workspace-scoped, capability-checked, explicit date-range Calendar reads suitable for Day/Week/Month/List data without adding route queries or cutting over `/admin/calendar`.
+- Calendar item shells require `calendar.view`; assignment-derived coverage counts use the stricter current-safe rule requiring both `calendar.view` and `assignments.view` until a later permissions review relaxes it.
+- Assignment-derived counts must come from `calendar_assignments` and current `assignment_responses`, not Calendar item counters, assigned volunteer id arrays, mock `filledCount`, or client calculations. The contract defines assigned, confirmed, denied, unassigned, waiting-on-confirmation, has-denied, all-assigned-helpers-denied, coverage-state, and assigned-fraction fields.
+- Zero-needed informational items use `0/0 assigned`. `multi_day_window` and `milestone` items remain zero-needed/non-assignable by default, and aggregate volunteer counts on multi-day windows remain forbidden unless a later reviewed child-occurrence model is added.
+- The contract keeps Calendar writes, assignment picker/create/cancel, assignment-detail entry links, response-link activation, delivery, public lookup, remembered devices, seed data, service-role reads, hosted validation, and mock-to-real mixing blocked.
+
+Changed files:
+- `lib/calendar/readModelContract.server.ts`
+- `scripts/calendar-read-model-contract-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run test:calendar-read-model-contract` proves the contract exists, is server-only and route-unused, preserves false implementation/cutover/write/assignment-picker/detail-linking/response-link/service-role/seed flags, requires explicit workspace/contact/capability scope and date-range bounds, documents the strict current-safe capability rule for assignment-derived counts, and proves no app route/component imports the contract or persisted Calendar helpers.
+- `npm run test:mvp-cutover-plan` remains intact and still records 12.2 as the planned next slice from 12.1.
+- Existing Calendar item, assignment, Calendar UI, response-link, and assignment-detail guardrails remain unchanged.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- This was planning/static hardening only, not a Calendar route cutover, query implementation, UI integration, Calendar mutation, assignment picker, delivery, public lookup, remembered-device behavior, response-link activation, service-role usage, seed data, hosted validation, or mock-to-real mixing.
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+
+Next recommended step:
+- If the contract continues to pass cleanly, consider `12.3 Route-Unused Calendar Read Model Helper or Query-Shape Review`. Otherwise revise the contract before any helper/query-shape work. Do not cut over `/admin/calendar` in 12.3.
+
 ## Iteration 12.1 - MVP Real-Data Cutover Sequencing Review
 
 Summary:

@@ -12,6 +12,22 @@ Needed count is non-negative and may be zero. Use `0/0 assigned` for information
 
 Meals/Breakfast/Lunch are special Calendar-owned entries in the unified model, not a permanent Food mini-app or a Lunch-only system-preset assumption. Their detailed schema remains future work. Current migrations and mock routes are unchanged by this planning alignment.
 
+## 12.2 Persisted Calendar Read Model Contract
+
+Iteration 12.2 adds a server-only, route-unused persisted Calendar read model contract in `lib/calendar/readModelContract.server.ts`. It is not a query implementation, not a Calendar route cutover, not UI integration, not a write command, not an assignment picker, not delivery, and not response-link activation.
+
+The future read model is scoped to authenticated project contacts inside one workspace. It requires explicit capability checks, explicit bounded date ranges, workspace timezone behavior, and no anonymous read, service-role path, seed data, mock fallback, or broad raw table exposure. The contract is suitable for future Day, Week, Month, and List read data, but `/admin/calendar` remains deterministic mock UI after this slice.
+
+Calendar item shells require `calendar.view`. Assignment-derived coverage counts use the stricter current-safe rule requiring both `calendar.view` and `assignments.view` until a later permissions review relaxes that rule. Broad volunteer labels/contact values are not part of the Calendar list read model.
+
+Coverage truth must be derived from `calendar_assignments` and current `assignment_responses`, not Calendar item counters, mock `filledCount`, assigned volunteer id arrays, or client-calculated coverage. The contract defines assigned, confirmed, denied, unassigned, waiting-on-confirmation, has-denied, all-assigned-helpers-denied, coverage-state, and assigned-fraction values. Pending/`needs_response` plus confirmed assignments count toward assigned count; denied and removed assignments do not. Zero-needed informational items use `0/0 assigned`.
+
+`multi_day_window` and `milestone` items default to zero-needed/non-assignable unless a later reviewed child-occurrence model exists. Aggregate volunteer count on a multi-day window remains forbidden for now.
+
+Future Calendar inspectors must stay inside the same read-model boundary and must not expose response-link URLs, public tokens, verifiers, token ids, audit ids, questionnaire answers, emergency contact details, raw grant/capability arrays, unrelated volunteer rows, broad assignment directories, helper contact values, or assignment-detail route links unless a later slice separately reviews those surfaces.
+
+Mock-to-real rules remain strict: one route may not silently combine mock and persisted Calendar items, a route may not read persisted Calendar data and fall back to mock data in the same user-facing truth source, and the existing mock Calendar regression remains the product UI behavior reference until a separate cutover slice.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.
