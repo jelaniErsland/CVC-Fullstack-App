@@ -154,9 +154,17 @@ assert.doesNotMatch(
   serverActionSource,
   /from "\.\/productAction\.server|createAssignmentDetailResponseLinkProductAction\(|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|replaceAssignmentResponseToken|replace_assignment_response_token|issueAssignmentResponseLink|recordAssignmentResponseLinkRevealAudit|assignment_response_tokens|\.rpc\(|(?<!Array)\.from\(|redirect\(|permanentRedirect\(|revalidatePath\(|revalidateTag\(|cookies\(|headers\(|NextResponse|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole\b|console\.|logger\.|navigator\.clipboard|clipboard\.writeText|sendEmail|sendReminder|enqueue/i,
 );
+assert.match(
+  routeSource,
+  /import \{ createDisabledAssignmentResponseLinkServerAction \} from "@\/lib\/responseTokens\/productActionServerAction\.server"/,
+);
+assert.match(
+  routeSource,
+  /getDisabledResponseLinkWiringState\(\s*createDisabledAssignmentResponseLinkServerAction,\s*\)/s,
+);
 assert.doesNotMatch(
   routeSource,
-  /productActionServerAction|createDisabledAssignmentResponseLinkServerAction|<form\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|navigator\.clipboard|clipboard\.writeText/i,
+  /createDisabledAssignmentResponseLinkServerAction\([^)]|<form\b|formAction|type=["']submit["']|type=["']hidden["']|onClick=|navigator\.clipboard|clipboard\.writeText/i,
 );
 assert.match(
   packageSource,
@@ -190,7 +198,7 @@ for (const file of appAndComponentFiles) {
     assignmentDetailInboundLinks.push(relative);
   }
 }
-assert.deepEqual(serverActionImporters, []);
+assert.deepEqual(serverActionImporters, ["app/admin/assignments/[assignmentId]/page.tsx"]);
 assert.deepEqual(assignmentDetailInboundLinks, []);
 
 const description = describeDisabledAssignmentResponseLinkServerAction();
@@ -401,4 +409,4 @@ assert.equal(RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE, false);
 
 console.log("Assignment-detail disabled server-action stub regression passed.");
-console.log("Confirmed route-unused disabled results and disabled-adapter-only execution.");
+console.log("Confirmed disabled route import without invocation and disabled-adapter-only execution.");

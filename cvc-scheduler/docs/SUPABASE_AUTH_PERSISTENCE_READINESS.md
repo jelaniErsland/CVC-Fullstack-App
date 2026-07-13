@@ -4,6 +4,16 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 11.43 assignment-detail disabled route wiring implementation
+
+`/admin/assignments/[assignmentId]` now imports `createDisabledAssignmentResponseLinkServerAction` from `lib/responseTokens/productActionServerAction.server.ts` as the first reviewed route import of the disabled server-action seam. The route uses it only as an inert reviewed-seam reference in the authorized response-link panel; there is no form, action prop, enabled or disabled wired submit control, hidden metadata, generated URL field, copy button, clipboard behavior, redirect, revalidation, cookie mutation, email, reminder, or navigation generation.
+
+The route still reads persisted assignment data only through `readAssignmentDetailContext`, remains dynamic/no-store and unlinked, and keeps missing, unauthorized, cross-workspace, inactive, or otherwise unavailable states non-disclosing. It does not import the disabled adapter, the 11.32 product-action boundary, audited reveal helper/RPC, token helper, replacement helper, diagnostic helper, service-role path, route-entry policy, enablement checklist, server-action shape policy, disabled route-wiring policy, or token-table/direct Supabase mutation path.
+
+The only browser-visible response-link state remains disabled/unavailable and credential-free. No full response URL, bearer, verifier, token id, audit id, access/refresh token, password, API key, service-role key, SQL/internal RPC detail, sensitive intake value, or unrelated row data is rendered or returned. Disabled route-wiring/import flags are now true; final approval, active reveal, active copy, route server-action implementation, product-action UI, copy affordance, product surface, reveal availability, entry linkage, and product navigation remain false.
+
+No migration, hosted validation, delivery, public lookup, remembered-device behavior, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+
 ## 11.42 assignment-detail disabled route wiring readiness review
 
 `lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts` records the future disabled wiring contract between `/admin/assignments/[assignmentId]` and the 11.41 server-action stub. It is server-only, route-unused, and not imported by the assignment-detail route or any current route/component.
@@ -14,15 +24,15 @@ Render, GET, page load, prefetch, hover, focus, client effect, hydration, unavai
 
 Disabled route-wiring implementation, route server-action implementation, final approval, active reveal, active copy, product-action UI, copy affordance, product surface, reveal availability, entry/navigation linkage, and product navigation remain false. This slice adds no migration, route wiring, form, submit control, copy behavior, delivery, route cutover, or hosted validation requirement.
 
-## 11.41 route-unused disabled assignment response link server action stub
+## 11.41 disabled assignment response link server action stub
 
-`lib/responseTokens/productActionServerAction.server.ts` adds the first executable server-action seam for future assignment-detail response-link wiring, but it remains route-unused and disabled. It is not imported by `/admin/assignments/[assignmentId]` or any current route/component.
+`lib/responseTokens/productActionServerAction.server.ts` adds the first executable server-action seam for future assignment-detail response-link wiring. It remains disabled by default and returns only credential-free disabled states while final approval is false. Iteration 11.43 later imports it into `/admin/assignments/[assignmentId]` as an inert reviewed seam without calling or binding it.
 
 The exported `createDisabledAssignmentResponseLinkServerAction` accepts only a route-derived assignment id plus optional `expiresInHours` FormData. Workspace, volunteer, actor, response/token ids, bearer, verifier, origin, full/redacted URL, audit id/metadata, response-link metadata, capability/grant data, copy mode, service-role/client input, redirect/return paths, arbitrary hidden metadata, and unknown fields fail closed before the adapter can run.
 
 The stub calls only the 11.38 disabled adapter seam. It does not call the 11.32 product-action boundary directly and does not import reveal/RPC/token/replacement helpers. While final approval remains false, valid input returns only credential-free disabled/not-approved states; malformed, out-of-range, forbidden, checklist-blocked, adapter-error, and impossible success paths are reduced to credential-free disabled states. It never redirects, revalidates, sets cookies, logs, sends email, enqueues reminders, writes clipboard, generates navigation, returns a URL, or exposes token/audit identifiers.
 
-`npm run test:assignment-detail-server-action` is preview-free, hosted-free, and service-role-free. It proves the module is server-only, route-unused, adapter-only, and credential-free across valid, malformed, out-of-range, forbidden-field, adapter-error, and impossible-success cases.
+`npm run test:assignment-detail-server-action` is preview-free, hosted-free, and service-role-free. It proves the module is server-only, adapter-only, and credential-free across valid, malformed, out-of-range, forbidden-field, adapter-error, and impossible-success cases, and after 11.43 proves the reviewed route import does not invoke or bind it.
 
 No migration, hosted validation, route wiring, visible control, copy behavior, delivery, route cutover, or product availability flag changed.
 
@@ -648,7 +658,9 @@ RLS is one layer, not the whole authorization design. Server commands still vali
 - **11.38 Assignment Detail Disabled Action Adapter — completed:** route-unused server-only adapter accepts only assignment id plus optional bounded TTL, rejects forbidden browser fields, checks the 11.37 checklist, and keeps the 11.32 product-action boundary behind a false final-approval flag. It returns only credential-free disabled states today, and the current route imports no adapter/action/reveal helper.
 - **11.39 Assignment Detail Disabled Adapter Unit Harness — completed:** preview-free `npm run test:assignment-detail-action-adapter` proves valid disabled/not-approved behavior, TTL bounds, malformed/forbidden input rejection, credential-free disabled results, false activation flags, and zero product-action boundary calls while final approval is false.
 - **11.40 Assignment Detail Server-Action Shape Readiness Review — completed:** route-unused server-only policy defines a future explicit POST/server-action shape for `/admin/assignments/[assignmentId]` only, through the disabled adapter/reviewed successor only, with credential-free disabled/error states and all active implementation/reveal/copy/navigation flags still false.
-- **11.41 Route-Unused Disabled Assignment Response Link Server Action Stub — completed:** route-unused executable server-action seam accepts only route-derived assignment id plus optional TTL FormData, delegates only to the disabled adapter, returns credential-free disabled states while final approval is false, and is covered by preview-free `npm run test:assignment-detail-server-action`.
+- **11.41 Route-Unused Disabled Assignment Response Link Server Action Stub — completed:** executable server-action seam accepts only route-derived assignment id plus optional TTL FormData, delegates only to the disabled adapter, returns credential-free disabled states while final approval is false, and is covered by preview-free `npm run test:assignment-detail-server-action`.
+- **11.42 Assignment Detail Disabled Route Wiring Readiness Review — completed:** route-unused policy permits only a future disabled `/admin/assignments/[assignmentId]` connection to the 11.41 stub and forbids direct adapter/product-action/reveal/RPC/token/replacement/diagnostic/service-role route calls.
+- **11.43 Assignment Detail Disabled Route Wiring Implementation — completed:** the assignment-detail route now imports the 11.41 stub as its only response-link wiring import, but does not call it or bind it to a form/control. Disabled route-wiring/import flags are true; final approval, active reveal/copy, route server-action implementation, product-action UI, copy affordance, product surface, reveal availability, and navigation remain false.
 - **Later communications/reminder persistence readiness:** drafts, delivery boundary, token issuance/revocation, and provider decision.
 
 The non-production migration and live token/RLS prerequisite is satisfied, but it does not authorize or implement route integration. `project-local-staging` is validation-only, not real Belgrade production data. Communications persistence, email/reminder delivery, Needs Attention persistence, remembered devices, public lookup, and broad route cutovers remain separate later slices.

@@ -29,13 +29,15 @@ import { RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE } from "./revealPolicy.s
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_CONTRACT_AVAILABLE =
   true;
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE =
-  false;
+  true;
+export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE =
+  true;
 export const RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE =
   "/admin/assignments/[assignmentId]" as const;
 
 export const responseLinkProductActionDisabledRouteWiringPolicy = {
   eligibleRoute: RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE,
-  currentStatus: "contract_only_route_unused_no_form_or_action_binding",
+  currentStatus: "disabled_route_import_without_form_or_action_binding",
   currentPanel: "11.34_inert_response_link_shell",
   routeImport: "prohibited_until_later_reviewed_disabled_wiring_slice",
   routeRequirements: {
@@ -118,7 +120,7 @@ export const responseLinkProductActionDisabledRouteWiringPolicy = {
     ],
   },
   disabledRenderingRules: {
-    currentPanelState: "inert_before_any_disabled_wiring",
+    currentPanelState: "disabled_import_wiring_without_form_or_action_binding",
     futureDisabledPanelCopy:
       "response_link_generation_unavailable_until_later_reviewed_enablement",
     disabledAndErrorStates: [
@@ -167,7 +169,6 @@ export const responseLinkProductActionDisabledRouteWiringPolicy = {
     productNavigationLinkage: "unavailable",
   },
   activeFlagsThatMustRemainFalse: [
-    "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE",
     "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
     "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
     "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
@@ -201,6 +202,8 @@ export function describeResponseLinkProductActionDisabledRouteWiringPolicy() {
       RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_CONTRACT_AVAILABLE,
     disabledRouteWiringImplementationAvailable:
       RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE,
+    disabledRouteWiringRouteImportAvailable:
+      RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE,
     serverActionStubAvailable: RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE,
     serverActionStubRouteUnused:
       RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_ROUTE_UNUSED,

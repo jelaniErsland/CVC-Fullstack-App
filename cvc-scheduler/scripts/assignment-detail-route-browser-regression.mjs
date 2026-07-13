@@ -454,6 +454,7 @@ async function exerciseBrowserRoute() {
     "Unavailable in this read-only shell",
     "No link is generated on page load.",
     "No email or reminder is sent from this page.",
+    "The reviewed server-action seam is present but remains disabled here.",
     "Manual copying will only be available after an audited success",
   ]) {
     assert(
@@ -567,6 +568,7 @@ async function exerciseBrowserRoute() {
     "Response link",
     "future link would grant response access",
     "Manual copying",
+    "reviewed server-action seam",
     "No link is generated",
   ]) {
     assert(

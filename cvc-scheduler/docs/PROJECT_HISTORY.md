@@ -4301,6 +4301,41 @@ Limitations:
 Next recommended step:
 - Keep `/admin/assignments/[assignmentId]` free of server-action imports until a later reviewed slice proves safe disabled wiring or final approval. Any future route wiring must call only the 11.41 server-action stub and continue to keep reveal/copy/product availability false until a separate active-success UI review.
 
+## Iteration 11.43 - Assignment Detail Disabled Route Wiring Implementation
+
+Summary:
+- Imported `createDisabledAssignmentResponseLinkServerAction` into `/admin/assignments/[assignmentId]` as the first reviewed route import of the 11.41 disabled server-action stub.
+- The route uses the imported stub only as an inert reviewed-seam reference in the authorized response-link panel. It does not call the function, bind it to a form/action, render hidden metadata, or expose any submit/copy path.
+- The route still reads persisted assignment data only through `readAssignmentDetailContext`, remains dynamic/no-store and unlinked, and keeps unavailable states non-disclosing with no response-link capability details.
+- The route does not import the disabled adapter, product-action boundary, audited reveal helper/RPC, token helper, replacement helper, diagnostic helper, service-role path, route-entry policy, enablement checklist, server-action shape policy, disabled route-wiring policy, or any response-link mutation path.
+- `RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE` and `RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE` are true; final approval, active reveal, active copy, route server-action implementation, product-action UI, copy affordance, product surface, reveal availability, entry linkage, and navigation remain false.
+- Extended static and browser route regressions to prove no enabled submit button, form, hidden action metadata, generated URL field, copy button, clipboard behavior, URL/bearer/verifier/token/audit id exposure, console errors, or mobile overflow were added.
+
+Changed files:
+- `app/admin/assignments/[assignmentId]/page.tsx`
+- `lib/responseTokens/productActionDisabledRouteWiringPolicy.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `scripts/assignment-detail-server-action-regression.mjs`
+- `scripts/assignment-detail-route-browser-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- `npm run test:assignment-detail-route` proves the assignment-detail route imports the disabled server-action stub and no other response-link action/reveal/token/replacement/diagnostic/service-role/policy path, uses no form/action binding, and keeps all active flags false.
+- `npm run test:assignment-detail-server-action` proves the stub remains disabled, adapter-only, and credential-free while allowing exactly the reviewed route import without invocation.
+- `npm run test:assignment-detail-route:browser` proves authorized desktop/mobile rendering remains safe, unavailable states are non-disclosing, the response-link area is disabled/unavailable, and no form, submit control, generated URL field, copy button, credential, sensitive intake value, unrelated row marker, console error, or horizontal overflow appears.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, or hosted database behavior changed.
+
+Limitations:
+- No active route server action, enabled or disabled wired form, submit button, usable response-link generation, URL reveal, copy behavior, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The disabled server-action stub and disabled adapter remain disabled by default.
+
+Next recommended step:
+- Keep the disabled route import non-invoking until a later reviewed slice proves a safe disabled form/action binding or final active approval. Any active slice still needs warning/expiration UI, post-success-only manual copy, browser proof, log redaction, and explicit approval.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:

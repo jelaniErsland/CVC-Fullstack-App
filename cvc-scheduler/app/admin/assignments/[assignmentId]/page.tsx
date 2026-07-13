@@ -16,6 +16,7 @@ import { PageShell } from "@/components/PageShell";
 import { readAssignmentDetailContext } from "@/lib/assignments/detailContext.server";
 import type { AssignmentDetailContext } from "@/lib/assignments/detailContext.server";
 import { readProjectContactSession } from "@/lib/auth/session";
+import { createDisabledAssignmentResponseLinkServerAction } from "@/lib/responseTokens/productActionServerAction.server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -119,6 +120,14 @@ function formatUpdatedAt(value: string, timezone: string) {
       timeZoneName: "short",
     }).format(date);
   }
+}
+
+function getDisabledResponseLinkWiringState(disabledServerActionImport: unknown) {
+  void disabledServerActionImport;
+  return {
+    reviewedDisabledServerActionImport: true,
+    enabled: false,
+  } as const;
 }
 
 function PageFrame({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -231,6 +240,10 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
     return <UnavailableState />;
   }
 
+  const responseLinkWiringState = getDisabledResponseLinkWiringState(
+    createDisabledAssignmentResponseLinkServerAction,
+  );
+
   return (
     <PageFrame>
       <div className="mt-4 space-y-5">
@@ -339,6 +352,13 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                 <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
                   <li>No link is generated on page load.</li>
                   <li>No email or reminder is sent from this page.</li>
+                  {responseLinkWiringState.reviewedDisabledServerActionImport &&
+                  !responseLinkWiringState.enabled ? (
+                    <li>
+                      The reviewed server-action seam is present but remains
+                      disabled here.
+                    </li>
+                  ) : null}
                   <li>
                     Manual copying will only be available after an audited
                     success in a later reviewed slice.

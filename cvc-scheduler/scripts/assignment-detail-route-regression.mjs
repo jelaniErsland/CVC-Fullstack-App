@@ -88,6 +88,7 @@ import {
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_CONTRACT_AVAILABLE,
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE,
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE,
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE,
   describeResponseLinkProductActionDisabledRouteWiringPolicy,
   evaluateResponseLinkProductActionDisabledRouteWiringReadiness,
   responseLinkProductActionDisabledRouteWiringPolicy,
@@ -218,7 +219,19 @@ assert.match(
   routeSource,
   /import \{ readAssignmentDetailContext \} from "@\/lib\/assignments\/detailContext\.server"/,
 );
+assert.match(
+  routeSource,
+  /import \{ createDisabledAssignmentResponseLinkServerAction \} from "@\/lib\/responseTokens\/productActionServerAction\.server"/,
+);
 assert.match(routeSource, /readAssignmentDetailContext\(\{\s*assignmentId:/s);
+assert.match(
+  routeSource,
+  /getDisabledResponseLinkWiringState\(\s*createDisabledAssignmentResponseLinkServerAction,\s*\)/s,
+);
+assert.doesNotMatch(
+  routeSource,
+  /createDisabledAssignmentResponseLinkServerAction\([^)]/,
+);
 assert.match(routeSource, /readProjectContactSession\(\)/);
 assert.match(routeSource, /session\.status !== "authenticated"/);
 assert.match(routeSource, /Assignment unavailable/);
@@ -230,11 +243,11 @@ assert.match(routeSource, /will\s+expire/s);
 assert.match(routeSource, /explicit click or tap/);
 assert.match(routeSource, /Manual copying will only be available after an audited\s+success/s);
 assert.match(routeSource, /No link is generated on page load/);
+assert.match(routeSource, /reviewed server-action seam is present but remains\s+disabled here/s);
 assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
-assert.doesNotMatch(routeSource, /@\/lib\/responseTokens\//);
 assert.doesNotMatch(
   routeSource,
-  /createAssignmentDetailResponseLinkProductAction|createDisabledAssignmentResponseLinkServerAction|productAction|productActionDisabledAdapter|productActionServerAction|productActionDisabledRouteWiring|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
+  /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
 );
 assert.doesNotMatch(
   routeSource,
@@ -754,7 +767,7 @@ assert.match(
 assert.match(productActionServerActionHarnessSource, /adapterCallCount/);
 assert.match(
   productActionServerActionHarnessSource,
-  /Confirmed route-unused disabled results and disabled-adapter-only execution/,
+  /Confirmed disabled route import without invocation and disabled-adapter-only execution/,
 );
 
 assert.match(productActionDisabledRouteWiringPolicySource, /^import "server-only";/);
@@ -764,7 +777,11 @@ assert.match(
 );
 assert.match(
   productActionDisabledRouteWiringPolicySource,
-  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*false/,
+  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE =\s*\r?\n\s*true/,
+);
+assert.match(
+  productActionDisabledRouteWiringPolicySource,
+  /RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE =\s*\r?\n\s*true/,
 );
 assert.match(
   productActionDisabledRouteWiringPolicySource,
@@ -960,9 +977,12 @@ assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
 assert.deepEqual(disabledAdapterImporters, []);
 assert.deepEqual(serverActionPolicyImporters, []);
-assert.deepEqual(serverActionStubImporters, []);
+assert.deepEqual(serverActionStubImporters, [routeRelativePath]);
 assert.deepEqual(disabledRouteWiringPolicyImporters, []);
-assert.deepEqual(unsafeCurrentRouteOrComponentUi, []);
+assert.deepEqual(
+  unsafeCurrentRouteOrComponentUi.filter((relative) => relative !== routeRelativePath),
+  [],
+);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
@@ -1043,7 +1063,11 @@ assert.equal(
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_CONTRACT_AVAILABLE, true);
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE,
-  false,
+  true,
+);
+assert.equal(
+  RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ROUTE_IMPORT_AVAILABLE,
+  true,
 );
 assert.equal(
   RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_ELIGIBLE_ROUTE,
@@ -1054,7 +1078,11 @@ const disabledRouteWiringDescription =
 assert.equal(disabledRouteWiringDescription.contractAvailable, true);
 assert.equal(
   disabledRouteWiringDescription.disabledRouteWiringImplementationAvailable,
-  false,
+  true,
+);
+assert.equal(
+  disabledRouteWiringDescription.disabledRouteWiringRouteImportAvailable,
+  true,
 );
 assert.equal(disabledRouteWiringDescription.serverActionStubAvailable, true);
 assert.equal(disabledRouteWiringDescription.serverActionStubRouteUnused, true);
@@ -2033,7 +2061,7 @@ assert.equal(
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.currentStatus,
-  "contract_only_route_unused_no_form_or_action_binding",
+  "disabled_route_import_without_form_or_action_binding",
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.currentPanel,
@@ -2164,7 +2192,7 @@ for (const prohibitedDisabledRouteCall of [
 }
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.disabledRenderingRules.currentPanelState,
-  "inert_before_any_disabled_wiring",
+  "disabled_import_wiring_without_form_or_action_binding",
 );
 assert.equal(
   responseLinkProductActionDisabledRouteWiringPolicy.disabledRenderingRules.stateDisclosure,
@@ -2213,7 +2241,6 @@ assert.equal(
   "forbidden",
 );
 for (const requiredDisabledRouteWiringFalseFlag of [
-  "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_DISABLED_ADAPTER_FINAL_APPROVAL_AVAILABLE",
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
@@ -2247,7 +2274,6 @@ const otherwiseReadyDisabledRouteWiring =
   });
 assert.equal(otherwiseReadyDisabledRouteWiring.allowed, false);
 for (const requiredDisabledRouteWiringBlocker of [
-  "disabled_route_wiring_implementation_unavailable",
   "route_server_action_implementation_unavailable",
   "final_approval_unavailable",
   "active_response_link_reveal_unavailable",
