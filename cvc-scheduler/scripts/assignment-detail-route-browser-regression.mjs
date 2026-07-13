@@ -594,10 +594,16 @@ async function exerciseBrowserRoute() {
     "data-result-state",
     "actionResult",
     "resultRenderer",
+    "resultComponent",
     "not_approved",
     "checklist_blocked",
     "malformed_input",
     "action_error",
+    "retry",
+    "download",
+    "open link",
+    "send link",
+    "aria-live=\"polite\"",
   ]) {
     assert(
       !pageHtml.includes(forbiddenHtml),
@@ -650,6 +656,10 @@ async function exerciseBrowserRoute() {
     (await page.locator('[data-action-result], [data-result-state], [aria-live*="result"]').count()) === 0,
     "The read-only route rendered a response-link result state.",
   );
+  assert(
+    (await responseLinkPanel.locator('button, a, [role="button"], [role="link"], [data-retry], [data-download], [data-open-link], [data-send]').count()) === 0,
+    "The response-link panel rendered a result-renderer affordance.",
+  );
   assertNoForbiddenRequests(
     forbiddenLoadRequests,
     0,
@@ -676,8 +686,8 @@ async function exerciseBrowserRoute() {
     };
   });
   assert(
-    !activeElementSummary.interactive || !/copy|submit|generate|reveal/i.test(activeElementSummary.text),
-    "Tabbing exposed an active response-link submit or copy affordance.",
+    !activeElementSummary.interactive || !/copy|submit|generate|reveal|retry|download|open|send/i.test(activeElementSummary.text),
+    "Tabbing exposed an active response-link submit, copy, or renderer affordance.",
   );
   assert(
     page.url() === pageUrlBeforeInteraction,
