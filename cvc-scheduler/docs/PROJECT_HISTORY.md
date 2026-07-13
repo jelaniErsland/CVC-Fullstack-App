@@ -4503,6 +4503,38 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.7 - Calendar Route Cutover Readiness Review
+
+Summary:
+- Added `lib/calendar/routeCutoverReadiness.server.ts` as a server-only, route-unused readiness contract for a later `/admin/calendar` persisted read cutover.
+- The review defines `/admin/calendar` as the only eligible future route for this specific Calendar read cutover and requires dynamic/no-store persisted rendering, server-boundary-only reads, reviewed Auth/workspace/contact/grant/capability/timezone derivation, explicit bounded Day/Week/Month/List ranges, the 12.6 dependency-injected query helper or reviewed successor, and the 12.3 pure projection or reviewed successor.
+- The policy records strict authorization behavior: missing Auth, missing grant, missing `calendar.view`, or missing `assignments.view` must fail closed; missing assignment visibility must not silently produce zero coverage; role/title strings alone do not authorize reads; and raw grant/capability arrays must not render.
+- The review defines mock-to-real rules, calm unavailable/empty/error state requirements, read-only-first UI constraints, browser/preview proof requirements, and rollback boundaries. It keeps Calendar writes, assignment picker/create/cancel, assignment-detail entry links, response-link activation, copy UI, delivery, public lookup, remembered devices, seed data, hosted validation, service-role usage, and mock-to-real mixing blocked.
+
+Changed files:
+- `lib/calendar/routeCutoverReadiness.server.ts`
+- `scripts/calendar-route-cutover-readiness-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run test:calendar-route-cutover-readiness` proves the readiness module exists, is server-only and route-unused, `/admin/calendar` remains mock-only, no app route/component imports the readiness policy or 12.6 query helper, no route converted from mock Calendar data to persisted Calendar data, no direct route `.from`/`.rpc`/service-role path was added, and the 12.1/12.6/11.50/11.47 guardrails remain intact.
+- Existing Calendar read-model and Calendar UI regressions remain the required companion checks before any future route work.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, hosted behavior, product route query, or route cutover changed.
+
+Result:
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+- No app route/component imports the new readiness policy or the 12.6 query helper.
+- No product route query, Calendar write, assignment picker, assignment mutation, assignment-detail entry link, response-link activation, copy UI, delivery, public lookup, remembered-device behavior, seed data, service-role usage, hosted validation, production data validation, or mock-to-real mixing was added.
+
+Next recommended step:
+- If 12.7 remains clean, consider `12.8 Calendar Route Cutover Dry-Run Harness`. It should still avoid changing `/admin/calendar` behavior while proving future route entry conditions, state rendering expectations, preview/browser setup, and rollback boundaries are practical. Otherwise revise 12.7 first.
+
 ## Iteration 12.6 - Route-Unused Calendar Read Model Query-Helper Readiness
 
 Summary:

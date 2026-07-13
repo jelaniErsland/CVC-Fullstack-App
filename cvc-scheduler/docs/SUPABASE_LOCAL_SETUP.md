@@ -179,6 +179,14 @@ npm run test:calendar-read-model-query-helper
 
 This command requires no preview server, hosted Supabase target, local disposable fixture, service-role key, or raw Supabase CLI output. It proves `lib/calendar/readModelQuery.server.ts` is server-only, route-unused, dependency-injected, unimported by app routes/components, and not used by `/admin/calendar`; creates no Supabase client; reads no cookies or route params; imports no `app/` code or service-role path; uses explicit allowlisted selectors with no `select("*")`; queries only Calendar item, task preset, assignment, and current-response table concepts; fails closed before reads when capabilities or ranges are invalid; reduces provider errors to safe generic reason codes; and keeps cutover/write/assignment-picker/detail-linking/response-link/service-role/seed/hosted flags false.
 
+After 12.7, run the Calendar route cutover readiness static guardrail when changing future `/admin/calendar` persisted read cutover planning:
+
+```powershell
+npm run test:calendar-route-cutover-readiness
+```
+
+This command requires no preview server, hosted Supabase target, local disposable fixture, service-role key, or raw Supabase CLI output. It proves `lib/calendar/routeCutoverReadiness.server.ts` is server-only and route-unused, no route/component imports the readiness policy or 12.6 query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies future cutover requirements for dynamic/no-store server-only reads, trusted Auth/workspace/contact/capability/timezone derivation, explicit bounded Day/Week/Month/List ranges, strict `calendar.view` plus `assignments.view` coverage authorization, calm unavailable/empty/error states, mock-to-real separation, browser/preview proof, rollback boundaries, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

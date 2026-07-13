@@ -82,6 +82,24 @@ The helper translates persisted rows into the existing safe read-model row input
 
 If 12.6 remains clean, the recommended next slice is `12.7 Calendar Route Cutover Readiness Review`. That should still be a readiness/review slice defining route entry conditions, unavailable/empty states, browser proof, and rollback boundaries before any actual `/admin/calendar` persisted-data cutover.
 
+## 12.7 Calendar Route Cutover Readiness Review
+
+Iteration 12.7 adds `lib/calendar/routeCutoverReadiness.server.ts` and `npm run test:calendar-route-cutover-readiness` as route-unused planning/static guardrails for a later `/admin/calendar` persisted read cutover. It is not a route cutover implementation, not UI integration, not hosted validation, not production data validation, not Calendar mutation, not an assignment picker, not delivery, and not response-link activation.
+
+The readiness contract names `/admin/calendar` as the only eligible route for this specific future read cutover. When connected to persisted data later, the route must remain dynamic/no-store, execute persisted reads only from a server boundary, derive workspace/contact/capability/timezone context from reviewed authenticated server helpers, and call only reviewed server-only Calendar read seams. It may not create a browser Supabase client for Calendar product data, trust browser-provided workspace ids/capabilities/actor ids/selectors, call `.from` or `.rpc` directly, use service-role credentials, query broad tables, render raw errors, or expose secrets/internal policy details.
+
+The required future data path is: verified project-contact session, active workspace/contact grant resolution, explicit `calendar.view`, explicit `assignments.view` for coverage-bearing output, trusted workspace id, trusted contact/actor id, trusted workspace timezone, server-derived bounded Day/Week/Month/List date range, the 12.6 dependency-injected query helper or reviewed successor, and the 12.3 pure read-model projection or reviewed successor.
+
+The route-readiness rules keep the mock-to-real boundary strict. A future route may not silently combine mock Calendar items with persisted Calendar items, may not read persisted data and fall back to mock data in the same user-facing truth source, and must have one truth source per execution path. Existing mock Calendar regression remains the UI behavior reference until an actual cutover succeeds. Mock `filledCount`, assigned volunteer id arrays, deterministic colors, and local creation drafts are not production truth.
+
+Future unavailable, empty, and error states must cover unauthenticated, unauthorized/no workspace access, missing `calendar.view`, missing `assignments.view`, no items in range, local configuration issues, query helper safe failures, invalid period/range, and inactive/archived workspace contexts where applicable. These states must be calm and non-disclosing, must not render raw database/provider errors or stack traces, must not reveal unrelated workspace/project/volunteer existence, and must not fall back to mock data unless the route remains explicitly mock-only.
+
+The later cutover must be read-only first. Calendar create/edit/archive/delete persistence, draft saving, drag/drop/resize/copy/repeat persistence, assignment picker/create/cancel, Calendar assignment response mutation, assignment-detail entry links, response-link generation, copy UI, delivery, public lookup, remembered devices, seed data, and service-role usage remain blocked.
+
+Browser proof for a later actual cutover must show desktop and 390px mobile Calendar safety, Day/Week/Month/List switching, filter behavior, non-stacking creation/inspector surfaces, calm empty and unavailable persisted states, no mock/persisted mix, no raw ids/capabilities/errors/secrets, no response-link or assignment-detail entry behavior, no unexpected response-token/reveal/diagnostic/write network calls, and redirected/redacted preview logs.
+
+If 12.7 remains clean, the recommended next slice is `12.8 Calendar Route Cutover Dry-Run Harness`. That dry-run should still avoid changing `/admin/calendar` behavior while proving the future route entry conditions, state rendering expectations, browser preview setup, and rollback boundary are practical before any persisted-data route integration.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.
