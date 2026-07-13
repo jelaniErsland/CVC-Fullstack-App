@@ -4503,6 +4503,41 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.6 - Route-Unused Calendar Read Model Query-Helper Readiness
+
+Summary:
+- Added `lib/calendar/readModelQuery.server.ts` as a server-only, route-unused, dependency-injected Calendar read model query-helper readiness seam.
+- The helper accepts a reviewed Supabase-like client from a future server boundary, validates the existing 12.3 workspace/contact/date-range/timezone/filter/capability shape before any read, uses explicit selectors for `calendar_items`, `task_presets`, `calendar_assignments`, and `assignment_responses`, translates rows through the existing safe read-model helper, and returns only safe success/error shapes.
+- The helper creates no Supabase client, imports no `lib/supabase/server.ts`, reads no cookies/route params, imports no `app/` code, uses no service-role path, exposes no raw database rows/errors, and uses no `select("*")`.
+- Extended `scripts/calendar-read-model-local-data-validation.mjs` so the 12.5 disposable local `qa-12-5-*` fixture flow also exercises the new query helper with an injected local authenticated client while preserving zero-residue cleanup.
+
+Changed files:
+- `lib/calendar/readModelQuery.server.ts`
+- `scripts/calendar-read-model-query-helper-regression.mjs`
+- `scripts/calendar-read-model-local-data-validation.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run test:calendar-read-model-query-helper` proves the query helper is server-only, route-unused, dependency-injected, selector-allowlisted, no `select("*")`, no service-role path, no app route/component import, fail-closed before reads on bad capability/range input, and credential-free/safe-error-only.
+- `npm run test:calendar-read-model:local` now validates the query helper against disposable local persisted row shapes in addition to the pure 12.3 helper, then cleans fixtures with zero residue.
+- `npm run test:calendar-read-model-helper:qa`, `npm run test:calendar-read-model-helper`, `npm run test:calendar-read-model-contract`, and `npm run test:mvp-cutover-plan` keep the 12.4, 12.3, 12.2, and 12.1 guardrails intact.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, hosted behavior, product route query, or Calendar route cutover changed.
+
+Result:
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+- No app route/component imports the new query helper.
+- No product route loader, Calendar create/edit/write action, assignment picker, assignment mutation, assignment-detail entry link, response-link activation, copy UI, delivery, public lookup, remembered-device behavior, seed data, service-role usage, hosted validation, production data validation, or mock-to-real mixing was added.
+- Assignment-derived counts remain derived from `calendar_assignments` and current `assignment_responses`, not Calendar item counters or mock `filledCount`.
+
+Next recommended step:
+- If 12.6 remains clean, consider `12.7 Calendar Route Cutover Readiness Review`. It should still be readiness/review only before any actual `/admin/calendar` persisted-data cutover. Otherwise revise 12.6 first.
+
 ## Iteration 12.5 - Route-Unused Calendar Read Model Disposable Local Data Validation
 
 Summary:

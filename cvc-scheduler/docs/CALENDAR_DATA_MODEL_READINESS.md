@@ -66,6 +66,22 @@ Coverage validation proves real local `calendar_assignments` and current `assign
 
 Safe projection validation proves output excludes volunteer contact values, emergency contacts, questionnaire answers, public/redacted response URLs, bearer/verifier/token/audit ids, credentials, SQL/RPC details, raw grants/capabilities, unrelated rows, provider dumps, stack traces, and raw exceptions. Cleanup runs in `finally` and verifies zero residue for the local fixture namespace. If 12.5 remains clean, the recommended next slice is `12.6 Route-Unused Calendar Read Model Query Helper Readiness`; otherwise revise 12.5 first.
 
+## 12.6 Route-Unused Calendar Read Model Query-Helper Readiness
+
+Iteration 12.6 adds `lib/calendar/readModelQuery.server.ts` and `npm run test:calendar-read-model-query-helper` as a server-only, route-unused query-helper readiness seam. It is not a Calendar route cutover, not UI integration, not hosted validation, not production data validation, not Calendar mutation, not an assignment picker, not delivery, and not response-link activation.
+
+The query helper is dependency-injected. It accepts a reviewed Supabase-like client from a future server boundary but does not create a Supabase client, import `lib/supabase/server.ts`, read cookies, read route params, import from `app/`, use service-role credentials, or expose a product route loader/React hook/client helper. No app route/component imports it, and `/admin/calendar` remains mock-only.
+
+The helper reuses the 12.3 normalization, bounded date-range, filter, capability, coverage, and projection helpers. It validates `workspaceId`, `actorContactId`, trusted workspace timezone, explicit `rangeStart`/`rangeEnd`, period kind, filters, and the strict `calendar.view` plus `assignments.view` coverage rule before any injected client read. Missing `calendar.view`, missing `assignments.view`, invalid dates, end-before-start, and broader-than-bounded ranges fail closed before reads.
+
+The only allowed table concepts are `calendar_items`, `task_presets`, `calendar_assignments`, and `assignment_responses`. Every selector is explicit; no `select("*")` is used. The helper does not query volunteer profiles/contact values, questionnaire submissions, emergency contact data, response-token tables, reveal/audit tables, project contacts/grants, auth/storage tables, diagnostics, broad assignment directories, or raw capability arrays.
+
+The helper translates persisted rows into the existing safe read-model row inputs and returns only safe Calendar read-model fields: Calendar item id, stable display reference, task/source label, display type, schedule kind, date/range/time fields, timezone, needed count, lifecycle/publication state, safe schedule notes, task-preset or one-off labels, assignment-derived coverage summary, and assigned-fraction label. It does not return raw database rows or raw Supabase errors.
+
+`npm run test:calendar-read-model:local` now also exercises the query helper against the same disposable local `qa-12-5-*` fixture flow. The local harness proves real local `calendar_assignments` and current `assignment_responses` row shapes drive coverage through the query seam, missing assignment visibility still fails closed, wrong-workspace/wrong-item rows do not bleed, unsafe fields are not projected, and cleanup still verifies zero residue.
+
+If 12.6 remains clean, the recommended next slice is `12.7 Calendar Route Cutover Readiness Review`. That should still be a readiness/review slice defining route entry conditions, unavailable/empty states, browser proof, and rollback boundaries before any actual `/admin/calendar` persisted-data cutover.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

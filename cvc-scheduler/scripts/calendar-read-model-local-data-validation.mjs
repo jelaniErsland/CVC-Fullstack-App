@@ -15,6 +15,10 @@ import {
   mapCalendarReadModelItem,
 } from "../lib/calendar/readModel.server.ts";
 import { describeCalendarPersistedReadModelContract } from "../lib/calendar/readModelContract.server.ts";
+import {
+  describeCalendarReadModelQueryHelper,
+  readCalendarReadModelWithClient,
+} from "../lib/calendar/readModelQuery.server.ts";
 import { describeMvpRealDataCutoverPlan } from "../lib/readiness/mvpRealDataCutoverPlan.server.ts";
 import { describeResponseLinkProductActionActivationCheckpoint } from "../lib/responseTokens/productActionActivationCheckpoint.server.ts";
 
@@ -170,6 +174,10 @@ async function resolveLocalDatabaseContainer() {
 
 async function verifyStaticBoundaries() {
   const helperSource = await readFile(path.join(root, "lib", "calendar", "readModel.server.ts"), "utf8");
+  const queryHelperSource = await readFile(
+    path.join(root, "lib", "calendar", "readModelQuery.server.ts"),
+    "utf8",
+  );
   const calendarRouteSource = await readFile(
     path.join(root, "app", "admin", "calendar", "page.tsx"),
     "utf8",
@@ -201,6 +209,12 @@ async function verifyStaticBoundaries() {
     ),
     "Calendar read model helper imported or executed a forbidden live/query/action path.",
   );
+  assert.match(queryHelperSource, /^import "server-only";/);
+  assert.doesNotMatch(
+    queryHelperSource,
+    /createClient|createServerSupabaseClient|createBrowserSupabaseClient|lib\/supabase\/server|cookies\(|from\s+["']app\/|createServiceRole|SUPABASE_SERVICE_ROLE_KEY|serviceRoleClient|serviceRolePath/i,
+  );
+  assert.doesNotMatch(queryHelperSource, /\.select\(\s*["']\*["']\s*\)/);
 
   const appAndComponentFiles = [];
   for (const directory of ["app", "components"]) {
@@ -220,7 +234,9 @@ async function verifyStaticBoundaries() {
     const source = await readFile(file, "utf8");
     if (
       source.includes("readModel.server") ||
+      source.includes("readModelQuery.server") ||
       source.includes("buildCalendarReadModelQueryShape") ||
+      source.includes("readCalendarReadModelWithClient") ||
       source.includes("mapCalendarReadModelItem") ||
       source.includes("filterAndSortCalendarReadModelItems")
     ) {
@@ -230,7 +246,7 @@ async function verifyStaticBoundaries() {
       validationImporters.push(relative);
     }
     if (
-      /@\/lib\/calendar\/server|@\/lib\/calendar\/readModel|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses/i.test(
+      /@\/lib\/calendar\/server|@\/lib\/calendar\/readModel|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|calendar_items|calendar_assignments|assignment_responses/i.test(
         source,
       )
     ) {
@@ -251,7 +267,7 @@ async function verifyStaticBoundaries() {
   assert.match(calendarRouteSource, /@\/lib\/mockData/);
   assert.doesNotMatch(
     calendarRouteSource,
-    /@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses/i,
+    /@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|calendar_items|calendar_assignments|assignment_responses/i,
   );
 
   const helperReadiness = describeCalendarReadModelHelper();
@@ -263,6 +279,20 @@ async function verifyStaticBoundaries() {
   assert.equal(helperReadiness.responseLinkActivationReopened, false);
   assert.equal(helperReadiness.serviceRoleReadAvailable, false);
   assert.equal(helperReadiness.seedDataAvailable, false);
+
+  const queryHelperReadiness = describeCalendarReadModelQueryHelper();
+  assert.equal(queryHelperReadiness.queryHelperAvailable, true);
+  assert.equal(queryHelperReadiness.routeUnused, true);
+  assert.equal(queryHelperReadiness.dependencyInjected, true);
+  assert.equal(queryHelperReadiness.serviceRoleAvailable, false);
+  assert.equal(queryHelperReadiness.routeCutoverAvailable, false);
+  assert.equal(queryHelperReadiness.mockToRealMixingAllowed, false);
+  assert.equal(queryHelperReadiness.persistedWriteAvailable, false);
+  assert.equal(queryHelperReadiness.assignmentPickerCutoverAvailable, false);
+  assert.equal(queryHelperReadiness.assignmentDetailLinkingAvailable, false);
+  assert.equal(queryHelperReadiness.responseLinkActivationReopened, false);
+  assert.equal(queryHelperReadiness.seedDataAvailable, false);
+  assert.equal(queryHelperReadiness.hostedQueryValidationAvailable, false);
 
   const contract = describeCalendarPersistedReadModelContract();
   assert.equal(contract.routeCutoverAvailable, false);
@@ -285,12 +315,15 @@ async function verifyStaticBoundaries() {
     packageSource,
     /"test:calendar-read-model:local": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/calendar-read-model-local-data-validation\.mjs"/,
   );
-  assert.match(currentStateSource, /Iteration 12\.5/);
-  assert.match(roadmapSource, /12\.6 Route-Unused Calendar Read Model Query Helper Readiness/);
+  assert.match(packageSource, /"test:calendar-read-model-query-helper"/);
+  assert.match(currentStateSource, /Iteration 12\.6/);
+  assert.match(roadmapSource, /12\.7 Calendar Route Cutover Readiness Review/);
   assert.match(calendarReadinessSource, /12\.5 Route-Unused Calendar Read Model Disposable Local Data Validation/);
-  assert.match(authReadinessSource, /12\.5 route-unused Calendar read model disposable local data validation/i);
+  assert.match(calendarReadinessSource, /12\.6 Route-Unused Calendar Read Model Query-Helper Readiness/);
+  assert.match(authReadinessSource, /12\.6 route-unused Calendar read model query-helper readiness/i);
   assert.match(localSetupSource, /test:calendar-read-model:local/);
-  assert.match(projectHistorySource, /Iteration 12\.5 - Route-Unused Calendar Read Model Disposable Local Data Validation/);
+  assert.match(localSetupSource, /test:calendar-read-model-query-helper/);
+  assert.match(projectHistorySource, /Iteration 12\.6 - Route-Unused Calendar Read Model Query-Helper Readiness/);
   assert.match(localSetupSource, /Do not print raw Supabase CLI\/status\/start output/);
   assert.match(localSetupSource, /Redirect Supabase start\/status output to a temporary file/);
   assert.match(localSetupSource, /Redact key-like values before displaying diagnostics/);
@@ -766,6 +799,77 @@ async function verifyLiveRows(containerName, clientsForFixture) {
     assertCredentialFree(item, "Calendar read-model projection", fixture.namespace);
   }
 
+  const queryHelperResult = await readCalendarReadModelWithClient({
+    client: fullClient,
+    workspaceId: fixture.workspaceId,
+    actorContactId: fixture.fullContactId,
+    rangeStart: "2031-02-01",
+    rangeEnd: "2031-02-28",
+    workspaceTimezone: "America/Denver",
+    periodKind: "month",
+    capabilities: fullGrant.capabilities,
+  });
+  assert.equal(queryHelperResult.ok, true, "Query helper could not read disposable local rows.");
+  if (queryHelperResult.ok) {
+    assert.equal(queryHelperResult.query.routeUnused, true);
+    assert.equal(queryHelperResult.query.dependencyInjected, true);
+    assert.deepEqual(queryHelperResult.query.tables, [
+      "calendar_items",
+      "task_presets",
+      "calendar_assignments",
+      "assignment_responses",
+    ]);
+    assert.equal(queryHelperResult.items.length, 5);
+    const queryTimedItem = queryHelperResult.items.find(
+      (item) => item.calendarItemId === fixture.timedCalendarItemId,
+    );
+    assert(queryTimedItem, "Query helper did not project the timed Calendar item.");
+    assert.equal(queryTimedItem.taskSourceLabel, "QA 12.5 Gate Crew");
+    assert.equal(queryTimedItem.coverage.assignedCount, 4);
+    assert.equal(queryTimedItem.coverage.confirmedCount, 3);
+    assert.equal(queryTimedItem.coverage.waitingOnConfirmationCount, 1);
+    assert.equal(queryTimedItem.coverage.deniedCount, 1);
+    assert.equal(queryTimedItem.coverage.unassignedCount, 2);
+    assert.equal(queryTimedItem.assignedFractionLabel, "4/6 assigned");
+    const queryDateItem = queryHelperResult.items.find(
+      (item) => item.calendarItemId === fixture.dateBasedCalendarItemId,
+    );
+    assert(queryDateItem, "Query helper did not project the date-based Calendar item.");
+    assert.equal(queryDateItem.coverage.assignedCount, 2);
+    assert.equal(queryDateItem.assignedFractionLabel, "2/2 assigned");
+    const queryInformationalItem = queryHelperResult.items.find(
+      (item) => item.calendarItemId === fixture.multiDayCalendarItemId,
+    );
+    assert(queryInformationalItem, "Query helper did not project the informational Calendar item.");
+    assert.equal(queryInformationalItem.neededCount, 0);
+    assert.equal(queryInformationalItem.assignedFractionLabel, "0/0 assigned");
+    assert.equal(
+      queryHelperResult.items.some(
+        (item) => item.calendarItemId === fixture.otherWorkspaceCalendarItemId,
+      ),
+      false,
+      "Query helper allowed wrong-workspace Calendar rows to bleed into output.",
+    );
+    for (const item of queryHelperResult.items) {
+      assertCredentialFree(item, "Calendar query-helper projection", fixture.namespace);
+    }
+  }
+
+  const queryHelperCalendarOnly = await readCalendarReadModelWithClient({
+    client: calendarOnlyClient,
+    workspaceId: fixture.workspaceId,
+    actorContactId: fixture.calendarOnlyContactId,
+    rangeStart: "2031-02-01",
+    rangeEnd: "2031-02-28",
+    workspaceTimezone: "America/Denver",
+    periodKind: "month",
+    capabilities: calendarOnlyGrant.capabilities,
+  });
+  assert.deepEqual(queryHelperCalendarOnly, {
+    ok: false,
+    reason: "missing_assignments_view_for_coverage",
+  });
+
   for (const forbiddenField of [
     "volunteer_contact_values",
     "emergency_contact_details",
@@ -855,7 +959,7 @@ async function main() {
   }
   assert(cleanupCompleted, "Calendar read-model fixture cleanup did not complete.");
   console.log("Calendar read-model local data validation passed.");
-  console.log("Verified route-unused helper compatibility with disposable local persisted row shapes and zero residue.");
+  console.log("Verified route-unused helper and query-helper compatibility with disposable local persisted row shapes and zero residue.");
   console.log("No response URL, bearer, verifier, token id, password, access token, refresh token, API key, service-role key, or database URL was logged.");
 }
 
