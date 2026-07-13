@@ -4142,6 +4142,37 @@ Limitations:
 Next recommended step:
 - Use the checklist as the gate for any future activation. Do not enable entry links, product action UI, copy affordance, product-surface implementation, or reveal availability until every checklist group has concrete proof and a later explicit approval slice flips the active flags.
 
+## Iteration 11.38 - Assignment Detail Disabled Action Adapter
+
+Summary:
+- Added route-unused server-only `productActionDisabledAdapter.server.ts` for future assignment-detail response-link action wiring.
+- The adapter accepts only assignment id plus optional bounded TTL, rejects forbidden browser-shaped fields, checks the 11.37 enablement checklist, and keeps the 11.32 product-action boundary behind a hard false final-approval flag.
+- Current malformed, checklist-blocked, not-approved, boundary-unavailable, and action-error states return only credential-free disabled results.
+- Extended the assignment-detail route static regression to prove the adapter exists, is server-only, defaults disabled, keeps final approval false, rejects forbidden fields/169-hour TTL, and does not call the product-action boundary on the current path.
+- Preserved `/admin/assignments/[assignmentId]` as read-only, unlinked, dynamic/no-store, persisted-context-only, and limited to `readAssignmentDetailContext`.
+
+Changed files:
+- `lib/responseTokens/productActionDisabledAdapter.server.ts`
+- `scripts/assignment-detail-route-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Verification:
+- The assignment-detail route regression now proves the disabled adapter is unavailable by default and route-unused, while all current entry/linkage, product-action UI, copy affordance, product-surface, reveal, and navigation flags remain false.
+- The static gate still proves no current app route/component links to `/admin/assignments/[assignmentId]`, no current route imports the persisted detail context except the assignment-detail route, and no Calendar, Volunteers, Needs Attention, Communications, public, diagnostic, response-token, or mock surface links to the route.
+- The browser gate remains the same local disposable-fixture proof for sign-in, safe success, inert shell, unavailable state, desktop/mobile overflow, forbidden fields, and zero residue.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, or hosted gate behavior changed.
+
+Limitations:
+- No enabled response-link control, form, server action wiring, copy behavior, URL reveal, delivery, entry link, product navigation link, route cutover, seed data, cron/background job, service-role usage, or mock-to-real mixing was added.
+- The visible response-link shell remains inert and cannot reveal, submit, copy, display, email, send, or log a response link.
+
+Next recommended step:
+- Keep the adapter disabled until a later slice provides concrete browser proof, warning/expiry/copy behavior, persisted authorized entry points, and explicit product-owner approval. Do not import the adapter into the route or flip active flags before that review.
+
 ## Product Planning Alignment — Real-World MVP Requirements (2026-07-05)
 
 Summary:
