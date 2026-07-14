@@ -4,6 +4,18 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 12.11 Calendar persisted read route cutover implementation
+
+Iteration 12.11 is the first actual `/admin/calendar` persisted-read route cutover. It is read-only and does not add Calendar writes, assignment picker/create/cancel UI, assignment-detail entry links, response-link activation, copy UI, email/reminder delivery, public lookup, remembered-device behavior, seed data, service-role usage, migrations, generated type changes, hosted validation, production data validation, or mock/persisted mixing.
+
+The route is dynamic/no-store and server-owned. It derives the verified project-contact Auth session, authenticated project contact id, active workspace/contact grant context, trusted workspace timezone, and explicit reviewed capabilities server-side. The strict rule remains unchanged: `calendar.view` is required for Calendar item shells, and `calendar.view` plus `assignments.view` are required for coverage-bearing output. Role/title strings alone do not authorize reads, missing prerequisites fail closed, and raw grant/capability arrays are not rendered.
+
+`/admin/calendar` now uses the 12.6 dependency-injected query helper through a narrow route read adapter and maps only safe persisted read-model fields into the existing Calendar UI. It does not call `.from` or `.rpc` directly in the route, does not use service-role credentials, does not create a client-side Supabase reader, and does not expose raw Supabase/database/provider errors.
+
+The four route states are implemented: `ready_with_items`, `ready_empty`, `unavailable`, and `error`. Empty is successful zero-item data, not failure. Unavailable is a fail-closed prerequisite/capability/workspace state. Error is an unexpected safe failure after prerequisites. None of the states falls back to mock Calendar items or mixes mock and persisted item truth.
+
+Hosted validation is not required because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed. Local disposable validation and browser proof cover the cut-over route. Recommended next slice: `12.12 Calendar Persisted Read Cutover Stabilization`, still read-only and still blocking Calendar writes, delivery, public lookup, remembered devices, and response-link activation.
+
 ## 12.10 Calendar route cutover empty/unavailable state prototype
 
 Iteration 12.10 is Calendar route cutover UI-state prototype/readiness only. It does not cut over `/admin/calendar`, change Calendar production data behavior, import the query helper, dry-run harness, final preflight, readiness policy, or state prototype into the route, add a product route loader, add React hooks/client helpers, add hosted validation, add production data validation, add Calendar create/edit/delete UI, add assignment picker/create/cancel UI, add assignment-detail entry links, activate response-link generation, add email/reminder delivery, add public volunteer lookup, add remembered-device behavior, add seed data, add service-role usage, or mix mock and persisted data.

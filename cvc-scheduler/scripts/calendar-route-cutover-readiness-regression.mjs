@@ -278,7 +278,7 @@ assert.deepEqual(queryHelperImporters, []);
 assert.deepEqual(persistedCalendarRouteImporters, []);
 assert.deepEqual(assignmentDetailLinks, []);
 
-assert.match(calendarRouteSource, /@\/lib\/mockData/);
+assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
   calendarRouteSource,
   /routeCutoverReadiness|readModelQuery|readCalendarReadModelWithClient|@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|calendar_items|calendar_assignments|assignment_responses|(?:^|\n)\s*\.from\(|\.rpc\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole|formAction|useActionState|useFormState/i,
@@ -311,4 +311,4 @@ assert.equal(activationCheckpoint.activeRevealAvailable, false);
 assert.equal(activationCheckpoint.activeCopyAvailable, false);
 
 console.log("Calendar route cutover readiness checks passed.");
-console.log("Confirmed /admin/calendar remains mock-only and no route imports the query helper.");
+console.log("Confirmed readiness remains route-unused and /admin/calendar uses only the reviewed route read adapter.");

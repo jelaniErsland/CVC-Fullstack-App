@@ -151,6 +151,29 @@ Every state prohibits silent mock fallback, mock/persisted mixing, raw internal 
 
 If 12.10 remains clean, the recommended next slice is `12.11 Calendar Persisted Read Route Cutover Implementation`, limited to a narrow read-only route cutover that uses the existing static/dry-run/browser guardrails. If 12.10 reveals any readiness issue, revise the state prototype before touching the route.
 
+## 12.11 Calendar Persisted Read Route Cutover Implementation
+
+Iteration 12.11 performs the first actual `/admin/calendar` persisted-read cutover. The route now reads persisted Calendar display items through a server-owned, dynamic/no-store route boundary instead of using mock Calendar items as its user-facing item truth source. This is a read cutover only: no Calendar writes, assignment picker/mutations, assignment-detail entry links, response-link activation, copy UI, delivery, public lookup, remembered devices, service-role usage, seed data, hosted validation, production data validation, generated type change, migration, or mock/persisted mixing was added.
+
+The implementation preserves the reviewed 12.7-12.10 route chain. `/admin/calendar` derives a verified project-contact session, authenticated contact id, active workspace/grant context, trusted workspace timezone, and explicit capabilities server-side. Coverage-bearing output still requires both `calendar.view` and `assignments.view`. The route uses a bounded initial Calendar read range and calls the 12.6 dependency-injected query helper only through `lib/calendar/routeRead.server.ts`; it does not create a Supabase client in a Client Component, trust browser-provided workspace/capability values, call `.from` or `.rpc` in the route, use service-role credentials, or render raw database/provider errors.
+
+The existing Calendar UI was moved behind `components/CalendarClient.tsx` and continues to provide Day, Week, Month, List, date navigation, filters, inspector behavior, mobile behavior, and preview-only creation controls. Persisted read-model items are mapped into a narrow safe presentation shape: Calendar id/date/time labels, task/source label, type/category, schedule kind, timezone, needed count, lifecycle/publication state, safe notes, task preset/one-off labels, assignment-derived coverage, and assigned-fraction labels. The route does not map volunteer contact values, emergency contacts, questionnaire answers, response URLs, bearer/verifier/token/audit ids, access/refresh tokens, passwords, API keys, service-role keys, SQL/RPC detail, raw grants/capabilities, unrelated rows, provider dumps, stack traces, or raw exception messages.
+
+The four reviewed route states are implemented:
+
+- `ready_with_items`: authorized persisted read with one or more safe Calendar items rendered in the existing Calendar shell.
+- `ready_empty`: authorized successful zero-item range with calm “no scheduled items in this range” treatment, not unavailable and not error.
+- `unavailable`: fail-closed prerequisite/workspace/contact/grant/capability state with non-disclosing user copy.
+- `error`: unexpected safe failure after prerequisites, kept distinct from unavailable and rendered without raw diagnostics.
+
+Mock-to-real boundaries remain strict. `/admin/calendar` does not combine persisted items with mock Calendar items and does not fall back to mock items on empty/unavailable/error. Assignment-derived counts remain based on `calendar_assignments` and current `assignment_responses`; Calendar item counters, mock `filledCount`, assigned volunteer arrays, deterministic mock colors, and client-side mock counters remain non-production truth.
+
+`npm run test:calendar-route-cutover` proves the route read adapter, state mapping, no direct broad route query, no `select("*")`, no mock fallback/mixing, false write/picker/detail-linking/response-link/service-role/seed flags, and response-link pause. The Calendar browser regression now creates disposable local persisted fixtures, authenticates project contacts, verifies persisted success/empty/unavailable states, Day/Week/Month/List interactions, filters, inspector behavior, 390px layout, no unsafe leakage, no mock Calendar item leakage, and cleanup.
+
+Hosted validation is not required because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed. The rollback path is small and reversible: remove the route read adapter integration and restore the prior mock item source rather than weakening Auth, capability, query-helper, projection, or safe-state rules.
+
+Recommended next slice: `12.12 Calendar Persisted Read Cutover Stabilization`, still read-only. Do not move into Calendar writes, assignment picker/mutations, delivery, public lookup, remembered devices, response-link activation, or other route cutovers until the first persisted read cutover remains clean.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

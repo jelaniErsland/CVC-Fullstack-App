@@ -353,10 +353,10 @@ assert.deepEqual(persistedCalendarRouteImporters, []);
 assert.deepEqual(assignmentDetailLinks, []);
 assert.deepEqual(serviceRoleMarkers, []);
 
-assert.match(calendarRouteSource, /@\/lib\/mockData/);
+assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
   calendarRouteSource,
-  /@\/lib\/calendar\/readModelContract|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses/i,
+  /@\/lib\/calendar\/readModelContract|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses|getCalendarItemsByWeek/i,
 );
 
 const mvpPlan = describeMvpRealDataCutoverPlan();
@@ -385,4 +385,4 @@ assert.match(localSetupSource, /Redirect Supabase start\/status output to a temp
 assert.match(localSetupSource, /Redact key-like values before displaying diagnostics/);
 
 console.log("Persisted Calendar read model contract checks passed.");
-console.log("Confirmed route-unused contract, no /admin/calendar cutover, and assignment-derived coverage rules.");
+console.log("Confirmed route-unused contract, 12.11 route-adapter compatibility, and assignment-derived coverage rules.");

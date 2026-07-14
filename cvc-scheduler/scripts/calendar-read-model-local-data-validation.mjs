@@ -279,10 +279,10 @@ async function verifyStaticBoundaries() {
   assert.deepEqual(validationImporters, []);
   assert.deepEqual(persistedCalendarRouteImporters, []);
   assert.deepEqual(assignmentDetailLinks, []);
-  assert.match(calendarRouteSource, /@\/lib\/mockData/);
+  assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
   assert.doesNotMatch(
     calendarRouteSource,
-    /@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|calendar_items|calendar_assignments|assignment_responses/i,
+    /@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|calendar_items|calendar_assignments|assignment_responses|getCalendarItemsByWeek/i,
   );
 
   const helperReadiness = describeCalendarReadModelHelper();

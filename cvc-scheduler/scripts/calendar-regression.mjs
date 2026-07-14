@@ -1,3 +1,9 @@
+import nextEnv from "@next/env";
+import { createBrowserClient } from "@supabase/ssr";
+import { randomBytes, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 import { chromium } from "playwright";
 import {
   createPreviewUrl,
@@ -5,6 +11,12 @@ import {
   resolvePreviewBrowserExecutable,
 } from "./preview-config.mjs";
 
+const { loadEnvConfig } = nextEnv;
+loadEnvConfig(process.cwd());
+
+const root = process.cwd();
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 
@@ -13,18 +25,357 @@ const mobileViewport = { width: 390, height: 844 };
 const projectWeekLabel = "Jan 12 to Jan 18, 2026";
 const previousWeekLabel = "Jan 5 to Jan 11, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
-// Accessible names are the deliberate interaction contract for the fixed Belgrade mock.
+// Accessible names are the deliberate interaction contract for the persisted 12.11 cutover fixtures.
 const weekItemLabel =
   "Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
 const listItemLabel =
-  "Site support week, Project window · Mon Jan 12 through Sat Jan 17, 2 of 3 helpers, General Volunteers";
+  "Site support week, Project window · Mon Jan 12 through Sat Jan 17, 0 of 0 helpers, General Volunteers";
 const monthItemLabel =
   "Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
+
+const secrets = new Set();
+const fixture = {
+  namespace: `qa-12-11-calendar-${randomUUID()}`,
+  workspaceId: randomUUID(),
+  calendarOnlyWorkspaceId: randomUUID(),
+  calendarOnlyContactId: randomUUID(),
+  fullContactId: randomUUID(),
+  calendarOnlyGrantId: randomUUID(),
+  fullGrantId: randomUUID(),
+  generalTaskPresetId: randomUUID(),
+  foodTaskPresetId: randomUUID(),
+  volunteerIds: Array.from({ length: 8 }, () => randomUUID()),
+  questionnaireIds: Array.from({ length: 8 }, () => randomUUID()),
+  calendarItemIds: {
+    gate: randomUUID(),
+    siteWindow: randomUUID(),
+    signage: randomUUID(),
+    lunch: randomUUID(),
+    coffee: randomUUID(),
+    doorCheck: randomUUID(),
+    supplyRun: randomUUID(),
+  },
+  assignmentIds: {
+    gate: randomUUID(),
+    signage: randomUUID(),
+    lunch: randomUUID(),
+    coffee: randomUUID(),
+    doorCheck: randomUUID(),
+    supplyRun: randomUUID(),
+  },
+  otherWorkspaceId: randomUUID(),
+  otherCalendarItemId: randomUUID(),
+};
+const authCookieSets = new Map();
+const authUserIds = [];
+let cleanupCompleted = false;
 
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function isLoopbackUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) &&
+      ["127.0.0.1", "localhost", "[::1]", "::1"].includes(parsed.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function redact(value) {
+  let message = value instanceof Error ? value.message : String(value);
+  for (const secret of secrets) {
+    if (typeof secret === "string" && secret.length > 0) {
+      message = message.replaceAll(secret, "[redacted]");
+      message = message.replaceAll(encodeURIComponent(secret), "[redacted]");
+    }
+  }
+  return message;
+}
+
+function sqlText(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function command(commandName, args, options = {}) {
+  return spawnSync(commandName, args, {
+    cwd: root,
+    encoding: "utf8",
+    windowsHide: true,
+    ...options,
+  });
+}
+
+function runPsql(containerName, sql) {
+  const result = command(
+    "docker",
+    [
+      "exec",
+      "-i",
+      containerName,
+      "psql",
+      "--no-psqlrc",
+      "-X",
+      "-qAt",
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-U",
+      "postgres",
+      "-d",
+      "postgres",
+    ],
+    { input: sql },
+  );
+  if (result.status !== 0) {
+    throw new Error(
+      `The local Calendar route fixture command failed: ${redact(result.stderr).slice(0, 800)}`,
+    );
+  }
+  return result.stdout.trim();
+}
+
+async function resolveLocalDatabaseContainer() {
+  const config = await readFile(path.join(root, "supabase", "config.toml"), "utf8");
+  const projectId = config.match(/^project_id\s*=\s*"([a-zA-Z0-9_-]+)"/m)?.[1];
+  assert(projectId, "supabase/config.toml must define a local project_id.");
+  const containerName = `supabase_db_${projectId}`;
+  const result = command("docker", ["inspect", "--format", "{{.State.Running}}", containerName]);
+  assert(
+    result.status === 0 && result.stdout.trim() === "true",
+    "Local Supabase is not running. Start it with `npx supabase start` with output redirected/redacted.",
+  );
+  return containerName;
+}
+
+async function verifyLocalPreflight() {
+  assert(supabaseUrl && anonKey, "Local public Supabase environment values are missing.");
+  assert(isLoopbackUrl(supabaseUrl), "Calendar route QA accepts only local Supabase.");
+  assert(isLoopbackUrl(baseUrl), "Calendar route QA accepts only a loopback production preview.");
+  secrets.add(anonKey);
+
+  const health = await fetch(new URL("/auth/v1/health", supabaseUrl), {
+    headers: { apikey: anonKey },
+    redirect: "error",
+  });
+  assert(health.ok, "Local Supabase Auth is unavailable.");
+}
+
+async function createAuthenticatedContact(label) {
+  const email = `qa-12-11-${label}-${randomUUID()}@example.invalid`;
+  const password = `${randomBytes(24).toString("base64url")}aA1!`;
+  const cookieJar = new Map();
+  secrets.add(email);
+  secrets.add(password);
+
+  const client = createBrowserClient(supabaseUrl, anonKey, {
+    isSingleton: false,
+    cookies: {
+      getAll() {
+        return Array.from(cookieJar.values()).map(({ name, value }) => ({
+          name,
+          value,
+        }));
+      },
+      setAll(cookies) {
+        for (const cookie of cookies) {
+          if (cookie.value) cookieJar.set(cookie.name, cookie);
+          else cookieJar.delete(cookie.name);
+        }
+      },
+    },
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: true,
+    },
+  });
+
+  const signup = await client.auth.signUp({ email, password });
+  assert(!signup.error && signup.data.user, "Disposable local Auth user creation failed.");
+  let session = signup.data.session;
+  if (!session) {
+    const signin = await client.auth.signInWithPassword({ email, password });
+    assert(!signin.error && signin.data.session, "Disposable local Auth sign-in failed.");
+    session = signin.data.session;
+  }
+  const currentUser = await client.auth.getUser();
+  assert(
+    currentUser.data.user?.id === signup.data.user.id,
+    `Disposable Auth cookie jar resolved the wrong user for ${label}.`,
+  );
+  authUserIds.push(signup.data.user.id);
+  secrets.add(session.access_token);
+  secrets.add(session.refresh_token);
+  for (const cookie of cookieJar.values()) secrets.add(cookie.value);
+  assert(cookieJar.size > 0, "Disposable Auth did not produce the SSR session cookie.");
+  authCookieSets.set(label, cookieJar);
+  return signup.data.user.id;
+}
+
+async function applyAuthCookies(context, label) {
+  const cookieJar = authCookieSets.get(label);
+  assert(cookieJar?.size > 0, `Missing auth cookies for ${label}.`);
+  const target = new URL(baseUrl);
+  await context.addCookies(
+    Array.from(cookieJar.values()).map((cookie) => ({
+      domain: target.hostname,
+      httpOnly: false,
+      name: cookie.name,
+      path: "/",
+      sameSite: "Lax",
+      secure: target.protocol === "https:",
+      value: cookie.value,
+    })),
+  );
+}
+
+function questionnaireRows() {
+  return fixture.questionnaireIds
+    .map((id, index) => {
+      const answers = JSON.stringify({
+        aboutYou: {
+          name: `QA 12.11 Volunteer ${index + 1}`,
+          email: `qa-12-11-volunteer-${index + 1}@example.invalid`,
+          phone: "+1 555 120 1100",
+          congregation: "QA Congregation",
+        },
+        availability: { weekdays: ["Tuesday"] },
+        skillsExperience: { categories: ["General"] },
+        emergencyContact: {
+          name: "QA Private Emergency",
+          phone: "+1 555 120 1199",
+        },
+        otherWaysToHelp: { notes: "QA private intake marker" },
+      });
+      return `('${id}'::uuid, '${fixture.workspaceId}'::uuid, 'submitted', 'admin_entry', 1, ${sqlText(answers)}::jsonb)`;
+    })
+    .join(",\n");
+}
+
+function volunteerRows() {
+  return fixture.volunteerIds
+    .map(
+      (id, index) =>
+        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', 'QA 12.11 Volunteer ${index + 1}', 'qa-12-11-volunteer-${index + 1}@example.invalid', null, 'QA Congregation', 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
+    )
+    .join(",\n");
+}
+
+function assignmentRows(fullUserId) {
+  const rows = [
+    [fixture.assignmentIds.gate, fixture.calendarItemIds.gate, fixture.volunteerIds[0], "active"],
+    [fixture.assignmentIds.signage, fixture.calendarItemIds.signage, fixture.volunteerIds[1], "active"],
+    [fixture.assignmentIds.lunch, fixture.calendarItemIds.lunch, fixture.volunteerIds[2], "active"],
+    [fixture.assignmentIds.coffee, fixture.calendarItemIds.coffee, fixture.volunteerIds[3], "active"],
+    [fixture.assignmentIds.doorCheck, fixture.calendarItemIds.doorCheck, fixture.volunteerIds[4], "active"],
+    [fixture.assignmentIds.supplyRun, fixture.calendarItemIds.supplyRun, fixture.volunteerIds[5], "active"],
+  ];
+  return rows
+    .map(
+      ([assignmentId, itemId, volunteerId, lifecycle]) =>
+        `('${assignmentId}'::uuid, '${fixture.workspaceId}'::uuid, '${itemId}'::uuid, '${volunteerId}'::uuid, '${lifecycle}', null, '${fullUserId}'::uuid)`,
+    )
+    .join(",\n");
+}
+
+function responseRows(fullUserId) {
+  const rows = [
+    [fixture.assignmentIds.gate, "confirmed"],
+    [fixture.assignmentIds.signage, "confirmed"],
+    [fixture.assignmentIds.lunch, "needs_response"],
+    [fixture.assignmentIds.coffee, "confirmed"],
+    [fixture.assignmentIds.doorCheck, "confirmed"],
+    [fixture.assignmentIds.supplyRun, "confirmed"],
+  ];
+  return rows
+    .map(([assignmentId, status]) => {
+      const respondedAt = status === "needs_response" ? "null" : "now()";
+      return `('${randomUUID()}'::uuid, '${fixture.workspaceId}'::uuid, '${assignmentId}'::uuid, '${status}', 'project_contact', ${respondedAt}, '${fullUserId}'::uuid)`;
+    })
+    .join(",\n");
+}
+
+async function createFixtures(containerName) {
+  const fullUserId = await createAuthenticatedContact("full");
+  const calendarOnlyUserId = await createAuthenticatedContact("calendar-only");
+
+  runPsql(containerName, `begin;
+insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
+values
+  ('${fixture.workspaceId}'::uuid, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.11 Calendar Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
+  ('${fixture.calendarOnlyWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-calendar-only`)}, 'QA 12.11 Calendar Only Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
+  ('${fixture.otherWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.11 Other Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false);
+insert into public.project_contacts (id, auth_user_id, status)
+values
+  ('${fixture.fullContactId}'::uuid, '${fullUserId}'::uuid, 'active'),
+  ('${fixture.calendarOnlyContactId}'::uuid, '${calendarOnlyUserId}'::uuid, 'active');
+insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status)
+values
+  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view']::text[], 'active'),
+  ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.calendarOnlyWorkspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
+insert into public.questionnaire_submissions (id, workspace_id, status, source, questionnaire_version, answers)
+values ${questionnaireRows()};
+insert into public.volunteer_profiles (
+  id, workspace_id, source_submission_id, lifecycle, readiness_status, full_name,
+  email, phone, congregation, preferred_contact_method, availability_snapshot,
+  skills_help_snapshot, profile_notes
+) values ${volunteerRows()};
+insert into public.task_presets (
+  id, workspace_id, name, description, task_type, default_needed_count, volunteer_visible,
+  is_system_preset, custom_field_definitions, lifecycle
+) values
+  ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.11 General', null, 'general', 1, true, false, '[]'::jsonb, 'active'),
+  ('${fixture.foodTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.11 Food', null, 'food', 1, true, false, '[]'::jsonb, 'active');
+insert into public.calendar_items (
+  id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
+  schedule_kind, start_date, end_date, start_time, end_time, timezone,
+  needed_count, schedule_notes, custom_values, lifecycle
+) values
+  ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Gate attendant', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, 'Safe gate note', '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.siteWindow}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Site support week', 'general', 'multi_day_window', '2026-01-12', '2026-01-17', null, null, 'America/Denver', 0, 'Safe project window note', '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.signage}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Room signage labels', 'general', 'timed', '2026-01-15', null, '10:00:00', '12:00:00', 'America/Denver', 2, 'Safe signage note', '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.lunch}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.foodTaskPresetId}'::uuid, 'Lunch handoff', 'food', 'timed', '2026-01-14', null, '11:00:00', '12:00:00', 'America/Denver', 1, 'Safe lunch note', '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.coffee}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Coffee station', 'general', 'timed', '2026-01-14', null, '08:00:00', '09:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.doorCheck}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Door check', 'general', 'timed', '2026-01-14', null, '09:00:00', '10:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
+  ('${fixture.calendarItemIds.supplyRun}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Supply run', 'general', 'timed', '2026-01-14', null, '13:00:00', '14:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
+  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.11 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active');
+insert into public.calendar_assignments (
+  id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
+) values ${assignmentRows(fullUserId)};
+insert into public.assignment_responses (
+  id, workspace_id, assignment_id, response_status, response_source, responded_at, updated_by_auth_user_id
+) values ${responseRows(fullUserId)};
+commit;`);
+}
+
+async function cleanupFixtures(containerName) {
+  const authUserDeletes = authUserIds
+    .map((id) => `delete from auth.users where id = '${id}'::uuid;`)
+    .join("\n");
+  const residue = runPsql(containerName, `begin;
+delete from public.assignment_responses where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
+delete from public.calendar_assignments where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
+delete from public.calendar_items where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
+delete from public.task_presets where workspace_id = '${fixture.workspaceId}'::uuid;
+delete from public.volunteer_profiles where workspace_id = '${fixture.workspaceId}'::uuid;
+delete from public.questionnaire_submissions where workspace_id = '${fixture.workspaceId}'::uuid;
+delete from public.workspace_contact_grants where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyWorkspaceId}'::uuid);
+delete from public.project_contacts where id in ('${fixture.fullContactId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid);
+delete from public.workspaces where id in ('${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyWorkspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
+${authUserDeletes}
+commit;
+select
+  (select count(*) from public.workspaces where workspace_key like '${fixture.namespace}%') +
+  (select count(*) from public.calendar_items where title_snapshot like 'QA 12.11%') +
+  (select count(*) from auth.users where email like 'qa-12-11-%@example.invalid');`);
+  assert(residue === "0", `Calendar route fixture cleanup left residue count ${residue}.`);
+  cleanupCompleted = true;
 }
 
 function calendarUrl() {
@@ -125,7 +476,7 @@ function watchPageErrors(page) {
   return failures;
 }
 
-async function loadCalendar(page) {
+async function loadCalendar(page, { expectControls = true } = {}) {
   const response = await page.goto(calendarUrl(), {
     waitUntil: "domcontentloaded",
     timeout: 30_000,
@@ -133,7 +484,9 @@ async function loadCalendar(page) {
 
   assert(response?.ok(), `Calendar returned ${response?.status() ?? "no response"}`);
   await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
-  await page.getByRole("button", { name: "Week", exact: true }).waitFor();
+  if (expectControls) {
+    await page.getByRole("button", { name: "Week", exact: true }).waitFor();
+  }
 }
 
 async function assertUnique(locator, label) {
@@ -325,6 +678,7 @@ async function closeWithEscape(page, dialogName, triggerLabel) {
 
 async function runDesktop(browser) {
   const context = await browser.newContext({ viewport: desktopViewport });
+  await applyAuthCookies(context, "full");
   const page = await context.newPage();
   const errors = watchPageErrors(page);
   const step = createStepRunner("desktop", page);
@@ -614,12 +968,12 @@ async function runDesktop(browser) {
       await dialog.waitFor({ state: "hidden" });
       await waitForFocusLabel(page, "Open calendar filters");
       await assertClosedSurfaceInert(page, "Close calendar filters");
-      await page.getByText("4 visible items - Food", { exact: true }).waitFor();
+      await page.getByText("1 visible item - Food", { exact: true }).waitFor();
       assert(
         (await page
           .locator('[data-testid="calendar-list-view"] [role="listitem"] > button')
-          .count()) === 4,
-        "Food filter should leave four List rows",
+          .count()) === 1,
+        "Food filter should leave one List row",
       );
       await activateWithKeyboard(
         await assertUnique(
@@ -944,6 +1298,7 @@ async function runDesktop(browser) {
 
 async function runMobile(browser) {
   const context = await browser.newContext({ viewport: mobileViewport });
+  await applyAuthCookies(context, "full");
   const page = await context.newPage();
   const errors = watchPageErrors(page);
   const step = createStepRunner("mobile", page);
@@ -1004,7 +1359,7 @@ async function runMobile(browser) {
           rows: list?.querySelectorAll('[role="listitem"] > button').length ?? 0,
         };
       });
-      assert(mobileListAudit.rows === 15, "Mobile List should retain all 15 rows");
+      assert(mobileListAudit.rows === 7, "Mobile List should retain all 7 persisted rows");
       assert(
         mobileListAudit.nestedControls === 0,
         "Mobile List should not contain nested interactive controls",
@@ -1027,8 +1382,7 @@ async function runMobile(browser) {
       );
       const overflow = await assertUnique(
         page.getByRole("button", {
-          name: "Switch to Day view for Wed Jan 14 to show 3 more calendar items",
-          exact: true,
+          name: /^Switch to Day view for Wed Jan 14 to show \d+ more calendar item/,
         }),
         "Mobile Month overflow button",
       );
@@ -1173,6 +1527,53 @@ async function runMobile(browser) {
   }
 }
 
+async function runUnavailable(browser) {
+  const context = await browser.newContext({ viewport: desktopViewport });
+  await applyAuthCookies(context, "calendar-only");
+  const page = await context.newPage();
+  const errors = watchPageErrors(page);
+  const step = createStepRunner("unavailable", page);
+  page.setDefaultTimeout(7_500);
+
+  try {
+    await step("under-capability Calendar fails closed", async () => {
+      await loadCalendar(page, { expectControls: false });
+      await page
+        .getByText("Calendar is unavailable right now", { exact: true })
+        .waitFor();
+      assert(
+        (await page.getByRole("button", { name: weekItemLabel, exact: true }).count()) === 0,
+        "Unavailable Calendar must not reveal persisted item controls",
+      );
+      assert(
+        (await page.getByText("Gate attendant", { exact: true }).count()) === 0,
+        "Unavailable Calendar must not reveal item labels",
+      );
+      const bodyText = await page.locator("body").innerText();
+      for (const forbidden of [
+        "Supabase",
+        "SQL",
+        "RPC",
+        "policy",
+        "workspace_contact_grants",
+        "calendar_assignments",
+        "assignment_responses",
+        "access token",
+        "refresh token",
+        "service role",
+      ]) {
+        assert(!bodyText.includes(forbidden), `Unavailable state leaked ${forbidden}`);
+      }
+    });
+
+    await step("unavailable has no browser errors", async () => {
+      assert(errors.length === 0, errors.join("\n"));
+    });
+  } finally {
+    await context.close();
+  }
+}
+
 async function assertPreviewAvailable() {
   const target = calendarUrl();
 
@@ -1221,21 +1622,27 @@ async function launchBrowser() {
 
 async function main() {
   console.log(`Calendar regression target: ${calendarUrl()}`);
-  await assertPreviewAvailable();
-
-  const browser = await launchBrowser();
+  await verifyLocalPreflight();
+  const containerName = await resolveLocalDatabaseContainer();
+  let browser;
 
   try {
+    await createFixtures(containerName);
+    await assertPreviewAvailable();
+    browser = await launchBrowser();
+    await runUnavailable(browser);
     await runDesktop(browser);
     await runMobile(browser);
   } finally {
-    await browser.close();
+    await browser?.close();
+    await cleanupFixtures(containerName);
   }
+  assert(cleanupCompleted, "Calendar route browser fixture cleanup did not complete.");
 
   console.log("Calendar interaction regression passed.");
 }
 
 main().catch((error) => {
-  console.error(`\nCalendar interaction regression failed.\n${errorMessage(error)}`);
+  console.error(`\nCalendar interaction regression failed.\n${redact(errorMessage(error))}`);
   process.exitCode = 1;
 });

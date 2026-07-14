@@ -16,6 +16,28 @@ export type ProjectContactGrantState = Readonly<{
   reason: string;
 }>;
 
+export async function readAuthenticatedProjectContactIdWithClient(
+  supabase: AppSupabaseClient,
+  authenticatedUserId: string,
+): Promise<string | null> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user || user.id !== authenticatedUserId) return null;
+
+  const { data, error } = await supabase
+    .from("project_contacts")
+    .select("id")
+    .eq("auth_user_id", authenticatedUserId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error || !data?.id || typeof data.id !== "string") return null;
+  return data.id;
+}
+
 /**
  * Loads only active workspace-read grants visible through the caller's RLS
  * session. The explicit user id must match the verified session identity.

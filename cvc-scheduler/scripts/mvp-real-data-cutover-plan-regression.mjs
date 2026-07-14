@@ -259,7 +259,12 @@ for (const file of appAndComponentFiles) {
       source,
     )
   ) {
-    persistedCutoverImporters.push(relative);
+    if (
+      relative !== "app/admin/calendar/page.tsx" ||
+      !source.includes("@/lib/calendar/routeRead.server")
+    ) {
+      persistedCutoverImporters.push(relative);
+    }
   }
   if (/SUPABASE_SERVICE_ROLE_KEY|serviceRole|createServiceRole/i.test(source)) {
     serviceRoleMarkers.push(relative);
@@ -272,7 +277,6 @@ assert.deepEqual(persistedCutoverImporters, []);
 assert.deepEqual(serviceRoleMarkers, []);
 
 for (const [relative, requiredMarker] of [
-  ["app/admin/calendar/page.tsx", "@/lib/mockData"],
   ["app/admin/tasks/page.tsx", "@/lib/mockData"],
   ["app/admin/volunteers/page.tsx", "@/lib/mockData"],
   ["app/admin/announcements/page.tsx", "@/lib/mockData"],
@@ -288,6 +292,13 @@ for (const [relative, requiredMarker] of [
   assert.match(source, new RegExp(requiredMarker.replace("/", "\\/")));
 }
 
+const calendarRouteSource = await readFile(
+  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  "utf8",
+);
+assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
+assert.doesNotMatch(calendarRouteSource, /@\/lib\/mockData|getCalendarItemsByWeek/);
+
 assert.match(packageSource, /"test:mvp-cutover-plan": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/mvp-real-data-cutover-plan-regression\.mjs"/);
 assert.match(readinessSource, /12\.1 MVP real-data cutover sequencing review/i);
 assert.match(readinessSource, /12\.2 Persisted Calendar Read Model Contract/);
@@ -302,4 +313,4 @@ assert.match(localSetupSource, /Redirect Supabase start\/status output to a temp
 assert.match(localSetupSource, /Redact key-like values before displaying diagnostics/);
 
 console.log("MVP real-data cutover sequencing checks passed.");
-console.log("Confirmed no route cutover, no mock-to-real mixing, and 12.2 Calendar read-model contract as next slice.");
+console.log("Confirmed the 12.1 cutover plan remains intact while /admin/calendar uses the approved 12.11 read adapter.");

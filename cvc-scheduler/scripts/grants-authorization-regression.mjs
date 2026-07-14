@@ -64,8 +64,12 @@ assert.match(grantsReader, /^import "server-only";/);
 assert.match(workspacesReader, /^import "server-only";/);
 assert.deepEqual(
   [...grantsReader.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
-  ["workspace_contact_grants"],
+  ["project_contacts", "workspace_contact_grants"],
 );
+assert.match(grantsReader, /readAuthenticatedProjectContactIdWithClient/);
+assert.match(grantsReader, /\.select\("id"\)/);
+assert.match(grantsReader, /\.eq\("auth_user_id", authenticatedUserId\)/);
+assert.match(grantsReader, /\.eq\("status", "active"\)/);
 assert.deepEqual(
   [...workspacesReader.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
   ["workspaces"],

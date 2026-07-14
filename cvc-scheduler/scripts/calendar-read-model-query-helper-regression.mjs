@@ -142,7 +142,8 @@ for (const filePath of [...appFiles, ...componentFiles]) {
 assert.equal(calendarRouteSource.includes("readModelQuery.server"), false);
 assert.equal(calendarRouteSource.includes("readCalendarReadModelWithClient"), false);
 assert.equal(calendarRouteSource.includes("readModel.server"), false);
-assert.match(calendarRouteSource, /MOCK_CALENDAR_ITEMS|mock/i);
+assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
+assert.doesNotMatch(calendarRouteSource, /MOCK_CALENDAR_ITEMS|getCalendarItemsByWeek|demoProjectId/i);
 assert.equal(packageSource.includes('"test:calendar-read-model-query-helper"'), true);
 
 for (const docsSource of [

@@ -1,5 +1,21 @@
 # Project History
 
+## Iteration 12.11 - Calendar Persisted Read Route Cutover Implementation
+
+Summary:
+- Converted `/admin/calendar` from mock Calendar item truth to the reviewed persisted Calendar read model while keeping the route narrow, read-only, dynamic/no-store, and reversible.
+- Split the existing Calendar UI into `components/CalendarClient.tsx` and replaced the route with a server boundary that calls `lib/calendar/routeRead.server.ts`.
+- The route read boundary derives the authenticated project-contact session, contact id, active workspace/grant context, strict `calendar.view` plus `assignments.view` capabilities, trusted workspace timezone, and a bounded initial Calendar read range server-side before calling the 12.6 dependency-injected query helper.
+- The existing Calendar shell, Day/Week/Month/List controls, date navigation, filters, inspector behavior, mobile patterns, and preview-only creation surfaces remain in place.
+- Implemented the reviewed four route states: `ready_with_items`, `ready_empty`, `unavailable`, and `error`. Empty remains a successful authorized zero-item state, unavailable remains distinct from unexpected error, and neither state falls back to mock Calendar items.
+- Added `npm run test:calendar-route-cutover` and `scripts/calendar-route-cutover-regression.mjs` to prove the route uses the reviewed persisted read boundary, remains dynamic/no-store, introduces no direct broad queries or `select("*")`, keeps all four states explicit, forbids mock fallback/mixing, and adds no Calendar write, assignment picker/mutation, assignment-detail link, response-link activation, service-role path, seed data, migration, or hosted validation.
+- Updated the Calendar browser regression to create disposable local persisted fixtures, authenticate project contacts, verify persisted item rendering, assignment-derived counts, empty and under-capability unavailable states, no mock item leakage, no unsafe field leakage, desktop/mobile interactions, and cleanup.
+- Assignment-derived counts continue to come from `calendar_assignments` and current `assignment_responses`, not Calendar item counters, mock `filledCount`, assigned volunteer arrays, or client-side mock counters.
+- Calendar creation/edit/assignment actions remain preview-only or unimplemented; no persisted write behavior changed.
+- No assignment-detail entry links, response-link reveal/copy/delivery, public lookup, remembered-device behavior, service-role usage, seed data, migration, generated type change, hosted validation, production data validation, or mock/persisted mixing was added.
+- Hosted validation was skipped because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed; local disposable validation and browser proof covered the route cutover.
+- Recommended next slice: `12.12 Calendar Persisted Read Cutover Stabilization`, keeping the work read-only and focused on proving/refining the first cutover before any Calendar writes or other route cutovers.
+
 ## Iteration 12.10 - Calendar Route Cutover Empty/Unavailable State Prototype
 
 Summary:
