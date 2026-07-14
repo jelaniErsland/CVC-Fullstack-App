@@ -134,6 +134,23 @@ The future route must not map volunteer contact values, emergency contacts, ques
 
 If 12.9 remains clean, the recommended next slice is `12.10 Calendar Route Cutover Empty/Unavailable State Prototype`; otherwise revise 12.9 first. Do not implement `/admin/calendar` persisted reads until the future empty/unavailable state prototype proves the user-facing state boundary without mixing persisted and mock truth.
 
+## 12.10 Calendar Route Cutover Empty/Unavailable State Prototype
+
+Iteration 12.10 adds `lib/calendar/routeCutoverStatePrototype.server.ts` and `npm run test:calendar-route-cutover-state-prototype` as a server-only, route-unused UI-state prototype for the future `/admin/calendar` persisted read cutover. It is not the actual Calendar route cutover, not UI integration into `/admin/calendar`, not a product route loader, not a live product query, not hosted validation, not Calendar mutation, not an assignment picker, not delivery, and not response-link activation.
+
+The prototype defines four explicit future route states:
+
+- `ready_with_items`: a successful authorized persisted read with one or more projected Calendar items. The future route should continue rendering the normal Day, Week, Month, and List Calendar experience with minimal event blocks.
+- `ready_empty`: a successful authorized persisted read with zero Calendar items in the selected bounded range. Empty is not unavailable and not an error. The future route should preserve the Calendar shell, view controls, date navigation, filters, and preview-only creation behavior while showing calm copy that there are no scheduled items in the selected range.
+- `unavailable`: an intentional fail-closed prerequisite state for missing or unavailable server-side access/workspace/capability/range conditions. It remains distinct from unexpected errors and must not expose raw Auth, grant, workspace, Supabase, SQL, RPC, policy, or capability details.
+- `error`: an unexpected persisted-read failure after prerequisites were satisfied. It remains distinct from unavailable and must render only generic, non-technical, credential-free copy.
+
+Every state prohibits silent mock fallback, mock/persisted mixing, raw internal diagnostics, raw provider errors, stack traces, table/policy/query details, tokens, response URLs, volunteer contact values, questionnaire answers, emergency contact values, and unrelated row data. Empty/unavailable/error handling is required to fit inside the existing Calendar page rather than replacing it with an unrelated full-page design.
+
+`/admin/calendar` remains mock-backed and behaviorally unchanged after 12.10. The 12.6 query helper, 12.8 dry-run harness, 12.9 final preflight, and 12.10 state prototype all remain route-unused. Response-link activation remains paused after 11.50.
+
+If 12.10 remains clean, the recommended next slice is `12.11 Calendar Persisted Read Route Cutover Implementation`, limited to a narrow read-only route cutover that uses the existing static/dry-run/browser guardrails. If 12.10 reveals any readiness issue, revise the state prototype before touching the route.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

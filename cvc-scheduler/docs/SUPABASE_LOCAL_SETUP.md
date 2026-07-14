@@ -203,6 +203,14 @@ npm run test:calendar-route-cutover-final-preflight
 
 This command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, or local fixture creation. It proves `lib/calendar/routeCutoverFinalPreflight.server.ts` is server-only and route-unused, no route/component imports the final preflight, readiness policy, dry-run harness, or query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies the final go/no-go checklist, future empty/unavailable/error states, UI preservation contract, safe mapping allowlist, unsafe field denylist, mock-to-real boundary, rollback requirements, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the redirected/redacted Supabase diagnostic guardrail.
 
+After 12.10, run the Calendar route cutover state prototype static guardrail when changing future persisted-read empty/unavailable/error state planning:
+
+```powershell
+npm run test:calendar-route-cutover-state-prototype
+```
+
+This command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, or local fixture creation. It proves `lib/calendar/routeCutoverStatePrototype.server.ts` is server-only and route-unused, no route/component imports the state prototype, final preflight, readiness policy, dry-run harness, or query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies the explicit `ready_with_items`, `ready_empty`, `unavailable`, and `error` states; confirms empty is not unavailable/error; keeps unavailable distinct from unexpected error; preserves the Calendar shell/control contract; forbids mock fallback and mock/persisted mixing; and protects against raw diagnostic or unsafe user-facing output.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

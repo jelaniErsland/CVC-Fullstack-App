@@ -1,5 +1,33 @@
 # Project History
 
+## Iteration 12.10 - Calendar Route Cutover Empty/Unavailable State Prototype
+
+Summary:
+- Added `lib/calendar/routeCutoverStatePrototype.server.ts` as a server-only, route-unused typed state prototype for future `/admin/calendar` persisted-read route states.
+- Defined four explicit future states: `ready_with_items`, `ready_empty`, `unavailable`, and `error`.
+- Ready with items preserves the existing Calendar Day/Week/Month/List experience. Ready empty is a successful zero-item state, not a failure. Unavailable remains a fail-closed prerequisite/access/capability state. Error remains an unexpected safe failure after prerequisites.
+- The prototype preserves the Calendar shell, view controls, date navigation, filters, and preview-only creation behavior where safe while forbidding mock fallback, mock/persisted mixing, raw diagnostics, unsafe fields, Calendar writes, assignment picker, assignment-detail links, delivery, public lookup, service-role usage, seed data, hosted validation, production data validation, and response-link activation.
+
+Changed files:
+- `lib/calendar/routeCutoverStatePrototype.server.ts`
+- `scripts/calendar-route-cutover-state-prototype-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/PROJECT_HISTORY.md`
+
+Verification:
+- `npm run test:calendar-route-cutover-state-prototype` added for focused static state-prototype coverage.
+- Full 12.10 verification is recorded in the final implementation report.
+
+Result:
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+- No app route/component imports the state prototype, final preflight module, dry-run harness, readiness policy, or query helper.
+- No route was converted from mock Calendar data to persisted Calendar data.
+
 ## Iteration 12.9 - Calendar Route Cutover Final Preflight
 
 Summary:
