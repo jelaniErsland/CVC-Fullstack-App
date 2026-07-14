@@ -31,6 +31,7 @@
     "test:calendar-read-model-query-helper": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-query-helper-regression.mjs",
     "test:calendar-route-cutover-readiness": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-route-cutover-readiness-regression.mjs",
     "test:calendar-route-cutover-dry-run": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-route-cutover-dry-run-regression.mjs",
+    "test:calendar-route-cutover-final-preflight": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-route-cutover-final-preflight-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",

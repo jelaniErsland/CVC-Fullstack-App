@@ -195,6 +195,14 @@ npm run test:calendar-route-cutover-dry-run
 
 This command requires no preview server, hosted Supabase target, service-role key, or raw Supabase CLI output. It proves `lib/calendar/routeCutoverDryRun.server.ts` is server-only and route-unused, no route/component imports the dry-run harness, readiness policy, or query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies bounded Day/Week/Month/List range derivation, fail-closed missing Auth/workspace/capability/range states before query, dependency-injected query-helper usage, explicit selectors with no `select("*")`, safe dry-run result states, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
 
+After 12.9, run the Calendar route cutover final preflight static guardrail when changing final cutover go/no-go planning:
+
+```powershell
+npm run test:calendar-route-cutover-final-preflight
+```
+
+This command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, or local fixture creation. It proves `lib/calendar/routeCutoverFinalPreflight.server.ts` is server-only and route-unused, no route/component imports the final preflight, readiness policy, dry-run harness, or query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies the final go/no-go checklist, future empty/unavailable/error states, UI preservation contract, safe mapping allowlist, unsafe field denylist, mock-to-real boundary, rollback requirements, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the redirected/redacted Supabase diagnostic guardrail.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

@@ -1,5 +1,33 @@
 # Project History
 
+## Iteration 12.9 - Calendar Route Cutover Final Preflight
+
+Summary:
+- Added `lib/calendar/routeCutoverFinalPreflight.server.ts` as a server-only, route-unused final preflight policy for a later `/admin/calendar` persisted read implementation slice.
+- The preflight defines the only candidate scope as read-only `/admin/calendar` persisted display items, with no Calendar writes, assignment mutations, assignment picker, assignment-detail links, response-link activation, delivery, public lookup, remembered-device behavior, seed data, service-role usage, hosted validation, production data validation, or mock-to-real mixing.
+- It records the required future route chain, strict go/no-go checklist, future empty/unavailable/error state contract, UI preservation requirements, safe mapping allowlist, unsafe field denylist, mock-to-real route boundary, and rollback plan.
+- The recommended next slice is `12.10 Calendar Route Cutover Empty/Unavailable State Prototype` only if 12.9 remains clean; otherwise revise the final preflight first.
+
+Changed files:
+- `lib/calendar/routeCutoverFinalPreflight.server.ts`
+- `scripts/calendar-route-cutover-final-preflight-regression.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/PROJECT_HISTORY.md`
+
+Verification:
+- `npm run test:calendar-route-cutover-final-preflight` added for focused static preflight coverage.
+- Full 12.9 verification is recorded in the final implementation report.
+
+Result:
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+- No app route/component imports the final preflight module, dry-run harness, readiness policy, or query helper.
+- No route was converted from mock Calendar data to persisted Calendar data.
+
 ## Volunteer Foundation
 
 Summary:
