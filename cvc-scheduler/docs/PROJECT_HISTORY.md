@@ -4503,6 +4503,41 @@ Limitations:
 Next recommended step:
 - Keep disabled result rendering unimplemented until a later reviewed slice decides whether to add credential-free disabled result copy or proceed toward an active-success review with final approval, audited reveal proof, browser/log proof, and post-success-only manual copy.
 
+## Iteration 12.8 - Calendar Route Cutover Dry-Run Harness
+
+Summary:
+- Added `lib/calendar/routeCutoverDryRun.server.ts` as a server-only, route-unused dry-run harness for the future `/admin/calendar` persisted read data path.
+- The dry-run accepts only dependency-injected inputs: an injected Supabase-like client, trusted workspace/contact/grant context, trusted workspace timezone, period kind, anchor date, optional safe filters, and explicit `dryRun` execution mode.
+- It models the future server-side route chain without being imported by the route: verified Auth/session, trusted workspace/contact/grant context, trusted capabilities, server-derived bounded Day/Week/Month/List ranges, the 12.6 query helper, and safe 12.3 projection.
+- Missing Auth, missing workspace/contact/grant context, missing `calendar.view`, missing `assignments.view`, invalid period/range, and invalid timezone fail closed before query. Role/title strings alone do not authorize reads, and raw grants/capabilities/provider errors/database rows are not returned.
+- Extended `scripts/calendar-read-model-local-data-validation.mjs` so the existing disposable local fixture flow also exercises the dry-run harness and keeps zero-residue cleanup.
+
+Changed files:
+- `lib/calendar/routeCutoverDryRun.server.ts`
+- `scripts/calendar-route-cutover-dry-run-regression.mjs`
+- `scripts/calendar-read-model-local-data-validation.mjs`
+- `package.json`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- `npm run test:calendar-route-cutover-dry-run` proves the dry-run module exists, is server-only and route-unused, derives bounded period ranges, fails closed before query for missing Auth/workspace/capability/range states, keeps the query helper dependency-injected and route-unused, uses explicit selectors with no `select("*")`, returns safe state/items/summary only, and keeps `/admin/calendar` mock-only.
+- `npm run test:calendar-read-model:local` now validates the dry-run against disposable local persisted row shapes in addition to the pure helper and query helper, then cleans fixtures with zero residue.
+- `npm run test:calendar-route-cutover-readiness` keeps the 12.7 readiness review intact.
+- Hosted validation was intentionally skipped because no migration, generated type, RPC, hosted script, hosted behavior, product route query, or route cutover changed.
+
+Result:
+- `/admin/calendar` remains mock-only and behaviorally unchanged.
+- No app route/component imports the dry-run harness, readiness policy, or query helper.
+- No product route query, Calendar write, assignment picker, assignment mutation, assignment-detail entry link, response-link activation, copy UI, delivery, public lookup, remembered-device behavior, seed data, service-role usage, hosted validation, production data validation, or mock-to-real mixing was added.
+
+Next recommended step:
+- If 12.8 remains clean, consider `12.9 Calendar Route Cutover Final Preflight`. It should still verify the final route, state, browser, and rollback conditions before any actual `/admin/calendar` persisted read implementation. Otherwise revise 12.8 first.
+
 ## Iteration 12.7 - Calendar Route Cutover Readiness Review
 
 Summary:

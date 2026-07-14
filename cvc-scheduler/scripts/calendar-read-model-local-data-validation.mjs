@@ -19,6 +19,10 @@ import {
   describeCalendarReadModelQueryHelper,
   readCalendarReadModelWithClient,
 } from "../lib/calendar/readModelQuery.server.ts";
+import {
+  describeCalendarRouteCutoverDryRun,
+  runCalendarRouteCutoverDryRun,
+} from "../lib/calendar/routeCutoverDryRun.server.ts";
 import { describeMvpRealDataCutoverPlan } from "../lib/readiness/mvpRealDataCutoverPlan.server.ts";
 import { describeResponseLinkProductActionActivationCheckpoint } from "../lib/responseTokens/productActionActivationCheckpoint.server.ts";
 
@@ -178,6 +182,10 @@ async function verifyStaticBoundaries() {
     path.join(root, "lib", "calendar", "readModelQuery.server.ts"),
     "utf8",
   );
+  const dryRunSource = await readFile(
+    path.join(root, "lib", "calendar", "routeCutoverDryRun.server.ts"),
+    "utf8",
+  );
   const calendarRouteSource = await readFile(
     path.join(root, "app", "admin", "calendar", "page.tsx"),
     "utf8",
@@ -215,6 +223,11 @@ async function verifyStaticBoundaries() {
     /createClient|createServerSupabaseClient|createBrowserSupabaseClient|lib\/supabase\/server|cookies\(|from\s+["']app\/|createServiceRole|SUPABASE_SERVICE_ROLE_KEY|serviceRoleClient|serviceRolePath/i,
   );
   assert.doesNotMatch(queryHelperSource, /\.select\(\s*["']\*["']\s*\)/);
+  assert.match(dryRunSource, /^import "server-only";/);
+  assert.doesNotMatch(
+    dryRunSource,
+    /createClient|createServerSupabaseClient|createBrowserSupabaseClient|lib\/supabase\/server|cookies\(|from\s+["']app\/|createServiceRole|SUPABASE_SERVICE_ROLE_KEY|serviceRoleClient|serviceRolePath|\.from\(|\.rpc\(/i,
+  );
 
   const appAndComponentFiles = [];
   for (const directory of ["app", "components"]) {
@@ -235,8 +248,10 @@ async function verifyStaticBoundaries() {
     if (
       source.includes("readModel.server") ||
       source.includes("readModelQuery.server") ||
+      source.includes("routeCutoverDryRun.server") ||
       source.includes("buildCalendarReadModelQueryShape") ||
       source.includes("readCalendarReadModelWithClient") ||
+      source.includes("runCalendarRouteCutoverDryRun") ||
       source.includes("mapCalendarReadModelItem") ||
       source.includes("filterAndSortCalendarReadModelItems")
     ) {
@@ -246,7 +261,7 @@ async function verifyStaticBoundaries() {
       validationImporters.push(relative);
     }
     if (
-      /@\/lib\/calendar\/server|@\/lib\/calendar\/readModel|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|calendar_items|calendar_assignments|assignment_responses/i.test(
+      /@\/lib\/calendar\/server|@\/lib\/calendar\/readModel|routeCutoverDryRun|readCurrentContactCalendarItems|readCalendarItemsWithClient|readCalendarReadModelWithClient|runCalendarRouteCutoverDryRun|calendar_items|calendar_assignments|assignment_responses/i.test(
         source,
       )
     ) {
@@ -294,6 +309,20 @@ async function verifyStaticBoundaries() {
   assert.equal(queryHelperReadiness.seedDataAvailable, false);
   assert.equal(queryHelperReadiness.hostedQueryValidationAvailable, false);
 
+  const dryRunReadiness = describeCalendarRouteCutoverDryRun();
+  assert.equal(dryRunReadiness.dryRunAvailable, true);
+  assert.equal(dryRunReadiness.routePersistedReadCutoverImplemented, false);
+  assert.equal(dryRunReadiness.routeImportsReadModelQueryHelper, false);
+  assert.equal(dryRunReadiness.routeUsesDryRunHarness, false);
+  assert.equal(dryRunReadiness.mockToRealMixingAllowed, false);
+  assert.equal(dryRunReadiness.persistedWriteAvailable, false);
+  assert.equal(dryRunReadiness.assignmentPickerCutoverAvailable, false);
+  assert.equal(dryRunReadiness.assignmentDetailLinkingAvailable, false);
+  assert.equal(dryRunReadiness.responseLinkActivationReopened, false);
+  assert.equal(dryRunReadiness.serviceRoleReadAvailable, false);
+  assert.equal(dryRunReadiness.seedDataAvailable, false);
+  assert.equal(dryRunReadiness.hostedCutoverValidationAvailable, false);
+
   const contract = describeCalendarPersistedReadModelContract();
   assert.equal(contract.routeCutoverAvailable, false);
   assert.deepEqual(contract.contract.capabilityContract.assignmentDerivedCoverageCountsRequire, [
@@ -316,14 +345,17 @@ async function verifyStaticBoundaries() {
     /"test:calendar-read-model:local": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/calendar-read-model-local-data-validation\.mjs"/,
   );
   assert.match(packageSource, /"test:calendar-read-model-query-helper"/);
-  assert.match(currentStateSource, /Iteration 12\.6/);
-  assert.match(roadmapSource, /12\.7 Calendar Route Cutover Readiness Review/);
+  assert.match(packageSource, /"test:calendar-route-cutover-dry-run"/);
+  assert.match(currentStateSource, /Iteration 12\.8/);
+  assert.match(roadmapSource, /12\.9 Calendar Route Cutover Final Preflight/);
   assert.match(calendarReadinessSource, /12\.5 Route-Unused Calendar Read Model Disposable Local Data Validation/);
   assert.match(calendarReadinessSource, /12\.6 Route-Unused Calendar Read Model Query-Helper Readiness/);
-  assert.match(authReadinessSource, /12\.6 route-unused Calendar read model query-helper readiness/i);
+  assert.match(calendarReadinessSource, /12\.8 Calendar Route Cutover Dry-Run Harness/);
+  assert.match(authReadinessSource, /12\.8 Calendar route cutover dry-run harness/i);
   assert.match(localSetupSource, /test:calendar-read-model:local/);
   assert.match(localSetupSource, /test:calendar-read-model-query-helper/);
-  assert.match(projectHistorySource, /Iteration 12\.6 - Route-Unused Calendar Read Model Query-Helper Readiness/);
+  assert.match(localSetupSource, /test:calendar-route-cutover-dry-run/);
+  assert.match(projectHistorySource, /Iteration 12\.8 - Calendar Route Cutover Dry-Run Harness/);
   assert.match(localSetupSource, /Do not print raw Supabase CLI\/status\/start output/);
   assert.match(localSetupSource, /Redirect Supabase start\/status output to a temporary file/);
   assert.match(localSetupSource, /Redact key-like values before displaying diagnostics/);
@@ -870,6 +902,88 @@ async function verifyLiveRows(containerName, clientsForFixture) {
     reason: "missing_assignments_view_for_coverage",
   });
 
+  const dryRunResult = await runCalendarRouteCutoverDryRun({
+    executionMode: "dryRun",
+    client: fullClient,
+    trustedContext: {
+      authSessionPresent: true,
+      workspaceId: fixture.workspaceId,
+      actorContactId: fixture.fullContactId,
+      workspaceTimezone: "America/Denver",
+      workspaceAvailable: true,
+      grantActive: true,
+      capabilities: fullGrant.capabilities,
+      roleTitle: fullGrant.role,
+    },
+    periodKind: "month",
+    anchorDate: "2031-02-03",
+  });
+  assert.equal(dryRunResult.available, true, "Dry-run did not project local persisted rows.");
+  assert.equal(dryRunResult.state, "ready");
+  assert.equal(dryRunResult.dryRunOnly, true);
+  assert.equal(dryRunResult.routeUnused, true);
+  assert.equal(dryRunResult.items.length, 5);
+  const dryRunTimedItem = dryRunResult.items.find(
+    (item) => item.calendarItemId === fixture.timedCalendarItemId,
+  );
+  assert(dryRunTimedItem, "Dry-run did not project the timed Calendar item.");
+  assert.equal(dryRunTimedItem.coverage.assignedCount, 4);
+  assert.equal(dryRunTimedItem.coverage.confirmedCount, 3);
+  assert.equal(dryRunTimedItem.coverage.waitingOnConfirmationCount, 1);
+  assert.equal(dryRunTimedItem.coverage.deniedCount, 1);
+  assert.equal(dryRunTimedItem.coverage.unassignedCount, 2);
+  assert.equal(dryRunTimedItem.assignedFractionLabel, "4/6 assigned");
+  assert.equal(dryRunResult.summary.itemCount, 5);
+  assert.equal(dryRunResult.summary.assignedCount >= 7, true);
+  assert.equal(
+    dryRunResult.items.some((item) => item.calendarItemId === fixture.otherWorkspaceCalendarItemId),
+    false,
+    "Dry-run allowed wrong-workspace Calendar rows to bleed into output.",
+  );
+  assertCredentialFree(dryRunResult, "Calendar route cutover dry-run projection", fixture.namespace);
+
+  const dryRunCalendarOnly = await runCalendarRouteCutoverDryRun({
+    executionMode: "dryRun",
+    client: calendarOnlyClient,
+    trustedContext: {
+      authSessionPresent: true,
+      workspaceId: fixture.workspaceId,
+      actorContactId: fixture.calendarOnlyContactId,
+      workspaceTimezone: "America/Denver",
+      workspaceAvailable: true,
+      grantActive: true,
+      capabilities: calendarOnlyGrant.capabilities,
+      roleTitle: calendarOnlyGrant.role,
+    },
+    periodKind: "month",
+    anchorDate: "2031-02-03",
+  });
+  assert.equal(dryRunCalendarOnly.available, false);
+  assert.equal(dryRunCalendarOnly.state, "missing-assignments-view");
+
+  const dryRunUnauthenticated = await runCalendarRouteCutoverDryRun({
+    executionMode: "dryRun",
+    client: fullClient,
+    trustedContext: {
+      authSessionPresent: false,
+      workspaceId: fixture.workspaceId,
+      actorContactId: fixture.fullContactId,
+      workspaceTimezone: "America/Denver",
+      workspaceAvailable: true,
+      grantActive: true,
+      capabilities: fullGrant.capabilities,
+      roleTitle: fullGrant.role,
+    },
+    periodKind: "month",
+    anchorDate: "2031-02-03",
+  });
+  assert.deepEqual(dryRunUnauthenticated, {
+    available: false,
+    state: "unauthenticated",
+    dryRunOnly: true,
+    routeUnused: true,
+  });
+
   for (const forbiddenField of [
     "volunteer_contact_values",
     "emergency_contact_details",
@@ -959,7 +1073,7 @@ async function main() {
   }
   assert(cleanupCompleted, "Calendar read-model fixture cleanup did not complete.");
   console.log("Calendar read-model local data validation passed.");
-  console.log("Verified route-unused helper and query-helper compatibility with disposable local persisted row shapes and zero residue.");
+  console.log("Verified route-unused helper, query-helper, and dry-run compatibility with disposable local persisted row shapes and zero residue.");
   console.log("No response URL, bearer, verifier, token id, password, access token, refresh token, API key, service-role key, or database URL was logged.");
 }
 

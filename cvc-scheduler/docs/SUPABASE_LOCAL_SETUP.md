@@ -163,13 +163,13 @@ npm run test:calendar-read-model-helper:qa
 
 This QA command requires no preview server, hosted Supabase target, service-role key, local disposable database fixture, or raw Supabase CLI output. It exercises `lib/calendar/readModel.server.ts` with in-memory database-shaped fixtures only. It proves the helper remains server-only, route-unused, unimported by app routes/components, free of Supabase client creation, `.from`, `.rpc`, service-role/config paths, mock Calendar imports, and response-token/reveal/product-action imports. It also proves strict workspace/contact/timezone/date-range/capability behavior, scoped assignment/current-response coverage math, safe projections, pure filter/sort behavior, mock-to-real separation, false cutover/write/assignment-picker/detail-link/response-link/service-role/seed flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
 
-After 12.5, run the route-unused Calendar read model disposable local data validation when changing persisted row-shape translation or local-read compatibility. After 12.6, this same command also exercises the route-unused dependency-injected query helper against the disposable local fixture flow:
+After 12.5, run the route-unused Calendar read model disposable local data validation when changing persisted row-shape translation or local-read compatibility. After 12.6, this same command also exercises the route-unused dependency-injected query helper against the disposable local fixture flow. After 12.8, it also exercises the route-unused Calendar route cutover dry-run harness against the same disposable fixture flow:
 
 ```powershell
 npm run test:calendar-read-model:local
 ```
 
-This local command requires local Supabase and Docker but no preview server, hosted Supabase target, service-role key, generated type change, or production data. It refuses non-loopback Supabase URLs, creates disposable `qa-12-5-*` Auth/product fixtures, translates real local `calendar_items`, `task_presets`, `calendar_assignments`, and current `assignment_responses` rows into the pure 12.3 helper inputs, validates strict `calendar.view` plus `assignments.view` coverage behavior, exercises the 12.6 query helper with an injected local authenticated client, checks safe projection and wrong-workspace/wrong-item non-bleed, and removes every fixture in `finally` with a zero-residue namespace check. Do not paste raw `npx supabase start`, `npx supabase status`, or raw Supabase CLI output while preparing this command; redirect diagnostics to temp files and redact key-like values before showing excerpts.
+This local command requires local Supabase and Docker but no preview server, hosted Supabase target, service-role key, generated type change, or production data. It refuses non-loopback Supabase URLs, creates disposable `qa-12-5-*` Auth/product fixtures, translates real local `calendar_items`, `task_presets`, `calendar_assignments`, and current `assignment_responses` rows into the pure 12.3 helper inputs, validates strict `calendar.view` plus `assignments.view` coverage behavior, exercises the 12.6 query helper and 12.8 dry-run harness with an injected local authenticated client, checks safe projection and wrong-workspace/wrong-item non-bleed, and removes every fixture in `finally` with a zero-residue namespace check. Do not paste raw `npx supabase start`, `npx supabase status`, or raw Supabase CLI output while preparing this command; redirect diagnostics to temp files and redact key-like values before showing excerpts.
 
 After 12.6, run the route-unused Calendar read model query-helper static/unit guardrail when changing the dependency-injected query seam:
 
@@ -186,6 +186,14 @@ npm run test:calendar-route-cutover-readiness
 ```
 
 This command requires no preview server, hosted Supabase target, local disposable fixture, service-role key, or raw Supabase CLI output. It proves `lib/calendar/routeCutoverReadiness.server.ts` is server-only and route-unused, no route/component imports the readiness policy or 12.6 query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies future cutover requirements for dynamic/no-store server-only reads, trusted Auth/workspace/contact/capability/timezone derivation, explicit bounded Day/Week/Month/List ranges, strict `calendar.view` plus `assignments.view` coverage authorization, calm unavailable/empty/error states, mock-to-real separation, browser/preview proof, rollback boundaries, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
+
+After 12.8, run the Calendar route cutover dry-run static/unit guardrail when changing dry-run route-chain planning:
+
+```powershell
+npm run test:calendar-route-cutover-dry-run
+```
+
+This command requires no preview server, hosted Supabase target, service-role key, or raw Supabase CLI output. It proves `lib/calendar/routeCutoverDryRun.server.ts` is server-only and route-unused, no route/component imports the dry-run harness, readiness policy, or query helper, `/admin/calendar` remains mock-only, and no route has been converted to persisted Calendar data. It verifies bounded Day/Week/Month/List range derivation, fail-closed missing Auth/workspace/capability/range states before query, dependency-injected query-helper usage, explicit selectors with no `select("*")`, safe dry-run result states, false cutover/write/assignment-picker/detail-linking/response-link/delivery/public-lookup/service-role/seed/hosted flags, and the 11.47 redirected/redacted Supabase diagnostic guardrail.
 
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 

@@ -100,6 +100,22 @@ Browser proof for a later actual cutover must show desktop and 390px mobile Cale
 
 If 12.7 remains clean, the recommended next slice is `12.8 Calendar Route Cutover Dry-Run Harness`. That dry-run should still avoid changing `/admin/calendar` behavior while proving the future route entry conditions, state rendering expectations, browser preview setup, and rollback boundary are practical before any persisted-data route integration.
 
+## 12.8 Calendar Route Cutover Dry-Run Harness
+
+Iteration 12.8 adds `lib/calendar/routeCutoverDryRun.server.ts` and `npm run test:calendar-route-cutover-dry-run` as a route-unused dry-run harness for the future `/admin/calendar` persisted read path. It is not a route cutover implementation, not UI integration, not hosted validation, not production data validation, not Calendar mutation, not an assignment picker, not delivery, and not response-link activation.
+
+The dry-run accepts only dependency-injected inputs: an injected Supabase-like client, trusted workspace/contact/grant context, trusted workspace timezone, a requested Day/Week/Month/List period, an anchor date, optional safe filters, and explicit `dryRun` execution mode. It does not create a Supabase client, import `lib/supabase/server.ts`, read cookies or route params, import from `app/`, render JSX, return React components, call product routes, call `.from` directly, call `.rpc`, use service-role credentials, read hosted/production data, expose raw rows, or expose raw errors.
+
+The dry-run models the future server-side route chain: verified project-contact session, resolved workspace/contact/grant context, trusted workspace id, trusted actor/contact id, trusted workspace timezone, explicit reviewed capabilities, server-derived bounded period range, the 12.6 dependency-injected query helper, and the 12.3 pure read-model projection. It does not trust browser-provided workspace ids, actor ids, capability arrays, timezones, selectors, table names, raw ranges, or Supabase configuration.
+
+The route-unused range helper derives bounded dry-run ranges for Day, Week, Month, and List. Day uses the selected local date as a bounded one-day dry-run range, Week uses the visible Monday-start week, Month uses the bounded calendar month, and List uses a bounded 42-day range. Invalid dates, invalid timezones, unsupported periods, end-before-start, and broader-than-policy ranges fail closed before query.
+
+Dry-run state output is deliberately small and safe: `ready`, `empty`, `unauthenticated`, `unauthorized`, `missing-calendar-view`, `missing-assignments-view`, `invalid-range`, `workspace-unavailable`, `query-unavailable`, or `safe-error`. Successful dry-run output may include safe projected read-model items and summary counts, but never raw grants/capabilities, raw Supabase errors, provider dumps, stack traces, SQL/RPC detail, response links, tokens, volunteer contact details, questionnaire answers, emergency contact values, or unrelated row data.
+
+The existing disposable local validation now also exercises the dry-run against local persisted row shapes and keeps zero-residue cleanup. It proves `needs_response` plus confirmed assignments count toward assigned, declined/denied and canceled/removed rows do not count toward assigned, wrong-workspace/wrong-item rows do not bleed, zero-needed informational items remain `0/0 assigned`, and Calendar counters/mock `filledCount`/assigned volunteer arrays are not production truth.
+
+If 12.8 remains clean, the recommended next slice is `12.9 Calendar Route Cutover Final Preflight`; otherwise revise 12.8 first. Do not implement `/admin/calendar` persisted reads until that preflight explicitly confirms the remaining route state, browser, and rollback boundaries.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.
