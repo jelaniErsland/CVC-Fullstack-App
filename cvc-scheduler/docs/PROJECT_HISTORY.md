@@ -1,5 +1,34 @@
 # Project History
 
+## Iteration 12.15.1 - Hosted Staging Migration + Volunteer Profile Management Validation Gate
+
+Summary:
+- Added `scripts/hosted-volunteer-profile-management-regression.mjs` and `npm run test:volunteer-profile-management:hosted` as the exact opt-in hosted non-production validation gate for the 12.15 migration/RPC/provenance design.
+- Locked the gate to `project-local-staging` (`kfuujcfxoayukywvtaeh`) with `RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- The gate verifies staging migration level `20260714121500`, hosted generated public-schema types, manual create/edit RPC behavior, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit`, cross-contact/cross-workspace isolation, revoked/expired/inactive grants, role/title non-authorization, direct table-write denial, malformed/protected input rejection, safe output, and exact-run plus namespace zero-residue cleanup.
+- Updated the volunteer persistence regression so the hosted gate remains protected by static checks for the expected staging target, migration, opt-in env var, volunteer RPCs, generated-type comparison, cleanup, and no service-role shortcut.
+
+Changed files:
+- `scripts/hosted-volunteer-profile-management-regression.mjs`
+- `scripts/volunteer-persistence-regression.mjs`
+- `package.json`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- Initial `git status --short` was clean.
+- The hosted command refuses to run without the exact opt-in.
+- Hosted project discovery confirmed the approved staging name/ref, but the project currently reports `INACTIVE`; hosted database login-role creation timed out before migration/RLS/RPC validation could run.
+- No hosted product fixtures were created, no hosted migration was applied, and no hosted residue cleanup was needed during this blocked attempt.
+- No product route, migration, generated type, service-role application path, real data, email, Calendar write, assignment picker, public lookup, remembered-device behavior, Belgrade migration, or response-link activation was added.
+
+Recommended next slice:
+- Restore/reactivate the approved non-production staging target and rerun `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate` until it passes cleanly. Only then begin `12.16 Calendar Create/Edit Scheduled Item Implementation`.
+
 ## Iteration 12.15 - Manual Volunteer Profile Add/Edit Permanent Path
 
 Summary:

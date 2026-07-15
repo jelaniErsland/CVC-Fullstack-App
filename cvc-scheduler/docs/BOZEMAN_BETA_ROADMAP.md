@@ -42,21 +42,23 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
    - Unblocks: the first real Bozeman workspace, contact identities, grants, and all later beta admin access.
 2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
    - Completed as the permanent persisted `/admin/volunteers` manual Add/Edit path. It unblocks the first real Bozeman volunteer record and the future assignment picker source.
-3. `12.16 Calendar Create/Edit Scheduled Item Implementation`
+3. `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate`
+   - Pending. The opt-in hosted gate exists and is locked to `project-local-staging` (`kfuujcfxoayukywvtaeh`), but that approved staging project currently reports `INACTIVE`, so hosted DB/RLS/RPC validation has not passed yet.
+4. `12.16 Calendar Create/Edit Scheduled Item Implementation`
    - Unblocks: first real persisted scheduled item created from the product UI.
-4. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
+5. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
    - Unblocks: preset-derived and one-off scheduled item creation without requiring the full `/admin/tasks` cutover first.
-5. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
+6. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
    - Unblocks: first real volunteer assignment.
-6. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
+7. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
    - Unblocks: first published volunteer-visible assignment.
-7. `12.20 Secure Account-Light Volunteer Schedule Access`
+8. `12.20 Secure Account-Light Volunteer Schedule Access`
    - Unblocks: volunteers seeing only their own published assignments.
-8. `12.21 Volunteer Confirm/Deny Round Trip`
+9. `12.21 Volunteer Confirm/Deny Round Trip`
    - Unblocks: first real Confirm/Deny round trip and admin-visible response state.
-9. `12.22 Initial Assignment Notification Email Boundary`
+10. `12.22 Initial Assignment Notification Email Boundary`
    - Unblocks: first real assignment notification email with duplicate-send prevention and observable failures.
-10. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+11. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
     - Unblocks: beta launch candidate review.
 
 ## Repository-grounded beta blockers
@@ -175,4 +177,18 @@ No real Bozeman production rows, migrations, generated Supabase type changes, ho
 - Manual create/update goes through authenticated RPCs (`create_manual_volunteer_profile`, `update_volunteer_profile_manual_fields`) that re-check the caller's active project-contact grant and `volunteers.edit` capability. Direct authenticated table insert/update/delete privileges remain denied.
 - `npm run test:volunteer-profile-management` performs disposable local validation for create, edit, read-back persistence, view-only behavior, missing-view failure, cross-contact/cross-workspace isolation, malformed/protected input, questionnaire compatibility, no service-role dependency, no secret output, and zero-residue cleanup.
 
-12.15 adds a migration and generated type updates for manual provenance and the two narrow RPCs. Hosted validation is required before this migration is applied to any hosted non-production or production environment. No real Bozeman production volunteer records, controlled import UI, assignment picker, Calendar write, public volunteer lookup, email sending, remembered-device behavior, service-role usage, seed data, Belgrade migration, or response-link activation was added.
+12.15 adds a migration and generated type updates for manual provenance and the two narrow RPCs. Hosted validation is required before this migration is trusted by any hosted beta dependency. No real Bozeman production volunteer records, controlled import UI, assignment picker, Calendar write, public volunteer lookup, email sending, remembered-device behavior, service-role usage, seed data, Belgrade migration, or response-link activation was added.
+
+## 12.15.1 hosted staging volunteer profile gate
+
+12.15.1 adds `npm run test:volunteer-profile-management:hosted` as the narrow hosted non-production validation gate for the 12.15 migration/RPC/provenance design.
+
+The command is explicitly locked to the existing approved staging project, `project-local-staging` (`kfuujcfxoayukywvtaeh`), and refuses to run without:
+
+```powershell
+$env:RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+```
+
+When staging is active and migrated through `20260714121500`, the gate validates hosted generated types, manual profile create/edit RPCs, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant behavior, role/title non-authorization, direct table-write denial, malformed/protected input rejection, and disposable hosted cleanup with zero residue.
+
+This gate has not passed yet: project discovery confirmed the expected staging ref/name, but the approved staging project currently reports `INACTIVE`, and hosted database login-role creation times out before migration/RPC validation can run. Do not begin 12.16 against hosted assumptions until staging is active and this gate passes cleanly.

@@ -28,6 +28,7 @@
     "test:bozeman-workspace-provisioning": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-workspace-provisioning-regression.mjs",
     "test:volunteer-profile-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-regression.mjs",
     "test:volunteer-profile-management:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-browser-regression.mjs",
+    "test:volunteer-profile-management:hosted": "node scripts/hosted-volunteer-profile-management-regression.mjs",
     "test:tasks-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/tasks-read-model-contract-regression.mjs",
     "test:calendar-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-contract-regression.mjs",
     "test:calendar-read-model-helper": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-helper-regression.mjs",

@@ -340,6 +340,18 @@ This local disposable command requires local Supabase and refuses non-loopback S
 
 `npm run test:volunteer-profile-management:browser` additionally requires a loopback production preview. Start preview with logs redirected to a temp file, then run the command to validate the real `/admin/volunteers` route with disposable local Auth/workspace/grant fixtures, Add/Edit/reload behavior, view-only presentation, 390px mobile width, no mock volunteer leakage, and zero-residue cleanup. Stop preview before final typecheck/build.
 
+To rerun the hosted non-production volunteer profile management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:volunteer-profile-management:hosted
+Remove-Item Env:RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION
+```
+
+The command refuses every other target, requires hosted staging to be migrated through `20260714121500`, compares hosted generated public-schema types with the committed generated types, creates disposable `qa-12-15-hosted-*` Auth/product fixtures, validates manual create/edit RPC behavior, questionnaire provenance compatibility, `volunteers.view`/`volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant behavior, role/title non-authorization, direct table-write denial, malformed/protected input rejection, safe errors, and removes exact-run plus namespace residue in `finally`. It uses the prior hosted-gate pattern: operator/CLI database access is isolated to fixture setup/cleanup, while the product behavior under test runs through authenticated anon/RLS/RPC paths. Do not print raw Supabase status/start output or credentials while preparing this gate.
+
+Current gate status: project discovery confirms the approved staging ref/name, but the staging project currently reports `INACTIVE`, so hosted database login-role creation times out before migration/RPC validation can run. Restore the approved staging project, apply the reviewed migrations with CLI output redirected/redacted, and rerun this gate before treating 12.15 as hosted-ready.
+
 The task migration creates one `task_presets` table, a bounded custom-field validator, and authenticated create/archive functions. Anon has no table/function access; authenticated table access is read-only through `tasks.view`. Create/archive verify `auth.uid()`, active contact/grant validity, and `tasks.edit`. Ordinary create accepts only reusable definition fields and always creates a non-system active preset. Archive applies only to non-system presets. A trusted future Lunch row can use `system_key = 'lunch'` with a required `menu` field, but this migration adds no seed rows or lunch scheduling. No date/time, Calendar, assignment, filled-count, recurrence, confirmation, or response data is stored.
 
 The Calendar migration creates one `calendar_items` table plus authenticated create/archive functions. Anon has no table/function access; authenticated table access is read-only through `calendar.view`, while commands require `calendar.edit`. A composite foreign key enforces same-workspace task-preset references. Create accepts exactly one active preset reference or one validated one-off snapshot, derives preset snapshots and the workspace timezone in the database, and enforces the schedule-kind/date/time and planned-needed-count rules. Direct application writes are denied. No assignments, volunteer responses, confirmation states, coverage counters, recurrence metadata, communication/reminder state, or seed rows are added.

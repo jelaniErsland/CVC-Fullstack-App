@@ -20,12 +20,24 @@ const manualMigrationPath = path.join(
   "20260714121500_manual_volunteer_profiles.sql",
 );
 const serverBoundaryPath = path.join(root, "lib", "volunteers", "server.ts");
+const hostedValidationPath = path.join(
+  root,
+  "scripts",
+  "hosted-volunteer-profile-management-regression.mjs",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, manualMigration, serverBoundary, environmentExample] = await Promise.all([
+const [
+  migration,
+  manualMigration,
+  serverBoundary,
+  hostedValidation,
+  environmentExample,
+] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(manualMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
+  readFile(hostedValidationPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -133,6 +145,22 @@ assert.deepEqual(
   ["volunteer_profiles"],
 );
 assert.doesNotMatch(serverBoundary, /emergency|SUPABASE_SERVICE_ROLE_KEY|serviceRole/i);
+assert.match(hostedValidation, /expectedName = "project-local-staging"/);
+assert.match(hostedValidation, /expectedRef = "kfuujcfxoayukywvtaeh"/);
+assert.match(hostedValidation, /expectedMigration = "20260714121500"/);
+assert.match(
+  hostedValidation,
+  /RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION === expectedConfirmation/,
+);
+assert.match(hostedValidation, /create_manual_volunteer_profile/);
+assert.match(hostedValidation, /update_volunteer_profile_manual_fields/);
+assert.match(hostedValidation, /convert_questionnaire_submission_to_volunteer_profile/);
+assert.match(hostedValidation, /verifyGeneratedTypes/);
+assert.match(hostedValidation, /verifyNamespaceResidue/);
+assert.doesNotMatch(
+  hostedValidation,
+  /process\.env\.SUPABASE_SERVICE_ROLE_KEY|createServiceRole|auth\.admin/i,
+);
 assert.match(environmentExample, /^ADMIN_AUTH_MODE=review$/m);
 
 const parsedProfile = parseVolunteerProfile({
