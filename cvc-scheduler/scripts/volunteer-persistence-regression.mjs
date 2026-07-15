@@ -13,11 +13,18 @@ const migrationPath = path.join(
   "migrations",
   "20260701030000_volunteer_profiles.sql",
 );
+const manualMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260714121500_manual_volunteer_profiles.sql",
+);
 const serverBoundaryPath = path.join(root, "lib", "volunteers", "server.ts");
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, serverBoundary, environmentExample] = await Promise.all([
+const [migration, manualMigration, serverBoundary, environmentExample] = await Promise.all([
   readFile(migrationPath, "utf8"),
+  readFile(manualMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
@@ -28,6 +35,10 @@ const createdTables = [...migration.matchAll(/create table\s+public\.([a-z_]+)/g
 assert.deepEqual(createdTables, ["volunteer_profiles"]);
 assert.match(migration, /workspace_id uuid not null references public\.workspaces/i);
 assert.match(migration, /source_submission_id uuid not null/i);
+assert.match(manualMigration, /alter column source_submission_id drop not null/i);
+assert.match(manualMigration, /profile_source text not null default 'questionnaire'/i);
+assert.match(manualMigration, /manual_created_by_project_contact_id uuid/i);
+assert.match(manualMigration, /volunteer_profiles_provenance_known/i);
 assert.match(
   migration,
   /foreign key\s*\(\s*workspace_id,\s*source_submission_id\s*\)[\s\S]*references public\.questionnaire_submissions\s*\(workspace_id, id\)/i,
@@ -85,6 +96,19 @@ assert.match(migration, /existing_profile\.source_submission_id = source_submiss
 assert.doesNotMatch(migration, /update public\.questionnaire_submissions/i);
 assert.doesNotMatch(migration, /delete from public\.questionnaire_submissions/i);
 assert.match(
+  manualMigration,
+  /create or replace function public\.create_manual_volunteer_profile/i,
+);
+assert.match(
+  manualMigration,
+  /create or replace function public\.update_volunteer_profile_manual_fields/i,
+);
+assert.doesNotMatch(manualMigration, /grant (?:insert|update|delete|all).*volunteer_profiles.*to authenticated/i);
+assert.doesNotMatch(
+  manualMigration,
+  /service_role|SUPABASE_SERVICE_ROLE_KEY|insert\s+into\s+public\.workspaces/i,
+);
+assert.match(
   migration,
   /revoke all on function public\.convert_questionnaire_submission_to_volunteer_profile\(uuid\)[\s\n]*from public/i,
 );
@@ -98,7 +122,11 @@ assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["convert_questionnaire_submission_to_volunteer_profile"],
+  [
+    "convert_questionnaire_submission_to_volunteer_profile",
+    "create_manual_volunteer_profile",
+    "update_volunteer_profile_manual_fields",
+  ],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
@@ -111,6 +139,9 @@ const parsedProfile = parseVolunteerProfile({
   id: "550e8400-e29b-41d4-a716-446655440001",
   workspace_id: "550e8400-e29b-41d4-a716-446655440002",
   source_submission_id: "550e8400-e29b-41d4-a716-446655440003",
+  profile_source: "questionnaire",
+  manual_created_by_project_contact_id: null,
+  manual_created_at: null,
   lifecycle: "active",
   readiness_status: "ready",
   full_name: "Alex Rivera",
@@ -125,6 +156,7 @@ const parsedProfile = parseVolunteerProfile({
   updated_at: "2026-07-01T12:00:00.000Z",
 });
 assert.equal(parsedProfile.fullName, "Alex Rivera");
+assert.equal(parsedProfile.profileSource, "questionnaire");
 assert.equal("emergencyContact" in parsedProfile, false);
 assert.throws(() =>
   parseVolunteerProfile({
@@ -132,6 +164,9 @@ assert.throws(() =>
     id: parsedProfile.id,
     workspace_id: parsedProfile.workspaceId,
     source_submission_id: parsedProfile.sourceSubmissionId,
+    profile_source: parsedProfile.profileSource,
+    manual_created_by_project_contact_id: parsedProfile.manualCreatedByProjectContactId,
+    manual_created_at: parsedProfile.manualCreatedAt,
     readiness_status: "unknown",
     full_name: parsedProfile.fullName,
     preferred_contact_method: parsedProfile.preferredContactMethod,
@@ -241,9 +276,9 @@ for (const file of routeFiles) {
 }
 assert.deepEqual(
   routeImports,
-  [],
-  "Existing volunteer/questionnaire routes must not import persisted volunteer boundaries",
+  ["app/admin/volunteers/page.tsx"],
+  "Only the approved 12.15 persisted volunteer-management route may import persisted volunteer boundaries",
 );
 
 console.log("Volunteer profile persistence and authorization checks passed.");
-console.log("Confirmed explicit conversion, scoped reads, sensitive separation, and no route cutover.");
+console.log("Confirmed explicit conversion, manual provenance, scoped reads, sensitive separation, and the approved 12.15 route cutover boundary.");

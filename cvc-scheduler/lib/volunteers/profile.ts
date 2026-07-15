@@ -1,7 +1,10 @@
 export type VolunteerProfile = Readonly<{
   id: string;
   workspaceId: string;
-  sourceSubmissionId: string;
+  sourceSubmissionId: string | null;
+  profileSource: "questionnaire" | "manual";
+  manualCreatedByProjectContactId: string | null;
+  manualCreatedAt: string | null;
   lifecycle: "active" | "inactive" | "archived";
   readinessStatus: "ready" | "on_hold";
   fullName: string;
@@ -55,14 +58,28 @@ function uuid(record: Record<string, unknown>, field: string) {
   return value;
 }
 
+function nullableUuid(record: Record<string, unknown>, field: string) {
+  const value = nullableString(record, field);
+  if (value === null) return null;
+  const normalizedValue = value.toLowerCase();
+  if (!uuidPattern.test(normalizedValue)) {
+    throw new Error(`Volunteer profile has an invalid ${field}.`);
+  }
+  return normalizedValue;
+}
+
 export function parseVolunteerProfile(value: unknown): VolunteerProfile {
   if (!isRecord(value)) {
     throw new Error("Volunteer profile read returned an invalid row.");
   }
 
+  const profileSource = value.profile_source;
   const lifecycle = value.lifecycle;
   const readinessStatus = value.readiness_status;
   const preferredContactMethod = value.preferred_contact_method;
+  if (profileSource !== "questionnaire" && profileSource !== "manual") {
+    throw new Error("Volunteer profile has an invalid profile source.");
+  }
   if (lifecycle !== "active" && lifecycle !== "inactive" && lifecycle !== "archived") {
     throw new Error("Volunteer profile has an invalid lifecycle.");
   }
@@ -81,7 +98,13 @@ export function parseVolunteerProfile(value: unknown): VolunteerProfile {
   return {
     id: uuid(value, "id"),
     workspaceId: uuid(value, "workspace_id"),
-    sourceSubmissionId: uuid(value, "source_submission_id"),
+    sourceSubmissionId: nullableUuid(value, "source_submission_id"),
+    profileSource,
+    manualCreatedByProjectContactId: nullableUuid(
+      value,
+      "manual_created_by_project_contact_id",
+    ),
+    manualCreatedAt: nullableString(value, "manual_created_at"),
     lifecycle,
     readinessStatus,
     fullName: requiredString(value, "full_name"),

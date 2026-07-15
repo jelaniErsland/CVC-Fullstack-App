@@ -11,7 +11,7 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 - Workspace, project-contact grant, questionnaire submission, volunteer profile, task preset, Calendar item, Calendar assignment/current response, public response-token, response route, and assignment-detail foundations exist.
 - `/admin/calendar` is already cut over to persisted Calendar item reads. It is server-owned, dynamic/no-store, bounded by server-derived Day/Week/Month/List ranges, workspace/contact/capability scoped, read-only, and free of mock/persisted item mixing.
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
-- `/admin/tasks`, `/admin/volunteers`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
+- `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
 - `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
 - Calendar writes, assignment picker UI, publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the existing prototype work and `sample mockup images`; beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
@@ -41,7 +41,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
    - Completed as the permanent operator provisioning boundary for workspaces, approved Auth identities, project contacts, and explicit grants. It does not create real Bozeman data automatically.
    - Unblocks: the first real Bozeman workspace, contact identities, grants, and all later beta admin access.
 2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
-   - Unblocks: first real Bozeman volunteer record and the future assignment picker source.
+   - Completed as the permanent persisted `/admin/volunteers` manual Add/Edit path. It unblocks the first real Bozeman volunteer record and the future assignment picker source.
 3. `12.16 Calendar Create/Edit Scheduled Item Implementation`
    - Unblocks: first real persisted scheduled item created from the product UI.
 4. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
@@ -62,7 +62,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 ## Repository-grounded beta blockers
 
 - Real Bozeman workspace provisioning is now repeatable through the reviewed operator boundary, but real production execution remains an explicit operator step after approved Auth identities exist.
-- Manual volunteer Add/Edit or controlled import does not exist.
+- Controlled volunteer import does not exist; manual persisted volunteer Add/Edit now exists through `/admin/volunteers`.
 - Calendar create/edit/archive/publication mutations are not connected to `/admin/calendar`.
 - Draft/private versus published/live visibility truth is unresolved.
 - Volunteer assignment picker and assignment create/cancel UI are missing.
@@ -102,7 +102,7 @@ Return to the Tasks helper as either:
 
 ## Safest shortest path to first real-world moments
 
-- First real Bozeman volunteer record: use the 12.14 operator boundary to provision Bozeman workspace/contact/grants after approved Auth identities exist, then create one volunteer via permanent `volunteer_profiles` Add/Edit or controlled import.
+- First real Bozeman volunteer record: use the 12.14 operator boundary to provision Bozeman workspace/contact/grants after approved Auth identities exist, then create one volunteer through the persisted `/admin/volunteers` manual Add/Edit path.
 - First real persisted scheduled item created from product UI: keep the current persisted `/admin/calendar` read route, add a reviewed `calendar.edit` server action for a narrow create/edit path, then refresh the persisted route.
 - First real volunteer assignment: add a volunteer picker read seam and `assignments.edit` create command for one active volunteer/item pair with duplicate prevention.
 - First published volunteer-visible assignment: define publication visibility truth before email; visibility must not depend on delivery success.
@@ -163,3 +163,16 @@ Safe operator procedure for later real Bozeman provisioning:
 5. Validate with the normal app Auth sign-in path and the relevant access/regression checks.
 
 No real Bozeman production rows, migrations, generated Supabase type changes, hosted validation, service-role path, seed data, email sending, Calendar writes, volunteer Add/Edit UI, assignment picker, public volunteer lookup, remembered-device behavior, Belgrade migration, or response-link activation was added in 12.14.
+
+## 12.15 manual volunteer Add/Edit path
+
+12.15 establishes the first permanent volunteer-management product path for the Bozeman beta.
+
+- `/admin/volunteers` is now a dynamic/no-store persisted route. It derives the authenticated project contact, deterministic active workspace, and effective grants server-side, requires `volunteers.view` for reads, and requires `volunteers.edit` for manual create/update actions.
+- The route no longer uses mock volunteer rows as its user-facing truth source. It renders persisted profiles, a true empty state, a calm unavailable state, and a safe error state without mock fallback or mock/persisted mixing.
+- Manual volunteers are legitimate `volunteer_profiles` rows with `profile_source = 'manual'`, null `source_submission_id`, and protected server-derived manual provenance. The browser cannot forge workspace, contact, capability, lifecycle authority outside the allowed form choices, source, or questionnaire provenance.
+- Questionnaire-derived profiles remain compatible: `profile_source = 'questionnaire'` preserves `source_submission_id`, and ordinary edits do not erase that provenance.
+- Manual create/update goes through authenticated RPCs (`create_manual_volunteer_profile`, `update_volunteer_profile_manual_fields`) that re-check the caller's active project-contact grant and `volunteers.edit` capability. Direct authenticated table insert/update/delete privileges remain denied.
+- `npm run test:volunteer-profile-management` performs disposable local validation for create, edit, read-back persistence, view-only behavior, missing-view failure, cross-contact/cross-workspace isolation, malformed/protected input, questionnaire compatibility, no service-role dependency, no secret output, and zero-residue cleanup.
+
+12.15 adds a migration and generated type updates for manual provenance and the two narrow RPCs. Hosted validation is required before this migration is applied to any hosted non-production or production environment. No real Bozeman production volunteer records, controlled import UI, assignment picker, Calendar write, public volunteer lookup, email sending, remembered-device behavior, service-role usage, seed data, Belgrade migration, or response-link activation was added.

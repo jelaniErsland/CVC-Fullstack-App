@@ -260,8 +260,19 @@ for (const file of appAndComponentFiles) {
     )
   ) {
     if (
-      relative !== "app/admin/calendar/page.tsx" ||
-      !source.includes("@/lib/calendar/routeRead.server")
+      !(
+        relative === "app/admin/calendar/page.tsx" &&
+        source.includes("@/lib/calendar/routeRead.server")
+      ) &&
+      !(
+        relative === "app/admin/volunteers/page.tsx" &&
+        source.includes("@/lib/volunteers/routeRead.server")
+      ) &&
+      !(
+        (relative === "components/VolunteerCard.tsx" ||
+          relative === "components/VolunteerDirectory.tsx") &&
+        source.includes("@/lib/volunteers/profile")
+      )
     ) {
       persistedCutoverImporters.push(relative);
     }
@@ -278,7 +289,6 @@ assert.deepEqual(serviceRoleMarkers, []);
 
 for (const [relative, requiredMarker] of [
   ["app/admin/tasks/page.tsx", "@/lib/mockData"],
-  ["app/admin/volunteers/page.tsx", "@/lib/mockData"],
   ["app/admin/announcements/page.tsx", "@/lib/mockData"],
   ["app/admin/announcements/templates/page.tsx", "@/lib/mockData"],
   ["app/v/demo/page.tsx", "@/lib/volunteerPreview"],
@@ -298,6 +308,13 @@ const calendarRouteSource = await readFile(
 );
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(calendarRouteSource, /@\/lib\/mockData|getCalendarItemsByWeek/);
+
+const volunteersRouteSource = await readFile(
+  path.join(root, "app", "admin", "volunteers", "page.tsx"),
+  "utf8",
+);
+assert.match(volunteersRouteSource, /@\/lib\/volunteers\/routeRead\.server/);
+assert.doesNotMatch(volunteersRouteSource, /@\/lib\/mockData|projectVolunteers|getVolunteerById/);
 
 assert.match(packageSource, /"test:mvp-cutover-plan": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/mvp-real-data-cutover-plan-regression\.mjs"/);
 assert.match(readinessSource, /12\.1 MVP real-data cutover sequencing review/i);

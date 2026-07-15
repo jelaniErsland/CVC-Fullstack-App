@@ -32,6 +32,7 @@ Critical path from the post-12.13 state:
 1. `12.14 Bozeman Workspace Access and Provisioning Readiness`
    - Completed: operator provisioning boundary and local validation exist.
 2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
+   - Completed: `/admin/volunteers` now reads persisted profiles and supports authorized manual create/edit through narrow authenticated RPCs.
 3. `12.16 Calendar Create/Edit Scheduled Item Implementation`
 4. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
 5. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`

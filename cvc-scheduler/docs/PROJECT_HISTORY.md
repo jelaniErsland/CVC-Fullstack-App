@@ -1,5 +1,42 @@
 # Project History
 
+## Iteration 12.15 - Manual Volunteer Profile Add/Edit Permanent Path
+
+Summary:
+- Cut `/admin/volunteers` over from mock volunteer rows to persisted `volunteer_profiles` as the user-facing truth source for the narrow Bozeman beta Add/Edit path.
+- Added manual volunteer provenance to `volunteer_profiles` without manufacturing questionnaire submissions. Manual profiles use `profile_source = 'manual'`, null `source_submission_id`, and server-derived project-contact creation provenance; questionnaire-derived profiles keep `profile_source = 'questionnaire'` and their immutable `source_submission_id`.
+- Added authenticated RPCs `create_manual_volunteer_profile` and `update_volunteer_profile_manual_fields`. They validate bounded editable fields, require the signed-in active project contact to hold an effective `volunteers.edit` grant for the target workspace, derive protected workspace/contact/provenance values server-side, and leave direct authenticated table writes denied.
+- Added `lib/volunteers/routeRead.server.ts` to resolve the volunteer-management route context using the stabilized contact-scoped deterministic workspace-selection pattern. Reads require `volunteers.view`; edit controls/actions require `volunteers.edit`; multiple eligible volunteer workspaces fail closed rather than selecting arbitrarily.
+- Reworked the Volunteers page and cards to show persisted profiles, true empty/unavailable/error states, Add Volunteer, and inline Edit Volunteer without linking persisted rows into the old mock detail route.
+- Added `npm run test:volunteer-profile-management`, a disposable local validation that proves create/edit/read-back persistence, view-only behavior, missing-view failure, wrong-contact and wrong-workspace isolation, malformed/protected input rejection, questionnaire-derived profile compatibility, no service-role dependency, no secret output, and zero-residue cleanup.
+
+Changed files:
+- `supabase/migrations/20260714121500_manual_volunteer_profiles.sql`
+- `lib/supabase/database.types.ts`
+- `lib/volunteers/profile.ts`
+- `lib/volunteers/server.ts`
+- `lib/volunteers/routeRead.server.ts`
+- `app/admin/volunteers/page.tsx`
+- `components/VolunteerDirectory.tsx`
+- `components/VolunteerCard.tsx`
+- `scripts/volunteer-profile-management-regression.mjs`
+- `scripts/volunteer-profile-management-browser-regression.mjs`
+- `scripts/volunteer-persistence-regression.mjs`
+- `package.json`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- A migration and generated type update were added for manual volunteer provenance and the two narrow RPCs. No real Bozeman production rows, seed data, service-role path, Calendar write, assignment picker, public volunteer lookup, remembered-device behavior, email sending, Belgrade migration, or response-link activation was added.
+- Hosted validation is required before applying the new migration/RPCs to any hosted target; it was not run as part of the local implementation pass.
+
+Recommended next slice:
+- `12.16 Calendar Create/Edit Scheduled Item Implementation`, only if the final 12.15 validation remains clean.
+
 ## Iteration 12.14 - Bozeman Workspace Access and Provisioning Readiness
 
 Summary:

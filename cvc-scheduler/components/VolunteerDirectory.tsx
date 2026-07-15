@@ -1,31 +1,36 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
-import { VolunteerCard } from "./VolunteerCard";
-import type { ProjectVolunteer, ProjectVolunteerStatus } from "@/lib/mockData";
+import { VolunteerCard, VolunteerFields } from "./VolunteerCard";
+import type { VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerDirectoryProps = {
-  volunteers: ProjectVolunteer[];
+  volunteers: readonly VolunteerProfile[];
   congregations: string[];
+  canEdit: boolean;
+  createAction?: (formData: FormData) => void | Promise<void>;
+  updateAction?: (formData: FormData) => void | Promise<void>;
 };
 
-const statuses: Array<ProjectVolunteerStatus | "all"> = [
+const lifecycles: Array<VolunteerProfile["lifecycle"] | "all"> = [
   "all",
-  "Submitted",
-  "Needs Review",
-  "Approved",
-  "Needs Info",
-  "Not Approved",
+  "active",
+  "inactive",
+  "archived",
 ];
 
 export function VolunteerDirectory({
+  canEdit,
+  createAction,
+  updateAction,
   volunteers,
   congregations,
 }: VolunteerDirectoryProps) {
   const [query, setQuery] = useState("");
   const [congregation, setCongregation] = useState("all");
-  const [status, setStatus] = useState<ProjectVolunteerStatus | "all">("all");
+  const [lifecycle, setLifecycle] = useState<VolunteerProfile["lifecycle"] | "all">("all");
 
   const filteredVolunteers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -33,44 +38,57 @@ export function VolunteerDirectory({
     return volunteers.filter((volunteer) => {
       const matchesCongregation =
         congregation === "all" || volunteer.congregation === congregation;
-      const matchesStatus = status === "all" || volunteer.status === status;
+      const matchesLifecycle = lifecycle === "all" || volunteer.lifecycle === lifecycle;
       const searchableText = [
-        volunteer.name,
+        volunteer.fullName,
         volunteer.email,
         volunteer.phone,
         volunteer.congregation,
-        volunteer.status,
-        volunteer.skillsExperience.construction.join(" "),
-        volunteer.skillsExperience.taskCards,
-        volunteer.otherWaysToHelp.details,
+        volunteer.lifecycle,
+        volunteer.readinessStatus,
+        volunteer.profileNotes,
       ]
         .join(" ")
         .toLowerCase();
       const matchesQuery =
         normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesCongregation && matchesStatus && matchesQuery;
+      return matchesCongregation && matchesLifecycle && matchesQuery;
     });
-  }, [congregation, query, status, volunteers]);
+  }, [congregation, lifecycle, query, volunteers]);
 
-  if (volunteers.length === 0) {
-    return (
-      <EmptyState
-        title="No volunteers yet"
-        message="Submitted questionnaires will appear here once volunteers begin responding."
-      />
-    );
-  }
+  const addForm = canEdit && createAction ? (
+    <details className="mb-6 rounded-3xl border border-white/70 bg-white/54 p-5 shadow-sm sm:p-6">
+      <summary className="cursor-pointer text-base font-semibold text-slate-900">
+        Add volunteer
+      </summary>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+        Create a permanent manual profile for scheduling. This does not create a
+        questionnaire submission and does not send volunteer email.
+      </p>
+      <form action={createAction} className="mt-5 grid gap-3">
+        <VolunteerFields />
+        <Button className="mt-1 w-full sm:w-auto" type="submit">
+          Save volunteer
+        </Button>
+      </form>
+    </details>
+  ) : (
+    <div className="mb-6 rounded-3xl border border-white/70 bg-white/54 p-5 text-sm leading-6 text-slate-500 shadow-sm">
+      Volunteer profile editing is unavailable for this signed-in contact.
+    </div>
+  );
 
   return (
     <div>
+      {addForm}
       <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px]">
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Search</span>
           <input
             className="mt-2 min-h-12 w-full rounded-full border border-white/80 bg-white/64 px-5 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white/86 focus:ring-2 focus:ring-slate-300/60"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, congregation, email, phone, skills"
+            placeholder="Name, congregation, email, phone, notes"
             type="search"
             value={query}
           />
@@ -93,17 +111,17 @@ export function VolunteerDirectory({
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-slate-600">Status</span>
+          <span className="text-sm font-medium text-slate-600">Lifecycle</span>
           <select
             className="mt-2 min-h-12 w-full rounded-full border border-white/80 bg-white/64 px-5 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-300 focus:bg-white/86 focus:ring-2 focus:ring-slate-300/60"
             onChange={(event) =>
-              setStatus(event.target.value as ProjectVolunteerStatus | "all")
+              setLifecycle(event.target.value as VolunteerProfile["lifecycle"] | "all")
             }
-            value={status}
+            value={lifecycle}
           >
-            {statuses.map((item) => (
+            {lifecycles.map((item) => (
               <option key={item} value={item}>
-                {item === "all" ? "All statuses" : item}
+                {item === "all" ? "All lifecycles" : item}
               </option>
             ))}
           </select>
@@ -114,13 +132,13 @@ export function VolunteerDirectory({
         <p>
           {filteredVolunteers.length} of {volunteers.length} volunteers
         </p>
-        {(query || congregation !== "all" || status !== "all") && (
+        {(query || congregation !== "all" || lifecycle !== "all") && (
           <button
             className="rounded-full px-3 py-2 font-semibold text-slate-600 transition hover:bg-white/56 hover:text-slate-950"
             onClick={() => {
               setQuery("");
               setCongregation("all");
-              setStatus("all");
+              setLifecycle("all");
             }}
             type="button"
           >
@@ -132,14 +150,23 @@ export function VolunteerDirectory({
       {filteredVolunteers.length > 0 ? (
         <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredVolunteers.map((volunteer) => (
-            <VolunteerCard key={volunteer.id} volunteer={volunteer} />
+            <VolunteerCard
+              canEdit={canEdit}
+              key={volunteer.id}
+              updateAction={updateAction}
+              volunteer={volunteer}
+            />
           ))}
         </section>
       ) : (
         <div className="mt-5">
           <EmptyState
-            title="No search results"
-            message="Try a different name, congregation, status, phone number, or skill."
+            title={volunteers.length === 0 ? "No volunteers yet" : "No search results"}
+            message={
+              volunteers.length === 0
+                ? "Add a manual volunteer profile when a Bozeman helper is ready to be scheduled."
+                : "Try a different name, congregation, lifecycle, phone number, or note."
+            }
           />
         </div>
       )}

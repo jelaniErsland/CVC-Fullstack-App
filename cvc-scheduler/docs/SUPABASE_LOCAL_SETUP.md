@@ -276,7 +276,7 @@ The command refuses every other target, uses disposable `qa-11-27-*` Auth/produc
 
 ## Workspace migration and type generation
 
-The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260705000000_assignment_detail_context.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260714121500_manual_volunteer_profiles.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push
@@ -284,6 +284,7 @@ npm run test:workspace
 npm run test:grants
 npm run test:questionnaires
 npm run test:volunteers
+npm run test:volunteer-profile-management
 npm run test:tasks
 npm run test:calendar-items
 npm run test:assignments
@@ -328,7 +329,16 @@ Provisioning Auth users, contact records, and grants is intentionally an adminis
 
 The questionnaire migration creates one `questionnaire_submissions` table and the `submit_questionnaire_submission` function. Anon/authenticated callers can execute that function, but anon receives no table privileges and cannot list, read, update, or delete submissions. The security-definer function has an empty search path, fixes status/source/timestamps itself, validates the version and basic answer structure, and resolves only an active intake-enabled workspace. Review reads additionally require an effective grant containing `questionnaires.review`. No seed submission is added.
 
-The volunteer migration creates one `volunteer_profiles` table and the authenticated-only `convert_questionnaire_submission_to_volunteer_profile` function. Application roles have no direct insert/update/delete privilege. Conversion accepts only a submission UUID, verifies `auth.uid()`, requires `questionnaires.review` plus `volunteers.edit` on the source workspace, accepts only a still-`submitted` version-1 source, derives every profile/scope value from that row, and leaves it unchanged. A composite foreign key and unique source constraint enforce same-workspace provenance and one conversion per submission. Profile reads require `volunteers.view`. Emergency-contact answers are not copied; they remain protected questionnaire truth.
+The volunteer migrations create `volunteer_profiles`, the authenticated-only `convert_questionnaire_submission_to_volunteer_profile` function, and the 12.15 manual-profile RPCs. Application roles still have no direct insert/update/delete table privilege. Questionnaire conversion accepts only a submission UUID, verifies `auth.uid()`, requires `questionnaires.review` plus `volunteers.edit` on the source workspace, accepts only a still-`submitted` version-1 source, derives every profile/scope value from that row, and leaves the questionnaire unchanged. Manual creation uses `create_manual_volunteer_profile`; editing supported profile fields uses `update_volunteer_profile_manual_fields`. Both manual RPCs require `volunteers.edit`, derive protected workspace/contact/provenance values server-side, and do not create fake questionnaire submissions. Profile reads require `volunteers.view`. Emergency-contact answers are not copied; they remain protected questionnaire truth.
+
+```powershell
+npm run test:volunteer-profile-management
+npm run test:volunteer-profile-management:browser
+```
+
+This local disposable command requires local Supabase and refuses non-loopback Supabase URLs. It applies the 12.15 migration if needed, creates disposable Auth/workspace/grant fixtures, validates persisted manual create/edit/read-back behavior, view-only behavior, missing-view failure, wrong-contact and wrong-workspace isolation, malformed/protected input rejection, questionnaire-derived profile compatibility, no service-role dependency, no secret output, and zero-residue cleanup.
+
+`npm run test:volunteer-profile-management:browser` additionally requires a loopback production preview. Start preview with logs redirected to a temp file, then run the command to validate the real `/admin/volunteers` route with disposable local Auth/workspace/grant fixtures, Add/Edit/reload behavior, view-only presentation, 390px mobile width, no mock volunteer leakage, and zero-residue cleanup. Stop preview before final typecheck/build.
 
 The task migration creates one `task_presets` table, a bounded custom-field validator, and authenticated create/archive functions. Anon has no table/function access; authenticated table access is read-only through `tasks.view`. Create/archive verify `auth.uid()`, active contact/grant validity, and `tasks.edit`. Ordinary create accepts only reusable definition fields and always creates a non-system active preset. Archive applies only to non-system presets. A trusted future Lunch row can use `system_key = 'lunch'` with a required `menu` field, but this migration adds no seed rows or lunch scheduling. No date/time, Calendar, assignment, filled-count, recurrence, confirmation, or response data is stored.
 
@@ -353,7 +363,7 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 - Capability enforcement beyond the implemented workspace/questionnaire/volunteer/task/Calendar/assignment capabilities; grant roles do not confer other product permissions.
 - Service-role operations.
 - Volunteer lookup, reminder delivery/link transport, remembered-device behavior, and public route integration. The isolated assignment-response bearer RPCs are not a lookup or delivered reminder feature.
-- Questionnaire status mutations, volunteer profile edits, task preset general updates, Calendar general updates, assignment general edits/response history, communication, or follow-up persistence.
-- Any mock-to-real route cutover.
+- Questionnaire status mutations, controlled volunteer import, task preset general updates, Calendar general updates, assignment general edits/response history, communication, or follow-up persistence.
+- Mock-to-real route cutovers beyond the approved persisted `/admin/calendar` read route and persisted `/admin/volunteers` manual profile-management route.
 
 The existing deterministic mock application remains the behavior reference. The next slice must not treat a successful health check as permission to query or mutate product data.

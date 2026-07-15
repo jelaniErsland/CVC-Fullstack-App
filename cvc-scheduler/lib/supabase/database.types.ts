@@ -453,12 +453,15 @@ export type Database = {
           full_name: string
           id: string
           lifecycle: string
+          manual_created_at: string | null
+          manual_created_by_project_contact_id: string | null
           phone: string | null
           preferred_contact_method: string | null
+          profile_source: string
           profile_notes: string
           readiness_status: string
           skills_help_snapshot: Json
-          source_submission_id: string
+          source_submission_id: string | null
           updated_at: string
           workspace_id: string
         }
@@ -470,12 +473,15 @@ export type Database = {
           full_name: string
           id?: string
           lifecycle?: string
+          manual_created_at?: string | null
+          manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
+          profile_source?: string
           profile_notes?: string
           readiness_status?: string
           skills_help_snapshot: Json
-          source_submission_id: string
+          source_submission_id?: string | null
           updated_at?: string
           workspace_id: string
         }
@@ -487,16 +493,26 @@ export type Database = {
           full_name?: string
           id?: string
           lifecycle?: string
+          manual_created_at?: string | null
+          manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
+          profile_source?: string
           profile_notes?: string
           readiness_status?: string
           skills_help_snapshot?: Json
-          source_submission_id?: string
+          source_submission_id?: string | null
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "volunteer_profiles_manual_created_by_project_contact_id_fkey"
+            columns: ["manual_created_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "volunteer_profiles_source_workspace_fk"
             columns: ["workspace_id", "source_submission_id"]
@@ -629,6 +645,19 @@ export type Database = {
       }
       convert_questionnaire_submission_to_volunteer_profile: {
         Args: { p_submission_id: string }
+        Returns: string
+      }
+      create_manual_volunteer_profile: {
+        Args: {
+          p_workspace_id: string
+          p_full_name: string
+          p_email?: string | null
+          p_phone?: string | null
+          p_congregation?: string | null
+          p_preferred_contact_method?: string | null
+          p_readiness_status?: string
+          p_profile_notes?: string
+        }
         Returns: string
       }
       create_calendar_assignment: {
@@ -805,6 +834,20 @@ export type Database = {
           p_assignment_id: string
           p_response_note: string
           p_response_status: string
+        }
+        Returns: string
+      }
+      update_volunteer_profile_manual_fields: {
+        Args: {
+          p_profile_id: string
+          p_full_name: string
+          p_email?: string | null
+          p_phone?: string | null
+          p_congregation?: string | null
+          p_preferred_contact_method?: string | null
+          p_lifecycle?: string
+          p_readiness_status?: string
+          p_profile_notes?: string
         }
         Returns: string
       }
