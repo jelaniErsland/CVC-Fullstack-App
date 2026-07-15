@@ -4,6 +4,18 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## Bozeman beta re-baseline after 12.13
+
+The near-term production-readiness target is now a narrow Bozeman scheduling beta, ideally ready by mid-August 2026. Belgrade remains on the existing Google Sheets/App Script workflow and is the operational fallback. The principle for the beta is **Cut features, not integrity**.
+
+`lib/readiness/bozemanBetaRoadmap.server.ts` and `docs/BOZEMAN_BETA_ROADMAP.md` record the repository-grounded dependency map. This re-baseline does not change Supabase schema, RLS, RPCs, generated types, hosted behavior, route behavior, email behavior, response-link activation, service-role usage, production data access, or mock/persisted truth boundaries.
+
+The beta launch gate requires permanent workspace/contact/grant foundations for Bozeman, volunteer profile entry/import on the existing `volunteer_profiles` architecture, Calendar create/edit/write boundaries on top of the stabilized persisted Calendar read route, assignment commands and picker UI, publication visibility truth, secure account-light volunteer schedule access, Confirm/Deny persistence and admin response visibility, a minimal initial assignment email boundary, approved Project Local UI integration on beta-critical surfaces, and production environment/hosted validation/observability/backup/rollback proof.
+
+The old `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review` recommendation is moved/modified. A full Tasks helper remains useful, but the immediate persistence/auth readiness blocker is `12.14 Bozeman Workspace Access and Provisioning Readiness`. A narrower task-preset selector seam can be reviewed when Calendar create/edit needs it. Response-link activation remains paused after 11.50.
+
+Hosted validation is not required for this re-baseline because no database, RPC, generated type, hosted script, hosted behavior, or product route behavior changed.
+
 ## 12.13 Persisted Tasks read-model contract
 
 Iteration 12.13 is a route-unused persisted Tasks read-model contract for a future `/admin/tasks` cutover. It does not cut over `/admin/tasks`, import the contract into any app route/component, add a Tasks route loader, add client-side Supabase Tasks reads, add a query helper, add Tasks create/edit/archive UI behavior, add Calendar writes, activate response links, add delivery/public lookup/remembered devices, use service-role credentials, add seed data, add migrations, change generated Supabase types, run hosted validation, or mix mock and persisted task presets.

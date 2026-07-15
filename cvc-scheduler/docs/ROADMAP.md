@@ -5,8 +5,10 @@
 - Belgrade Remodel remains the production Sheets/App Script workflow.
 - The full-stack app is being built in parallel.
 - Belgrade is the research/testing blueprint.
-- The goal is to be ready for the next project after Belgrade.
+- The near-term beta target is now Bozeman volunteer scheduling, ideally ready by mid-August 2026.
 - Do not rush the full-stack app into the live Belgrade remodel unless a narrow slice becomes safe.
+- Belgrade remains the operational fallback while Bozeman proves Project Local in a smaller real beta.
+- Near-term principle: **Cut features, not integrity**.
 
 ## 2. Real-World Readiness Plan
 
@@ -16,8 +18,33 @@ Rough phases:
 
 - Mock prototype foundation.
 - Real-data alpha.
-- Practical MVP for next project.
+- Practical Bozeman scheduling beta.
 - Multi-module platform version.
+
+## Bozeman Scheduling Beta Re-baseline
+
+The repository-grounded beta plan is recorded in [`BOZEMAN_BETA_ROADMAP.md`](./BOZEMAN_BETA_ROADMAP.md) and protected by `lib/readiness/bozemanBetaRoadmap.server.ts` plus `npm run test:bozeman-beta-roadmap`.
+
+The Bozeman Beta launch gate requires one production-safe scheduling loop: authorized Bozeman workspace access, permanent volunteer profile entry/import, real Calendar scheduled item create/edit, task-preset or one-off scheduled item creation, volunteer assignment, draft/private versus published/live visibility, secure account-light volunteer schedule access, Confirm/Deny persistence, admin-visible response state, reliable initial assignment email, approved Project Local UI polish on beta-critical surfaces, production environment readiness, hosted validation where required, browser/mobile proof, observability, backup/recovery, and Belgrade Sheets fallback.
+
+Critical path from the post-12.13 state:
+
+1. `12.14 Bozeman Workspace Access and Provisioning Readiness`
+2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
+3. `12.16 Calendar Create/Edit Scheduled Item Implementation`
+4. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
+5. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
+6. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
+7. `12.20 Secure Account-Light Volunteer Schedule Access`
+8. `12.21 Volunteer Confirm/Deny Round Trip`
+9. `12.22 Initial Assignment Notification Email Boundary`
+10. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+
+The old next step, `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`, is moved and modified. It remains useful, but it is not the immediate beta blocker. A narrower task-preset selector/read seam can be reviewed when Calendar create/edit needs it, and the full `/admin/tasks` cutover can wait unless it becomes directly beta-critical.
+
+Features explicitly deferred behind the beta gate include Belgrade migration, full `/admin/tasks` cutover if not needed for Calendar creation, full public questionnaire cutover, manual public lookup, remembered devices, assignment-detail response-link admin reveal/copy activation, full Communications authoring, automatic reminders, delivery analytics, advanced availability/conflict engine, drag/drop/resize/recurrence Calendar persistence, Food/Security restoration as separate modules, Needs Attention persistence, and broad assignment directory/search.
+
+Response-link activation remains paused after 11.50.
 
 ## 3. Near-Term Roadmap
 
@@ -160,6 +187,7 @@ Rough phases:
 - 12.11 Calendar Persisted Read Route Cutover Implementation. Completed as the first actual `/admin/calendar` persisted-read route cutover. The route is now dynamic/no-store and server-owned, derives Auth/contact/workspace/grant/capability/timezone context through reviewed server boundaries, requires the strict `calendar.view` plus `assignments.view` rule for coverage-bearing output, calls the dependency-injected 12.6 query helper through a narrow route read adapter, and maps safe persisted read-model items into the existing Calendar UI. `/admin/calendar` no longer uses mock Calendar items as the user-facing item truth source and does not fall back to or mix mock/persisted items. The four reviewed states (`ready_with_items`, `ready_empty`, `unavailable`, `error`) are implemented. Calendar writes, assignment picker/mutations, assignment-detail links, response-link activation/copy/delivery, public lookup, remembered devices, service-role usage, seed data, migrations, generated type changes, hosted validation, and production data validation remain absent. Next recommended slice: `12.12 Calendar Persisted Read Cutover Stabilization`, still read-only, before any Calendar writes or broader route cutovers.
 - 12.12 Calendar Persisted Read Cutover Stabilization. Completed as a read-only stabilization pass for the first persisted Calendar route cutover. Calendar Day/Week/Month/List navigation now uses server-backed `view` and `date` query parameters that derive a fresh explicit bounded range before each persisted read, preventing false `ready_empty` states for periods that were never queried. Workspace selection is now deterministic and contact-scoped: only the authenticated project contact's effective active grants are unioned, revoked/expired/inactive grants are ignored, exactly one eligible workspace with both `calendar.view` and `assignments.view` is required, cross-contact/cross-workspace capability borrowing is rejected, and ambiguous multiple-workspace eligibility fails closed. `/admin/calendar` remains persisted-item-backed, read-only, dynamic/no-store, and free of mock fallback/mixing, writes, assignment picker/mutations, assignment-detail links, response-link activation, delivery, public lookup, remembered devices, service-role usage, seed data, migrations, generated type changes, hosted validation, or broader route cutovers. Recommended next slice: `12.13 Persisted Tasks Read Model Contract` if the final 12.12 validation remains clean; otherwise perform a narrow Calendar read-cutover stabilization follow-up.
 - 12.13 Persisted Tasks Read Model Contract. Completed as route-unused, server-only readiness for a future `/admin/tasks` persisted read cutover. The contract keeps `/admin/tasks` mock/prototype, requires `tasks.view` plus server-derived authenticated contact and deterministic active workspace context, and defines a safe allowlisted task-preset projection from the current `task_presets` schema: preset id, workspace scope, name, description, type/category, default needed count, volunteer visibility, lifecycle, bounded custom-field definitions, safe system identity, and timestamps only when needed. It documents future schema gaps instead of inventing fields, keeps system/trusted preset identity controlled, and separates Tasks presets from Calendar occurrences by forbidding schedule date/time/range, Calendar placement, assignment/response rows, assigned/confirmed/denied counts, coverage state, occurrence notes, Follow-up Contact overrides, recurrence instances, and times-scheduled/upcoming-occurrence aggregates. Mock fallback/mixing, route cutover, query helper implementation, Tasks writes, Calendar writes, response-link activation, delivery, public lookup, remembered devices, service-role usage, seed data, migrations, generated type changes, and hosted validation remain absent. Recommended next slice: `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`; do not cut over `/admin/tasks` from 12.13 alone.
+- Bozeman Scheduling Beta Roadmap Re-baseline. Completed as audit/dependency-mapping/documentation only. A server-only route-unused readiness artifact and canonical roadmap doc identify Bozeman as the initial Project Local beta target, ideal mid-August 2026 readiness, Belgrade Sheets as fallback, and **Cut features, not integrity** as the near-term principle. The beta-critical path now prioritizes Bozeman workspace access, volunteer Add/Edit/import, Calendar writes, task-preset/one-off scheduled item creation, assignment picker/commands, publication visibility, secure volunteer schedule access, Confirm/Deny, initial assignment email, UI polish, and production gates. The previous `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review` is moved/modified, not deleted: use a narrower task-preset selector seam when Calendar create/edit needs it. No product implementation, migration, hosted validation, email sending, response-link activation, service-role usage, production data access, or mock/persisted mixing was added. Next recommended slice: `12.14 Bozeman Workspace Access and Provisioning Readiness`.
 
 ## 4. Mid-Term Roadmap
 

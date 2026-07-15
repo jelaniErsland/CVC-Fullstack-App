@@ -1,5 +1,32 @@
 # Project History
 
+## Bozeman Scheduling Beta Roadmap Re-baseline
+
+Summary:
+- Performed a repository-grounded roadmap audit after 12.13 and re-baselined near-term work toward a narrow production-safe Bozeman scheduling beta, ideally ready by mid-August 2026.
+- Added `docs/BOZEMAN_BETA_ROADMAP.md` and `lib/readiness/bozemanBetaRoadmap.server.ts` to record Bozeman as the initial Project Local beta target, Belgrade Sheets/App Script as the operational fallback, and **Cut features, not integrity** as the governing near-term principle.
+- Classified every beta-critical domain against actual repository state: workspace/admin access, volunteer data entry/import, Tasks, Calendar, volunteer assignment, publication lifecycle, volunteer schedule access, Confirm/Deny, initial assignment email, UI integration, and production readiness.
+- Defined the Bozeman Beta launch gate, blocker list, deferred feature list, dependency critical path, validation gates, and approved UI integration sequence.
+- Moved and modified the old `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review` recommendation. It remains useful, but the immediate next implementation slice is now `12.14 Bozeman Workspace Access and Provisioning Readiness`; any task-preset helper work should be narrowed to a Calendar creation selector seam if that becomes the beta-critical need.
+- Added `npm run test:bozeman-beta-roadmap` to prove the roadmap artifact is server-only, route-unused, non-implementing, docs-backed, Bozeman-targeted, and preserves the response-link pause, Belgrade fallback, no-service-role, no-email, no-production-data, and no mock/persisted-mixing guardrails.
+- Response-link activation remains paused after 11.50.
+
+Changed files:
+- `lib/readiness/bozemanBetaRoadmap.server.ts`
+- `scripts/bozeman-beta-roadmap-regression.mjs`
+- `package.json`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+
+Validation:
+- This was audit/dependency-mapping/documentation only. No route cutover, product route loader, Calendar write, Tasks/Volunteers/Public Volunteer/Communications cutover, real email sending, response-link activation, service-role usage, seed data, production data access, migration, generated type change, hosted validation, or mock/persisted truth mixing was added.
+
+Recommended next slice:
+- `12.14 Bozeman Workspace Access and Provisioning Readiness`: define the permanent safe path to provision the Bozeman workspace, project-contact identities, capability grants, and active-workspace assumptions before real Bozeman volunteer data is entered.
+
 ## Iteration 12.13 - Persisted Tasks Read Model Contract
 
 Summary:

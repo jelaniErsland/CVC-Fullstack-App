@@ -24,6 +24,7 @@
     "test:assignment-detail-route:browser": "node scripts/assignment-detail-route-browser-regression.mjs",
     "test:assignment-detail-context:hosted": "node scripts/hosted-assignment-detail-context-regression.mjs",
     "test:mvp-cutover-plan": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/mvp-real-data-cutover-plan-regression.mjs",
+    "test:bozeman-beta-roadmap": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-beta-roadmap-regression.mjs",
     "test:tasks-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/tasks-read-model-contract-regression.mjs",
     "test:calendar-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-contract-regression.mjs",
     "test:calendar-read-model-helper": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-read-model-helper-regression.mjs",
