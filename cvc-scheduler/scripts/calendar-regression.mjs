@@ -25,17 +25,19 @@ const mobileViewport = { width: 390, height: 844 };
 const projectWeekLabel = "Jan 12 to Jan 18, 2026";
 const previousWeekLabel = "Jan 5 to Jan 11, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
-// Accessible names are the deliberate interaction contract for the persisted 12.11 cutover fixtures.
+// Accessible names are the deliberate interaction contract for the persisted 12.12 cutover fixtures.
 const weekItemLabel =
   "Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
 const listItemLabel =
   "Site support week, Project window · Mon Jan 12 through Sat Jan 17, 0 of 0 helpers, General Volunteers";
 const monthItemLabel =
   "Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
+const nextWeekItemLabel =
+  "Follow-up supplies, 1 of 1 volunteers, Tue Jan 20, 9:00 AM - 10:00 AM";
 
 const secrets = new Set();
 const fixture = {
-  namespace: `qa-12-11-calendar-${randomUUID()}`,
+  namespace: `qa-12-12-calendar-${randomUUID()}`,
   workspaceId: randomUUID(),
   calendarOnlyWorkspaceId: randomUUID(),
   calendarOnlyContactId: randomUUID(),
@@ -54,6 +56,7 @@ const fixture = {
     coffee: randomUUID(),
     doorCheck: randomUUID(),
     supplyRun: randomUUID(),
+    nextWeekSupplies: randomUUID(),
   },
   assignmentIds: {
     gate: randomUUID(),
@@ -62,6 +65,7 @@ const fixture = {
     coffee: randomUUID(),
     doorCheck: randomUUID(),
     supplyRun: randomUUID(),
+    nextWeekSupplies: randomUUID(),
   },
   otherWorkspaceId: randomUUID(),
   otherCalendarItemId: randomUUID(),
@@ -167,7 +171,7 @@ async function verifyLocalPreflight() {
 }
 
 async function createAuthenticatedContact(label) {
-  const email = `qa-12-11-${label}-${randomUUID()}@example.invalid`;
+  const email = `qa-12-12-${label}-${randomUUID()}@example.invalid`;
   const password = `${randomBytes(24).toString("base64url")}aA1!`;
   const cookieJar = new Map();
   secrets.add(email);
@@ -240,8 +244,8 @@ function questionnaireRows() {
     .map((id, index) => {
       const answers = JSON.stringify({
         aboutYou: {
-          name: `QA 12.11 Volunteer ${index + 1}`,
-          email: `qa-12-11-volunteer-${index + 1}@example.invalid`,
+          name: `QA 12.12 Volunteer ${index + 1}`,
+          email: `qa-12-12-volunteer-${index + 1}@example.invalid`,
           phone: "+1 555 120 1100",
           congregation: "QA Congregation",
         },
@@ -262,7 +266,7 @@ function volunteerRows() {
   return fixture.volunteerIds
     .map(
       (id, index) =>
-        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', 'QA 12.11 Volunteer ${index + 1}', 'qa-12-11-volunteer-${index + 1}@example.invalid', null, 'QA Congregation', 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
+        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', 'QA 12.12 Volunteer ${index + 1}', 'qa-12-12-volunteer-${index + 1}@example.invalid', null, 'QA Congregation', 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
     )
     .join(",\n");
 }
@@ -275,6 +279,12 @@ function assignmentRows(fullUserId) {
     [fixture.assignmentIds.coffee, fixture.calendarItemIds.coffee, fixture.volunteerIds[3], "active"],
     [fixture.assignmentIds.doorCheck, fixture.calendarItemIds.doorCheck, fixture.volunteerIds[4], "active"],
     [fixture.assignmentIds.supplyRun, fixture.calendarItemIds.supplyRun, fixture.volunteerIds[5], "active"],
+    [
+      fixture.assignmentIds.nextWeekSupplies,
+      fixture.calendarItemIds.nextWeekSupplies,
+      fixture.volunteerIds[6],
+      "active",
+    ],
   ];
   return rows
     .map(
@@ -292,6 +302,7 @@ function responseRows(fullUserId) {
     [fixture.assignmentIds.coffee, "confirmed"],
     [fixture.assignmentIds.doorCheck, "confirmed"],
     [fixture.assignmentIds.supplyRun, "confirmed"],
+    [fixture.assignmentIds.nextWeekSupplies, "confirmed"],
   ];
   return rows
     .map(([assignmentId, status]) => {
@@ -308,9 +319,9 @@ async function createFixtures(containerName) {
   runPsql(containerName, `begin;
 insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
 values
-  ('${fixture.workspaceId}'::uuid, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.11 Calendar Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
-  ('${fixture.calendarOnlyWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-calendar-only`)}, 'QA 12.11 Calendar Only Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
-  ('${fixture.otherWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.11 Other Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false);
+  ('${fixture.workspaceId}'::uuid, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.12 Calendar Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
+  ('${fixture.calendarOnlyWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-calendar-only`)}, 'QA 12.12 Calendar Only Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
+  ('${fixture.otherWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.12 Other Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false);
 insert into public.project_contacts (id, auth_user_id, status)
 values
   ('${fixture.fullContactId}'::uuid, '${fullUserId}'::uuid, 'active'),
@@ -318,7 +329,7 @@ values
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status)
 values
   ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view']::text[], 'active'),
-  ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.calendarOnlyWorkspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
+  ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
 insert into public.questionnaire_submissions (id, workspace_id, status, source, questionnaire_version, answers)
 values ${questionnaireRows()};
 insert into public.volunteer_profiles (
@@ -330,8 +341,8 @@ insert into public.task_presets (
   id, workspace_id, name, description, task_type, default_needed_count, volunteer_visible,
   is_system_preset, custom_field_definitions, lifecycle
 ) values
-  ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.11 General', null, 'general', 1, true, false, '[]'::jsonb, 'active'),
-  ('${fixture.foodTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.11 Food', null, 'food', 1, true, false, '[]'::jsonb, 'active');
+  ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.12 General', null, 'general', 1, true, false, '[]'::jsonb, 'active'),
+  ('${fixture.foodTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.12 Food', null, 'food', 1, true, false, '[]'::jsonb, 'active');
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, end_date, start_time, end_time, timezone,
@@ -344,7 +355,8 @@ insert into public.calendar_items (
   ('${fixture.calendarItemIds.coffee}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Coffee station', 'general', 'timed', '2026-01-14', null, '08:00:00', '09:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
   ('${fixture.calendarItemIds.doorCheck}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Door check', 'general', 'timed', '2026-01-14', null, '09:00:00', '10:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
   ('${fixture.calendarItemIds.supplyRun}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Supply run', 'general', 'timed', '2026-01-14', null, '13:00:00', '14:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
-  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.11 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active');
+  ('${fixture.calendarItemIds.nextWeekSupplies}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Follow-up supplies', 'general', 'timed', '2026-01-20', null, '09:00:00', '10:00:00', 'America/Denver', 1, 'Safe follow-up note', '{}'::jsonb, 'active'),
+  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.12 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active');
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 ) values ${assignmentRows(fullUserId)};
@@ -372,8 +384,8 @@ ${authUserDeletes}
 commit;
 select
   (select count(*) from public.workspaces where workspace_key like '${fixture.namespace}%') +
-  (select count(*) from public.calendar_items where title_snapshot like 'QA 12.11%') +
-  (select count(*) from auth.users where email like 'qa-12-11-%@example.invalid');`);
+  (select count(*) from public.calendar_items where title_snapshot like 'QA 12.12%') +
+  (select count(*) from auth.users where email like 'qa-12-12-%@example.invalid');`);
   assert(residue === "0", `Calendar route fixture cleanup left residue count ${residue}.`);
   cleanupCompleted = true;
 }
@@ -731,10 +743,37 @@ async function runDesktop(browser) {
 
         await activateWithKeyboard(previous, `${view} Previous week button`);
         await assertPeriod(page, previousWeekLabel);
+        if (view === "Week") {
+          await page
+            .getByText("No scheduled items in this range", { exact: true })
+            .waitFor();
+          assert(
+            (await page.getByRole("button", { name: weekItemLabel, exact: true }).count()) ===
+              0,
+            `${view} previous-week empty state must not keep the project-week persisted item`,
+          );
+        }
         await activateWithKeyboard(next, `${view} Next week button`);
         await assertPeriod(page, projectWeekLabel);
+        await page
+          .getByRole("button", {
+            name: view === "List" ? listItemLabel : weekItemLabel,
+            exact: true,
+          })
+          .waitFor();
         await activateWithKeyboard(next, `${view} Next week button`);
         await assertPeriod(page, nextWeekLabel);
+        if (view === "List") {
+          await page.getByText("Follow-up supplies", { exact: true }).waitFor();
+        } else {
+          await page
+            .getByRole("button", { name: nextWeekItemLabel, exact: true })
+            .waitFor();
+        }
+        assert(
+          (await page.getByText("No scheduled items in this range", { exact: true }).count()) === 0,
+          `${view} next-week persisted item was hidden behind a false empty state`,
+        );
 
         const reset = await assertUnique(
           page.getByRole("button", { name: "Project week", exact: true }),
@@ -1403,6 +1442,15 @@ async function runMobile(browser) {
         "Mobile Month overflow and date creation target must remain sibling controls",
       );
       await activateWithKeyboard(overflow, "Mobile Month overflow button");
+      await page.waitForFunction(() =>
+        Array.from(
+          document.querySelectorAll('[aria-label="Calendar view"] button'),
+        ).some(
+          (candidate) =>
+            candidate.textContent?.trim() === "Day" &&
+            candidate.getAttribute("aria-pressed") === "true",
+        ),
+      );
       assert(
         (await page
           .getByRole("button", { name: "Day", exact: true })

@@ -1,9 +1,9 @@
 import "server-only";
 
 import {
-  loadProjectContactGrantsWithClient,
-  readAuthenticatedProjectContactIdWithClient,
-} from "../auth/project-contact-grants.ts";
+  isEffectiveWorkspaceReadGrant,
+  type ProjectContactGrant,
+} from "../auth/grant.ts";
 import {
   getCalendarRouteCutoverStatePrototypePresentation,
   type CalendarRouteCutoverErrorReason,
@@ -14,9 +14,11 @@ import {
   type CalendarReadModelQueryClient,
   type CalendarReadModelQueryFailureReason,
 } from "./readModelQuery.server.ts";
-import type { CalendarReadModelItem } from "./readModel.server.ts";
-import { createServerSupabaseClient } from "../supabase/server.ts";
-import { readGrantedWorkspacesWithClient } from "../workspaces/granted.ts";
+import type {
+  CalendarReadModelItem,
+  CalendarReadModelPeriodKind,
+} from "./readModel.server.ts";
+import type { WorkspaceIdentity } from "../workspaces/identity.ts";
 
 type CalendarClientCategory =
   | "general"
@@ -54,9 +56,45 @@ type CalendarClientItem = {
     customFields: never[];
   };
 };
+export type CalendarRouteView = CalendarReadModelPeriodKind;
+export type CalendarRouteQueriedRange = Readonly<{
+  rangeStart: string;
+  rangeEnd: string;
+  periodKind: CalendarRouteView;
+  anchorDate: string;
+  bounded: true;
+  rangeSemantics: "server_derived_start_inclusive_end_exclusive";
+}>;
+type CalendarClientStateBase = Readonly<{
+  view: CalendarRouteView;
+  anchorDate: string;
+  queriedRange: CalendarRouteQueriedRange;
+}>;
 type CalendarClientState =
-  | Readonly<{ kind: "ready_with_items" | "ready_empty"; items: CalendarClientItem[] }>
-  | Readonly<{ kind: "unavailable" | "error"; title: string; message: string }>;
+  | (CalendarClientStateBase &
+      Readonly<{ kind: "ready_with_items" | "ready_empty"; items: CalendarClientItem[] }>)
+  | (CalendarClientStateBase &
+      Readonly<{ kind: "unavailable" | "error"; title: string; message: string }>);
+
+type CalendarRouteSearchParams =
+  | Record<string, string | string[] | undefined>
+  | undefined;
+
+type CalendarRouteWorkspaceSelection =
+  | Readonly<{
+      ok: true;
+      workspace: WorkspaceIdentity;
+      projectContactId: string;
+      capabilities: readonly ["calendar.view", "assignments.view"];
+    }>
+  | Readonly<{
+      ok: false;
+      reason:
+        | "unauthorized"
+        | "missing_calendar_view"
+        | "missing_assignments_view"
+        | "workspace_unavailable";
+    }>;
 
 export const CALENDAR_ROUTE_PERSISTED_READ_CUTOVER_IMPLEMENTED = true;
 export const CALENDAR_ROUTE_PERSISTED_READ_ONLY = true;
@@ -67,35 +105,196 @@ export const CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE = false;
 export const CALENDAR_RESPONSE_LINK_ACTIVATION_REOPENED = false;
 export const CALENDAR_SERVICE_ROLE_READ_AVAILABLE = false;
 export const CALENDAR_SEED_DATA_AVAILABLE = false;
+export const CALENDAR_ROUTE_SERVER_BACKED_NAVIGATION_AVAILABLE = true;
+export const CALENDAR_ROUTE_FALSE_EMPTY_FOR_UNQUERIED_RANGE_ALLOWED = false;
+export const CALENDAR_ROUTE_AMBIGUOUS_WORKSPACE_SELECTION_ALLOWED = false;
 
+export const CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE = "2026-01-13";
+export const CALENDAR_ROUTE_DEFAULT_VIEW: CalendarRouteView = "week";
+export const CALENDAR_ROUTE_MAXIMUM_RANGE_DAYS = 93;
 export const CALENDAR_ROUTE_PERSISTED_READ_RANGE = {
-  rangeStart: "2026-01-01",
-  rangeEnd: "2026-04-04",
-  periodKind: "list",
-  anchorDate: "2026-01-13",
-  boundedRangeDays: 93,
+  rangeStart: "2026-01-12",
+  rangeEnd: "2026-01-19",
+  periodKind: "week",
+  anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
+  boundedRangeDays: 7,
+  rangeSemantics: "server_derived_start_inclusive_end_exclusive",
 } as const;
 
-function unavailableState(
-  reason: CalendarRouteCutoverUnavailableReason,
-): CalendarClientState {
-  const presentation = getCalendarRouteCutoverStatePrototypePresentation({
-    kind: "unavailable",
-    view: "week",
-    reason,
-  });
+const supportedRouteViews = ["day", "week", "month", "list"] as const;
+const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+const fallbackRange: CalendarRouteQueriedRange = {
+  rangeStart: "2026-01-12",
+  rangeEnd: "2026-01-19",
+  periodKind: "week",
+  anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
+  bounded: true,
+  rangeSemantics: "server_derived_start_inclusive_end_exclusive",
+};
+
+function firstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isSupportedRouteView(value: unknown): value is CalendarRouteView {
+  return supportedRouteViews.includes(value as CalendarRouteView);
+}
+
+function normalizeDate(value: unknown) {
+  if (typeof value !== "string") return null;
+  const match = datePattern.exec(value.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return value.trim();
+}
+
+function addDays(date: string, days: number) {
+  const nextDate = new Date(`${date}T00:00:00Z`);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+  return nextDate.toISOString().slice(0, 10);
+}
+
+function firstDayOfMonth(date: string) {
+  const current = new Date(`${date}T00:00:00Z`);
+  return new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth(), 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function firstDayOfNextMonth(date: string) {
+  const current = new Date(`${date}T00:00:00Z`);
+  return new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + 1, 1))
+    .toISOString()
+    .slice(0, 10);
+}
+
+function mondayWeekStart(date: string) {
+  const current = new Date(`${date}T00:00:00Z`);
+  const day = current.getUTCDay();
+  const offset = day === 0 ? -6 : 1 - day;
+  current.setUTCDate(current.getUTCDate() + offset);
+  return current.toISOString().slice(0, 10);
+}
+
+function rangeLengthDays(rangeStart: string, rangeEnd: string) {
+  return Math.round(
+    (new Date(`${rangeEnd}T00:00:00Z`).getTime() -
+      new Date(`${rangeStart}T00:00:00Z`).getTime()) /
+      (24 * 60 * 60 * 1000),
+  );
+}
+
+function isTrustedTimezone(value: unknown) {
+  if (typeof value !== "string" || value.trim().length === 0) return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value.trim() }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function normalizeCalendarRouteSearchParams(
+  searchParams: CalendarRouteSearchParams,
+):
+  | Readonly<{ ok: true; view: CalendarRouteView; anchorDate: string }>
+  | Readonly<{ ok: false; view: CalendarRouteView; anchorDate: string }> {
+  const rawView = firstSearchParam(searchParams?.view);
+  const rawDate = firstSearchParam(searchParams?.date);
+
+  const view = rawView === undefined ? CALENDAR_ROUTE_DEFAULT_VIEW : rawView;
+  const anchorDate =
+    rawDate === undefined ? CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE : normalizeDate(rawDate);
+
+  if (!isSupportedRouteView(view) || !anchorDate) {
+    return {
+      ok: false,
+      view: CALENDAR_ROUTE_DEFAULT_VIEW,
+      anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
+    };
+  }
+
+  return { ok: true, view, anchorDate };
+}
+
+export function deriveCalendarRouteReadRange(input: {
+  view: CalendarRouteView;
+  anchorDate: string;
+  workspaceTimezone: string;
+}): CalendarRouteQueriedRange | null {
+  const anchorDate = normalizeDate(input.anchorDate);
+  if (!isSupportedRouteView(input.view) || !anchorDate || !isTrustedTimezone(input.workspaceTimezone)) {
+    return null;
+  }
+
+  let rangeStart: string;
+  let rangeEnd: string;
+  if (input.view === "day") {
+    rangeStart = anchorDate;
+    rangeEnd = addDays(anchorDate, 1);
+  } else if (input.view === "week") {
+    rangeStart = mondayWeekStart(anchorDate);
+    rangeEnd = addDays(rangeStart, 7);
+  } else if (input.view === "month") {
+    rangeStart = firstDayOfMonth(anchorDate);
+    rangeEnd = firstDayOfNextMonth(anchorDate);
+  } else {
+    rangeStart = anchorDate;
+    rangeEnd = addDays(anchorDate, 42);
+  }
+
+  const length = rangeLengthDays(rangeStart, rangeEnd);
+  if (!Number.isFinite(length) || length <= 0 || length > CALENDAR_ROUTE_MAXIMUM_RANGE_DAYS) {
+    return null;
+  }
 
   return {
-    kind: "unavailable",
-    title: presentation.userFacingHeading,
-    message: presentation.userFacingCopy,
+    rangeStart,
+    rangeEnd,
+    periodKind: input.view,
+    anchorDate,
+    bounded: true,
+    rangeSemantics: "server_derived_start_inclusive_end_exclusive",
   };
 }
 
-function errorState(reason: CalendarRouteCutoverErrorReason): CalendarClientState {
+function unavailableState(
+  reason: CalendarRouteCutoverUnavailableReason,
+  range: CalendarRouteQueriedRange = fallbackRange,
+): CalendarClientState {
+  const presentation = getCalendarRouteCutoverStatePrototypePresentation({
+    kind: "unavailable",
+    view: range.periodKind,
+    reason,
+  });
+
+  return {
+    kind: "unavailable",
+    title: presentation.userFacingHeading,
+    message: presentation.userFacingCopy,
+    view: range.periodKind,
+    anchorDate: range.anchorDate,
+    queriedRange: range,
+  };
+}
+
+function errorState(
+  reason: CalendarRouteCutoverErrorReason,
+  range: CalendarRouteQueriedRange = fallbackRange,
+): CalendarClientState {
   const presentation = getCalendarRouteCutoverStatePrototypePresentation({
     kind: "error",
-    view: "week",
+    view: range.periodKind,
     reason,
   });
 
@@ -103,6 +302,9 @@ function errorState(reason: CalendarRouteCutoverErrorReason): CalendarClientStat
     kind: "error",
     title: presentation.userFacingHeading,
     message: presentation.userFacingCopy,
+    view: range.periodKind,
+    anchorDate: range.anchorDate,
+    queriedRange: range,
   };
 }
 
@@ -186,8 +388,89 @@ function isUnavailableQueryFailure(reason: CalendarReadModelQueryFailureReason) 
   );
 }
 
-export async function readCalendarRouteState(): Promise<CalendarClientState> {
+function readModelItemOverlapsRouteRange(
+  item: CalendarReadModelItem,
+  range: CalendarRouteQueriedRange,
+) {
+  const itemEndDate = item.endDate ?? item.startDate;
+  return item.startDate < range.rangeEnd && itemEndDate >= range.rangeStart;
+}
+
+export function selectCalendarRouteWorkspaceContext(input: {
+  projectContactId: string;
+  ownGrants: readonly ProjectContactGrant[];
+  workspaces: readonly WorkspaceIdentity[];
+}): CalendarRouteWorkspaceSelection {
+  if (input.ownGrants.length === 0) return { ok: false, reason: "unauthorized" };
+
+  const activeWorkspaces = new Map(
+    input.workspaces
+      .filter((workspace) => workspace.lifecycle === "active")
+      .map((workspace) => [workspace.id, workspace]),
+  );
+  const workspaceCapabilities = new Map<
+    string,
+    { workspace: WorkspaceIdentity; capabilities: Set<string> }
+  >();
+
+  for (const grant of input.ownGrants) {
+    if (grant.projectContactId !== input.projectContactId) continue;
+    if (!isEffectiveWorkspaceReadGrant(grant)) continue;
+    const workspace = activeWorkspaces.get(grant.workspaceId);
+    if (!workspace) continue;
+    const existing = workspaceCapabilities.get(workspace.id) ?? {
+      workspace,
+      capabilities: new Set<string>(),
+    };
+    for (const capability of grant.capabilities) existing.capabilities.add(capability);
+    workspaceCapabilities.set(workspace.id, existing);
+  }
+
+  if (workspaceCapabilities.size === 0) {
+    return { ok: false, reason: "workspace_unavailable" };
+  }
+
+  const candidates = [...workspaceCapabilities.values()];
+  const eligible = candidates.filter(
+    ({ capabilities }) =>
+      capabilities.has("calendar.view") && capabilities.has("assignments.view"),
+  );
+
+  if (eligible.length === 1) {
+    return {
+      ok: true,
+      workspace: eligible[0].workspace,
+      projectContactId: input.projectContactId,
+      capabilities: ["calendar.view", "assignments.view"],
+    };
+  }
+
+  if (eligible.length > 1) {
+    return { ok: false, reason: "workspace_unavailable" };
+  }
+
+  const hasCalendarView = candidates.some(({ capabilities }) =>
+    capabilities.has("calendar.view"),
+  );
+  return {
+    ok: false,
+    reason: hasCalendarView ? "missing_assignments_view" : "missing_calendar_view",
+  };
+}
+
+export async function readCalendarRouteState(
+  searchParams?: CalendarRouteSearchParams,
+): Promise<CalendarClientState> {
+  const routeRequest = normalizeCalendarRouteSearchParams(searchParams);
+  if (!routeRequest.ok) return unavailableState("invalid_period_or_range");
+
   try {
+    const { createServerSupabaseClient } = await import("../supabase/server.ts");
+    const {
+      loadProjectContactGrantsWithClient,
+      readAuthenticatedProjectContactIdWithClient,
+    } = await import("../auth/project-contact-grants.ts");
+    const { readGrantedWorkspacesWithClient } = await import("../workspaces/granted.ts");
     const supabase = await createServerSupabaseClient();
     const {
       data: { user },
@@ -209,49 +492,56 @@ export async function readCalendarRouteState(): Promise<CalendarClientState> {
     if (ownGrants.length === 0) return unavailableState("unauthorized");
 
     const workspaces = await readGrantedWorkspacesWithClient(supabase);
-    const candidate = ownGrants
-      .map((grant) => ({
-        grant,
-        workspace: workspaces.find((workspace) => workspace.id === grant.workspaceId),
-      }))
-      .find(({ grant, workspace }) => {
-        if (!workspace || workspace.lifecycle !== "active") return false;
-        return (
-          grant.capabilities.includes("calendar.view") &&
-          grant.capabilities.includes("assignments.view")
-        );
-      });
+    const workspaceSelection = selectCalendarRouteWorkspaceContext({
+      projectContactId,
+      ownGrants,
+      workspaces,
+    });
 
-    if (!candidate?.workspace) {
-      const hasCalendarView = ownGrants.some((grant) =>
-        grant.capabilities.includes("calendar.view"),
-      );
-      return unavailableState(
-        hasCalendarView ? "missing_assignments_view" : "missing_calendar_view",
-      );
-    }
+    if (!workspaceSelection.ok) return unavailableState(workspaceSelection.reason);
+
+    const range = deriveCalendarRouteReadRange({
+      view: routeRequest.view,
+      anchorDate: routeRequest.anchorDate,
+      workspaceTimezone: workspaceSelection.workspace.timezone,
+    });
+    if (!range) return unavailableState("invalid_period_or_range");
 
     const query = await readCalendarReadModelWithClient({
       client: supabase as unknown as CalendarReadModelQueryClient,
-      workspaceId: candidate.workspace.id,
-      actorContactId: candidate.grant.projectContactId,
-      workspaceTimezone: candidate.workspace.timezone,
-      rangeStart: CALENDAR_ROUTE_PERSISTED_READ_RANGE.rangeStart,
-      rangeEnd: CALENDAR_ROUTE_PERSISTED_READ_RANGE.rangeEnd,
-      periodKind: CALENDAR_ROUTE_PERSISTED_READ_RANGE.periodKind,
-      capabilities: ["calendar.view", "assignments.view"],
+      workspaceId: workspaceSelection.workspace.id,
+      actorContactId: workspaceSelection.projectContactId,
+      workspaceTimezone: workspaceSelection.workspace.timezone,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
+      periodKind: range.periodKind,
+      capabilities: workspaceSelection.capabilities,
     });
 
     if (!query.ok) {
       return isUnavailableQueryFailure(query.reason)
-        ? unavailableState("prerequisite_unavailable")
-        : errorState("query_unavailable");
+        ? unavailableState("prerequisite_unavailable", range)
+        : errorState("query_unavailable", range);
     }
 
-    const items = query.items.map(mapPersistedItemToCalendarItem);
+    const items = query.items
+      .filter((item) => readModelItemOverlapsRouteRange(item, range))
+      .map(mapPersistedItemToCalendarItem);
     return items.length > 0
-      ? { kind: "ready_with_items", items }
-      : { kind: "ready_empty", items: [] };
+      ? {
+          kind: "ready_with_items",
+          items,
+          view: range.periodKind,
+          anchorDate: range.anchorDate,
+          queriedRange: range,
+        }
+      : {
+          kind: "ready_empty",
+          items: [],
+          view: range.periodKind,
+          anchorDate: range.anchorDate,
+          queriedRange: range,
+        };
   } catch {
     return errorState("safe_error");
   }
@@ -268,11 +558,16 @@ export function describeCalendarRoutePersistedReadCutover() {
     responseLinkActivationReopened: CALENDAR_RESPONSE_LINK_ACTIVATION_REOPENED,
     serviceRoleReadAvailable: CALENDAR_SERVICE_ROLE_READ_AVAILABLE,
     seedDataAvailable: CALENDAR_SEED_DATA_AVAILABLE,
+    serverBackedNavigationAvailable: CALENDAR_ROUTE_SERVER_BACKED_NAVIGATION_AVAILABLE,
+    falseEmptyForUnqueriedRangeAllowed:
+      CALENDAR_ROUTE_FALSE_EMPTY_FOR_UNQUERIED_RANGE_ALLOWED,
+    ambiguousWorkspaceSelectionAllowed:
+      CALENDAR_ROUTE_AMBIGUOUS_WORKSPACE_SELECTION_ALLOWED,
     routeRange: CALENDAR_ROUTE_PERSISTED_READ_RANGE,
     states: ["ready_with_items", "ready_empty", "unavailable", "error"],
     dataBoundary: "readCalendarReadModelWithClient",
     authBoundary:
-      "server_supabase_auth_user_plus_loadProjectContactGrantsWithClient_plus_readGrantedWorkspacesWithClient",
+      "server_supabase_auth_user_plus_contact_scoped_loadProjectContactGrantsWithClient_plus_readGrantedWorkspacesWithClient",
     strictCapabilities: ["calendar.view", "assignments.view"],
   } as const;
 }

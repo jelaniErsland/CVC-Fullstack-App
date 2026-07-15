@@ -1,5 +1,20 @@
 # Project History
 
+## Iteration 12.12 - Calendar Persisted Read Cutover Stabilization
+
+Summary:
+- Stabilized the first `/admin/calendar` persisted-read cutover while keeping it read-only and without adding Calendar writes, assignment picker/mutations, assignment-detail links, response-link activation, delivery, public lookup, remembered devices, service-role usage, seed data, migrations, generated type changes, hosted validation, or broader route cutovers.
+- Replaced client-local date/view period movement with server-backed `view` and `date` query parameters. Each Day/Week/Month/List navigation now triggers a fresh dynamic/no-store server read for an explicit bounded range, so `ready_empty` is only used after a real successful zero-row persisted read of the selected period and cannot mask unqueried periods that may contain persisted items.
+- Hardened workspace selection in `lib/calendar/routeRead.server.ts`: only the authenticated project contact's own effective active grants are unioned per active workspace; exactly one eligible workspace with both `calendar.view` and `assignments.view` is required; revoked/expired/inactive grants are ignored; cross-contact/cross-workspace capability borrowing is rejected; and multiple eligible workspaces fail closed instead of choosing an arbitrary first workspace.
+- Extended Calendar browser validation fixtures to include a same-workspace under-capability contact and a persisted item in the next week, proving unavailable state behavior, genuine empty queried ranges, and no false-empty state after navigation.
+- Added `npm run test:calendar-route-cutover-stabilization` to cover the 12.12 server/client split, bounded range semantics, deterministic workspace selection, contact-scoped authorization, strict capability rule, no mock fallback/mixing, and unchanged read-only boundaries.
+
+Validation:
+- Focused static stabilization and cutover checks pass.
+- Hosted validation is still skipped because no DB/RPC/generated-type/hosted behavior changed.
+
+Recommended next slice: choose based on final 12.12 validation. If the matrix remains clean, a safe next step is `12.13 Persisted Tasks Read Model Contract`; otherwise run a narrow Calendar read-cutover stabilization follow-up before broader route cutovers or any Calendar write work.
+
 ## Iteration 12.11 - Calendar Persisted Read Route Cutover Implementation
 
 Summary:
@@ -14,7 +29,7 @@ Summary:
 - Calendar creation/edit/assignment actions remain preview-only or unimplemented; no persisted write behavior changed.
 - No assignment-detail entry links, response-link reveal/copy/delivery, public lookup, remembered-device behavior, service-role usage, seed data, migration, generated type change, hosted validation, production data validation, or mock/persisted mixing was added.
 - Hosted validation was skipped because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed; local disposable validation and browser proof covered the route cutover.
-- Recommended next slice: `12.12 Calendar Persisted Read Cutover Stabilization`, keeping the work read-only and focused on proving/refining the first cutover before any Calendar writes or other route cutovers.
+- Recommended next slice was `12.12 Calendar Persisted Read Cutover Stabilization`, keeping the work read-only and focused on proving/refining the first cutover before any Calendar writes or other route cutovers.
 
 ## Iteration 12.10 - Calendar Route Cutover Empty/Unavailable State Prototype
 

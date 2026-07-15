@@ -221,6 +221,16 @@ This command requires no preview server, hosted Supabase target, service-role ke
 
 After 12.11, `npm run test:calendar` validates the cut-over route against disposable local persisted fixtures while a loopback production preview is running. It refuses non-loopback targets, authenticates project contacts, renders persisted success, empty, and under-capability unavailable states, checks Day/Week/Month/List switching, date navigation, filters, inspector behavior, 390px layout, no unsafe leakage, no mock item leakage, and cleans every fixture in `finally`. Start preview with logs redirected to temp files, do not print raw Supabase/preview env output, and stop preview before final `npx tsc --noEmit` or `npm run build`.
 
+After 12.12, run the Calendar persisted-read cutover stabilization guardrail when changing `/admin/calendar`, `lib/calendar/routeRead.server.ts`, or Calendar navigation/range/workspace-selection behavior:
+
+```powershell
+npm run test:calendar-route-cutover-stabilization
+```
+
+This command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, or local fixture creation. It proves the route/client split remains dynamic/no-store and server-owned, Calendar navigation is server-backed by validated `view`/`date` query parameters, Day/Week/Month/List ranges are explicit and bounded, false `ready_empty` for unqueried periods is forbidden, workspace selection is deterministic and contact-scoped, revoked/expired/inactive grants are ignored, cross-contact/cross-workspace capability borrowing is blocked, ambiguous multiple eligible workspaces fail closed, the strict `calendar.view` plus `assignments.view` rule remains in force, and no mock fallback, write path, assignment picker, assignment-detail link, response-link activation, service-role path, or unsafe projection was added.
+
+After 12.12, `npm run test:calendar` additionally validates a same-workspace under-capability contact, a real empty queried period, and navigation into another period containing persisted rows so the browser proof catches false-empty behavior. Keep the preview log redirection/redaction rule unchanged.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

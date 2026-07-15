@@ -87,10 +87,12 @@ for (const [flagName, expected] of [
 ]) {
   assert.match(routeReadSource, new RegExp(`${flagName} = ${expected}`));
 }
-assert.match(routeReadSource, /rangeStart: "2026-01-01"/);
-assert.match(routeReadSource, /rangeEnd: "2026-04-04"/);
-assert.match(routeReadSource, /periodKind: "list"/);
-assert.match(routeReadSource, /boundedRangeDays: 93/);
+assert.match(routeReadSource, /CALENDAR_ROUTE_SERVER_BACKED_NAVIGATION_AVAILABLE = true/);
+assert.match(routeReadSource, /CALENDAR_ROUTE_FALSE_EMPTY_FOR_UNQUERIED_RANGE_ALLOWED = false/);
+assert.match(routeReadSource, /CALENDAR_ROUTE_AMBIGUOUS_WORKSPACE_SELECTION_ALLOWED = false/);
+assert.match(routeReadSource, /normalizeCalendarRouteSearchParams/);
+assert.match(routeReadSource, /deriveCalendarRouteReadRange/);
+assert.match(routeReadSource, /server_derived_start_inclusive_end_exclusive/);
 assert.match(routeReadSource, /dataBoundary: "readCalendarReadModelWithClient"/);
 assert.match(routeReadSource, /strictCapabilities: \["calendar\.view", "assignments\.view"\]/);
 
@@ -116,6 +118,8 @@ assert.deepEqual([...statePrototype.states], [
 assert.match(calendarClientSource, /type CalendarClientState/);
 assert.match(calendarClientSource, /kind: "ready_with_items" \| "ready_empty"/);
 assert.match(calendarClientSource, /kind: "unavailable" \| "error"/);
+assert.match(calendarClientSource, /useRouter/);
+assert.match(calendarClientSource, /buildCalendarRouteHref/);
 assert.match(calendarClientSource, /No scheduled items in this range/);
 assert.match(calendarClientSource, /This Calendar view is ready/);
 assert.doesNotMatch(

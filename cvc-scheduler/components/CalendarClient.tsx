@@ -28,6 +28,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
@@ -2708,14 +2709,37 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       items: CalendarItem[];
+      view: CalendarViewMode;
+      anchorDate: string;
+      queriedRange: CalendarClientQueriedRange;
     }>
   | Readonly<{
       kind: "unavailable" | "error";
       title: string;
       message: string;
+      view: CalendarViewMode;
+      anchorDate: string;
+      queriedRange: CalendarClientQueriedRange;
     }>;
 
+type CalendarClientQueriedRange = Readonly<{
+  rangeStart: string;
+  rangeEnd: string;
+  periodKind: CalendarViewMode;
+  anchorDate: string;
+  bounded: true;
+  rangeSemantics: "server_derived_start_inclusive_end_exclusive";
+}>;
+
+function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
+  const params = new URLSearchParams();
+  params.set("view", view);
+  params.set("date", date);
+  return `/admin/calendar?${params.toString()}`;
+}
+
 export default function CalendarClient({ state }: Readonly<{ state: CalendarClientState }>) {
+  const router = useRouter();
   const isReady = state.kind === "ready_with_items" || state.kind === "ready_empty";
   const isReadyEmpty = state.kind === "ready_empty";
   const allItems = useMemo(() => (isReady ? state.items : []), [isReady, state]);
@@ -2727,8 +2751,8 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
 
     return preferred.length > 0 ? preferred : presets;
   }, []);
-  const [activeView, setActiveView] = useState<CalendarViewMode>("week");
-  const [calendarAnchor, setCalendarAnchor] = useState(projectCalendarAnchor);
+  const activeView = state.view;
+  const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
   const [selectedId, setSelectedId] = useState<string | undefined>();
@@ -2872,23 +2896,27 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
 
   const handleViewChange = (view: CalendarViewMode) => {
     closeCalendarSurface();
-    setActiveView(view);
+    router.push(buildCalendarRouteHref(view, calendarAnchor));
   };
 
   const handleNavigateCalendar = (amount: number) => {
     closeCalendarSurface();
-    setCalendarAnchor((current) => shiftCalendarAnchor(current, amount, activeView));
+    router.push(
+      buildCalendarRouteHref(
+        activeView,
+        shiftCalendarAnchor(calendarAnchor, amount, activeView),
+      ),
+    );
   };
 
   const handleResetCalendar = () => {
     closeCalendarSurface();
-    setCalendarAnchor(projectCalendarAnchor);
+    router.push(buildCalendarRouteHref(activeView, projectCalendarAnchor));
   };
 
   const handleFocusCalendarDate = (date: string) => {
     closeCalendarSurface();
-    setCalendarAnchor(date);
-    setActiveView("day");
+    router.push(buildCalendarRouteHref("day", date));
   };
 
   return (

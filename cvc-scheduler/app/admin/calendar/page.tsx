@@ -5,8 +5,12 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-export default async function AdminCalendarPage() {
-  const state = await readCalendarRouteState();
+type CalendarPageProps = Readonly<{
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}>;
 
-  return <CalendarClient state={state} />;
+export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
+  const state = await readCalendarRouteState(await searchParams);
+
+  return <CalendarClient key={`${state.view}:${state.anchorDate}:${state.kind}`} state={state} />;
 }

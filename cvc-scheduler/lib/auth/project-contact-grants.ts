@@ -4,11 +4,11 @@ import {
   isEffectiveWorkspaceReadGrant,
   parseProjectContactGrant,
   type ProjectContactGrant,
-} from "@/lib/auth/grant";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { AppSupabaseClient } from "@/lib/supabase/types";
+} from "./grant.ts";
+import { createServerSupabaseClient } from "../supabase/server.ts";
+import type { AppSupabaseClient } from "../supabase/types.ts";
 
-export type { ProjectContactGrant } from "@/lib/auth/grant";
+export type { ProjectContactGrant } from "./grant.ts";
 
 export type ProjectContactGrantState = Readonly<{
   status: "authorized" | "no_active_grants" | "unavailable";

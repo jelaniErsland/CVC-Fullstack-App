@@ -172,7 +172,21 @@ Mock-to-real boundaries remain strict. `/admin/calendar` does not combine persis
 
 Hosted validation is not required because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed. The rollback path is small and reversible: remove the route read adapter integration and restore the prior mock item source rather than weakening Auth, capability, query-helper, projection, or safe-state rules.
 
-Recommended next slice: `12.12 Calendar Persisted Read Cutover Stabilization`, still read-only. Do not move into Calendar writes, assignment picker/mutations, delivery, public lookup, remembered devices, response-link activation, or other route cutovers until the first persisted read cutover remains clean.
+Recommended next slice was `12.12 Calendar Persisted Read Cutover Stabilization`, still read-only. Do not move into Calendar writes, assignment picker/mutations, delivery, public lookup, remembered devices, response-link activation, or other route cutovers until the first persisted read cutover remains clean.
+
+## 12.12 Calendar Persisted Read Cutover Stabilization
+
+Iteration 12.12 stabilizes the first actual `/admin/calendar` persisted-read cutover without adding new product behavior. The route remains read-only, dynamic/no-store, server-owned, and persisted-item-backed. No Calendar create/edit/archive/delete persistence, assignment picker, assignment mutation, assignment-detail entry link, response-link activation, copy UI, delivery, public lookup, remembered-device behavior, service-role usage, seed data, hosted validation, production data validation, generated type change, migration, Tasks/Volunteers/Public Volunteer/Communications cutover, or mock/persisted mixing was added.
+
+The main stabilization closes the false-empty risk from combining a bounded server read with client-only date navigation. Calendar view/date changes now use validated `view` and `date` query parameters and a server-derived bounded range for Day, Week, Month, and List. The client no longer advances to an unqueried period locally; each navigation requests a new persisted read. `ready_empty` therefore means a real successful authorized read returned zero items for the selected bounded range, not that the user navigated outside a previously loaded horizon.
+
+Workspace selection is now deterministic and contact-scoped. The route resolves the authenticated project contact, filters grants to that actual contact, ignores revoked/expired/inactive grants, unions capabilities only within the same active workspace for that same contact, and requires exactly one eligible workspace with both `calendar.view` and `assignments.view`. A contact cannot borrow another contact's capabilities in the same workspace, cannot borrow a capability from another workspace grant, and multiple eligible workspaces fail closed rather than selecting an arbitrary first workspace. Role/title strings remain non-authorizing.
+
+The strict coverage rule is unchanged: `calendar.view` is required for Calendar item shells and `assignments.view` is also required for the current coverage-bearing read model. Missing `assignments.view` does not produce misleading zero coverage. Assignment-derived counts remain based on `calendar_assignments` and current `assignment_responses`, not Calendar item counters, assigned-volunteer arrays, mock `filledCount`, or client calculations.
+
+The existing Calendar UI structure is preserved. Day/Week/Month/List, date navigation, filters, inspector behavior, mobile interactions, keyboard behavior, and preview-only creation surfaces remain the same except that navigation now refreshes the route through the bounded server read seam. Preview-only creation remains non-persistent and does not authorize writes. Local/browser validation now includes a real empty queried period, a real persisted item in a later navigated period, a same-workspace under-capability contact, wrong-workspace rows, and zero-residue cleanup.
+
+Recommended next slice: if 12.12 validation remains clean, `12.13 Persisted Tasks Read Model Contract` is a safe next step in the MVP cutover sequence. If any range/navigation or workspace-selection issue remains, do a narrow Calendar read-cutover stabilization follow-up before broader route cutovers or any Calendar write work.
 
 ## Iteration 11.9 persisted boundary
 

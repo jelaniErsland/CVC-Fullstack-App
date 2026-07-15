@@ -4,6 +4,18 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 12.12 Calendar persisted read cutover stabilization
+
+Iteration 12.12 stabilizes the first `/admin/calendar` persisted-read route cutover. It remains read-only and does not add Calendar writes, assignment picker/create/cancel UI, assignment-detail entry links, response-link activation, copy UI, email/reminder delivery, public lookup, remembered-device behavior, seed data, service-role usage, migrations, generated type changes, hosted validation, production data validation, broader route cutovers, or mock/persisted mixing.
+
+The persisted Calendar route now treats Day/Week/Month/List navigation as server-backed navigation through validated `view` and `date` query parameters. Each navigation derives a fresh explicit bounded range from trusted server context before reading persisted rows, so the route does not silently show `ready_empty` for an unqueried period. `ready_empty` remains a successful authorized zero-row read for the actual selected range.
+
+Workspace/grant selection is deterministic and contact-scoped. The route resolves the authenticated project contact, filters grants to that contact, ignores revoked/expired/inactive grants, unions same-contact capabilities only within the same active workspace, and requires exactly one eligible workspace containing both `calendar.view` and `assignments.view`. Same-workspace contacts cannot borrow each other's capabilities, cross-workspace grants do not combine into one authorization, and multiple eligible workspaces fail closed instead of selecting an arbitrary workspace.
+
+The strict capability rule remains unchanged: `calendar.view` is required for item shells, and `calendar.view` plus `assignments.view` are required for the current coverage-bearing output. Missing `assignments.view` does not produce misleading zero coverage. Raw workspace ids, grant ids, capability arrays, provider errors, and database details remain out of the client presentation boundary.
+
+Hosted validation is not required because no migration, generated type, RPC, hosted script, hosted behavior, or production-data behavior changed. Local disposable and browser proof cover the stabilized route behavior. Recommended next slice: if 12.12 remains clean, `12.13 Persisted Tasks Read Model Contract`; otherwise perform a narrow Calendar read-cutover stabilization follow-up.
+
 ## 12.11 Calendar persisted read route cutover implementation
 
 Iteration 12.11 is the first actual `/admin/calendar` persisted-read route cutover. It is read-only and does not add Calendar writes, assignment picker/create/cancel UI, assignment-detail entry links, response-link activation, copy UI, email/reminder delivery, public lookup, remembered-device behavior, seed data, service-role usage, migrations, generated type changes, hosted validation, production data validation, or mock/persisted mixing.
