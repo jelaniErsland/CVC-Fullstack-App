@@ -231,6 +231,14 @@ This command requires no preview server, hosted Supabase target, service-role ke
 
 After 12.12, `npm run test:calendar` additionally validates a same-workspace under-capability contact, a real empty queried period, and navigation into another period containing persisted rows so the browser proof catches false-empty behavior. Keep the preview log redirection/redaction rule unchanged.
 
+After 12.13, run the route-unused persisted Tasks read-model contract guardrail when changing future `/admin/tasks` read-cutover planning:
+
+```powershell
+npm run test:tasks-read-model-contract
+```
+
+This command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, or local fixture creation. It proves `lib/tasks/readModelContract.server.ts` is server-only and route-unused, `/admin/tasks` remains mock/prototype, no app route/component imports the contract, `tasks.view` is the required future capability, workspace/contact/capability context must be server-derived, task presets remain reusable definitions separate from Calendar occurrences, safe output is allowlisted from current `task_presets` schema fields, custom-field definitions remain bounded, system/trusted preset identity remains controlled, mock fallback/mixing is forbidden, and no route cutover, query helper, mutation, Calendar write, response-link activation, delivery, public lookup, remembered-device behavior, service-role usage, seed data, migration, generated type change, or hosted validation was added. If it remains clean, the next planning command should target `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`; it does not authorize the `/admin/tasks` route cutover.
+
 For the 11.31 visual/behavior gate, start a local production preview after building, then run:
 
 ```powershell

@@ -4,6 +4,20 @@ This document is the implementation-readiness bridge between the stable Project 
 
 Iteration 11.21 adds the credential-free audit persistence boundary required by the 11.20 reveal policy. It is not product UI, credential reveal, deletion, background cleanup, or delivery and adds no lookup, email, remembered-device behavior, Calendar/Volunteers/Communications/Needs Attention cutover, seed data, or broad schedule access.
 
+## 12.13 Persisted Tasks read-model contract
+
+Iteration 12.13 is a route-unused persisted Tasks read-model contract for a future `/admin/tasks` cutover. It does not cut over `/admin/tasks`, import the contract into any app route/component, add a Tasks route loader, add client-side Supabase Tasks reads, add a query helper, add Tasks create/edit/archive UI behavior, add Calendar writes, activate response links, add delivery/public lookup/remembered devices, use service-role credentials, add seed data, add migrations, change generated Supabase types, run hosted validation, or mix mock and persisted task presets.
+
+The contract defines `tasks.view` as the required read capability. A future route must derive the authenticated project contact id, deterministic active workspace context, and capability scope server-side, following the 12.12 contact-scoped grant-selection principles. Role/title strings alone do not authorize reads, and browser-provided workspace ids, contact ids, capability arrays, role names, selectors, table names, or query fragments remain untrusted.
+
+The safe read projection is limited to current `task_presets` reusable-definition data: preset id, workspace scope, name, description/instructions where present, high-level General/Food/Security/Custom type, default needed count, volunteer visibility, lifecycle, bounded custom-field definitions, safe system/trusted identity, and timestamps only if the Tasks UI genuinely needs them. Future product concepts such as default duration, area/location, congregation preference, skill text, age/driver/equipment/safety notes, richer default publication behavior, and default Follow-up Contact are documented as schema gaps rather than fabricated fields.
+
+Tasks presets remain separate from Calendar occurrences. The Tasks read model must not project scheduled date/time/range, Calendar placement, Calendar item ids as preset state, assignment rows, assignment responses, assigned/confirmed/denied counts, coverage state, occurrence-specific notes, occurrence-specific Follow-up Contact, recurrence instances, times scheduled, upcoming occurrence counts, volunteer contact data, questionnaire answers, response-token/reveal rows, raw grants/capabilities, SQL/RPC detail, provider dumps, stack traces, service-role material, or unrelated workspace rows.
+
+The future route states are ready with presets, ready empty, unavailable, and error. Empty is a successful zero-preset read, unavailable is a calm fail-closed prerequisite/capability/workspace state, and error is an unexpected safe failure without raw provider details. Mock fallback and mock/persisted mixing are prohibited after a future cutover.
+
+Hosted validation is not required because no database, RPC, generated type, hosted script, hosted behavior, or route behavior changed. Recommended next slice: `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`; 12.13 alone does not authorize the `/admin/tasks` route cutover.
+
 ## 12.12 Calendar persisted read cutover stabilization
 
 Iteration 12.12 stabilizes the first `/admin/calendar` persisted-read route cutover. It remains read-only and does not add Calendar writes, assignment picker/create/cancel UI, assignment-detail entry links, response-link activation, copy UI, email/reminder delivery, public lookup, remembered-device behavior, seed data, service-role usage, migrations, generated type changes, hosted validation, production data validation, broader route cutovers, or mock/persisted mixing.

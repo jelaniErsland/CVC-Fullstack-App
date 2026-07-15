@@ -1,5 +1,20 @@
 # Project History
 
+## Iteration 12.13 - Persisted Tasks Read Model Contract
+
+Summary:
+- Added `lib/tasks/readModelContract.server.ts` as a server-only, route-unused contract for a future persisted `/admin/tasks` read cutover. `/admin/tasks` remains mock/prototype and imports no persisted Tasks read-model contract.
+- Defined `tasks.view` as the required future read capability, with authenticated project-contact id and deterministic contact-scoped workspace context derived server-side. Browser-provided workspace ids, contact ids, capability arrays, role names, selectors, SQL/query fragments, and table names remain untrusted.
+- Defined the safe persisted task-preset projection from the current schema: preset id, workspace scope, name, description/instructions where present, high-level type/category, default needed count, volunteer visibility, lifecycle, bounded custom-field definitions, safe system/trusted identity, and timestamps only if needed by the Tasks UI.
+- Explicitly separated task presets from Calendar occurrences. The contract forbids scheduled date/time/range, Calendar placement, Calendar item ids as preset state, assignment rows, response truth, assigned/confirmed/denied counts, coverage state, occurrence-specific notes, occurrence-specific Follow-up Contact, recurrence instances, times-scheduled, and upcoming-occurrence aggregates.
+- Documented custom-field handling, system/trusted preset compatibility, safe search/filter/sort defaults, ready-with-presets / ready-empty / unavailable / error states, mock-to-real non-mixing rules, and unsafe data denylist.
+- Added `npm run test:tasks-read-model-contract` to prove the contract is server-only, route-unused, docs-backed, and does not cut over `/admin/tasks`.
+
+Validation:
+- No migration, generated type change, hosted validation, seed data, service-role path, route loader, client Supabase read, Tasks mutation UI, Calendar write, response-link activation, delivery, public lookup, remembered-device behavior, or mock/persisted mixing was added.
+
+Recommended next slice: `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`. This does not authorize the `/admin/tasks` route cutover.
+
 ## Iteration 12.12 - Calendar Persisted Read Cutover Stabilization
 
 Summary:
