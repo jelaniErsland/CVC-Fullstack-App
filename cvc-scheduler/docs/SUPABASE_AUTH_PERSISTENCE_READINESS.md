@@ -16,6 +16,18 @@ The old `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Revi
 
 Hosted validation is not required for this re-baseline because no database, RPC, generated type, hosted script, hosted behavior, or product route behavior changed.
 
+## 12.14 Bozeman workspace access and provisioning readiness
+
+Iteration 12.14 establishes the smallest permanent provisioning path for the Bozeman beta access foundation without creating a product workspace-administration UI. Approved project-contact Auth identity creation remains an explicit operator step through Supabase Auth administration. Unknown public users still cannot create project-contact accounts through the normal admin sign-in flow because `AdminContactSignIn` uses `shouldCreateUser: false`.
+
+`lib/workspaces/provisioning.server.ts` validates operator-provided workspace/contact/grant input and builds a deterministic transaction against the existing `workspaces`, `project_contacts`, and `workspace_contact_grants` tables. It uses the existing workspace key/display name/lifecycle/timezone/date-range/public-intake fields, requires an existing Auth user id before associating a project contact, and creates explicit workspace-scoped grants only with existing capability names. Role/title strings do not grant authority, and `workspace.read` remains required.
+
+The provisioning boundary is idempotent only when existing rows match the requested input. It fails closed on conflicting duplicate workspace keys, missing approved Auth users, conflicting contact status, conflicting grants, malformed input, unknown capabilities, invalid dates/timezones, missing `workspace.read`, or revoked-grant creation. It does not use `SUPABASE_SERVICE_ROLE_KEY`, create a service-role client, send email, seed data, insert real Bozeman rows, or expose a browser-accessible creation path.
+
+`scripts/provision-workspace-access.mjs` is the operator command. It can emit reviewed SQL from an uncommitted JSON input file or execute against local Supabase for validation. `npm run test:bozeman-workspace-provisioning` uses disposable local Auth users and local database fixtures to prove intended access, explicit grant behavior, under-capability failure, wrong-contact isolation, wrong-workspace isolation, revoked grant failure, role/title non-authorization, duplicate/idempotency and conflict behavior, no service-role dependency, no secret output, and zero-residue cleanup.
+
+Hosted validation is not required because 12.14 adds no migration, RPC, generated type change, hosted script, hosted behavior change, or product route behavior change. The actual future Bozeman production execution remains an explicit operator procedure after approved Auth identities exist.
+
 ## 12.13 Persisted Tasks read-model contract
 
 Iteration 12.13 is a route-unused persisted Tasks read-model contract for a future `/admin/tasks` cutover. It does not cut over `/admin/tasks`, import the contract into any app route/component, add a Tasks route loader, add client-side Supabase Tasks reads, add a query helper, add Tasks create/edit/archive UI behavior, add Calendar writes, activate response links, add delivery/public lookup/remembered devices, use service-role credentials, add seed data, add migrations, change generated Supabase types, run hosted validation, or mix mock and persisted task presets.

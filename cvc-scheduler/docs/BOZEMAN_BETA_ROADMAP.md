@@ -38,6 +38,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 ## Dependency-based critical path
 
 1. `12.14 Bozeman Workspace Access and Provisioning Readiness`
+   - Completed as the permanent operator provisioning boundary for workspaces, approved Auth identities, project contacts, and explicit grants. It does not create real Bozeman data automatically.
    - Unblocks: the first real Bozeman workspace, contact identities, grants, and all later beta admin access.
 2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
    - Unblocks: first real Bozeman volunteer record and the future assignment picker source.
@@ -60,7 +61,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 
 ## Repository-grounded beta blockers
 
-- Bozeman workspace provisioning and project-contact grants are not productized.
+- Real Bozeman workspace provisioning is now repeatable through the reviewed operator boundary, but real production execution remains an explicit operator step after approved Auth identities exist.
 - Manual volunteer Add/Edit or controlled import does not exist.
 - Calendar create/edit/archive/publication mutations are not connected to `/admin/calendar`.
 - Draft/private versus published/live visibility truth is unresolved.
@@ -101,7 +102,7 @@ Return to the Tasks helper as either:
 
 ## Safest shortest path to first real-world moments
 
-- First real Bozeman volunteer record: provision Bozeman workspace/contact/grants, then create one volunteer via permanent `volunteer_profiles` Add/Edit or controlled import.
+- First real Bozeman volunteer record: use the 12.14 operator boundary to provision Bozeman workspace/contact/grants after approved Auth identities exist, then create one volunteer via permanent `volunteer_profiles` Add/Edit or controlled import.
 - First real persisted scheduled item created from product UI: keep the current persisted `/admin/calendar` read route, add a reviewed `calendar.edit` server action for a narrow create/edit path, then refresh the persisted route.
 - First real volunteer assignment: add a volunteer picker read seam and `assignments.edit` create command for one active volunteer/item pair with duplicate prevention.
 - First published volunteer-visible assignment: define publication visibility truth before email; visibility must not depend on delivery success.
@@ -135,3 +136,30 @@ Do not schedule a giant full-app redesign after backend work. UI quality is part
 ## Integrity constraints retained
 
 Response-link activation remains paused after 11.50. Do not activate assignment-detail reveal/copy merely because token infrastructure exists. No service-role shortcut, seed data, production data access, real email sending, or mock/persisted fallback mixing was added by this re-baseline.
+
+## 12.14 provisioning mechanism
+
+12.14 establishes a narrow executable operator boundary rather than a product workspace-creation UI.
+
+- Auth identity remains an operator step: create or invite the approved project-contact user through Supabase Auth administration first. The app's sign-in flow remains invite-only (`shouldCreateUser: false` for normal project-contact sign-in).
+- `lib/workspaces/provisioning.server.ts` validates the permanent workspace/contact/grant input and builds a deterministic transaction against the existing `workspaces`, `project_contacts`, and `workspace_contact_grants` architecture.
+- `scripts/provision-workspace-access.mjs` can emit the reviewed SQL from an operator-provided JSON file or execute it against local Supabase for validation. It does not read `SUPABASE_SERVICE_ROLE_KEY`.
+- `npm run test:bozeman-workspace-provisioning` creates disposable local Auth users, provisions workspace/contact/grant fixtures through the reviewed boundary, verifies RLS-visible access and fail-closed behavior, and cleans up with zero residue.
+
+The provisioning transaction is idempotent only when existing workspace/contact/grant rows match the requested input. It fails closed on conflicting duplicate workspace keys, missing approved Auth users, conflicting contact status, conflicting grants, malformed input, unknown capabilities, or missing `workspace.read`.
+
+Current Bozeman beta capability sets use only existing capability names:
+
+- Main scheduler: `workspace.read`, `questionnaires.review`, `volunteers.view`, `volunteers.edit`, `tasks.view`, `tasks.edit`, `calendar.view`, `calendar.edit`, `assignments.view`, `assignments.edit`.
+- Volunteer data entry helper: `workspace.read`, `questionnaires.review`, `volunteers.view`, `volunteers.edit`.
+- Scheduling read-only helper: `workspace.read`, `volunteers.view`, `tasks.view`, `calendar.view`, `assignments.view`.
+
+Safe operator procedure for later real Bozeman provisioning:
+
+1. Create or invite the approved project-contact Auth user in Supabase Auth administration.
+2. Prepare a local, uncommitted JSON input file with the Bozeman workspace key/display name/lifecycle/timezone/date range/public-intake setting, the approved Auth user id, and the explicit capability set.
+3. Run `node --conditions=react-server --no-warnings --experimental-strip-types scripts/provision-workspace-access.mjs --input <file.json> --emit-sql` and review the generated transaction.
+4. Apply the reviewed transaction through the approved operator database channel for the target environment.
+5. Validate with the normal app Auth sign-in path and the relevant access/regression checks.
+
+No real Bozeman production rows, migrations, generated Supabase type changes, hosted validation, service-role path, seed data, email sending, Calendar writes, volunteer Add/Edit UI, assignment picker, public volunteer lookup, remembered-device behavior, Belgrade migration, or response-link activation was added in 12.14.

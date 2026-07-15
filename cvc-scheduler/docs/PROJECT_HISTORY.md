@@ -1,5 +1,34 @@
 # Project History
 
+## Iteration 12.14 - Bozeman Workspace Access and Provisioning Readiness
+
+Summary:
+- Added `lib/workspaces/provisioning.server.ts` as a server-only validated operator boundary for provisioning the first real Bozeman beta workspace/access foundation without adding product UI or production data.
+- Added `scripts/provision-workspace-access.mjs` so an operator can provide an uncommitted JSON input, emit the reviewed transaction, or execute it against local Supabase for validation.
+- Kept approved project-contact Auth identity creation as an explicit Supabase Auth administration step. The provisioning boundary requires the Auth user id to already exist before it will create/reuse the `project_contacts` row.
+- Reused the existing `workspaces`, `project_contacts`, and `workspace_contact_grants` architecture. Workspace keys remain unique, contact rows remain one-per-Auth-user, grants remain contact-scoped, workspace-scoped, explicit, lifecycle/validity/revocation-aware, and capability-based.
+- Defined current Bozeman beta capability sets using only existing capability names: main scheduler, volunteer data entry helper, and scheduling read-only helper.
+- Added `npm run test:bozeman-workspace-provisioning`, a local disposable validation that creates fake Auth users, provisions fixture workspaces/contacts/grants, verifies intended access, under-capability failure, wrong-contact and wrong-workspace isolation, revoked grant failure, role/title non-authorization, duplicate/idempotency and conflict behavior, no service-role dependency, no secret output, and zero-residue cleanup.
+
+Changed files:
+- `lib/workspaces/provisioning.server.ts`
+- `scripts/provision-workspace-access.mjs`
+- `scripts/bozeman-workspace-provisioning-regression.mjs`
+- `package.json`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- No migration, generated type change, hosted validation, service-role path, seed data, real Bozeman production record, Belgrade migration, route cutover, Calendar write, volunteer Add/Edit UI, assignment picker, public lookup, remembered-device behavior, response-link activation, or email sending was added.
+- Hosted validation was skipped because no database, RPC, generated type, hosted script, hosted behavior, or product route behavior changed.
+
+Recommended next slice:
+- `12.15 Manual Volunteer Profile Add/Edit Permanent Path`, only if the final 12.14 validation remains clean.
+
 ## Bozeman Scheduling Beta Roadmap Re-baseline
 
 Summary:

@@ -145,6 +145,14 @@ npm run test:bozeman-beta-roadmap
 
 This static command requires no preview server, hosted Supabase target, service-role key, raw Supabase CLI output, local fixture creation, or production data. It proves `lib/readiness/bozemanBetaRoadmap.server.ts` is server-only and route-unused, records Bozeman as the initial Project Local beta target, preserves Belgrade Sheets/App Script as fallback, encodes **Cut features, not integrity**, lists the Bozeman beta launch gate, blockers, deferred features, dependency critical path, validation gates, and UI integration sequence, and confirms that the old `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review` recommendation moved behind `12.14 Bozeman Workspace Access and Provisioning Readiness`. It also verifies that no app route/component imports the roadmap artifact and that response-link activation, real email sending, service-role shortcuts, production data access, and mock/persisted mixing remain unavailable.
 
+```powershell
+npm run test:bozeman-workspace-provisioning
+```
+
+This local disposable command requires local Supabase and refuses non-loopback Supabase URLs. It does not call `npx supabase start` or `npx supabase status`, does not use `SUPABASE_SERVICE_ROLE_KEY`, and does not print raw keys, tokens, passwords, database URLs, or connection strings. It proves the 12.14 operator provisioning boundary can create/reuse matching `workspaces`, `project_contacts`, and `workspace_contact_grants` rows after disposable Auth users exist; verifies intended access, explicit capabilities, under-capability failure, wrong-contact isolation, wrong-workspace isolation, revoked-grant failure, role/title non-authorization, duplicate/idempotency and conflict behavior, no service-role dependency, and zero-residue cleanup; and confirms no product route/component imports the provisioning boundary.
+
+For later real Bozeman provisioning, create or invite the approved Auth identity through Supabase Auth administration first, keep the JSON input file uncommitted, run `scripts/provision-workspace-access.mjs --emit-sql` to review the transaction, and apply it only through the approved operator database channel for the target environment. Do not commit real UUIDs, emails, generated SQL output, production data, local env values, or secrets.
+
 After 12.2, run the Calendar read model contract guardrail when changing future Calendar real-data read planning:
 
 ```powershell
