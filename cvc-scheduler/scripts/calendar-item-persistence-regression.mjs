@@ -17,11 +17,18 @@ const migrationPath = path.join(
   "migrations",
   "20260701050000_calendar_items.sql",
 );
+const itemManagementMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260714121600_calendar_item_management.sql",
+);
 const serverBoundaryPath = path.join(root, "lib", "calendar", "server.ts");
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, serverBoundary, environmentExample] = await Promise.all([
+const [migration, itemManagementMigration, serverBoundary, environmentExample] = await Promise.all([
   readFile(migrationPath, "utf8"),
+  readFile(itemManagementMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
@@ -106,13 +113,31 @@ assert.match(
   migration,
   /grant execute on function public\.create_calendar_item[\s\S]*to authenticated/i,
 );
+assert.match(itemManagementMigration, /follow_up_project_contact_id uuid/i);
+assert.match(
+  itemManagementMigration,
+  /references public\.project_contacts\s*\(\s*id\s*\)/i,
+);
+assert.match(itemManagementMigration, /p_needed_count between 0 and 99/i);
+assert.match(itemManagementMigration, /create or replace function public\.create_calendar_item\(/i);
+assert.match(itemManagementMigration, /caller_project_contact_id/i);
+assert.match(itemManagementMigration, /follow_up_project_contact_id/i);
+assert.match(
+  itemManagementMigration,
+  /create (?:or replace )?function public\.update_calendar_item_one_off_timed\(/i,
+);
+assert.match(
+  itemManagementMigration,
+  /grant execute on function public\.update_calendar_item_one_off_timed[\s\S]*to authenticated/i,
+);
+assert.doesNotMatch(itemManagementMigration, /grant .*to anon|service_role/i);
 assert.doesNotMatch(migration, /to anon|service_role/i);
 
 assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_calendar_item", "archive_calendar_item"],
+  ["create_calendar_item", "update_calendar_item_one_off_timed", "archive_calendar_item"],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
@@ -135,6 +160,12 @@ const timed = validateCreateCalendarItemInput({
   schedule: { kind: "timed", date: "2026-01-12", startTime: "09:00", endTime: "11:30" },
 });
 assert.equal(timed.schedule.kind, "timed");
+const zeroNeededTimed = validateCreateCalendarItemInput({
+  ...base,
+  neededCount: 0,
+  schedule: { kind: "timed", date: "2026-01-12", startTime: "12:00", endTime: "13:00" },
+});
+assert.equal(zeroNeededTimed.neededCount, 0);
 const dateBased = validateCreateCalendarItemInput({
   ...base,
   schedule: { kind: "date_based", date: "2026-01-13" },
@@ -317,11 +348,15 @@ const routeFiles = (await collectFiles(path.join(root, "app"))).filter((file) =>
 const routeImports = [];
 for (const file of routeFiles) {
   const source = await readFile(file, "utf8");
-  if (source.includes("lib/calendar/server")) {
+if (source.includes("lib/calendar/server")) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
-assert.deepEqual(routeImports, [], "Existing Calendar routes must remain mock-only");
+assert.deepEqual(
+  routeImports,
+  ["app/admin/calendar/page.tsx"],
+  "Only the reviewed Calendar route may import the server Calendar mutation boundary",
+);
 
 console.log("Calendar item persistence and authorization checks passed.");
-console.log("Confirmed schedule unions, scoped reads/writes, no coverage truth, and no route cutover.");
+console.log("Confirmed schedule unions, scoped reads/writes, Follow-up Contact, and no coverage truth.");

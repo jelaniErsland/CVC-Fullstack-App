@@ -42,6 +42,8 @@ type CalendarClientItem = {
   allDay?: boolean;
   startTime?: string;
   endTime?: string;
+  startTimeValue?: string;
+  endTimeValue?: string;
   timeWindow?: string;
   category: CalendarClientCategory;
   assignedVolunteerIds: string[];
@@ -72,7 +74,11 @@ type CalendarClientStateBase = Readonly<{
 }>;
 type CalendarClientState =
   | (CalendarClientStateBase &
-      Readonly<{ kind: "ready_with_items" | "ready_empty"; items: CalendarClientItem[] }>)
+      Readonly<{
+        kind: "ready_with_items" | "ready_empty";
+        items: CalendarClientItem[];
+        canEdit: boolean;
+      }>)
   | (CalendarClientStateBase &
       Readonly<{ kind: "unavailable" | "error"; title: string; message: string }>);
 
@@ -86,6 +92,7 @@ type CalendarRouteWorkspaceSelection =
       workspace: WorkspaceIdentity;
       projectContactId: string;
       capabilities: readonly ["calendar.view", "assignments.view"];
+      canEdit: boolean;
     }>
   | Readonly<{
       ok: false;
@@ -97,8 +104,8 @@ type CalendarRouteWorkspaceSelection =
     }>;
 
 export const CALENDAR_ROUTE_PERSISTED_READ_CUTOVER_IMPLEMENTED = true;
-export const CALENDAR_ROUTE_PERSISTED_READ_ONLY = true;
-export const CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE = false;
+export const CALENDAR_ROUTE_PERSISTED_READ_ONLY = false;
+export const CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE = true;
 export const CALENDAR_ROUTE_MOCK_TO_REAL_MIXING_ALLOWED = false;
 export const CALENDAR_ASSIGNMENT_PICKER_CUTOVER_AVAILABLE = false;
 export const CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE = false;
@@ -357,6 +364,8 @@ function mapPersistedItemToCalendarItem(item: CalendarReadModelItem): CalendarCl
     allDay: item.scheduleKind !== "timed",
     startTime,
     endTime,
+    startTimeValue: item.startTime ?? undefined,
+    endTimeValue: item.endTime ?? undefined,
     timeWindow: startTime && endTime ? `${startTime} - ${endTime}` : undefined,
     category,
     assignedVolunteerIds: [],
@@ -442,6 +451,7 @@ export function selectCalendarRouteWorkspaceContext(input: {
       workspace: eligible[0].workspace,
       projectContactId: input.projectContactId,
       capabilities: ["calendar.view", "assignments.view"],
+      canEdit: eligible[0].capabilities.has("calendar.edit"),
     };
   }
 
@@ -531,6 +541,7 @@ export async function readCalendarRouteState(
       ? {
           kind: "ready_with_items",
           items,
+          canEdit: workspaceSelection.canEdit,
           view: range.periodKind,
           anchorDate: range.anchorDate,
           queriedRange: range,
@@ -538,6 +549,7 @@ export async function readCalendarRouteState(
       : {
           kind: "ready_empty",
           items: [],
+          canEdit: workspaceSelection.canEdit,
           view: range.periodKind,
           anchorDate: range.anchorDate,
           queriedRange: range,
@@ -570,4 +582,48 @@ export function describeCalendarRoutePersistedReadCutover() {
       "server_supabase_auth_user_plus_contact_scoped_loadProjectContactGrantsWithClient_plus_readGrantedWorkspacesWithClient",
     strictCapabilities: ["calendar.view", "assignments.view"],
   } as const;
+}
+
+export async function readCalendarMutationRouteContext() {
+  try {
+    const { createServerSupabaseClient } = await import("../supabase/server.ts");
+    const {
+      loadProjectContactGrantsWithClient,
+      readAuthenticatedProjectContactIdWithClient,
+    } = await import("../auth/project-contact-grants.ts");
+    const { readGrantedWorkspacesWithClient } = await import("../workspaces/granted.ts");
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) return null;
+    const grantState = await loadProjectContactGrantsWithClient(supabase, user.id);
+    if (grantState.status !== "authorized") return null;
+    const projectContactId = await readAuthenticatedProjectContactIdWithClient(
+      supabase,
+      user.id,
+    );
+    if (!projectContactId) return null;
+    const ownGrants = grantState.grants.filter(
+      (grant) => grant.projectContactId === projectContactId,
+    );
+    const workspaces = await readGrantedWorkspacesWithClient(supabase);
+    const workspaceSelection = selectCalendarRouteWorkspaceContext({
+      projectContactId,
+      ownGrants,
+      workspaces,
+    });
+
+    if (!workspaceSelection.ok || !workspaceSelection.canEdit) return null;
+
+    return {
+      supabase,
+      workspace: workspaceSelection.workspace,
+      projectContactId: workspaceSelection.projectContactId,
+    } as const;
+  } catch {
+    return null;
+  }
 }

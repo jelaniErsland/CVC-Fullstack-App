@@ -328,7 +328,7 @@ values
   ('${fixture.calendarOnlyContactId}'::uuid, '${calendarOnlyUserId}'::uuid, 'active');
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status)
 values
-  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view']::text[], 'active'),
+  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view', 'calendar.edit']::text[], 'active'),
   ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
 insert into public.questionnaire_submissions (id, workspace_id, status, source, questionnaire_version, answers)
 values ${questionnaireRows()};
@@ -622,7 +622,7 @@ async function assertClosedSurfaceInert(page, closeLabel) {
 const dialogFocusableSelector = [
   "a[href]",
   'button:not([disabled]):not([tabindex="-1"])',
-  'input:not([disabled]):not([tabindex="-1"])',
+  'input:not([type="hidden"]):not([disabled]):not([tabindex="-1"])',
   'select:not([disabled]):not([tabindex="-1"])',
   'textarea:not([disabled]):not([tabindex="-1"])',
   '[tabindex]:not([tabindex="-1"])',
@@ -642,7 +642,7 @@ async function assertDialogFocusContainment(page, dialog, label) {
     `${label} accessible description is missing or empty`,
   );
 
-  const focusable = dialog.locator(dialogFocusableSelector);
+  const focusable = dialog.locator(`${dialogFocusableSelector}:visible`);
   const focusableCount = await focusable.count();
   assert(focusableCount > 0, `${label} has no focusable controls`);
   const firstFocusable = focusable.first();
@@ -1105,8 +1105,8 @@ async function runDesktop(browser) {
         "Desktop creation",
       );
       assert(
-        creationDescription.includes("Saving, scheduling, and helper assignment"),
-        "Creation description lacks preview availability context",
+        creationDescription.includes("Create a persisted one-off timed Calendar item"),
+        "Creation description lacks persisted one-off availability context",
       );
       await planner
         .getByText("Suggested Tuesday, Jan 13, 1 PM to 2 PM. Adjust below.", {
@@ -1123,16 +1123,17 @@ async function runDesktop(browser) {
       );
 
       const taskPresetMode = await assertUnique(
-        planner.getByRole("button", { name: "Task preset", exact: true }),
-        "Task preset mode",
+        planner.getByRole("button", { name: "Task preset later", exact: true }),
+        "Task preset deferred mode",
       );
       const customMode = await assertUnique(
         planner.getByRole("button", { name: "Custom one-day", exact: true }),
         "Custom one-day mode",
       );
       assert(
-        (await taskPresetMode.getAttribute("aria-pressed")) === "true" &&
-          (await customMode.getAttribute("aria-pressed")) === "false",
+        (await taskPresetMode.getAttribute("aria-pressed")) === "false" &&
+          (await customMode.getAttribute("aria-pressed")) === "true" &&
+          (await taskPresetMode.isDisabled()),
         "Creation task-source buttons should expose their selected state",
       );
 
@@ -1151,7 +1152,17 @@ async function runDesktop(browser) {
       await planner.locator(`[id="${errorDescriptionId}"]`).waitFor();
       await endInput.fill("14:00");
 
-      for (const action of ["Schedule", "Save draft", "Assign helpers"]) {
+      const scheduleButton = await assertUnique(
+        planner.getByRole("button", { name: "Schedule", exact: true }),
+        "Schedule persisted action",
+      );
+      assert(await scheduleButton.isEnabled(), "Schedule should be enabled for valid one-off timed creation");
+      assert(
+        Boolean(await scheduleButton.getAttribute("aria-describedby")),
+        "Schedule should describe its persisted action state",
+      );
+
+      for (const action of ["Save draft", "Assign helpers"]) {
         const actionButton = await assertUnique(
           planner.getByRole("button", { name: action, exact: true }),
           `${action} preview action`,
@@ -1327,6 +1338,64 @@ async function runDesktop(browser) {
       await closeWithEscape(page, "Calendar item inspector", listItemLabel);
     });
 
+    await step("desktop persisted create/edit round trip", async () => {
+      const createdTitle = `QA persisted browser item ${fixture.namespace.slice(-8)}`;
+      const updatedTitle = `QA edited browser item ${fixture.namespace.slice(-8)}`;
+
+      await selectView(page, "Day");
+      const triggerLabel = "Plan project work on Tue Jan 13 at 3 PM";
+      const trigger = await assertUnique(
+        page.getByRole("button", { name: triggerLabel, exact: true }),
+        "Day persisted creation target",
+      );
+      await activateWithKeyboard(trigger, "Day persisted creation target");
+      const planner = page.getByRole("dialog", {
+        name: "Plan project work",
+        exact: true,
+      });
+      await planner.waitFor();
+      await planner.getByLabel("Custom task name", { exact: true }).fill(createdTitle);
+      await planner.locator('input[type="number"]').first().fill("0");
+      await planner
+        .getByLabel("Schedule notes", { exact: true })
+        .fill("Browser regression persisted create note.");
+      await Promise.all([
+        page.waitForURL(/notice=created/),
+        planner.getByRole("button", { name: "Schedule", exact: true }).click(),
+      ]);
+      await page.getByText("Calendar item scheduled", { exact: true }).waitFor();
+      await page.getByText(createdTitle, { exact: true }).waitFor();
+
+      await page.reload();
+      await page.getByText(createdTitle, { exact: true }).waitFor();
+      const createdItem = page
+        .getByRole("button", { name: new RegExp(createdTitle) })
+        .first();
+      await activateWithKeyboard(createdItem, "Created persisted Calendar item");
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      await inspector.waitFor();
+      await inspector.getByLabel("Task name", { exact: true }).fill(updatedTitle);
+      await inspector.getByLabel("Start", { exact: true }).fill("15:30");
+      await inspector.getByLabel("End", { exact: true }).fill("16:30");
+      await inspector.locator("textarea").first().fill("Browser regression persisted edit note.");
+      await Promise.all([
+        page.waitForURL(/notice=updated/),
+        inspector.getByRole("button", { name: "Save item changes", exact: true }).click(),
+      ]);
+      await page.getByText("Calendar item updated", { exact: true }).waitFor();
+      await page.getByText(updatedTitle, { exact: true }).waitFor();
+
+      await page.reload();
+      await page.getByText(updatedTitle, { exact: true }).waitFor();
+      assert(
+        (await page.getByText(createdTitle, { exact: true }).count()) === 0,
+        "Reload after edit still displayed the stale created title",
+      );
+    });
+
     await step("desktop has no browser errors", async () => {
       assert(errors.length === 0, errors.join("\n"));
     });
@@ -1398,7 +1467,10 @@ async function runMobile(browser) {
           rows: list?.querySelectorAll('[role="listitem"] > button').length ?? 0,
         };
       });
-      assert(mobileListAudit.rows === 7, "Mobile List should retain all 7 persisted rows");
+      assert(
+        mobileListAudit.rows >= 7,
+        "Mobile List should retain the original persisted rows plus any browser-created item",
+      );
       assert(
         mobileListAudit.nestedControls === 0,
         "Mobile List should not contain nested interactive controls",

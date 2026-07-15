@@ -32,7 +32,10 @@ assert.match(calendarRouteSource, /export const dynamic = "force-dynamic"/);
 assert.match(calendarRouteSource, /export const revalidate = 0/);
 assert.match(calendarRouteSource, /export const fetchCache = "force-no-store"/);
 assert.match(calendarRouteSource, /searchParams/);
-assert.match(calendarRouteSource, /readCalendarRouteState\(await searchParams\)/);
+assert.match(
+  calendarRouteSource,
+  /const resolvedSearchParams = await searchParams[\s\S]*readCalendarRouteState\(resolvedSearchParams\)/,
+);
 assert.doesNotMatch(
   calendarRouteSource,
   /@\/lib\/mockData|getCalendarItemsByWeek|demoProjectId|readModelQuery|readCalendarReadModelWithClient|routeCutoverDryRun|routeCutoverFinalPreflight|routeCutoverReadiness|routeCutoverStatePrototype|\.from\(|\.rpc\(|select\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole/i,

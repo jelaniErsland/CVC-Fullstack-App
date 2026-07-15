@@ -200,6 +200,10 @@ export type CalendarItem = {
   allDay?: boolean;
   startTime?: string;
   endTime?: string;
+  /** Persisted route edit form value, kept separate from localized display copy. */
+  startTimeValue?: string;
+  /** Persisted route edit form value, kept separate from localized display copy. */
+  endTimeValue?: string;
   timeWindow?: string;
   category: TaskPresetCategory;
   assignedVolunteerIds: string[];

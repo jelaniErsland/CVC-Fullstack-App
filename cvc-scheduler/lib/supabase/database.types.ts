@@ -259,6 +259,7 @@ export type Database = {
           custom_values: Json
           end_date: string | null
           end_time: string | null
+          follow_up_project_contact_id: string | null
           id: string
           lifecycle: string
           needed_count: number
@@ -278,6 +279,7 @@ export type Database = {
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
+          follow_up_project_contact_id?: string | null
           id?: string
           lifecycle?: string
           needed_count: number
@@ -297,6 +299,7 @@ export type Database = {
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
+          follow_up_project_contact_id?: string | null
           id?: string
           lifecycle?: string
           needed_count?: number
@@ -312,6 +315,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "calendar_items_follow_up_project_contact_id_fkey"
+            columns: ["follow_up_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "calendar_items_task_preset_workspace_fk"
             columns: ["workspace_id", "task_preset_id"]
@@ -839,6 +849,20 @@ export type Database = {
           p_assignment_id: string
           p_response_note: string
           p_response_status: string
+        }
+        Returns: string
+      }
+      update_calendar_item_one_off_timed: {
+        Args: {
+          p_calendar_item_id: string
+          p_custom_values: Json
+          p_end_time: string
+          p_needed_count: number
+          p_one_off_task_type: string
+          p_one_off_title: string
+          p_schedule_notes: string
+          p_start_date: string
+          p_start_time: string
         }
         Returns: string
       }

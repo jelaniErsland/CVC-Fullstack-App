@@ -392,13 +392,17 @@ assert.deepEqual(finalPreflightImporters, []);
 assert.deepEqual(dryRunImporters, []);
 assert.deepEqual(readinessImporters, []);
 assert.deepEqual(queryHelperImporters, []);
-assert.deepEqual(persistedCalendarRouteImporters, []);
+assert.deepEqual(
+  persistedCalendarRouteImporters,
+  ["app/admin/calendar/page.tsx"],
+  "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
+);
 assert.deepEqual(assignmentDetailLinks, []);
 
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
   calendarRouteSource,
-  /routeCutoverStatePrototype|routeCutoverFinalPreflight|routeCutoverDryRun|routeCutoverReadiness|readModelQuery|readCalendarReadModelWithClient|runCalendarRouteCutoverDryRun|@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|calendar_items|calendar_assignments|assignment_responses|(?:^|\n)\s*\.from\(|\.rpc\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole|formAction|useActionState|useFormState/i,
+  /routeCutoverStatePrototype|routeCutoverFinalPreflight|routeCutoverDryRun|routeCutoverReadiness|readModelQuery|readCalendarReadModelWithClient|runCalendarRouteCutoverDryRun|@\/lib\/calendar\/readModel|calendar_items|calendar_assignments|assignment_responses|(?:^|\n)\s*\.from\(|\.rpc\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRole|formAction|useActionState|useFormState/i,
 );
 assert.doesNotMatch(
   calendarRouteSource,
@@ -428,4 +432,6 @@ assert.equal(activationCheckpoint.activeRevealAvailable, false);
 assert.equal(activationCheckpoint.activeCopyAvailable, false);
 
 console.log("Calendar route cutover state prototype checks passed.");
-console.log("Confirmed 12.10 prototype remains route-unused and /admin/calendar uses only the reviewed route read adapter.");
+console.log(
+  "Confirmed 12.10 prototype remains route-unused and /admin/calendar uses only reviewed Calendar route boundaries.",
+);

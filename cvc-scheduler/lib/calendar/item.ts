@@ -29,6 +29,15 @@ export type CreateCalendarItemInput = Readonly<{
   customValues: Readonly<Record<string, CalendarCustomValue>>;
 }>;
 
+export type UpdateCalendarOneOffTimedItemInput = Readonly<{
+  calendarItemId: string;
+  source: Readonly<{ title: string; taskType: CalendarTaskType }>;
+  schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
+  neededCount: number;
+  notes?: string | null;
+  customValues: Readonly<Record<string, CalendarCustomValue>>;
+}>;
+
 export type CalendarItem = Readonly<{
   id: string;
   workspaceId: string;
@@ -62,6 +71,14 @@ const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const customKeyPattern = /^[a-z][a-z0-9_]{0,39}$/;
 const rootKeys = new Set([
   "workspaceId",
+  "source",
+  "schedule",
+  "neededCount",
+  "notes",
+  "customValues",
+]);
+const updateOneOffTimedRootKeys = new Set([
+  "calendarItemId",
   "source",
   "schedule",
   "neededCount",
@@ -246,6 +263,39 @@ function parseSchedule(value: unknown, issues: string[]): CalendarSchedule {
   return { kind: "milestone", date: "" };
 }
 
+function parseOneOffTimedUpdateSource(
+  value: unknown,
+  issues: string[],
+): UpdateCalendarOneOffTimedItemInput["source"] {
+  if (!isRecord(value)) {
+    issues.push("source must be an object.");
+    return { title: "Invalid", taskType: "custom" };
+  }
+  rejectUnknownKeys(value, ["title", "taskType"], "source", issues);
+  const taskType = value.taskType;
+  if (typeof taskType !== "string" || !calendarTaskTypes.includes(taskType as CalendarTaskType)) {
+    issues.push("source.taskType is unsupported.");
+  }
+  return {
+    title: boundedText(value.title, "source.title", issues, 1, 160),
+    taskType: calendarTaskTypes.includes(taskType as CalendarTaskType)
+      ? (taskType as CalendarTaskType)
+      : "custom",
+  };
+}
+
+function parseTimedScheduleForUpdate(
+  value: unknown,
+  issues: string[],
+): UpdateCalendarOneOffTimedItemInput["schedule"] {
+  const schedule = parseSchedule(value, issues);
+  if (schedule.kind !== "timed") {
+    issues.push("schedule.kind must be timed for this Calendar edit.");
+    return { kind: "timed", date: "", startTime: "", endTime: "" };
+  }
+  return schedule;
+}
+
 export function validateCreateCalendarItemInput(input: unknown): CreateCalendarItemInput {
   if (!isRecord(input)) {
     throw new CalendarItemValidationError(["input must be an object."]);
@@ -260,11 +310,11 @@ export function validateCreateCalendarItemInput(input: unknown): CreateCalendarI
   if (
     typeof neededCount !== "number" ||
     !Number.isInteger(neededCount) ||
-    (requiresHelpers ? neededCount < 1 || neededCount > 99 : neededCount !== 0)
+    (requiresHelpers ? neededCount < 0 || neededCount > 99 : neededCount !== 0)
   ) {
     issues.push(
       requiresHelpers
-        ? "neededCount must be an integer from 1 to 99 for assignable work."
+        ? "neededCount must be an integer from 0 to 99 for assignable work."
         : "neededCount must be 0 for project windows and milestones.",
     );
   }
@@ -274,6 +324,42 @@ export function validateCreateCalendarItemInput(input: unknown): CreateCalendarI
       : boundedText(input.notes, "notes", issues, 1, 4000);
   const normalized: CreateCalendarItemInput = {
     workspaceId: normalizeUuid(input.workspaceId, "workspaceId", issues),
+    source,
+    schedule,
+    neededCount: typeof neededCount === "number" ? neededCount : 0,
+    notes,
+    customValues: parseCustomValues(input.customValues, issues),
+  };
+  if (issues.length > 0) throw new CalendarItemValidationError(issues);
+  return normalized;
+}
+
+export function validateUpdateCalendarOneOffTimedItemInput(
+  input: unknown,
+): UpdateCalendarOneOffTimedItemInput {
+  if (!isRecord(input)) {
+    throw new CalendarItemValidationError(["input must be an object."]);
+  }
+  const issues: string[] = [];
+  const unknown = Object.keys(input).filter((key) => !updateOneOffTimedRootKeys.has(key));
+  if (unknown.length > 0) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
+  const source = parseOneOffTimedUpdateSource(input.source, issues);
+  const schedule = parseTimedScheduleForUpdate(input.schedule, issues);
+  const neededCount = input.neededCount;
+  if (
+    typeof neededCount !== "number" ||
+    !Number.isInteger(neededCount) ||
+    neededCount < 0 ||
+    neededCount > 99
+  ) {
+    issues.push("neededCount must be an integer from 0 to 99 for assignable work.");
+  }
+  const notes =
+    input.notes === null || input.notes === undefined
+      ? null
+      : boundedText(input.notes, "notes", issues, 1, 4000);
+  const normalized: UpdateCalendarOneOffTimedItemInput = {
+    calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
     source,
     schedule,
     neededCount: typeof neededCount === "number" ? neededCount : 0,
@@ -317,7 +403,7 @@ export function parseCalendarItem(value: unknown): CalendarItem {
   } else {
     const requiresHelpers = schedule.kind === "timed" || schedule.kind === "date_based";
     if (
-      (requiresHelpers && (value.needed_count < 1 || value.needed_count > 99)) ||
+      (requiresHelpers && (value.needed_count < 0 || value.needed_count > 99)) ||
       (!requiresHelpers && value.needed_count !== 0)
     ) {
       issues.push("needed_count does not match the schedule kind.");

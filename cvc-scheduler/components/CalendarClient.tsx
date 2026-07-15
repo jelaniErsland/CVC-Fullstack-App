@@ -71,6 +71,7 @@ import type {
 type CalendarViewMode = "day" | "week" | "month" | "list";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
 type CreationMode = "preset" | "oneOff";
+type CalendarMutationAction = (formData: FormData) => void | Promise<void>;
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 const calmFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-1";
@@ -490,6 +491,19 @@ function getTimelineSlotFromPointer(event: MouseEvent<HTMLButtonElement>) {
   const hour = Math.min(23, Math.max(0, Math.floor((offset / bounds.height) * 24)));
 
   return dayTimelineSlots[hour] ?? dayTimelineSlots[13];
+}
+
+function mapHighLevelTaskTypeToCalendarTaskType(taskType: CalendarHighLevelTaskType) {
+  if (taskType === "food") return "food";
+  if (taskType === "security") return "security";
+  return "general";
+}
+
+function mapCategoryToCalendarTaskType(category: TaskPresetCategory) {
+  if (category === "lunch") return "food";
+  if (category === "security") return "security";
+  if (category === "custom") return "custom";
+  return "general";
 }
 
 function handleCalendarGridArrowKey(
@@ -1793,13 +1807,21 @@ function MobileDayGroups({
 }
 
 function CalendarCreatePanel({
+  canEdit,
+  createAction,
   creationDraft,
+  currentDate,
+  currentView,
   isOpen,
   onClose,
   onDraftChange,
   presets,
 }: {
+  canEdit: boolean;
+  createAction?: CalendarMutationAction;
   creationDraft?: CalendarCreationDraft;
+  currentDate: string;
+  currentView: CalendarViewMode;
   isOpen: boolean;
   onClose: () => void;
   onDraftChange: (draft: CalendarCreationDraft) => void;
@@ -1898,8 +1920,12 @@ function CalendarCreatePanel({
       >
         <GlassCard className="flex h-full flex-col overflow-hidden rounded-2xl p-0 shadow-[0_20px_72px_rgba(15,23,42,0.18)]">
           <CreatePanelContent
+            canEdit={canEdit}
             closeButtonRef={desktopCloseButtonRef}
+            createAction={createAction}
             creationDraft={creationDraft}
+            currentDate={currentDate}
+            currentView={currentView}
             descriptionId={`${descriptionId}-desktop`}
             onClose={onClose}
             onPresetChange={handlePresetChange}
@@ -1925,8 +1951,12 @@ function CalendarCreatePanel({
           tabIndex={-1}
         >
           <CreatePanelContent
+            canEdit={canEdit}
             closeButtonRef={mobileCloseButtonRef}
+            createAction={createAction}
             creationDraft={creationDraft}
+            currentDate={currentDate}
+            currentView={currentView}
             descriptionId={`${descriptionId}-mobile`}
             onClose={onClose}
             onPresetChange={handlePresetChange}
@@ -1942,8 +1972,12 @@ function CalendarCreatePanel({
 }
 
 function CreatePanelContent({
+  canEdit,
   closeButtonRef,
+  createAction,
   creationDraft,
+  currentDate,
+  currentView,
   descriptionId,
   onClose,
   onPresetChange,
@@ -1952,8 +1986,12 @@ function CreatePanelContent({
   selectedPreset,
   selectedTaskType,
 }: {
+  canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
+  createAction?: CalendarMutationAction;
   creationDraft: CalendarCreationDraft;
+  currentDate: string;
+  currentView: CalendarViewMode;
   descriptionId: string;
   onClose: () => void;
   onPresetChange: (presetId: string) => void;
@@ -1980,7 +2018,9 @@ function CreatePanelContent({
     !timedTimeMissing &&
     creationDraft.endTime <= creationDraft.startTime;
   const neededCountInvalid =
-    creationDraft.neededCount < 1 || creationDraft.neededCount > 99;
+    creationDraft.neededCount < 0 || creationDraft.neededCount > 99;
+  const unsupportedTaskPreset = !isOneOff;
+  const unsupportedAllDay = creationDraft.allDay;
   const customNameErrorId = `${validationId}-custom-task-name-error`;
   const dateErrorId = `${validationId}-creation-date-error`;
   const timeErrorId = `${validationId}-creation-time-error`;
@@ -2001,8 +2041,20 @@ function CreatePanelContent({
     (customNameInvalid && "Add a custom task name.") ||
     dateValidationMessage ||
     timeValidationMessage ||
-    (neededCountInvalid && "Needed must be between 1 and 99.") ||
-    "Preview only. Saving, scheduling, and helper assignment are not connected yet.";
+    (neededCountInvalid && "Needed must be between 0 and 99.") ||
+    (unsupportedTaskPreset && "Task-preset scheduling is coming next; use Custom one-day for this first persisted create path.") ||
+    (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
+    (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
+    "Ready to save this one-off timed item to the persisted Calendar.";
+  const canSubmitPersisted =
+    canEdit &&
+    Boolean(createAction) &&
+    isOneOff &&
+    !unsupportedAllDay &&
+    !customNameInvalid &&
+    !dateValidationMessage &&
+    !timeValidationMessage &&
+    !neededCountInvalid;
   const creationContextCopy = dateMissing
     ? "Choose a date below."
     : creationDraft.allDay
@@ -2016,15 +2068,15 @@ function CreatePanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Create a local Calendar draft from the selected date and time. Saving,
-        scheduling, and helper assignment remain unavailable in this preview.
+        Create a persisted one-off timed Calendar item from the selected date and time.
+        Task presets, drafts, publishing, and helper assignment remain unavailable.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Calendar draft
+              Calendar item
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
               Plan project work
@@ -2068,20 +2120,15 @@ function CreatePanelContent({
             <button
               aria-pressed={!isOneOff}
               className={[
-                `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
+                `min-h-11 cursor-not-allowed rounded-full border px-3 text-sm font-semibold opacity-70 transition ${calmFocusRing}`,
                 !isOneOff
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
               ].join(" ")}
-              onClick={() =>
-                onUpdate({
-                  mode: "preset",
-                  neededCount: selectedPreset?.neededCount ?? creationDraft.neededCount,
-                })
-              }
+              disabled
               type="button"
             >
-              Task preset
+              Task preset later
             </button>
             <button
               aria-pressed={isOneOff}
@@ -2336,7 +2383,7 @@ function CreatePanelContent({
             ) : null}
             {isOneOff ? (
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                This would schedule a one-off item without creating a reusable task preset.
+                This schedules a persisted one-off item without creating a reusable task preset.
               </p>
             ) : null}
           </div>
@@ -2346,12 +2393,12 @@ function CreatePanelContent({
             <input
               className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
               max={99}
-              min={1}
+              min={0}
               onChange={(event) =>
                 onUpdate({
                   neededCount: Math.min(
                     99,
-                    Math.max(1, Number(event.target.value) || 1),
+                    Math.max(0, Number(event.target.value) || 0),
                   ),
                 })
               }
@@ -2360,11 +2407,11 @@ function CreatePanelContent({
             />
             {!isOneOff && selectedPreset ? (
               <span className="mt-2 block text-xs font-medium leading-5 text-slate-500">
-                Preset default: {selectedPreset.neededCount} · 1-99
+                Preset default: {selectedPreset.neededCount} · 0-99
               </span>
             ) : (
               <span className="mt-2 block text-xs font-medium leading-5 text-slate-500">
-                1-99 volunteers
+                0-99 helpers
               </span>
             )}
           </label>
@@ -2387,8 +2434,8 @@ function CreatePanelContent({
 
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
             <p className="text-sm leading-6 text-slate-600">
-              Helper assignment stays later. This preview keeps the work ready for assigning
-              volunteers after it is scheduled.
+              Helper assignment, draft/publish controls, and notifications stay later.
+              The Follow-up Contact defaults safely to the signed-in scheduler.
             </p>
           </div>
         </section>
@@ -2396,47 +2443,78 @@ function CreatePanelContent({
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
-        <p
-          aria-live="polite"
-          className={[
-            "mb-3 text-xs font-semibold leading-5",
-            actionStatus.startsWith("Preview only")
-              ? "text-slate-500"
-              : "text-rose-600",
-          ].join(" ")}
-          id={actionStatusId}
-        >
-          {actionStatus}
-          {!actionStatus.startsWith("Preview only")
-            ? " Actions stay unavailable in this preview."
-            : ""}
-        </p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {["Schedule", "Save draft", "Assign helpers"].map((label) => (
+        <form action={createAction} className="grid gap-2">
+          <input name="redirectView" type="hidden" value={currentView} />
+          <input name="redirectDate" type="hidden" value={currentDate} />
+          <input name="title" type="hidden" value={creationDraft.customName} />
+          <input
+            name="taskType"
+            type="hidden"
+            value={mapHighLevelTaskTypeToCalendarTaskType(creationDraft.customTaskType)}
+          />
+          <input name="date" type="hidden" value={creationDraft.date} />
+          <input name="startTime" type="hidden" value={creationDraft.startTime} />
+          <input name="endTime" type="hidden" value={creationDraft.endTime} />
+          <input name="neededCount" type="hidden" value={String(creationDraft.neededCount)} />
+          <input name="notes" type="hidden" value={creationDraft.notes} />
+          <p
+            aria-live="polite"
+            className={[
+              "mb-1 text-xs font-semibold leading-5",
+              canSubmitPersisted ? "text-slate-500" : "text-rose-600",
+            ].join(" ")}
+            id={actionStatusId}
+          >
+            {actionStatus}
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
             <button
               aria-describedby={actionStatusId}
-              className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
-              disabled
-              key={label}
-              type="button"
+              className={[
+                "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
+                canSubmitPersisted
+                  ? "border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                  : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
+              ].join(" ")}
+              disabled={!canSubmitPersisted}
+              type="submit"
             >
-              {label}
+              Schedule
             </button>
-          ))}
-        </div>
+            {["Save draft", "Assign helpers"].map((label) => (
+              <button
+                aria-describedby={actionStatusId}
+                className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
+                disabled
+                key={label}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </form>
       </div>
     </>
   );
 }
 
 function CalendarInspector({
+  canEdit,
   item,
   isOpen,
   onClose,
+  updateAction,
+  currentDate,
+  currentView,
 }: {
+  canEdit: boolean;
   item?: CalendarItemWithPreset;
   isOpen: boolean;
   onClose: () => void;
+  updateAction?: CalendarMutationAction;
+  currentDate: string;
+  currentView: CalendarViewMode;
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
   const desktopDialogRef = useRef<HTMLElement>(null);
@@ -2503,11 +2581,15 @@ function CalendarInspector({
           className={`flex h-full flex-col overflow-hidden rounded-2xl border border-white/72 border-l-4 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.22)] backdrop-blur-2xl ${detailAccentStyles[item.category]}`}
         >
           <InspectorContent
+            canEdit={canEdit}
             closeButtonRef={desktopCloseButtonRef}
+            currentDate={currentDate}
+            currentView={currentView}
             descriptionId={`${descriptionId}-desktop`}
             item={item}
             onClose={onClose}
             tone={tone}
+            updateAction={updateAction}
           />
         </div>
       </aside>
@@ -2536,11 +2618,15 @@ function CalendarInspector({
           tabIndex={-1}
         >
           <InspectorContent
+            canEdit={canEdit}
             closeButtonRef={mobileCloseButtonRef}
+            currentDate={currentDate}
+            currentView={currentView}
             descriptionId={`${descriptionId}-mobile`}
             item={item}
             onClose={onClose}
             tone={tone}
+            updateAction={updateAction}
           />
         </section>
       </div>
@@ -2549,19 +2635,34 @@ function CalendarInspector({
 }
 
 function InspectorContent({
+  canEdit,
   closeButtonRef,
+  currentDate,
+  currentView,
   descriptionId,
   item,
   tone,
   onClose,
+  updateAction,
 }: {
+  canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
+  currentDate: string;
+  currentView: CalendarViewMode;
   descriptionId: string;
   item: CalendarItemWithPreset;
   tone: CalendarStatusTone;
   onClose: () => void;
+  updateAction?: CalendarMutationAction;
 }) {
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
+  const canEditSelectedItem =
+    canEdit &&
+    Boolean(updateAction) &&
+    isOneOffCalendarItem(item) &&
+    !item.allDay &&
+    Boolean(item.startTimeValue) &&
+    Boolean(item.endTimeValue);
   const placeholderActions = [
     { label: "Add to calendar", icon: Plus },
     { label: "Edit placement", icon: Pencil },
@@ -2682,6 +2783,110 @@ function InspectorContent({
           {item.copyLabel ? <span>Copy: {item.copyLabel}</span> : null}
         </div>
 
+        {canEditSelectedItem ? (
+          <form action={updateAction} className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-4">
+            <input name="calendarItemId" type="hidden" value={item.id} />
+            <input name="redirectView" type="hidden" value={currentView} />
+            <input name="redirectDate" type="hidden" value={currentDate} />
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Edit persisted one-off item
+            </p>
+            <div className="mt-3 grid gap-3">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Task name</span>
+                <input
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  defaultValue={getCalendarItemDisplayName(item)}
+                  maxLength={160}
+                  name="title"
+                  required
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Date</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={item.date}
+                    name="date"
+                    required
+                    type="date"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Task type</span>
+                  <select
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={mapCategoryToCalendarTaskType(item.category)}
+                    name="taskType"
+                  >
+                    <option value="general">General</option>
+                    <option value="food">Food</option>
+                    <option value="security">Security</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Start</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={item.startTimeValue}
+                    name="startTime"
+                    required
+                    type="time"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">End</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={item.endTimeValue}
+                    name="endTime"
+                    required
+                    type="time"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Needed</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={item.neededCount}
+                    max={99}
+                    min={0}
+                    name="neededCount"
+                    required
+                    type="number"
+                  />
+                </label>
+              </div>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Schedule notes</span>
+                <textarea
+                  className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  defaultValue={item.scheduleNotes ?? ""}
+                  maxLength={4000}
+                  name="notes"
+                />
+              </label>
+              <p className="text-xs font-semibold leading-5 text-slate-500">
+                Follow-up Contact stays with the original scheduled item. Assignment,
+                publication, copy, and delivery changes stay unavailable.
+              </p>
+              <button
+                className="min-h-11 rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                type="submit"
+              >
+                Save item changes
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
+            This item is read-only here unless it is a persisted one-off timed item and the
+            signed-in contact has Calendar edit access.
+          </div>
+        )}
+
         <div className="mt-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Preview actions
@@ -2709,6 +2914,7 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       items: CalendarItem[];
+      canEdit: boolean;
       view: CalendarViewMode;
       anchorDate: string;
       queriedRange: CalendarClientQueriedRange;
@@ -2731,6 +2937,40 @@ type CalendarClientQueriedRange = Readonly<{
   rangeSemantics: "server_derived_start_inclusive_end_exclusive";
 }>;
 
+function CalendarNotice({ notice }: { notice?: string }) {
+  if (!notice) return null;
+  const copy: Record<string, { title: string; message: string }> = {
+    created: {
+      title: "Calendar item scheduled",
+      message: "The one-off timed item was saved to the persisted Calendar.",
+    },
+    updated: {
+      title: "Calendar item updated",
+      message: "The edited item was saved and will remain after reload.",
+    },
+    validation: {
+      title: "Check the Calendar details",
+      message: "Use a one-off timed item with a real date, ordered start/end times, 0-99 helpers, and bounded notes.",
+    },
+    unavailable: {
+      title: "Calendar editing is unavailable",
+      message: "This signed-in project contact cannot safely change Calendar items right now.",
+    },
+    error: {
+      title: "Calendar change was not saved",
+      message: "Something went wrong while saving. No mock Calendar fallback was used.",
+    },
+  };
+  const selected = copy[notice];
+  if (!selected) return null;
+  return (
+    <GlassCard className="border-slate-200/80 bg-white/64 p-4">
+      <p className="text-sm font-semibold text-slate-950">{selected.title}</p>
+      <p className="mt-1 text-sm leading-6 text-slate-500">{selected.message}</p>
+    </GlassCard>
+  );
+}
+
 function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
   const params = new URLSearchParams();
   params.set("view", view);
@@ -2738,7 +2978,17 @@ function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
   return `/admin/calendar?${params.toString()}`;
 }
 
-export default function CalendarClient({ state }: Readonly<{ state: CalendarClientState }>) {
+export default function CalendarClient({
+  createAction,
+  notice,
+  state,
+  updateAction,
+}: Readonly<{
+  createAction?: CalendarMutationAction;
+  notice?: string;
+  state: CalendarClientState;
+  updateAction?: CalendarMutationAction;
+}>) {
   const router = useRouter();
   const isReady = state.kind === "ready_with_items" || state.kind === "ready_empty";
   const isReadyEmpty = state.kind === "ready_empty";
@@ -2864,6 +3114,9 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
   };
 
   const handleCreateFromSlot = (slot: CalendarCreationSlot) => {
+    if (!isReady || !state.canEdit) {
+      return;
+    }
     const defaultPreset = creationPresets[0];
 
     rememberSurfaceTrigger();
@@ -2880,7 +3133,7 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
       endTime: slot.allDay
         ? ""
         : slot.suggestedEndTime ?? suggestedSlots.morning.end,
-      mode: "preset",
+      mode: "oneOff",
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,
       notes: "",
@@ -2957,6 +3210,8 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
               resetDisabled={calendarAnchor === projectCalendarAnchor}
             />
 
+            <CalendarNotice notice={notice} />
+
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
 
             {isReadyEmpty && filteredItems.length === 0 ? (
@@ -3027,16 +3282,24 @@ export default function CalendarClient({ state }: Readonly<{ state: CalendarClie
               onClose={closeCalendarSurface}
             />
             <CalendarCreatePanel
+              canEdit={state.canEdit}
+              createAction={createAction}
               creationDraft={creationDraft}
+              currentDate={calendarAnchor}
+              currentView={activeView}
               isOpen={activeSurface === "create"}
               onClose={closeCalendarSurface}
               onDraftChange={setCreationDraft}
               presets={creationPresets}
             />
             <CalendarInspector
+              canEdit={state.canEdit}
+              currentDate={calendarAnchor}
+              currentView={activeView}
               isOpen={activeSurface === "inspect"}
               item={selectedItem}
               onClose={closeCalendarSurface}
+              updateAction={updateAction}
             />
           </>
         ) : state.kind === "unavailable" || state.kind === "error" ? (

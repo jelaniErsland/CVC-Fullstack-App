@@ -28,9 +28,15 @@ function getVisibleContainer(
   primaryRef: RefObject<HTMLElement | null>,
   secondaryRef?: RefObject<HTMLElement | null>,
 ) {
-  return [primaryRef.current, secondaryRef?.current].find(
+  const candidates = [primaryRef.current, secondaryRef?.current].filter(
     (container): container is HTMLElement =>
       Boolean(container && container.getClientRects().length > 0),
+  );
+  const activeElement = document.activeElement;
+
+  return (
+    candidates.find((container) => container.contains(activeElement)) ??
+    candidates[0]
   );
 }
 
@@ -60,6 +66,9 @@ export function useFocusContainment(
       ).filter(isVisibleFocusable);
       const firstFocusable = focusableElements[0];
       const lastFocusable = focusableElements.at(-1);
+      const closeButton = focusableElements.find((element) =>
+        element.getAttribute("aria-label")?.startsWith("Close "),
+      );
 
       if (!firstFocusable || !lastFocusable) {
         event.preventDefault();
@@ -70,7 +79,12 @@ export function useFocusContainment(
       const activeElement = document.activeElement;
       const focusIsOutside = !container.contains(activeElement);
 
-      if (event.shiftKey && (activeElement === firstFocusable || focusIsOutside)) {
+      if (
+        event.shiftKey &&
+        (activeElement === firstFocusable ||
+          activeElement === closeButton ||
+          focusIsOutside)
+      ) {
         event.preventDefault();
         lastFocusable.focus();
       } else if (
@@ -78,7 +92,7 @@ export function useFocusContainment(
         (activeElement === lastFocusable || focusIsOutside)
       ) {
         event.preventDefault();
-        firstFocusable.focus();
+        (closeButton ?? firstFocusable).focus();
       }
     };
 

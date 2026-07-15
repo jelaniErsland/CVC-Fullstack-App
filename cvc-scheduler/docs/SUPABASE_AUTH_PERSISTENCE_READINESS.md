@@ -12,6 +12,16 @@ The near-term production-readiness target is now a narrow Bozeman scheduling bet
 
 The beta launch gate requires permanent workspace/contact/grant foundations for Bozeman, volunteer profile entry/import on the existing `volunteer_profiles` architecture, Calendar create/edit/write boundaries on top of the stabilized persisted Calendar read route, assignment commands and picker UI, publication visibility truth, secure account-light volunteer schedule access, Confirm/Deny persistence and admin response visibility, a minimal initial assignment email boundary, approved Project Local UI integration on beta-critical surfaces, and production environment/hosted validation/observability/backup/rollback proof.
 
+## 12.16 Calendar item management
+
+12.16 adds the first narrow Calendar write boundary on top of the stabilized persisted `/admin/calendar` read route. Mutations remain server-owned and capability-checked. Reads still require `calendar.view` plus `assignments.view` for coverage-bearing output; create/edit requires effective `calendar.edit` for the deterministic authenticated project-contact workspace context. Role/title strings do not authorize, and the browser cannot provide trusted workspace id, actor id, capability arrays, timezone, Follow-up Contact, source provenance, arbitrary columns, or RPC names.
+
+The only supported product write path in 12.16 is persisted one-off timed scheduled items. The UI does not persist mock task presets, all-day/date-based authoring, multi-day windows, milestones, recurrence, drag/drop, resize, copy, archive/delete, publication, assignment picker/mutations, delivery, public lookup, remembered-device behavior, or response-link actions.
+
+Migration `20260714121600_calendar_item_management.sql` adds nullable `calendar_items.follow_up_project_contact_id`, allows timed/date-based `needed_count` values from `0` to `99`, replaces `create_calendar_item` to derive Follow-up Contact from the authenticated scheduler, and adds `update_calendar_item_one_off_timed` for an allowlisted edit field set. Existing rows are preserved; edits preserve Follow-up Contact and assignment truth.
+
+Application/product code still uses no service-role path and grants no direct broad table insert/update/delete to authenticated users. Local disposable validation (`npm run test:calendar-item-management`) and browser preview validation (`npm run test:calendar`) passed locally. Because this slice changes schema/RPC/generated public-schema types, hosted non-production validation is required next: `12.16.1 Hosted Staging Calendar Item Management Validation Gate`.
+
 ## 12.15 manual volunteer profile management
 
 Local migration `20260714121500_manual_volunteer_profiles.sql` extends `volunteer_profiles` with explicit provenance for legitimate manual records while preserving questionnaire-derived provenance. `source_submission_id` is nullable only for `profile_source = 'manual'`; questionnaire profiles keep their same-workspace source submission. Manual rows record the server-derived project contact and timestamp that created them. No fake questionnaire submission is manufactured.

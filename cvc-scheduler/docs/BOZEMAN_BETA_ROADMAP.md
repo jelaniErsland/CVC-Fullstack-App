@@ -9,11 +9,11 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 ## Concise current-state summary
 
 - Workspace, project-contact grant, questionnaire submission, volunteer profile, task preset, Calendar item, Calendar assignment/current response, public response-token, response route, and assignment-detail foundations exist.
-- `/admin/calendar` is already cut over to persisted Calendar item reads. It is server-owned, dynamic/no-store, bounded by server-derived Day/Week/Month/List ranges, workspace/contact/capability scoped, read-only, and free of mock/persisted item mixing.
+- `/admin/calendar` is already cut over to persisted Calendar item reads and now supports the first narrow persisted one-off timed item create/edit path. It is server-owned, dynamic/no-store, bounded by server-derived Day/Week/Month/List ranges, workspace/contact/capability scoped, and free of mock/persisted item mixing.
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
 - `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
 - `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
-- Calendar writes, assignment picker UI, publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
+- Calendar task-preset selection, assignment picker UI, publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the existing prototype work and `sample mockup images`; beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
 
 ## Bozeman Beta launch gate
@@ -45,7 +45,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 3. `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate`
    - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260705000000` to `20260714121500`, and the hosted gate passed migration/RPC/provenance, generated-type, RLS/capability, isolation, direct-table-denial, safe-error, and zero-residue checks.
 4. `12.16 Calendar Create/Edit Scheduled Item Implementation`
-   - Unblocks: first real persisted scheduled item created from the product UI.
+   - Completed locally as the first narrow persisted Calendar item create/edit path: one-off timed items only, defaulting Follow-up Contact to the authenticated scheduler. Because it adds migration/RPC/generated-type changes through `20260714121600`, it requires a hosted 12.16.1 validation gate before 12.17.
 5. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
    - Unblocks: preset-derived and one-off scheduled item creation without requiring the full `/admin/tasks` cutover first.
 6. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
@@ -65,7 +65,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 
 - Real Bozeman workspace provisioning is now repeatable through the reviewed operator boundary, but real production execution remains an explicit operator step after approved Auth identities exist.
 - Controlled volunteer import does not exist; manual persisted volunteer Add/Edit now exists through `/admin/volunteers`.
-- Calendar create/edit/archive/publication mutations are not connected to `/admin/calendar`.
+- `/admin/calendar` has a narrow one-off timed create/edit path locally, but hosted staging validation for the 12.16 migration/RPC/type changes remains required before depending on it for hosted beta use.
 - Draft/private versus published/live visibility truth is unresolved.
 - Volunteer assignment picker and assignment create/cancel UI are missing.
 - Secure account-light volunteer schedule access is missing; `/v/demo` is mock, while `/respond/[token]` is single-assignment.
@@ -192,3 +192,15 @@ $env:RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION='project-local-staging:k
 12.15.1 resumed after the approved staging project was reactivated. Project discovery verified the exact staging ref/name and `ACTIVE_HEALTHY` status, staging was confirmed at `20260705000000` before applying the reviewed pending migration, then advanced cleanly to `20260714121500`. The hosted gate passed hosted generated type comparison, manual profile create/edit RPCs, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant behavior, role/title non-authorization, direct table-write denial, malformed/protected input rejection, safe-error checks, and disposable hosted cleanup with exact-run plus namespace zero residue.
 
 The resume required no schema redesign, no service-role application path, no product route change, and no real Bozeman or Belgrade data. The committed generated public-schema types were refreshed from the hosted schema, the volunteer RPC caller was aligned with the generated optional-argument typing, and the hosted gate's static service-role guard was narrowed so false capability/readiness flag names do not fail the test while real service-role usage remains forbidden.
+
+## 12.16 Calendar create/edit scheduled item implementation
+
+12.16 establishes the first permanent scheduled-item write path from the actual `/admin/calendar` product UI. The route remains server-owned, dynamic/no-store, and persisted-truth-only. A contact with the effective `calendar.edit` capability can create and edit a supported one-off timed Calendar item; a contact with only read coverage can still view the Calendar but cannot use working create/edit controls.
+
+The supported 12.16 source path is deliberately narrow: persisted one-off/custom timed items only. The UI does not persist mock task presets, fake preset ids, all-day/date-based authoring, multi-day windows, milestones, recurrence, drag/drop, resize, copy, assignment picker actions, publication, delivery, or response links. 12.17 owns the polished persisted task-preset selector and broader one-off source path.
+
+12.16 adds migration `20260714121600_calendar_item_management.sql`, adds `calendar_items.follow_up_project_contact_id`, relaxes timed/date-based `needed_count` to `0..99`, replaces `create_calendar_item` so new rows derive the Follow-up Contact from the authenticated scheduler, and adds the allowlisted `update_calendar_item_one_off_timed` RPC. Existing Calendar rows are preserved because the Follow-up Contact column is nullable until a reviewed backfill exists. Update preserves the existing Follow-up Contact and assignment truth.
+
+Local validation now includes `npm run test:calendar-item-management`, which proves authorized create/edit persistence, Follow-up Contact, zero-needed timed items, malformed input failure, wrong-contact/wrong-workspace isolation, missing `calendar.edit` failure, direct table-write denial, safe read-model visibility, and zero residue. `npm run test:calendar` now also exercises a browser create -> reload -> edit -> reload round trip against disposable local persisted fixtures.
+
+Because 12.16 changes schema, RPC behavior, and generated Supabase public-schema types, hosted non-production validation is required before the Calendar item-management boundary is trusted for hosted beta work. The next slice should be `12.16.1 Hosted Staging Calendar Item Management Validation Gate`, not 12.17, unless that gate is already complete.

@@ -188,6 +188,20 @@ The existing Calendar UI structure is preserved. Day/Week/Month/List, date navig
 
 Recommended next slice: if 12.12 validation remains clean, `12.13 Persisted Tasks Read Model Contract` is a safe next step in the MVP cutover sequence. If any range/navigation or workspace-selection issue remains, do a narrow Calendar read-cutover stabilization follow-up before broader route cutovers or any Calendar write work.
 
+## 12.16 Calendar Create/Edit Scheduled Item Implementation
+
+Iteration 12.16 adds the first narrow persisted Calendar write path while preserving the 12.11/12.12 read architecture. `/admin/calendar` remains dynamic/no-store, server-owned, bounded by server-derived Day/Week/Month/List ranges, workspace/contact scoped, and free of mock/persisted Calendar item mixing.
+
+The supported create/edit surface is one-off timed scheduled items only. The route does not persist mock task presets, fake preset ids, all-day/date-based authoring, multi-day windows, milestones, recurrence, drag/drop, resize, copy, archive/delete, assignment selection, publication, email, reminders, response links, public lookup, remembered devices, or seed data. Existing historical persisted items of other readable schedule kinds remain readable.
+
+12.16 adds `calendar_items.follow_up_project_contact_id` as a real project-contact relationship for Follow-up Contact. New creates derive this value from the authenticated scheduler server-side; the browser cannot forge it. Existing rows are preserved because the column is nullable until a reviewed backfill exists. Edits preserve the current legitimate Follow-up Contact rather than replacing it with the editor.
+
+The migration also changes timed/date-based needed count validation to allow `0..99`, preserving `0/0 assigned` informational behavior. Assignment rows and current responses remain the only staffing/coverage truth; no Calendar item counters, mock `filledCount`, or assigned-volunteer arrays were added.
+
+Create uses the reviewed Calendar server boundary and `create_calendar_item` RPC with server-derived authenticated project-contact/workspace/capability context and effective `calendar.edit`. Edit uses the new allowlisted `update_calendar_item_one_off_timed` RPC and validates the same narrow field set: title, high-level one-off task type, date, start time, end time, needed count, notes, and empty custom values. Protected provenance, workspace, assignment truth, lifecycle, and Follow-up Contact are not browser-controlled.
+
+Local validation uses `npm run test:calendar-item-management` for disposable database proof and `npm run test:calendar` for production-preview browser proof, including create -> reload -> edit -> reload. Because this slice changes schema, RPC behavior, and generated public-schema types, the required next gate is `12.16.1 Hosted Staging Calendar Item Management Validation Gate` before any hosted beta dependency or 12.17 work trusts the new boundary.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

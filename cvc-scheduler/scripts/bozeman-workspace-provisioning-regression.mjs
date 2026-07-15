@@ -519,6 +519,7 @@ async function run() {
       workspace: fullAccess.workspaces[0],
       projectContactId: fullAccess.contactId,
       capabilities: ["calendar.view", "assignments.view"],
+      canEdit: true,
     },
   );
 

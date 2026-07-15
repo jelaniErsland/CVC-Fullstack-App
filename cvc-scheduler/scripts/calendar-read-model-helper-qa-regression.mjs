@@ -195,12 +195,16 @@ for (const file of appAndComponentFiles) {
   }
 }
 assert.deepEqual(helperImporters, []);
-assert.deepEqual(persistedCalendarRouteImporters, []);
+assert.deepEqual(
+  persistedCalendarRouteImporters,
+  ["app/admin/calendar/page.tsx"],
+  "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
+);
 assert.deepEqual(assignmentDetailLinks, []);
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
   calendarRouteSource,
-  /@\/lib\/calendar\/readModel|@\/lib\/calendar\/server|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses|getCalendarItemsByWeek/i,
+  /@\/lib\/calendar\/readModel|readCurrentContactCalendarItems|readCalendarItemsWithClient|calendar_items|calendar_assignments|assignment_responses|getCalendarItemsByWeek/i,
 );
 
 assert.equal(normalizeCalendarReadModelInput(baseInput).ok, true);

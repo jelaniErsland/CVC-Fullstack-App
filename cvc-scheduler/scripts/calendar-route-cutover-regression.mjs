@@ -53,8 +53,8 @@ assert.match(routeReadSource, /readGrantedWorkspacesWithClient/);
 assert.match(routeReadSource, /readCalendarReadModelWithClient/);
 assert.match(routeReadSource, /getCalendarRouteCutoverStatePrototypePresentation/);
 assert.match(routeReadSource, /CALENDAR_ROUTE_PERSISTED_READ_CUTOVER_IMPLEMENTED = true/);
-assert.match(routeReadSource, /CALENDAR_ROUTE_PERSISTED_READ_ONLY = true/);
-assert.match(routeReadSource, /CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE = false/);
+assert.match(routeReadSource, /CALENDAR_ROUTE_PERSISTED_READ_ONLY = false/);
+assert.match(routeReadSource, /CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE = true/);
 assert.match(routeReadSource, /CALENDAR_ROUTE_MOCK_TO_REAL_MIXING_ALLOWED = false/);
 assert.match(routeReadSource, /CALENDAR_SERVICE_ROLE_READ_AVAILABLE = false/);
 assert.match(routeReadSource, /CALENDAR_SEED_DATA_AVAILABLE = false/);
@@ -76,8 +76,8 @@ assert.doesNotMatch(
 
 for (const [flagName, expected] of [
   ["CALENDAR_ROUTE_PERSISTED_READ_CUTOVER_IMPLEMENTED", "true"],
-  ["CALENDAR_ROUTE_PERSISTED_READ_ONLY", "true"],
-  ["CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE", "false"],
+  ["CALENDAR_ROUTE_PERSISTED_READ_ONLY", "false"],
+  ["CALENDAR_ROUTE_PERSISTED_WRITE_AVAILABLE", "true"],
   ["CALENDAR_ROUTE_MOCK_TO_REAL_MIXING_ALLOWED", "false"],
   ["CALENDAR_ASSIGNMENT_PICKER_CUTOVER_AVAILABLE", "false"],
   ["CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE", "false"],
@@ -118,6 +118,7 @@ assert.deepEqual([...statePrototype.states], [
 assert.match(calendarClientSource, /type CalendarClientState/);
 assert.match(calendarClientSource, /kind: "ready_with_items" \| "ready_empty"/);
 assert.match(calendarClientSource, /kind: "unavailable" \| "error"/);
+assert.match(calendarClientSource, /canEdit: boolean/);
 assert.match(calendarClientSource, /useRouter/);
 assert.match(calendarClientSource, /buildCalendarRouteHref/);
 assert.match(calendarClientSource, /No scheduled items in this range/);
@@ -188,4 +189,4 @@ assert.equal(activationCheckpoint.rememberedDeviceAvailable, false);
 assert.match(packageSource, /"test:calendar-route-cutover"/);
 
 console.log("Calendar route persisted read cutover checks passed.");
-console.log("Confirmed /admin/calendar uses the reviewed read-only persisted boundary with no mock fallback.");
+console.log("Confirmed /admin/calendar uses reviewed persisted read and narrow create/edit boundaries with no mock fallback.");

@@ -1,5 +1,40 @@
 # Project History
 
+## Iteration 12.16 - Calendar Create/Edit Scheduled Item Implementation
+
+Summary:
+- Added the first permanent `/admin/calendar` scheduled-item write path for the Bozeman beta: authorized project contacts with effective `calendar.edit` can create and edit persisted one-off timed Calendar items from the existing Calendar UI.
+- Kept the route server-owned, dynamic/no-store, bounded, and persisted-truth-only. Mutations resolve the authenticated user, project contact, deterministic active workspace, and effective capabilities server-side; the browser cannot authorize workspace, actor, capability, timezone, source, or Follow-up Contact values.
+- Added migration `20260714121600_calendar_item_management.sql`. It adds nullable `calendar_items.follow_up_project_contact_id`, allows timed/date-based `needed_count` values from `0` to `99`, replaces `create_calendar_item` so new rows derive Follow-up Contact from the authenticated scheduler, and adds allowlisted RPC `update_calendar_item_one_off_timed`.
+- Updated Calendar server helpers and `/admin/calendar` server actions for validated one-off timed create/edit only. Task-preset selection, all-day/date-based authoring, draft/publish, archive/delete, assignment picker/mutations, delivery, response links, and Calendar item mock fallback remain out of scope.
+- Updated `components/CalendarClient.tsx` so create/edit surfaces submit to server actions when `calendar.edit` is present, while read-only contacts retain Calendar read access without working mutation controls. The inspector edit form supports only persisted one-off timed items.
+- Hardened focus containment around the Calendar dialogs after adding real form controls.
+
+Changed files:
+- `supabase/migrations/20260714121600_calendar_item_management.sql`
+- `app/admin/calendar/page.tsx`
+- `components/CalendarClient.tsx`
+- `hooks/useFocusContainment.ts`
+- `lib/calendar/item.ts`
+- `lib/calendar/routeRead.server.ts`
+- `lib/calendar/server.ts`
+- `lib/mockData.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/calendar-item-management-regression.mjs`
+- `scripts/calendar-regression.mjs`
+- Calendar/readiness regression scripts updated for the approved 12.16 mutation-boundary import.
+- `package.json`
+- Canonical docs updated for 12.16.
+
+Validation:
+- `npm run test:calendar-item-management` passed with disposable local fixtures and zero residue, proving create/edit persistence, Follow-up Contact, zero-needed timed items, read-model visibility, missing `calendar.edit` failure, wrong-contact/wrong-workspace isolation, malformed input failure, unsupported source rejection, direct table write denial, and no service-role dependency.
+- `npm run test:calendar` passed against a redirected-log loopback production preview. It now includes a browser create -> reload -> edit -> reload round trip, plus desktop/mobile Calendar interaction, inspector, filters, unavailable state, 390px no-overflow, no unsafe leakage, and cleanup.
+- Static Calendar/read-model/grant/roadmap compatibility regressions, lint, typecheck, and build were run during the slice.
+- Because 12.16 added a migration, RPC behavior, and generated public-schema type changes, hosted non-production validation is still required before trusting this boundary for hosted beta use.
+
+Recommended next slice:
+- `12.16.1 Hosted Staging Calendar Item Management Validation Gate` before 12.17.
+
 ## Iteration 12.15.1 - Hosted Staging Migration + Volunteer Profile Management Validation Gate
 
 Summary:

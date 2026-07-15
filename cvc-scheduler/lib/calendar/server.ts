@@ -3,8 +3,10 @@ import "server-only";
 import {
   parseCalendarItem,
   validateCreateCalendarItemInput,
+  validateUpdateCalendarOneOffTimedItemInput,
   type CalendarItem,
   type CreateCalendarItemInput,
+  type UpdateCalendarOneOffTimedItemInput,
 } from "@/lib/calendar/item";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
@@ -29,7 +31,8 @@ const calendarItemColumns = [
   "custom_values",
   "lifecycle",
   "created_at",
-  "updated_at",
+    "updated_at",
+    "follow_up_project_contact_id",
 ].join(",");
 
 async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
@@ -97,6 +100,39 @@ export async function createCalendarItem(input: CreateCalendarItemInput | unknow
   return createCalendarItemWithClient(supabase, input);
 }
 
+export async function updateCalendarOneOffTimedItemWithClient(
+  supabase: AppSupabaseClient,
+  input: UpdateCalendarOneOffTimedItemInput | unknown,
+): Promise<CalendarItemMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const item = validateUpdateCalendarOneOffTimedItemInput(input);
+  const { data, error } = await supabase.rpc(
+    "update_calendar_item_one_off_timed",
+    {
+      p_calendar_item_id: item.calendarItemId,
+      p_one_off_title: item.source.title,
+      p_one_off_task_type: item.source.taskType,
+      p_start_date: item.schedule.date,
+      p_start_time: item.schedule.startTime,
+      p_end_time: item.schedule.endTime,
+      p_needed_count: item.neededCount,
+      p_schedule_notes: item.notes ?? null,
+      p_custom_values: item.customValues,
+    } as PublicRpcArgs<"update_calendar_item_one_off_timed">,
+  );
+  if (error || typeof data !== "string") {
+    throw new Error("Calendar item could not be updated.", { cause: error });
+  }
+  return { calendarItemId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export async function updateCalendarOneOffTimedItem(
+  input: UpdateCalendarOneOffTimedItemInput | unknown,
+) {
+  const supabase = await createServerSupabaseClient();
+  return updateCalendarOneOffTimedItemWithClient(supabase, input);
+}
+
 export async function archiveCalendarItemWithClient(
   supabase: AppSupabaseClient,
   calendarItemId: string,
@@ -115,4 +151,69 @@ export async function archiveCalendarItemWithClient(
 export async function archiveCalendarItem(calendarItemId: string) {
   const supabase = await createServerSupabaseClient();
   return archiveCalendarItemWithClient(supabase, calendarItemId);
+}
+
+function textFromFormData(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+function optionalTextFromFormData(formData: FormData, key: string) {
+  const value = textFromFormData(formData, key).trim();
+  return value.length > 0 ? value : null;
+}
+
+function taskTypeFromFormData(formData: FormData) {
+  const value = textFromFormData(formData, "taskType");
+  if (value === "food" || value === "security" || value === "custom") return value;
+  return "general";
+}
+
+function neededCountFromFormData(formData: FormData) {
+  const value = Number(textFromFormData(formData, "neededCount"));
+  return Number.isInteger(value) ? value : Number.NaN;
+}
+
+export function calendarOneOffTimedCreateInputFromFormData(
+  formData: FormData,
+  workspaceId: string,
+): CreateCalendarItemInput {
+  return validateCreateCalendarItemInput({
+    workspaceId,
+    source: {
+      kind: "one_off",
+      title: textFromFormData(formData, "title"),
+      taskType: taskTypeFromFormData(formData),
+    },
+    schedule: {
+      kind: "timed",
+      date: textFromFormData(formData, "date"),
+      startTime: textFromFormData(formData, "startTime"),
+      endTime: textFromFormData(formData, "endTime"),
+    },
+    neededCount: neededCountFromFormData(formData),
+    notes: optionalTextFromFormData(formData, "notes"),
+    customValues: {},
+  });
+}
+
+export function calendarOneOffTimedUpdateInputFromFormData(
+  formData: FormData,
+): UpdateCalendarOneOffTimedItemInput {
+  return validateUpdateCalendarOneOffTimedItemInput({
+    calendarItemId: textFromFormData(formData, "calendarItemId"),
+    source: {
+      title: textFromFormData(formData, "title"),
+      taskType: taskTypeFromFormData(formData),
+    },
+    schedule: {
+      kind: "timed",
+      date: textFromFormData(formData, "date"),
+      startTime: textFromFormData(formData, "startTime"),
+      endTime: textFromFormData(formData, "endTime"),
+    },
+    neededCount: neededCountFromFormData(formData),
+    notes: optionalTextFromFormData(formData, "notes"),
+    customValues: {},
+  });
 }
