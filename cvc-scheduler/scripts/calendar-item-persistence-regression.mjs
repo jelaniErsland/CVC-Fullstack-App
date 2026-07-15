@@ -24,12 +24,26 @@ const itemManagementMigrationPath = path.join(
   "20260714121600_calendar_item_management.sql",
 );
 const serverBoundaryPath = path.join(root, "lib", "calendar", "server.ts");
+const hostedManagementGatePath = path.join(
+  root,
+  "scripts",
+  "hosted-calendar-item-management-regression.mjs",
+);
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, itemManagementMigration, serverBoundary, environmentExample] = await Promise.all([
+const [
+  migration,
+  itemManagementMigration,
+  serverBoundary,
+  hostedManagementGate,
+  packageJson,
+  environmentExample,
+] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(itemManagementMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
+  readFile(hostedManagementGatePath, "utf8"),
+  readFile(path.join(root, "package.json"), "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
 
@@ -132,6 +146,29 @@ assert.match(
 );
 assert.doesNotMatch(itemManagementMigration, /grant .*to anon|service_role/i);
 assert.doesNotMatch(migration, /to anon|service_role/i);
+
+assert.match(packageJson, /"test:calendar-item-management:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/hosted-calendar-item-management-regression\.mjs"/);
+assert.match(hostedManagementGate, /const expectedRef = "kfuujcfxoayukywvtaeh";/);
+assert.match(hostedManagementGate, /const expectedName = "project-local-staging";/);
+assert.match(hostedManagementGate, /RUN_HOSTED_CALENDAR_ITEM_MANAGEMENT_VALIDATION === expectedConfirmation/);
+assert.match(hostedManagementGate, /const expectedBeforeMigration = "20260714121500";/);
+assert.match(hostedManagementGate, /const expectedAfterMigration = "20260714121600";/);
+assert.match(hostedManagementGate, /const expectedMigrationFile = `\$\{expectedAfterMigration\}_calendar_item_management\.sql`;/);
+assert.match(hostedManagementGate, /db", "push", "--linked", "--dry-run", "--yes"/);
+assert.match(hostedManagementGate, /db", "push", "--linked", "--yes"/);
+assert.match(hostedManagementGate, /gen", "types", "typescript", "--linked", "--schema", "public"/);
+assert.match(hostedManagementGate, /create_calendar_item/);
+assert.match(hostedManagementGate, /update_calendar_item_one_off_timed/);
+assert.match(hostedManagementGate, /follow_up_project_contact_id/);
+assert.match(hostedManagementGate, /verifyNamespaceResidue/);
+assert.match(hostedManagementGate, /Hosted disposable product and Auth residue/);
+assert.doesNotMatch(
+  hostedManagementGate
+    .replace(/service credential/g, "")
+    .replace(/SUPABASE_SERVICE_ROLE_KEY/g, "")
+    .replace(/createServiceRole/g, ""),
+  /SUPABASE_SERVICE_ROLE_KEY|createServiceRole/,
+);
 
 assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);

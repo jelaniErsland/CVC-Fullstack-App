@@ -45,27 +45,29 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 3. `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate`
    - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260705000000` to `20260714121500`, and the hosted gate passed migration/RPC/provenance, generated-type, RLS/capability, isolation, direct-table-denial, safe-error, and zero-residue checks.
 4. `12.16 Calendar Create/Edit Scheduled Item Implementation`
-   - Completed locally as the first narrow persisted Calendar item create/edit path: one-off timed items only, defaulting Follow-up Contact to the authenticated scheduler. Because it adds migration/RPC/generated-type changes through `20260714121600`, it requires a hosted 12.16.1 validation gate before 12.17.
-5. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
+   - Completed as the first narrow persisted Calendar item create/edit path: one-off timed items only, defaulting Follow-up Contact to the authenticated scheduler.
+5. `12.16.1 Hosted Staging Calendar Item Management Validation Gate`
+   - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260714121500` to `20260714121600`, and the hosted gate passed generated-type parity, one-off timed create/edit, Follow-up Contact, zero-needed/read-model, RLS/capability, isolation, direct-table-denial, malformed/source-validation, existing-row compatibility, safe-output, and zero-residue checks.
+6. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
    - Unblocks: preset-derived and one-off scheduled item creation without requiring the full `/admin/tasks` cutover first.
-6. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
+7. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
    - Unblocks: first real volunteer assignment.
-7. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
+8. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
    - Unblocks: first published volunteer-visible assignment.
-8. `12.20 Secure Account-Light Volunteer Schedule Access`
+9. `12.20 Secure Account-Light Volunteer Schedule Access`
    - Unblocks: volunteers seeing only their own published assignments.
-9. `12.21 Volunteer Confirm/Deny Round Trip`
+10. `12.21 Volunteer Confirm/Deny Round Trip`
    - Unblocks: first real Confirm/Deny round trip and admin-visible response state.
-10. `12.22 Initial Assignment Notification Email Boundary`
+11. `12.22 Initial Assignment Notification Email Boundary`
    - Unblocks: first real assignment notification email with duplicate-send prevention and observable failures.
-11. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+12. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
     - Unblocks: beta launch candidate review.
 
 ## Repository-grounded beta blockers
 
 - Real Bozeman workspace provisioning is now repeatable through the reviewed operator boundary, but real production execution remains an explicit operator step after approved Auth identities exist.
 - Controlled volunteer import does not exist; manual persisted volunteer Add/Edit now exists through `/admin/volunteers`.
-- `/admin/calendar` has a narrow one-off timed create/edit path locally, but hosted staging validation for the 12.16 migration/RPC/type changes remains required before depending on it for hosted beta use.
+- `/admin/calendar` has a narrow one-off timed create/edit path, and its 12.16 migration/RPC/type changes have passed the required hosted staging validation gate.
 - Draft/private versus published/live visibility truth is unresolved.
 - Volunteer assignment picker and assignment create/cancel UI are missing.
 - Secure account-light volunteer schedule access is missing; `/v/demo` is mock, while `/respond/[token]` is single-assignment.
@@ -203,4 +205,4 @@ The supported 12.16 source path is deliberately narrow: persisted one-off/custom
 
 Local validation now includes `npm run test:calendar-item-management`, which proves authorized create/edit persistence, Follow-up Contact, zero-needed timed items, malformed input failure, wrong-contact/wrong-workspace isolation, missing `calendar.edit` failure, direct table-write denial, safe read-model visibility, and zero residue. `npm run test:calendar` now also exercises a browser create -> reload -> edit -> reload round trip against disposable local persisted fixtures.
 
-Because 12.16 changes schema, RPC behavior, and generated Supabase public-schema types, hosted non-production validation is required before the Calendar item-management boundary is trusted for hosted beta work. The next slice should be `12.16.1 Hosted Staging Calendar Item Management Validation Gate`, not 12.17, unless that gate is already complete.
+12.16.1 completed the required hosted non-production validation gate for the Calendar item-management boundary. The gate is locked to `project-local-staging` (`kfuujcfxoayukywvtaeh`) and requires `RUN_HOSTED_CALENDAR_ITEM_MANAGEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`. It verified `ACTIVE_HEALTHY` staging, advanced from `20260714121500` to `20260714121600`, compared hosted generated public-schema types to committed types, validated one-off timed create/edit, Follow-up Contact integrity, needed-count `0` and `0/0 assigned` read-model behavior, protected-field preservation, capability/RLS isolation, grant lifecycle failure, role/title non-authorization, direct table-write denial, malformed schedule/source rejection, fake preset rejection, existing preset-backed source compatibility, legacy nullable Follow-up Contact compatibility, safe output, and exact-run plus namespace zero residue. No product/runtime code change, extra migration, service-role application path, real data, or Calendar feature expansion was added by the hosted gate.

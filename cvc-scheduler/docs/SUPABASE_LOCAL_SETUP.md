@@ -239,7 +239,17 @@ After 12.16, run the Calendar item-management local validation when changing the
 npm run test:calendar-item-management
 ```
 
-This command requires local Supabase, refuses non-loopback targets, uses disposable local fixtures only, uses no service-role application path, and cleans up with zero residue. It proves authorized one-off timed Calendar item creation and editing, persisted read-back through the normal Calendar read model, server-derived Follow-up Contact, needed count `0..99`, missing `calendar.edit` failure, wrong-contact/wrong-workspace isolation, role/title non-authorization, malformed date/time/needed/source failure, direct authenticated table-write denial, safe output, and no credential logging. Because 12.16 adds migration/RPC/generated-type changes, hosted non-production validation remains required before relying on the boundary in staging/beta.
+This command requires local Supabase, refuses non-loopback targets, uses disposable local fixtures only, uses no service-role application path, and cleans up with zero residue. It proves authorized one-off timed Calendar item creation and editing, persisted read-back through the normal Calendar read model, server-derived Follow-up Contact, needed count `0..99`, missing `calendar.edit` failure, wrong-contact/wrong-workspace isolation, role/title non-authorization, malformed date/time/needed/source failure, direct authenticated table-write denial, safe output, and no credential logging.
+
+To rerun the hosted non-production Calendar item-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_CALENDAR_ITEM_MANAGEMENT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:calendar-item-management:hosted
+Remove-Item Env:RUN_HOSTED_CALENDAR_ITEM_MANAGEMENT_VALIDATION
+```
+
+The command refuses every other target, verifies `project-local-staging` (`kfuujcfxoayukywvtaeh`) is `ACTIVE_HEALTHY`, advances staging only through the reviewed `20260714121600_calendar_item_management.sql` migration when pending, compares hosted generated public-schema types with committed types, creates disposable `qa-12-16-1-*` Auth/product fixtures, validates one-off timed create/edit, server-derived Follow-up Contact, needed-count `0` and `0/0 assigned`, protected-field preservation, view-only and missing-`calendar.edit` denial, cross-contact/cross-workspace isolation, revoked/expired/inactive grants, role/title non-authorization, direct table-write denial, malformed schedule/source rejection, fake preset rejection, existing preset-backed source compatibility, existing-row nullable Follow-up Contact compatibility, safe output, and exact-run plus namespace zero residue. Current gate status: passed on the approved non-production staging target; staging advanced from `20260714121500` to `20260714121600`.
 
 After 12.11, `npm run test:calendar` validates the cut-over route against disposable local persisted fixtures while a loopback production preview is running. It refuses non-loopback targets, authenticates project contacts, renders persisted success, empty, and under-capability unavailable states, checks Day/Week/Month/List switching, date navigation, filters, inspector behavior, 390px layout, no unsafe leakage, no mock item leakage, and cleans every fixture in `finally`. After 12.16 it also performs a persisted one-off timed create -> reload -> edit -> reload browser round trip. Start preview with logs redirected to temp files, do not print raw Supabase/preview env output, and stop preview before final `npx tsc --noEmit` or `npm run build`.
 
@@ -284,7 +294,7 @@ The command refuses every other target, uses disposable `qa-11-27-*` Auth/produc
 
 ## Workspace migration and type generation
 
-The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260714121500_manual_volunteer_profiles.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
+The migrations are `supabase/migrations/20260701000000_workspace_identity.sql` through `supabase/migrations/20260714121600_calendar_item_management.sql`. Review them before applying them in timestamp order. The token migrations use `pgcrypto` from Supabase's `extensions` schema for secure random bytes and SHA-256 verification. With the Supabase CLI authenticated and this repository linked to the intended non-production project, run:
 
 ```powershell
 npx supabase db push

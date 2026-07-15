@@ -1,5 +1,32 @@
 # Project History
 
+## Iteration 12.16.1 - Hosted Staging Calendar Item Management Validation Gate
+
+Summary:
+- Added `scripts/hosted-calendar-item-management-regression.mjs` and `npm run test:calendar-item-management:hosted` as the exact-opt-in hosted non-production validation gate for the 12.16 Calendar item-management migration/RPC boundary.
+- Locked the gate to `project-local-staging` (`kfuujcfxoayukywvtaeh`) with `RUN_HOSTED_CALENDAR_ITEM_MANAGEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- The command refuses missing/wrong opt-in, verifies the linked staging ref/name and `ACTIVE_HEALTHY` status, checks migration state, confirms only the reviewed `20260714121600_calendar_item_management.sql` migration is pending when staging is at `20260714121500`, applies it with the established hosted workflow, compares hosted generated public-schema types to committed types, validates disposable hosted Auth/RLS/RPC behavior, and verifies exact-run plus namespace zero residue.
+- The first hosted run verified staging at `20260714121500` and applied the reviewed 12.16 migration, then stopped on a local harness static false-positive against the existing false service-role readiness flag. The harness guard was narrowed to real service-role usage patterns without changing product/runtime code. The completed rerun verified staging at `20260714121600` and passed the full hosted behavior/cleanup gate.
+- Hosted validation proved one-off timed create/edit, server-derived Follow-up Contact, needed-count `0`, safe `0/0 assigned` read-model output, protected-field preservation, view-only and missing-`calendar.edit` denial, cross-contact and cross-workspace isolation, revoked/expired/inactive grant failure, role/title non-authorization, direct table insert/update/delete denial, malformed schedule/source rejection, fake preset rejection, existing preset-backed source compatibility, existing-row compatibility for nullable Follow-up Contact, generated type parity, safe output, and zero hosted residue.
+- Added a static guard to the Calendar item persistence regression so the hosted gate remains pinned to the approved staging target, exact opt-in, expected migrations, RPCs, generated-type comparison, cleanup, and no service-role shortcut.
+
+Changed files:
+- `scripts/hosted-calendar-item-management-regression.mjs`
+- `scripts/calendar-item-persistence-regression.mjs`
+- `package.json`
+- Canonical docs updated for 12.16.1.
+
+Validation:
+- Initial `git status --short` was clean.
+- `npm run test:calendar-item-management:hosted` without opt-in refused execution.
+- Hosted project discovery confirmed `project-local-staging` (`kfuujcfxoayukywvtaeh`) as the exact approved target and active status `ACTIVE_HEALTHY`.
+- Hosted migration level before applying the reviewed pending migration was `20260714121500`; staging advanced cleanly to `20260714121600`.
+- `npm run test:calendar-item-management:hosted` passed with the exact opt-in and confirmed hosted disposable product/Auth residue `0`.
+- No product/runtime route code, new migration beyond the already-reviewed 12.16 migration, generated type change during this gate, service-role application path, real Bozeman/Belgrade data, Calendar feature expansion, assignment picker, publication, email, public lookup, remembered-device behavior, or response-link activation was added.
+
+Recommended next slice:
+- `12.17 Calendar Task Preset Selector and One-Off Definition Path`, only after the final 12.16.1 local compatibility chain remains clean.
+
 ## Iteration 12.16 - Calendar Create/Edit Scheduled Item Implementation
 
 Summary:
