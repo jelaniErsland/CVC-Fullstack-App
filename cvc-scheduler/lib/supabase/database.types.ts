@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -7,6 +7,11 @@
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       assignment_response_link_reveal_events: {
@@ -457,8 +462,8 @@ export type Database = {
           manual_created_by_project_contact_id: string | null
           phone: string | null
           preferred_contact_method: string | null
-          profile_source: string
           profile_notes: string
+          profile_source: string
           readiness_status: string
           skills_help_snapshot: Json
           source_submission_id: string | null
@@ -477,8 +482,8 @@ export type Database = {
           manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
-          profile_source?: string
           profile_notes?: string
+          profile_source?: string
           readiness_status?: string
           skills_help_snapshot: Json
           source_submission_id?: string | null
@@ -497,8 +502,8 @@ export type Database = {
           manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
-          profile_source?: string
           profile_notes?: string
+          profile_source?: string
           readiness_status?: string
           skills_help_snapshot?: Json
           source_submission_id?: string | null
@@ -647,19 +652,6 @@ export type Database = {
         Args: { p_submission_id: string }
         Returns: string
       }
-      create_manual_volunteer_profile: {
-        Args: {
-          p_workspace_id: string
-          p_full_name: string
-          p_email?: string | null
-          p_phone?: string | null
-          p_congregation?: string | null
-          p_preferred_contact_method?: string | null
-          p_readiness_status?: string
-          p_profile_notes?: string
-        }
-        Returns: string
-      }
       create_calendar_assignment: {
         Args: {
           p_assignment_note: string
@@ -681,6 +673,19 @@ export type Database = {
           p_start_date: string
           p_start_time: string
           p_task_preset_id: string
+          p_workspace_id: string
+        }
+        Returns: string
+      }
+      create_manual_volunteer_profile: {
+        Args: {
+          p_congregation?: string
+          p_email?: string
+          p_full_name: string
+          p_phone?: string
+          p_preferred_contact_method?: string
+          p_profile_notes?: string
+          p_readiness_status?: string
           p_workspace_id: string
         }
         Returns: string
@@ -839,15 +844,15 @@ export type Database = {
       }
       update_volunteer_profile_manual_fields: {
         Args: {
-          p_profile_id: string
+          p_congregation?: string
+          p_email?: string
           p_full_name: string
-          p_email?: string | null
-          p_phone?: string | null
-          p_congregation?: string | null
-          p_preferred_contact_method?: string | null
           p_lifecycle?: string
-          p_readiness_status?: string
+          p_phone?: string
+          p_preferred_contact_method?: string
+          p_profile_id: string
           p_profile_notes?: string
+          p_readiness_status?: string
         }
         Returns: string
       }

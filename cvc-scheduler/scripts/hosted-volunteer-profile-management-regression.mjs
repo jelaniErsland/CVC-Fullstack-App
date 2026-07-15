@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes, randomUUID } from "node:crypto";
+import { writeFileSync, unlinkSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -102,14 +104,18 @@ function parseCliJson(output, stage) {
 }
 
 function runHostedSql(sql, stage = "Hosted database query") {
-  const output = runSupabaseCli([
-    "db",
-    "query",
-    "--linked",
-    sql.replace(/\r?\n/g, " "),
-    "--output",
-    "json",
-  ]);
+  const file = path.join(tmpdir(), `project-local-hosted-${randomUUID()}.sql`);
+  writeFileSync(file, sql, "utf8");
+  let output;
+  try {
+    output = runSupabaseCli(["db", "query", "--linked", "--file", file, "--output", "json"]);
+  } finally {
+    try {
+      unlinkSync(file);
+    } catch {
+      // Best-effort cleanup only; the file contains disposable validation SQL, not credentials.
+    }
+  }
   const result = parseCliJson(output, stage);
   assert(Array.isArray(result.rows), `${stage} omitted rows.`);
   return result.rows;
@@ -295,7 +301,12 @@ async function verifyStaticBoundaries() {
   assert(migration.includes("create_manual_volunteer_profile"), "Manual create RPC migration is missing.");
   assert(migration.includes("update_volunteer_profile_manual_fields"), "Manual update RPC migration is missing.");
   assert(!/grant (?:insert|update|delete|all).*volunteer_profiles.*to authenticated/i.test(migration), "Manual migration broadened direct volunteer table writes.");
-  assert(!/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test(`${migration}\n${server}\n${routeRead}\n${route}`), "Volunteer path references a service-role shortcut.");
+  assert(
+    !/process\.env\.SUPABASE_SERVICE_ROLE_KEY|createServiceRole|auth\.admin/i.test(
+      `${migration}\n${server}\n${routeRead}\n${route}`,
+    ),
+    "Volunteer path references a service-role shortcut.",
+  );
   assert(/readVolunteerManagementRouteState/.test(route), "Volunteer route is not using the reviewed route read state.");
   assert(!/mockData|projectVolunteers|getVolunteerById/i.test(route), "Volunteer route still references mock volunteer truth.");
 

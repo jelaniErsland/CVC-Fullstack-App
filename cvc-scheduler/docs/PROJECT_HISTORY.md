@@ -6,11 +6,15 @@ Summary:
 - Added `scripts/hosted-volunteer-profile-management-regression.mjs` and `npm run test:volunteer-profile-management:hosted` as the exact opt-in hosted non-production validation gate for the 12.15 migration/RPC/provenance design.
 - Locked the gate to `project-local-staging` (`kfuujcfxoayukywvtaeh`) with `RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
 - The gate verifies staging migration level `20260714121500`, hosted generated public-schema types, manual create/edit RPC behavior, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit`, cross-contact/cross-workspace isolation, revoked/expired/inactive grants, role/title non-authorization, direct table-write denial, malformed/protected input rejection, safe output, and exact-run plus namespace zero-residue cleanup.
+- Resumed the hosted gate after the approved staging project was reactivated, verified the exact target as `ACTIVE_HEALTHY`, advanced staging from `20260705000000` to `20260714121500`, and completed the hosted validation successfully.
+- Refreshed committed generated public-schema types from the hosted schema, aligned volunteer RPC optional arguments with the generated `string | undefined` arg shape, and narrowed the hosted static service-role guard so false readiness flag names do not fail the test while real service-role usage remains forbidden.
 - Updated the volunteer persistence regression so the hosted gate remains protected by static checks for the expected staging target, migration, opt-in env var, volunteer RPCs, generated-type comparison, cleanup, and no service-role shortcut.
 
 Changed files:
 - `scripts/hosted-volunteer-profile-management-regression.mjs`
 - `scripts/volunteer-persistence-regression.mjs`
+- `lib/supabase/database.types.ts`
+- `lib/volunteers/server.ts`
 - `package.json`
 - `docs/BOZEMAN_BETA_ROADMAP.md`
 - `docs/CURRENT_STATE.md`
@@ -22,12 +26,15 @@ Changed files:
 Validation:
 - Initial `git status --short` was clean.
 - The hosted command refuses to run without the exact opt-in.
-- Hosted project discovery confirmed the approved staging name/ref, but the project currently reports `INACTIVE`; hosted database login-role creation timed out before migration/RLS/RPC validation could run.
-- No hosted product fixtures were created, no hosted migration was applied, and no hosted residue cleanup was needed during this blocked attempt.
-- No product route, migration, generated type, service-role application path, real data, email, Calendar write, assignment picker, public lookup, remembered-device behavior, Belgrade migration, or response-link activation was added.
+- Hosted project discovery confirmed `project-local-staging` (`kfuujcfxoayukywvtaeh`) as the exact approved target and active status `ACTIVE_HEALTHY`.
+- Hosted migration level before applying reviewed pending migrations was `20260705000000`; staging advanced cleanly to `20260714121500`.
+- `npm run test:volunteer-profile-management:hosted` passed with the exact opt-in. It proved manual profile create/edit, questionnaire provenance compatibility, `volunteers.view`/`volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant failure, role/title non-authorization, direct table insert/update/delete denial, malformed/protected input behavior, generated public-schema type parity, safe output, and exact-run plus namespace zero-residue cleanup.
+- Hosted disposable product/Auth residue was confirmed as `0`.
+- Local compatibility remains required after the hosted pass before starting 12.16.
+- No product route behavior, new migration, service-role application path, real data, email, Calendar write, assignment picker, public lookup, remembered-device behavior, Belgrade migration, or response-link activation was added.
 
 Recommended next slice:
-- Restore/reactivate the approved non-production staging target and rerun `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate` until it passes cleanly. Only then begin `12.16 Calendar Create/Edit Scheduled Item Implementation`.
+- `12.16 Calendar Create/Edit Scheduled Item Implementation`, only after the final 12.15.1 local compatibility chain remains clean.
 
 ## Iteration 12.15 - Manual Volunteer Profile Add/Edit Permanent Path
 

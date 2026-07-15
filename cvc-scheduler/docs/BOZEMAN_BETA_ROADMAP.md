@@ -43,7 +43,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 2. `12.15 Manual Volunteer Profile Add/Edit Permanent Path`
    - Completed as the permanent persisted `/admin/volunteers` manual Add/Edit path. It unblocks the first real Bozeman volunteer record and the future assignment picker source.
 3. `12.15.1 Hosted Staging Migration + Volunteer Profile Management Validation Gate`
-   - Pending. The opt-in hosted gate exists and is locked to `project-local-staging` (`kfuujcfxoayukywvtaeh`), but that approved staging project currently reports `INACTIVE`, so hosted DB/RLS/RPC validation has not passed yet.
+   - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260705000000` to `20260714121500`, and the hosted gate passed migration/RPC/provenance, generated-type, RLS/capability, isolation, direct-table-denial, safe-error, and zero-residue checks.
 4. `12.16 Calendar Create/Edit Scheduled Item Implementation`
    - Unblocks: first real persisted scheduled item created from the product UI.
 5. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
@@ -177,7 +177,7 @@ No real Bozeman production rows, migrations, generated Supabase type changes, ho
 - Manual create/update goes through authenticated RPCs (`create_manual_volunteer_profile`, `update_volunteer_profile_manual_fields`) that re-check the caller's active project-contact grant and `volunteers.edit` capability. Direct authenticated table insert/update/delete privileges remain denied.
 - `npm run test:volunteer-profile-management` performs disposable local validation for create, edit, read-back persistence, view-only behavior, missing-view failure, cross-contact/cross-workspace isolation, malformed/protected input, questionnaire compatibility, no service-role dependency, no secret output, and zero-residue cleanup.
 
-12.15 adds a migration and generated type updates for manual provenance and the two narrow RPCs. Hosted validation is required before this migration is trusted by any hosted beta dependency. No real Bozeman production volunteer records, controlled import UI, assignment picker, Calendar write, public volunteer lookup, email sending, remembered-device behavior, service-role usage, seed data, Belgrade migration, or response-link activation was added.
+12.15 adds a migration and generated type updates for manual provenance and the two narrow RPCs. 12.15.1 has now completed the required hosted staging validation before any hosted beta dependency relies on that behavior. No real Bozeman production volunteer records, controlled import UI, assignment picker, Calendar write, public volunteer lookup, email sending, remembered-device behavior, service-role usage, seed data, Belgrade migration, or response-link activation was added.
 
 ## 12.15.1 hosted staging volunteer profile gate
 
@@ -189,6 +189,6 @@ The command is explicitly locked to the existing approved staging project, `proj
 $env:RUN_HOSTED_VOLUNTEER_PROFILE_MANAGEMENT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
 ```
 
-When staging is active and migrated through `20260714121500`, the gate validates hosted generated types, manual profile create/edit RPCs, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant behavior, role/title non-authorization, direct table-write denial, malformed/protected input rejection, and disposable hosted cleanup with zero residue.
+12.15.1 resumed after the approved staging project was reactivated. Project discovery verified the exact staging ref/name and `ACTIVE_HEALTHY` status, staging was confirmed at `20260705000000` before applying the reviewed pending migration, then advanced cleanly to `20260714121500`. The hosted gate passed hosted generated type comparison, manual profile create/edit RPCs, questionnaire-derived provenance compatibility, `volunteers.view` and `volunteers.edit` enforcement, cross-contact and cross-workspace isolation, revoked/expired/inactive grant behavior, role/title non-authorization, direct table-write denial, malformed/protected input rejection, safe-error checks, and disposable hosted cleanup with exact-run plus namespace zero residue.
 
-This gate has not passed yet: project discovery confirmed the expected staging ref/name, but the approved staging project currently reports `INACTIVE`, and hosted database login-role creation times out before migration/RPC validation can run. Do not begin 12.16 against hosted assumptions until staging is active and this gate passes cleanly.
+The resume required no schema redesign, no service-role application path, no product route change, and no real Bozeman or Belgrade data. The committed generated public-schema types were refreshed from the hosted schema, the volunteer RPC caller was aligned with the generated optional-argument typing, and the hosted gate's static service-role guard was narrowed so false capability/readiness flag names do not fail the test while real service-role usage remains forbidden.

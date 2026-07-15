@@ -157,10 +157,9 @@ assert.match(hostedValidation, /update_volunteer_profile_manual_fields/);
 assert.match(hostedValidation, /convert_questionnaire_submission_to_volunteer_profile/);
 assert.match(hostedValidation, /verifyGeneratedTypes/);
 assert.match(hostedValidation, /verifyNamespaceResidue/);
-assert.doesNotMatch(
-  hostedValidation,
-  /process\.env\.SUPABASE_SERVICE_ROLE_KEY|createServiceRole|auth\.admin/i,
-);
+assert.doesNotMatch(hostedValidation, /process\.env\.SUPABASE_SERVICE_ROLE_KEY/i);
+assert.doesNotMatch(hostedValidation, /createServiceRole\s*\(/i);
+assert.doesNotMatch(hostedValidation, /auth\.admin\./i);
 assert.match(environmentExample, /^ADMIN_AUTH_MODE=review$/m);
 
 const parsedProfile = parseVolunteerProfile({
