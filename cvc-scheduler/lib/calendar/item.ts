@@ -38,6 +38,14 @@ export type UpdateCalendarOneOffTimedItemInput = Readonly<{
   customValues: Readonly<Record<string, CalendarCustomValue>>;
 }>;
 
+export type UpdateCalendarPresetTimedItemInput = Readonly<{
+  calendarItemId: string;
+  schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
+  neededCount: number;
+  notes?: string | null;
+  customValues: Readonly<Record<string, CalendarCustomValue>>;
+}>;
+
 export type CalendarItem = Readonly<{
   id: string;
   workspaceId: string;
@@ -80,6 +88,13 @@ const rootKeys = new Set([
 const updateOneOffTimedRootKeys = new Set([
   "calendarItemId",
   "source",
+  "schedule",
+  "neededCount",
+  "notes",
+  "customValues",
+]);
+const updatePresetTimedRootKeys = new Set([
+  "calendarItemId",
   "schedule",
   "neededCount",
   "notes",
@@ -296,6 +311,29 @@ function parseTimedScheduleForUpdate(
   return schedule;
 }
 
+function normalizeUpdateTimedSharedFields(input: Record<string, unknown>, issues: string[]) {
+  const schedule = parseTimedScheduleForUpdate(input.schedule, issues);
+  const neededCount = input.neededCount;
+  if (
+    typeof neededCount !== "number" ||
+    !Number.isInteger(neededCount) ||
+    neededCount < 0 ||
+    neededCount > 99
+  ) {
+    issues.push("neededCount must be an integer from 0 to 99 for assignable work.");
+  }
+  const notes =
+    input.notes === null || input.notes === undefined
+      ? null
+      : boundedText(input.notes, "notes", issues, 1, 4000);
+  return {
+    schedule,
+    neededCount: typeof neededCount === "number" ? neededCount : 0,
+    notes,
+    customValues: parseCustomValues(input.customValues, issues),
+  };
+}
+
 export function validateCreateCalendarItemInput(input: unknown): CreateCalendarItemInput {
   if (!isRecord(input)) {
     throw new CalendarItemValidationError(["input must be an object."]);
@@ -344,27 +382,29 @@ export function validateUpdateCalendarOneOffTimedItemInput(
   const unknown = Object.keys(input).filter((key) => !updateOneOffTimedRootKeys.has(key));
   if (unknown.length > 0) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
   const source = parseOneOffTimedUpdateSource(input.source, issues);
-  const schedule = parseTimedScheduleForUpdate(input.schedule, issues);
-  const neededCount = input.neededCount;
-  if (
-    typeof neededCount !== "number" ||
-    !Number.isInteger(neededCount) ||
-    neededCount < 0 ||
-    neededCount > 99
-  ) {
-    issues.push("neededCount must be an integer from 0 to 99 for assignable work.");
-  }
-  const notes =
-    input.notes === null || input.notes === undefined
-      ? null
-      : boundedText(input.notes, "notes", issues, 1, 4000);
+  const shared = normalizeUpdateTimedSharedFields(input, issues);
   const normalized: UpdateCalendarOneOffTimedItemInput = {
     calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
     source,
-    schedule,
-    neededCount: typeof neededCount === "number" ? neededCount : 0,
-    notes,
-    customValues: parseCustomValues(input.customValues, issues),
+    ...shared,
+  };
+  if (issues.length > 0) throw new CalendarItemValidationError(issues);
+  return normalized;
+}
+
+export function validateUpdateCalendarPresetTimedItemInput(
+  input: unknown,
+): UpdateCalendarPresetTimedItemInput {
+  if (!isRecord(input)) {
+    throw new CalendarItemValidationError(["input must be an object."]);
+  }
+  const issues: string[] = [];
+  const unknown = Object.keys(input).filter((key) => !updatePresetTimedRootKeys.has(key));
+  if (unknown.length > 0) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
+  const shared = normalizeUpdateTimedSharedFields(input, issues);
+  const normalized: UpdateCalendarPresetTimedItemInput = {
+    calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
+    ...shared,
   };
   if (issues.length > 0) throw new CalendarItemValidationError(issues);
   return normalized;

@@ -866,6 +866,18 @@ export type Database = {
         }
         Returns: string
       }
+      update_calendar_item_preset_timed: {
+        Args: {
+          p_calendar_item_id: string
+          p_custom_values: Json
+          p_end_time: string
+          p_needed_count: number
+          p_schedule_notes: string
+          p_start_date: string
+          p_start_time: string
+        }
+        Returns: string
+      }
       update_volunteer_profile_manual_fields: {
         Args: {
           p_congregation?: string

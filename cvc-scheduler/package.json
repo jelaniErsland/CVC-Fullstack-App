@@ -43,6 +43,7 @@
     "test:calendar-route-cutover-stabilization": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-route-cutover-stabilization-regression.mjs",
     "test:calendar-item-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-item-management-regression.mjs",
     "test:calendar-item-management:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-calendar-item-management-regression.mjs",
+    "test:calendar-source-selection": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-source-selection-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",

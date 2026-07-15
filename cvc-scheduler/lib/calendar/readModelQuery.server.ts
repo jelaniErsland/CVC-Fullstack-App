@@ -264,6 +264,7 @@ function toItemRow(
     neededCount,
     lifecycle,
     scheduleNotes: asOptionalString(row.schedule_notes),
+    taskPresetId,
     oneOffTaskLabel: hasPreset ? null : titleSnapshot,
     oneOffTaskType: hasPreset ? null : taskTypeSnapshot,
     taskPresetLabel,

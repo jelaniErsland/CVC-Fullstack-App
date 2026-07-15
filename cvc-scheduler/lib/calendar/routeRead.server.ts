@@ -14,10 +14,15 @@ import {
   type CalendarReadModelQueryClient,
   type CalendarReadModelQueryFailureReason,
 } from "./readModelQuery.server.ts";
+import {
+  readCalendarTaskPresetSelectorWithClient,
+  type CalendarTaskPresetSelectorOption,
+} from "./taskPresetSelector.server.ts";
 import type {
   CalendarReadModelItem,
   CalendarReadModelPeriodKind,
 } from "./readModel.server.ts";
+import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
 
 type CalendarClientCategory =
@@ -33,10 +38,31 @@ type CalendarClientStatus =
   | "filled"
   | "needsReview"
   | "draftMock";
+type CalendarClientTaskPresetCustomField = {
+  id: string;
+  name: string;
+  label: string;
+  type: "shortText" | "longText" | "number" | "select" | "checkbox";
+  required?: boolean;
+  options?: string[];
+};
+type CalendarClientTaskPreset = {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  category: CalendarClientCategory;
+  neededCount: number;
+  visibility: "mainContacts" | "allContacts" | "volunteers";
+  customFields: CalendarClientTaskPresetCustomField[];
+  isSystemPreset?: boolean;
+  sourcePresetId?: string;
+};
 type CalendarClientItem = {
   id: string;
   projectId: string;
   taskPresetId?: string;
+  displayName?: string;
   date: string;
   endDate?: string;
   allDay?: boolean;
@@ -51,6 +77,7 @@ type CalendarClientItem = {
   neededCount: number;
   status: CalendarClientStatus;
   scheduleNotes?: string;
+  taskPreset?: CalendarClientTaskPreset;
   oneOffTask?: {
     name: string;
     category: CalendarClientCategory;
@@ -72,12 +99,19 @@ type CalendarClientStateBase = Readonly<{
   anchorDate: string;
   queriedRange: CalendarRouteQueriedRange;
 }>;
+type CalendarTaskPresetSelectorClientState =
+  | Readonly<{ kind: "ready_with_presets"; presets: readonly CalendarClientTaskPreset[] }>
+  | Readonly<{ kind: "ready_empty"; presets: readonly [] }>
+  | Readonly<{ kind: "unavailable"; reason: "missing_tasks_view" }>
+  | Readonly<{ kind: "error"; reason: "query_unavailable" | "invalid_projection" }>;
 type CalendarClientState =
   | (CalendarClientStateBase &
       Readonly<{
         kind: "ready_with_items" | "ready_empty";
         items: CalendarClientItem[];
         canEdit: boolean;
+        canViewTaskPresets: boolean;
+        taskPresetSelector: CalendarTaskPresetSelectorClientState;
       }>)
   | (CalendarClientStateBase &
       Readonly<{ kind: "unavailable" | "error"; title: string; message: string }>);
@@ -93,6 +127,7 @@ type CalendarRouteWorkspaceSelection =
       projectContactId: string;
       capabilities: readonly ["calendar.view", "assignments.view"];
       canEdit: boolean;
+      canViewTaskPresets: boolean;
     }>
   | Readonly<{
       ok: false;
@@ -324,6 +359,74 @@ function mapDisplayTypeToCategory(
   return "general";
 }
 
+function mapPresetTaskTypeToCategory(
+  taskType: CalendarTaskPresetSelectorOption["taskType"],
+): CalendarClientCategory {
+  if (taskType === "food") return "lunch";
+  if (taskType === "security") return "security";
+  if (taskType === "custom") return "custom";
+  return "general";
+}
+
+function mapTaskPresetCustomFieldType(
+  type: CalendarTaskPresetSelectorOption["customFields"][number]["type"],
+): CalendarClientTaskPresetCustomField["type"] {
+  if (type === "short_text") return "shortText";
+  if (type === "long_text") return "longText";
+  return type;
+}
+
+function mapSelectorPresetToClientPreset(
+  preset: CalendarTaskPresetSelectorOption,
+): CalendarClientTaskPreset {
+  return {
+    id: preset.id,
+    projectId: `workspace:${preset.workspaceId}`,
+    name: preset.name,
+    description: preset.description,
+    category: mapPresetTaskTypeToCategory(preset.taskType),
+    neededCount: preset.defaultNeededCount,
+    visibility: preset.volunteerVisible ? "volunteers" : "mainContacts",
+    customFields: preset.customFields.map((field) => ({
+      id: field.id,
+      name: field.name,
+      label: field.label,
+      type: mapTaskPresetCustomFieldType(field.type),
+      required: field.required,
+      options: [...field.options],
+    })),
+    isSystemPreset: preset.isSystemPreset || undefined,
+    sourcePresetId: preset.systemKey ?? undefined,
+  };
+}
+
+function taskPresetSelectorUnavailable(): CalendarTaskPresetSelectorClientState {
+  return { kind: "unavailable", reason: "missing_tasks_view" };
+}
+
+async function readTaskPresetSelectorState(input: {
+  supabase: AppSupabaseClient;
+  workspaceId: string;
+  canViewTaskPresets: boolean;
+}): Promise<CalendarTaskPresetSelectorClientState> {
+  const selector = await readCalendarTaskPresetSelectorWithClient({
+    client: input.supabase,
+    workspaceId: input.workspaceId,
+    canViewTaskPresets: input.canViewTaskPresets,
+  });
+
+  if (!selector.ok) {
+    return selector.reason === "missing_tasks_view"
+      ? taskPresetSelectorUnavailable()
+      : { kind: "error", reason: "query_unavailable" };
+  }
+
+  const presets = selector.presets.map(mapSelectorPresetToClientPreset);
+  return presets.length > 0
+    ? { kind: "ready_with_presets", presets }
+    : { kind: "ready_empty", presets: [] };
+}
+
 function mapCoverageToStatus(
   coverageState: CalendarReadModelItem["coverage"]["coverageState"],
 ): CalendarClientStatus {
@@ -358,7 +461,8 @@ function mapPersistedItemToCalendarItem(item: CalendarReadModelItem): CalendarCl
   return {
     id: item.calendarItemId,
     projectId: item.stableDisplayReference,
-    taskPresetId: undefined,
+    taskPresetId: item.taskPresetId ?? undefined,
+    displayName: item.taskSourceLabel,
     date: item.startDate,
     endDate: item.endDate ?? undefined,
     allDay: item.scheduleKind !== "timed",
@@ -373,12 +477,26 @@ function mapPersistedItemToCalendarItem(item: CalendarReadModelItem): CalendarCl
     neededCount: item.neededCount,
     status: mapCoverageToStatus(item.coverage.coverageState),
     scheduleNotes: item.scheduleNotes ?? undefined,
-    oneOffTask: {
-      name: item.taskSourceLabel,
-      category,
-      neededCount: item.neededCount,
-      customFields: [],
-    },
+    taskPreset: item.taskPresetId
+      ? {
+          id: item.taskPresetId,
+          projectId: item.stableDisplayReference,
+          name: item.taskPresetLabel ?? item.taskSourceLabel,
+          description: null,
+          category,
+          neededCount: item.neededCount,
+          visibility: "mainContacts",
+          customFields: [],
+        }
+      : undefined,
+    oneOffTask: item.taskPresetId
+      ? undefined
+      : {
+          name: item.taskSourceLabel,
+          category,
+          neededCount: item.neededCount,
+          customFields: [],
+        },
   };
 }
 
@@ -452,6 +570,7 @@ export function selectCalendarRouteWorkspaceContext(input: {
       projectContactId: input.projectContactId,
       capabilities: ["calendar.view", "assignments.view"],
       canEdit: eligible[0].capabilities.has("calendar.edit"),
+      canViewTaskPresets: eligible[0].capabilities.has("tasks.view"),
     };
   }
 
@@ -537,11 +656,18 @@ export async function readCalendarRouteState(
     const items = query.items
       .filter((item) => readModelItemOverlapsRouteRange(item, range))
       .map(mapPersistedItemToCalendarItem);
+    const taskPresetSelector = await readTaskPresetSelectorState({
+      supabase: supabase as AppSupabaseClient,
+      workspaceId: workspaceSelection.workspace.id,
+      canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+    });
     return items.length > 0
       ? {
           kind: "ready_with_items",
           items,
           canEdit: workspaceSelection.canEdit,
+          canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+          taskPresetSelector,
           view: range.periodKind,
           anchorDate: range.anchorDate,
           queriedRange: range,
@@ -550,6 +676,8 @@ export async function readCalendarRouteState(
           kind: "ready_empty",
           items: [],
           canEdit: workspaceSelection.canEdit,
+          canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+          taskPresetSelector,
           view: range.periodKind,
           anchorDate: range.anchorDate,
           queriedRange: range,
@@ -581,6 +709,7 @@ export function describeCalendarRoutePersistedReadCutover() {
     authBoundary:
       "server_supabase_auth_user_plus_contact_scoped_loadProjectContactGrantsWithClient_plus_readGrantedWorkspacesWithClient",
     strictCapabilities: ["calendar.view", "assignments.view"],
+    taskPresetSelectorCapability: "tasks.view",
   } as const;
 }
 

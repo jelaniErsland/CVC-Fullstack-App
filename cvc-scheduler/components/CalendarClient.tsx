@@ -52,7 +52,6 @@ import {
   getCalendarItemTimeWindow,
   getCalendarStatusLabel,
   getCalendarStatusTone,
-  getTaskPresetsForActiveWorkspace,
   groupCalendarItemsByDay,
   isLunchCalendarItem,
   isOneOffCalendarItem,
@@ -64,7 +63,6 @@ import type {
   CalendarFilterOptions,
   CalendarHighLevelTaskType,
   CalendarStatusTone,
-  TaskPreset,
   TaskPresetCategory,
 } from "@/lib/mockData";
 
@@ -102,6 +100,34 @@ type CalendarCreationDraft = {
   customTaskType: CalendarHighLevelTaskType;
 };
 
+type CalendarTaskPresetCustomField = {
+  id: string;
+  name: string;
+  label: string;
+  type: "shortText" | "longText" | "number" | "select" | "checkbox";
+  required?: boolean;
+  options?: string[];
+};
+
+type CalendarTaskPresetOption = {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string | null;
+  category: TaskPresetCategory;
+  neededCount: number;
+  visibility: "mainContacts" | "allContacts" | "volunteers";
+  customFields: CalendarTaskPresetCustomField[];
+  isSystemPreset?: boolean;
+  sourcePresetId?: string;
+};
+
+type CalendarTaskPresetSelectorState =
+  | Readonly<{ kind: "ready_with_presets"; presets: readonly CalendarTaskPresetOption[] }>
+  | Readonly<{ kind: "ready_empty"; presets: readonly [] }>
+  | Readonly<{ kind: "unavailable"; reason: "missing_tasks_view" }>
+  | Readonly<{ kind: "error"; reason: "query_unavailable" | "invalid_projection" }>;
+
 type WeekBandCalendarItem = CalendarItemWithPreset;
 
 type WeekBandLayoutItem = {
@@ -130,17 +156,6 @@ const coverageOptions: CalendarCoverageFilterState[] = [
   "waitingConfirmations",
   "allConfirmed",
   "someDenied",
-];
-
-const preferredCreationPresetIds = [
-  "task-belgrade-lunch",
-  "task-belgrade-night-watch",
-  "task-belgrade-gate-attendant",
-  "task-belgrade-drywall-crew",
-  "task-belgrade-cleanup-help",
-  "task-belgrade-water-coffee",
-  "task-belgrade-morning-unlock",
-  "task-belgrade-custom-special",
 ];
 
 const suggestedSlots = {
@@ -195,6 +210,13 @@ function getCalendarEventStyle(item: CalendarItem) {
     calendarEventPalette[hash % calendarEventPalette.length] ??
     calendarEventPalette[0]
   );
+}
+
+function enrichCalendarClientItem(item: CalendarItem): CalendarItemWithPreset {
+  const enriched = enrichCalendarItem(item);
+  const persistedPreset = (item as CalendarItem & { taskPreset?: CalendarTaskPresetOption })
+    .taskPreset;
+  return persistedPreset ? { ...enriched, taskPreset: persistedPreset } : enriched;
 }
 
 function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
@@ -1084,7 +1106,7 @@ function WeekGrid({
   }));
   const bandItems = items
     .filter(isWeekBandCalendarItem)
-    .map((item) => enrichCalendarItem(item) as WeekBandCalendarItem);
+    .map((item) => enrichCalendarClientItem(item) as WeekBandCalendarItem);
   const bandLayout = getWeekBandLayout(bandItems, referenceDate);
   const visibleBandItems = bandLayout.filter(
     ({ lane }) => lane < weekBandVisibleLaneCount,
@@ -1333,7 +1355,7 @@ function DayView({
 }) {
   const dayItems = items
     .filter((item) => doesCalendarItemOccurOnDate(item, date))
-    .map(enrichCalendarItem);
+    .map(enrichCalendarClientItem);
   const contextItems = dayItems.filter(isWeekBandCalendarItem);
   const timedItems = dayItems.filter((item) => !isWeekBandCalendarItem(item));
   const visibleContextItem = contextItems[0];
@@ -1493,7 +1515,7 @@ function MonthView({
         {dates.map((date, dateIndex) => {
           const dateItems = items
             .filter((item) => doesCalendarItemOccurOnDate(item, date))
-            .map(enrichCalendarItem);
+            .map(enrichCalendarClientItem);
           const mobileOverflowCount = Math.max(
             dateItems.length - monthMobileVisibleItemLimit,
             0,
@@ -1622,7 +1644,7 @@ function CalendarListView({
       const groupDate = item.date < weekRange.start ? weekRange.start : item.date;
       const currentItems = grouped.get(groupDate) ?? [];
 
-      grouped.set(groupDate, [...currentItems, enrichCalendarItem(item)]);
+      grouped.set(groupDate, [...currentItems, enrichCalendarClientItem(item)]);
       return grouped;
     }, new Map()),
   )
@@ -1825,7 +1847,7 @@ function CalendarCreatePanel({
   isOpen: boolean;
   onClose: () => void;
   onDraftChange: (draft: CalendarCreationDraft) => void;
-  presets: TaskPreset[];
+  presets: readonly CalendarTaskPresetOption[];
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
   const desktopDialogRef = useRef<HTMLElement>(null);
@@ -1996,12 +2018,14 @@ function CreatePanelContent({
   onClose: () => void;
   onPresetChange: (presetId: string) => void;
   onUpdate: (changes: Partial<CalendarCreationDraft>) => void;
-  presets: TaskPreset[];
-  selectedPreset?: TaskPreset;
+  presets: readonly CalendarTaskPresetOption[];
+  selectedPreset?: CalendarTaskPresetOption;
   selectedTaskType: CalendarHighLevelTaskType;
 }) {
   const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
+  const hasPresetChoices = presets.length > 0;
+  const presetMissing = !isOneOff && (!hasPresetChoices || !selectedPreset);
   const customNameInvalid = isOneOff && creationDraft.customName.trim().length === 0;
   const dateMissing = creationDraft.date.length === 0;
   const allDayEndMissing = creationDraft.allDay && creationDraft.endDate.length === 0;
@@ -2019,7 +2043,6 @@ function CreatePanelContent({
     creationDraft.endTime <= creationDraft.startTime;
   const neededCountInvalid =
     creationDraft.neededCount < 0 || creationDraft.neededCount > 99;
-  const unsupportedTaskPreset = !isOneOff;
   const unsupportedAllDay = creationDraft.allDay;
   const customNameErrorId = `${validationId}-custom-task-name-error`;
   const dateErrorId = `${validationId}-creation-date-error`;
@@ -2042,14 +2065,16 @@ function CreatePanelContent({
     dateValidationMessage ||
     timeValidationMessage ||
     (neededCountInvalid && "Needed must be between 0 and 99.") ||
-    (unsupportedTaskPreset && "Task-preset scheduling is coming next; use Custom one-day for this first persisted create path.") ||
+    (presetMissing && "Choose an available persisted task preset, or use Custom one-off.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
-    "Ready to save this one-off timed item to the persisted Calendar.";
+    (isOneOff
+      ? "Ready to save this custom one-off timed item to the persisted Calendar."
+      : "Ready to save this task-preset timed item to the persisted Calendar.");
   const canSubmitPersisted =
     canEdit &&
     Boolean(createAction) &&
-    isOneOff &&
+    !presetMissing &&
     !unsupportedAllDay &&
     !customNameInvalid &&
     !dateValidationMessage &&
@@ -2068,8 +2093,8 @@ function CreatePanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Create a persisted one-off timed Calendar item from the selected date and time.
-        Task presets, drafts, publishing, and helper assignment remain unavailable.
+        Create a persisted timed Calendar item from a task preset or custom one-off source.
+        Drafts, publishing, and helper assignment remain unavailable.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2120,15 +2145,26 @@ function CreatePanelContent({
             <button
               aria-pressed={!isOneOff}
               className={[
-                `min-h-11 cursor-not-allowed rounded-full border px-3 text-sm font-semibold opacity-70 transition ${calmFocusRing}`,
+                `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 !isOneOff
                   ? "border-slate-950 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
+                  : hasPresetChoices
+                    ? "border-slate-200 bg-white/72 text-slate-600 hover:bg-white"
+                    : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-70",
               ].join(" ")}
-              disabled
+              disabled={!hasPresetChoices}
+              onClick={() => {
+                if (!hasPresetChoices) return;
+                const nextPreset = selectedPreset ?? presets[0];
+                onUpdate({
+                  mode: "preset",
+                  presetId: nextPreset.id,
+                  neededCount: nextPreset.neededCount,
+                });
+              }}
               type="button"
             >
-              Task preset later
+              Task preset
             </button>
             <button
               aria-pressed={isOneOff}
@@ -2138,17 +2174,25 @@ function CreatePanelContent({
                   ? "border-slate-950 bg-slate-950 text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
               ].join(" ")}
-              onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
+                onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
               type="button"
             >
-              Custom one-day
+              Custom one-off
             </button>
           </div>
+
+          {!hasPresetChoices ? (
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              No persisted task presets are available to this Calendar context yet.
+              Custom one-off scheduling remains available.
+            </p>
+          ) : null}
 
           {!isOneOff ? (
             <label className="mt-3 block">
               <span className="text-sm font-semibold text-slate-700">Task preset</span>
               <select
+                aria-label="Task preset"
                 className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                 onChange={(event) => onPresetChange(event.target.value)}
                 value={creationDraft.presetId}
@@ -2355,7 +2399,7 @@ function CreatePanelContent({
             </p>
             <h3 className="mt-2 text-lg font-semibold text-slate-950">
               {isOneOff
-                ? creationDraft.customName || "Custom one-day task"
+                ? creationDraft.customName || "Custom one-off task"
                 : selectedPreset?.name ?? "Task preset"}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -2366,6 +2410,11 @@ function CreatePanelContent({
                 0/{creationDraft.neededCount} filled
               </span>
             </div>
+            {!isOneOff && selectedPreset?.description ? (
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                {selectedPreset.description}
+              </p>
+            ) : null}
             {!isOneOff && selectedPreset?.customFields.length ? (
               <div className="mt-3 grid gap-1 text-xs font-semibold text-slate-500">
                 {selectedPreset.customFields.slice(0, 3).map((field) => (
@@ -2374,11 +2423,6 @@ function CreatePanelContent({
                     {field.required ? " required" : ""}
                   </span>
                 ))}
-              </div>
-            ) : null}
-            {!isOneOff && selectedPreset?.name === "Lunch" ? (
-              <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                The lunch menu will stay with this calendar item when scheduling is connected.
               </div>
             ) : null}
             {isOneOff ? (
@@ -2446,6 +2490,8 @@ function CreatePanelContent({
         <form action={createAction} className="grid gap-2">
           <input name="redirectView" type="hidden" value={currentView} />
           <input name="redirectDate" type="hidden" value={currentDate} />
+          <input name="sourceMode" type="hidden" value={creationDraft.mode === "preset" ? "preset" : "oneOff"} />
+          <input name="taskPresetId" type="hidden" value={creationDraft.mode === "preset" ? creationDraft.presetId : ""} />
           <input name="title" type="hidden" value={creationDraft.customName} />
           <input
             name="taskType"
@@ -2656,10 +2702,12 @@ function InspectorContent({
   updateAction?: CalendarMutationAction;
 }) {
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
+  const isOneOffItem = isOneOffCalendarItem(item);
+  const isPresetBackedItem = Boolean(item.taskPresetId) && !isOneOffItem;
   const canEditSelectedItem =
     canEdit &&
     Boolean(updateAction) &&
-    isOneOffCalendarItem(item) &&
+    (isOneOffItem || isPresetBackedItem) &&
     !item.allDay &&
     Boolean(item.startTimeValue) &&
     Boolean(item.endTimeValue);
@@ -2788,20 +2836,36 @@ function InspectorContent({
             <input name="calendarItemId" type="hidden" value={item.id} />
             <input name="redirectView" type="hidden" value={currentView} />
             <input name="redirectDate" type="hidden" value={currentDate} />
+            <input name="sourceMode" type="hidden" value={isPresetBackedItem ? "preset" : "oneOff"} />
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              Edit persisted one-off item
+              {isPresetBackedItem ? "Edit persisted preset item" : "Edit persisted one-off item"}
             </p>
             <div className="mt-3 grid gap-3">
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Task name</span>
-                <input
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                  defaultValue={getCalendarItemDisplayName(item)}
-                  maxLength={160}
-                  name="title"
-                  required
-                />
-              </label>
+              {isOneOffItem ? (
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Task name</span>
+                  <input
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                    defaultValue={getCalendarItemDisplayName(item)}
+                    maxLength={160}
+                    name="title"
+                    required
+                  />
+                </label>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Task preset
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-800">
+                    {item.taskPreset?.name ?? getCalendarItemDisplayName(item)}
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    This edit changes only this scheduled occurrence. Preset selection
+                    and reusable task editing remain separate.
+                  </p>
+                </div>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Date</span>
@@ -2813,19 +2877,21 @@ function InspectorContent({
                     type="date"
                   />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">Task type</span>
-                  <select
-                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                    defaultValue={mapCategoryToCalendarTaskType(item.category)}
-                    name="taskType"
-                  >
-                    <option value="general">General</option>
-                    <option value="food">Food</option>
-                    <option value="security">Security</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </label>
+                {isOneOffItem ? (
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-700">Task type</span>
+                    <select
+                      className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                      defaultValue={mapCategoryToCalendarTaskType(item.category)}
+                      name="taskType"
+                    >
+                      <option value="general">General</option>
+                      <option value="food">Food</option>
+                      <option value="security">Security</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </label>
+                ) : null}
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Start</span>
                   <input
@@ -2882,8 +2948,8 @@ function InspectorContent({
           </form>
         ) : (
           <div className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
-            This item is read-only here unless it is a persisted one-off timed item and the
-            signed-in contact has Calendar edit access.
+            This item is read-only here unless it is a persisted timed one-off or
+            task-preset occurrence and the signed-in contact has Calendar edit access.
           </div>
         )}
 
@@ -2913,8 +2979,10 @@ function InspectorContent({
 export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
-      items: CalendarItem[];
+      items: Array<CalendarItem & { taskPreset?: CalendarTaskPresetOption }>;
       canEdit: boolean;
+      canViewTaskPresets: boolean;
+      taskPresetSelector: CalendarTaskPresetSelectorState;
       view: CalendarViewMode;
       anchorDate: string;
       queriedRange: CalendarClientQueriedRange;
@@ -2942,7 +3010,7 @@ function CalendarNotice({ notice }: { notice?: string }) {
   const copy: Record<string, { title: string; message: string }> = {
     created: {
       title: "Calendar item scheduled",
-      message: "The one-off timed item was saved to the persisted Calendar.",
+      message: "The timed item was saved to the persisted Calendar.",
     },
     updated: {
       title: "Calendar item updated",
@@ -2950,7 +3018,7 @@ function CalendarNotice({ notice }: { notice?: string }) {
     },
     validation: {
       title: "Check the Calendar details",
-      message: "Use a one-off timed item with a real date, ordered start/end times, 0-99 helpers, and bounded notes.",
+      message: "Use a timed item with a real date, ordered start/end times, 0-99 helpers, and bounded notes.",
     },
     unavailable: {
       title: "Calendar editing is unavailable",
@@ -2994,13 +3062,19 @@ export default function CalendarClient({
   const isReadyEmpty = state.kind === "ready_empty";
   const allItems = useMemo(() => (isReady ? state.items : []), [isReady, state]);
   const creationPresets = useMemo(() => {
-    const presets = getTaskPresetsForActiveWorkspace();
-    const preferred = preferredCreationPresetIds
-      .map((presetId) => presets.find((preset) => preset.id === presetId))
-      .filter((preset): preset is TaskPreset => Boolean(preset));
+    if (
+      state.kind !== "ready_with_items" &&
+      state.kind !== "ready_empty"
+    ) {
+      return [];
+    }
 
-    return preferred.length > 0 ? preferred : presets;
-  }, []);
+    if (state.taskPresetSelector.kind !== "ready_with_presets") {
+      return [];
+    }
+
+    return state.taskPresetSelector.presets;
+  }, [state]);
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
@@ -3038,7 +3112,7 @@ export default function CalendarClient({
   const activeFilterSummary = getCalendarActiveFilterSummary(filters);
 
   const selectedItem = selectedId
-    ? filteredItems.map(enrichCalendarItem).find((item) => item.id === selectedId)
+    ? filteredItems.map(enrichCalendarClientItem).find((item) => item.id === selectedId)
     : undefined;
 
   const rememberSurfaceTrigger = () => {
@@ -3137,7 +3211,7 @@ export default function CalendarClient({
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,
       notes: "",
-      customName: "Custom one-day task",
+      customName: "Custom one-off task",
       customTaskType: "generalVolunteers",
     });
     setActiveSurface("create");

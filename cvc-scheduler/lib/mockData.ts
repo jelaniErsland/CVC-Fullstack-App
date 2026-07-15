@@ -194,6 +194,8 @@ export type CalendarItem = {
   id: string;
   projectId: string;
   taskPresetId?: string;
+  /** Safe persisted occurrence display label when the route owns Calendar item truth. */
+  displayName?: string;
   date: string;
   endDate?: string;
   /** Preview compatibility flag behind the current "All day" UI wording. */
@@ -4482,7 +4484,12 @@ export function getCalendarFilledLabel(item: CalendarItem) {
 }
 
 export function getCalendarItemDisplayName(item: CalendarItem) {
-  return item.oneOffTask?.name ?? resolveCalendarItemTaskPreset(item)?.name ?? "Custom task";
+  return (
+    item.oneOffTask?.name ??
+    item.displayName ??
+    resolveCalendarItemTaskPreset(item)?.name ??
+    "Custom task"
+  );
 }
 
 export function getCalendarItemTimeWindow(item: CalendarItem) {

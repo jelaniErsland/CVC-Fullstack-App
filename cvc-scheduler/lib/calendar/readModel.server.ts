@@ -120,6 +120,7 @@ export type CalendarReadModelItemRow = Readonly<{
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
   scheduleNotes?: string | null;
+  taskPresetId?: string | null;
   oneOffTaskLabel?: string | null;
   oneOffTaskType?: CalendarReadModelDisplayType | null;
   taskPresetLabel?: string | null;
@@ -140,6 +141,7 @@ export type CalendarReadModelItem = Readonly<{
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
   scheduleNotes: string | null;
+  taskPresetId: string | null;
   oneOffTaskLabel: string | null;
   oneOffTaskType: CalendarReadModelDisplayType | null;
   taskPresetLabel: string | null;
@@ -509,9 +511,8 @@ export function mapCalendarReadModelItem(
   );
   const taskPresetLabel = row.taskPresetLabel ?? null;
   const oneOffTaskLabel = row.oneOffTaskLabel ?? null;
-  const taskSourceLabel = oneOffTaskLabel ?? taskPresetLabel ?? row.titleSnapshot;
-  const displayType =
-    row.oneOffTaskType ?? row.taskPresetType ?? row.taskTypeSnapshot;
+  const taskSourceLabel = row.titleSnapshot;
+  const displayType = row.taskTypeSnapshot;
   const assignable = row.scheduleKind === "timed" || row.scheduleKind === "date_based";
 
   return {
@@ -528,6 +529,7 @@ export function mapCalendarReadModelItem(
     neededCount: assignable ? row.neededCount : 0,
     lifecycle: row.lifecycle,
     scheduleNotes: row.scheduleNotes ?? null,
+    taskPresetId: row.taskPresetId ?? null,
     oneOffTaskLabel,
     oneOffTaskType: row.oneOffTaskType ?? null,
     taskPresetLabel,

@@ -386,7 +386,9 @@ if (result.ok) {
     (item) => item.calendarItemId === "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
   );
   assert(timedItem, "timed read-model item should be projected");
-  assert.equal(timedItem.taskSourceLabel, "Preset Gate Crew");
+  assert.equal(timedItem.taskSourceLabel, "Gate Crew");
+  assert.equal(timedItem.taskPresetId, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1");
+  assert.equal(timedItem.taskPresetLabel, "Preset Gate Crew");
   assert.equal(timedItem.coverage.assignedCount, 2);
   assert.equal(timedItem.coverage.confirmedCount, 1);
   assert.equal(timedItem.coverage.waitingOnConfirmationCount, 1);

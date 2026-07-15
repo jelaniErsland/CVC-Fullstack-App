@@ -8,8 +8,11 @@ import {
 import {
   calendarOneOffTimedCreateInputFromFormData,
   calendarOneOffTimedUpdateInputFromFormData,
+  calendarPresetTimedCreateInputFromFormData,
+  calendarPresetTimedUpdateInputFromFormData,
   createCalendarItemWithClient,
   updateCalendarOneOffTimedItemWithClient,
+  updateCalendarPresetTimedItemWithClient,
 } from "@/lib/calendar/server";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +48,10 @@ function safeCalendarRedirect(formData: FormData, notice: string) {
   return `/admin/calendar?${params.toString()}`;
 }
 
+function calendarSourceModeFromFormData(formData: FormData) {
+  return formData.get("sourceMode") === "preset" ? "preset" : "oneOff";
+}
+
 async function createCalendarItemAction(formData: FormData) {
   "use server";
 
@@ -54,10 +61,13 @@ async function createCalendarItemAction(formData: FormData) {
     if (!context) {
       notice = "unavailable";
     } else {
-      const input = calendarOneOffTimedCreateInputFromFormData(
-        formData,
-        context.workspace.id,
-      );
+      const input =
+        calendarSourceModeFromFormData(formData) === "preset"
+          ? calendarPresetTimedCreateInputFromFormData(formData, context.workspace.id)
+          : calendarOneOffTimedCreateInputFromFormData(
+              formData,
+              context.workspace.id,
+            );
       await createCalendarItemWithClient(context.supabase, input);
       notice = "created";
     }
@@ -80,8 +90,13 @@ async function updateCalendarItemAction(formData: FormData) {
     if (!context) {
       notice = "unavailable";
     } else {
-      const input = calendarOneOffTimedUpdateInputFromFormData(formData);
-      await updateCalendarOneOffTimedItemWithClient(context.supabase, input);
+      if (calendarSourceModeFromFormData(formData) === "preset") {
+        const input = calendarPresetTimedUpdateInputFromFormData(formData);
+        await updateCalendarPresetTimedItemWithClient(context.supabase, input);
+      } else {
+        const input = calendarOneOffTimedUpdateInputFromFormData(formData);
+        await updateCalendarOneOffTimedItemWithClient(context.supabase, input);
+      }
       notice = "updated";
     }
   } catch (error) {

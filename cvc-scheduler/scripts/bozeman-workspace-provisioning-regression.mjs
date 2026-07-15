@@ -520,6 +520,7 @@ async function run() {
       projectContactId: fullAccess.contactId,
       capabilities: ["calendar.view", "assignments.view"],
       canEdit: true,
+      canViewTaskPresets: true,
     },
   );
 

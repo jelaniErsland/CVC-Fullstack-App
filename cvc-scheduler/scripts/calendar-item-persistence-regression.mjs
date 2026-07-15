@@ -23,6 +23,12 @@ const itemManagementMigrationPath = path.join(
   "migrations",
   "20260714121600_calendar_item_management.sql",
 );
+const sourceSelectionMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260714121700_calendar_source_selection.sql",
+);
 const serverBoundaryPath = path.join(root, "lib", "calendar", "server.ts");
 const hostedManagementGatePath = path.join(
   root,
@@ -34,6 +40,7 @@ const environmentExamplePath = path.join(root, ".env.example");
 const [
   migration,
   itemManagementMigration,
+  sourceSelectionMigration,
   serverBoundary,
   hostedManagementGate,
   packageJson,
@@ -41,6 +48,7 @@ const [
 ] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(itemManagementMigrationPath, "utf8"),
+  readFile(sourceSelectionMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(hostedManagementGatePath, "utf8"),
   readFile(path.join(root, "package.json"), "utf8"),
@@ -145,6 +153,16 @@ assert.match(
   /grant execute on function public\.update_calendar_item_one_off_timed[\s\S]*to authenticated/i,
 );
 assert.doesNotMatch(itemManagementMigration, /grant .*to anon|service_role/i);
+assert.match(
+  sourceSelectionMigration,
+  /create (?:or replace )?function public\.update_calendar_item_preset_timed\(/i,
+);
+assert.match(
+  sourceSelectionMigration,
+  /grant execute on function public\.update_calendar_item_preset_timed[\s\S]*to authenticated/i,
+);
+assert.match(sourceSelectionMigration, /item\.task_preset_id is not null/i);
+assert.doesNotMatch(sourceSelectionMigration, /grant .*to anon|service_role/i);
 assert.doesNotMatch(migration, /to anon|service_role/i);
 
 assert.match(packageJson, /"test:calendar-item-management:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/hosted-calendar-item-management-regression\.mjs"/);
@@ -174,7 +192,12 @@ assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_calendar_item", "update_calendar_item_one_off_timed", "archive_calendar_item"],
+  [
+    "create_calendar_item",
+    "update_calendar_item_one_off_timed",
+    "update_calendar_item_preset_timed",
+    "archive_calendar_item",
+  ],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),

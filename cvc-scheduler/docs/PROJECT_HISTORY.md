@@ -1,5 +1,21 @@
 # Project History
 
+## Iteration 12.17 - Calendar Task Preset Selector and One-Off Definition Path
+
+Summary:
+- Added a server-only Calendar task-preset selector seam over persisted `task_presets`. It uses explicit selected columns, requires the resolved Calendar route workspace/contact context plus `tasks.view`, returns only active same-workspace preset options, normalizes bounded custom-field definitions, and has no mock fallback.
+- `/admin/calendar` now supports timed Calendar creation from either a real persisted task preset or a custom one-off source. The route still derives Auth, workspace, contact, capabilities, and timezone server-side; `calendar.edit` is still required for mutations; role/title strings and browser-provided capabilities remain untrusted.
+- Added migration `20260714121700_calendar_source_selection.sql` with `update_calendar_item_preset_timed`, an allowlisted preset-backed timed occurrence update RPC. It edits date/start/end/needed/notes/custom values only, and preserves workspace, preset source, Follow-up Contact, lifecycle, protected provenance, and assignment truth.
+- Extended Calendar server helpers and generated public-schema types for the preset-backed timed edit boundary. One-off timed create/edit remains supported; no all-day/date-based authoring, archive/delete UI, assignments, publication, response links, delivery, recurrence, drag/drop, resize, `/admin/tasks` cutover, service-role application path, seed data, or real Bozeman data was added.
+- Updated the Calendar read model to keep occurrence title snapshots as the user-facing Calendar display label while carrying task preset id/label as safe source metadata.
+- Updated the Calendar UI to remove mock task presets from creation. The task-preset tab is enabled only when real persisted presets are available through the selector; missing `tasks.view` leaves preset selection unavailable while custom one-off creation remains available for `calendar.edit` contacts.
+- Added `scripts/calendar-source-selection-regression.mjs` and `npm run test:calendar-source-selection`. Local disposable validation passed, proving real persisted preset selection, preset-backed create/read/edit, custom one-off continuity, fake/archived/wrong-workspace preset rejection, view-only and wrong-contact denial, role/title non-authorization, direct table-write denial, and zero residue.
+- Extended `scripts/calendar-regression.mjs` so the browser proof covers the real preset selector plus preset-backed create -> reload -> edit -> reload while preserving the existing Day/Week/Month/List shell and mobile/desktop interaction contract.
+- Because 12.17 adds a migration, RPC, and generated-type change, hosted non-production validation is required before relying on this boundary for beta use.
+
+Recommended next slice:
+- `12.17.1 Hosted Staging Calendar Source Selection Validation Gate`; do not begin assignment picker, publication, email, public volunteer access, or `/admin/tasks` cutover before that gate passes.
+
 ## Iteration 12.16.1 - Hosted Staging Calendar Item Management Validation Gate
 
 Summary:

@@ -492,6 +492,7 @@ assert.deepEqual(Object.keys(mapped).sort(), [
   "stableDisplayReference",
   "startDate",
   "startTime",
+  "taskPresetId",
   "taskPresetLabel",
   "taskPresetType",
   "taskSourceLabel",
@@ -500,6 +501,7 @@ assert.deepEqual(Object.keys(mapped).sort(), [
 assert.equal(mapped.calendarItemId, calendarItemId);
 assert.equal(mapped.stableDisplayReference, `calendar-item:${calendarItemId}`);
 assert.equal(mapped.taskSourceLabel, "Gate Crew");
+assert.equal(mapped.taskPresetId, null);
 assert.equal(mapped.displayType, "general");
 assert.equal(mapped.scheduleKind, "timed");
 assert.equal(mapped.timezone, "America/Denver");

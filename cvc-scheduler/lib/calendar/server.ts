@@ -4,9 +4,11 @@ import {
   parseCalendarItem,
   validateCreateCalendarItemInput,
   validateUpdateCalendarOneOffTimedItemInput,
+  validateUpdateCalendarPresetTimedItemInput,
   type CalendarItem,
   type CreateCalendarItemInput,
   type UpdateCalendarOneOffTimedItemInput,
+  type UpdateCalendarPresetTimedItemInput,
 } from "@/lib/calendar/item";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
@@ -133,6 +135,37 @@ export async function updateCalendarOneOffTimedItem(
   return updateCalendarOneOffTimedItemWithClient(supabase, input);
 }
 
+export async function updateCalendarPresetTimedItemWithClient(
+  supabase: AppSupabaseClient,
+  input: UpdateCalendarPresetTimedItemInput | unknown,
+): Promise<CalendarItemMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const item = validateUpdateCalendarPresetTimedItemInput(input);
+  const { data, error } = await supabase.rpc(
+    "update_calendar_item_preset_timed",
+    {
+      p_calendar_item_id: item.calendarItemId,
+      p_start_date: item.schedule.date,
+      p_start_time: item.schedule.startTime,
+      p_end_time: item.schedule.endTime,
+      p_needed_count: item.neededCount,
+      p_schedule_notes: item.notes ?? null,
+      p_custom_values: item.customValues,
+    } as PublicRpcArgs<"update_calendar_item_preset_timed">,
+  );
+  if (error || typeof data !== "string") {
+    throw new Error("Calendar item could not be updated.", { cause: error });
+  }
+  return { calendarItemId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export async function updateCalendarPresetTimedItem(
+  input: UpdateCalendarPresetTimedItemInput | unknown,
+) {
+  const supabase = await createServerSupabaseClient();
+  return updateCalendarPresetTimedItemWithClient(supabase, input);
+}
+
 export async function archiveCalendarItemWithClient(
   supabase: AppSupabaseClient,
   calendarItemId: string,
@@ -197,6 +230,28 @@ export function calendarOneOffTimedCreateInputFromFormData(
   });
 }
 
+export function calendarPresetTimedCreateInputFromFormData(
+  formData: FormData,
+  workspaceId: string,
+): CreateCalendarItemInput {
+  return validateCreateCalendarItemInput({
+    workspaceId,
+    source: {
+      kind: "preset",
+      taskPresetId: textFromFormData(formData, "taskPresetId"),
+    },
+    schedule: {
+      kind: "timed",
+      date: textFromFormData(formData, "date"),
+      startTime: textFromFormData(formData, "startTime"),
+      endTime: textFromFormData(formData, "endTime"),
+    },
+    neededCount: neededCountFromFormData(formData),
+    notes: optionalTextFromFormData(formData, "notes"),
+    customValues: {},
+  });
+}
+
 export function calendarOneOffTimedUpdateInputFromFormData(
   formData: FormData,
 ): UpdateCalendarOneOffTimedItemInput {
@@ -206,6 +261,23 @@ export function calendarOneOffTimedUpdateInputFromFormData(
       title: textFromFormData(formData, "title"),
       taskType: taskTypeFromFormData(formData),
     },
+    schedule: {
+      kind: "timed",
+      date: textFromFormData(formData, "date"),
+      startTime: textFromFormData(formData, "startTime"),
+      endTime: textFromFormData(formData, "endTime"),
+    },
+    neededCount: neededCountFromFormData(formData),
+    notes: optionalTextFromFormData(formData, "notes"),
+    customValues: {},
+  });
+}
+
+export function calendarPresetTimedUpdateInputFromFormData(
+  formData: FormData,
+): UpdateCalendarPresetTimedItemInput {
+  return validateUpdateCalendarPresetTimedItemInput({
+    calendarItemId: textFromFormData(formData, "calendarItemId"),
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),
