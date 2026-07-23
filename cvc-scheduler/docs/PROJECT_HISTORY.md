@@ -1,5 +1,16 @@
 # Project History
 
+## Iteration 12.17.1 - Hosted Staging Calendar Source Selection Validation Gate
+
+Summary:
+- Completed the hosted non-production validation gate for the 12.17 Calendar source-selection boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The target was verified as `ACTIVE_HEALTHY`.
+- Confirmed staging migration level `20260714121700` before and after the successful gate run. Hosted generated public-schema types matched `lib/supabase/database.types.ts`.
+- Validated hosted selector authorization/projection/scoping, active-only preset lifecycle eligibility, missing-`tasks.view` selector unavailability with custom one-off continuity, role/title non-authorization, preset-backed timed create/edit through `create_calendar_item` and `update_calendar_item_preset_timed`, source/snapshot semantics, fake/wrong-workspace/archived preset rejection, mixed-source rejection, source immutability/no one-off/preset conversion, mutation capability enforcement, cross-contact/cross-workspace isolation, revoked/expired/inactive grant denial, direct table-write denial for `calendar_items` and `task_presets`, read-model compatibility, existing one-off compatibility, existing preset-backed row compatibility, malformed input rejection, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+- Corrected only hosted harness disposable fixture values so they satisfy the existing `workspace_contact_grants` role constraint and `task_presets` system-key constraint. No product/runtime/schema behavior changed, no real Bozeman or Belgrade data was used, no production target was touched, and no service-role application path was added.
+
+Recommended next slice:
+- `12.18 Volunteer Assignment Picker and Create/Cancel Commands`, only if the repository remains clean.
+
 ## Iteration 12.17 - Calendar Task Preset Selector and One-Off Definition Path
 
 Summary:
@@ -11,10 +22,10 @@ Summary:
 - Updated the Calendar UI to remove mock task presets from creation. The task-preset tab is enabled only when real persisted presets are available through the selector; missing `tasks.view` leaves preset selection unavailable while custom one-off creation remains available for `calendar.edit` contacts.
 - Added `scripts/calendar-source-selection-regression.mjs` and `npm run test:calendar-source-selection`. Local disposable validation passed, proving real persisted preset selection, preset-backed create/read/edit, custom one-off continuity, fake/archived/wrong-workspace preset rejection, view-only and wrong-contact denial, role/title non-authorization, direct table-write denial, and zero residue.
 - Extended `scripts/calendar-regression.mjs` so the browser proof covers the real preset selector plus preset-backed create -> reload -> edit -> reload while preserving the existing Day/Week/Month/List shell and mobile/desktop interaction contract.
-- Because 12.17 adds a migration, RPC, and generated-type change, hosted non-production validation is required before relying on this boundary for beta use.
+- 12.17.1 subsequently completed hosted non-production validation for this migration/RPC/generated-type boundary.
 
 Recommended next slice:
-- `12.17.1 Hosted Staging Calendar Source Selection Validation Gate`; do not begin assignment picker, publication, email, public volunteer access, or `/admin/tasks` cutover before that gate passes.
+- Superseded by completed `12.17.1`; next beta-critical work may proceed to `12.18 Volunteer Assignment Picker and Create/Cancel Commands`.
 
 ## Iteration 12.16.1 - Hosted Staging Calendar Item Management Validation Gate
 

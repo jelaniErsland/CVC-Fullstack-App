@@ -247,7 +247,15 @@ After 12.17, run the Calendar source-selection local validation when changing th
 npm run test:calendar-source-selection
 ```
 
-This command requires local Supabase, refuses non-loopback targets, applies the local 12.17 source-selection migration if the running disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves active persisted preset selection under `tasks.view`, missing-`tasks.view` selector unavailability, preset-backed timed create/read/edit, custom one-off continuity, fake/archived/wrong-workspace preset rejection, view-only/wrong-contact/role-only denial, direct authenticated table-write denial, and no credential logging. This is local proof only; because 12.17 changes migration/RPC/generated-type behavior, hosted staging validation remains required before beta reliance.
+This command requires local Supabase, refuses non-loopback targets, applies the local 12.17 source-selection migration if the running disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves active persisted preset selection under `tasks.view`, missing-`tasks.view` selector unavailability, preset-backed timed create/read/edit, custom one-off continuity, fake/archived/wrong-workspace preset rejection, view-only/wrong-contact/role-only denial, direct authenticated table-write denial, and no credential logging.
+
+Hosted source-selection validation is available through:
+
+```bash
+RUN_HOSTED_CALENDAR_SOURCE_SELECTION_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh npm run test:calendar-source-selection:hosted
+```
+
+The hosted gate is exact-opt-in only, targets non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`), verifies `ACTIVE_HEALTHY` before DB work, compares hosted generated public-schema types, validates hosted selector/source/create/edit/isolation/direct-write-denial/malformed-input/read-model behavior with disposable fixtures, and verifies exact-run plus namespace zero residue. 12.17.1 completed this gate at staging migration `20260714121700` with hosted disposable residue count `0`.
 
 To rerun the hosted non-production Calendar item-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 

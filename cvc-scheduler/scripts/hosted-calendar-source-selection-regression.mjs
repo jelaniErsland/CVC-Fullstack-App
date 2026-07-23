@@ -371,7 +371,7 @@ insert into public.workspace_contact_grants (
 ) values
   ${grantRowSql("full", fixture.workspaceId, "main_contact", fullCaps)},
   ${grantRowSql("noTasks", fixture.workspaceId, "main_contact", ["workspace.read", "calendar.view", "assignments.view", "calendar.edit"])},
-  ${grantRowSql("tasksOnly", fixture.workspaceId, "task_librarian", ["workspace.read", "tasks.view"])},
+  ${grantRowSql("tasksOnly", fixture.workspaceId, "assistant_contact", ["workspace.read", "tasks.view"])},
   ${grantRowSql("viewOnly", fixture.workspaceId, "assistant_contact", ["workspace.read", "calendar.view", "assignments.view", "tasks.view"])},
   ${grantRowSql("roleOnly", fixture.workspaceId, "main_contact", ["workspace.read"])},
   ${grantRowSql("other", fixture.otherWorkspaceId, "main_contact", fullCaps)},
@@ -398,7 +398,7 @@ insert into public.task_presets (
   (
     ${sqlUuid(fixture.otherTaskPresetId)}, ${sqlUuid(fixture.otherWorkspaceId)},
     ${sqlText(`${fixture.namespace} Other`)}, null, 'food',
-    1, true, true, 'qa-other', '[]'::jsonb, 'active'
+    1, true, false, null, '[]'::jsonb, 'active'
   );
 
 insert into public.calendar_items (
