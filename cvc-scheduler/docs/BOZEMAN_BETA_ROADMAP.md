@@ -13,7 +13,7 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
 - `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
 - `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
-- Calendar task-preset selection, assignment picker UI, publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
+- Calendar task-preset selection and the first Calendar volunteer assignment picker/create/cancel path are locally implemented. Publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the existing prototype work and `sample mockup images`; beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
 
 ## Bozeman Beta launch gate
@@ -49,9 +49,9 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 5. `12.16.1 Hosted Staging Calendar Item Management Validation Gate`
    - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260714121500` to `20260714121600`, and the hosted gate passed generated-type parity, one-off timed create/edit, Follow-up Contact, zero-needed/read-model, RLS/capability, isolation, direct-table-denial, malformed/source-validation, existing-row compatibility, safe-output, and zero-residue checks.
 6. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
-   - Unblocks: preset-derived and one-off scheduled item creation without requiring the full `/admin/tasks` cutover first.
+   - Completed locally and hosted-validated through 12.17.1: preset-derived and one-off scheduled item creation without requiring the full `/admin/tasks` cutover first.
 7. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
-   - Unblocks: first real volunteer assignment.
+   - Completed locally: `/admin/calendar` can assign ready persisted volunteers and cancel active assignments through reviewed persisted boundaries. Hosted validation remains required before hosted beta dependency because 12.18 adds migration/RPC/generated-type changes.
 8. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
    - Unblocks: first published volunteer-visible assignment.
 9. `12.20 Secure Account-Light Volunteer Schedule Access`
@@ -70,7 +70,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 - `/admin/calendar` has a narrow one-off timed create/edit path, and its 12.16 migration/RPC/type changes have passed the required hosted staging validation gate.
 - 12.17 is implemented and hosted-validated as the Calendar task-preset selector and one-off definition path: `/admin/calendar` now reads active persisted `task_presets` for the resolved workspace when the same contact has `tasks.view`, can create preset-backed timed scheduled items through the existing create RPC, keeps custom one-off timed creation, and can edit preset-backed timed occurrences through a new allowlisted RPC without changing their source. 12.17.1 completed hosted staging validation on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260714121700`.
 - Draft/private versus published/live visibility truth is unresolved.
-- Volunteer assignment picker and assignment create/cancel UI are missing.
+- 12.18 is locally implemented as the first Calendar volunteer assignment picker/create/cancel path. It uses persisted volunteer profiles and assignment/current-response truth, but the new `20260714121800` migration/RPC/generated-type boundary still requires hosted non-production validation before hosted beta use.
 - Secure account-light volunteer schedule access is missing; `/v/demo` is mock, while `/respond/[token]` is single-assignment.
 - Confirm/Deny exists for a tokenized single assignment but is not integrated into a persisted volunteer schedule.
 - Basic initial assignment email delivery has no provider boundary, recipient resolution, duplicate-send prevention, or delivery observability.
@@ -221,3 +221,17 @@ The selector uses a new server-only Calendar seam over `task_presets` with expli
 12.17.1 completed the hosted staging validation gate on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). The gate verified the project as `ACTIVE_HEALTHY`, confirmed migration level `20260714121700` before and after the successful run, compared hosted generated public-schema types to committed types, and validated selector authorization/projection/scoping, active-only lifecycle filtering, missing-`tasks.view` selector unavailability with custom one-off continuity, preset-backed create, source/snapshot semantics, preset-backed edit, source immutability/no conversion, capability and workspace/contact isolation, revoked/expired/inactive grant denial, role/title non-authorization, direct table-write denial for Calendar items and task presets, malformed/source rejection, read-model compatibility, existing one-off compatibility, existing preset-backed row compatibility, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`. The only implementation correction during the gate was to the hosted harness's disposable fixture values so they obey existing grant-role and task-preset system-key constraints; no product/runtime/schema behavior changed.
 
 Recommended next slice after the successful hosted gate: `12.18 Volunteer Assignment Picker and Create/Cancel Commands`.
+
+## 12.18 Volunteer assignment picker and create/cancel commands
+
+12.18 locally adds the first permanent volunteer assignment management path to `/admin/calendar`. The Calendar route remains server-owned, dynamic/no-store, bounded by Day/Week/Month/List query ranges, persisted-truth-only, and workspace/contact scoped. Existing Calendar item reads, task-preset source selection, and one-off/preset timed create/edit remain intact.
+
+The route now passes a safe `assignmentPicker` state to the Calendar client. The picker uses `lib/calendar/assignmentPicker.server.ts`, requires the resolved Calendar route context plus `volunteers.view` to show ready volunteer choices, and projects only safe volunteer display fields needed by the inspector: volunteer profile id, display name, and congregation. It does not expose volunteer email, phone, profile notes, questionnaire data, raw grants/capabilities, response tokens, URLs, or provider/database objects.
+
+Assignment create/cancel uses server actions on `/admin/calendar` plus the existing assignment server boundary. Create uses the new authenticated RPC `create_calendar_assignments_batch`, which atomically assigns `1..25` same-workspace active ready volunteers to one active timed/date-based Calendar item, requires effective `assignments.edit`, prevents duplicates, creates `needs_response` current response rows, and rejects malformed, duplicate, wrong-workspace, inactive, on-hold, revoked/expired/inactive-grant, role/title-only, and under-capability contexts. Cancel reuses `cancel_calendar_assignment`, requires `assignments.edit`, and marks active assignments `canceled`.
+
+The Calendar inspector now shows active persisted assignment names and response states (`needs_response`, confirmed, denied), a searchable ready-volunteer picker for contacts with assignment edit access, calm unavailable/error/read-only states, and a non-blocking over-assignment warning. Coverage remains derived from `calendar_assignments` plus current `assignment_responses`; no Calendar counters, mock volunteer arrays, response links, publication state, volunteer-visible schedules, email, delivery, or assignment-detail links were added.
+
+12.18 adds migration `20260714121800_calendar_assignment_management.sql`, updates generated public-schema types for `create_calendar_assignments_batch`, adds `npm run test:calendar-assignment-management`, and updates the Calendar browser regression expectation through the existing product route. Because this slice changes migration/RPC/generated-type behavior, hosted non-production validation is required before 12.19.
+
+Recommended next slice after local 12.18: `12.18.1 Hosted Staging Assignment Management Validation Gate`.

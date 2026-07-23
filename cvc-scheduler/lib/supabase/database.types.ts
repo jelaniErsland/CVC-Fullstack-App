@@ -670,6 +670,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_calendar_assignments_batch: {
+        Args: {
+          p_assignment_note: string | null
+          p_calendar_item_id: string
+          p_volunteer_profile_ids: string[]
+        }
+        Returns: string[]
+      }
       create_calendar_item: {
         Args: {
           p_custom_values: Json

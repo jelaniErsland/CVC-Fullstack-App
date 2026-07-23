@@ -1,5 +1,42 @@
 # Project History
 
+## Iteration 12.18 - Volunteer Assignment Picker and Create/Cancel Commands
+
+Summary:
+- Added the first permanent `/admin/calendar` volunteer assignment management path for the Bozeman beta. The Calendar inspector now shows active persisted assignment names and current response states, exposes a searchable ready-volunteer picker when the resolved contact has `volunteers.view`, and exposes assignment create/cancel controls only when the resolved contact has `assignments.edit`.
+- Added server-only `lib/calendar/assignmentPicker.server.ts`, which reads explicit persisted volunteer, assignment, and response columns and projects only safe assignment-picker fields. It does not expose volunteer email, phone, profile notes, questionnaire data, raw grants/capabilities, response tokens, response URLs, provider dumps, or unrelated rows.
+- Added migration `20260714121800_calendar_assignment_management.sql` with authenticated RPC `create_calendar_assignments_batch`. The RPC atomically assigns `1..25` active ready same-workspace volunteers to one active timed/date-based Calendar item, prevents duplicate active assignments, and creates `needs_response` current response rows. Cancel continues through the existing `cancel_calendar_assignment` RPC.
+- Updated `lib/assignments/assignment.ts` and `lib/assignments/server.ts` with allowlisted batch-create and cancel validation/helpers. Updated `/admin/calendar` server actions to use the assignment mutation context derived from authenticated project-contact/workspace/capability state.
+- Kept assignment-derived coverage based on `calendar_assignments` and current `assignment_responses`. No Calendar item counters, mock volunteer arrays, assignment-detail links, response-link reveal/copy activation, public volunteer schedule, publication, email, delivery, service-role application path, real Bozeman/Belgrade data, `/admin/tasks` cutover, drag/drop, recurrence, copy/paste, or Calendar delete behavior was added.
+- Added `npm run test:calendar-assignment-management` and disposable local validation proving persisted picker projection, atomic create, cancel, coverage refresh including over-target coverage, duplicate/wrong-workspace/on-hold rejection, view-only/role-only/wrong-contact/revoked/expired/inactive denial, direct table-write denial, no response-token creation, safe output, and zero-residue cleanup.
+
+Changed files:
+- `supabase/migrations/20260714121800_calendar_assignment_management.sql`
+- `lib/supabase/database.types.ts`
+- `lib/calendar/assignmentPicker.server.ts`
+- `lib/calendar/routeRead.server.ts`
+- `lib/assignments/assignment.ts`
+- `lib/assignments/server.ts`
+- `app/admin/calendar/page.tsx`
+- `components/CalendarClient.tsx`
+- `scripts/calendar-assignment-management-regression.mjs`
+- `scripts/assignment-persistence-regression.mjs`
+- `scripts/calendar-route-cutover-regression.mjs`
+- `package.json`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- Local focused validation passed with zero residue. Because this slice adds a migration, a new authenticated RPC, and generated public-schema type changes, hosted non-production validation is required before 12.19 or hosted beta dependency. The local implementation does not itself target production or use hosted data.
+
+Recommended next slice:
+- `12.18.1 Hosted Staging Assignment Management Validation Gate`, before 12.19.
+
 ## Iteration 12.17.1 - Hosted Staging Calendar Source Selection Validation Gate
 
 Summary:

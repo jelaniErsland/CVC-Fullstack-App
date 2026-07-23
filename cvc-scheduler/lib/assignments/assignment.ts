@@ -10,6 +10,16 @@ export type CreateAssignmentInput = Readonly<{
   note?: string | null;
 }>;
 
+export type CreateAssignmentBatchInput = Readonly<{
+  calendarItemId: string;
+  volunteerProfileIds: readonly string[];
+  note?: string | null;
+}>;
+
+export type CancelAssignmentInput = Readonly<{
+  assignmentId: string;
+}>;
+
 export type UpdateAssignmentResponseInput = Readonly<{
   assignmentId: string;
   status: AssignmentResponseStatus;
@@ -82,6 +92,7 @@ function parseOptionalNote(
     return null;
   }
   const normalized = value.trim();
+  if (normalized.length === 0) return null;
   if (normalized.length < 1 || normalized.length > maximum) {
     issues.push(`${label} must be 1-${maximum} characters when supplied.`);
   }
@@ -109,6 +120,47 @@ export function validateCreateAssignmentInput(input: unknown): CreateAssignmentI
       issues,
     ),
     note: parseOptionalNote(input.note, "note", 2000, issues),
+  };
+  if (issues.length > 0) throw new AssignmentValidationError(issues);
+  return normalized;
+}
+
+export function validateCreateAssignmentBatchInput(
+  input: unknown,
+): CreateAssignmentBatchInput {
+  if (!isRecord(input)) throw new AssignmentValidationError(["input must be an object."]);
+  const issues: string[] = [];
+  rejectUnknownKeys(input, ["calendarItemId", "volunteerProfileIds", "note"], issues);
+  const volunteerProfileIds = Array.isArray(input.volunteerProfileIds)
+    ? input.volunteerProfileIds.map((value) =>
+        normalizeUuid(value, "volunteerProfileIds", issues),
+      )
+    : [];
+  if (!Array.isArray(input.volunteerProfileIds)) {
+    issues.push("volunteerProfileIds must be an array.");
+  }
+  const uniqueVolunteerProfileIds = new Set(volunteerProfileIds);
+  if (volunteerProfileIds.length < 1 || volunteerProfileIds.length > 25) {
+    issues.push("volunteerProfileIds must include 1-25 volunteers.");
+  }
+  if (uniqueVolunteerProfileIds.size !== volunteerProfileIds.length) {
+    issues.push("volunteerProfileIds must not contain duplicates.");
+  }
+  const normalized: CreateAssignmentBatchInput = {
+    calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
+    volunteerProfileIds,
+    note: parseOptionalNote(input.note, "note", 2000, issues),
+  };
+  if (issues.length > 0) throw new AssignmentValidationError(issues);
+  return normalized;
+}
+
+export function validateCancelAssignmentInput(input: unknown): CancelAssignmentInput {
+  if (!isRecord(input)) throw new AssignmentValidationError(["input must be an object."]);
+  const issues: string[] = [];
+  rejectUnknownKeys(input, ["assignmentId"], issues);
+  const normalized: CancelAssignmentInput = {
+    assignmentId: normalizeUuid(input.assignmentId, "assignmentId", issues),
   };
   if (issues.length > 0) throw new AssignmentValidationError(issues);
   return normalized;

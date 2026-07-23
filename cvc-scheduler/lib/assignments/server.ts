@@ -3,10 +3,14 @@ import "server-only";
 import {
   parseAssignmentResponse,
   parseCalendarAssignment,
+  validateCancelAssignmentInput,
+  validateCreateAssignmentBatchInput,
   validateCreateAssignmentInput,
   validateUpdateAssignmentResponseInput,
   type AssignmentResponse,
+  type CancelAssignmentInput,
   type CalendarAssignment,
+  type CreateAssignmentBatchInput,
   type CreateAssignmentInput,
   type UpdateAssignmentResponseInput,
 } from "@/lib/assignments/assignment";
@@ -15,6 +19,7 @@ import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
 export type AssignmentMutationResult = Readonly<{ assignmentId: string }>;
+export type AssignmentBatchMutationResult = Readonly<{ assignmentIds: readonly string[] }>;
 export type AssignmentState = Readonly<{
   assignments: readonly CalendarAssignment[];
   responses: readonly AssignmentResponse[];
@@ -122,12 +127,45 @@ export async function createAssignment(input: CreateAssignmentInput | unknown) {
   return createAssignmentWithClient(supabase, input);
 }
 
+export async function createAssignmentsBatchWithClient(
+  supabase: AppSupabaseClient,
+  input: CreateAssignmentBatchInput | unknown,
+): Promise<AssignmentBatchMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const assignment = validateCreateAssignmentBatchInput(input);
+  const { data, error } = await supabase.rpc(
+    "create_calendar_assignments_batch",
+    {
+      p_calendar_item_id: assignment.calendarItemId,
+      p_volunteer_profile_ids: [...assignment.volunteerProfileIds],
+      p_assignment_note: assignment.note ?? null,
+    } as PublicRpcArgs<"create_calendar_assignments_batch">,
+  );
+  if (error || !Array.isArray(data)) {
+    throw new Error("Assignments could not be created.", { cause: error });
+  }
+  return {
+    assignmentIds: data.map((id) => normalizeWorkspaceReference({ id }).value),
+  };
+}
+
+export async function createAssignmentsBatch(
+  input: CreateAssignmentBatchInput | unknown,
+) {
+  const supabase = await createServerSupabaseClient();
+  return createAssignmentsBatchWithClient(supabase, input);
+}
+
 export async function cancelAssignmentWithClient(
   supabase: AppSupabaseClient,
-  assignmentId: string,
+  input: CancelAssignmentInput | string | unknown,
 ): Promise<AssignmentMutationResult> {
   await requireAuthenticatedContact(supabase);
-  const normalizedId = normalizeWorkspaceReference({ id: assignmentId }).value;
+  const assignment =
+    typeof input === "string"
+      ? validateCancelAssignmentInput({ assignmentId: input })
+      : validateCancelAssignmentInput(input);
+  const normalizedId = normalizeWorkspaceReference({ id: assignment.assignmentId }).value;
   const { data, error } = await supabase.rpc("cancel_calendar_assignment", {
     p_assignment_id: normalizedId,
   });
@@ -137,9 +175,9 @@ export async function cancelAssignmentWithClient(
   return { assignmentId: normalizeWorkspaceReference({ id: data }).value };
 }
 
-export async function cancelAssignment(assignmentId: string) {
+export async function cancelAssignment(input: CancelAssignmentInput | string | unknown) {
   const supabase = await createServerSupabaseClient();
-  return cancelAssignmentWithClient(supabase, assignmentId);
+  return cancelAssignmentWithClient(supabase, input);
 }
 
 export async function updateAssignmentResponseWithClient(

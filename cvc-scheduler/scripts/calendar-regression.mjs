@@ -342,7 +342,7 @@ values
   ('${fixture.calendarOnlyContactId}'::uuid, '${calendarOnlyUserId}'::uuid, 'active');
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status)
 values
-  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view', 'calendar.edit', 'tasks.view']::text[], 'active'),
+  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view', 'assignments.edit', 'volunteers.view', 'calendar.edit', 'tasks.view']::text[], 'active'),
   ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
 insert into public.questionnaire_submissions (id, workspace_id, status, source, questionnaire_version, answers)
 values ${questionnaireRows()};
@@ -600,6 +600,21 @@ async function waitForFocusLabel(page, label) {
       document.activeElement?.getAttribute("aria-label") === expectedLabel,
     label,
   );
+}
+
+async function expectButtonEnabled(page, locator, label) {
+  await locator.waitFor({ state: "visible" });
+  await page.waitForFunction(
+    (buttonLabel) =>
+      Array.from(document.querySelectorAll("button")).some(
+        (button) =>
+          button.textContent?.trim() === buttonLabel &&
+          !button.disabled &&
+          !button.closest("[inert]"),
+      ),
+    label,
+  );
+  assert(await locator.isEnabled(), `${label} should be enabled`);
 }
 
 async function pressAndWaitForFocus(page, key, label) {
@@ -1470,6 +1485,74 @@ async function runDesktop(browser) {
       await page.getByText("Calendar item updated", { exact: true }).waitFor();
       await page.reload();
       await page.getByRole("button", { name: /QA 12\.12 General.*4:30 PM - 5:30 PM/ }).first().waitFor();
+    });
+
+    await step("desktop persisted assignment create/cancel round trip", async () => {
+      await selectView(page, "Day");
+      const assignmentTarget = page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first();
+      await activateWithKeyboard(assignmentTarget, "Assignment target Calendar item");
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      await inspector.waitFor();
+      await inspector
+        .locator("label")
+        .filter({ hasText: "QA 12.12 Volunteer 2" })
+        .locator('input[type="checkbox"]')
+        .click({ force: true });
+      await inspector.locator('input[name="volunteerProfileIds"]').waitFor({
+        state: "attached",
+      });
+      const assignSelectedButton = inspector.getByRole("button", {
+        name: "Assign selected",
+        exact: true,
+      });
+      await expectButtonEnabled(page, assignSelectedButton, "Assign selected");
+      await Promise.all([
+        page.waitForURL(/notice=(assigned|validation|error|unavailable)/),
+        assignSelectedButton.evaluate((button) => {
+          if (!(button instanceof HTMLButtonElement) || !button.form) {
+            throw new Error("Assignment submit button was not associated with a form.");
+          }
+          button.form.requestSubmit(button);
+        }),
+      ]);
+      assert(
+        new URL(page.url()).searchParams.get("notice") === "assigned",
+        `Assignment submit returned ${page.url()} instead of the persisted assigned notice.`,
+      );
+      await page.getByText("Volunteer assigned", { exact: true }).waitFor();
+
+      await page.reload();
+      const assignedItem = page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first();
+      await activateWithKeyboard(assignedItem, "Assigned persisted Calendar item");
+      await inspector.waitFor();
+      await inspector.getByText("QA 12.12 Volunteer 2", { exact: true }).waitFor();
+      await inspector.getByText("Needs response", { exact: true }).waitFor();
+
+      await Promise.all([
+        page.waitForURL(/notice=assignment_canceled/),
+        inspector
+          .getByRole("button", { name: "Remove assignment", exact: true })
+          .nth(1)
+          .click(),
+      ]);
+      await page.getByText("Volunteer removed", { exact: true }).waitFor();
+      await page.reload();
+      const canceledItem = page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first();
+      await activateWithKeyboard(canceledItem, "Canceled-assignment Calendar item");
+      await inspector.waitFor();
+      assert(
+        (await inspector.getByText("Needs response", { exact: true }).count()) === 0,
+        "Canceled assignment response still appeared in the Calendar inspector after reload.",
+      );
     });
 
     await step("desktop has no browser errors", async () => {

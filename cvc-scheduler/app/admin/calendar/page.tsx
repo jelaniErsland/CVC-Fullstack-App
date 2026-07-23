@@ -2,6 +2,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import CalendarClient from "@/components/CalendarClient";
 import {
+  cancelAssignmentWithClient,
+  createAssignmentsBatchWithClient,
+} from "@/lib/assignments/server";
+import {
+  readCalendarAssignmentMutationRouteContext,
   readCalendarMutationRouteContext,
   readCalendarRouteState,
 } from "@/lib/calendar/routeRead.server";
@@ -26,6 +31,8 @@ type CalendarPageProps = Readonly<{
 const supportedNoticeValues = new Set([
   "created",
   "updated",
+  "assigned",
+  "assignment_canceled",
   "validation",
   "unavailable",
   "error",
@@ -109,6 +116,58 @@ async function updateCalendarItemAction(formData: FormData) {
   redirect(safeCalendarRedirect(formData, notice));
 }
 
+async function createCalendarAssignmentsAction(formData: FormData) {
+  "use server";
+
+  let notice = "error";
+  try {
+    const context = await readCalendarAssignmentMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+    } else {
+      const calendarItemId = formData.get("calendarItemId");
+      const volunteerProfileIds = formData.getAll("volunteerProfileIds");
+      await createAssignmentsBatchWithClient(context.supabase, {
+        calendarItemId,
+        volunteerProfileIds,
+        note: formData.get("assignmentNote"),
+      });
+      notice = "assigned";
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
+      ? "validation"
+      : "error";
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice));
+}
+
+async function cancelCalendarAssignmentAction(formData: FormData) {
+  "use server";
+
+  let notice = "error";
+  try {
+    const context = await readCalendarAssignmentMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+    } else {
+      await cancelAssignmentWithClient(context.supabase, {
+        assignmentId: formData.get("assignmentId"),
+      });
+      notice = "assignment_canceled";
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
+      ? "validation"
+      : "error";
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice));
+}
+
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
   const state = await readCalendarRouteState(resolvedSearchParams);
@@ -117,6 +176,8 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
 
   return (
     <CalendarClient
+      assignAction={createCalendarAssignmentsAction}
+      cancelAssignmentAction={cancelCalendarAssignmentAction}
       createAction={createCalendarItemAction}
       key={`${state.view}:${state.anchorDate}:${state.kind}:${notice ?? ""}`}
       notice={notice}

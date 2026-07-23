@@ -7,6 +7,8 @@ import {
   AssignmentValidationError,
   parseAssignmentResponse,
   parseCalendarAssignment,
+  validateCancelAssignmentInput,
+  validateCreateAssignmentBatchInput,
   validateCreateAssignmentInput,
   validateUpdateAssignmentResponseInput,
 } from "../lib/assignments/assignment.ts";
@@ -25,12 +27,25 @@ const calendarMigrationPath = path.join(
   "migrations",
   "20260701050000_calendar_items.sql",
 );
+const assignmentManagementMigrationPath = path.join(
+  root,
+  "supabase",
+  "migrations",
+  "20260714121800_calendar_assignment_management.sql",
+);
 const serverBoundaryPath = path.join(root, "lib", "assignments", "server.ts");
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, calendarMigration, serverBoundary, environmentExample] = await Promise.all([
+const [
+  migration,
+  calendarMigration,
+  assignmentManagementMigration,
+  serverBoundary,
+  environmentExample,
+] = await Promise.all([
   readFile(migrationPath, "utf8"),
   readFile(calendarMigrationPath, "utf8"),
+  readFile(assignmentManagementMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
@@ -137,6 +152,14 @@ assert.match(migration, /item\.schedule_kind in \('timed', 'date_based'\)/i);
 assert.match(migration, /volunteer\.readiness_status = 'ready'/i);
 assert.match(migration, /insert into public\.assignment_responses/i);
 assert.match(migration, /'needs_response',[\s\S]*'project_contact'/i);
+assert.match(assignmentManagementMigration, /create function public\.create_calendar_assignments_batch\(\s*p_calendar_item_id uuid,\s*p_volunteer_profile_ids uuid\[\],\s*p_assignment_note text/i);
+assert.match(assignmentManagementMigration, /selected_count < 1[\s\S]*selected_count > 25/i);
+assert.match(assignmentManagementMigration, /distinct_count <> selected_count/i);
+assert.match(assignmentManagementMigration, /volunteer\.readiness_status = 'ready'/i);
+assert.match(assignmentManagementMigration, /insert into public\.assignment_responses/i);
+assert.match(assignmentManagementMigration, /'needs_response'[\s\S]*'project_contact'/i);
+assert.match(assignmentManagementMigration, /grant_row\.capabilities @> array\['assignments\.edit'\]::text\[\]/i);
+assert.doesNotMatch(assignmentManagementMigration, /to anon|service_role/i);
 assert.match(migration, /p_response_status = current_status/i);
 assert.match(migration, /current_status = 'needs_response' and p_response_status in \('confirmed', 'declined'\)/i);
 assert.match(migration, /assignment\.lifecycle = 'active'/i);
@@ -174,7 +197,12 @@ assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_calendar_assignment", "cancel_calendar_assignment", "update_assignment_response"],
+  [
+    "create_calendar_assignment",
+    "create_calendar_assignments_batch",
+    "cancel_calendar_assignment",
+    "update_assignment_response",
+  ],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
@@ -195,6 +223,14 @@ const createInput = validateCreateAssignmentInput({
   note: "Meet at the south entrance.",
 });
 assert.equal(createInput.note, "Meet at the south entrance.");
+const batchInput = validateCreateAssignmentBatchInput({
+  calendarItemId,
+  volunteerProfileIds: [volunteerProfileId],
+  note: "Batch note.",
+});
+assert.deepEqual(batchInput.volunteerProfileIds, [volunteerProfileId]);
+const cancelInput = validateCancelAssignmentInput({ assignmentId });
+assert.equal(cancelInput.assignmentId, assignmentId);
 const responseInput = validateUpdateAssignmentResponseInput({
   assignmentId,
   status: "confirmed",
@@ -359,7 +395,11 @@ for (const file of routeFiles) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
-assert.deepEqual(routeImports, [], "Existing routes must remain mock-only");
+assert.deepEqual(
+  routeImports,
+  ["app/admin/calendar/page.tsx"],
+  "Only the approved persisted Calendar route may import assignment mutation helpers.",
+);
 
 console.log("Assignment and volunteer-response persistence checks passed.");
-console.log("Confirmed scoped truth, deterministic transitions, no counters/tokens, and no route cutover.");
+console.log("Confirmed scoped truth, deterministic transitions, no counters/tokens, and only the approved Calendar assignment route integration.");

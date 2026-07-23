@@ -40,12 +40,16 @@ Critical path from the post-12.13 state:
 5. `12.16.1 Hosted Staging Calendar Item Management Validation Gate`
    - Completed: non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) advanced from `20260714121500` to `20260714121600`, and hosted generated-type, create/edit, Follow-up Contact, needed-count, RLS/capability, isolation, direct-table-denial, malformed/source-validation, existing-row compatibility, safe-output, and zero-residue checks passed.
 6. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
+   - Completed locally and hosted-validated through 12.17.1.
 7. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
-8. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
-9. `12.20 Secure Account-Light Volunteer Schedule Access`
-10. `12.21 Volunteer Confirm/Deny Round Trip`
-11. `12.22 Initial Assignment Notification Email Boundary`
-12. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+   - Completed locally: persisted Calendar inspector assignment picker, atomic assignment create, cancel, response-state display, and local validation exist. Hosted validation is required because 12.18 adds migration/RPC/generated-type changes.
+8. `12.18.1 Hosted Staging Assignment Management Validation Gate`
+   - Required before hosted beta dependency or 12.19.
+9. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
+10. `12.20 Secure Account-Light Volunteer Schedule Access`
+11. `12.21 Volunteer Confirm/Deny Round Trip`
+12. `12.22 Initial Assignment Notification Email Boundary`
+13. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
 
 The old next step, `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`, is moved and modified. It remains useful, but it is not the immediate beta blocker. A narrower task-preset selector/read seam can be reviewed when Calendar create/edit needs it, and the full `/admin/tasks` cutover can wait unless it becomes directly beta-critical.
 
