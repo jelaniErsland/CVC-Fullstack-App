@@ -50,7 +50,7 @@ export const CALENDAR_READ_MODEL_QUERY_ALLOWED_TABLES = [
 
 export const CALENDAR_READ_MODEL_QUERY_SELECTORS = {
   calendarItems:
-    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,lifecycle",
+    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,lifecycle,publication_state,created_by_project_contact_id,published_at",
   taskPresets: "id,workspace_id,name,task_type",
   calendarAssignments: "id,workspace_id,calendar_item_id,lifecycle",
   assignmentResponses: "assignment_id,workspace_id,response_status",
@@ -142,6 +142,7 @@ const allowedLifecycleStates = [
   "canceled",
   "completed",
 ] as const;
+const allowedPublicationStates = ["draft", "published"] as const;
 const activeAssignmentLifecycles = ["active", "removed", "canceled", "archived"] as const;
 const responseStatuses = ["needs_response", "confirmed", "declined", "denied"] as const;
 
@@ -188,6 +189,12 @@ function normalizeLifecycle(value: unknown) {
     : null;
 }
 
+function normalizePublicationState(value: unknown) {
+  return allowedPublicationStates.includes(value as (typeof allowedPublicationStates)[number])
+    ? (value as CalendarReadModelItemRow["publicationState"])
+    : null;
+}
+
 function normalizeAssignmentLifecycle(value: unknown) {
   return activeAssignmentLifecycles.includes(
     value as (typeof activeAssignmentLifecycles)[number],
@@ -229,6 +236,7 @@ function toItemRow(
   const timezone = asString(row.timezone);
   const neededCount = asNumber(row.needed_count);
   const lifecycle = normalizeLifecycle(row.lifecycle);
+  const publicationState = normalizePublicationState(row.publication_state);
 
   if (
     !id ||
@@ -239,7 +247,8 @@ function toItemRow(
     !startDate ||
     !timezone ||
     neededCount === null ||
-    !lifecycle
+    !lifecycle ||
+    !publicationState
   ) {
     return null;
   }
@@ -263,6 +272,9 @@ function toItemRow(
     timezone,
     neededCount,
     lifecycle,
+    publicationState,
+    createdByProjectContactId: asOptionalString(row.created_by_project_contact_id),
+    publishedAt: asOptionalString(row.published_at),
     scheduleNotes: asOptionalString(row.schedule_notes),
     taskPresetId,
     oneOffTaskLabel: hasPreset ? null : titleSnapshot,
@@ -349,12 +361,20 @@ export async function readCalendarReadModelWithClient(
   }
 
   const calendarItemRows = asRows(calendarItemsResult.data);
-  const calendarItemIds = calendarItemRows
+  const visibleCalendarItemRows = calendarItemRows.filter((row) => {
+    const publicationState = normalizePublicationState(row.publication_state);
+    if (publicationState === "published") return true;
+    return (
+      publicationState === "draft" &&
+      asOptionalString(row.created_by_project_contact_id) === scope.actorContactId
+    );
+  });
+  const calendarItemIds = visibleCalendarItemRows
     .map((row) => asString(row.id))
     .filter((id): id is string => Boolean(id));
   const taskPresetIds = [
     ...new Set(
-      calendarItemRows
+      visibleCalendarItemRows
         .map((row) => asOptionalString(row.task_preset_id))
         .filter((id): id is string => Boolean(id)),
     ),
@@ -416,10 +436,10 @@ export async function readCalendarReadModelWithClient(
       })
       .filter((entry): entry is readonly [string, AnyRow] => Boolean(entry)),
   );
-  const itemRows = calendarItemRows
+  const itemRows = visibleCalendarItemRows
     .map((row) => toItemRow(row, taskPresetById))
     .filter((row): row is CalendarReadModelItemRow => Boolean(row));
-  if (itemRows.length !== calendarItemRows.length) return safeFailure("invalid_projection");
+  if (itemRows.length !== visibleCalendarItemRows.length) return safeFailure("invalid_projection");
 
   const coverageRows = toCoverageRows(assignmentRows, responseRows);
   const items = filterAndSortCalendarReadModelItems(

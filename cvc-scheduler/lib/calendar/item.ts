@@ -46,6 +46,10 @@ export type UpdateCalendarPresetTimedItemInput = Readonly<{
   customValues: Readonly<Record<string, CalendarCustomValue>>;
 }>;
 
+export type PublishCalendarItemInput = Readonly<{
+  calendarItemId: string;
+}>;
+
 export type CalendarItem = Readonly<{
   id: string;
   workspaceId: string;
@@ -58,6 +62,10 @@ export type CalendarItem = Readonly<{
   notes: string | null;
   customValues: Readonly<Record<string, CalendarCustomValue>>;
   lifecycle: "active" | "archived" | "canceled";
+  publicationState: "draft" | "published";
+  createdByProjectContactId: string | null;
+  publishedAt: string | null;
+  publishedByProjectContactId: string | null;
   createdAt: string;
   updatedAt: string;
 }>;
@@ -100,6 +108,7 @@ const updatePresetTimedRootKeys = new Set([
   "notes",
   "customValues",
 ]);
+const publishRootKeys = new Set(["calendarItemId"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -410,6 +419,20 @@ export function validateUpdateCalendarPresetTimedItemInput(
   return normalized;
 }
 
+export function validatePublishCalendarItemInput(input: unknown): PublishCalendarItemInput {
+  if (!isRecord(input)) {
+    throw new CalendarItemValidationError(["input must be an object."]);
+  }
+  const issues: string[] = [];
+  const unknown = Object.keys(input).filter((key) => !publishRootKeys.has(key));
+  if (unknown.length > 0) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
+  const normalized = {
+    calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
+  };
+  if (issues.length > 0) throw new CalendarItemValidationError(issues);
+  return normalized;
+}
+
 export function parseCalendarItem(value: unknown): CalendarItem {
   if (!isRecord(value)) throw new Error("Calendar item read returned an invalid row.");
   const issues: string[] = [];
@@ -432,11 +455,15 @@ export function parseCalendarItem(value: unknown): CalendarItem {
   );
   const taskType = value.task_type_snapshot;
   const lifecycle = value.lifecycle;
+  const publicationState = value.publication_state;
   if (typeof taskType !== "string" || !calendarTaskTypes.includes(taskType as CalendarTaskType)) {
     issues.push("task_type_snapshot is invalid.");
   }
   if (lifecycle !== "active" && lifecycle !== "archived" && lifecycle !== "canceled") {
     issues.push("lifecycle is invalid.");
+  }
+  if (publicationState !== "draft" && publicationState !== "published") {
+    issues.push("publication_state is invalid.");
   }
   if (typeof value.needed_count !== "number" || !Number.isInteger(value.needed_count)) {
     issues.push("needed_count is invalid.");
@@ -462,6 +489,22 @@ export function parseCalendarItem(value: unknown): CalendarItem {
   if (notes !== null && typeof notes !== "string") issues.push("schedule_notes is invalid.");
   const id = normalizeUuid(value.id, "id", issues);
   const workspaceId = normalizeUuid(value.workspace_id, "workspace_id", issues);
+  const createdByProjectContactId =
+    value.created_by_project_contact_id === null
+      ? null
+      : normalizeUuid(
+          value.created_by_project_contact_id,
+          "created_by_project_contact_id",
+          issues,
+        );
+  const publishedByProjectContactId =
+    value.published_by_project_contact_id === null
+      ? null
+      : normalizeUuid(
+          value.published_by_project_contact_id,
+          "published_by_project_contact_id",
+          issues,
+        );
   const title = requiredText("title_snapshot");
   const timezone = requiredText("timezone");
   const createdAt = requiredText("created_at");
@@ -479,6 +522,10 @@ export function parseCalendarItem(value: unknown): CalendarItem {
     notes: notes as string | null,
     customValues,
     lifecycle: lifecycle as CalendarItem["lifecycle"],
+    publicationState: publicationState as CalendarItem["publicationState"],
+    createdByProjectContactId,
+    publishedAt: value.published_at as string | null,
+    publishedByProjectContactId,
     createdAt,
     updatedAt,
   };

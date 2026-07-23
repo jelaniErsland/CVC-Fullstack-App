@@ -371,6 +371,19 @@ commit;`,
     "Unrelated Calendar fixture creation",
   );
 
+  await rpc(
+    authenticatedClient,
+    "publish_calendar_item",
+    { p_calendar_item_id: targetCalendarItemId },
+    "Target Calendar fixture publication",
+  );
+  await rpc(
+    authenticatedClient,
+    "publish_calendar_item",
+    { p_calendar_item_id: unrelatedCalendarItemId },
+    "Unrelated Calendar fixture publication",
+  );
+
   const targetAssignmentId = expectUuid(
     await rpc(
       authenticatedClient,

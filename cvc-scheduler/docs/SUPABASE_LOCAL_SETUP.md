@@ -267,6 +267,16 @@ This command requires local Supabase, refuses non-loopback targets, applies the 
 
 12.18.1 completed the required hosted non-production validation gate for migration `20260714121800_calendar_assignment_management.sql`, authenticated RPC `create_calendar_assignments_batch`, cancellation compatibility, and generated public-schema type parity against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The hosted gate validated `ACTIVE_HEALTHY` target status, migration level `20260714121800`, picker authorization/projection, workspace/lifecycle filtering, atomic batch create, duplicate/retry rejection, over-assignment consistency, response initialization, cancellation, coverage truth, capability isolation, direct table-write denial, blank-note normalization, malformed-input rejection, no response-token/email/publication side effects, safe output, and exact-run plus namespace zero residue.
 
+After 12.19, run the Calendar publication-visibility local validation when changing draft/private versus published/live visibility, Calendar item create/update/publish functions, assignment preparation on drafts, response-token gating, assignment-detail context visibility, or Calendar read-model publication projection:
+
+```powershell
+npm run test:calendar-publication-visibility
+```
+
+This command requires local Supabase, refuses non-loopback targets, applies the local 12.19 publication migration if the disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves new items default to private draft with server-derived creator/Follow-up Contact, owner-only draft reads/edits, non-owner draft invisibility, draft assignment preparation limited to the creator, draft response-token/reveal/public-response denial, one-way publish through `publish_calendar_item`, published cross-contact visibility, published edit compatibility, direct authenticated table-write denial, role/title non-authorization, revoked/expired/inactive grant denial, no email/public schedule activation, and no credential logging.
+
+Because 12.19 changes migration/RPC/generated-type behavior, hosted staging validation is required next as `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate` before hosted beta dependency or 12.20. The approved hosted target remains non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`), expected to advance from `20260714121800` to `20260714121900` through `20260714121900_calendar_publication_visibility.sql`.
+
 To rerun the hosted non-production Calendar assignment-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
 ```powershell

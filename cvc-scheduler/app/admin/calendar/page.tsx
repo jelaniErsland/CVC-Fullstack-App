@@ -16,6 +16,7 @@ import {
   calendarPresetTimedCreateInputFromFormData,
   calendarPresetTimedUpdateInputFromFormData,
   createCalendarItemWithClient,
+  publishCalendarItemWithClient,
   updateCalendarOneOffTimedItemWithClient,
   updateCalendarPresetTimedItemWithClient,
 } from "@/lib/calendar/server";
@@ -33,6 +34,7 @@ const supportedNoticeValues = new Set([
   "updated",
   "assigned",
   "assignment_canceled",
+  "published",
   "validation",
   "unavailable",
   "error",
@@ -168,6 +170,30 @@ async function cancelCalendarAssignmentAction(formData: FormData) {
   redirect(safeCalendarRedirect(formData, notice));
 }
 
+async function publishCalendarItemAction(formData: FormData) {
+  "use server";
+
+  let notice = "error";
+  try {
+    const context = await readCalendarMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+    } else {
+      await publishCalendarItemWithClient(context.supabase, {
+        calendarItemId: formData.get("calendarItemId"),
+      });
+      notice = "published";
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
+      ? "validation"
+      : "error";
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice));
+}
+
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
   const state = await readCalendarRouteState(resolvedSearchParams);
@@ -181,6 +207,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       createAction={createCalendarItemAction}
       key={`${state.view}:${state.anchorDate}:${state.kind}:${notice ?? ""}`}
       notice={notice}
+      publishAction={publishCalendarItemAction}
       state={state}
       updateAction={updateCalendarItemAction}
     />

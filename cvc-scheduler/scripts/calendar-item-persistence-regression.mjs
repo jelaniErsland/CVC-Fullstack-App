@@ -196,6 +196,7 @@ assert.deepEqual(
     "create_calendar_item",
     "update_calendar_item_one_off_timed",
     "update_calendar_item_preset_timed",
+    "publish_calendar_item",
     "archive_calendar_item",
   ],
 );
@@ -297,6 +298,10 @@ const parsed = parseCalendarItem({
   schedule_notes: "Meet at the south entrance.",
   custom_values: { menu: "Soup and sandwiches" },
   lifecycle: "active",
+  publication_state: "published",
+  created_by_project_contact_id: "550e8400-e29b-41d4-a716-446655440099",
+  published_at: "2026-07-01T12:05:00.000Z",
+  published_by_project_contact_id: "550e8400-e29b-41d4-a716-446655440099",
   created_at: "2026-07-01T12:00:00.000Z",
   updated_at: "2026-07-01T12:00:00.000Z",
 });

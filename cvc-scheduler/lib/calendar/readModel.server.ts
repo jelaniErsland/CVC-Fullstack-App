@@ -48,6 +48,7 @@ export type CalendarReadModelLifecycleFilter =
   | "archived"
   | "canceled"
   | "completed";
+export type CalendarReadModelPublicationState = "draft" | "published";
 export type CalendarReadModelScheduleKind =
   | "timed"
   | "date_based"
@@ -119,6 +120,9 @@ export type CalendarReadModelItemRow = Readonly<{
   timezone: string;
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
+  publicationState: CalendarReadModelPublicationState;
+  createdByProjectContactId: string | null;
+  publishedAt?: string | null;
   scheduleNotes?: string | null;
   taskPresetId?: string | null;
   oneOffTaskLabel?: string | null;
@@ -140,6 +144,9 @@ export type CalendarReadModelItem = Readonly<{
   timezone: string;
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
+  publicationState: CalendarReadModelPublicationState;
+  isOwnDraft: boolean;
+  publishedAt: string | null;
   scheduleNotes: string | null;
   taskPresetId: string | null;
   oneOffTaskLabel: string | null;
@@ -388,6 +395,9 @@ export function buildCalendarReadModelQueryShape(input: unknown) {
             "timezone",
             "needed_count",
             "lifecycle",
+            "publication_state",
+            "created_by_project_contact_id",
+            "published_at",
             "schedule_notes",
             "task_preset_id",
           ],
@@ -528,6 +538,9 @@ export function mapCalendarReadModelItem(
     timezone: row.timezone,
     neededCount: assignable ? row.neededCount : 0,
     lifecycle: row.lifecycle,
+    publicationState: row.publicationState,
+    isOwnDraft: row.publicationState === "draft",
+    publishedAt: row.publishedAt ?? null,
     scheduleNotes: row.scheduleNotes ?? null,
     taskPresetId: row.taskPresetId ?? null,
     oneOffTaskLabel,

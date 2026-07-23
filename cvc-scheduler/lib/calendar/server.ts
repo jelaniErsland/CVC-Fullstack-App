@@ -2,11 +2,13 @@ import "server-only";
 
 import {
   parseCalendarItem,
+  validatePublishCalendarItemInput,
   validateCreateCalendarItemInput,
   validateUpdateCalendarOneOffTimedItemInput,
   validateUpdateCalendarPresetTimedItemInput,
   type CalendarItem,
   type CreateCalendarItemInput,
+  type PublishCalendarItemInput,
   type UpdateCalendarOneOffTimedItemInput,
   type UpdateCalendarPresetTimedItemInput,
 } from "@/lib/calendar/item";
@@ -35,6 +37,10 @@ const calendarItemColumns = [
   "created_at",
     "updated_at",
     "follow_up_project_contact_id",
+    "created_by_project_contact_id",
+    "publication_state",
+    "published_at",
+    "published_by_project_contact_id",
 ].join(",");
 
 async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
@@ -164,6 +170,26 @@ export async function updateCalendarPresetTimedItem(
 ) {
   const supabase = await createServerSupabaseClient();
   return updateCalendarPresetTimedItemWithClient(supabase, input);
+}
+
+export async function publishCalendarItemWithClient(
+  supabase: AppSupabaseClient,
+  input: PublishCalendarItemInput | unknown,
+): Promise<CalendarItemMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const item = validatePublishCalendarItemInput(input);
+  const { data, error } = await supabase.rpc("publish_calendar_item", {
+    p_calendar_item_id: item.calendarItemId,
+  } as PublicRpcArgs<"publish_calendar_item">);
+  if (error || typeof data !== "string") {
+    throw new Error("Calendar item could not be published.", { cause: error });
+  }
+  return { calendarItemId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export async function publishCalendarItem(input: PublishCalendarItemInput | unknown) {
+  const supabase = await createServerSupabaseClient();
+  return publishCalendarItemWithClient(supabase, input);
 }
 
 export async function archiveCalendarItemWithClient(

@@ -177,11 +177,14 @@ insert into public.task_presets (
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, start_time, end_time, timezone, needed_count,
-  custom_values, lifecycle
+  custom_values, lifecycle, follow_up_project_contact_id, created_by_project_contact_id,
+  publication_state, published_at, published_by_project_contact_id
 ) values (
   '${fixture.calendarItemId}'::uuid, '${fixture.workspaceId}'::uuid,
   '${fixture.taskPresetId}'::uuid, 'QA 11.26 Assignment Detail', 'general',
-  'timed', '2031-01-26', '09:00:00', '11:30:00', 'America/Denver', 2, '{}'::jsonb, 'active'
+  'timed', '2031-01-26', '09:00:00', '11:30:00', 'America/Denver', 2, '{}'::jsonb, 'active',
+  '${fixture.viewerContactId}'::uuid, '${fixture.viewerContactId}'::uuid,
+  'published', now(), '${fixture.viewerContactId}'::uuid
 );
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, created_by_auth_user_id

@@ -501,14 +501,15 @@ insert into public.task_presets (
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, end_date, start_time, end_time, timezone,
-  needed_count, schedule_notes, custom_values, lifecycle
+  needed_count, schedule_notes, custom_values, lifecycle, follow_up_project_contact_id,
+  created_by_project_contact_id, publication_state, published_at, published_by_project_contact_id
 ) values
-  ('${fixture.timedCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'QA 12.5 Gate Crew', 'general', 'timed', '2031-02-03', null, '07:30:00', '10:30:00', 'America/Denver', 6, 'Safe schedule note', '{}'::jsonb, 'active'),
-  ('${fixture.dateBasedCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.foodTaskPresetId}'::uuid, 'QA 12.5 Breakfast Service', 'food', 'date_based', '2031-02-04', null, null, null, 'America/Denver', 2, 'Safe food note', '{}'::jsonb, 'active'),
-  ('${fixture.multiDayCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 Site Window', 'general', 'multi_day_window', '2031-02-05', '2031-02-08', null, null, 'America/Denver', 0, 'Safe project window note', '{}'::jsonb, 'active'),
-  ('${fixture.milestoneCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 Inspection Milestone', 'custom', 'milestone', '2031-02-09', null, null, null, 'America/Denver', 0, null, '{}'::jsonb, 'active'),
-  ('${fixture.oneOffCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 One-Off Labels', 'security', 'timed', '2031-02-10', null, '11:00:00', '12:00:00', 'America/Denver', 1, 'Safe one-off note', '{}'::jsonb, 'active'),
-  ('${fixture.otherWorkspaceCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.5 Other Workspace Item', 'general', 'timed', '2031-02-03', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active');
+  ('${fixture.timedCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'QA 12.5 Gate Crew', 'general', 'timed', '2031-02-03', null, '07:30:00', '10:30:00', 'America/Denver', 6, 'Safe schedule note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.dateBasedCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.foodTaskPresetId}'::uuid, 'QA 12.5 Breakfast Service', 'food', 'date_based', '2031-02-04', null, null, null, 'America/Denver', 2, 'Safe food note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.multiDayCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 Site Window', 'general', 'multi_day_window', '2031-02-05', '2031-02-08', null, null, 'America/Denver', 0, 'Safe project window note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.milestoneCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 Inspection Milestone', 'custom', 'milestone', '2031-02-09', null, null, null, 'America/Denver', 0, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.oneOffCalendarItemId}'::uuid, '${fixture.workspaceId}'::uuid, null, 'QA 12.5 One-Off Labels', 'security', 'timed', '2031-02-10', null, '11:00:00', '12:00:00', 'America/Denver', 1, 'Safe one-off note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.otherWorkspaceCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.5 Other Workspace Item', 'general', 'timed', '2031-02-03', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid);
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 ) values
@@ -567,6 +568,9 @@ function toReadModelItemRow(row, taskPresetById) {
     timezone: row.timezone,
     neededCount: row.needed_count,
     lifecycle: row.lifecycle,
+    publicationState: row.publication_state,
+    createdByProjectContactId: row.created_by_project_contact_id,
+    publishedAt: row.published_at,
     scheduleNotes: row.schedule_notes,
     taskPresetId: row.task_preset_id,
     oneOffTaskLabel: row.task_preset_id ? null : row.title_snapshot,
@@ -819,10 +823,13 @@ async function verifyLiveRows(containerName, clientsForFixture) {
       "displayType",
       "endDate",
       "endTime",
+      "isOwnDraft",
       "lifecycle",
       "neededCount",
       "oneOffTaskLabel",
       "oneOffTaskType",
+      "publicationState",
+      "publishedAt",
       "scheduleKind",
       "scheduleNotes",
       "stableDisplayReference",

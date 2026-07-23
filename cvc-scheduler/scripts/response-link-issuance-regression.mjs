@@ -286,7 +286,9 @@ insert into public.task_presets (
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, start_time, end_time, timezone,
-  needed_count, custom_values, lifecycle
+  needed_count, custom_values, lifecycle, follow_up_project_contact_id,
+  created_by_project_contact_id, publication_state, published_at,
+  published_by_project_contact_id
 ) values (
   '${fixture.calendarItemId}'::uuid,
   '${fixture.workspaceId}'::uuid,
@@ -300,7 +302,12 @@ insert into public.calendar_items (
   'America/Denver',
   1,
   '{}'::jsonb,
-  'active'
+  'active',
+  '${fixture.contactId}'::uuid,
+  '${fixture.contactId}'::uuid,
+  'published',
+  now(),
+  '${fixture.contactId}'::uuid
 );
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id,

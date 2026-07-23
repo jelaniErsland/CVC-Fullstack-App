@@ -1,5 +1,21 @@
 # Project History
 
+## Iteration 12.19 - Draft/Private Versus Published/Live Calendar Visibility
+
+- Added the first local persisted Calendar publication visibility boundary. New `/admin/calendar` scheduled items are now private drafts owned by the creating project contact; publishing is a one-way/idempotent server action for the draft owner with effective `calendar.edit`.
+- Added migration `20260714121900_calendar_publication_visibility.sql`, `calendar_items.publication_state`, creator/publisher metadata, and the authenticated `publish_calendar_item` RPC. Existing legacy Calendar rows are preserved as draft rows without guessed owner/publisher backfill, so unknown-owner legacy drafts fail closed until a later reviewed data decision.
+- Updated the Calendar read model and route presentation boundary so authorized callers see published items plus their own drafts only. The client receives safe publication state, publish eligibility, and published timestamp metadata; it does not receive raw creator contact ids, grant ids, capability arrays, or provider/database errors.
+- Replaced the relevant Calendar item, assignment, response-token, public response, reveal, and assignment-detail functions so draft assignments may be prepared only by the draft creator, while response-token issuance/replacement/read/submit/reveal fails closed for drafts. Published items remain visible to authorized same-workspace contacts and continue using assignment/current-response truth for coverage.
+- Updated the Calendar UI narrowly: newly saved items are labeled as private drafts, draft event blocks are visually distinct, the inspector includes calm publication state copy, and the explicit Publish action states that it sends no email and activates no volunteer schedule or response link.
+- Preserved the beta boundaries: no email, no volunteer schedule access, no public lookup, no response-link reveal/copy UI activation, no assignment-detail navigation links, no Calendar delete, no drag/drop/resize/recurrence, no `/admin/tasks` cutover, no real Bozeman/Belgrade data, no service-role application path, and no mock/persisted Calendar truth mixing.
+- Added `npm run test:calendar-publication-visibility`, which passed locally with disposable fixtures and proved draft owner-only reads, publish, published cross-contact visibility, draft assignment/token gating, direct table-write denial, grant lifecycle failure, role/title non-authorization, safe output, and zero-residue cleanup.
+- Updated affected Calendar/assignment/response/read-model regressions for the new publication defaults. Existing route/read-model/source/assignment/volunteer/grant guardrails remain green locally.
+- Because this slice adds a migration, RPC/function behavior, and generated Supabase type changes, hosted non-production validation is required before hosted beta dependency.
+
+Next recommended slice:
+
+- `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`.
+
 ## Iteration 12.18.1 - Hosted Staging Assignment Management Validation Gate
 
 Summary:

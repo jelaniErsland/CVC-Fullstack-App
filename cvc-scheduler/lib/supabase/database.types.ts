@@ -256,6 +256,7 @@ export type Database = {
       calendar_items: {
         Row: {
           created_at: string
+          created_by_project_contact_id: string | null
           custom_values: Json
           end_date: string | null
           end_time: string | null
@@ -263,6 +264,9 @@ export type Database = {
           id: string
           lifecycle: string
           needed_count: number
+          publication_state: string
+          published_at: string | null
+          published_by_project_contact_id: string | null
           schedule_kind: string
           schedule_notes: string | null
           start_date: string
@@ -276,6 +280,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by_project_contact_id?: string | null
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
@@ -283,6 +288,9 @@ export type Database = {
           id?: string
           lifecycle?: string
           needed_count: number
+          publication_state?: string
+          published_at?: string | null
+          published_by_project_contact_id?: string | null
           schedule_kind: string
           schedule_notes?: string | null
           start_date: string
@@ -296,6 +304,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by_project_contact_id?: string | null
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
@@ -303,6 +312,9 @@ export type Database = {
           id?: string
           lifecycle?: string
           needed_count?: number
+          publication_state?: string
+          published_at?: string | null
+          published_by_project_contact_id?: string | null
           schedule_kind?: string
           schedule_notes?: string | null
           start_date?: string
@@ -316,8 +328,22 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "calendar_items_created_by_project_contact_id_fkey"
+            columns: ["created_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_items_follow_up_project_contact_id_fkey"
             columns: ["follow_up_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_items_published_by_project_contact_id_fkey"
+            columns: ["published_by_project_contact_id"]
             isOneToOne: false
             referencedRelation: "project_contacts"
             referencedColumns: ["id"]
@@ -693,6 +719,10 @@ export type Database = {
           p_task_preset_id: string
           p_workspace_id: string
         }
+        Returns: string
+      }
+      publish_calendar_item: {
+        Args: { p_calendar_item_id: string }
         Returns: string
       }
       create_manual_volunteer_profile: {

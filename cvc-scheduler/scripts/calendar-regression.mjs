@@ -27,13 +27,13 @@ const previousWeekLabel = "Jan 5 to Jan 11, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
 // Accessible names are the deliberate interaction contract for the persisted 12.12 cutover fixtures.
 const weekItemLabel =
-  "Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
+  "Published, Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
 const listItemLabel =
   "Site support week, Project window · Mon Jan 12 through Sat Jan 17, 0 of 0 helpers, General Volunteers";
 const monthItemLabel =
-  "Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
+  "Published, Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
 const nextWeekItemLabel =
-  "Follow-up supplies, 1 of 1 volunteers, Tue Jan 20, 9:00 AM - 10:00 AM";
+  "Published, Follow-up supplies, 1 of 1 volunteers, Tue Jan 20, 9:00 AM - 10:00 AM";
 
 const secrets = new Set();
 const fixture = {
@@ -360,17 +360,19 @@ insert into public.task_presets (
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, end_date, start_time, end_time, timezone,
-  needed_count, schedule_notes, custom_values, lifecycle
+  needed_count, schedule_notes, custom_values, lifecycle,
+  follow_up_project_contact_id, created_by_project_contact_id, publication_state,
+  published_at, published_by_project_contact_id
 ) values
-  ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Gate attendant', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, 'Safe gate note', '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.siteWindow}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Site support week', 'general', 'multi_day_window', '2026-01-12', '2026-01-17', null, null, 'America/Denver', 0, 'Safe project window note', '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.signage}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Room signage labels', 'general', 'timed', '2026-01-15', null, '10:00:00', '12:00:00', 'America/Denver', 2, 'Safe signage note', '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.lunch}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.foodTaskPresetId}'::uuid, 'Lunch handoff', 'food', 'timed', '2026-01-14', null, '11:00:00', '12:00:00', 'America/Denver', 1, 'Safe lunch note', '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.coffee}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Coffee station', 'general', 'timed', '2026-01-14', null, '08:00:00', '09:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.doorCheck}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Door check', 'general', 'timed', '2026-01-14', null, '09:00:00', '10:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.supplyRun}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Supply run', 'general', 'timed', '2026-01-14', null, '13:00:00', '14:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active'),
-  ('${fixture.calendarItemIds.nextWeekSupplies}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Follow-up supplies', 'general', 'timed', '2026-01-20', null, '09:00:00', '10:00:00', 'America/Denver', 1, 'Safe follow-up note', '{}'::jsonb, 'active'),
-  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.12 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active');
+  ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Gate attendant', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, 'Safe gate note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.siteWindow}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Site support week', 'general', 'multi_day_window', '2026-01-12', '2026-01-17', null, null, 'America/Denver', 0, 'Safe project window note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.signage}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Room signage labels', 'general', 'timed', '2026-01-15', null, '10:00:00', '12:00:00', 'America/Denver', 2, 'Safe signage note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.lunch}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.foodTaskPresetId}'::uuid, 'Lunch handoff', 'food', 'timed', '2026-01-14', null, '11:00:00', '12:00:00', 'America/Denver', 1, 'Safe lunch note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.coffee}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Coffee station', 'general', 'timed', '2026-01-14', null, '08:00:00', '09:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.doorCheck}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Door check', 'general', 'timed', '2026-01-14', null, '09:00:00', '10:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.supplyRun}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Supply run', 'general', 'timed', '2026-01-14', null, '13:00:00', '14:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.nextWeekSupplies}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Follow-up supplies', 'general', 'timed', '2026-01-20', null, '09:00:00', '10:00:00', 'America/Denver', 1, 'Safe follow-up note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.12 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid);
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 ) values ${assignmentRows(fullUserId)};
@@ -1206,16 +1208,16 @@ async function runDesktop(browser) {
       await endInput.fill("14:00");
 
       const scheduleButton = await assertUnique(
-        planner.getByRole("button", { name: "Schedule", exact: true }),
-        "Schedule persisted action",
+        planner.getByRole("button", { name: "Save draft", exact: true }),
+        "Save draft persisted action",
       );
-      assert(await scheduleButton.isEnabled(), "Schedule should be enabled for valid timed creation");
+      assert(await scheduleButton.isEnabled(), "Save draft should be enabled for valid timed creation");
       assert(
         Boolean(await scheduleButton.getAttribute("aria-describedby")),
-        "Schedule should describe its persisted action state",
+        "Save draft should describe its persisted action state",
       );
 
-      for (const action of ["Save draft", "Assign helpers"]) {
+      for (const action of ["Publish after save", "Assign helpers after save"]) {
         const actionButton = await assertUnique(
           planner.getByRole("button", { name: action, exact: true }),
           `${action} preview action`,
@@ -1414,9 +1416,9 @@ async function runDesktop(browser) {
         .fill("Browser regression persisted create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Schedule", exact: true }).click(),
+        planner.getByRole("button", { name: "Save draft", exact: true }).click(),
       ]);
-      await page.getByText("Calendar item scheduled", { exact: true }).waitFor();
+      await page.getByText("Calendar draft saved", { exact: true }).waitFor();
       await page.getByText(createdTitle, { exact: true }).waitFor();
 
       await page.reload();
@@ -1447,6 +1449,31 @@ async function runDesktop(browser) {
         (await page.getByText(createdTitle, { exact: true }).count()) === 0,
         "Reload after edit still displayed the stale created title",
       );
+      const editedDraftItem = page
+        .getByRole("button", { name: new RegExp(updatedTitle) })
+        .first();
+      await activateWithKeyboard(editedDraftItem, "Edited draft Calendar item");
+      await inspector.waitFor();
+      await inspector.getByText("Private draft", { exact: true }).waitFor();
+      await inspector.getByRole("button", { name: "Publish item", exact: true }).click();
+      await inspector.getByText("Publish this Calendar item?", { exact: true }).waitFor();
+      await Promise.all([
+        page.waitForURL(/notice=published/),
+        inspector.getByRole("button", { name: "Publish item", exact: true }).last().click(),
+      ]);
+      await page.getByText("Calendar item published", { exact: true }).waitFor();
+      await page.reload();
+      const publishedItem = page
+        .getByRole("button", { name: new RegExp(updatedTitle) })
+        .first();
+      await activateWithKeyboard(publishedItem, "Published Calendar item");
+      await inspector.waitFor();
+      await inspector.getByText("Published", { exact: true }).waitFor();
+      await closeWithEscape(
+        page,
+        "Calendar item inspector",
+        `Published, ${updatedTitle}, 0 of 0 volunteers, Tue Jan 13, 3:30 PM - 4:30 PM`,
+      );
 
       const presetTriggerLabel = "Plan project work on Tue Jan 13 at 4 PM";
       const presetTrigger = await assertUnique(
@@ -1463,9 +1490,9 @@ async function runDesktop(browser) {
         .fill("Browser regression persisted preset create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Schedule", exact: true }).click(),
+        planner.getByRole("button", { name: "Save draft", exact: true }).click(),
       ]);
-      await page.getByText("Calendar item scheduled", { exact: true }).waitFor();
+      await page.getByText("Calendar draft saved", { exact: true }).waitFor();
       await page.getByText("QA 12.12 General", { exact: true }).waitFor();
 
       await page.reload();

@@ -445,6 +445,9 @@ function itemRow(overrides = {}) {
     timezone: "America/Denver",
     neededCount: 6,
     lifecycle: "active",
+    publicationState: "draft",
+    createdByProjectContactId: actorContactId,
+    publishedAt: null,
     scheduleNotes: "Safe project-contact note",
     oneOffTaskLabel: null,
     oneOffTaskType: null,
@@ -483,10 +486,13 @@ assert.deepEqual(Object.keys(mapped).sort(), [
   "displayType",
   "endDate",
   "endTime",
+  "isOwnDraft",
   "lifecycle",
   "neededCount",
   "oneOffTaskLabel",
   "oneOffTaskType",
+  "publicationState",
+  "publishedAt",
   "scheduleKind",
   "scheduleNotes",
   "stableDisplayReference",
@@ -502,6 +508,9 @@ assert.equal(mapped.calendarItemId, calendarItemId);
 assert.equal(mapped.stableDisplayReference, `calendar-item:${calendarItemId}`);
 assert.equal(mapped.taskSourceLabel, "Gate Crew");
 assert.equal(mapped.taskPresetId, null);
+assert.equal(mapped.publicationState, "draft");
+assert.equal(mapped.isOwnDraft, true);
+assert.equal(mapped.publishedAt, null);
 assert.equal(mapped.displayType, "general");
 assert.equal(mapped.scheduleKind, "timed");
 assert.equal(mapped.timezone, "America/Denver");

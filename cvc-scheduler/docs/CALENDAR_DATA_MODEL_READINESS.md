@@ -236,6 +236,20 @@ The hosted gate compares generated public-schema types to `lib/supabase/database
 
 Hosted disposable validation proves picker authorization/projection under `volunteers.view`, workspace/lifecycle filtering, safe empty picker state, atomic batch assignment creation, duplicate/retry and malformed-input rejection, over-assignment consistency, `needs_response` initialization, blank optional note normalization, cancellation through `cancel_calendar_assignment`, assignment/current-response coverage truth, capability/contact/workspace/grant lifecycle isolation, role/title non-authorization, direct table-write denial, compatibility with existing assignment/Calendar item behavior, no response-token/email/publication side effects, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
 
+## 12.19 Draft/Private Versus Published/Live Calendar Visibility
+
+12.19 locally adds the first persisted Calendar publication visibility boundary. `calendar_items` now carry `publication_state`, `created_by_project_contact_id`, `published_at`, and `published_by_project_contact_id`. New item creation derives creator and Follow-up Contact from the authenticated project contact and stores the item as a private draft. Published rows require publisher metadata; draft rows require published metadata to remain null.
+
+Draft visibility is intentionally narrow: the Calendar read model projects published rows plus the authenticated caller's own drafts only. Unknown-owner legacy rows are preserved as draft and fail closed rather than receiving a guessed owner or publication backfill. The client receives safe publication state, publish eligibility, and published timestamp metadata, but not raw creator/publisher ids, workspace/grant ids, capability arrays, SQL/RPC details, or provider/database errors.
+
+Publishing is an explicit server action over `publish_calendar_item`. It requires the draft creator's deterministic same-workspace context and effective `calendar.edit`, is one-way/idempotent, and does not send notification email, activate volunteer-visible schedules, issue response tokens, reveal/copy response links, or treat delivery success as visibility truth.
+
+Assignment and response boundaries now respect publication visibility. The draft creator may prepare/cancel draft assignments with `assignments.edit`; non-owner contacts cannot see or mutate the draft. Response-token issuance, token replacement, public response read/submit, and reveal helper calls fail closed for drafts. Published items continue to use assignment/current-response truth for assigned, confirmed, denied, and waiting-on-confirmation state.
+
+The Calendar UI remains Calendar-first and narrow. Draft event blocks are visually distinguished, the inspector explains draft/private versus published/live status calmly, and the publish confirmation explicitly says no email, response link, or volunteer schedule access is sent or activated. No Calendar delete, drag/drop, resize, recurrence, assignment-detail entry link, email, public lookup, remembered device, `/admin/tasks` cutover, real Bozeman/Belgrade data, service-role application path, or mock/persisted truth mixing was added.
+
+Local validation: `npm run test:calendar-publication-visibility` passed with disposable fixtures and zero residue. Because this slice adds migration `20260714121900_calendar_publication_visibility.sql`, RPC/function changes, and generated public-schema type changes, hosted non-production validation is required next as `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`.
+
 ## Iteration 11.9 persisted boundary
 
 `public.calendar_items` implements only scheduled/project-context item identity, task source snapshots, schedule values, planned needed count, notes/custom values, lifecycle, and timestamps. `calendar.view` gates authenticated reads; `calendar.edit` gates authenticated create/archive commands. A same-workspace composite foreign key prevents a preset from another workspace being referenced, and one-off creation never creates a reusable preset.

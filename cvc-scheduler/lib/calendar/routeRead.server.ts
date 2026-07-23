@@ -82,6 +82,9 @@ type CalendarClientItem = {
   filledCount: number;
   neededCount: number;
   status: CalendarClientStatus;
+  publicationState: "draft" | "published";
+  canPublish: boolean;
+  publishedAt?: string;
   scheduleNotes?: string;
   taskPreset?: CalendarClientTaskPreset;
   oneOffTask?: {
@@ -517,6 +520,7 @@ function formatTime(value: string | null) {
 function mapPersistedItemToCalendarItem(
   item: CalendarReadModelItem,
   assignments: readonly CalendarClientAssignment[] = [],
+  canEdit = false,
 ): CalendarClientItem {
   const startTime = formatTime(item.startTime);
   const endTime = formatTime(item.endTime);
@@ -541,6 +545,9 @@ function mapPersistedItemToCalendarItem(
     filledCount: item.coverage.assignedCount,
     neededCount: item.neededCount,
     status: mapCoverageToStatus(item.coverage.coverageState),
+    publicationState: item.publicationState,
+    canPublish: canEdit && item.publicationState === "draft" && item.isOwnDraft,
+    publishedAt: item.publishedAt ?? undefined,
     scheduleNotes: item.scheduleNotes ?? undefined,
     taskPreset: item.taskPresetId
       ? {
@@ -746,6 +753,7 @@ export async function readCalendarRouteState(
       mapPersistedItemToCalendarItem(
         item,
         assignmentsByItemId.get(item.calendarItemId) ?? [],
+        workspaceSelection.canEdit,
       ),
     );
     return items.length > 0

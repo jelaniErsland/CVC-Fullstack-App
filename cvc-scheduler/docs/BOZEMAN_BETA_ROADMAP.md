@@ -13,7 +13,7 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
 - `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
 - `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
-- Calendar task-preset selection and the first Calendar volunteer assignment picker/create/cancel path are implemented and hosted-validated through 12.18.1. Publication lifecycle, persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
+- Calendar task-preset selection and the first Calendar volunteer assignment picker/create/cancel path are implemented and hosted-validated through 12.18.1. 12.19 locally implements the first draft/private versus published/live Calendar visibility boundary; hosted validation for that migration/RPC change remains required in 12.19.1 before hosted beta dependency. Persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the existing prototype work and `sample mockup images`; beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
 
 ## Bozeman Beta launch gate
@@ -55,14 +55,16 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 8. `12.18.1 Hosted Staging Assignment Management Validation Gate`
    - Completed: non-production staging is validated at `20260714121800` with generated type parity, picker projection, atomic create, cancellation, coverage truth, direct-write-denial, isolation, and zero-residue proof.
 9. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
-   - Unblocks: first published volunteer-visible assignment.
-10. `12.20 Secure Account-Light Volunteer Schedule Access`
+   - Completed locally: new Calendar items are private drafts owned by the creating project contact, published items become visible to authorized same-workspace contacts, and publication remains separate from email/volunteer schedule access/response-link activation.
+10. `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`
+   - Required before hosted beta dependency because 12.19 adds migration/RPC/generated-type behavior.
+11. `12.20 Secure Account-Light Volunteer Schedule Access`
    - Unblocks: volunteers seeing only their own published assignments.
-11. `12.21 Volunteer Confirm/Deny Round Trip`
+12. `12.21 Volunteer Confirm/Deny Round Trip`
    - Unblocks: first real Confirm/Deny round trip and admin-visible response state.
-12. `12.22 Initial Assignment Notification Email Boundary`
+13. `12.22 Initial Assignment Notification Email Boundary`
    - Unblocks: first real assignment notification email with duplicate-send prevention and observable failures.
-13. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+14. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
     - Unblocks: beta launch candidate review.
 
 ## Repository-grounded beta blockers
@@ -71,7 +73,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 - Controlled volunteer import does not exist; manual persisted volunteer Add/Edit now exists through `/admin/volunteers`.
 - `/admin/calendar` has a narrow one-off timed create/edit path, and its 12.16 migration/RPC/type changes have passed the required hosted staging validation gate.
 - 12.17 is implemented and hosted-validated as the Calendar task-preset selector and one-off definition path: `/admin/calendar` now reads active persisted `task_presets` for the resolved workspace when the same contact has `tasks.view`, can create preset-backed timed scheduled items through the existing create RPC, keeps custom one-off timed creation, and can edit preset-backed timed occurrences through a new allowlisted RPC without changing their source. 12.17.1 completed hosted staging validation on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260714121700`.
-- Draft/private versus published/live visibility truth is unresolved.
+- Draft/private versus published/live visibility is implemented locally in 12.19. Hosted non-production validation remains pending because the slice adds migration `20260714121900_calendar_publication_visibility.sql`, RPC `publish_calendar_item`, replaced Calendar/assignment/response functions, and generated public-schema type changes.
 - 12.18 and 12.18.1 are complete. The first Calendar volunteer assignment picker/create/cancel path uses persisted volunteer profiles and assignment/current-response truth, and the `20260714121800` migration/RPC/generated-type boundary has passed hosted non-production validation before hosted beta use.
 - Secure account-light volunteer schedule access is missing; `/v/demo` is mock, while `/respond/[token]` is single-assignment.
 - Confirm/Deny exists for a tokenized single assignment but is not integrated into a persisted volunteer schedule.
@@ -240,4 +242,14 @@ The Calendar inspector now shows active persisted assignment names and response 
 
 12.18.1 validates the assignment-management boundary against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) at migration `20260714121800`. The gate proves hosted generated-type parity, picker authorization/projection, workspace and lifecycle filtering, atomic batch create, duplicate/retry rejection, over-assignment behavior, response initialization, cancellation, coverage truth, capability/contact/workspace/grant isolation, role/title non-authorization, direct table-write denial, blank-note normalization, compatibility with existing Calendar/assignment behavior, no response-token/email/publication side effects, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
 
-Recommended next slice after 12.18.1: `12.19 Draft/Private Versus Published/Live Calendar Visibility`.
+## 12.19 Draft/private versus published/live Calendar visibility
+
+12.19 locally adds the first publication visibility boundary to persisted `/admin/calendar`. Newly created scheduled items now default to `publication_state = 'draft'`, record the authenticated creator as `created_by_project_contact_id`, and keep `published_at`/`published_by_project_contact_id` empty until an explicit publish action. Legacy pre-12.19 rows default to draft without guessed owner metadata, which intentionally fails closed until a later reviewed backfill/publication decision.
+
+Drafts are private to the creating project contact. The Calendar read model projects only published items plus the caller's own drafts, and the client receives only safe publication state, publish eligibility, and published timestamp fields--not raw contact ids, grant ids, capability arrays, or database errors. Published items remain visible to authorized same-workspace contacts through the existing `calendar.view` plus `assignments.view` coverage-bearing read rule.
+
+Publishing uses the new authenticated `publish_calendar_item` boundary. It requires the same deterministic workspace/contact context and effective `calendar.edit`, is one-way/idempotent for the owning draft creator, and records server-derived published metadata. It does not send email, expose a volunteer schedule, activate response links, create response tokens, or treat delivery success as visibility truth.
+
+Assignment preparation remains admin-only. The creator may prepare/cancel draft assignments with `assignments.edit`; other contacts cannot see or mutate the draft. Response-token issuance, replacement, public response reads/submits, and reveal helpers fail closed for drafts and continue only after publication through their existing reviewed boundaries. Response-link reveal/copy UI remains paused.
+
+Local validation uses `npm run test:calendar-publication-visibility`, which proves draft owner-only reads, publish, published cross-contact visibility, assignment/token gating, direct-write denial, grant lifecycle failure, role/title non-authorization, and zero-residue cleanup. Because 12.19 changes migration/RPC/generated-type behavior, the required next slice is `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`; do not proceed to 12.20 until that hosted gate passes.

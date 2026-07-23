@@ -71,6 +71,7 @@ type CalendarViewMode = "day" | "week" | "month" | "list";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
 type CreationMode = "preset" | "oneOff";
 type CalendarMutationAction = (formData: FormData) => void | Promise<void>;
+type CalendarPublicationState = "draft" | "published";
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 const calmFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-1";
@@ -157,6 +158,9 @@ type CalendarAssignmentPickerState =
 
 type CalendarClientDisplayItem = CalendarItemWithPreset & {
   assignments?: readonly CalendarAssignmentSummary[];
+  publicationState?: CalendarPublicationState;
+  canPublish?: boolean;
+  publishedAt?: string;
 };
 
 type WeekBandCalendarItem = CalendarItemWithPreset;
@@ -250,12 +254,29 @@ function enrichCalendarClientItem(item: CalendarItem): CalendarClientDisplayItem
   return persistedPreset ? { ...enriched, taskPreset: persistedPreset } : enriched;
 }
 
+function isDraftCalendarItem(item: CalendarItem | CalendarClientDisplayItem) {
+  return (
+    "publicationState" in item &&
+    item.publicationState === "draft"
+  );
+}
+
+function getCalendarEventClasses(item: CalendarItemWithPreset) {
+  return [
+    getCalendarEventStyle(item),
+    isDraftCalendarItem(item)
+      ? "border border-dashed border-slate-500/60 opacity-75"
+      : "",
+  ].join(" ");
+}
+
 function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
   if (isWeekBandCalendarItem(item)) {
     return getWeekBandItemAccessibleLabel(item);
   }
 
   return [
+    isDraftCalendarItem(item) ? "Private draft" : "Published",
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     getCalendarCompactDayLabel(item.date),
@@ -273,6 +294,7 @@ function getWeekBandItemAccessibleLabel(item: WeekBandCalendarItem) {
     : `no specific time ${startLabel}`;
 
   return [
+    isDraftCalendarItem(item) ? "Private draft" : "Published",
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     dateLabel,
@@ -289,6 +311,7 @@ function getProjectContextItemAccessibleLabel(item: WeekBandCalendarItem) {
     : `date-based project context ${startLabel}`;
 
   return [
+    isDraftCalendarItem(item) ? "Private draft" : "Published",
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     dateLabel,
@@ -1113,7 +1136,7 @@ function CalendarBlock({
       className={[
         `w-full overflow-hidden rounded text-left shadow-none transition ${calmFocusRing}`,
         fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
-        getCalendarEventStyle(item),
+        getCalendarEventClasses(item),
         isSelected ? "ring-2 ring-slate-900/30 ring-offset-1" : "",
       ].join(" ")}
       onClick={onSelect}
@@ -1234,7 +1257,7 @@ function WeekGrid({
                 aria-label={getWeekBandItemAccessibleLabel(item)}
                 className={[
                   `pointer-events-auto flex min-w-0 items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-4 transition ${calmFocusRing}`,
-                  getCalendarEventStyle(item),
+                  getCalendarEventClasses(item),
                   selectedId === item.id
                     ? "ring-2 ring-slate-900/30 ring-offset-1"
                     : "",
@@ -1612,7 +1635,7 @@ function MonthView({
                       className={[
                         `pointer-events-auto h-4 w-full rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
                         index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
-                        getCalendarEventStyle(item),
+                        getCalendarEventClasses(item),
                         selectedId === item.id
                           ? "ring-2 ring-slate-900/30 ring-offset-1"
                           : "",
@@ -2116,8 +2139,8 @@ function CreatePanelContent({
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
     (isOneOff
-      ? "Ready to save this custom one-off timed item to the persisted Calendar."
-      : "Ready to save this task-preset timed item to the persisted Calendar.");
+      ? "Ready to save this custom one-off timed item as a private Calendar draft."
+      : "Ready to save this task-preset timed item as a private Calendar draft.");
   const canSubmitPersisted =
     canEdit &&
     Boolean(createAction) &&
@@ -2141,7 +2164,7 @@ function CreatePanelContent({
     <>
       <p className="sr-only" id={descriptionId}>
         Create a persisted timed Calendar item from a task preset or custom one-off source.
-        Drafts, publishing, and helper assignment remain unavailable.
+        The saved item starts as a private draft. Publishing and helper assignment are handled separately.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2525,7 +2548,8 @@ function CreatePanelContent({
 
           <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
             <p className="text-sm leading-6 text-slate-600">
-              Helper assignment, draft/publish controls, and notifications stay later.
+              This creates a private admin draft first. You can assign helpers before
+              publishing, and publishing will not send notifications in this slice.
               The Follow-up Contact defaults safely to the signed-in scheduler.
             </p>
           </div>
@@ -2572,9 +2596,9 @@ function CreatePanelContent({
               disabled={!canSubmitPersisted}
               type="submit"
             >
-              Schedule
+              Save draft
             </button>
-            {["Save draft", "Assign helpers"].map((label) => (
+            {["Publish after save", "Assign helpers after save"].map((label) => (
               <button
                 aria-describedby={actionStatusId}
                 className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
@@ -2601,6 +2625,7 @@ function CalendarInspector({
   item,
   isOpen,
   onClose,
+  publishAction,
   updateAction,
   currentDate,
   currentView,
@@ -2613,6 +2638,7 @@ function CalendarInspector({
   item?: CalendarClientDisplayItem;
   isOpen: boolean;
   onClose: () => void;
+  publishAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
   currentDate: string;
   currentView: CalendarViewMode;
@@ -2694,6 +2720,7 @@ function CalendarInspector({
             item={item}
             key={item.id}
             onClose={onClose}
+            publishAction={publishAction}
             tone={tone}
             updateAction={updateAction}
           />
@@ -2736,6 +2763,7 @@ function CalendarInspector({
             item={item}
             key={item.id}
             onClose={onClose}
+            publishAction={publishAction}
             tone={tone}
             updateAction={updateAction}
           />
@@ -2758,6 +2786,7 @@ function InspectorContent({
   item,
   tone,
   onClose,
+  publishAction,
   updateAction,
 }: {
   assignAction?: CalendarMutationAction;
@@ -2772,6 +2801,7 @@ function InspectorContent({
   item: CalendarClientDisplayItem;
   tone: CalendarStatusTone;
   onClose: () => void;
+  publishAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
 }) {
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
@@ -2785,6 +2815,12 @@ function InspectorContent({
     Boolean(item.startTimeValue) &&
     Boolean(item.endTimeValue);
   const currentAssignments = item.assignments ?? [];
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
+  const canPublishSelectedItem =
+    canEdit &&
+    Boolean(publishAction) &&
+    Boolean(item.canPublish) &&
+    item.publicationState === "draft";
   const assignedVolunteerIds = new Set(
     currentAssignments.map((assignment) => assignment.volunteerProfileId),
   );
@@ -2872,6 +2908,73 @@ function InspectorContent({
           >
             {getCalendarStatusLabel(item.status)}
           </span>
+          <span
+            className={[
+              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold",
+              item.publicationState === "draft"
+                ? "border-slate-300 bg-white/80 text-slate-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700",
+            ].join(" ")}
+          >
+            {item.publicationState === "draft" ? "Private draft" : "Published"}
+          </span>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Visibility
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            {item.publicationState === "draft"
+              ? "This draft is visible only to the project contact who created it. Assignments can be prepared here, but volunteer response links and email remain inactive."
+              : "This item is published for authorized project contacts. Publishing did not send email or create volunteer schedule access."}
+          </p>
+          {item.publishedAt ? (
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Published {item.publishedAt.slice(0, 10)}
+            </p>
+          ) : null}
+          {canPublishSelectedItem ? (
+            <div className="mt-3">
+              {confirmingPublish ? (
+                <form action={publishAction} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                  <input name="calendarItemId" type="hidden" value={item.id} />
+                  <input name="redirectView" type="hidden" value={currentView} />
+                  <input name="redirectDate" type="hidden" value={currentDate} />
+                  <p className="text-sm font-semibold text-amber-950">
+                    Publish this Calendar item?
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-amber-800">
+                    Authorized project contacts will be able to see it. No email,
+                    response link, or volunteer schedule access will be sent or activated.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      className={`inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 ${calmFocusRing}`}
+                      type="submit"
+                    >
+                      Publish item
+                    </button>
+                    <button
+                      className={`inline-flex min-h-10 items-center rounded-full border border-amber-200 bg-white/80 px-4 text-sm font-semibold text-amber-900 transition hover:bg-white ${calmFocusRing}`}
+                      onClick={() => setConfirmingPublish(false)}
+                      type="button"
+                    >
+                      Keep draft
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  className={`inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 ${calmFocusRing}`}
+                  onClick={() => setConfirmingPublish(true)}
+                  type="button"
+                >
+                  Publish item
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-4 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
@@ -3186,7 +3289,7 @@ function InspectorContent({
               </label>
               <p className="text-xs font-semibold leading-5 text-slate-500">
                 Follow-up Contact stays with the original scheduled item. Assignment,
-                publication, copy, and delivery changes stay unavailable.
+                publication state, copy, and delivery changes stay controlled separately.
               </p>
               <button
                 className="min-h-11 rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
@@ -3233,6 +3336,9 @@ export type CalendarClientState =
         CalendarItem & {
           assignments: CalendarAssignmentSummary[];
           taskPreset?: CalendarTaskPresetOption;
+          publicationState: CalendarPublicationState;
+          canPublish: boolean;
+          publishedAt?: string;
         }
       >;
       canEdit: boolean;
@@ -3267,8 +3373,8 @@ function CalendarNotice({ notice }: { notice?: string }) {
   if (!notice) return null;
   const copy: Record<string, { title: string; message: string }> = {
     created: {
-      title: "Calendar item scheduled",
-      message: "The timed item was saved to the persisted Calendar.",
+      title: "Calendar draft saved",
+      message: "The timed item was saved as a private persisted Calendar draft.",
     },
     updated: {
       title: "Calendar item updated",
@@ -3281,6 +3387,10 @@ function CalendarNotice({ notice }: { notice?: string }) {
     assignment_canceled: {
       title: "Volunteer removed",
       message: "The assignment was canceled without changing Calendar item or response-link behavior.",
+    },
+    published: {
+      title: "Calendar item published",
+      message: "Authorized project contacts can now see it. No email or response link was sent.",
     },
     validation: {
       title: "Check the Calendar details",
@@ -3317,6 +3427,7 @@ export default function CalendarClient({
   cancelAssignmentAction,
   createAction,
   notice,
+  publishAction,
   state,
   updateAction,
 }: Readonly<{
@@ -3324,6 +3435,7 @@ export default function CalendarClient({
   cancelAssignmentAction?: CalendarMutationAction;
   createAction?: CalendarMutationAction;
   notice?: string;
+  publishAction?: CalendarMutationAction;
   state: CalendarClientState;
   updateAction?: CalendarMutationAction;
 }>) {
@@ -3647,6 +3759,7 @@ export default function CalendarClient({
               isOpen={activeSurface === "inspect"}
               item={selectedItem}
               onClose={closeCalendarSurface}
+              publishAction={publishAction}
               updateAction={updateAction}
             />
           </>
