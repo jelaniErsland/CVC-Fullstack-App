@@ -570,6 +570,73 @@ export type Database = {
           },
         ]
       }
+      volunteer_schedule_access_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          issued_by_project_contact_id: string | null
+          last_used_at: string | null
+          purpose: string
+          revoked_at: string | null
+          token_verifier_hash: string
+          token_version: number
+          updated_at: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          issued_by_project_contact_id?: string | null
+          last_used_at?: string | null
+          purpose?: string
+          revoked_at?: string | null
+          token_verifier_hash: string
+          token_version?: number
+          updated_at?: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issued_by_project_contact_id?: string | null
+          last_used_at?: string | null
+          purpose?: string
+          revoked_at?: string | null
+          token_verifier_hash?: string
+          token_version?: number
+          updated_at?: string
+          volunteer_profile_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_schedule_access_tokens_issued_by_project_contact_id_fkey"
+            columns: ["issued_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_schedule_tokens_volunteer_workspace_fk"
+            columns: ["workspace_id", "volunteer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "volunteer_schedule_access_tokens_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_contact_grants: {
         Row: {
           capabilities: string[]
@@ -758,6 +825,14 @@ export type Database = {
           token_id: string
         }[]
       }
+      issue_volunteer_schedule_access: {
+        Args: { p_ttl_hours: number; p_volunteer_profile_id: string }
+        Returns: {
+          bearer_token: string
+          token_expires_at: string
+          token_id: string
+        }[]
+      }
       publish_calendar_item: {
         Args: { p_calendar_item_id: string }
         Returns: string
@@ -802,6 +877,32 @@ export type Database = {
           start_time: string
           task_title: string
           workspace_display_name: string
+        }[]
+      }
+      read_volunteer_schedule: {
+        Args: { p_bearer_token: string }
+        Returns: {
+          active_assigned_count: number | null
+          assignment_reference: string | null
+          confirmed_count: number | null
+          current_response_status: string | null
+          declined_count: number | null
+          end_date: string | null
+          end_time: string | null
+          follow_up_contact_display_name: string | null
+          follow_up_contact_email: string | null
+          follow_up_contact_phone: string | null
+          needed_count: number | null
+          schedule_kind: string | null
+          schedule_notes: string | null
+          schedule_state: string
+          start_date: string | null
+          start_time: string | null
+          task_title: string | null
+          task_type: string | null
+          volunteer_display_name: string | null
+          workspace_display_name: string | null
+          workspace_timezone: string | null
         }[]
       }
       record_assignment_response_link_reveal_event: {
@@ -855,6 +956,10 @@ export type Database = {
         }[]
       }
       revoke_assignment_response_token: {
+        Args: { p_token_id: string }
+        Returns: string
+      }
+      revoke_volunteer_schedule_access: {
         Args: { p_token_id: string }
         Returns: string
       }

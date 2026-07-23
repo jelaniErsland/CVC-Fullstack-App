@@ -277,6 +277,26 @@ This command requires local Supabase, refuses non-loopback targets, applies the 
 
 12.19.1 completed the required hosted non-production validation gate for migration `20260714121900_calendar_publication_visibility.sql`, `publish_calendar_item`, the publication-aware Calendar/assignment/response functions, and generated public-schema type parity against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The first migration application advanced staging from `20260714121800` to `20260714121900` after correcting a safe typo in the unapplied migration's leading SQL comment; the final successful hosted run verified `20260714121900` before and after behavior validation. The hosted gate validated `ACTIVE_HEALTHY` target status, publication defaults, legacy draft fail-closed behavior, creator-only draft reads, published cross-contact visibility, safe projection, publish authorization/idempotency, assignment/token/public-response gating, direct table-write denial, capability isolation, malformed-input rejection, no email/delivery/public-lookup/volunteer-schedule/remembered-device coupling, safe output, generated-type parity after a UTF-8-safe refresh, and exact-run plus namespace zero residue.
 
+After 12.20, run the volunteer schedule access local validation when changing dedicated volunteer schedule access tokens, `/v/access/[token]`, `/v/schedule`, schedule-token issuance/revocation/read RPCs, schedule cookie behavior, or volunteer-facing published-assignment projection:
+
+```powershell
+npm run test:volunteer-schedule-access
+```
+
+This command requires local Supabase, refuses non-loopback targets, applies the local 12.20 volunteer schedule access migration if the disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves hash-only issuance, TTL bounds, server-derived issuer/workspace/volunteer scope, safe published-only schedule reads, `needs_response`/confirmed/declined response projection, valid empty/unavailable states, revocation, missing `assignments.edit` denial, role/title non-authorization, revoked/expired/inactive grants, inactive/on-hold volunteer failure, wrong-workspace isolation, direct authenticated table denial, malformed/protected input rejection, no assignment-response-token coupling, no email/public lookup/remembered-device behavior, no credential logging, and zero residue.
+
+For browser validation, start a loopback production preview with stdout/stderr redirected, then run:
+
+```powershell
+$env:PREVIEW_BASE_URL='http://127.0.0.1:3000'
+npm run test:volunteer-schedule-access:browser
+Remove-Item Env:PREVIEW_BASE_URL
+```
+
+The browser proof creates disposable local fixtures, issues a dedicated schedule bearer, opens `/v/access/[token]`, verifies the final clean `/v/schedule` URL, checks the HttpOnly SameSite=Lax session cookie, validates persisted schedule display/detail sheet/empty/unavailable states/Not-you clearing/390px width/no horizontal overflow, and proves the bearer is not present in HTML, localStorage, sessionStorage, readable cookies, or the final URL. Stop preview before final `npx tsc --noEmit` or `npm run build`.
+
+12.20 adds migration `20260714122000_volunteer_schedule_access.sql`, generated public-schema type changes, and new RPCs (`issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, `read_volunteer_schedule`). Hosted non-production validation is therefore required before beta reliance. The next hosted gate should target only `project-local-staging` (`kfuujcfxoayukywvtaeh`), advance staging from `20260714121900` to `20260714122000`, compare generated public-schema types, validate hosted issuance/revocation/read/cookie route behavior with disposable fixtures, and verify exact-run plus namespace zero residue.
+
 To rerun the hosted non-production Calendar publication-visibility gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
 ```powershell

@@ -50,9 +50,12 @@ Critical path from the post-12.13 state:
 10. `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`
    - Completed: non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is validated at `20260714121900`; generated-type, draft/published visibility, publication authorization, assignment/token gating, direct-table-denial, isolation, safe-output, and zero-residue checks passed.
 11. `12.20 Secure Account-Light Volunteer Schedule Access`
-12. `12.21 Volunteer Confirm/Deny Round Trip`
-13. `12.22 Initial Assignment Notification Email Boundary`
-14. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+   - Completed locally: dedicated hash-only volunteer schedule access credentials, `/v/access/[token]` bearer exchange, and read-only `/v/schedule` for a volunteer's own published assignments. Hosted staging validation is required next because 12.20 added migration/RPC/generated-type changes.
+12. `12.20.1 Hosted Staging Volunteer Schedule Access Validation Gate`
+   - Required next: validate `20260714122000`, generated types, issuance/revocation/read RPCs, public route/cookie behavior, isolation, direct-table denial, and zero-residue cleanup on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`).
+13. `12.21 Volunteer Confirm/Deny Round Trip`
+14. `12.22 Initial Assignment Notification Email Boundary`
+15. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
 
 The old next step, `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`, is moved and modified. It remains useful, but it is not the immediate beta blocker. A narrower task-preset selector/read seam can be reviewed when Calendar create/edit needs it, and the full `/admin/tasks` cutover can wait unless it becomes directly beta-critical.
 

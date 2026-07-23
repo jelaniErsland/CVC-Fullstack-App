@@ -13,7 +13,7 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
 - `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
 - `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
-- Calendar task-preset selection, the first Calendar volunteer assignment picker/create/cancel path, and the draft/private versus published/live Calendar visibility boundary are implemented and hosted-validated through 12.19.1. Persisted volunteer schedule access, initial assignment email delivery, Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
+- Calendar task-preset selection, the first Calendar volunteer assignment picker/create/cancel path, and the draft/private versus published/live Calendar visibility boundary are implemented and hosted-validated through 12.19.1. Secure account-light volunteer schedule access is implemented locally through 12.20 and awaits its required hosted staging gate. Initial assignment email delivery, Communications persistence, public lookup, remembered devices, Confirm/Deny schedule integration, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the existing prototype work and `sample mockup images`; beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
 
 ## Bozeman Beta launch gate
@@ -59,12 +59,14 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 10. `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`
    - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). Staging advanced from `20260714121800` to `20260714121900` during the gate after a safe unapplied migration comment typo fix, and the final hosted validation passed generated-type parity, publication defaults, draft/published read privacy, publish authorization, assignment/token/public-response gating, direct-table-denial, isolation, safe-output, and zero-residue checks.
 11. `12.20 Secure Account-Light Volunteer Schedule Access`
-   - Unblocks: volunteers seeing only their own published assignments.
-12. `12.21 Volunteer Confirm/Deny Round Trip`
+   - Completed locally: authorized schedulers can issue/revoke dedicated hash-only volunteer schedule access tokens, `/v/access/[token]` exchanges the bearer for a session-only HttpOnly cookie, and `/v/schedule` reads only that volunteer's published assignments. Hosted validation is required before relying on this boundary in staging or beta.
+12. `12.20.1 Hosted Staging Volunteer Schedule Access Validation Gate`
+   - Required next: validate migration `20260714122000`, generated public-schema types, token issuance/revocation/read RPCs, public route behavior, cookie/session handling, isolation, direct-table denial, and zero residue against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`).
+13. `12.21 Volunteer Confirm/Deny Round Trip`
    - Unblocks: first real Confirm/Deny round trip and admin-visible response state.
-13. `12.22 Initial Assignment Notification Email Boundary`
+14. `12.22 Initial Assignment Notification Email Boundary`
    - Unblocks: first real assignment notification email with duplicate-send prevention and observable failures.
-14. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+15. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
     - Unblocks: beta launch candidate review.
 
 ## Repository-grounded beta blockers
@@ -75,7 +77,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 - 12.17 is implemented and hosted-validated as the Calendar task-preset selector and one-off definition path: `/admin/calendar` now reads active persisted `task_presets` for the resolved workspace when the same contact has `tasks.view`, can create preset-backed timed scheduled items through the existing create RPC, keeps custom one-off timed creation, and can edit preset-backed timed occurrences through a new allowlisted RPC without changing their source. 12.17.1 completed hosted staging validation on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260714121700`.
 - Draft/private versus published/live visibility is implemented and hosted-validated through 12.19.1. Staging is validated at `20260714121900`; draft/private reads, published/live reads, publication authorization, assignment preparation privacy, response-token/public-response gating, generated-type parity, direct-write denial, and zero-residue cleanup passed on non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`).
 - 12.18 and 12.18.1 are complete. The first Calendar volunteer assignment picker/create/cancel path uses persisted volunteer profiles and assignment/current-response truth, and the `20260714121800` migration/RPC/generated-type boundary has passed hosted non-production validation before hosted beta use.
-- Secure account-light volunteer schedule access is missing; `/v/demo` is mock, while `/respond/[token]` is single-assignment.
+- Secure account-light volunteer schedule access is locally implemented in 12.20. `/v/demo` remains mock and separate; `/respond/[token]` remains single-assignment. The 12.20 migration/RPC/generated-type boundary must still pass 12.20.1 hosted staging validation before beta use.
 - Confirm/Deny exists for a tokenized single assignment but is not integrated into a persisted volunteer schedule.
 - Basic initial assignment email delivery has no provider boundary, recipient resolution, duplicate-send prevention, or delivery observability.
 - Beta-critical UI polish is not yet integrated across create/edit Calendar, volunteer picker, Add/Edit Volunteer, volunteer schedule, response states, and safe empty/unavailable/error states.
@@ -258,4 +260,20 @@ Local validation uses `npm run test:calendar-publication-visibility`, which prov
 
 The hosted gate validated publication defaults, unknown-owner legacy draft fail-closed behavior, server-derived creator and Follow-up Contact metadata, creator-only draft reads, published same-workspace cross-contact visibility, safe publication projection, publish authorization and idempotency, preservation of assignments/source/Follow-up Contact/provenance, draft edit and assignment privacy, assignment-detail privacy, draft response-token/reveal/public-response denial, existing published token/response compatibility, direct table-write denial, cross-contact/cross-workspace/grant lifecycle/role-title denial, malformed input rejection, no email/delivery/volunteer-schedule/public-lookup/remembered-device coupling, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`. No product/runtime code changed during the gate.
 
-Recommended next slice after the successful hosted gate: `12.20 Secure Account-Light Volunteer Schedule Access`.
+Recommended next slice after the successful hosted gate was `12.20 Secure Account-Light Volunteer Schedule Access`.
+
+## 12.20 Secure account-light volunteer schedule access
+
+12.20 locally implements the first permanent volunteer-facing schedule path without cutting over `/v/demo` and without reusing assignment-response tokens. The product path is intentionally narrow: an authorized project contact with effective `assignments.edit` can issue or revoke a dedicated volunteer schedule access credential for a same-workspace active ready volunteer profile; the volunteer opens `/v/access/[token]`; the route validates the bearer, sets a session-only HttpOnly `pl-volunteer-schedule` cookie scoped to `/v`, and lands on the clean `/v/schedule` page.
+
+The credential model is separate from `assignment_response_tokens`. Migration `20260714122000_volunteer_schedule_access.sql` adds `volunteer_schedule_access_tokens` with SHA-256 verifier storage only, purpose/version constraints, default 30-day TTL, 1-hour minimum, 90-day maximum, revocation, and last-used tracking. Raw bearers are returned only once by `issue_volunteer_schedule_access`; the database stores only the verifier hash. Revocation through `revoke_volunteer_schedule_access` is idempotent and does not delete assignments, assignment responses, volunteer profiles, or token history.
+
+`/v/schedule` is read-only. It validates the schedule cookie through `read_volunteer_schedule` using a public server-side RPC client and returns only the token volunteer's own published same-workspace assignments. Draft/private Calendar items, archived/canceled items, assignments for other volunteers, unrelated workspaces, inactive/on-hold volunteer profiles, expired/revoked/unknown bearers, and malformed tokens fail closed or render calm empty/unavailable states. Declined assignments remain visible to the volunteer as historical/current response state, but Confirm/Deny buttons are not active in 12.20.
+
+The browser handoff keeps the bearer out of the clean schedule URL, HTML, localStorage, sessionStorage, and readable cookies. The access route uses a harmless linked handoff state to ensure Chromium/loopback cookie availability before replacing to `/v/schedule`; no bearer is placed in the query string. Cookie attributes are HttpOnly, SameSite=Lax, session-only, Secure on HTTPS, and loopback-compatible for local preview.
+
+Follow-up Contact remains a known projection gap for the volunteer schedule page because the current project-contact schema does not yet contain reviewed volunteer-facing contact display/email/phone fields. The page shows calm copy that project-team contact details will be included in a later beta slice rather than exposing Auth metadata, raw contact rows, grants, capabilities, or private data.
+
+Local validation now includes `npm run test:volunteer-schedule-access` and `npm run test:volunteer-schedule-access:browser`. The local disposable database proof validates hash-only issuance, TTL bounds, safe read filtering, published-only visibility, needs/confirmed/declined response projection, revocation, direct table denial, role/title non-authorization, grant/contact/workspace isolation, malformed/protected input failure, no assignment-response-token coupling, no email/public lookup/remembered-device behavior, no secret output, and zero residue. The browser proof validates the real preview routes, clean bearer exchange, HttpOnly session cookie, persisted schedule display, detail sheet, unavailable/empty states, Not-you cookie clearing, 390px mobile layout, no horizontal overflow, no unsafe leakage, and no `/v/demo` mock leakage.
+
+Because 12.20 adds a migration, RPCs, and generated Supabase public-schema type changes, hosted non-production validation is required before 12.21. Recommended next slice: `12.20.1 Hosted Staging Volunteer Schedule Access Validation Gate` against `project-local-staging` (`kfuujcfxoayukywvtaeh`). Do not begin Confirm/Deny, email, remembered devices, public lookup, response-link reveal/copy activation, or real Bozeman data entry until that gate passes.

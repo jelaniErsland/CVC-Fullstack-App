@@ -1,5 +1,43 @@
 # Project History
 
+## Iteration 12.20 - Secure Account-Light Volunteer Schedule Access
+
+Summary:
+- Added the first permanent volunteer-facing schedule access path without cutting over `/v/demo` and without reusing assignment-response tokens. `/v/access/[token]` exchanges a dedicated bearer for a session-only HttpOnly cookie, and `/v/schedule` renders a read-only clean schedule page for that volunteer's own published assignments.
+- Added migration `20260714122000_volunteer_schedule_access.sql`, `volunteer_schedule_access_tokens`, and authenticated/public RPCs for `issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, and `read_volunteer_schedule`. Bearers are database-generated, returned once, stored as SHA-256 verifier hashes only, scoped to one workspace/volunteer, default to 30 days, and are bounded from 1 hour to 90 days.
+- Issuance and revocation require authenticated project-contact context plus effective `assignments.edit`; role/title strings, browser-provided workspace/contact/capability data, cross-contact grants, cross-workspace grants, revoked/expired/inactive grants, inactive contacts, inactive workspaces, inactive/on-hold volunteers, malformed ids, and unsupported input fail closed.
+- The public read boundary validates only the dedicated schedule bearer and projects safe schedule fields for active assignments on published active Calendar items. Draft/private items, archived/canceled items, other volunteers, other workspaces, response-token rows, token hashes, raw grants/capabilities, Auth metadata, provider errors, and private volunteer/contact details are not exposed.
+- Added a volunteer schedule UI with calm unavailable/empty/ready states, assignment detail sheet, response-state labels, secure-access explanation, Not-you cookie clearing, and Follow-up Contact gap copy. Confirm/Deny remains inactive; email, public lookup, remembered devices, response-link reveal/copy, assignment-detail links, real Bozeman data, and service-role application behavior remain out of scope.
+- The access handoff preserves a clean final `/v/schedule` URL while keeping the bearer out of the query string, HTML, localStorage, sessionStorage, and readable cookies. The cookie is HttpOnly, SameSite=Lax, session-only, Secure on HTTPS, scoped to `/v`, and loopback-compatible.
+
+Changed files:
+- `supabase/migrations/20260714122000_volunteer_schedule_access.sql`
+- `lib/supabase/database.types.ts`
+- `lib/volunteerScheduleAccess/token.ts`
+- `lib/volunteerScheduleAccess/server.ts`
+- `app/v/access/[token]/route.ts`
+- `app/v/schedule/page.tsx`
+- `components/VolunteerScheduleAccessRefresh.tsx`
+- `components/VolunteerScheduleClient.tsx`
+- `proxy.ts`
+- `scripts/volunteer-schedule-access-regression.mjs`
+- `scripts/volunteer-schedule-access-browser-regression.mjs`
+- `package.json`
+- Canonical docs updated for 12.20.
+
+Validation:
+- `npm run test:volunteer-schedule-access` passed with disposable local fixtures and zero residue.
+- `npm run test:volunteer-schedule-access:browser` passed against a loopback production preview with redirected logs, proving clean bearer exchange, HttpOnly session cookie, persisted schedule display, detail sheet, mobile width, Not-you clearing, invalid/empty states, no unsafe leakage, and no mock leakage.
+- Relevant Calendar publication, assignment, source-selection, item-management, response-token/route/link, assignment-detail, grants, Bozeman, MVP, Volunteers, lint/type/build, and diff checks were run for compatibility.
+- Hosted validation is required because this slice adds a migration, RPCs, and generated public-schema type changes. It was not run in 12.20.
+
+Limitations:
+- Confirm/Deny/Confirm All, initial assignment email, remembered-device behavior, manual public lookup, response-link reveal/copy activation, volunteer self-editing, broad public portal replacement, and real Bozeman production data remain unimplemented.
+- Follow-up Contact is not yet safely projected to volunteers because the current project-contact schema lacks reviewed volunteer-facing contact fields.
+
+Next recommended slice:
+- `12.20.1 Hosted Staging Volunteer Schedule Access Validation Gate`.
+
 ## Iteration 12.19.1 - Hosted Staging Calendar Publication Visibility Validation Gate
 
 Summary:
