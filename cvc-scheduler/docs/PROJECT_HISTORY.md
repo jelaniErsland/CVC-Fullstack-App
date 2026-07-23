@@ -1,5 +1,33 @@
 # Project History
 
+## Iteration 12.19.1 - Hosted Staging Calendar Publication Visibility Validation Gate
+
+Summary:
+- Completed the hosted non-production validation gate for the 12.19 Calendar publication-visibility boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The target was verified as `ACTIVE_HEALTHY`.
+- The first hosted migration application advanced staging from `20260714121800` to `20260714121900` after correcting a safe typo in the unapplied migration's leading SQL comment (`git--` to `--`). The final successful gate verified migration level `20260714121900` before and after behavioral validation.
+- Validated hosted generated public-schema type parity after refreshing `lib/supabase/database.types.ts` from hosted generation with UTF-8-safe output. Product/runtime code did not change during the hosted gate.
+- Validated publication defaults, legacy unknown-owner draft fail-closed behavior, server-derived creator and Follow-up Contact metadata, creator-only draft reads, published same-workspace cross-contact visibility, safe publication projection, `publish_calendar_item` authorization and idempotency, preservation of assignments/source/Follow-up Contact/provenance, owner-only draft edit and assignment preparation, assignment-detail draft privacy, draft response-token/reveal/public-response denial, existing published token/response compatibility, direct table-write denial, cross-contact and cross-workspace isolation, revoked/expired/inactive grant denial, role/title non-authorization, malformed input rejection, no email/delivery/public lookup/volunteer schedule/remembered-device coupling, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+- Added `npm run test:calendar-publication-visibility:hosted` and `scripts/hosted-calendar-publication-visibility-regression.mjs` as the repeatable exact-opt-in hosted gate. The gate refuses to run without `RUN_HOSTED_CALENDAR_PUBLICATION_VISIBILITY_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Changed files:
+- `scripts/hosted-calendar-publication-visibility-regression.mjs`
+- `package.json`
+- `supabase/migrations/20260714121900_calendar_publication_visibility.sql`
+- `lib/supabase/database.types.ts`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- Hosted staging validation passed with exact-run and namespace zero residue. Local compatibility passed after the hosted gate.
+
+Recommended next slice:
+- `12.20 Secure Account-Light Volunteer Schedule Access`.
+
 ## Iteration 12.19 - Draft/Private Versus Published/Live Calendar Visibility
 
 - Added the first local persisted Calendar publication visibility boundary. New `/admin/calendar` scheduled items are now private drafts owned by the creating project contact; publishing is a one-way/idempotent server action for the draft owner with effective `calendar.edit`.
@@ -10,11 +38,11 @@
 - Preserved the beta boundaries: no email, no volunteer schedule access, no public lookup, no response-link reveal/copy UI activation, no assignment-detail navigation links, no Calendar delete, no drag/drop/resize/recurrence, no `/admin/tasks` cutover, no real Bozeman/Belgrade data, no service-role application path, and no mock/persisted Calendar truth mixing.
 - Added `npm run test:calendar-publication-visibility`, which passed locally with disposable fixtures and proved draft owner-only reads, publish, published cross-contact visibility, draft assignment/token gating, direct table-write denial, grant lifecycle failure, role/title non-authorization, safe output, and zero-residue cleanup.
 - Updated affected Calendar/assignment/response/read-model regressions for the new publication defaults. Existing route/read-model/source/assignment/volunteer/grant guardrails remain green locally.
-- Because this slice adds a migration, RPC/function behavior, and generated Supabase type changes, hosted non-production validation is required before hosted beta dependency.
+- The required hosted non-production validation for this migration/RPC/generated-type boundary is recorded in the completed 12.19.1 gate above.
 
 Next recommended slice:
 
-- `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`.
+- Superseded by completed `12.19.1`; next beta-critical work may proceed to `12.20 Secure Account-Light Volunteer Schedule Access`.
 
 ## Iteration 12.18.1 - Hosted Staging Assignment Management Validation Gate
 

@@ -275,7 +275,17 @@ npm run test:calendar-publication-visibility
 
 This command requires local Supabase, refuses non-loopback targets, applies the local 12.19 publication migration if the disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves new items default to private draft with server-derived creator/Follow-up Contact, owner-only draft reads/edits, non-owner draft invisibility, draft assignment preparation limited to the creator, draft response-token/reveal/public-response denial, one-way publish through `publish_calendar_item`, published cross-contact visibility, published edit compatibility, direct authenticated table-write denial, role/title non-authorization, revoked/expired/inactive grant denial, no email/public schedule activation, and no credential logging.
 
-Because 12.19 changes migration/RPC/generated-type behavior, hosted staging validation is required next as `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate` before hosted beta dependency or 12.20. The approved hosted target remains non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`), expected to advance from `20260714121800` to `20260714121900` through `20260714121900_calendar_publication_visibility.sql`.
+12.19.1 completed the required hosted non-production validation gate for migration `20260714121900_calendar_publication_visibility.sql`, `publish_calendar_item`, the publication-aware Calendar/assignment/response functions, and generated public-schema type parity against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The first migration application advanced staging from `20260714121800` to `20260714121900` after correcting a safe typo in the unapplied migration's leading SQL comment; the final successful hosted run verified `20260714121900` before and after behavior validation. The hosted gate validated `ACTIVE_HEALTHY` target status, publication defaults, legacy draft fail-closed behavior, creator-only draft reads, published cross-contact visibility, safe projection, publish authorization/idempotency, assignment/token/public-response gating, direct table-write denial, capability isolation, malformed-input rejection, no email/delivery/public-lookup/volunteer-schedule/remembered-device coupling, safe output, generated-type parity after a UTF-8-safe refresh, and exact-run plus namespace zero residue.
+
+To rerun the hosted non-production Calendar publication-visibility gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_CALENDAR_PUBLICATION_VISIBILITY_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:calendar-publication-visibility:hosted
+Remove-Item Env:RUN_HOSTED_CALENDAR_PUBLICATION_VISIBILITY_VALIDATION
+```
+
+The command refuses every other target, verifies `project-local-staging` (`kfuujcfxoayukywvtaeh`) is `ACTIVE_HEALTHY`, advances staging only through the reviewed `20260714121900_calendar_publication_visibility.sql` migration when pending, compares hosted generated public-schema types with committed types, creates disposable `qa-12-19-1-*` Auth/product fixtures, validates publication visibility/RLS/RPC behavior, and verifies exact-run plus namespace zero residue. Current gate status: passed on the approved non-production staging target; staging is validated at `20260714121900`.
 
 To rerun the hosted non-production Calendar assignment-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 

@@ -1,4 +1,4 @@
-git-- Iteration 12.19: draft/private versus published/live Calendar visibility.
+-- Iteration 12.19: draft/private versus published/live Calendar visibility.
 -- Draft Calendar items are private to their creating project contact. Publishing is
 -- one-way and does not send email, create public visibility, or activate response links.
 

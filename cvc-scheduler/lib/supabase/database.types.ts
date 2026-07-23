@@ -721,10 +721,6 @@ export type Database = {
         }
         Returns: string
       }
-      publish_calendar_item: {
-        Args: { p_calendar_item_id: string }
-        Returns: string
-      }
       create_manual_volunteer_profile: {
         Args: {
           p_congregation?: string
@@ -761,6 +757,10 @@ export type Database = {
           token_expires_at: string
           token_id: string
         }[]
+      }
+      publish_calendar_item: {
+        Args: { p_calendar_item_id: string }
+        Returns: string
       }
       read_assignment_detail_context: {
         Args: { p_assignment_id: string }

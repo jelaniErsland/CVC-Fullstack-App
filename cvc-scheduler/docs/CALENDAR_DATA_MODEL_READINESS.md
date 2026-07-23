@@ -248,7 +248,15 @@ Assignment and response boundaries now respect publication visibility. The draft
 
 The Calendar UI remains Calendar-first and narrow. Draft event blocks are visually distinguished, the inspector explains draft/private versus published/live status calmly, and the publish confirmation explicitly says no email, response link, or volunteer schedule access is sent or activated. No Calendar delete, drag/drop, resize, recurrence, assignment-detail entry link, email, public lookup, remembered device, `/admin/tasks` cutover, real Bozeman/Belgrade data, service-role application path, or mock/persisted truth mixing was added.
 
-Local validation: `npm run test:calendar-publication-visibility` passed with disposable fixtures and zero residue. Because this slice adds migration `20260714121900_calendar_publication_visibility.sql`, RPC/function changes, and generated public-schema type changes, hosted non-production validation is required next as `12.19.1 Hosted Staging Calendar Publication Visibility Validation Gate`.
+Local validation: `npm run test:calendar-publication-visibility` passed with disposable fixtures and zero residue.
+
+## 12.19.1 Hosted Staging Calendar Publication Visibility Validation
+
+12.19.1 completes the hosted non-production validation gate for the 12.19 publication boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The target was verified as `ACTIVE_HEALTHY`. The first hosted migration application advanced staging from `20260714121800` to `20260714121900` after correcting a safe typo in the unapplied migration's leading SQL comment; the final successful hosted gate verified migration level `20260714121900` before and after validation.
+
+The gate compares hosted generated public-schema types to `lib/supabase/database.types.ts`; committed generated types were refreshed from hosted generation using UTF-8-safe output so they match the validated schema. Product/runtime code did not change during the gate.
+
+Hosted disposable validation proves new rows default to private draft, unknown-owner legacy drafts fail closed, creator and Follow-up Contact metadata are server-derived, draft reads are creator-only, published rows are visible to authorized same-workspace contacts, safe publication projection excludes raw creator/publisher/grant/capability/provider details, `publish_calendar_item` authorization and idempotency hold, publication preserves assignments/source/Follow-up Contact/provenance, draft edit and assignment preparation remain owner-private, assignment-detail reads fail closed for drafts outside the owner context, draft response-token/reveal/public-response boundaries fail closed, existing published token/response behavior remains compatible, direct table writes remain denied, capability/contact/workspace/grant lifecycle isolation holds, role/title strings do not authorize, malformed input is rejected safely, no email/delivery/public lookup/volunteer schedule/remembered-device behavior is introduced, output stays credential-safe, and exact-run plus namespace cleanup leaves hosted disposable residue count `0`.
 
 ## Iteration 11.9 persisted boundary
 
