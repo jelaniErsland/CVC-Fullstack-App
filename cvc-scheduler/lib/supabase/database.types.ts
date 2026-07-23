@@ -615,10 +615,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "volunteer_schedule_access_tokens_issued_by_project_contact_id_fkey"
+            foreignKeyName: "volunteer_schedule_access_tok_issued_by_project_contact_id_fkey"
             columns: ["issued_by_project_contact_id"]
             isOneToOne: false
             referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_schedule_access_tokens_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
           {
@@ -627,13 +634,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "volunteer_profiles"
             referencedColumns: ["workspace_id", "id"]
-          },
-          {
-            foreignKeyName: "volunteer_schedule_access_tokens_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -882,27 +882,27 @@ export type Database = {
       read_volunteer_schedule: {
         Args: { p_bearer_token: string }
         Returns: {
-          active_assigned_count: number | null
-          assignment_reference: string | null
-          confirmed_count: number | null
-          current_response_status: string | null
-          declined_count: number | null
-          end_date: string | null
-          end_time: string | null
-          follow_up_contact_display_name: string | null
-          follow_up_contact_email: string | null
-          follow_up_contact_phone: string | null
-          needed_count: number | null
-          schedule_kind: string | null
-          schedule_notes: string | null
+          active_assigned_count: number
+          assignment_reference: string
+          confirmed_count: number
+          current_response_status: string
+          declined_count: number
+          end_date: string
+          end_time: string
+          follow_up_contact_display_name: string
+          follow_up_contact_email: string
+          follow_up_contact_phone: string
+          needed_count: number
+          schedule_kind: string
+          schedule_notes: string
           schedule_state: string
-          start_date: string | null
-          start_time: string | null
-          task_title: string | null
-          task_type: string | null
-          volunteer_display_name: string | null
-          workspace_display_name: string | null
-          workspace_timezone: string | null
+          start_date: string
+          start_time: string
+          task_title: string
+          task_type: string
+          volunteer_display_name: string
+          workspace_display_name: string
+          workspace_timezone: string
         }[]
       }
       record_assignment_response_link_reveal_event: {

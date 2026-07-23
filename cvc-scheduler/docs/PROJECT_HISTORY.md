@@ -1,5 +1,33 @@
 # Project History
 
+## Iteration 12.20.1 - Hosted Staging Volunteer Schedule Access Validation Gate
+
+Summary:
+- Completed the hosted non-production validation gate for the 12.20 volunteer schedule access boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The target was verified as `ACTIVE_HEALTHY`.
+- Staging had already been advanced to `20260714122000` during the gate's first hosted attempt; the final successful run verified migration level `20260714122000` before and after behavior validation.
+- Validated hosted generated public-schema type parity after refreshing `lib/supabase/database.types.ts` from hosted generation with UTF-8-safe output. Product/runtime code did not change during the hosted gate.
+- Added `npm run test:volunteer-schedule-access:hosted` and `scripts/hosted-volunteer-schedule-access-regression.mjs` as the repeatable exact-opt-in hosted gate. The gate refuses to run without `RUN_HOSTED_VOLUNTEER_SCHEDULE_ACCESS_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- Validated dedicated volunteer schedule token separation from `assignment_response_tokens`, SHA-256 verifier-only storage, TTL defaults and bounds, server-derived issuer/workspace/volunteer scope, issuance/revocation authorization through effective `assignments.edit`, public read-only ready/ready-empty/unavailable schedule states, published-assignment filtering, current-response truth, safe volunteer schedule projection, direct table-write denial, cross-contact/cross-workspace and revoked/expired/inactive grant isolation, inactive/on-hold volunteer fail-closed behavior, role/title non-authorization, malformed/protected input rejection, multiple credential independence, last-used behavior, hosted `/v/access/[token]` to `/v/schedule` bearer exchange, clean URL, HttpOnly SameSite=Lax session cookie, request host preservation, Not-you clearing, 390px mobile layout, focus behavior, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+
+Changed files:
+- `scripts/hosted-volunteer-schedule-access-regression.mjs`
+- `package.json`
+- `lib/supabase/database.types.ts`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- Hosted staging validation passed with exact-run and namespace zero residue.
+- Local compatibility passed after the hosted gate, including volunteer schedule access DB/browser proof, publication/assignment/response/assignment-detail/Calendar/read-model/task/grant/Bozeman/volunteer guardrails, lint, typecheck, build, and `git diff --check`.
+
+Recommended next slice:
+- `12.21 Volunteer Confirm/Deny Round Trip`.
+
 ## Iteration 12.20 - Secure Account-Light Volunteer Schedule Access
 
 Summary:
@@ -36,7 +64,7 @@ Limitations:
 - Follow-up Contact is not yet safely projected to volunteers because the current project-contact schema lacks reviewed volunteer-facing contact fields.
 
 Next recommended slice:
-- `12.20.1 Hosted Staging Volunteer Schedule Access Validation Gate`.
+- Superseded by completed `12.20.1`; next beta-critical work may proceed to `12.21 Volunteer Confirm/Deny Round Trip`.
 
 ## Iteration 12.19.1 - Hosted Staging Calendar Publication Visibility Validation Gate
 

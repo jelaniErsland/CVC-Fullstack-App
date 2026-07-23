@@ -295,7 +295,17 @@ Remove-Item Env:PREVIEW_BASE_URL
 
 The browser proof creates disposable local fixtures, issues a dedicated schedule bearer, opens `/v/access/[token]`, verifies the final clean `/v/schedule` URL, checks the HttpOnly SameSite=Lax session cookie, validates persisted schedule display/detail sheet/empty/unavailable states/Not-you clearing/390px width/no horizontal overflow, and proves the bearer is not present in HTML, localStorage, sessionStorage, readable cookies, or the final URL. Stop preview before final `npx tsc --noEmit` or `npm run build`.
 
-12.20 adds migration `20260714122000_volunteer_schedule_access.sql`, generated public-schema type changes, and new RPCs (`issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, `read_volunteer_schedule`). Hosted non-production validation is therefore required before beta reliance. The next hosted gate should target only `project-local-staging` (`kfuujcfxoayukywvtaeh`), advance staging from `20260714121900` to `20260714122000`, compare generated public-schema types, validate hosted issuance/revocation/read/cookie route behavior with disposable fixtures, and verify exact-run plus namespace zero residue.
+12.20 adds migration `20260714122000_volunteer_schedule_access.sql`, generated public-schema type changes, and new RPCs (`issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, `read_volunteer_schedule`). 12.20.1 completed the required hosted non-production validation gate against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The final successful run verified the target as `ACTIVE_HEALTHY`, verified staging at `20260714122000` before and after behavior validation, refreshed generated public-schema types from hosted output with UTF-8-safe generation, validated hosted issuance/revocation/read/cookie route behavior with disposable fixtures, and verified exact-run plus namespace zero residue.
+
+To rerun the hosted non-production volunteer schedule access gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_VOLUNTEER_SCHEDULE_ACCESS_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:volunteer-schedule-access:hosted
+Remove-Item Env:RUN_HOSTED_VOLUNTEER_SCHEDULE_ACCESS_VALIDATION
+```
+
+The command refuses every other target, verifies `project-local-staging` (`kfuujcfxoayukywvtaeh`) is `ACTIVE_HEALTHY`, applies only the reviewed `20260714122000_volunteer_schedule_access.sql` migration when pending, compares hosted generated public-schema types with committed types, creates disposable `qa-12-20-1-*` Auth/product fixtures, validates dedicated token separation, hash-only storage, TTL policy, `assignments.edit` issuance/revocation authorization, public ready/empty/unavailable schedule reads, published-assignment filtering, response-state truth, direct table denial, isolation, multiple credentials, last-used behavior, hosted `/v/access/[token]` to `/v/schedule` exchange, clean URL, HttpOnly SameSite=Lax session cookie, host preservation, Not-you clearing, 390px layout, focus behavior, safe output, and exact-run plus namespace zero residue. Current gate status: passed on the approved non-production staging target; hosted disposable residue count was `0`.
 
 To rerun the hosted non-production Calendar publication-visibility gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 

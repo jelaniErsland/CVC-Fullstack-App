@@ -264,7 +264,15 @@ Hosted disposable validation proves new rows default to private draft, unknown-o
 
 The volunteer schedule read model is intentionally downstream of publication. `/v/schedule` shows only active assignments on active published Calendar items for the volunteer profile tied to the validated schedule bearer. Draft/private items, wrong-volunteer assignments, wrong-workspace rows, canceled/archived rows, response-token rows, raw grants/capabilities, token hashes, provider errors, and private volunteer/contact fields are excluded. Declined assignments can remain visible as response state; declined and canceled assignments do not become Calendar counters or mock arrays.
 
-The account-light route remains read-only in 12.20. It does not add Confirm/Deny, Confirm All, email, remembered-device access, manual public lookup, assignment-detail entry links, response-link reveal/copy, or `/v/demo` mock-to-real mixing. Local database and browser validation passed; hosted staging validation is required next because migration `20260714122000_volunteer_schedule_access.sql`, new RPCs, and generated public-schema type changes were added.
+The account-light route remains read-only in 12.20. It does not add Confirm/Deny, Confirm All, email, remembered-device access, manual public lookup, assignment-detail entry links, response-link reveal/copy, or `/v/demo` mock-to-real mixing. Local database and browser validation passed.
+
+## 12.20.1 Hosted Staging Volunteer Schedule Access Validation
+
+12.20.1 completes the hosted non-production validation gate for migration `20260714122000_volunteer_schedule_access.sql`, RPCs `issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, and `read_volunteer_schedule`, hosted generated public-schema type parity, and hosted-backed `/v/access/[token]` / `/v/schedule` route behavior.
+
+The gate is locked to `project-local-staging` (`kfuujcfxoayukywvtaeh`) and passed with the project verified as `ACTIVE_HEALTHY`. Staging was verified at migration `20260714122000` before and after the successful run. Hosted proof covered dedicated token separation from assignment-response tokens, hash-only storage, TTL default/bounds, issuance/revocation authorization, public ready/ready-empty/unavailable reads, published-assignment filtering, current-response truth, safe projection, direct table denial, cross-contact/cross-workspace and revoked/expired/inactive grant isolation, role/title non-authorization, inactive/on-hold volunteer fail-closed behavior, multiple credential independence, last-used behavior, clean bearer exchange, HttpOnly SameSite=Lax session cookie scoped to `/v`, request host preservation, Not-you clearing, mobile layout, focus behavior, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+
+The hosted gate refreshed committed generated public-schema types from hosted output using UTF-8-safe generation. Product/runtime code did not change during the gate.
 
 ## Iteration 11.9 persisted boundary
 
