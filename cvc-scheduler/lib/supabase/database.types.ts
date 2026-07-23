@@ -672,7 +672,7 @@ export type Database = {
       }
       create_calendar_assignments_batch: {
         Args: {
-          p_assignment_note: string | null
+          p_assignment_note: string
           p_calendar_item_id: string
           p_volunteer_profile_ids: string[]
         }

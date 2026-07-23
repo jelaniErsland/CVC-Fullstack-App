@@ -42,9 +42,9 @@ Critical path from the post-12.13 state:
 6. `12.17 Calendar Task Preset Selector and One-Off Definition Path`
    - Completed locally and hosted-validated through 12.17.1.
 7. `12.18 Volunteer Assignment Picker and Create/Cancel Commands`
-   - Completed locally: persisted Calendar inspector assignment picker, atomic assignment create, cancel, response-state display, and local validation exist. Hosted validation is required because 12.18 adds migration/RPC/generated-type changes.
+   - Completed locally and hosted-validated through 12.18.1: persisted Calendar inspector assignment picker, atomic assignment create, cancel, response-state display, local validation, and hosted staging validation exist.
 8. `12.18.1 Hosted Staging Assignment Management Validation Gate`
-   - Required before hosted beta dependency or 12.19.
+   - Completed: non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is validated at `20260714121800`; picker projection, atomic assignment create, cancellation, coverage truth, capability/isolation, direct-table-denial, generated type parity, and zero-residue checks passed.
 9. `12.19 Draft/Private Versus Published/Live Calendar Visibility`
 10. `12.20 Secure Account-Light Volunteer Schedule Access`
 11. `12.21 Volunteer Confirm/Deny Round Trip`

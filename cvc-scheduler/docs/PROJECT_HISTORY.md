@@ -1,5 +1,32 @@
 # Project History
 
+## Iteration 12.18.1 - Hosted Staging Assignment Management Validation Gate
+
+Summary:
+- Completed the hosted non-production validation gate for the 12.18 Calendar assignment-management boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The target was verified as `ACTIVE_HEALTHY`.
+- Staging had been advanced from `20260714121700` to `20260714121800` during this gate's first hosted run; the final successful run verified migration level `20260714121800` before and after validation.
+- Validated hosted generated public-schema type parity after one narrow committed type correction: `create_calendar_assignments_batch.p_assignment_note` matches hosted generation as `string`, consistent with the existing generated single-assignment RPC style. Product/runtime code did not change during the hosted gate.
+- Validated picker authorization and safe projection under `volunteers.view`, same-workspace/lifecycle filtering, safe empty picker state, atomic multi-volunteer batch creation through `create_calendar_assignments_batch`, duplicate/retry rejection, wrong-workspace/ineligible volunteer rejection, over-assignment behavior, `needs_response` initialization, blank optional note normalization to `null`, cancellation through `cancel_calendar_assignment`, response and coverage truth from `calendar_assignments` plus current `assignment_responses`, capability/contact/workspace/grant lifecycle isolation, role/title non-authorization, direct table-write denial for Calendar assignments/responses, volunteer profiles, and Calendar items, malformed input rejection, no response-token/email/publication side effects, safe output, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+- Added `npm run test:calendar-assignment-management:hosted` and `scripts/hosted-calendar-assignment-management-regression.mjs` as the repeatable exact-opt-in hosted gate. The gate refuses to run without `RUN_HOSTED_CALENDAR_ASSIGNMENT_MANAGEMENT_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Changed files:
+- `scripts/hosted-calendar-assignment-management-regression.mjs`
+- `package.json`
+- `lib/supabase/database.types.ts`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+
+Validation:
+- Hosted staging validation passed with exact-run and namespace zero residue. Local compatibility passed after the hosted gate.
+
+Recommended next slice:
+- `12.19 Draft/Private Versus Published/Live Calendar Visibility`.
+
 ## Iteration 12.18 - Volunteer Assignment Picker and Create/Cancel Commands
 
 Summary:
@@ -32,10 +59,10 @@ Changed files:
 - `docs/SUPABASE_LOCAL_SETUP.md`
 
 Validation:
-- Local focused validation passed with zero residue. Because this slice adds a migration, a new authenticated RPC, and generated public-schema type changes, hosted non-production validation is required before 12.19 or hosted beta dependency. The local implementation does not itself target production or use hosted data.
+- Local focused validation passed with zero residue. Because this slice added a migration, a new authenticated RPC, and generated public-schema type changes, hosted non-production validation was required before 12.19 or hosted beta dependency. That requirement was satisfied by 12.18.1.
 
 Recommended next slice:
-- `12.18.1 Hosted Staging Assignment Management Validation Gate`, before 12.19.
+- Superseded by completed `12.18.1`; next beta-critical work may proceed to `12.19 Draft/Private Versus Published/Live Calendar Visibility`.
 
 ## Iteration 12.17.1 - Hosted Staging Calendar Source Selection Validation Gate
 

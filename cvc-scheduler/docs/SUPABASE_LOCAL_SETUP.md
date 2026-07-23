@@ -265,7 +265,15 @@ npm run test:calendar-assignment-management
 
 This command requires local Supabase, refuses non-loopback targets, applies the local 12.18 assignment-management migration if the running disposable database has not yet seen it, uses disposable fixtures only, uses no service-role application path, and cleans up with zero residue. It proves safe ready-volunteer picker projection under `volunteers.view`, missing-volunteer-view unavailable behavior, atomic assignment batch creation through `create_calendar_assignments_batch`, `needs_response` current response creation, assignment cancel through `cancel_calendar_assignment`, over-target assignment-derived coverage, duplicate/wrong-workspace/on-hold rejection, view-only/role-only/wrong-contact/revoked/expired/inactive denial, direct authenticated table-write denial, no response-token creation, and no credential logging.
 
-Because 12.18 adds migration `20260714121800_calendar_assignment_management.sql`, a new authenticated RPC, and generated public-schema type changes, hosted non-production validation is required before hosted beta dependency or 12.19. The required next gate is `12.18.1 Hosted Staging Assignment Management Validation Gate` against `project-local-staging` (`kfuujcfxoayukywvtaeh`).
+12.18.1 completed the required hosted non-production validation gate for migration `20260714121800_calendar_assignment_management.sql`, authenticated RPC `create_calendar_assignments_batch`, cancellation compatibility, and generated public-schema type parity against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The hosted gate validated `ACTIVE_HEALTHY` target status, migration level `20260714121800`, picker authorization/projection, workspace/lifecycle filtering, atomic batch create, duplicate/retry rejection, over-assignment consistency, response initialization, cancellation, coverage truth, capability isolation, direct table-write denial, blank-note normalization, malformed-input rejection, no response-token/email/publication side effects, safe output, and exact-run plus namespace zero residue.
+
+To rerun the hosted non-production Calendar assignment-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_CALENDAR_ASSIGNMENT_MANAGEMENT_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:calendar-assignment-management:hosted
+Remove-Item Env:RUN_HOSTED_CALENDAR_ASSIGNMENT_MANAGEMENT_VALIDATION
+```
 
 To rerun the hosted non-production Calendar item-management gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
