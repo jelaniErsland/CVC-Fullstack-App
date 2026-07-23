@@ -1,5 +1,41 @@
 # Project History
 
+## Iteration 12.21 - Volunteer Confirm/Deny Round Trip
+
+Summary:
+- Added the first real persisted volunteer response round trip from account-light `/v/schedule` without cutting over `/v/demo`, adding email, remembered devices, public lookup, response-link reveal/copy, assignment-detail entry links, or service-role product behavior.
+- Added migration `20260714122100_volunteer_schedule_responses.sql`. It adds a trusted Calendar assignment start/cutoff helper, replaces `read_volunteer_schedule` with safe response action eligibility plus response notes, adds `submit_volunteer_schedule_assignment_response`, adds `confirm_all_volunteer_schedule_assignments`, and tightens `submit_assignment_response_by_token` with the same 48-hour/start-lock policy.
+- Volunteers can Confirm an eligible assignment, mark an eligible assignment as `Can’t make it` with an optional bounded/normalized note, change `confirmed` to `declined` only before the 48-hour cutoff, change `declined` to `confirmed` before start, and Confirm All currently pending eligible assignments.
+- Schedule-cookie response mutations record `response_source = 'volunteer_schedule'`; the older assignment-response-token route remains the `public_token` provenance boundary. The focused local regression proves schedule responses do not create, consume, reveal, or mutate `assignment_response_tokens`.
+- The database derives workspace/volunteer/assignment scope from the dedicated schedule credential and derives cutoff behavior from persisted Calendar item date/time/timezone plus server time. The browser never receives the bearer and cannot provide workspace/contact/capability/source authority.
+- Assignment rows plus the one current `assignment_responses` row remain the only response and coverage truth. No Calendar counters, mock volunteer arrays, response-token rows, email/delivery rows, volunteer accounts, public lookup, or remembered-device state are created.
+- The existing `/respond/[token]` submit RPC now shares the 48-hour/start-lock mutation policy while remaining single-assignment and not exposing response-link admin reveal/copy.
+
+Changed files:
+- `supabase/migrations/20260714122100_volunteer_schedule_responses.sql`
+- `lib/supabase/database.types.ts`
+- `lib/volunteerScheduleAccess/token.ts`
+- `lib/volunteerScheduleAccess/server.ts`
+- `app/v/schedule/actions.ts`
+- `app/v/schedule/page.tsx`
+- `components/VolunteerScheduleClient.tsx`
+- `scripts/volunteer-schedule-responses-regression.mjs`
+- `scripts/volunteer-schedule-responses-browser-regression.mjs`
+- `package.json`
+- Canonical docs updated for 12.21.
+
+Validation:
+- `npm run test:volunteer-schedule-responses` passed with disposable local fixtures and zero residue.
+- `npm run test:volunteer-schedule-responses:browser` passed against a loopback production preview with redirected logs, proving `/v/access/[token]` to `/v/schedule`, Confirm, Can’t make it with note, Confirm All, reload persistence, inside-48 guidance, 390px layout, safe cookie behavior, and cleanup.
+- `npm run test:volunteer-schedule-access`, `npm run lint`, `npx tsc --noEmit`, and `npm run build` passed during implementation. The full compatibility matrix is recorded in the slice final report.
+
+Limitations:
+- Hosted staging validation is required before beta use because 12.21 changes schema/RPC/generated types.
+- Initial assignment email, remembered devices, manual public lookup, `/v/demo` cutover, response-link reveal/copy activation, assignment-detail entry links, volunteer self-editing, broad public portal replacement, and real Bozeman production data remain unimplemented.
+
+Next recommended slice:
+- `12.21.1 Hosted Staging Volunteer Response Round-Trip Validation Gate`.
+
 ## Iteration 12.20.1 - Hosted Staging Volunteer Schedule Access Validation Gate
 
 Summary:

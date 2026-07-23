@@ -3,18 +3,23 @@
 import {
   ArrowRight,
   CalendarDays,
+  Check,
   Clock3,
+  Loader2,
   LogOut,
   MessageCircle,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
+import type { VolunteerScheduleActionResult } from "@/app/v/schedule/actions";
 import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/token";
 
 type VolunteerScheduleClientProps = Readonly<{
   assignments: readonly VolunteerScheduleAssignment[];
+  confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
   leaveAction: () => Promise<void>;
+  submitResponseAction: (formData: FormData) => Promise<VolunteerScheduleActionResult>;
 }>;
 
 const responseLabels: Record<
@@ -81,15 +86,52 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
 
 export function VolunteerScheduleClient({
   assignments,
+  confirmAllAction,
   leaveAction,
+  submitResponseAction,
 }: VolunteerScheduleClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] =
+    useState<VolunteerScheduleActionResult | null>(null);
+  const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
+  const [isConfirmAllPending, startConfirmAllTransition] = useTransition();
+  const [isResponsePending, startResponseTransition] = useTransition();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLButtonElement | null>(null);
   const selected = assignments.find(
     (assignment) => assignment.assignmentReference === selectedId,
   );
+  const confirmAllCount = assignments.filter(
+    (assignment) =>
+      assignment.currentResponseStatus === "needs_response" && assignment.canConfirm,
+  ).length;
+
+  function submitResponse(
+    assignment: VolunteerScheduleAssignment,
+    status: "confirmed" | "declined",
+    note?: string | null,
+  ) {
+    setPendingAssignmentId(assignment.assignmentReference);
+    setActionNotice(null);
+    const formData = new FormData();
+    formData.set("assignmentId", assignment.assignmentReference);
+    formData.set("status", status);
+    if (note) formData.set("note", note);
+    startResponseTransition(async () => {
+      const result = await submitResponseAction(formData);
+      setActionNotice(result);
+      setPendingAssignmentId(null);
+    });
+  }
+
+  function confirmAll() {
+    setActionNotice(null);
+    startConfirmAllTransition(async () => {
+      const result = await confirmAllAction();
+      setActionNotice(result);
+    });
+  }
 
   useEffect(() => {
     if (!selected) return undefined;
@@ -112,6 +154,38 @@ export function VolunteerScheduleClient({
   return (
     <>
       <div className="divide-y divide-slate-200/80 border-y border-slate-200/80">
+        {confirmAllCount > 1 ? (
+          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-slate-600">
+              {confirmAllCount} assignments are waiting for your reply.
+            </p>
+            <button
+              type="button"
+              onClick={confirmAll}
+              disabled={isConfirmAllPending}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+            >
+              {isConfirmAllPending ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <Check aria-hidden="true" className="size-4" />
+              )}
+              Confirm all pending
+            </button>
+          </div>
+        ) : null}
+        {actionNotice ? (
+          <div
+            aria-live="polite"
+            className={`my-4 rounded-2xl border p-4 text-sm leading-6 ${
+              actionNotice.ok
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+          >
+            {actionNotice.message}
+          </div>
+        ) : null}
         {assignments.map((assignment) => (
           <button
             key={assignment.assignmentReference}
@@ -278,12 +352,114 @@ export function VolunteerScheduleClient({
 
             <p className="mt-6 flex gap-2 rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-sky-900">
               <MessageCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              Confirm/Deny actions are not active here yet. This schedule is read-only
-              for 12.20.
+              Responses are saved to the project schedule. If you need to decline
+              within 48 hours of the start time, please contact the project team.
             </p>
+
+            {selected.responseNote ? (
+              <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-semibold text-slate-950">Your note</h3>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                  {selected.responseNote}
+                </p>
+              </section>
+            ) : null}
+
+            <ResponseActions
+              assignment={selected}
+              isPending={
+                isResponsePending && pendingAssignmentId === selected.assignmentReference
+              }
+              onSubmit={submitResponse}
+            />
           </div>
         </div>
       ) : null}
     </>
+  );
+}
+
+function ResponseActions({
+  assignment,
+  isPending,
+  onSubmit,
+}: Readonly<{
+  assignment: VolunteerScheduleAssignment;
+  isPending: boolean;
+  onSubmit: (
+    assignment: VolunteerScheduleAssignment,
+    status: "confirmed" | "declined",
+    note?: string | null,
+  ) => void;
+}>) {
+  const [declineNote, setDeclineNote] = useState("");
+  const canSubmitConfirm =
+    assignment.canConfirm && assignment.currentResponseStatus !== "confirmed";
+  const canSubmitDecline =
+    assignment.canDecline && assignment.currentResponseStatus !== "declined";
+  const lockCopy =
+    assignment.responseLockReason === "started"
+      ? "This assignment has already started, so responses are locked."
+      : assignment.responseLockReason === "inside_48_hours"
+        ? "This assignment starts within 48 hours. You can still confirm, but please contact the project team if you can’t make it."
+        : null;
+
+  return (
+    <section
+      className="mt-6 rounded-[1.35rem] border border-slate-200 bg-white p-4 sm:p-5"
+      aria-labelledby="volunteer-response-actions-title"
+    >
+      <h3
+        id="volunteer-response-actions-title"
+        className="text-sm font-semibold text-slate-950"
+      >
+        Your response
+      </h3>
+      {lockCopy ? (
+        <p className="mt-2 text-sm leading-6 text-slate-600">{lockCopy}</p>
+      ) : null}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onSubmit(assignment, "confirmed")}
+          disabled={!canSubmitConfirm || isPending}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+        >
+          {isPending && canSubmitConfirm ? (
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          ) : (
+            <Check aria-hidden="true" className="size-4" />
+          )}
+          {assignment.currentResponseStatus === "confirmed" ? "Confirmed" : "Confirm"}
+        </button>
+        <button
+          type="button"
+          onClick={() => onSubmit(assignment, "declined", declineNote)}
+          disabled={!canSubmitDecline || isPending}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+        >
+          <X aria-hidden="true" className="size-4" />
+          {assignment.currentResponseStatus === "declined"
+            ? "Can’t make it"
+            : "Can’t make it"}
+        </button>
+      </div>
+
+      {canSubmitDecline ? (
+        <label className="mt-4 block text-sm font-semibold text-slate-700">
+          Note for the project team{" "}
+          <span className="font-normal text-slate-400">(optional)</span>
+          <textarea
+            value={declineNote}
+            onChange={(event) => setDeclineNote(event.target.value)}
+            maxLength={1000}
+            rows={3}
+            className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            placeholder="Add a brief note if you can’t make it"
+          />
+        </label>
+      ) : null}
+    </section>
   );
 }

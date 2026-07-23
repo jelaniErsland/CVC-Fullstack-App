@@ -9,13 +9,19 @@ import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 import {
   parseIssuedVolunteerScheduleAccess,
+  parseVolunteerScheduleConfirmAllResult,
   parseVolunteerScheduleRows,
+  parseVolunteerScheduleResponseResult,
+  validateConfirmAllVolunteerScheduleAssignmentsInput,
   validateIssueVolunteerScheduleAccessInput,
   validateReadVolunteerScheduleInput,
   validateRevokeVolunteerScheduleAccessInput,
+  validateSubmitVolunteerScheduleResponseInput,
+  type ConfirmAllVolunteerScheduleAssignmentsInput,
   type IssueVolunteerScheduleAccessInput,
   type ReadVolunteerScheduleInput,
   type RevokeVolunteerScheduleAccessInput,
+  type SubmitVolunteerScheduleResponseInput,
 } from "./token";
 
 export const volunteerScheduleAccessCookie = {
@@ -113,4 +119,59 @@ export async function readVolunteerScheduleWithClient(
 export async function readVolunteerSchedule(input: ReadVolunteerScheduleInput | unknown) {
   const supabase = createVolunteerScheduleReadClient();
   return readVolunteerScheduleWithClient(supabase, input);
+}
+
+export async function submitVolunteerScheduleAssignmentResponseWithClient(
+  supabase: AppSupabaseClient,
+  input: SubmitVolunteerScheduleResponseInput | unknown,
+) {
+  const response = validateSubmitVolunteerScheduleResponseInput(input);
+  const { data, error } = await supabase.rpc(
+    "submit_volunteer_schedule_assignment_response",
+    {
+      p_bearer_token: response.token,
+      p_assignment_id: response.assignmentId,
+      p_response_status: response.status,
+      p_response_note: response.note ?? null,
+    } as PublicRpcArgs<"submit_volunteer_schedule_assignment_response">,
+  );
+  if (error) {
+    throw new Error("Volunteer schedule response could not be recorded.", {
+      cause: error,
+    });
+  }
+  return parseVolunteerScheduleResponseResult(data);
+}
+
+export async function submitVolunteerScheduleAssignmentResponse(
+  input: SubmitVolunteerScheduleResponseInput | unknown,
+) {
+  const supabase = createVolunteerScheduleReadClient();
+  return submitVolunteerScheduleAssignmentResponseWithClient(supabase, input);
+}
+
+export async function confirmAllVolunteerScheduleAssignmentsWithClient(
+  supabase: AppSupabaseClient,
+  input: ConfirmAllVolunteerScheduleAssignmentsInput | unknown,
+) {
+  const confirmation = validateConfirmAllVolunteerScheduleAssignmentsInput(input);
+  const { data, error } = await supabase.rpc(
+    "confirm_all_volunteer_schedule_assignments",
+    {
+      p_bearer_token: confirmation.token,
+    } as PublicRpcArgs<"confirm_all_volunteer_schedule_assignments">,
+  );
+  if (error) {
+    throw new Error("Volunteer schedule assignments could not be confirmed.", {
+      cause: error,
+    });
+  }
+  return parseVolunteerScheduleConfirmAllResult(data);
+}
+
+export async function confirmAllVolunteerScheduleAssignments(
+  input: ConfirmAllVolunteerScheduleAssignmentsInput | unknown,
+) {
+  const supabase = createVolunteerScheduleReadClient();
+  return confirmAllVolunteerScheduleAssignmentsWithClient(supabase, input);
 }

@@ -26,7 +26,7 @@ export type AssignmentDetailContext = Readonly<{
   volunteerCongregation: string | null;
   currentResponseStatus: "needs_response" | "confirmed" | "declined";
   currentResponseUpdatedAt: string;
-  currentResponseSource: "project_contact" | "public_token";
+  currentResponseSource: "project_contact" | "public_token" | "volunteer_schedule";
   canEditAssignment: boolean;
   responseLinkProductSurfaceAvailable: false;
   futureResponseLinkSurface: "future_project_contact_assignment_response_reveal";
@@ -43,7 +43,7 @@ const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const scheduleKinds = ["timed", "date_based", "multi_day_window", "milestone"] as const;
 const responseStatuses = ["needs_response", "confirmed", "declined"] as const;
-const responseSources = ["project_contact", "public_token"] as const;
+const responseSources = ["project_contact", "public_token", "volunteer_schedule"] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

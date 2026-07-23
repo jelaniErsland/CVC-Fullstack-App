@@ -266,6 +266,14 @@ The volunteer schedule read model is intentionally downstream of publication. `/
 
 The account-light route remains read-only in 12.20. It does not add Confirm/Deny, Confirm All, email, remembered-device access, manual public lookup, assignment-detail entry links, response-link reveal/copy, or `/v/demo` mock-to-real mixing. Local database and browser validation passed.
 
+## 12.21 Volunteer Confirm/Deny Round Trip
+
+12.21 locally connects the published volunteer schedule to persisted assignment/current-response truth. The new migration `20260714122100_volunteer_schedule_responses.sql` adds `submit_volunteer_schedule_assignment_response` and `confirm_all_volunteer_schedule_assignments`, replaces `read_volunteer_schedule` with safe action eligibility fields plus response notes, and tightens `submit_assignment_response_by_token` so the single-assignment token route follows the same 48-hour/start-lock mutation policy.
+
+The database derives cutoff behavior from persisted Calendar item schedule values, the persisted item timezone, and server time. Before the 48-hour cutoff and before start, volunteers may confirm, mark Can’t make it, change confirmed to declined, or change declined to confirmed. Inside 48 hours but before start, confirming remains allowed while new declines and confirmed-to-declined changes fail closed. At or after start, response mutations fail closed. Confirm All confirms currently pending eligible assignments only and does not create counters, response tokens, email, delivery rows, or volunteer accounts.
+
+The route continues to use the dedicated HttpOnly volunteer schedule cookie; the browser never receives the bearer. Schedule-cookie responses record `response_source = 'volunteer_schedule'`, while the separate assignment-response-token route continues to record `public_token`. Assignment rows plus the one current `assignment_responses` row remain the response and coverage truth. `/v/demo`, public lookup, remembered devices, assignment-detail entry links, response-link reveal/copy, email, Communications, and real Bozeman data remain out of scope. Local database and browser validation passed; hosted staging validation is required next as 12.21.1 because schema/RPC/generated types changed.
+
 ## 12.20.1 Hosted Staging Volunteer Schedule Access Validation
 
 12.20.1 completes the hosted non-production validation gate for migration `20260714122000_volunteer_schedule_access.sql`, RPCs `issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, and `read_volunteer_schedule`, hosted generated public-schema type parity, and hosted-backed `/v/access/[token]` / `/v/schedule` route behavior.

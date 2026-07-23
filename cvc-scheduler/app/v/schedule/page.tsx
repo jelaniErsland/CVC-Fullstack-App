@@ -11,6 +11,10 @@ import {
   readVolunteerSchedule,
   volunteerScheduleAccessCookie,
 } from "@/lib/volunteerScheduleAccess/server";
+import {
+  confirmAllVolunteerScheduleAction,
+  submitVolunteerScheduleResponseAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -183,7 +187,8 @@ export default async function VolunteerSchedulePage({
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
               These are your current published assignments for {schedule.workspaceDisplayName}.
-              This page is read-only for now.
+              You can confirm or update eligible responses here; schedule details come
+              from the project team&apos;s published Calendar.
             </p>
           </section>
 
@@ -226,7 +231,9 @@ export default async function VolunteerSchedulePage({
                 </div>
                 <VolunteerScheduleClient
                   assignments={assignments}
+                  confirmAllAction={confirmAllVolunteerScheduleAction}
                   leaveAction={leaveScheduleAction}
+                  submitResponseAction={submitVolunteerScheduleResponseAction}
                 />
               </section>
 

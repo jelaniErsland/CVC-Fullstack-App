@@ -297,6 +297,14 @@ The browser proof creates disposable local fixtures, issues a dedicated schedule
 
 12.20 adds migration `20260714122000_volunteer_schedule_access.sql`, generated public-schema type changes, and new RPCs (`issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, `read_volunteer_schedule`). 12.20.1 completed the required hosted non-production validation gate against `project-local-staging` (`kfuujcfxoayukywvtaeh`). The final successful run verified the target as `ACTIVE_HEALTHY`, verified staging at `20260714122000` before and after behavior validation, refreshed generated public-schema types from hosted output with UTF-8-safe generation, validated hosted issuance/revocation/read/cookie route behavior with disposable fixtures, and verified exact-run plus namespace zero residue.
 
+### `npm run test:volunteer-schedule-responses`
+
+12.21 adds migration `20260714122100_volunteer_schedule_responses.sql`, generated public-schema type changes, `submit_volunteer_schedule_assignment_response`, `confirm_all_volunteer_schedule_assignments`, and a tightened `submit_assignment_response_by_token` policy. This local command refuses non-loopback Supabase targets, creates disposable Auth/workspace/contact/grant/volunteer/Calendar assignment fixtures, proves Confirm, Can’t make it with normalized optional notes, eligible response reversal, Confirm All, server-owned 48-hour/start locks, schedule-cookie provenance as `volunteer_schedule`, no schedule side effects on `assignment_response_tokens`, `/respond/[token]` mutation parity as `public_token`, direct table-write denial, assignment/current-response coverage truth, safe output, and zero residue. Because the schema/RPC/type boundary changed, hosted 12.21.1 validation is required before beta use.
+
+### `npm run test:volunteer-schedule-responses:browser`
+
+This command requires a clean loopback production preview with redirected logs. It validates the actual `/v/access/[token]` to `/v/schedule` product flow with disposable local data: Confirm, reload persistence, Can’t make it with note, reload persistence, Confirm All, inside-48 guidance, 390px layout, no horizontal overflow, no console/page errors, no readable-cookie/storage/HTML bearer leakage, and zero disposable residue. It does not send email, activate lookup/remembered devices, cut over `/v/demo`, or reopen response-link reveal/copy.
+
 To rerun the hosted non-production volunteer schedule access gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
 ```powershell

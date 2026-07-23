@@ -1516,6 +1516,9 @@ async function runDesktop(browser) {
 
     await step("desktop persisted assignment create/cancel round trip", async () => {
       await selectView(page, "Day");
+      await page.waitForURL(/\/admin\/calendar\?view=day&date=2026-01-13$/, {
+        waitUntil: "load",
+      });
       const assignmentTarget = page
         .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
         .first();
@@ -1533,6 +1536,15 @@ async function runDesktop(browser) {
       await inspector.locator('input[name="volunteerProfileIds"]').waitFor({
         state: "attached",
       });
+      const submittedVolunteerIds = await inspector
+        .locator('input[name="volunteerProfileIds"]')
+        .evaluateAll((inputs) =>
+          inputs.map((input) => input instanceof HTMLInputElement ? input.value : ""),
+        );
+      assert(
+        submittedVolunteerIds.includes(fixture.volunteerIds[1]),
+        "Selecting the volunteer did not update the assignment form submitted state.",
+      );
       const assignSelectedButton = inspector.getByRole("button", {
         name: "Assign selected",
         exact: true,
@@ -1540,12 +1552,7 @@ async function runDesktop(browser) {
       await expectButtonEnabled(page, assignSelectedButton, "Assign selected");
       await Promise.all([
         page.waitForURL(/notice=(assigned|validation|error|unavailable)/),
-        assignSelectedButton.evaluate((button) => {
-          if (!(button instanceof HTMLButtonElement) || !button.form) {
-            throw new Error("Assignment submit button was not associated with a form.");
-          }
-          button.form.requestSubmit(button);
-        }),
+        assignSelectedButton.click(),
       ]);
       assert(
         new URL(page.url()).searchParams.get("notice") === "assigned",

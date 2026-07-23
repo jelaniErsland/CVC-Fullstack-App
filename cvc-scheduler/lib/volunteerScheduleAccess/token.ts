@@ -34,6 +34,17 @@ export type ReadVolunteerScheduleInput = Readonly<{
   token: string;
 }>;
 
+export type SubmitVolunteerScheduleResponseInput = Readonly<{
+  token: string;
+  assignmentId: string;
+  status: "confirmed" | "declined";
+  note?: string | null;
+}>;
+
+export type ConfirmAllVolunteerScheduleAssignmentsInput = Readonly<{
+  token: string;
+}>;
+
 export type IssuedVolunteerScheduleAccess = Readonly<{
   tokenId: string;
   token: string;
@@ -55,6 +66,11 @@ export type VolunteerScheduleAssignment = Readonly<{
   neededCount: number;
   scheduleNotes: string | null;
   currentResponseStatus: VolunteerScheduleAssignmentResponseStatus;
+  responseNote: string | null;
+  canConfirm: boolean;
+  canDecline: boolean;
+  responseLocked: boolean;
+  responseLockReason: "inside_48_hours" | "started" | null;
   activeAssignedCount: number;
   confirmedCount: number;
   declinedCount: number;
@@ -83,6 +99,18 @@ export type VolunteerSchedule =
       upcomingAssignments: readonly VolunteerScheduleAssignment[];
       pastAssignments: readonly VolunteerScheduleAssignment[];
     }>;
+
+export type VolunteerScheduleResponseResult = Readonly<{
+  assignmentReference: string;
+  status: "confirmed" | "declined";
+  note: string | null;
+  respondedAt: string;
+}>;
+
+export type VolunteerScheduleConfirmAllResult = Readonly<{
+  confirmedCount: number;
+  respondedAt: string;
+}>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -118,6 +146,24 @@ function bearer(value: unknown, issues: string[]) {
     return "";
   }
   return value;
+}
+
+function responseStatus(value: unknown, issues: string[]) {
+  if (value === "confirmed" || value === "declined") return value;
+  issues.push("status is unsupported.");
+  return "confirmed";
+}
+
+function optionalNote(value: unknown, issues: string[]) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") {
+    issues.push("note must be text.");
+    return null;
+  }
+  const normalized = value.trim();
+  if (normalized.length === 0) return null;
+  if (normalized.length > 1000) issues.push("note must be 1000 characters or fewer.");
+  return normalized;
 }
 
 export function validateIssueVolunteerScheduleAccessInput(input: unknown) {
@@ -167,6 +213,31 @@ export function validateReadVolunteerScheduleInput(input: unknown) {
   return normalized;
 }
 
+export function validateSubmitVolunteerScheduleResponseInput(input: unknown) {
+  const value = requireInput(input);
+  const issues: string[] = [];
+  rejectUnknownKeys(value, ["token", "assignmentId", "status", "note"], issues);
+  const normalized: SubmitVolunteerScheduleResponseInput = {
+    token: bearer(value.token, issues),
+    assignmentId: uuid(value.assignmentId, "assignmentId", issues),
+    status: responseStatus(value.status, issues),
+    note: optionalNote(value.note, issues),
+  };
+  if (issues.length > 0) throw new VolunteerScheduleAccessValidationError(issues);
+  return normalized;
+}
+
+export function validateConfirmAllVolunteerScheduleAssignmentsInput(input: unknown) {
+  const value = requireInput(input);
+  const issues: string[] = [];
+  rejectUnknownKeys(value, ["token"], issues);
+  const normalized: ConfirmAllVolunteerScheduleAssignmentsInput = {
+    token: bearer(value.token, issues),
+  };
+  if (issues.length > 0) throw new VolunteerScheduleAccessValidationError(issues);
+  return normalized;
+}
+
 function firstRow(value: unknown): Record<string, unknown> | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   return isRecord(value[0]) ? value[0] : null;
@@ -203,6 +274,23 @@ function numberValue(record: Record<string, unknown>, field: string, issues: str
     return 0;
   }
   return value;
+}
+
+function booleanValue(record: Record<string, unknown>, field: string, issues: string[]) {
+  const value = record[field];
+  if (typeof value !== "boolean") {
+    issues.push(`${field} is invalid.`);
+    return false;
+  }
+  return value;
+}
+
+function nullableLockReason(record: Record<string, unknown>, field: string, issues: string[]) {
+  const value = record[field];
+  if (value === null || value === undefined) return null;
+  if (value === "inside_48_hours" || value === "started") return value;
+  issues.push(`${field} is invalid.`);
+  return null;
 }
 
 export function parseIssuedVolunteerScheduleAccess(
@@ -290,6 +378,11 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
       neededCount: numberValue(rowValue, "needed_count", issues),
       scheduleNotes: nullableText(rowValue, "schedule_notes", issues),
       currentResponseStatus: responseStatus as VolunteerScheduleAssignmentResponseStatus,
+      responseNote: nullableText(rowValue, "response_note", issues),
+      canConfirm: booleanValue(rowValue, "can_confirm", issues),
+      canDecline: booleanValue(rowValue, "can_decline", issues),
+      responseLocked: booleanValue(rowValue, "response_locked", issues),
+      responseLockReason: nullableLockReason(rowValue, "response_lock_reason", issues),
       activeAssignedCount: numberValue(rowValue, "active_assigned_count", issues),
       confirmedCount: numberValue(rowValue, "confirmed_count", issues),
       declinedCount: numberValue(rowValue, "declined_count", issues),
@@ -319,4 +412,42 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
       (assignment) => compareAssignmentDates(assignment, now) < 0,
     ),
   };
+}
+
+export function parseVolunteerScheduleResponseResult(
+  value: unknown,
+): VolunteerScheduleResponseResult {
+  const row = firstRow(value);
+  if (!row) throw new Error("Volunteer schedule response returned an invalid result.");
+  const issues: string[] = [];
+  const status = row.current_response_status;
+  if (status !== "confirmed" && status !== "declined") {
+    issues.push("current_response_status is invalid.");
+  }
+  const result: VolunteerScheduleResponseResult = {
+    assignmentReference: uuid(row.assignment_reference, "assignment_reference", issues),
+    status: status === "declined" ? "declined" : "confirmed",
+    note: nullableText(row, "response_note", issues),
+    respondedAt: text(row, "response_recorded_at", issues),
+  };
+  if (issues.length > 0) {
+    throw new Error("Volunteer schedule response returned an invalid result.");
+  }
+  return result;
+}
+
+export function parseVolunteerScheduleConfirmAllResult(
+  value: unknown,
+): VolunteerScheduleConfirmAllResult {
+  const row = firstRow(value);
+  if (!row) throw new Error("Volunteer schedule confirmation returned an invalid result.");
+  const issues: string[] = [];
+  const result = {
+    confirmedCount: numberValue(row, "confirmed_count", issues),
+    respondedAt: text(row, "response_recorded_at", issues),
+  };
+  if (issues.length > 0) {
+    throw new Error("Volunteer schedule confirmation returned an invalid result.");
+  }
+  return result;
 }

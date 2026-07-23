@@ -1787,7 +1787,12 @@ assert.deepEqual(disabledResultStatePolicyImporters, []);
 assert.deepEqual(disabledResultRendererPolicyImporters, []);
 assert.deepEqual(activationCheckpointImporters, []);
 assert.deepEqual(
-  unsafeCurrentRouteOrComponentUi.filter((relative) => relative !== routeRelativePath),
+  unsafeCurrentRouteOrComponentUi.filter(
+    (relative) =>
+      relative !== routeRelativePath &&
+      !relative.startsWith("app/v/schedule/") &&
+      relative !== "components/VolunteerScheduleClient.tsx",
+  ),
   [],
 );
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);

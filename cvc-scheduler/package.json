@@ -52,6 +52,8 @@
     "test:volunteer-schedule-access": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-schedule-access-regression.mjs",
     "test:volunteer-schedule-access:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-schedule-access-browser-regression.mjs",
     "test:volunteer-schedule-access:hosted": "node scripts/hosted-volunteer-schedule-access-regression.mjs",
+    "test:volunteer-schedule-responses": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-schedule-responses-regression.mjs",
+    "test:volunteer-schedule-responses:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-schedule-responses-browser-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",
     "test:response-route": "node scripts/response-route-valid-token-regression.mjs",
     "test:response-link": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-link-issuance-regression.mjs",

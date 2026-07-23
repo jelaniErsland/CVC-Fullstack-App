@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       assignment_response_link_reveal_events: {
@@ -743,6 +738,15 @@ export type Database = {
         Returns: string
       }
       archive_task_preset: { Args: { p_preset_id: string }; Returns: string }
+      calendar_assignment_response_start_at: {
+        Args: {
+          p_schedule_kind: string
+          p_start_date: string
+          p_start_time: string
+          p_timezone: string
+        }
+        Returns: string
+      }
       calendar_custom_values_are_valid: {
         Args: { p_values: Json }
         Returns: boolean
@@ -750,6 +754,13 @@ export type Database = {
       cancel_calendar_assignment: {
         Args: { p_assignment_id: string }
         Returns: string
+      }
+      confirm_all_volunteer_schedule_assignments: {
+        Args: { p_bearer_token: string }
+        Returns: {
+          confirmed_count: number
+          response_recorded_at: string
+        }[]
       }
       convert_questionnaire_submission_to_volunteer_profile: {
         Args: { p_submission_id: string }
@@ -884,6 +895,8 @@ export type Database = {
         Returns: {
           active_assigned_count: number
           assignment_reference: string
+          can_confirm: boolean
+          can_decline: boolean
           confirmed_count: number
           current_response_status: string
           declined_count: number
@@ -893,6 +906,9 @@ export type Database = {
           follow_up_contact_email: string
           follow_up_contact_phone: string
           needed_count: number
+          response_lock_reason: string
+          response_locked: boolean
+          response_note: string
           schedule_kind: string
           schedule_notes: string
           schedule_state: string
@@ -982,6 +998,20 @@ export type Database = {
           p_workspace_key: string
         }
         Returns: string
+      }
+      submit_volunteer_schedule_assignment_response: {
+        Args: {
+          p_assignment_id: string
+          p_bearer_token: string
+          p_response_note: string
+          p_response_status: string
+        }
+        Returns: {
+          assignment_reference: string
+          current_response_status: string
+          response_note: string
+          response_recorded_at: string
+        }[]
       }
       task_custom_field_definitions_are_valid: {
         Args: { p_fields: Json }

@@ -58,6 +58,7 @@ const responseSourceLabels: Record<
 > = {
   project_contact: "Project contact",
   public_token: "Volunteer response",
+  volunteer_schedule: "Volunteer schedule",
 };
 
 function formatDate(value: string) {
