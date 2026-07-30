@@ -12,11 +12,11 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
 | Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260714122230` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
-| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) after the 12.25 schema gate is run cleanly | Final HTTPS domain | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
+| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Final HTTPS domain | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
 
-The approved production Supabase target for the 12.25 schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The schema gate is pending execution until committed and rerun from a clean tree.
+The approved production Supabase target for the 12.25 schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The schema gate passed: production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts remained zero, public Supabase connectivity passed, and structural RLS/security checks passed.
 
 ## Variable inventory
 
@@ -56,7 +56,7 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 5. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
 6. Stop on any mismatch; do not “fix” by copying staging values.
 
-Before any production app deployment, run the committed production schema gate from a clean tree:
+Before any production app deployment after future migrations, rerun the committed production schema gate from a clean tree:
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'

@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 adds the production Supabase schema gate for the approved production target, but production launch remains unavailable until that gate is committed, rerun from a clean tree, and the remaining deployment/Auth/domain/email/backup/operator gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target, but production launch remains unavailable until the remaining deployment/Auth/domain/email/backup/operator gates pass.
 
 Current launch conclusion: `NO-GO`.
 
@@ -65,7 +65,7 @@ Procedure:
 12. Do not run hosted disposable fixture scripts against production.
 13. Verify production tables contain no real Bozeman data after schema setup until operator provisioning begins.
 
-12.25 adds the exact-target schema command, but the actual production migration operation remains pending until this checkpoint is committed and rerun from a clean worktree:
+12.25 completed the exact-target schema command. Production advanced from a clean initial migration state to `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed. Rerun the command after future reviewed production migrations:
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -73,7 +73,7 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected empty production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies production remains free of app rows, Auth users, and storage objects.
+The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies production remains free of app rows, Auth users, and storage objects until reviewed operator provisioning begins.
 
 ## Auth URL and redirect plan
 

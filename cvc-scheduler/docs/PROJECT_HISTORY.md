@@ -3,20 +3,21 @@
 ## Iteration 12.25 - Production Supabase Migration, Type-Parity, and Read-Only Validation Gate
 
 Summary:
-- Added the production Supabase schema-validation gate and status documentation for the manually created production target without applying production migrations from the uncommitted 12.25 worktree.
+- Added the production Supabase schema-validation gate and status documentation for the manually created production target, then completed the pending production migration/type-parity/read-only validation from a clean committed worktree.
 - Added `scripts/production-supabase-schema-regression.mjs` and `npm run test:production-supabase-schema`.
 - Added `docs/PRODUCTION_SUPABASE_STATUS.md`.
 - The gate is exact-target locked to `project-local-production` (`wdlaauzknfggoqldolmx`), forbids staging ref `kfuujcfxoayukywvtaeh`, expects terminal migration `20260714122230`, allows no fixtures/product rows/Auth users/email/service-role runtime behavior, and refuses actual production execution from an uncommitted worktree.
 
 Production operation status:
-- Pending. The 12.25 production migration/type-parity/read-only validation must be run from a clean committed tree after this checkpoint is committed.
-- No production migration was applied, no production project was linked or mutated by the final gate, no production fixtures or real data were created, no email was configured or sent, no Vercel/DNS/Auth redirect configuration was changed, and launch remains `NO-GO`.
+- Completed. The first exact gate run refused safely while the local Supabase CLI was still linked to staging. After relinking to `project-local-production` (`wdlaauzknfggoqldolmx`), the reviewed dry-run showed only committed migrations through `20260714122230`, with no seeds or roles. Production migrations were applied through `20260714122230`, and the committed gate then passed.
+- The successful gate verified `ACTIVE_HEALTHY`, migration level `20260714122230`, generated public-schema type parity, public Supabase connectivity, empty product/Auth/storage counts, 13 RLS-protected product tables, and 0 broad direct mutation grants. The local production CLI link was removed afterward.
+- No production fixtures or real data were created, no Auth users were created, no storage objects were created, no email was configured or sent, no Vercel/DNS/Auth redirect configuration was changed, no service-role application behavior was added, staging was not targeted, and launch remains `NO-GO`.
 
 Changed files:
 - `scripts/production-supabase-schema-regression.mjs`
 - `docs/PRODUCTION_SUPABASE_STATUS.md`
 - `package.json`
-- Canonical docs updated for the pending 12.25 gate.
+- Canonical docs updated for the completed 12.25 production schema gate.
 
 ## Iteration 12.24 - Production Environment, Deployment, Domain, and Auth Readiness
 

@@ -77,7 +77,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 19. `12.24 Production Environment, Deployment, Domain, and Auth Readiness`
     - Completed as a production-readiness/operator-handoff slice only. It recommends Vercel based on the current Next.js repository shape; adds a server-only, route-unused production readiness contract; adds production environment inventory, deployment runbook, and Jelani setup checklist; and keeps the launch conclusion `NO-GO`. No production Supabase project, production deployment, DNS change, real Bozeman data, real email provider, production migration, service-role application path, response-link reveal/copy, or deferred feature expansion was added.
 20. `12.25 Production Supabase Migration, Type-Parity, and Read-Only Validation Gate`
-    - Gate prepared but production execution pending. The repository now contains `npm run test:production-supabase-schema`, locked to `project-local-production` (`wdlaauzknfggoqldolmx`) and expected migration `20260714122230`. Because the gate must refuse actual production execution from an uncommitted worktree and this slice adds the gate itself, no production migration was applied in this turn. The next action is to commit the 12.25 gate and rerun it from a clean tree before claiming production schema readiness.
+    - Completed: the exact production gate was run against `project-local-production` (`wdlaauzknfggoqldolmx`). The first run correctly refused while the local CLI was still linked to staging, then the approved production ref was linked, the dry-run showed only reviewed committed migrations through `20260714122230`, production advanced from a clean initial migration state to `20260714122230`, generated public-schema type parity passed, product/Auth/storage counts remained zero, public Supabase connectivity passed, structural RLS/security checks passed, staging was not targeted, and the production CLI link was removed afterward.
 
 ## Repository-grounded beta blockers
 
@@ -91,7 +91,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 - Confirm/Deny no longer depends on mock volunteer state locally. It persists to the existing one-current-row `assignment_responses` truth and is visible to authorized admins through existing Calendar assignment-derived response state.
 - Basic initial assignment email delivery now has a hosted-validated 12.22/12.22.1 boundary: explicit admin send only, server-derived recipient and Follow-up Contact eligibility, duplicate-send prevention, hash-only schedule-access credential issuance, safe delivery metadata, and a disabled-by-default recording transport. Production sender/provider/domain configuration and real deliverability proof remain beta blockers; the hosted migration/RPC/type boundary itself is validated.
 - Beta-critical UI polish has received a focused 12.23 pass on the real Calendar inspector/assignment/email surfaces, persisted Volunteers Add/Edit, and volunteer schedule response states. Product-owner review with desktop/390px screenshots and a controlled pilot remain required before launch.
-- Production Supabase/deployment/auth/email/domain/observability/backup/pilot gates are not complete. The 12.25 GO/NO-GO conclusion is still `NO-GO`.
+- Production Supabase schema validation is complete, but production deployment/auth/email/domain/observability/backup/operator/pilot gates are not complete. The 12.25 GO/NO-GO conclusion is still `NO-GO`.
 
 ## Non-blocking features deferred behind the beta gate
 

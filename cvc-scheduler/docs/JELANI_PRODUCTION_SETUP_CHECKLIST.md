@@ -55,7 +55,7 @@ Creating an Auth user does not grant app access. App access requires:
 ## Phase E - Production Supabase setup
 
 - Confirm the production Supabase project is exactly `project-local-production` with ref `wdlaauzknfggoqldolmx`.
-- After the 12.25 schema gate is committed, run the production schema gate from a clean local repository:
+- 12.25 already ran the production schema gate successfully through migration `20260714122230`. Rerun it from a clean local repository after any future reviewed production migration:
   ```powershell
   $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
   npm run test:production-supabase-schema
