@@ -358,8 +358,8 @@ async function runBrowserProof(token, emptyToken) {
     await page.getByRole("dialog", { name: /Needs Reply/ }).waitFor();
     await page.getByText("Safe schedule note.").waitFor();
     await page.getByText("The project team will include contact details in a later beta slice.").waitFor();
-    assert.equal(await page.getByRole("button", { name: /^Confirm$/ }).count(), 0);
-    assert.equal(await page.getByRole("button", { name: /^Deny$/ }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: /^Confirm$/ }).count(), 1);
+    assert((await page.getByRole("button", { name: /make it/ }).count()) >= 1);
     await page.keyboard.press("Escape");
     await page.getByRole("dialog").waitFor({ state: "detached" });
     await page.reload({ waitUntil: "domcontentloaded" });

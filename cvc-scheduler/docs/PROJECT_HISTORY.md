@@ -1,5 +1,14 @@
 # Project History
 
+## Iteration 12.21.1 - Hosted Staging Volunteer Response Round-Trip Validation
+
+- Completed the hosted non-production validation gate for migration `20260714122100_volunteer_schedule_responses.sql`, `submit_volunteer_schedule_assignment_response`, `confirm_all_volunteer_schedule_assignments`, the tightened `submit_assignment_response_by_token`, and generated public-schema type parity.
+- The exact target was `project-local-staging` (`kfuujcfxoayukywvtaeh`), verified as `ACTIVE_HEALTHY`. Staging was already at migration `20260714122100` before the gate and remained at `20260714122100` after validation.
+- Added `npm run test:volunteer-schedule-responses:hosted`, locked by `RUN_HOSTED_VOLUNTEER_SCHEDULE_RESPONSE_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- Hosted proof covered schedule Confirm, Can’t make it with bounded notes, eligible reconfirmation, Confirm All, 48-hour decline cutoff, assignment-start lock, `volunteer_schedule` provenance, `/respond/[token]` `public_token` parity, token separation, public ready/empty/unavailable reads, schedule filtering, admin Calendar response truth, safe projection, direct table denial, cross-token/cross-volunteer/cross-workspace isolation, hosted route actions, clean URL, HttpOnly cookie attributes, Not-you clearing, 390px layout, safe output, no email/public lookup/remembered-device/response-link side effects, exact-run cleanup, namespace zero residue, and hosted disposable residue count `0`.
+- Product/runtime code did not change during the hosted gate. The historical volunteer schedule access browser regression was updated narrowly so it expects the now-approved response controls instead of the obsolete pre-12.21 inert detail state.
+- Recommended next slice: `12.22 Initial Assignment Notification Email Boundary`.
+
 ## Iteration 12.21 - Volunteer Confirm/Deny Round Trip
 
 Summary:
@@ -30,11 +39,11 @@ Validation:
 - `npm run test:volunteer-schedule-access`, `npm run lint`, `npx tsc --noEmit`, and `npm run build` passed during implementation. The full compatibility matrix is recorded in the slice final report.
 
 Limitations:
-- Hosted staging validation is required before beta use because 12.21 changes schema/RPC/generated types.
+- Hosted staging validation was required before beta use because 12.21 changes schema/RPC/generated types; the follow-up 12.21.1 hosted gate is now complete.
 - Initial assignment email, remembered devices, manual public lookup, `/v/demo` cutover, response-link reveal/copy activation, assignment-detail entry links, volunteer self-editing, broad public portal replacement, and real Bozeman production data remain unimplemented.
 
 Next recommended slice:
-- `12.21.1 Hosted Staging Volunteer Response Round-Trip Validation Gate`.
+- Completed by `12.21.1 Hosted Staging Volunteer Response Round-Trip Validation Gate`; next beta-critical slice is `12.22 Initial Assignment Notification Email Boundary`.
 
 ## Iteration 12.20.1 - Hosted Staging Volunteer Schedule Access Validation Gate
 
