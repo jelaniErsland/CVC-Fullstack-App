@@ -1,5 +1,37 @@
 # Project History
 
+## Iteration 12.22 - Initial Assignment Notification Email Boundary
+
+Summary:
+- Added the first narrow persisted initial assignment notification email boundary from `/admin/calendar` without adding automatic sends, Communications persistence, reminders, public lookup, remembered devices, response-link reveal/copy, real provider sending, or service-role application behavior.
+- Added migration `20260714122200_initial_assignment_notifications.sql`. It adds reviewed volunteer-facing Follow-up Contact fields to `project_contacts`, adds `assignment_notification_deliveries`, and adds authenticated RPCs for notification summaries, send claims, and delivery finalization.
+- The send path is explicit and server-owned. It re-derives the authenticated project contact, deterministic workspace, assignment mutation authority, item publication/lifecycle/timing, active assignments, active ready volunteers, recipient email, existing successful delivery state, and Follow-up Contact volunteer-facing data at send time.
+- Successful initial delivery is terminal for one assignment/kind/template version; failed rows can retry; stale `sending` claims expire for recovery. The ledger persists only safe delivery metadata and never stores a schedule bearer, verifier, full URL, response URL, raw provider payload, SQL, stack trace, credentials, raw grants, or capability arrays.
+- The helper uses the existing `/v/access/[token]` volunteer schedule access path. The bearer exists only in memory for provider delivery and is not rendered or persisted in the admin route; provider failure after token issuance attempts schedule-access revocation before finalizing failure.
+- Added a server-only disabled-by-default provider boundary. The implemented local recording transport writes redacted JSONL summaries for deterministic validation and requires explicit environment configuration.
+- `/admin/calendar` now renders an Initial email inspector card with safe ready/already-sent/missing-email/missing-Follow-up-Contact counts and one explicit send action when configured and eligible. Publication and assignment creation remain separate from notification delivery.
+
+Changed files:
+- `.env.example`
+- `app/admin/calendar/page.tsx`
+- `components/CalendarClient.tsx`
+- `lib/calendar/assignmentNotifications.server.ts`
+- `lib/calendar/routeRead.server.ts`
+- `lib/notifications/initialAssignmentEmail.server.ts`
+- `lib/supabase/database.types.ts`
+- `scripts/assignment-notification-email-regression.mjs`
+- `supabase/migrations/20260714122200_initial_assignment_notifications.sql`
+- `package.json`
+- Canonical docs updated for 12.22.
+
+Validation:
+- `npm run test:assignment-notification-email` passed with disposable local fixtures and zero residue. It proves claim/finalize delivery behavior, duplicate prevention, missing recipient and missing Follow-up Contact handling, explicit send action wiring, schedule-access issuance, safe recording output, direct table denial, wrong-contact/wrong-workspace/role-only failures, disabled transport behavior, and cleanup.
+
+Limitations:
+- Hosted staging validation is required before hosted beta use because 12.22 changes schema/RPC/generated public-schema types. Recommended next slice: `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`.
+- The existing broad Calendar browser regression was not expanded into a dedicated send-click recording proof in this local slice; a focused browser proof should be included in or alongside the hosted gate if product UI behavior changes again. The database/email boundary and server action are covered locally.
+- Real email provider integration, automatic reminders, Communications persistence, schedule-change emails, delivery analytics, response-link reveal/copy activation, public lookup, remembered devices, assignment-detail entry links, real Bozeman data, and Belgrade migration remain out of scope.
+
 ## Iteration 12.21.1 - Hosted Staging Volunteer Response Round-Trip Validation
 
 - Completed the hosted non-production validation gate for migration `20260714122100_volunteer_schedule_responses.sql`, `submit_volunteer_schedule_assignment_response`, `confirm_all_volunteer_schedule_assignments`, the tightened `submit_assignment_response_by_token`, and generated public-schema type parity.

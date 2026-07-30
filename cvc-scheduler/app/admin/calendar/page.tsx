@@ -5,6 +5,7 @@ import {
   cancelAssignmentWithClient,
   createAssignmentsBatchWithClient,
 } from "@/lib/assignments/server";
+import { sendInitialAssignmentNotificationsForItemWithClient } from "@/lib/calendar/assignmentNotifications.server";
 import {
   readCalendarAssignmentMutationRouteContext,
   readCalendarMutationRouteContext,
@@ -34,6 +35,9 @@ const supportedNoticeValues = new Set([
   "updated",
   "assigned",
   "assignment_canceled",
+  "assignment_email_sent",
+  "assignment_email_already_sent",
+  "assignment_email_partial",
   "published",
   "validation",
   "unavailable",
@@ -194,6 +198,41 @@ async function publishCalendarItemAction(formData: FormData) {
   redirect(safeCalendarRedirect(formData, notice));
 }
 
+async function sendInitialAssignmentNotificationsAction(formData: FormData) {
+  "use server";
+
+  let notice = "error";
+  try {
+    const context = await readCalendarAssignmentMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+    } else {
+      const result = await sendInitialAssignmentNotificationsForItemWithClient(
+        context.supabase,
+        {
+          calendarItemId: formData.get("calendarItemId"),
+        },
+      );
+      if (result.sentCount > 0 && result.failedCount === 0) {
+        notice = "assignment_email_sent";
+      } else if (result.sentCount === 0 && result.alreadySentCount > 0) {
+        notice = "assignment_email_already_sent";
+      } else if (result.sentCount > 0 || result.failedCount > 0) {
+        notice = "assignment_email_partial";
+      } else {
+        notice = "unavailable";
+      }
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
+      ? "validation"
+      : "error";
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice));
+}
+
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
   const state = await readCalendarRouteState(resolvedSearchParams);
@@ -208,6 +247,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       key={`${state.view}:${state.anchorDate}:${state.kind}:${notice ?? ""}`}
       notice={notice}
       publishAction={publishCalendarItemAction}
+      sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
       state={state}
       updateAction={updateCalendarItemAction}
     />

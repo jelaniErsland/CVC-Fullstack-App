@@ -23,6 +23,11 @@ import {
   type CalendarAssignmentPickerAssignment,
   type CalendarAssignmentPickerVolunteer,
 } from "./assignmentPicker.server.ts";
+import {
+  readInitialAssignmentNotificationSummariesWithClient,
+  type InitialAssignmentNotificationSummary,
+} from "./assignmentNotifications.server.ts";
+import { readInitialAssignmentEmailConfiguration } from "../notifications/initialAssignmentEmail.server.ts";
 import type {
   CalendarReadModelItem,
   CalendarReadModelPeriodKind,
@@ -93,6 +98,7 @@ type CalendarClientItem = {
     neededCount: number;
     customFields: never[];
   };
+  initialAssignmentNotification: CalendarClientInitialAssignmentNotification;
 };
 type CalendarClientAssignment = {
   assignmentId: string;
@@ -102,6 +108,21 @@ type CalendarClientAssignment = {
   volunteerCongregation: string | null;
   responseStatus: "needs_response" | "confirmed" | "declined";
 };
+type CalendarClientInitialAssignmentNotification =
+  | Readonly<{
+      kind: "ready";
+      emailConfigured: boolean;
+      activeAssignmentCount: number;
+      eligibleToSendCount: number;
+      alreadySentCount: number;
+      missingEmailCount: number;
+      missingFollowUpContactCount: number;
+      failedRetryableCount: number;
+      sendingCount: number;
+      ineligibleCount: number;
+    }>
+  | Readonly<{ kind: "unavailable"; emailConfigured: boolean }>
+  | Readonly<{ kind: "error"; emailConfigured: boolean }>;
 export type CalendarRouteView = CalendarReadModelPeriodKind;
 export type CalendarRouteQueriedRange = Readonly<{
   rangeStart: string;
@@ -478,6 +499,65 @@ async function readAssignmentPickerState(input: {
   };
 }
 
+async function readInitialAssignmentNotificationState(input: {
+  supabase: AppSupabaseClient;
+  calendarItemIds: readonly string[];
+  canEditAssignments: boolean;
+}): Promise<
+  Readonly<{
+    kind: "ready" | "unavailable" | "error";
+    emailConfigured: boolean;
+    summaries: ReadonlyMap<string, InitialAssignmentNotificationSummary>;
+  }>
+> {
+  const emailConfigured = readInitialAssignmentEmailConfiguration().ok;
+  const result = await readInitialAssignmentNotificationSummariesWithClient({
+    supabase: input.supabase,
+    calendarItemIds: input.calendarItemIds,
+    canSendInitialAssignmentNotifications: input.canEditAssignments,
+  });
+
+  if (result.kind !== "ready") {
+    return {
+      kind: result.kind,
+      emailConfigured,
+      summaries: new Map<string, InitialAssignmentNotificationSummary>(),
+    };
+  }
+
+  return {
+    kind: "ready",
+    emailConfigured,
+    summaries: new Map(result.summaries.map((summary) => [summary.calendarItemId, summary])),
+  };
+}
+
+function mapNotificationSummaryToClient(input: {
+  summary: InitialAssignmentNotificationSummary | undefined;
+  stateKind: "ready" | "unavailable" | "error";
+  emailConfigured: boolean;
+}): CalendarClientInitialAssignmentNotification {
+  if (input.stateKind === "unavailable") {
+    return { kind: "unavailable", emailConfigured: input.emailConfigured };
+  }
+  if (input.stateKind === "error") {
+    return { kind: "error", emailConfigured: input.emailConfigured };
+  }
+
+  return {
+    kind: "ready",
+    emailConfigured: input.emailConfigured,
+    activeAssignmentCount: input.summary?.activeAssignmentCount ?? 0,
+    eligibleToSendCount: input.summary?.eligibleToSendCount ?? 0,
+    alreadySentCount: input.summary?.alreadySentCount ?? 0,
+    missingEmailCount: input.summary?.missingEmailCount ?? 0,
+    missingFollowUpContactCount: input.summary?.missingFollowUpContactCount ?? 0,
+    failedRetryableCount: input.summary?.failedRetryableCount ?? 0,
+    sendingCount: input.summary?.sendingCount ?? 0,
+    ineligibleCount: input.summary?.ineligibleCount ?? 0,
+  };
+}
+
 function mapAssignmentToClientAssignment(
   assignment: CalendarAssignmentPickerAssignment,
 ): CalendarClientAssignment {
@@ -521,6 +601,10 @@ function mapPersistedItemToCalendarItem(
   item: CalendarReadModelItem,
   assignments: readonly CalendarClientAssignment[] = [],
   canEdit = false,
+  initialAssignmentNotification: CalendarClientInitialAssignmentNotification = {
+    kind: "unavailable",
+    emailConfigured: false,
+  },
 ): CalendarClientItem {
   const startTime = formatTime(item.startTime);
   const endTime = formatTime(item.endTime);
@@ -569,6 +653,7 @@ function mapPersistedItemToCalendarItem(
           neededCount: item.neededCount,
           customFields: [],
         },
+    initialAssignmentNotification,
   };
 }
 
@@ -749,11 +834,21 @@ export async function readCalendarRouteState(
         assignmentsByItemId.set(assignment.calendarItemId, existing);
       }
     }
+    const notificationState = await readInitialAssignmentNotificationState({
+      supabase: supabase as AppSupabaseClient,
+      calendarItemIds: readModelItems.map((item) => item.calendarItemId),
+      canEditAssignments: workspaceSelection.canEditAssignments,
+    });
     const items = readModelItems.map((item) =>
       mapPersistedItemToCalendarItem(
         item,
         assignmentsByItemId.get(item.calendarItemId) ?? [],
         workspaceSelection.canEdit,
+        mapNotificationSummaryToClient({
+          summary: notificationState.summaries.get(item.calendarItemId),
+          stateKind: notificationState.kind,
+          emailConfigured: notificationState.emailConfigured,
+        }),
       ),
     );
     return items.length > 0

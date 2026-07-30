@@ -58,7 +58,10 @@ Critical path from the post-12.13 state:
 14. `12.21.1 Hosted Staging Volunteer Response Round-Trip Validation Gate`
    - Completed: non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is validated at `20260714122100`; generated-type parity, Confirm/Deny, denial notes, Confirm All, cutoff/start-lock behavior, response provenance, token separation, admin response truth, direct-table denial, hosted route/cookie/mobile behavior, and zero-residue cleanup passed.
 15. `12.22 Initial Assignment Notification Email Boundary`
-16. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+   - Completed locally: explicit `/admin/calendar` initial assignment email action, safe delivery ledger/RPCs, Follow-up Contact volunteer-facing fields, duplicate prevention, existing `/v/access/[token]` schedule-access link issuance, and disabled-by-default recording transport.
+16. `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`
+   - Required before hosted beta use because 12.22 changes migration/RPC/generated-type behavior.
+17. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
 
 The old next step, `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`, is moved and modified. It remains useful, but it is not the immediate beta blocker. A narrower task-preset selector/read seam can be reviewed when Calendar create/edit needs it, and the full `/admin/tasks` cutover can wait unless it becomes directly beta-critical.
 

@@ -136,6 +136,111 @@ export type Database = {
           },
         ]
       }
+      assignment_notification_deliveries: {
+        Row: {
+          attempt_count: number
+          calendar_assignment_id: string
+          calendar_item_id: string
+          created_at: string
+          delivery_state: string
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          initiated_by_project_contact_id: string | null
+          notification_kind: string
+          provider_message_id: string | null
+          recipient_email_snapshot: string | null
+          safe_failure_code: string | null
+          sending_expires_at: string | null
+          sending_started_at: string | null
+          sent_at: string | null
+          template_version: string
+          updated_at: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          calendar_assignment_id: string
+          calendar_item_id: string
+          created_at?: string
+          delivery_state: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key: string
+          initiated_by_project_contact_id?: string | null
+          notification_kind?: string
+          provider_message_id?: string | null
+          recipient_email_snapshot?: string | null
+          safe_failure_code?: string | null
+          sending_expires_at?: string | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          template_version?: string
+          updated_at?: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Update: {
+          attempt_count?: number
+          calendar_assignment_id?: string
+          calendar_item_id?: string
+          created_at?: string
+          delivery_state?: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string
+          initiated_by_project_contact_id?: string | null
+          notification_kind?: string
+          provider_message_id?: string | null
+          recipient_email_snapshot?: string | null
+          safe_failure_code?: string | null
+          sending_expires_at?: string | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          template_version?: string
+          updated_at?: string
+          volunteer_profile_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_notification_deliveries_assignment_fk"
+            columns: ["workspace_id", "calendar_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_assignments"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_initiated_by_project_contact_id_fkey"
+            columns: ["initiated_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_item_fk"
+            columns: ["workspace_id", "calendar_item_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_items"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_volunteer_fk"
+            columns: ["workspace_id", "volunteer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_responses: {
         Row: {
           assignment_id: string
@@ -366,6 +471,9 @@ export type Database = {
           id: string
           status: string
           updated_at: string
+          volunteer_facing_display_name: string | null
+          volunteer_facing_email: string | null
+          volunteer_facing_phone: string | null
         }
         Insert: {
           auth_user_id: string
@@ -373,6 +481,9 @@ export type Database = {
           id?: string
           status?: string
           updated_at?: string
+          volunteer_facing_display_name?: string | null
+          volunteer_facing_email?: string | null
+          volunteer_facing_phone?: string | null
         }
         Update: {
           auth_user_id?: string
@@ -380,6 +491,9 @@ export type Database = {
           id?: string
           status?: string
           updated_at?: string
+          volunteer_facing_display_name?: string | null
+          volunteer_facing_email?: string | null
+          volunteer_facing_phone?: string | null
         }
         Relationships: []
       }
@@ -762,6 +876,34 @@ export type Database = {
           response_recorded_at: string
         }[]
       }
+      claim_initial_assignment_notification_deliveries: {
+        Args: { p_calendar_item_id: string }
+        Returns: {
+          attempt_count: number
+          calendar_assignment_id: string
+          calendar_item_id: string
+          delivery_id: string
+          end_date: string
+          end_time: string
+          follow_up_contact_display_name: string
+          follow_up_contact_email: string
+          follow_up_contact_phone: string
+          idempotency_key: string
+          needed_count: number
+          recipient_email: string
+          schedule_kind: string
+          schedule_notes: string
+          send_status: string
+          start_date: string
+          start_time: string
+          task_title: string
+          task_type: string
+          volunteer_display_name: string
+          volunteer_profile_id: string
+          workspace_display_name: string
+          workspace_timezone: string
+        }[]
+      }
       convert_questionnaire_submission_to_volunteer_profile: {
         Args: { p_submission_id: string }
         Returns: string
@@ -811,6 +953,19 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: string
+      }
+      finalize_initial_assignment_notification_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_delivery_state: string
+          p_provider_message_id: string
+          p_safe_failure_code: string
+        }
+        Returns: {
+          attempt_count: number
+          delivery_id: string
+          delivery_state: string
+        }[]
       }
       create_task_preset: {
         Args: {
@@ -888,6 +1043,20 @@ export type Database = {
           start_time: string
           task_title: string
           workspace_display_name: string
+        }[]
+      }
+      read_initial_assignment_notification_summaries: {
+        Args: { p_calendar_item_ids: string[] }
+        Returns: {
+          active_assignment_count: number
+          already_sent_count: number
+          calendar_item_id: string
+          eligible_to_send_count: number
+          failed_retryable_count: number
+          ineligible_count: number
+          missing_email_count: number
+          missing_follow_up_contact_count: number
+          sending_count: number
         }[]
       }
       read_volunteer_schedule: {

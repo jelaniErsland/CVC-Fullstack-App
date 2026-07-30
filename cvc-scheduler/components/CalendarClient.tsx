@@ -8,10 +8,12 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Mail,
   Pencil,
   Plus,
   Repeat,
   Search,
+  Send,
   SlidersHorizontal,
   Soup,
   UserPlus,
@@ -141,6 +143,22 @@ type CalendarAssignmentSummary = {
   responseStatus: CalendarAssignmentResponseStatus;
 };
 
+type CalendarInitialAssignmentNotificationSummary =
+  | Readonly<{
+      kind: "ready";
+      emailConfigured: boolean;
+      activeAssignmentCount: number;
+      eligibleToSendCount: number;
+      alreadySentCount: number;
+      missingEmailCount: number;
+      missingFollowUpContactCount: number;
+      failedRetryableCount: number;
+      sendingCount: number;
+      ineligibleCount: number;
+    }>
+  | Readonly<{ kind: "unavailable"; emailConfigured: boolean }>
+  | Readonly<{ kind: "error"; emailConfigured: boolean }>;
+
 type CalendarAssignmentPickerVolunteer = {
   id: string;
   displayName: string;
@@ -158,6 +176,7 @@ type CalendarAssignmentPickerState =
 
 type CalendarClientDisplayItem = CalendarItemWithPreset & {
   assignments?: readonly CalendarAssignmentSummary[];
+  initialAssignmentNotification?: CalendarInitialAssignmentNotificationSummary;
   publicationState?: CalendarPublicationState;
   canPublish?: boolean;
   publishedAt?: string;
@@ -2626,6 +2645,7 @@ function CalendarInspector({
   isOpen,
   onClose,
   publishAction,
+  sendInitialAssignmentNotificationsAction,
   updateAction,
   currentDate,
   currentView,
@@ -2639,6 +2659,7 @@ function CalendarInspector({
   isOpen: boolean;
   onClose: () => void;
   publishAction?: CalendarMutationAction;
+  sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
   currentDate: string;
   currentView: CalendarViewMode;
@@ -2721,6 +2742,7 @@ function CalendarInspector({
             key={item.id}
             onClose={onClose}
             publishAction={publishAction}
+            sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
             tone={tone}
             updateAction={updateAction}
           />
@@ -2764,6 +2786,7 @@ function CalendarInspector({
             key={item.id}
             onClose={onClose}
             publishAction={publishAction}
+            sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
             tone={tone}
             updateAction={updateAction}
           />
@@ -2787,6 +2810,7 @@ function InspectorContent({
   tone,
   onClose,
   publishAction,
+  sendInitialAssignmentNotificationsAction,
   updateAction,
 }: {
   assignAction?: CalendarMutationAction;
@@ -2802,6 +2826,7 @@ function InspectorContent({
   tone: CalendarStatusTone;
   onClose: () => void;
   publishAction?: CalendarMutationAction;
+  sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
 }) {
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
@@ -2846,6 +2871,14 @@ function InspectorContent({
     canEditAssignments &&
     pickerReady &&
     eligibleVolunteers.length > 0;
+  const initialNotification = item.initialAssignmentNotification;
+  const canSubmitInitialEmails =
+    Boolean(sendInitialAssignmentNotificationsAction) &&
+    canEditAssignments &&
+    item.publicationState === "published" &&
+    initialNotification?.kind === "ready" &&
+    initialNotification.emailConfigured &&
+    initialNotification.eligibleToSendCount > 0;
   const assignmentCapacityWarning =
     item.neededCount > 0 &&
     currentAssignments.length + selectedVolunteerIds.length > item.neededCount;
@@ -2927,7 +2960,7 @@ function InspectorContent({
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {item.publicationState === "draft"
               ? "This draft is visible only to the project contact who created it. Assignments can be prepared here, but volunteer response links and email remain inactive."
-              : "This item is published for authorized project contacts. Publishing did not send email or create volunteer schedule access."}
+              : "This item is published for authorized project contacts. Email is sent only through the explicit Initial email action below."}
           </p>
           {item.publishedAt ? (
             <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -2945,8 +2978,9 @@ function InspectorContent({
                     Publish this Calendar item?
                   </p>
                   <p className="mt-1 text-sm leading-6 text-amber-800">
-                    Authorized project contacts will be able to see it. No email,
-                    response link, or volunteer schedule access will be sent or activated.
+                    Authorized project contacts will be able to see it. No email
+                    will be sent unless a scheduler later uses the explicit
+                    Initial email action.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -3152,6 +3186,81 @@ function InspectorContent({
         </div>
 
         <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <Mail aria-hidden="true" className="h-3.5 w-3.5" />
+            Initial email
+          </p>
+          {initialNotification?.kind === "ready" ? (
+            <div className="mt-3 space-y-3">
+              <p className="text-sm leading-6 text-slate-600">
+                Send the first assignment email for this published item. The
+                server rechecks publication, active assignments, volunteer email,
+                Follow-up Contact, and prior successful deliveries at send time.
+              </p>
+              <div className="grid gap-2 text-xs font-semibold text-slate-600 sm:grid-cols-2">
+                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Ready to send: {initialNotification.eligibleToSendCount}
+                </span>
+                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Already sent: {initialNotification.alreadySentCount}
+                </span>
+                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Missing email: {initialNotification.missingEmailCount}
+                </span>
+                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Needs Follow-up Contact: {initialNotification.missingFollowUpContactCount}
+                </span>
+              </div>
+              {!initialNotification.emailConfigured ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
+                  Email transport is not configured for this environment, so no
+                  schedule access links can be sent here yet.
+                </p>
+              ) : null}
+              {item.publicationState !== "published" ? (
+                <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
+                  Publish this item before sending assignment email.
+                </p>
+              ) : null}
+              {canEditAssignments && sendInitialAssignmentNotificationsAction ? (
+                <form action={sendInitialAssignmentNotificationsAction}>
+                  <input name="calendarItemId" type="hidden" value={item.id} />
+                  <input name="redirectView" type="hidden" value={currentView} />
+                  <input name="redirectDate" type="hidden" value={currentDate} />
+                  <button
+                    className={[
+                      "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+                      canSubmitInitialEmails
+                        ? "border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                        : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
+                    ].join(" ")}
+                    disabled={!canSubmitInitialEmails}
+                    formAction={sendInitialAssignmentNotificationsAction}
+                    type="submit"
+                  >
+                    <Send aria-hidden="true" className="h-4 w-4" />
+                    Send initial assignment emails
+                  </button>
+                </form>
+              ) : (
+                <p className="text-sm leading-6 text-slate-600">
+                  This signed-in contact can review assignments but cannot send
+                  initial assignment email from this Calendar.
+                </p>
+              )}
+            </div>
+          ) : initialNotification?.kind === "error" ? (
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Initial email readiness could not be checked safely right now.
+            </p>
+          ) : (
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Initial assignment email is unavailable for this signed-in contact.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Schedule notes
           </p>
@@ -3335,6 +3444,7 @@ export type CalendarClientState =
       items: Array<
         CalendarItem & {
           assignments: CalendarAssignmentSummary[];
+          initialAssignmentNotification: CalendarInitialAssignmentNotificationSummary;
           taskPreset?: CalendarTaskPresetOption;
           publicationState: CalendarPublicationState;
           canPublish: boolean;
@@ -3390,7 +3500,19 @@ function CalendarNotice({ notice }: { notice?: string }) {
     },
     published: {
       title: "Calendar item published",
-      message: "Authorized project contacts can now see it. No email or response link was sent.",
+      message: "Authorized project contacts can now see it. No email was sent until the explicit Initial email action is used.",
+    },
+    assignment_email_sent: {
+      title: "Initial assignment email sent",
+      message: "Eligible assigned volunteers received a schedule access email. The Calendar reloaded from persisted truth.",
+    },
+    assignment_email_already_sent: {
+      title: "Initial email already sent",
+      message: "No duplicate email was sent for assignments that already had a successful initial delivery.",
+    },
+    assignment_email_partial: {
+      title: "Initial email partially sent",
+      message: "Some eligible emails were sent and any failed deliveries were recorded with safe retry state.",
     },
     validation: {
       title: "Check the Calendar details",
@@ -3428,6 +3550,7 @@ export default function CalendarClient({
   createAction,
   notice,
   publishAction,
+  sendInitialAssignmentNotificationsAction,
   state,
   updateAction,
 }: Readonly<{
@@ -3436,6 +3559,7 @@ export default function CalendarClient({
   createAction?: CalendarMutationAction;
   notice?: string;
   publishAction?: CalendarMutationAction;
+  sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
   state: CalendarClientState;
   updateAction?: CalendarMutationAction;
 }>) {
@@ -3760,6 +3884,7 @@ export default function CalendarClient({
               item={selectedItem}
               onClose={closeCalendarSurface}
               publishAction={publishAction}
+              sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
               updateAction={updateAction}
             />
           </>

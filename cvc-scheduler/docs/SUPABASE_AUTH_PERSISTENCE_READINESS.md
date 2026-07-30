@@ -12,6 +12,20 @@ The near-term production-readiness target is now a narrow Bozeman scheduling bet
 
 The beta launch gate requires permanent workspace/contact/grant foundations for Bozeman, volunteer profile entry/import on the existing `volunteer_profiles` architecture, Calendar create/edit/write boundaries on top of the stabilized persisted Calendar read route, assignment commands and picker UI, publication visibility truth, secure account-light volunteer schedule access, Confirm/Deny persistence and admin response visibility, a minimal initial assignment email boundary, approved Project Local UI integration on beta-critical surfaces, and production environment/hosted validation/observability/backup/rollback proof.
 
+## 12.22 Initial assignment notification email
+
+12.22 locally adds the first initial assignment notification email boundary. The product route does not send automatically: publication, assignment creation, render, GET, prefetch, hover/focus, and client effects have no delivery side effect. A scheduler uses one explicit `/admin/calendar` server action, and the server re-derives all trusted context before any claim or send.
+
+The boundary requires authenticated project-contact identity, deterministic same-workspace access, and effective assignment mutation authority. Role/title strings do not authorize; the browser cannot provide trusted workspace id, contact id, capabilities, recipient values, Follow-up Contact authority, token values, provider fields, or arbitrary delivery state.
+
+Migration `20260714122200_initial_assignment_notifications.sql` adds reviewed volunteer-facing Follow-up Contact fields on `project_contacts`, an `assignment_notification_deliveries` ledger, `read_initial_assignment_notification_summaries`, `claim_initial_assignment_notification_deliveries`, and `finalize_initial_assignment_notification_delivery`. The claim RPC re-reads authoritative persisted Calendar item, assignment, volunteer, publication, timing, prior-delivery, and Follow-up Contact state. It skips missing recipient/FOLLOW-up prerequisites safely and prevents duplicate successful initial deliveries with a database unique constraint.
+
+The delivery ledger is credential-free. It does not store schedule bearers, token verifiers, full URLs, response URLs, raw provider payloads, raw database errors, SQL, stack traces, secrets, grants, or capability arrays. Successful delivery is terminal for the assignment/kind/template version; failures can retry; stale `sending` rows expire for recovery.
+
+The server provider boundary is disabled by default. The local `recording` transport requires explicit trusted origin/from/path configuration and writes redacted JSONL summaries for deterministic validation. Schedule access uses the existing hash-only `volunteer_schedule_access_tokens` boundary; the full `/v/access/[token]` URL is built only in memory for the provider and is not persisted or rendered in admin UI.
+
+Local validation uses `npm run test:assignment-notification-email`. Because 12.22 changes migration/RPC/generated public-schema types, hosted non-production validation is required as 12.22.1 before hosted beta reliance. No service-role application path, real provider sending, Communications persistence, automatic reminders, public lookup, remembered devices, response-link reveal/copy, real Bozeman data, or production deployment was added.
+
 ## 12.16 Calendar item management
 
 12.16 adds the first narrow Calendar write boundary on top of the stabilized persisted `/admin/calendar` read route. Mutations remain server-owned and capability-checked. Reads still require `calendar.view` plus `assignments.view` for coverage-bearing output; create/edit requires effective `calendar.edit` for the deterministic authenticated project-contact workspace context. Role/title strings do not authorize, and the browser cannot provide trusted workspace id, actor id, capability arrays, timezone, Follow-up Contact, source provenance, arbitrary columns, or RPC names.

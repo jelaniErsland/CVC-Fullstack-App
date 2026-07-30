@@ -307,6 +307,28 @@ The browser proof creates disposable local fixtures, issues a dedicated schedule
 
 This command requires a clean loopback production preview with redirected logs. It validates the actual `/v/access/[token]` to `/v/schedule` product flow with disposable local data: Confirm, reload persistence, Can’t make it with note, reload persistence, Confirm All, inside-48 guidance, 390px layout, no horizontal overflow, no console/page errors, no readable-cookie/storage/HTML bearer leakage, and zero disposable residue. It does not send email, activate lookup/remembered devices, cut over `/v/demo`, or reopen response-link reveal/copy.
 
+### `npm run test:assignment-notification-email`
+
+12.22 adds migration `20260714122200_initial_assignment_notifications.sql`, generated public-schema type changes, volunteer-facing Follow-up Contact fields, the `assignment_notification_deliveries` ledger, and authenticated notification summary/claim/finalize RPCs. This local command refuses non-loopback Supabase targets, uses disposable Auth/workspace/contact/grant/volunteer/Calendar assignment fixtures, configures only the deterministic recording transport, and cleans up with zero residue.
+
+The command proves explicit initial assignment email sending from the Calendar boundary, disabled-by-default transport behavior, recipient and Follow-up Contact eligibility, duplicate-send prevention, failed/missing-recipient and missing-Follow-up-Contact handling, existing `/v/access/[token]` schedule-access issuance, redacted recording output, direct delivery-table denial, wrong-contact/wrong-workspace/role-only failures, no automatic send on publish or assignment creation, no response-link reveal/copy activation, no real provider call, no service-role application path, no credential logging, and no persisted bearer/full URL.
+
+For local manual preview of the recording transport, configure only loopback-safe values and remove them afterward:
+
+```powershell
+$env:ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT='recording'
+$env:ASSIGNMENT_NOTIFICATION_BASE_URL='http://127.0.0.1:3000'
+$env:ASSIGNMENT_NOTIFICATION_FROM='Project Local <notifications@example.invalid>'
+$env:ASSIGNMENT_NOTIFICATION_RECORDING_PATH="$env:TEMP\project-local-assignment-notifications.jsonl"
+npm run test:assignment-notification-email
+Remove-Item Env:ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT
+Remove-Item Env:ASSIGNMENT_NOTIFICATION_BASE_URL
+Remove-Item Env:ASSIGNMENT_NOTIFICATION_FROM
+Remove-Item Env:ASSIGNMENT_NOTIFICATION_RECORDING_PATH
+```
+
+12.22 changes schema/RPC/generated-type behavior, so hosted non-production validation is required before hosted beta use. That follow-up gate should be `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`, locked to the approved non-production staging target and using disposable fixtures only.
+
 To rerun the hosted non-production volunteer schedule access gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
 ```powershell
