@@ -2,7 +2,7 @@
 
 Conclusion: NO-GO
 
-The persisted beta scheduling loop is technically proven through focused local and hosted staging gates, but production launch prerequisites remain unresolved. An honest NO-GO means the launch gate is doing its job; it does not mean the implementation failed.
+The persisted beta scheduling loop is technically proven through focused local gates, focused hosted staging gates, and the 12.23.1 integrated hosted end-to-end loop. Production launch prerequisites remain unresolved. An honest NO-GO means the launch gate is doing its job; it does not mean the implementation failed.
 
 ## Decision matrix
 
@@ -13,7 +13,8 @@ The persisted beta scheduling loop is technically proven through focused local a
 | Calendar create/edit/source/assignment/publish | Proven | 12.16 through 12.19.1 hosted gates; `npm run test:calendar` | Final UI review and pilot spot checks | No |
 | Volunteer schedule and Confirm/Deny | Proven | 12.20/12.20.1 and 12.21/12.21.1 hosted gates | Final mobile pilot | No |
 | Initial assignment email boundary | Configuration required | 12.22.1 hosted gate passed through `20260714122230` with recording transport | Approve/configure provider, sender domain, sender identity, secret, base URL, monitoring, and test-recipient policy | Yes |
-| Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity and zero-residue focused gates passed | Rerun exact hosted launch gate before final launch review | No |
+| Integrated hosted beta loop | Proven | 12.23.1 ran one continuous disposable namespace through Volunteer Add/Edit, Calendar scheduling, assignment, publication, recording-only email, secure schedule access, Confirm/Deny/Confirm All, admin response truth, negative paths, and zero residue | Repeat before final launch review if staging/schema changes | No |
+| Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity, focused hosted gates, launch verification, and 12.23.1 integrated zero-residue gate passed | Rerun exact hosted launch/E2E gates before final launch review if needed | No |
 | Beta-critical UI | Pilot required | 12.23 focused polish and browser validations | Product owner review of desktop/390px Calendar, Volunteers, and volunteer schedule | Yes |
 | Production deployment/domain/Auth | Configuration required | No production target accessed by 12.23 | Verify deployment, domain/base URL, Auth redirect allowlist, and secrets inventory | Yes |
 | Observability and backup/recovery | Configuration required | Runbook defines monitoring and recovery needs | Verify logging, alerts, backups, restore test, rollback, and Belgrade fallback | Yes |
@@ -25,6 +26,7 @@ The persisted beta scheduling loop is technically proven through focused local a
 - `npm run test:bozeman-beta-launch-gate`
 - `npm run test:bozeman-beta-ui`
 - `npm run test:bozeman-beta-launch:hosted`
+- `npm run test:bozeman-beta-e2e:hosted`
 - `npm run test:assignment-notification-email`
 - `npm run test:assignment-notification-email:hosted`
 - `npm run test:calendar`
@@ -69,7 +71,7 @@ The persisted beta scheduling loop is technically proven through focused local a
 - Provider secret: not configured or committed.
 - Production base URL/domain: not verified.
 - Production deployment: not performed.
-- Real external email: not sent by 12.23.
+- Real external email: not sent by 12.23.1.
 
 ## Fallback
 

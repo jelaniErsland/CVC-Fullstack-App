@@ -28,6 +28,7 @@
     "test:bozeman-beta-launch-gate": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-beta-launch-gate-regression.mjs",
     "test:bozeman-beta-ui": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-beta-ui-browser-regression.mjs",
     "test:bozeman-beta-launch:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-bozeman-beta-launch-regression.mjs",
+    "test:bozeman-beta-e2e:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-bozeman-beta-end-to-end-regression.mjs",
     "test:bozeman-workspace-provisioning": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-workspace-provisioning-regression.mjs",
     "test:volunteer-profile-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-regression.mjs",
     "test:volunteer-profile-management:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-browser-regression.mjs",

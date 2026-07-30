@@ -1,5 +1,29 @@
 # Project History
 
+## Iteration 12.23.1 - Hosted End-to-End Bozeman Beta Loop Integration Gate
+
+Summary:
+- Added the integrated hosted non-production Bozeman beta E2E gate without adding product features, production access, real Bozeman/Belgrade data, real email sending, response-link reveal/copy, public lookup, remembered devices, or service-role application behavior.
+- Added `scripts/hosted-bozeman-beta-end-to-end-regression.mjs` and `npm run test:bozeman-beta-e2e:hosted`.
+- The gate is exact-target locked to `project-local-staging` (`kfuujcfxoayukywvtaeh`) with `RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+
+Hosted validation:
+- The successful run verified the target as `ACTIVE_HEALTHY`, migration level `20260714122230` before and after, and hosted generated public-schema type parity.
+- One continuous disposable namespace exercised Auth/session, `/admin/volunteers` Add/Edit, `/admin/calendar` one-off create/edit, preset-backed creation, assignment picker/create, draft privacy, publication, recording-only Initial email, duplicate-send prevention, secure schedule handoff, `/v/schedule` Confirm, `Can’t make it`, Confirm All, admin response/coverage truth, view-only and wrong-workspace denial, missing email, missing Follow-up Contact, inside-48-hour guidance, started-state lock, invalid credential handling, desktop and 390px schedule layout, safe-output checks, and screenshot capture/removal.
+- Cleanup removed hosted product/Auth fixtures and temporary files; exact-run residue, namespace residue, and Auth residue were all `0`.
+
+Changed files:
+- `scripts/hosted-bozeman-beta-end-to-end-regression.mjs`
+- `package.json`
+- Canonical docs updated for 12.23.1.
+
+Validation:
+- `npm run test:bozeman-beta-e2e:hosted` refused without exact opt-in, then passed with the approved staging opt-in.
+- The local/static compatibility chain passed after hosted validation, including launch-gate, UI browser aggregation, hosted launch verification, assignment notification, Calendar, volunteer profile management, volunteer schedule access/responses, assignments, response tokens/routes, assignment detail, grants, Bozeman roadmap/provisioning, MVP cutover, volunteers, lint, typecheck, build, and `git diff --check`.
+
+Launch decision:
+- `NO-GO` remains correct. The integrated hosted beta loop is now proven evidence, but production provider/domain/deployment/Auth redirect/observability/backup/restore/operator provisioning/product-owner UI review/pilot evidence remains incomplete.
+
 ## Iteration 12.23 - Bozeman Beta UI Polish, Hosted Validation, and Launch Gate
 
 Summary:

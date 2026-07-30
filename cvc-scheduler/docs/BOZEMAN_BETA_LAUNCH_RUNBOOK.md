@@ -170,6 +170,7 @@ Use the current package scripts for focused validation, including:
 - `npm run test:bozeman-beta-launch-gate`
 - `npm run test:bozeman-beta-ui`
 - `npm run test:bozeman-beta-launch:hosted`
+- `npm run test:bozeman-beta-e2e:hosted`
 - `npm run test:calendar`
 - `npm run test:volunteer-profile-management:browser`
 - `npm run test:volunteer-schedule-responses:browser`
@@ -182,3 +183,13 @@ $env:RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION='project-local-staging:kfuujcfxoa
 npm run test:bozeman-beta-launch:hosted
 Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION
 ```
+
+Hosted end-to-end beta loop validation requires:
+
+```powershell
+$env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:bozeman-beta-e2e:hosted
+Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION
+```
+
+The 12.23.1 gate uses one disposable `qa-12-23-1-*` namespace and validates the continuous hosted staging loop across Auth/session, Volunteers Add/Edit, Calendar scheduling, assignment, publication, recording-only Initial email, secure schedule handoff, Confirm/Deny/Confirm All, admin response truth, negative paths, safe output, screenshot capture/removal, and zero residue. It does not send real email or target production.

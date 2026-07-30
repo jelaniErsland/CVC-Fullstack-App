@@ -37,6 +37,16 @@ Operational diagnostics after 11.47:
 - Prefer Docker/container status, port checks, and health endpoints for local troubleshooting instead of full Supabase environment blocks.
 - Do not store diagnostic output files in the repository, docs, fixtures, screenshots, or test artifacts.
 
+Hosted 12.23.1 Bozeman beta end-to-end validation uses only the approved non-production staging project, `project-local-staging` (`kfuujcfxoayukywvtaeh`), and refuses all other targets. It requires exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:bozeman-beta-e2e:hosted
+Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION
+```
+
+The successful gate verifies `ACTIVE_HEALTHY`, migration `20260714122230`, generated-type parity, one disposable hosted namespace across the real beta loop, recording-only email, safe output, temporary screenshot/log cleanup, and zero hosted/Auth residue. It does not target production, send real email, or create real Bozeman/Belgrade data.
+
 ## Client boundary
 
 - `lib/supabase/browser.ts` creates the cookie-compatible client used only by the contact sign-in form.
