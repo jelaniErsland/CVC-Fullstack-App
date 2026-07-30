@@ -2,6 +2,8 @@
 
 Iteration 12.25 added the production Supabase schema gate and completed the first production schema migration/type-parity/read-only validation against the approved production target.
 
+Iteration 12.25.1 stabilizes the gate for a completely pristine Supabase project by treating a missing `supabase_migrations.schema_migrations` table as an explicit clean initial state only after the exact target and environment guards have passed. Actual migration-history query failures and malformed or unexpected remote history still fail closed.
+
 Current status: `SCHEMA VALIDATED`.
 
 Launch conclusion: `NO-GO`.
@@ -56,3 +58,7 @@ It must not run hosted staging fixture gates against production. It must not con
 The first exact production gate run correctly refused execution while the repository was linked to staging. The CLI was then linked to the approved production ref, the migration dry-run showed only reviewed committed migrations through `20260714122230` with no seeds or roles, those migrations were applied, and the committed gate passed after migration. The local production CLI link was removed afterward so future commands do not inherit production as the linked target.
 
 No fixtures, Auth users, product rows, storage objects, real Bozeman data, email transport, real email, Vercel deployment, DNS change, Auth redirect change, service-role runtime path, response-link reveal/copy activation, seed data, or staging mutation was used.
+
+## 12.25.1 stabilization result
+
+The pristine migration-history edge case is covered by `npm run test:production-supabase-schema:pristine`. The already-migrated approved production target was also revalidated read-only at `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks still pass. The local production CLI link was removed afterward.

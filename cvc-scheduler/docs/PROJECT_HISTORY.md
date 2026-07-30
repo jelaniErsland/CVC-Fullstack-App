@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.25.1 - Pristine Production Schema Gate Stabilization
+
+Summary:
+- Patched `scripts/production-supabase-schema-regression.mjs` so a completely pristine Supabase project with no `supabase_migrations.schema_migrations` table is recognized as an explicit clean initial migration state, rather than as a suppressed query failure.
+- Added `npm run test:production-supabase-schema:pristine` to prove missing migration history is accepted only as pristine, actual migration-history query failures still fail closed, malformed versions fail closed, and unexpected partial remote history still fails.
+- Reran the exact production schema gate read-only against `project-local-production` (`wdlaauzknfggoqldolmx`) after relinking the CLI temporarily. Production remained `ACTIVE_HEALTHY`, at migration `20260714122230`, generated-type matched, product/Auth/storage counts remained zero, public connectivity passed, and the local production CLI link was removed afterward.
+- No migration, generated-type change, product/runtime route change, fixture, Auth user, storage object, real Bozeman data, email, deployment, DNS/Auth redirect change, service-role application behavior, staging mutation, or launch approval was added.
+
 ## Iteration 12.25 - Production Supabase Migration, Type-Parity, and Read-Only Validation Gate
 
 Summary:

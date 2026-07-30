@@ -5,6 +5,7 @@ import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 const expectedName = "project-local-production";
@@ -204,16 +205,38 @@ function verifyLinkedTarget() {
   assert.equal(linkedRef, expectedRef, "Linked Supabase project is not the approved production ref.");
 }
 
-function remoteMigrations() {
-  const rows = runLinkedSql(
+export function readRemoteMigrationHistory(query = runLinkedSql) {
+  const existenceRows = query(
+    "select to_regclass('supabase_migrations.schema_migrations') is not null as exists;",
+    "Production migration-history existence check",
+  );
+  assert.equal(existenceRows.length, 1, "Production migration-history existence check returned an unexpected shape.");
+  if (existenceRows[0]?.exists !== true) return [];
+
+  const rows = query(
     "select version from supabase_migrations.schema_migrations order by version;",
     "Production migration-history check",
   );
-  return rows.map((row) => String(row.version));
+  return rows.map((row) => {
+    const version = String(row.version ?? "");
+    assert.match(version, /^\d{14}$/, "Production migration history contains a malformed version.");
+    return version;
+  });
+}
+
+function remoteMigrations() {
+  return readRemoteMigrationHistory(runLinkedSql);
 }
 
 function latestMigrationLabel(versions) {
   return versions.length ? versions[versions.length - 1] : "none";
+}
+
+export function assertExpectedRemoteMigrationHistory(remoteBefore) {
+  assert(
+    remoteBefore.length === 0 || latestMigrationLabel(remoteBefore) === expectedMigration,
+    `Unexpected production migration history before gate: ${latestMigrationLabel(remoteBefore)}.`,
+  );
 }
 
 function verifyLocalMigrations() {
@@ -395,10 +418,7 @@ async function main() {
   verifyLinkedTarget();
   const localMigrations = verifyLocalMigrations();
   const remoteBefore = remoteMigrations();
-  assert(
-    remoteBefore.length === 0 || latestMigrationLabel(remoteBefore) === expectedMigration,
-    `Unexpected production migration history before gate: ${latestMigrationLabel(remoteBefore)}.`,
-  );
+  assertExpectedRemoteMigrationHistory(remoteBefore);
   verifyNoApplicationData("pre-migration");
   const plan = remoteBefore.length === 0 ? verifyMigrationPlan() : "production already at expected migration";
   if (remoteBefore.length === 0) applyMigrations();
@@ -419,7 +439,9 @@ async function main() {
   console.log("No fixtures, Auth users, product data, deployment, DNS change, email transport, real email, service-role runtime path, response-link reveal/copy, staging mutation, or seed data were used.");
 }
 
-main().catch((error) => {
-  console.error(redact(error instanceof Error ? error.message : String(error)));
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((error) => {
+    console.error(redact(error instanceof Error ? error.message : String(error)));
+    process.exit(1);
+  });
+}
