@@ -12,9 +12,11 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
 | Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260714122230` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
-| Production | Separate future production Supabase project | Final HTTPS domain | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
+| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) after the 12.25 schema gate is run cleanly | Final HTTPS domain | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
+
+The approved production Supabase target for the 12.25 schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The schema gate is pending execution until committed and rerun from a clean tree.
 
 ## Variable inventory
 
@@ -38,7 +40,7 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 ## Production-specific requirements
 
 - `ADMIN_AUTH_MODE=enforced`.
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` point to the future production Supabase project, not staging.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` point to the approved production Supabase project, not staging.
 - `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` remains empty/disabled until the production email-provider slice.
 - `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` remains unset in production.
 - `SUPABASE_SERVICE_ROLE_KEY` remains unset.
@@ -53,3 +55,11 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 4. Verify no production email transport is active before the provider slice.
 5. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
 6. Stop on any mismatch; do not “fix” by copying staging values.
+
+Before any production app deployment, run the committed production schema gate from a clean tree:
+
+```powershell
+$env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
+npm run test:production-supabase-schema
+Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+```

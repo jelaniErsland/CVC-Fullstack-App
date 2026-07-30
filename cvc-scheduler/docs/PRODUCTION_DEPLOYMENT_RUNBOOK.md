@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepares this runbook only. It does not create production Supabase, deploy production, configure DNS, add real Bozeman data, configure a production email provider, send email, or make the app publicly usable.
+Iteration 12.24 prepared this runbook. Iteration 12.25 adds the production Supabase schema gate for the approved production target, but production launch remains unavailable until that gate is committed, rerun from a clean tree, and the remaining deployment/Auth/domain/email/backup/operator gates pass.
 
 Current launch conclusion: `NO-GO`.
 
@@ -20,15 +20,15 @@ No hosting configuration file is added in 12.24 because the current Next.js defa
 
 ## Production Supabase operator plan
 
-Do not create the project from tests or migrations. Jelani/operator later performs:
+The approved production Supabase target for the 12.25 schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). Do not create the project from tests or migrations. Jelani/operator performs or verifies:
 
 1. Open Supabase.
-2. Create a new project named for Project Local production.
+2. Create or verify the new project named `project-local-production`.
 3. Select the correct organization/account.
 4. Choose a strong database password and store it in a password manager.
 5. Select the closest appropriate region for Bozeman beta users.
 6. Wait for the project to become healthy.
-7. Record the production project name and ref in private operator notes.
+7. Record the production project name and ref in private operator notes; the reviewed 12.25 target is `project-local-production` / `wdlaauzknfggoqldolmx`.
 8. Copy the project URL.
 9. Copy the public anon/publishable key.
 10. Do not expose or use the service-role key in the application.
@@ -65,7 +65,15 @@ Procedure:
 12. Do not run hosted disposable fixture scripts against production.
 13. Verify production tables contain no real Bozeman data after schema setup until operator provisioning begins.
 
-No production migration is applied in 12.24.
+12.25 adds the exact-target schema command, but the actual production migration operation remains pending until this checkpoint is committed and rerun from a clean worktree:
+
+```powershell
+$env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
+npm run test:production-supabase-schema
+Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+```
+
+The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected empty production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies production remains free of app rows, Auth users, and storage objects.
 
 ## Auth URL and redirect plan
 

@@ -54,6 +54,15 @@ Creating an Auth user does not grant app access. App access requires:
 
 ## Phase E - Production Supabase setup
 
+- Confirm the production Supabase project is exactly `project-local-production` with ref `wdlaauzknfggoqldolmx`.
+- After the 12.25 schema gate is committed, run the production schema gate from a clean local repository:
+  ```powershell
+  $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
+  npm run test:production-supabase-schema
+  Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+  ```
+- If Supabase CLI asks for the database password, enter it directly in the local terminal from the password manager. Do not paste it into Codex, chat, docs, Git, screenshots, or issue comments.
+- The schema gate is migration/type/security/count validation only. It must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, notification deliveries, storage objects, or real Bozeman data.
 - Configure Supabase Auth Site URL after the final HTTPS domain is working.
 - Add exact redirect URLs:
   - `https://<final-domain>/admin/auth/callback`

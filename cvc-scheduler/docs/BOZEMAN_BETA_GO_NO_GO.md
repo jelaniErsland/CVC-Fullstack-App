@@ -18,6 +18,7 @@ The persisted beta scheduling loop is technically proven through focused local g
 | Beta-critical UI | Pilot required | 12.23 focused polish and browser validations | Product owner review of desktop/390px Calendar, Volunteers, and volunteer schedule | Yes |
 | Production deployment/domain/Auth | Configuration required | No production target accessed by 12.23 | Verify deployment, domain/base URL, Auth redirect allowlist, and secrets inventory | Yes |
 | Production environment readiness | Configuration required | 12.24 recommends Vercel, adds production env inventory, deployment runbook, Jelani checklist, and route-unused readiness contract | Jelani/operator must create production Supabase/hosting/domain/Auth config and run non-mutating smoke checks | Yes |
+| Production Supabase schema | Pending | 12.25 adds `npm run test:production-supabase-schema` locked to `project-local-production` (`wdlaauzknfggoqldolmx`) and expected migration `20260714122230`; actual production execution waits for a clean committed tree | Commit the 12.25 gate, then run the exact production schema gate from clean state | Yes |
 | Observability and backup/recovery | Configuration required | Runbook defines monitoring and recovery needs | Verify logging, alerts, backups, restore test, rollback, and Belgrade fallback | Yes |
 | Real Bozeman pilot | Pilot required | No real Bozeman records created by tests | Run controlled pilot with approved data | Yes |
 | Deferred non-blocking features | Deferred non-blocking | Response-link reveal/copy, public lookup, remembered devices, Communications, `/admin/tasks`, `/v/demo`, import, reminders remain out of scope | Keep out of launch unless separately reviewed | No |
@@ -29,6 +30,7 @@ The persisted beta scheduling loop is technically proven through focused local g
 - `npm run test:bozeman-beta-launch:hosted`
 - `npm run test:bozeman-beta-e2e:hosted`
 - `npm run test:production-environment-readiness`
+- `npm run test:production-supabase-schema`
 - `npm run test:assignment-notification-email`
 - `npm run test:assignment-notification-email:hosted`
 - `npm run test:calendar`

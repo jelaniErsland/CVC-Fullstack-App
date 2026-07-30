@@ -181,6 +181,7 @@ Use the current package scripts for focused validation, including:
 - `npm run test:bozeman-beta-launch:hosted`
 - `npm run test:bozeman-beta-e2e:hosted`
 - `npm run test:production-environment-readiness`
+- `npm run test:production-supabase-schema`
 - `npm run test:calendar`
 - `npm run test:volunteer-profile-management:browser`
 - `npm run test:volunteer-schedule-responses:browser`
@@ -203,3 +204,13 @@ Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION
 ```
 
 The 12.23.1 gate uses one disposable `qa-12-23-1-*` namespace and validates the continuous hosted staging loop across Auth/session, Volunteers Add/Edit, Calendar scheduling, assignment, publication, recording-only Initial email, secure schedule handoff, Confirm/Deny/Confirm All, admin response truth, negative paths, safe output, screenshot capture/removal, and zero residue. It does not send real email or target production.
+
+Production Supabase schema validation is separate and must be run only after the 12.25 gate is committed:
+
+```powershell
+$env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
+npm run test:production-supabase-schema
+Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+```
+
+This production command is no-fixture and must refuse uncommitted worktrees, staging ref `kfuujcfxoayukywvtaeh`, enabled email transport, service-role runtime configuration, fixture flags, and wrong target identity.

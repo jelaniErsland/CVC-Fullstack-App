@@ -55,6 +55,16 @@ The successful gate verifies `ACTIVE_HEALTHY`, migration `20260714122230`, gener
 
 They recommend Vercel for the first production deployment, require a separate production Supabase project, require `ADMIN_AUTH_MODE=enforced`, require exact HTTPS Auth callback URLs, keep email transport disabled until the provider slice, keep `SUPABASE_SERVICE_ROLE_KEY` unset, and keep the launch conclusion `NO-GO`. No production project, migration, DNS change, real data, real email, or deployment is created by 12.24.
 
+12.25 adds the first production Supabase schema gate for the approved production target, `project-local-production` (`wdlaauzknfggoqldolmx`). The gate is intentionally pending actual production execution until committed and rerun from a clean tree:
+
+```powershell
+$env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
+npm run test:production-supabase-schema
+Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+```
+
+This production command is schema/read-only validation only. It refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees; it must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, deliveries, storage objects, real Bozeman data, deployment, DNS changes, or Auth redirect changes.
+
 ## Client boundary
 
 - `lib/supabase/browser.ts` creates the cookie-compatible client used only by the contact sign-in form.

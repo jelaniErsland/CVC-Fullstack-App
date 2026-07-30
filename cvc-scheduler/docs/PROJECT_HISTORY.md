@@ -1,5 +1,23 @@
 # Project History
 
+## Iteration 12.25 - Production Supabase Migration, Type-Parity, and Read-Only Validation Gate
+
+Summary:
+- Added the production Supabase schema-validation gate and status documentation for the manually created production target without applying production migrations from the uncommitted 12.25 worktree.
+- Added `scripts/production-supabase-schema-regression.mjs` and `npm run test:production-supabase-schema`.
+- Added `docs/PRODUCTION_SUPABASE_STATUS.md`.
+- The gate is exact-target locked to `project-local-production` (`wdlaauzknfggoqldolmx`), forbids staging ref `kfuujcfxoayukywvtaeh`, expects terminal migration `20260714122230`, allows no fixtures/product rows/Auth users/email/service-role runtime behavior, and refuses actual production execution from an uncommitted worktree.
+
+Production operation status:
+- Pending. The 12.25 production migration/type-parity/read-only validation must be run from a clean committed tree after this checkpoint is committed.
+- No production migration was applied, no production project was linked or mutated by the final gate, no production fixtures or real data were created, no email was configured or sent, no Vercel/DNS/Auth redirect configuration was changed, and launch remains `NO-GO`.
+
+Changed files:
+- `scripts/production-supabase-schema-regression.mjs`
+- `docs/PRODUCTION_SUPABASE_STATUS.md`
+- `package.json`
+- Canonical docs updated for the pending 12.25 gate.
+
 ## Iteration 12.24 - Production Environment, Deployment, Domain, and Auth Readiness
 
 Summary:

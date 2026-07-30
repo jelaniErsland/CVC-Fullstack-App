@@ -42,6 +42,12 @@ The launch gate explicitly cannot launch production, create data, send email, mu
 
 The contract records `NO-GO`, expected migration `20260714122230`, strict separation from staging `project-local-staging` (`kfuujcfxoayukywvtaeh`), and Vercel as the recommended first production host based on the current plain Next.js repository shape. `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`, `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`, and `docs/JELANI_PRODUCTION_SETUP_CHECKLIST.md` document production Supabase creation, migration/type-parity procedure, Auth Site URL and redirect allowlist, domain/DNS planning, environment variables, disabled email transport, no service-role key, read-only smoke-test design, observability, backups, rollback, and operator handoff. Production remains `configuration_required` until those manual steps are completed and verified.
 
+## 12.25 Production Supabase schema gate
+
+12.25 adds `scripts/production-supabase-schema-regression.mjs`, `npm run test:production-supabase-schema`, and `docs/PRODUCTION_SUPABASE_STATUS.md` for the first controlled production database schema operation. The gate is locked to `project-local-production` (`wdlaauzknfggoqldolmx`), forbids staging ref `kfuujcfxoayukywvtaeh`, expects terminal migration `20260714122230`, and allows only reviewed migration application plus read-only schema/type/security/count validation. Fixtures, Auth users, product rows, storage objects, email transport, service-role runtime configuration, response-link reveal/copy, production deployment, DNS/Auth redirect changes, and real Bozeman data remain forbidden.
+
+Actual production execution is pending because the gate must refuse uncommitted worktrees and this slice adds the gate itself. After this checkpoint is committed, run the exact opt-in production schema command from a clean tree. Until then, production schema readiness remains `NO-GO`.
+
 ## 12.16 Calendar item management
 
 12.16 adds the first narrow Calendar write boundary on top of the stabilized persisted `/admin/calendar` read route. Mutations remain server-owned and capability-checked. Reads still require `calendar.view` plus `assignments.view` for coverage-bearing output; create/edit requires effective `calendar.edit` for the deterministic authenticated project-contact workspace context. Role/title strings do not authorize, and the browser cannot provide trusted workspace id, actor id, capability arrays, timezone, Follow-up Contact, source provenance, arbitrary columns, or RPC names.
