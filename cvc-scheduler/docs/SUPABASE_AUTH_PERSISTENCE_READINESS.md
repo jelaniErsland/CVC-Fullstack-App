@@ -28,6 +28,12 @@ Local validation uses `npm run test:assignment-notification-email`. 12.22.1 comp
 
 The hosted gate passed generated public-schema type parity, notification summaries, claim/finalize behavior, duplicate/concurrency/retry/stale recovery, malformed recipient handling, safe provider-message-id bounds, schedule-access secrecy, no response-token or response-link reveal activation, direct-table denial, capability/contact/workspace/grant lifecycle isolation, hosted browser explicit-send and retry behavior with recording-only transport, safe output, and exact-run plus namespace zero residue. No service-role application path, real provider sending, Communications persistence, automatic reminders, public lookup, remembered devices, response-link reveal/copy, real Bozeman data, or production deployment was added.
 
+## 12.23 Bozeman beta launch gate
+
+12.23 adds a server-only, route-unused launch gate at `lib/readiness/bozemanBetaLaunchGate.server.ts`. It is not a Supabase mutation boundary and does not change schema, RLS, RPCs, generated public-schema types, hosted migrations, Auth behavior, provider configuration, or production deployment. It records an evidence-based `NO-GO` launch decision because production email provider/domain/deployment/Auth redirect/observability/backup/restore/operator provisioning/product-owner UI review/pilot requirements are unresolved.
+
+The launch gate explicitly cannot launch production, create data, send email, mutate deployment configuration, use a service-role application path, expose secrets, or activate response-link reveal/copy. `npm run test:bozeman-beta-launch-gate` verifies the launch contract is server-only and route-unused. `npm run test:bozeman-beta-launch:hosted` is exact-opt-in only for `project-local-staging` (`kfuujcfxoayukywvtaeh`) and verifies `ACTIVE_HEALTHY` target status, migration `20260714122230`, and generated-type parity without creating hosted fixtures or sending email.
+
 ## 12.16 Calendar item management
 
 12.16 adds the first narrow Calendar write boundary on top of the stabilized persisted `/admin/calendar` read route. Mutations remain server-owned and capability-checked. Reads still require `calendar.view` plus `assignments.view` for coverage-bearing output; create/edit requires effective `calendar.edit` for the deterministic authenticated project-contact workspace context. Role/title strings do not authorize, and the browser cannot provide trusted workspace id, actor id, capability arrays, timezone, Follow-up Contact, source provenance, arbitrary columns, or RPC names.

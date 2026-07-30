@@ -337,6 +337,26 @@ Remove-Item Env:RUN_HOSTED_ASSIGNMENT_NOTIFICATION_EMAIL_VALIDATION
 
 The hosted gate refuses every other target, verifies `project-local-staging` (`kfuujcfxoayukywvtaeh`) is `ACTIVE_HEALTHY`, applies only reviewed pending assignment-notification migrations, compares hosted generated public-schema types with committed types, creates disposable `qa-12-22-1-*` Auth/product fixtures, validates notification summary/claim/finalize behavior, duplicate/concurrency/retry/stale recovery, malformed-recipient handling, finalization bounds, schedule-access secrecy, hosted browser explicit-send and retry behavior with recording-only transport, direct table denial, safe output, and exact-run plus namespace zero residue. Current gate status: passed on the approved non-production staging target; staging is validated through `20260714122230` and hosted disposable residue count was `0`.
 
+### `npm run test:bozeman-beta-launch-gate`
+
+This static command requires no preview server, hosted Supabase target, service-role key, production data, or email provider. It verifies `lib/readiness/bozemanBetaLaunchGate.server.ts` is server-only and route-unused, records the exact staging target and migration `20260714122230`, keeps the launch decision as `NO-GO`, preserves response-link reveal/copy and service-role application use as unavailable, verifies the launch runbook and GO/NO-GO report exist, and proves no beta-critical route imports the launch-gate contract.
+
+### `npm run test:bozeman-beta-ui`
+
+This command requires local Supabase and a loopback production preview. It composes the focused browser suites for the real beta-critical surfaces: `npm run test:calendar`, `npm run test:volunteer-profile-management:browser`, and `npm run test:volunteer-schedule-responses:browser`. Together those suites cover persisted Calendar desktop/390px interactions, create/edit/source/assign/publish/Initial email states, persisted Volunteers Add/Edit, and volunteer schedule Confirm/Can’t make it/Confirm All behavior. It does not target hosted Supabase or production.
+
+### `npm run test:bozeman-beta-launch:hosted`
+
+This hosted launch verification is exact-opt-in only:
+
+```powershell
+$env:RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:bozeman-beta-launch:hosted
+Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION
+```
+
+The command refuses every other target, verifies the linked project is `project-local-staging` (`kfuujcfxoayukywvtaeh`), requires `ACTIVE_HEALTHY`, verifies migration `20260714122230`, and compares hosted generated public-schema types with committed types. It creates no hosted fixtures, sends no email, targets no production project, mutates no deployment configuration, and exists only as the final staging/migration/type verification for the 12.23 launch-candidate package.
+
 To rerun the hosted non-production volunteer schedule access gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 
 ```powershell

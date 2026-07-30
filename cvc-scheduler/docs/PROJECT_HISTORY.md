@@ -1,5 +1,44 @@
 # Project History
 
+## Iteration 12.23 - Bozeman Beta UI Polish, Hosted Validation, and Launch Gate
+
+Summary:
+- Added the Bozeman beta launch-candidate package without launching production, creating real Bozeman data, migrating Belgrade, selecting a production provider, sending real external email, or activating response-link reveal/copy.
+- Applied focused UI polish to the real persisted beta-critical surfaces: Calendar assignment picker and Initial email inspector card, persisted Volunteers Add/Edit framing, and volunteer schedule response-state copy/actions.
+- Added `lib/readiness/bozemanBetaLaunchGate.server.ts` as a server-only route-unused launch-gate contract. The gate records the exact staging target, migration `20260714122230`, blocking production/operator/configuration/pilot requirements, deferred non-blocking features, and an evidence-based `NO-GO` conclusion.
+- Added `docs/BOZEMAN_BETA_LAUNCH_RUNBOOK.md` and `docs/BOZEMAN_BETA_GO_NO_GO.md`.
+- Added `npm run test:bozeman-beta-launch-gate`, `npm run test:bozeman-beta-ui`, and `npm run test:bozeman-beta-launch:hosted`.
+
+Hosted validation:
+- `npm run test:bozeman-beta-launch:hosted` is exact-opt-in only with `RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- The hosted verification passed against `project-local-staging` (`kfuujcfxoayukywvtaeh`), verified `ACTIVE_HEALTHY`, confirmed migration `20260714122230`, and confirmed hosted generated public-schema type parity.
+- The 12.23 hosted launch verification created no hosted fixtures, sent no email, accessed no production target, and changed no deployment configuration. Disposable hosted behavior remains evidenced by the focused hosted gates through 12.22.1, each with zero-residue cleanup.
+
+Changed files:
+- `components/CalendarClient.tsx`
+- `components/VolunteerDirectory.tsx`
+- `components/VolunteerScheduleClient.tsx`
+- `lib/readiness/bozemanBetaLaunchGate.server.ts`
+- `scripts/bozeman-beta-launch-gate-regression.mjs`
+- `scripts/bozeman-beta-ui-browser-regression.mjs`
+- `scripts/hosted-bozeman-beta-launch-regression.mjs`
+- `docs/BOZEMAN_BETA_LAUNCH_RUNBOOK.md`
+- `docs/BOZEMAN_BETA_GO_NO_GO.md`
+- `package.json`
+- Canonical docs updated for 12.23.
+
+Validation:
+- `npm run test:bozeman-beta-launch-gate` passed.
+- `npm run test:bozeman-beta-launch:hosted` refused without exact opt-in, then passed with exact staging opt-in.
+- Full local browser and compatibility results are recorded in the slice final report.
+
+Launch decision:
+- `NO-GO`.
+- The technical persisted scheduling loop is proven, but production provider/domain/deployment/Auth redirect/observability/backup/restore/operator provisioning/product-owner UI review/pilot evidence remains incomplete.
+
+Recommended next action:
+- Resolve the launch blockers recorded in `docs/BOZEMAN_BETA_GO_NO_GO.md`; do not begin deferred non-blocking features until the launch blockers are cleared or explicitly re-scoped.
+
 ## Iteration 12.22.1 - Hosted Staging Initial Assignment Notification Validation Gate
 
 Summary:

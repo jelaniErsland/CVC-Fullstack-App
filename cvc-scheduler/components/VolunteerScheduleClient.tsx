@@ -352,8 +352,8 @@ export function VolunteerScheduleClient({
 
             <p className="mt-6 flex gap-2 rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-sky-900">
               <MessageCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              Responses are saved to the project schedule. If you need to decline
-              within 48 hours of the start time, please contact the project team.
+              Responses are saved to the project schedule. Need to change close
+              to the start time? Contact your Follow-up Contact.
             </p>
 
             {selected.responseNote ? (
@@ -433,22 +433,26 @@ function ResponseActions({
           )}
           {assignment.currentResponseStatus === "confirmed" ? "Confirmed" : "Confirm"}
         </button>
-        <button
-          type="button"
-          onClick={() => onSubmit(assignment, "declined", declineNote)}
-          disabled={!canSubmitDecline || isPending}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-        >
-          <X aria-hidden="true" className="size-4" />
-          {assignment.currentResponseStatus === "declined"
-            ? "Can’t make it"
-            : "Can’t make it"}
-        </button>
+        {canSubmitDecline || assignment.currentResponseStatus === "declined" ? (
+          <button
+            type="button"
+            onClick={() => onSubmit(assignment, "declined", declineNote)}
+            disabled={!canSubmitDecline || isPending}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          >
+            <X aria-hidden="true" className="size-4" />
+            Can’t make it
+          </button>
+        ) : (
+          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+            Need to change? Contact your Follow-up Contact.
+          </p>
+        )}
       </div>
 
       {canSubmitDecline ? (
         <label className="mt-4 block text-sm font-semibold text-slate-700">
-          Note for the project team{" "}
+          Notes{" "}
           <span className="font-normal text-slate-400">(optional)</span>
           <textarea
             value={declineNote}

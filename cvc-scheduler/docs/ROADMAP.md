@@ -62,6 +62,7 @@ Critical path from the post-12.13 state:
 16. `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`
    - Completed: non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`) is validated through `20260714122230`; generated-type parity, summary/claim/finalize behavior, duplicate/concurrency/retry/stale recovery, malformed recipient/finalize bounds, hosted browser recording-send flow, schedule-token secrecy, direct-table denial, safe output, and zero-residue cleanup passed.
 17. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
+   - Completed as a launch-candidate package with focused UI polish, server-only route-unused launch-gate contract, launch runbook, GO/NO-GO matrix, local UI browser aggregation, and hosted staging verification at `20260714122230`. Conclusion: `NO-GO` until production provider/domain/deployment/Auth redirect/observability/backup/operator/pilot actions are complete.
 
 The old next step, `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review`, is moved and modified. It remains useful, but it is not the immediate beta blocker. A narrower task-preset selector/read seam can be reviewed when Calendar create/edit needs it, and the full `/admin/tasks` cutover can wait unless it becomes directly beta-critical.
 

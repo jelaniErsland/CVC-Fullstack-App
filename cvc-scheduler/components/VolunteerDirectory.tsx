@@ -58,23 +58,24 @@ export function VolunteerDirectory({
   }, [congregation, lifecycle, query, volunteers]);
 
   const addForm = canEdit && createAction ? (
-    <details className="mb-6 rounded-3xl border border-white/70 bg-white/54 p-5 shadow-sm sm:p-6">
-      <summary className="cursor-pointer text-base font-semibold text-slate-900">
-        Add volunteer
+    <details className="mb-6 rounded-[1.75rem] border border-white/80 bg-white/64 p-5 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-6">
+      <summary className="cursor-pointer text-base font-semibold text-slate-900 marker:text-slate-400">
+        Add volunteer to this workspace
       </summary>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        Create a permanent manual profile for scheduling. This does not create a
-        questionnaire submission and does not send volunteer email.
+        Create a permanent manual profile for scheduling. Start with name and a
+        reachable contact method; this does not create a questionnaire submission
+        and does not send volunteer email.
       </p>
-      <form action={createAction} className="mt-5 grid gap-3">
+      <form action={createAction} className="mt-5 grid gap-4">
         <VolunteerFields />
-        <Button className="mt-1 w-full sm:w-auto" type="submit">
+        <Button className="mt-1 min-h-11 w-full sm:w-auto" type="submit">
           Save volunteer
         </Button>
       </form>
     </details>
   ) : (
-    <div className="mb-6 rounded-3xl border border-white/70 bg-white/54 p-5 text-sm leading-6 text-slate-500 shadow-sm">
+    <div className="mb-6 rounded-[1.75rem] border border-white/70 bg-white/60 p-5 text-sm leading-6 text-slate-500 shadow-sm">
       Volunteer profile editing is unavailable for this signed-in contact.
     </div>
   );
@@ -128,7 +129,7 @@ export function VolunteerDirectory({
         </label>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-500">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
         <p>
           {filteredVolunteers.length} of {volunteers.length} volunteers
         </p>

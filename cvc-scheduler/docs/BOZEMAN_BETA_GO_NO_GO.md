@@ -1,0 +1,76 @@
+# Bozeman Beta Go/No-Go
+
+Conclusion: NO-GO
+
+The persisted beta scheduling loop is technically proven through focused local and hosted staging gates, but production launch prerequisites remain unresolved. An honest NO-GO means the launch gate is doing its job; it does not mean the implementation failed.
+
+## Decision matrix
+
+| Gate | Status | Evidence | Owner/action | Blocking |
+| --- | --- | --- | --- | --- |
+| Workspace/contact/grant provisioning | Operator required | 12.14 boundary and local validation exist | Provision real Bozeman workspace and approved contacts through reviewed operator procedure | Yes |
+| Volunteer Add/Edit | Proven | `/admin/volunteers`, 12.15.1 hosted gate, local/browser regressions | Pilot with approved Bozeman volunteer data | No |
+| Calendar create/edit/source/assignment/publish | Proven | 12.16 through 12.19.1 hosted gates; `npm run test:calendar` | Final UI review and pilot spot checks | No |
+| Volunteer schedule and Confirm/Deny | Proven | 12.20/12.20.1 and 12.21/12.21.1 hosted gates | Final mobile pilot | No |
+| Initial assignment email boundary | Configuration required | 12.22.1 hosted gate passed through `20260714122230` with recording transport | Approve/configure provider, sender domain, sender identity, secret, base URL, monitoring, and test-recipient policy | Yes |
+| Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity and zero-residue focused gates passed | Rerun exact hosted launch gate before final launch review | No |
+| Beta-critical UI | Pilot required | 12.23 focused polish and browser validations | Product owner review of desktop/390px Calendar, Volunteers, and volunteer schedule | Yes |
+| Production deployment/domain/Auth | Configuration required | No production target accessed by 12.23 | Verify deployment, domain/base URL, Auth redirect allowlist, and secrets inventory | Yes |
+| Observability and backup/recovery | Configuration required | Runbook defines monitoring and recovery needs | Verify logging, alerts, backups, restore test, rollback, and Belgrade fallback | Yes |
+| Real Bozeman pilot | Pilot required | No real Bozeman records created by tests | Run controlled pilot with approved data | Yes |
+| Deferred non-blocking features | Deferred non-blocking | Response-link reveal/copy, public lookup, remembered devices, Communications, `/admin/tasks`, `/v/demo`, import, reminders remain out of scope | Keep out of launch unless separately reviewed | No |
+
+## Evidence commands
+
+- `npm run test:bozeman-beta-launch-gate`
+- `npm run test:bozeman-beta-ui`
+- `npm run test:bozeman-beta-launch:hosted`
+- `npm run test:assignment-notification-email`
+- `npm run test:assignment-notification-email:hosted`
+- `npm run test:calendar`
+- `npm run test:volunteer-profile-management:browser`
+- `npm run test:volunteer-schedule-responses:browser`
+
+## Blocking actions before launch
+
+1. Provision real Bozeman workspace/contact/grants through the 12.14 operator boundary.
+2. Select and configure production email provider.
+3. Verify sender domain and sender identity.
+4. Configure provider secret and production base URL without committing secrets.
+5. Verify production deployment target and domain.
+6. Verify Auth redirect allowlist.
+7. Verify logging, alerts, and stale-delivery monitoring.
+8. Verify backup availability and restore/rollback procedure.
+9. Complete product-owner UI review on desktop and 390px mobile.
+10. Run a small controlled pilot with approved Bozeman data and approved test recipients.
+
+## Non-blocking deferred items
+
+- Belgrade migration.
+- Full `/admin/tasks` cutover.
+- `/v/demo` cutover.
+- Public volunteer lookup.
+- Remembered devices.
+- Full Communications composer and analytics.
+- Automatic reminders.
+- Schedule-change emails.
+- Response-link reveal/copy activation.
+- Assignment-detail entry links.
+- Controlled import UI.
+- Availability/conflict engine.
+- Drag/drop, resize, recurrence, and copy/paste scheduling.
+- Needs Attention persistence.
+
+## Production email provider/domain/deployment status
+
+- Production provider: not approved in repository.
+- Production sender domain: not verified in repository.
+- Sender identity: not configured for production.
+- Provider secret: not configured or committed.
+- Production base URL/domain: not verified.
+- Production deployment: not performed.
+- Real external email: not sent by 12.23.
+
+## Fallback
+
+Belgrade Sheets/App Script remains the operational fallback. If any launch blocker remains unresolved, Bozeman beta should not replace or endanger Belgrade operations.

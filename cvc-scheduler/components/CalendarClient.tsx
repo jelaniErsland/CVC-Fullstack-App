@@ -3021,7 +3021,7 @@ function InspectorContent({
           </p>
         </div>
 
-        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
+        <div className="mt-3 rounded-2xl border border-slate-200/70 bg-white/76 px-4 py-4 shadow-sm">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
             Helpers
@@ -3074,7 +3074,7 @@ function InspectorContent({
             )}
           </div>
 
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
             {assignmentPicker.kind === "unavailable" ? (
               <p className="text-sm leading-6 text-slate-600">
                 Volunteer choices are unavailable for this signed-in contact.
@@ -3112,7 +3112,7 @@ function InspectorContent({
                     />
                   </span>
                 </label>
-                <div className="max-h-48 space-y-2 overflow-y-auto pr-1">
+                <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
                   {visiblePickerVolunteers.length > 0 ? (
                     visiblePickerVolunteers.map((volunteer) => (
                       <label
@@ -3185,13 +3185,23 @@ function InspectorContent({
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
+        <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-4 shadow-sm">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
             Initial email
           </p>
           {initialNotification?.kind === "ready" ? (
             <div className="mt-3 space-y-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-950">
+                  Notify volunteers
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Publishing makes the assignment visible in the volunteer schedule.
+                  This explicit action sends the first email notice through the
+                  configured server transport.
+                </p>
+              </div>
               <p className="text-sm leading-6 text-slate-600">
                 Send the first assignment email for this published item. The
                 server rechecks publication, active assignments, volunteer email,
@@ -3219,7 +3229,8 @@ function InspectorContent({
               ) : null}
               {item.publicationState !== "published" ? (
                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
-                  Publish this item before sending assignment email.
+                  Publish this item before sending assignment email. Assigning and
+                  publishing still do not send email automatically.
                 </p>
               ) : null}
               {canEditAssignments && sendInitialAssignmentNotificationsAction ? (

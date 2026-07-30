@@ -71,7 +71,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 16. `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`
    - Completed against non-production `project-local-staging` (`kfuujcfxoayukywvtaeh`). The gate preserved hosted history with forward validation fixes through `20260714122230`, refreshed generated public-schema type parity, validated explicit send summary/claim/finalize behavior, malformed recipient/finalize bounds, duplicate/concurrency/retry/stale recovery, hosted browser send/retry behavior with recording-only transport, schedule-access secrecy, no response-link activation, direct-table denial, safe output, and exact-run plus namespace zero residue.
 17. `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`
-    - Unblocks: beta launch candidate review.
+    - Completed as a launch-candidate gate, not a production launch. Focused Calendar/Volunteers/volunteer-schedule polish was applied, `lib/readiness/bozemanBetaLaunchGate.server.ts` records a server-only route-unused launch gate, `docs/BOZEMAN_BETA_LAUNCH_RUNBOOK.md` and `docs/BOZEMAN_BETA_GO_NO_GO.md` record operations and decision evidence, and the conclusion is `NO-GO` until production provider/domain/deployment/observability/backup/operator/pilot actions are completed.
 
 ## Repository-grounded beta blockers
 
@@ -84,8 +84,8 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 - Secure account-light volunteer schedule access and volunteer Confirm/Deny are implemented and hosted-validated through 12.21.1. `/v/demo` remains mock and separate. `/v/schedule` persists Confirm/Deny/Confirm All through credential-scoped public RPCs, and `/respond/[token]` shares the same 48-hour/start-lock mutation policy while retaining `public_token` provenance.
 - Confirm/Deny no longer depends on mock volunteer state locally. It persists to the existing one-current-row `assignment_responses` truth and is visible to authorized admins through existing Calendar assignment-derived response state.
 - Basic initial assignment email delivery now has a hosted-validated 12.22/12.22.1 boundary: explicit admin send only, server-derived recipient and Follow-up Contact eligibility, duplicate-send prevention, hash-only schedule-access credential issuance, safe delivery metadata, and a disabled-by-default recording transport. Production sender/provider/domain configuration and real deliverability proof remain beta blockers; the hosted migration/RPC/type boundary itself is validated.
-- Beta-critical UI polish is not yet integrated across create/edit Calendar, volunteer picker, Add/Edit Volunteer, volunteer schedule, response states, and safe empty/unavailable/error states.
-- Production Supabase/deployment/auth/email/domain/observability/backup/hosted-validation gates are not complete.
+- Beta-critical UI polish has received a focused 12.23 pass on the real Calendar inspector/assignment/email surfaces, persisted Volunteers Add/Edit, and volunteer schedule response states. Product-owner review with desktop/390px screenshots and a controlled pilot remain required before launch.
+- Production Supabase/deployment/auth/email/domain/observability/backup/pilot gates are not complete. The 12.23 GO/NO-GO conclusion is `NO-GO`.
 
 ## Non-blocking features deferred behind the beta gate
 
@@ -312,4 +312,18 @@ Follow-up Contact volunteer-facing data is now explicit. 12.22 does not use Auth
 
 The Calendar inspector now includes an Initial email card with ready/already-sent/missing-email/missing-Follow-up-Contact counts and one explicit send button when the transport is configured and eligible recipients exist. Publishing remains separate from email; assignment creation/cancellation remains separate from email; response-link reveal/copy remains paused; no Communications module, reminders, public lookup, remembered devices, assignment-detail links, provider integration, real Bozeman data, Belgrade migration, or service-role application path was added.
 
-Local validation uses `npm run test:assignment-notification-email`, which proves claim/finalize delivery behavior, duplicate prevention, missing recipient and missing Follow-up Contact handling, explicit send action wiring, schedule-access issuance, safe recording output, direct table denial, wrong-contact/wrong-workspace/role-only failures, disabled transport behavior, and zero disposable residue. Because this slice changes migration/RPC/generated-type behavior, the required next slice is `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate` before 12.23 or hosted beta reliance.
+Local validation uses `npm run test:assignment-notification-email`, which proves claim/finalize delivery behavior, duplicate prevention, missing recipient and missing Follow-up Contact handling, explicit send action wiring, schedule-access issuance, safe recording output, direct table denial, wrong-contact/wrong-workspace/role-only failures, disabled transport behavior, and zero disposable residue. 12.22.1 completed the required hosted staging validation gate before 12.23.
+
+## 12.23 Bozeman beta launch gate
+
+12.23 adds the launch-gate contract and operational package for the initial Bozeman beta candidate.
+
+- Focused UI polish was applied to the persisted Calendar inspector/assignment picker/Initial email card, persisted Volunteers Add/Edit surface, and volunteer schedule response states.
+- `lib/readiness/bozemanBetaLaunchGate.server.ts` is server-only and route-unused. It cannot launch production, create data, send email, mutate deployment configuration, expose secrets, use a service-role application path, or activate response-link reveal/copy.
+- `npm run test:bozeman-beta-launch-gate` proves the launch gate remains route-unused and honest.
+- `npm run test:bozeman-beta-ui` composes the focused loopback browser suites for Calendar, Volunteers, and volunteer schedule mobile/desktop behavior.
+- `npm run test:bozeman-beta-launch:hosted` is exact-opt-in only for `project-local-staging` (`kfuujcfxoayukywvtaeh`) and verifies `ACTIVE_HEALTHY` staging, migration `20260714122230`, and generated-type parity without creating hosted fixtures or sending email.
+- `docs/BOZEMAN_BETA_LAUNCH_RUNBOOK.md` records the operator procedure, environment inventory, Auth/workspace/grant procedure, volunteer/calendar/email operations, observability, backup/recovery, pilot, stop conditions, and Belgrade fallback.
+- `docs/BOZEMAN_BETA_GO_NO_GO.md` records the conclusion: `NO-GO`.
+
+The NO-GO is intentional and evidence-based: the persisted technical loop is proven, but production provider/domain/deployment/Auth redirect/observability/backup/restore/operator provisioning/product-owner UI review/pilot requirements are not yet evidenced. No real Bozeman data, production target access, provider SDK, real external email, Belgrade migration, service-role application path, public lookup, remembered-device behavior, full Communications, `/admin/tasks` cutover, `/v/demo` cutover, response-link reveal/copy activation, or assignment-detail entry link was added.
