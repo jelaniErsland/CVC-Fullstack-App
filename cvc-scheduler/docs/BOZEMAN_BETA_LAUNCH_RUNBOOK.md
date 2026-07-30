@@ -4,6 +4,8 @@ This runbook is the operational checklist for a future Bozeman Project Local bet
 
 Principle: **Cut features, not integrity.**
 
+Current launch conclusion: `NO-GO`.
+
 ## Environment inventory
 
 ### Local
@@ -24,6 +26,7 @@ Principle: **Cut features, not integrity.**
 
 Production is not configured or approved by this runbook. Before launch, record and verify:
 
+- Hosting platform. 12.24 recommends Vercel for the first production deployment based on this Next.js repository shape.
 - Production Supabase project.
 - Production deployment target.
 - Production domain and `ASSIGNMENT_NOTIFICATION_BASE_URL`.
@@ -32,6 +35,12 @@ Production is not configured or approved by this runbook. Before launch, record 
 - Logging, alerting, backups, restore testing, and rollback procedure.
 
 Do not store secrets in documentation.
+
+Production-readiness handoff docs:
+
+- [`PRODUCTION_ENVIRONMENT_INVENTORY.md`](./PRODUCTION_ENVIRONMENT_INVENTORY.md)
+- [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md)
+- [`JELANI_PRODUCTION_SETUP_CHECKLIST.md`](./JELANI_PRODUCTION_SETUP_CHECKLIST.md)
 
 ## Auth and access
 
@@ -171,6 +180,7 @@ Use the current package scripts for focused validation, including:
 - `npm run test:bozeman-beta-ui`
 - `npm run test:bozeman-beta-launch:hosted`
 - `npm run test:bozeman-beta-e2e:hosted`
+- `npm run test:production-environment-readiness`
 - `npm run test:calendar`
 - `npm run test:volunteer-profile-management:browser`
 - `npm run test:volunteer-schedule-responses:browser`

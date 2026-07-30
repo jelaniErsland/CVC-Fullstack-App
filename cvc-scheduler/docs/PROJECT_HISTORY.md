@@ -1,5 +1,32 @@
 # Project History
 
+## Iteration 12.24 - Production Environment, Deployment, Domain, and Auth Readiness
+
+Summary:
+- Added production-readiness and operator-handoff documentation without creating production Supabase, deploying production, configuring DNS, creating real Bozeman data, configuring a real email provider, sending email, activating response-link reveal/copy, or adding product features.
+- Added `lib/readiness/productionEnvironmentReadiness.server.ts` as a server-only, route-unused readiness contract. It records an evidence-based `NO-GO`, expected migration `20260714122230`, Vercel as the recommended first production host, and the remaining production/operator/configuration blockers.
+- Added `npm run test:production-environment-readiness` and `scripts/production-environment-readiness-regression.mjs`.
+- Added `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`, `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`, and `docs/JELANI_PRODUCTION_SETUP_CHECKLIST.md`.
+
+Deployment finding:
+- The repository is a plain Next.js 16 app with server actions, route handlers, dynamic/no-store routes, HttpOnly cookies, Supabase Auth callback flows, and no existing `vercel.json` or `netlify.toml`.
+- Vercel is recommended as the safest first production host for this repository because it has first-class Next.js support, encrypted environment settings, preview deployments, custom domain/HTTPS support, logs, and rollback. No hosting config file was added because current Next.js defaults are sufficient and less risky than ceremonial redirects/rewrites.
+
+Changed files:
+- `lib/readiness/productionEnvironmentReadiness.server.ts`
+- `scripts/production-environment-readiness-regression.mjs`
+- `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`
+- `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`
+- `docs/JELANI_PRODUCTION_SETUP_CHECKLIST.md`
+- `package.json`
+- Canonical docs updated for 12.24.
+
+Validation:
+- `npm run test:production-environment-readiness` protects the server-only, route-unused, NO-GO production-readiness contract and documentation.
+
+Launch decision:
+- `NO-GO` remains correct. Production Supabase project, production deployment, HTTPS domain/Auth redirect allowlist, production email provider, observability, backups/restore, real Bozeman operator provisioning, UI approval, and controlled pilot proof remain unresolved.
+
 ## Iteration 12.23.1 - Hosted End-to-End Bozeman Beta Loop Integration Gate
 
 Summary:

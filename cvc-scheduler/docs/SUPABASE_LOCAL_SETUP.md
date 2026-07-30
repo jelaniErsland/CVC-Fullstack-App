@@ -47,6 +47,14 @@ Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION
 
 The successful gate verifies `ACTIVE_HEALTHY`, migration `20260714122230`, generated-type parity, one disposable hosted namespace across the real beta loop, recording-only email, safe output, temporary screenshot/log cleanup, and zero hosted/Auth residue. It does not target production, send real email, or create real Bozeman/Belgrade data.
 
+12.24 production-readiness docs live in:
+
+- [`PRODUCTION_ENVIRONMENT_INVENTORY.md`](./PRODUCTION_ENVIRONMENT_INVENTORY.md)
+- [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md)
+- [`JELANI_PRODUCTION_SETUP_CHECKLIST.md`](./JELANI_PRODUCTION_SETUP_CHECKLIST.md)
+
+They recommend Vercel for the first production deployment, require a separate production Supabase project, require `ADMIN_AUTH_MODE=enforced`, require exact HTTPS Auth callback URLs, keep email transport disabled until the provider slice, keep `SUPABASE_SERVICE_ROLE_KEY` unset, and keep the launch conclusion `NO-GO`. No production project, migration, DNS change, real data, real email, or deployment is created by 12.24.
+
 ## Client boundary
 
 - `lib/supabase/browser.ts` creates the cookie-compatible client used only by the contact sign-in form.
