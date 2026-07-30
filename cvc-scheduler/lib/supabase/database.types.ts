@@ -7,8 +7,118 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
+      assignment_notification_deliveries: {
+        Row: {
+          attempt_count: number
+          calendar_assignment_id: string
+          calendar_item_id: string
+          created_at: string
+          delivery_state: string
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          initiated_by_project_contact_id: string | null
+          notification_kind: string
+          provider_message_id: string | null
+          recipient_email_snapshot: string | null
+          safe_failure_code: string | null
+          sending_expires_at: string | null
+          sending_started_at: string | null
+          sent_at: string | null
+          template_version: string
+          updated_at: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          calendar_assignment_id: string
+          calendar_item_id: string
+          created_at?: string
+          delivery_state: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key: string
+          initiated_by_project_contact_id?: string | null
+          notification_kind?: string
+          provider_message_id?: string | null
+          recipient_email_snapshot?: string | null
+          safe_failure_code?: string | null
+          sending_expires_at?: string | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          template_version?: string
+          updated_at?: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Update: {
+          attempt_count?: number
+          calendar_assignment_id?: string
+          calendar_item_id?: string
+          created_at?: string
+          delivery_state?: string
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string
+          initiated_by_project_contact_id?: string | null
+          notification_kind?: string
+          provider_message_id?: string | null
+          recipient_email_snapshot?: string | null
+          safe_failure_code?: string | null
+          sending_expires_at?: string | null
+          sending_started_at?: string | null
+          sent_at?: string | null
+          template_version?: string
+          updated_at?: string
+          volunteer_profile_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_notification_deliv_initiated_by_project_contact_fkey"
+            columns: ["initiated_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_assignment_fk"
+            columns: ["workspace_id", "calendar_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_assignments"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_item_fk"
+            columns: ["workspace_id", "calendar_item_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_items"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_volunteer_fk"
+            columns: ["workspace_id", "volunteer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_notification_deliveries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_response_link_reveal_events: {
         Row: {
           action: string
@@ -129,111 +239,6 @@ export type Database = {
           },
           {
             foreignKeyName: "assignment_response_tokens_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      assignment_notification_deliveries: {
-        Row: {
-          attempt_count: number
-          calendar_assignment_id: string
-          calendar_item_id: string
-          created_at: string
-          delivery_state: string
-          failed_at: string | null
-          id: string
-          idempotency_key: string
-          initiated_by_project_contact_id: string | null
-          notification_kind: string
-          provider_message_id: string | null
-          recipient_email_snapshot: string | null
-          safe_failure_code: string | null
-          sending_expires_at: string | null
-          sending_started_at: string | null
-          sent_at: string | null
-          template_version: string
-          updated_at: string
-          volunteer_profile_id: string
-          workspace_id: string
-        }
-        Insert: {
-          attempt_count?: number
-          calendar_assignment_id: string
-          calendar_item_id: string
-          created_at?: string
-          delivery_state: string
-          failed_at?: string | null
-          id?: string
-          idempotency_key: string
-          initiated_by_project_contact_id?: string | null
-          notification_kind?: string
-          provider_message_id?: string | null
-          recipient_email_snapshot?: string | null
-          safe_failure_code?: string | null
-          sending_expires_at?: string | null
-          sending_started_at?: string | null
-          sent_at?: string | null
-          template_version?: string
-          updated_at?: string
-          volunteer_profile_id: string
-          workspace_id: string
-        }
-        Update: {
-          attempt_count?: number
-          calendar_assignment_id?: string
-          calendar_item_id?: string
-          created_at?: string
-          delivery_state?: string
-          failed_at?: string | null
-          id?: string
-          idempotency_key?: string
-          initiated_by_project_contact_id?: string | null
-          notification_kind?: string
-          provider_message_id?: string | null
-          recipient_email_snapshot?: string | null
-          safe_failure_code?: string | null
-          sending_expires_at?: string | null
-          sending_started_at?: string | null
-          sent_at?: string | null
-          template_version?: string
-          updated_at?: string
-          volunteer_profile_id?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_notification_deliveries_assignment_fk"
-            columns: ["workspace_id", "calendar_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "calendar_assignments"
-            referencedColumns: ["workspace_id", "id"]
-          },
-          {
-            foreignKeyName: "assignment_notification_deliveries_initiated_by_project_contact_id_fkey"
-            columns: ["initiated_by_project_contact_id"]
-            isOneToOne: false
-            referencedRelation: "project_contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignment_notification_deliveries_item_fk"
-            columns: ["workspace_id", "calendar_item_id"]
-            isOneToOne: false
-            referencedRelation: "calendar_items"
-            referencedColumns: ["workspace_id", "id"]
-          },
-          {
-            foreignKeyName: "assignment_notification_deliveries_volunteer_fk"
-            columns: ["workspace_id", "volunteer_profile_id"]
-            isOneToOne: false
-            referencedRelation: "volunteer_profiles"
-            referencedColumns: ["workspace_id", "id"]
-          },
-          {
-            foreignKeyName: "assignment_notification_deliveries_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -869,13 +874,6 @@ export type Database = {
         Args: { p_assignment_id: string }
         Returns: string
       }
-      confirm_all_volunteer_schedule_assignments: {
-        Args: { p_bearer_token: string }
-        Returns: {
-          confirmed_count: number
-          response_recorded_at: string
-        }[]
-      }
       claim_initial_assignment_notification_deliveries: {
         Args: { p_calendar_item_id: string }
         Returns: {
@@ -902,6 +900,13 @@ export type Database = {
           volunteer_profile_id: string
           workspace_display_name: string
           workspace_timezone: string
+        }[]
+      }
+      confirm_all_volunteer_schedule_assignments: {
+        Args: { p_bearer_token: string }
+        Returns: {
+          confirmed_count: number
+          response_recorded_at: string
         }[]
       }
       convert_questionnaire_submission_to_volunteer_profile: {
@@ -954,6 +959,18 @@ export type Database = {
         }
         Returns: string
       }
+      create_task_preset: {
+        Args: {
+          p_custom_field_definitions: Json
+          p_default_needed_count: number
+          p_description: string
+          p_name: string
+          p_task_type: string
+          p_volunteer_visible: boolean
+          p_workspace_id: string
+        }
+        Returns: string
+      }
       finalize_initial_assignment_notification_delivery: {
         Args: {
           p_delivery_id: string
@@ -966,18 +983,6 @@ export type Database = {
           delivery_id: string
           delivery_state: string
         }[]
-      }
-      create_task_preset: {
-        Args: {
-          p_custom_field_definitions: Json
-          p_default_needed_count: number
-          p_description: string
-          p_name: string
-          p_task_type: string
-          p_volunteer_visible: boolean
-          p_workspace_id: string
-        }
-        Returns: string
       }
       issue_assignment_response_token: {
         Args: {

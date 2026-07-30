@@ -1,5 +1,42 @@
 # Project History
 
+## Iteration 12.22.1 - Hosted Staging Initial Assignment Notification Validation Gate
+
+Summary:
+- Completed the hosted non-production validation gate for the 12.22 initial assignment notification boundary against `project-local-staging` (`kfuujcfxoayukywvtaeh`), verified as `ACTIVE_HEALTHY`.
+- The gate applied the reviewed `20260714122200_initial_assignment_notifications.sql` migration, then preserved hosted migration history with forward fixes for real hosted-discovered defects: `20260714122210_initial_assignment_notification_email_validation.sql`, `20260714122220_initial_assignment_notification_recipient_snapshot.sql`, and `20260714122230_initial_assignment_notification_finalize_bounds.sql`.
+- Staging is now validated through migration `20260714122230`. The final successful hosted run verified `20260714122230` before and after behavior validation.
+- Added `npm run test:assignment-notification-email:hosted` and `scripts/hosted-assignment-notification-email-regression.mjs` as the repeatable exact-opt-in gate. The command refuses to run without `RUN_HOSTED_ASSIGNMENT_NOTIFICATION_EMAIL_VALIDATION=project-local-staging:kfuujcfxoayukywvtaeh`.
+- Hosted generated public-schema types were refreshed from hosted output using the UTF-8-safe workflow and now match the committed generated types.
+
+Hosted proof:
+- Validated notification summaries, claim/finalize delivery behavior, duplicate successful-send prevention, concurrency safety, failure retry, stale `sending` recovery, malformed-recipient skip behavior, bounded provider message ids, safe failure codes, and no raw provider/database/credential output.
+- Validated server-derived Auth/contact/workspace/capability behavior, including `assignments.edit` enforcement, wrong-contact and wrong-workspace failure, revoked/expired/inactive grant failure, inactive contact/workspace failure, role/title non-authorization, and direct authenticated table-write denial.
+- Validated schedule-access secrecy: the send path issues the existing hash-only schedule credential, does not persist the bearer or full URL, creates no assignment response token, and does not activate response-link reveal/copy.
+- Added hosted-backed browser proof for the explicit `/admin/calendar` Initial email action using only the recording transport: successful send, reload already-sent state, failed-send retry, 390px no-overflow layout, safe recording output, and no schedule bearer/full URL/token/grant/capability leakage.
+- Cleanup removed all exact-run disposable Auth/product/browser fixtures and verified namespace zero residue. Hosted disposable residue count was `0`.
+
+Changed files:
+- `lib/supabase/database.types.ts`
+- `package.json`
+- `scripts/assignment-notification-email-regression.mjs`
+- `scripts/hosted-assignment-notification-email-regression.mjs`
+- `supabase/migrations/20260714122210_initial_assignment_notification_email_validation.sql`
+- `supabase/migrations/20260714122220_initial_assignment_notification_recipient_snapshot.sql`
+- `supabase/migrations/20260714122230_initial_assignment_notification_finalize_bounds.sql`
+- Canonical docs updated for 12.22.1.
+
+Validation:
+- Hosted staging validation passed with exact-run and namespace zero residue.
+- Local compatibility passed after the hosted gate, including the assignment notification, Calendar item/source/assignment/publication, volunteer schedule access/responses, assignment/response-token/response-route/assignment-detail, grant, Bozeman, volunteer, lint, typecheck, build, browser Calendar, and `git diff --check` checks recorded in the slice final report.
+
+Limitations:
+- No real external email was sent. Production provider/sender/domain/secrets/deliverability/observability remain launch-gate work.
+- No automatic reminders, Communications persistence, public lookup, remembered devices, response-link reveal/copy activation, assignment-detail entry links, real Bozeman data, Belgrade migration, or service-role application path was added.
+
+Recommended next slice:
+- `12.23 Bozeman Beta UI Polish, Hosted Validation, and Launch Gate`.
+
 ## Iteration 12.22 - Initial Assignment Notification Email Boundary
 
 Summary:

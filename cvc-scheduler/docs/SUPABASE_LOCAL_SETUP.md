@@ -327,7 +327,15 @@ Remove-Item Env:ASSIGNMENT_NOTIFICATION_FROM
 Remove-Item Env:ASSIGNMENT_NOTIFICATION_RECORDING_PATH
 ```
 
-12.22 changes schema/RPC/generated-type behavior, so hosted non-production validation is required before hosted beta use. That follow-up gate should be `12.22.1 Hosted Staging Initial Assignment Notification Validation Gate`, locked to the approved non-production staging target and using disposable fixtures only.
+12.22.1 completed the hosted non-production validation gate for this boundary. To rerun it after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
+
+```powershell
+$env:RUN_HOSTED_ASSIGNMENT_NOTIFICATION_EMAIL_VALIDATION='project-local-staging:kfuujcfxoayukywvtaeh'
+npm run test:assignment-notification-email:hosted
+Remove-Item Env:RUN_HOSTED_ASSIGNMENT_NOTIFICATION_EMAIL_VALIDATION
+```
+
+The hosted gate refuses every other target, verifies `project-local-staging` (`kfuujcfxoayukywvtaeh`) is `ACTIVE_HEALTHY`, applies only reviewed pending assignment-notification migrations, compares hosted generated public-schema types with committed types, creates disposable `qa-12-22-1-*` Auth/product fixtures, validates notification summary/claim/finalize behavior, duplicate/concurrency/retry/stale recovery, malformed-recipient handling, finalization bounds, schedule-access secrecy, hosted browser explicit-send and retry behavior with recording-only transport, direct table denial, safe output, and exact-run plus namespace zero residue. Current gate status: passed on the approved non-production staging target; staging is validated through `20260714122230` and hosted disposable residue count was `0`.
 
 To rerun the hosted non-production volunteer schedule access gate after confirming the approved staging project is active and this repository is linked to it, use the exact opt-in:
 

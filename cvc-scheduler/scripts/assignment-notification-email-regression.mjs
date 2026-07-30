@@ -248,6 +248,39 @@ async function applyAssignmentEmailMigrationIfNeeded(containerName) {
       );
     runPsql(containerName, summaryFunction);
   }
+  const refreshedSummarySource = runPsql(
+    containerName,
+    "select prosrc from pg_proc where proname = 'read_initial_assignment_notification_summaries' limit 1;",
+  );
+  if (!refreshedSummarySource.includes("recipient_email !~*")) {
+    const validationMigration = await readFile(
+      path.join(root, "supabase", "migrations", "20260714122210_initial_assignment_notification_email_validation.sql"),
+      "utf8",
+    );
+    runPsql(containerName, validationMigration);
+  }
+  const refreshedClaimSource = runPsql(
+    containerName,
+    "select prosrc from pg_proc where proname = 'claim_initial_assignment_notification_deliveries' limit 1;",
+  );
+  if (!refreshedClaimSource.includes("normalized_recipient_email := null")) {
+    const snapshotMigration = await readFile(
+      path.join(root, "supabase", "migrations", "20260714122220_initial_assignment_notification_recipient_snapshot.sql"),
+      "utf8",
+    );
+    runPsql(containerName, snapshotMigration);
+  }
+  const refreshedFinalizeSource = runPsql(
+    containerName,
+    "select prosrc from pg_proc where proname = 'finalize_initial_assignment_notification_delivery' limit 1;",
+  );
+  if (!refreshedFinalizeSource.includes("A-Za-z0-9._:-")) {
+    const finalizeMigration = await readFile(
+      path.join(root, "supabase", "migrations", "20260714122230_initial_assignment_notification_finalize_bounds.sql"),
+      "utf8",
+    );
+    runPsql(containerName, finalizeMigration);
+  }
 }
 
 async function createAuthenticatedUser(label) {
