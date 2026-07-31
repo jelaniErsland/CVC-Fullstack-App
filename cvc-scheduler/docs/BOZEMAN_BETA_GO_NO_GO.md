@@ -16,9 +16,9 @@ The persisted beta scheduling loop is technically proven through focused local g
 | Integrated hosted beta loop | Proven | 12.23.1 ran one continuous disposable namespace through Volunteer Add/Edit, Calendar scheduling, assignment, publication, recording-only email, secure schedule access, Confirm/Deny/Confirm All, admin response truth, negative paths, and zero residue | Repeat before final launch review if staging/schema changes | No |
 | Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity, focused hosted gates, launch verification, and 12.23.1 integrated zero-residue gate passed | Rerun exact hosted launch/E2E gates before final launch review if needed | No |
 | Beta-critical UI | Pilot required | 12.23 focused polish and browser validations | Product owner review of desktop/390px Calendar, Volunteers, and volunteer schedule | Yes |
-| Production deployment/domain/Auth | Configuration required | No production target accessed by 12.23 | Verify deployment, domain/base URL, Auth redirect allowlist, and secrets inventory | Yes |
-| Production environment readiness | Configuration required | 12.24 recommends Vercel, adds production env inventory, deployment runbook, Jelani checklist, and route-unused readiness contract | Jelani/operator must create production Supabase/hosting/domain/Auth config and run non-mutating smoke checks | Yes |
-| Production Supabase schema | Proven | 12.25 ran `npm run test:production-supabase-schema` against `project-local-production` (`wdlaauzknfggoqldolmx`); production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts remained zero, public Supabase connectivity passed, and structural RLS/security checks passed | Keep production empty until reviewed operator provisioning; rerun the exact gate after future migrations | No |
+| Production deployment/domain/Auth | Partial | Vercel project `project-local` is live at `https://project-local-one.vercel.app`; `ADMIN_AUTH_MODE` is enforced; Supabase Auth Site URL and exact callback are configured; manual magic-link sign-in passed; custom domain remains unconnected | Connect final custom domain, update Auth callback/base URLs, and rerun smoke checks before real data | Yes |
+| Production environment readiness | Partial | 12.26 adds `npm run test:production-deployment-smoke`; refusal paths passed; matching public HTTP diagnostic and manual Auth/no-grant fail-closed evidence are recorded | Commit 12.26 and rerun the exact smoke gate, then complete final domain, email, observability, backup/restore, operator provisioning, UI approval, and pilot evidence | Yes |
+| Production Supabase schema | Proven | 12.25 ran the initial/bootstrap empty-production `npm run test:production-supabase-schema` gate against `project-local-production` (`wdlaauzknfggoqldolmx`); production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts were zero before Auth setup, public Supabase connectivity passed, and structural RLS/security checks passed | Keep Project Local product rows/storage empty until reviewed operator provisioning; use a separately reviewed established-production migration gate for future live-state migrations | No |
 | Observability and backup/recovery | Configuration required | Runbook defines monitoring and recovery needs | Verify logging, alerts, backups, restore test, rollback, and Belgrade fallback | Yes |
 | Real Bozeman pilot | Pilot required | No real Bozeman records created by tests | Run controlled pilot with approved data | Yes |
 | Deferred non-blocking features | Deferred non-blocking | Response-link reveal/copy, public lookup, remembered devices, Communications, `/admin/tasks`, `/v/demo`, import, reminders remain out of scope | Keep out of launch unless separately reviewed | No |
@@ -29,6 +29,7 @@ The persisted beta scheduling loop is technically proven through focused local g
 - `npm run test:bozeman-beta-ui`
 - `npm run test:bozeman-beta-launch:hosted`
 - `npm run test:bozeman-beta-e2e:hosted`
+- `npm run test:production-deployment-smoke`
 - `npm run test:production-environment-readiness`
 - `npm run test:production-supabase-schema`
 - `npm run test:assignment-notification-email`
@@ -74,7 +75,7 @@ The persisted beta scheduling loop is technically proven through focused local g
 - Sender identity: not configured for production.
 - Provider secret: not configured or committed.
 - Production base URL/domain: not verified.
-- Production deployment: not performed; 12.24 recommends Vercel but creates no hosting project automatically.
+- Production deployment: Vercel project `project-local` is live at `https://project-local-one.vercel.app`; final custom domain is not connected.
 - Real external email: not sent by 12.23.1.
 
 ## Fallback

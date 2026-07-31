@@ -55,7 +55,7 @@ The successful gate verifies `ACTIVE_HEALTHY`, migration `20260714122230`, gener
 
 They recommend Vercel for the first production deployment, require a separate production Supabase project, require `ADMIN_AUTH_MODE=enforced`, require exact HTTPS Auth callback URLs, keep email transport disabled until the provider slice, keep `SUPABASE_SERVICE_ROLE_KEY` unset, and keep the launch conclusion `NO-GO`. No production project, migration, DNS change, real data, real email, or deployment is created by 12.24.
 
-12.25 completed the first production Supabase schema gate for the approved production target, `project-local-production` (`wdlaauzknfggoqldolmx`). Production is validated through migration `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed. Rerun after future reviewed production migrations:
+12.25 completed the first production Supabase schema gate for the approved production target, `project-local-production` (`wdlaauzknfggoqldolmx`). This was the initial/bootstrap empty-production gate. Production is validated through migration `20260714122230`; generated-type parity, empty product/Auth/storage counts before Auth setup, public Supabase connectivity, and structural RLS/security checks passed.
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -63,7 +63,19 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-This production command is schema/read-only validation only. It refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees; it must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, deliveries, storage objects, real Bozeman data, deployment, DNS changes, or Auth redirect changes.
+This production command is schema/read-only bootstrap validation only. It refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees; it must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, deliveries, storage objects, real Bozeman data, deployment, DNS changes, or Auth redirect changes.
+
+After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist. Do not rerun or reinterpret the bootstrap zero-state gate as the generic established-production migration gate after Auth identities or real product data exist; future live-state migrations require a separately reviewed production migration/schema gate.
+
+12.26 adds the public HTTP-only production deployment smoke gate for Vercel project `project-local` at `https://project-local-one.vercel.app`:
+
+```powershell
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+npm run test:production-deployment-smoke
+Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
+```
+
+This command sends unauthenticated GET requests only and does not request magic links, create Auth users, create fixtures, call Vercel/Supabase APIs, send email, or mutate data. Manual operator evidence confirms the temporary production Auth Site URL and callback are configured, magic-link sign-in passed, and a signed-in user without Project Local grants failed closed. Because the command is new in 12.26 and refuses dirty worktrees, rerun the exact command after this checkpoint is committed; the same public HTTP assertions passed during implementation through a separate non-mutating diagnostic.
 
 ## Client boundary
 

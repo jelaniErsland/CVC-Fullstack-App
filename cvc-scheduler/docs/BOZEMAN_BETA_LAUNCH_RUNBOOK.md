@@ -24,15 +24,16 @@ Current launch conclusion: `NO-GO`.
 
 ### Production candidate
 
-Production is not configured or approved by this runbook. Before launch, record and verify:
+Production is partially configured but not launch-approved:
 
-- Hosting platform. 12.24 recommends Vercel for the first production deployment based on this Next.js repository shape.
-- Production Supabase project.
-- Production deployment target.
-- Production domain and `ASSIGNMENT_NOTIFICATION_BASE_URL`.
-- Auth redirect allowlist.
-- Email provider, sender domain, sender identity, and provider secret.
-- Logging, alerting, backups, restore testing, and rollback procedure.
+- Production Supabase exists as `project-local-production` (`wdlaauzknfggoqldolmx`) and is migrated through `20260714122230`.
+- Vercel project `project-local` is live at `https://project-local-one.vercel.app`.
+- `ADMIN_AUTH_MODE` is enforced.
+- Temporary Supabase Auth Site URL `https://project-local-one.vercel.app` and exact callback `https://project-local-one.vercel.app/admin/auth/callback` are configured.
+- Manual magic-link sign-in passed on the temporary production origin.
+- The exact clean-tree `npm run test:production-deployment-smoke` gate is still pending.
+- Final custom domain, final-domain Auth configuration, email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
+- Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
 
@@ -180,6 +181,7 @@ Use the current package scripts for focused validation, including:
 - `npm run test:bozeman-beta-ui`
 - `npm run test:bozeman-beta-launch:hosted`
 - `npm run test:bozeman-beta-e2e:hosted`
+- `npm run test:production-deployment-smoke`
 - `npm run test:production-environment-readiness`
 - `npm run test:production-supabase-schema`
 - `npm run test:calendar`
@@ -205,7 +207,7 @@ Remove-Item Env:RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION
 
 The 12.23.1 gate uses one disposable `qa-12-23-1-*` namespace and validates the continuous hosted staging loop across Auth/session, Volunteers Add/Edit, Calendar scheduling, assignment, publication, recording-only Initial email, secure schedule handoff, Confirm/Deny/Confirm All, admin response truth, negative paths, safe output, screenshot capture/removal, and zero residue. It does not send real email or target production.
 
-Production Supabase schema validation is separate and passed in 12.25 against `project-local-production` (`wdlaauzknfggoqldolmx`) through migration `20260714122230`. Rerun it after future reviewed production migrations:
+Production Supabase schema validation is separate and passed in 12.25 as the initial/bootstrap empty-production gate against `project-local-production` (`wdlaauzknfggoqldolmx`) through migration `20260714122230`:
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -213,4 +215,20 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-This production command is no-fixture and must refuse uncommitted worktrees, staging ref `kfuujcfxoayukywvtaeh`, enabled email transport, service-role runtime configuration, fixture flags, and wrong target identity. The 12.25 run confirmed generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks; it did not create real data, send email, deploy, configure DNS, or configure Auth redirects.
+This production command is no-fixture and must refuse uncommitted worktrees, staging ref `kfuujcfxoayukywvtaeh`, enabled email transport, service-role runtime configuration, fixture flags, and wrong target identity. The 12.25 run confirmed generated-type parity, empty product/Auth/storage counts before Auth setup, public Supabase connectivity, and structural RLS/security checks; it did not create real data, send email, deploy, configure DNS, or configure Auth redirects.
+
+After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Do not delete or alter those identities to satisfy the historical bootstrap zero-Auth assertion. Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that verifies the intended live before/after state.
+
+Production deployment smoke validation is added in 12.26 for the temporary stable Vercel origin:
+
+```powershell
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+npm run test:production-deployment-smoke
+Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
+```
+
+This production smoke command uses public unauthenticated GET requests only. It verifies the landing page, anonymous `/admin` redirect to `/admin/login`, safe login page render, invalid volunteer access redirect, unauthenticated `/v/schedule` unavailable state, same-origin redirects, volunteer-route no-store/noindex/no-referrer headers, and absence of raw internal/credential-like details. It does not request magic links, create Auth users, create fixtures, mutate data, call Vercel APIs, call Supabase APIs, configure email, or configure DNS/Auth redirects.
+
+During 12.26 implementation, the command's refusal paths passed and the same public HTTP assertions passed through a separate non-mutating diagnostic. Because the command is new in 12.26 and refuses dirty worktrees, rerun the exact npm command after this checkpoint is committed.
+
+Manual operator Auth evidence is recorded separately in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`: an approved existing Auth email received a magic link, returned through `https://project-local-one.vercel.app/admin/auth/callback`, opened the admin shell, and then failed closed on `/admin/calendar` and `/admin/volunteers` because no Project Local workspace/contact/grant exists yet.

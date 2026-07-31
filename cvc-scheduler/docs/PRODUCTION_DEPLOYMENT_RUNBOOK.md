@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target, but production launch remains unavailable until the remaining deployment/Auth/domain/email/backup/operator gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Production launch remains unavailable until the final custom domain, email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
 
 Current launch conclusion: `NO-GO`.
 
@@ -16,7 +16,17 @@ Repository evidence:
 - Production does not require persistent filesystem. The only filesystem email transport is the recording QA transport and must be disabled in production.
 - Vercel offers the lowest-friction Next.js compatibility, preview deployments, encrypted environment settings, custom domains/HTTPS, runtime logs, and deployment rollback for a small beta.
 
-No hosting configuration file is added in 12.24 because the current Next.js defaults are sufficient and safer than ceremonial redirects/rewrites. Do not add broad caching or route rewrites for Auth, admin, `/v/access/[token]`, `/v/schedule`, or response routes.
+No hosting configuration file is required because the current Next.js defaults are sufficient and safer than ceremonial redirects/rewrites. Do not add broad caching or route rewrites for Auth, admin, `/v/access/[token]`, `/v/schedule`, or response routes.
+
+Current production deployment evidence:
+
+- Vercel project: `project-local`.
+- Framework: Next.js.
+- Repository root directory: `cvc-scheduler`.
+- Production branch: `master`.
+- Temporary stable production origin: `https://project-local-one.vercel.app`.
+- Deployment status: live and Ready by operator evidence.
+- Custom domain: not connected yet.
 
 ## Production Supabase operator plan
 
@@ -32,16 +42,17 @@ The approved production Supabase target for the 12.25 schema gate is `project-lo
 8. Copy the project URL.
 9. Copy the public anon/publishable key.
 10. Do not expose or use the service-role key in the application.
-11. Configure Auth Site URL after the final HTTPS domain is ready.
-12. Configure exact allowed redirect URLs.
-13. Keep unknown public users unable to create project-contact access; the app uses invite-only behavior and database grants.
-14. Invite/create approved project-contact Auth users later.
-15. Apply reviewed committed migrations in order.
-16. Confirm final migration level `20260714122230` or later reviewed level.
-17. Regenerate/compare public-schema types.
-18. Verify RLS/Auth before adding real data.
-19. Verify backups and retention.
-20. Record safe public values in the production environment inventory; never commit secrets.
+11. Current temporary Auth Site URL is `https://project-local-one.vercel.app`.
+12. Current exact allowed redirect URL is `https://project-local-one.vercel.app/admin/auth/callback`.
+13. Reconfigure Auth Site URL and exact allowed redirect URLs after the final HTTPS domain is ready.
+14. Keep unknown public users unable to create project-contact access; the app uses invite-only behavior and database grants.
+15. At least one approved production Auth identity now exists and passed the 12.26 magic-link proof. Create additional approved project-contact Auth identities only when needed; an Auth identity alone grants no Project Local access because contact and workspace grant provisioning remains separate.
+16. Apply reviewed committed migrations in order.
+17. Confirm final migration level `20260714122230` or later reviewed level.
+18. Regenerate/compare public-schema types.
+19. Verify RLS/Auth before adding real data.
+20. Verify backups and retention.
+21. Record safe public values in the production environment inventory; never commit secrets.
 
 Creating an Auth user does not grant app access. Application access requires a `project_contacts` row plus an effective `workspace_contact_grants` row with explicit capabilities.
 
@@ -65,7 +76,7 @@ Procedure:
 12. Do not run hosted disposable fixture scripts against production.
 13. Verify production tables contain no real Bozeman data after schema setup until operator provisioning begins.
 
-12.25 completed the exact-target schema command. Production advanced from a clean initial migration state to `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed. Rerun the command after future reviewed production migrations:
+12.25 completed the exact-target initial/bootstrap empty-production schema command. Production advanced from a clean initial migration state to `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed before Auth setup. Preserve that evidence, but do not treat the command as a generic live-production migration gate after approved Auth identities or real product data exist.
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -73,7 +84,9 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies production remains free of app rows, Auth users, and storage objects until reviewed operator provisioning begins.
+The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies the bootstrap zero-state assumptions.
+
+After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that accounts for the intended live state, verifies safe before/after behavior, and does not require zero Auth users.
 
 ## Auth URL and redirect plan
 
@@ -130,7 +143,7 @@ If a `.app` domain is chosen, HTTPS is mandatory by browser policy; Vercel-manag
 4. Add production environment variables from `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`.
 5. Keep email transport disabled.
 6. Deploy only after production Supabase schema is ready.
-7. Keep the deployment operationally unused until Auth, smoke tests, rollback, and UI review pass.
+7. Keep the deployment operationally unused until final domain/Auth, email, smoke tests, rollback, and UI review pass.
 
 Do not call deployment successful merely because build passed.
 
@@ -225,28 +238,38 @@ Before launch, verify:
 
 Backup readiness cannot be claimed until the production project and plan are known.
 
-## Read-only production smoke-test design
+## Read-only production smoke test
 
-No production smoke test is run in 12.24. The future first check is a read-only production smoke test.
+12.26 adds the read-only production smoke test as a public HTTP-only production smoke test against `https://project-local-one.vercel.app`:
 
-Future command should refuse unless:
+```powershell
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+npm run test:production-deployment-smoke
+Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
+```
+
+The command refuses unless:
 
 - Operator explicitly opts in.
-- Production project name/ref are supplied.
+- Production Vercel project/origin/Supabase ref/migration are exact.
 - Target ref is not `kfuujcfxoayukywvtaeh`.
-- Origin is HTTPS and non-loopback.
-- Expected migration level is supplied.
+- Origin is HTTPS, non-loopback, and the approved stable Vercel origin.
 - Email transport is disabled.
 - Fixture creation is not enabled.
+- Service-role runtime configuration is absent.
+- The worktree is clean.
 
-The first smoke test should be read-only and prove:
+The smoke test is read-only and proves:
 
-- Deployment health.
-- Migration level.
-- Generated-type parity.
+- Landing page.
 - Anonymous admin redirect.
 - Login page.
 - Invalid volunteer credential unavailable state.
+- `/v/schedule` without a valid cookie exposes no schedule/private data.
+- Volunteer credential routes preserve no-store/noindex/no-referrer protections.
+- Redirects remain on the approved origin.
 - No raw errors.
 - No real email.
 - No data mutation.
+
+Manual Auth/session evidence is recorded in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`. Do not automate production magic-link requests in this gate.

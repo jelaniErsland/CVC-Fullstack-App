@@ -1,11 +1,25 @@
 # Project History
 
+## Iteration 12.26 - Production Deployment, Auth, and Read-Only Smoke Validation
+
+Summary:
+- Added `scripts/production-deployment-smoke-regression.mjs` and `npm run test:production-deployment-smoke` as an exact-opt-in, public HTTP-only production smoke gate locked to Vercel project `project-local`, origin `https://project-local-one.vercel.app`, Supabase ref `wdlaauzknfggoqldolmx`, and migration `20260714122230`. Because this command is new and refuses dirty worktrees, the exact command must be rerun after this checkpoint is committed.
+- Added `docs/PRODUCTION_DEPLOYMENT_STATUS.md` to record the live Ready Vercel deployment, temporary production origin, production Supabase/Auth configuration, manual magic-link sign-in evidence, no-grant fail-closed admin behavior, invalid volunteer unavailable behavior, and remaining launch blockers.
+- Updated the production readiness artifact and canonical docs to mark temporary deployment/Auth smoke evidence as proven while preserving the `NO-GO` launch conclusion.
+
+Validation and boundaries:
+- The automated smoke gate uses only public unauthenticated GET requests. It verifies `/`, anonymous `/admin` redirect, `/admin/login`, invalid `/v/access/not-a-real-token`, unauthenticated `/v/schedule`, same-origin redirects, volunteer no-store/noindex/no-referrer headers, and no raw internal/credential-like output.
+- Missing/wrong opt-in and dirty-worktree refusal paths passed. The same public HTTP assertions passed against `https://project-local-one.vercel.app` through a separate non-mutating diagnostic.
+- Manual Auth evidence remains operator evidence only: no production magic-link flow is automated.
+- No Vercel API token, Vercel CLI auth, Supabase API mutation, Auth user creation, magic-link request, fixture, workspace/contact/grant, product data, storage object, email config, real email, DNS/custom-domain change, Auth URL change, service-role application behavior, response-link reveal/copy activation, commit, or push was added.
+- Launch remains `NO-GO`; next manual action is to connect the final custom domain without provisioning production data yet.
+
 ## Iteration 12.25.1 - Pristine Production Schema Gate Stabilization
 
 Summary:
 - Patched `scripts/production-supabase-schema-regression.mjs` so a completely pristine Supabase project with no `supabase_migrations.schema_migrations` table is recognized as an explicit clean initial migration state, rather than as a suppressed query failure.
 - Added `npm run test:production-supabase-schema:pristine` to prove missing migration history is accepted only as pristine, actual migration-history query failures still fail closed, malformed versions fail closed, and unexpected partial remote history still fails.
-- Reran the exact production schema gate read-only against `project-local-production` (`wdlaauzknfggoqldolmx`) after relinking the CLI temporarily. Production remained `ACTIVE_HEALTHY`, at migration `20260714122230`, generated-type matched, product/Auth/storage counts remained zero, public connectivity passed, and the local production CLI link was removed afterward.
+- Reran the exact initial/bootstrap production schema gate read-only against `project-local-production` (`wdlaauzknfggoqldolmx`) after relinking the CLI temporarily. Production remained `ACTIVE_HEALTHY`, at migration `20260714122230`, generated-type matched, product/Auth/storage counts remained zero before 12.26 manual Auth evidence, public connectivity passed, and the local production CLI link was removed afterward.
 - No migration, generated-type change, product/runtime route change, fixture, Auth user, storage object, real Bozeman data, email, deployment, DNS/Auth redirect change, service-role application behavior, staging mutation, or launch approval was added.
 
 ## Iteration 12.25 - Production Supabase Migration, Type-Parity, and Read-Only Validation Gate
@@ -18,7 +32,7 @@ Summary:
 
 Production operation status:
 - Completed. The first exact gate run refused safely while the local Supabase CLI was still linked to staging. After relinking to `project-local-production` (`wdlaauzknfggoqldolmx`), the reviewed dry-run showed only committed migrations through `20260714122230`, with no seeds or roles. Production migrations were applied through `20260714122230`, and the committed gate then passed.
-- The successful gate verified `ACTIVE_HEALTHY`, migration level `20260714122230`, generated public-schema type parity, public Supabase connectivity, empty product/Auth/storage counts, 13 RLS-protected product tables, and 0 broad direct mutation grants. The local production CLI link was removed afterward.
+- The successful bootstrap gate verified `ACTIVE_HEALTHY`, migration level `20260714122230`, generated public-schema type parity, public Supabase connectivity, empty product/Auth/storage counts before Auth setup, 13 RLS-protected product tables, and 0 broad direct mutation grants. The local production CLI link was removed afterward.
 - No production fixtures or real data were created, no Auth users were created, no storage objects were created, no email was configured or sent, no Vercel/DNS/Auth redirect configuration was changed, no service-role application behavior was added, staging was not targeted, and launch remains `NO-GO`.
 
 Changed files:

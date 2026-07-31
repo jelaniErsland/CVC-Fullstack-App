@@ -12,11 +12,13 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
 | Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260714122230` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
-| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Final HTTPS domain | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
+| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Temporary stable origin `https://project-local-one.vercel.app`; final custom domain not connected | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
 
-The approved production Supabase target for the 12.25 schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The schema gate passed: production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts remained zero, public Supabase connectivity passed, and structural RLS/security checks passed.
+The approved production Supabase target for the 12.25 bootstrap schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The gate passed before Auth setup: production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts remained zero at that time, public Supabase connectivity passed, and structural RLS/security checks passed. After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist; no Project Local product rows or storage objects are known to have been created by 12.26.
+
+The approved temporary production deployment target for the 12.26 smoke gate is Vercel project `project-local` at `https://project-local-one.vercel.app`. Operator evidence confirms `ADMIN_AUTH_MODE=enforced`, production Supabase public URL/key configured in Vercel Production only, `SUPABASE_SERVICE_ROLE_KEY` absent, email/recording transports absent, Supabase Auth Site URL set to `https://project-local-one.vercel.app`, and exact callback `https://project-local-one.vercel.app/admin/auth/callback`.
 
 ## Variable inventory
 
@@ -46,6 +48,7 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 - `SUPABASE_SERVICE_ROLE_KEY` remains unset.
 - `RESPONSE_LINK_BASE_URL` remains unset until response-link reveal/copy is separately approved.
 - Final production origins must be HTTPS and non-loopback.
+- Until the final custom domain is connected, the stable temporary origin is `https://project-local-one.vercel.app`.
 
 ## Validation procedure
 
@@ -56,10 +59,18 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 5. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
 6. Stop on any mismatch; do not “fix” by copying staging values.
 
-Before any production app deployment after future migrations, rerun the committed production schema gate from a clean tree:
+The 12.25 command remains the documented bootstrap zero-state gate:
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
 npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
+```
+
+Do not use the bootstrap gate as the generic established-production migration check after approved Auth identities or real product data exist. Future production migrations in an established production environment require a separately reviewed gate that verifies the intended live before/after state. After deployment, Auth, or origin changes, rerun the production deployment smoke gate:
+
+```powershell
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+npm run test:production-deployment-smoke
+Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
