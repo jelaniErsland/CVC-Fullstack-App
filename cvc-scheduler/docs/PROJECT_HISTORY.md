@@ -1,5 +1,12 @@
 # Project History
 
+## Iteration 12.27 - Final Production Domain and Auth Validation
+
+Summary:
+- Retargeted the production deployment smoke gate from the temporary Vercel origin to canonical production origin `https://projectlocal.app`, while preserving exact locks to Vercel project `project-local`, production Supabase ref `wdlaauzknfggoqldolmx`, and migration `20260714122230`.
+- Recorded manual operator evidence that the final domain loads over HTTPS without a browser warning, Supabase Auth Site URL is `https://projectlocal.app`, exact callback `https://projectlocal.app/admin/auth/callback` is configured, the temporary Vercel callback remains allowlisted for fallback, magic-link sign-in returned through the final domain, the admin shell opened, and no-workspace/no-grant Calendar and Volunteers routes still failed closed.
+- No magic link was requested automatically, no Auth users were created or deleted, no workspace/contact/grant/product row was created, no email was sent, no Vercel/DNS/Supabase/Auth configuration was mutated by code, no migrations/generated types changed, and launch remains `NO-GO` until the exact clean-tree final-domain smoke gate plus email, backup/restore, observability, operator provisioning, UI approval, and controlled pilot evidence pass.
+
 ## Iteration 12.26 - Production Deployment, Auth, and Read-Only Smoke Validation
 
 Summary:

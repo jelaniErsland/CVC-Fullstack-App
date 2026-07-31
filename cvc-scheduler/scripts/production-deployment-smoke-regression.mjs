@@ -5,7 +5,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const expectedProject = "project-local";
-const expectedOrigin = "https://project-local-one.vercel.app";
+const expectedOrigin = "https://projectlocal.app";
 const expectedSupabaseRef = "wdlaauzknfggoqldolmx";
 const forbiddenStagingRef = "kfuujcfxoayukywvtaeh";
 const expectedMigration = "20260714122230";
@@ -50,7 +50,7 @@ function gitStatusShort() {
 function assertHttpsApprovedOrigin(origin) {
   const parsed = new URL(origin);
   assert.equal(parsed.protocol, "https:", "Production smoke origin must use HTTPS.");
-  assert.equal(parsed.origin, expectedOrigin, "Production smoke origin must be the approved stable Vercel origin.");
+  assert.equal(parsed.origin, expectedOrigin, "Production smoke origin must be the approved canonical production origin.");
   assert(!/localhost|127\.0\.0\.1|\[::1\]/i.test(parsed.hostname), "Production smoke origin must not be loopback.");
   assert(!/preview|git-|vercel\.app\/.+/i.test(origin.replace(expectedOrigin, "")), "Dynamic preview origins are not approved for this gate.");
 }
@@ -96,8 +96,8 @@ async function verifyStaticBoundaries() {
   assert(proxy.includes('X-Robots-Tag", "noindex, nofollow"'), "Proxy must preserve noindex header.");
   assert(deploymentStatus.includes(expectedProject) && deploymentStatus.includes(expectedOrigin), "Production deployment status must record approved project/origin.");
   assert(deploymentStatus.includes("manual magic-link sign-in passed"), "Production deployment status must record manual Auth evidence.");
-  assert(deploymentRunbook.includes(expectedOrigin), "Deployment runbook must record approved temporary production origin.");
-  assert(environmentInventory.includes(expectedOrigin), "Environment inventory must record approved temporary production origin.");
+  assert(deploymentRunbook.includes(expectedOrigin), "Deployment runbook must record approved canonical production origin.");
+  assert(environmentInventory.includes(expectedOrigin), "Environment inventory must record approved canonical production origin.");
   assert(goNoGo.includes("NO-GO"), "GO/NO-GO doc must remain honest.");
 }
 
@@ -107,7 +107,7 @@ async function request(pathname, options = {}) {
     method: "GET",
     redirect: "manual",
     headers: {
-      "User-Agent": "ProjectLocalProductionSmoke/12.26",
+      "User-Agent": "ProjectLocalProductionSmoke/12.27",
       Accept: "text/html,application/xhtml+xml",
     },
     ...options,

@@ -42,12 +42,12 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | Storage object count | Passed: `0` objects |
 | RLS/security structural proof | Passed: 13 RLS-protected product tables; 0 broad direct mutation grants |
 | Public Supabase endpoint connectivity proof | Passed: Auth health endpoint HTTP 200 using anon/publishable key without creating a user |
-| App deployment smoke test | Pending exact clean-tree rerun: `npm run test:production-deployment-smoke`; 12.26 refusal paths and matching public HTTP diagnostic passed |
+| App deployment smoke test | Pending exact clean-tree rerun: `npm run test:production-deployment-smoke`; 12.27 final-domain refusal paths passed, and matching public HTTP diagnostic passed against `https://projectlocal.app` |
 | Backup verification | Unresolved operator requirement |
 | Email provider | Disabled/unconfigured |
-| Vercel deployment | Live: Vercel project `project-local` at `https://project-local-one.vercel.app` |
-| Temporary Auth URLs | Configured: Site URL `https://project-local-one.vercel.app`; callback `https://project-local-one.vercel.app/admin/auth/callback`; manual magic-link/Auth session evidence passed |
-| Final custom domain/Auth URLs | Not complete: final domain is not connected and final-domain Auth Site URL/callback are not configured |
+| Vercel deployment | Live: Vercel project `project-local` at canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available |
+| Final-domain Auth URLs | Configured: Site URL `https://projectlocal.app`; callback `https://projectlocal.app/admin/auth/callback`; manual magic-link/Auth session evidence passed |
+| Temporary Vercel Auth callback | Still allowlisted for fallback: `https://project-local-one.vercel.app/admin/auth/callback` |
 | Real Bozeman data | Not created |
 
 ## Safety boundaries
@@ -68,4 +68,4 @@ The pristine migration-history edge case is covered by `npm run test:production-
 
 ## 12.26 Auth evidence note
 
-12.26 manual operator evidence used an existing approved Auth email to complete the production magic-link callback. After that point, the 12.25 schema gate's original zero-Auth-user invariant is no longer the correct post-Auth deployment smoke check. Production product rows, storage objects, email, deployment configuration, DNS, Auth URL configuration, service-role application behavior, and response-link reveal/copy remain unchanged by the public smoke work. Use `npm run test:production-deployment-smoke` for the post-deployment public route check, and rerun/adjust schema validation only when the intended Auth-user state is explicitly part of the reviewed gate.
+12.26 manual operator evidence used an existing approved Auth email to complete the production magic-link callback. 12.27 confirms the same manual Auth boundary on canonical origin `https://projectlocal.app` with final-domain callback `https://projectlocal.app/admin/auth/callback`; the temporary Vercel callback remains allowlisted for fallback. After that point, the 12.25 schema gate's original zero-Auth-user invariant is no longer the correct post-Auth deployment smoke check. Production product rows, storage objects, email, service-role application behavior, and response-link reveal/copy remain unchanged by the public smoke work. Use `npm run test:production-deployment-smoke` for the post-deployment public route check, and rerun/adjust schema validation only when the intended Auth-user state is explicitly part of the reviewed gate.

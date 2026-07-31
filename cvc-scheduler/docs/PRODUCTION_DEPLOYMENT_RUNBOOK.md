@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Production launch remains unavailable until the final custom domain, email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Production launch remains unavailable until email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
 
 Current launch conclusion: `NO-GO`.
 
@@ -24,9 +24,10 @@ Current production deployment evidence:
 - Framework: Next.js.
 - Repository root directory: `cvc-scheduler`.
 - Production branch: `master`.
-- Temporary stable production origin: `https://project-local-one.vercel.app`.
+- Canonical production origin: `https://projectlocal.app`.
+- Temporary Vercel fallback alias: `https://project-local-one.vercel.app`.
 - Deployment status: live and Ready by operator evidence.
-- Custom domain: not connected yet.
+- Custom domain: connected; HTTPS loaded without a browser warning by operator evidence.
 
 ## Production Supabase operator plan
 
@@ -42,9 +43,9 @@ The approved production Supabase target for the 12.25 schema gate is `project-lo
 8. Copy the project URL.
 9. Copy the public anon/publishable key.
 10. Do not expose or use the service-role key in the application.
-11. Current temporary Auth Site URL is `https://project-local-one.vercel.app`.
-12. Current exact allowed redirect URL is `https://project-local-one.vercel.app/admin/auth/callback`.
-13. Reconfigure Auth Site URL and exact allowed redirect URLs after the final HTTPS domain is ready.
+11. Current Supabase Auth Site URL is `https://projectlocal.app`.
+12. Current exact final-domain redirect URL is `https://projectlocal.app/admin/auth/callback`.
+13. Temporary Vercel callback `https://project-local-one.vercel.app/admin/auth/callback` remains allowlisted for fallback.
 14. Keep unknown public users unable to create project-contact access; the app uses invite-only behavior and database grants.
 15. At least one approved production Auth identity now exists and passed the 12.26 magic-link proof. Create additional approved project-contact Auth identities only when needed; an Auth identity alone grants no Project Local access because contact and workspace grant provisioning remains separate.
 16. Apply reviewed committed migrations in order.
@@ -104,32 +105,32 @@ Preview/staging:
 
 Production:
 
-- Site URL: final HTTPS origin, for example `https://<final-domain>`.
-- Redirect URL: `https://<final-domain>/admin/auth/callback`.
-- Use placeholders until the final domain is chosen; do not loosen app callback validation to guess domains.
+- Site URL: `https://projectlocal.app`.
+- Redirect URL: `https://projectlocal.app/admin/auth/callback`.
+- Temporary fallback redirect: `https://project-local-one.vercel.app/admin/auth/callback`.
+- Do not loosen app callback validation to guess domains.
 
-The callback sanitizes `next` to local `/admin` paths and rejects `/admin/auth`, `/admin/login`, protocol-relative, and non-admin return paths. `ADMIN_AUTH_MODE=enforced` is required for production admin routes. Test sign-in with an approved Auth user that has no workspace grants first, then revoke/disable the test identity if not needed.
+The callback sanitizes `next` to local `/admin` paths and rejects `/admin/auth`, `/admin/login`, protocol-relative, and non-admin return paths. `ADMIN_AUTH_MODE=enforced` is required for production admin routes. Manual 12.27 operator evidence confirms magic-link sign-in returned through `https://projectlocal.app/admin/auth/callback`, opened the admin shell, and failed closed on no-workspace/no-grant Calendar and Volunteers routes.
 
 ## Domain and DNS plan
 
-The repository does not confirm a final production domain or registrar.
+The canonical production domain is `https://projectlocal.app`.
 
-Jelani/operator must decide:
+Jelani/operator must still record private ownership/operations details:
 
 - Registrar/DNS provider.
-- Canonical host: root, `www`, or app subdomain.
-- Recommended beta-safe pattern: a dedicated app subdomain or a final root domain once ownership is clear.
+- Canonical host behavior for any `www` alias.
 - Whether `www` redirects to root or root redirects to `www`.
 
 Checklist:
 
-1. Choose canonical production URL.
-2. Connect domain in Vercel.
-3. Add only hosting-platform DNS records provided by Vercel.
-4. Wait for DNS propagation; timing varies.
-5. Verify HTTPS certificate issuance.
-6. Verify the deployed origin before configuring Supabase Auth.
-7. Configure Supabase Site URL and redirect allowlist.
+1. Keep canonical production URL `https://projectlocal.app`.
+2. Keep the domain connected in Vercel.
+3. Keep only hosting-platform DNS records provided by Vercel.
+4. Monitor DNS propagation and certificate status if records change.
+5. Verify HTTPS certificate issuance after any DNS/domain change.
+6. Verify the deployed origin before changing Supabase Auth.
+7. Keep Supabase Site URL and redirect allowlist aligned with the canonical origin.
 8. Keep future email DNS records (SPF/DKIM/DMARC) for the email-provider slice; do not add them in 12.24.
 9. Roll back DNS by reverting records or detaching the domain in the hosting platform if needed.
 
@@ -143,7 +144,7 @@ If a `.app` domain is chosen, HTTPS is mandatory by browser policy; Vercel-manag
 4. Add production environment variables from `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`.
 5. Keep email transport disabled.
 6. Deploy only after production Supabase schema is ready.
-7. Keep the deployment operationally unused until final domain/Auth, email, smoke tests, rollback, and UI review pass.
+7. Keep the deployment operationally unused until final-domain smoke, email, rollback, and UI review pass.
 
 Do not call deployment successful merely because build passed.
 
@@ -240,10 +241,10 @@ Backup readiness cannot be claimed until the production project and plan are kno
 
 ## Read-only production smoke test
 
-12.26 adds the read-only production smoke test as a public HTTP-only production smoke test against `https://project-local-one.vercel.app`:
+12.27 retargets the read-only production smoke test as a public HTTP-only production smoke test against the canonical origin `https://projectlocal.app`:
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
@@ -253,7 +254,7 @@ The command refuses unless:
 - Operator explicitly opts in.
 - Production Vercel project/origin/Supabase ref/migration are exact.
 - Target ref is not `kfuujcfxoayukywvtaeh`.
-- Origin is HTTPS, non-loopback, and the approved stable Vercel origin.
+- Origin is HTTPS, non-loopback, and the approved canonical production origin.
 - Email transport is disabled.
 - Fixture creation is not enabled.
 - Service-role runtime configuration is absent.
@@ -272,4 +273,4 @@ The smoke test is read-only and proves:
 - No real email.
 - No data mutation.
 
-Manual Auth/session evidence is recorded in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`. Do not automate production magic-link requests in this gate.
+Manual Auth/session evidence is recorded in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`. The temporary Vercel origin remains available as a fallback deployment alias, but it is no longer the canonical smoke-test origin. Do not automate production magic-link requests in this gate.

@@ -12,13 +12,13 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
 | Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260714122230` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
-| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Temporary stable origin `https://project-local-one.vercel.app`; final custom domain not connected | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
+| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` | Disabled until provider slice | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
 
 The approved production Supabase target for the 12.25 bootstrap schema gate is `project-local-production` (`wdlaauzknfggoqldolmx`). The gate passed before Auth setup: production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts remained zero at that time, public Supabase connectivity passed, and structural RLS/security checks passed. After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist; no Project Local product rows or storage objects are known to have been created by 12.26.
 
-The approved temporary production deployment target for the 12.26 smoke gate is Vercel project `project-local` at `https://project-local-one.vercel.app`. Operator evidence confirms `ADMIN_AUTH_MODE=enforced`, production Supabase public URL/key configured in Vercel Production only, `SUPABASE_SERVICE_ROLE_KEY` absent, email/recording transports absent, Supabase Auth Site URL set to `https://project-local-one.vercel.app`, and exact callback `https://project-local-one.vercel.app/admin/auth/callback`.
+The approved canonical production deployment target for the 12.27 smoke gate is Vercel project `project-local` at `https://projectlocal.app`. The temporary Vercel alias `https://project-local-one.vercel.app` remains available as a fallback deployment URL. Operator evidence confirms `ADMIN_AUTH_MODE=enforced`, production Supabase public URL/key configured in Vercel Production only, `SUPABASE_SERVICE_ROLE_KEY` absent, email/recording transports absent, Supabase Auth Site URL set to `https://projectlocal.app`, exact final-domain callback `https://projectlocal.app/admin/auth/callback`, temporary Vercel callback still allowlisted for fallback, HTTPS loaded without browser warning, manual magic-link sign-in returned through the final-domain callback, and no Project Local product rows were created.
 
 ## Variable inventory
 
@@ -48,7 +48,8 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 - `SUPABASE_SERVICE_ROLE_KEY` remains unset.
 - `RESPONSE_LINK_BASE_URL` remains unset until response-link reveal/copy is separately approved.
 - Final production origins must be HTTPS and non-loopback.
-- Until the final custom domain is connected, the stable temporary origin is `https://project-local-one.vercel.app`.
+- Canonical production origin is `https://projectlocal.app`.
+- Temporary Vercel fallback alias remains `https://project-local-one.vercel.app`.
 
 ## Validation procedure
 
@@ -70,7 +71,7 @@ Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 Do not use the bootstrap gate as the generic established-production migration check after approved Auth identities or real product data exist. Future production migrations in an established production environment require a separately reviewed gate that verifies the intended live before/after state. After deployment, Auth, or origin changes, rerun the production deployment smoke gate:
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```

@@ -27,12 +27,11 @@ Current launch conclusion: `NO-GO`.
 Production is partially configured but not launch-approved:
 
 - Production Supabase exists as `project-local-production` (`wdlaauzknfggoqldolmx`) and is migrated through `20260714122230`.
-- Vercel project `project-local` is live at `https://project-local-one.vercel.app`.
+- Vercel project `project-local` is live at canonical origin `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available.
 - `ADMIN_AUTH_MODE` is enforced.
-- Temporary Supabase Auth Site URL `https://project-local-one.vercel.app` and exact callback `https://project-local-one.vercel.app/admin/auth/callback` are configured.
-- Manual magic-link sign-in passed on the temporary production origin.
-- The exact clean-tree `npm run test:production-deployment-smoke` gate is still pending.
-- Final custom domain, final-domain Auth configuration, email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
+- Supabase Auth Site URL `https://projectlocal.app` and exact callback `https://projectlocal.app/admin/auth/callback` are configured; the temporary Vercel callback remains allowlisted for fallback.
+- Manual magic-link sign-in passed on the final production origin.
+- The exact clean-tree `npm run test:production-deployment-smoke` gate, email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -219,16 +218,16 @@ This production command is no-fixture and must refuse uncommitted worktrees, sta
 
 After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Do not delete or alter those identities to satisfy the historical bootstrap zero-Auth assertion. Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that verifies the intended live before/after state.
 
-Production deployment smoke validation is added in 12.26 for the temporary stable Vercel origin:
+Production deployment smoke validation is retargeted in 12.27 for the canonical production origin:
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
 
 This production smoke command uses public unauthenticated GET requests only. It verifies the landing page, anonymous `/admin` redirect to `/admin/login`, safe login page render, invalid volunteer access redirect, unauthenticated `/v/schedule` unavailable state, same-origin redirects, volunteer-route no-store/noindex/no-referrer headers, and absence of raw internal/credential-like details. It does not request magic links, create Auth users, create fixtures, mutate data, call Vercel APIs, call Supabase APIs, configure email, or configure DNS/Auth redirects.
 
-During 12.26 implementation, the command's refusal paths passed and the same public HTTP assertions passed through a separate non-mutating diagnostic. Because the command is new in 12.26 and refuses dirty worktrees, rerun the exact npm command after this checkpoint is committed.
+During 12.27 implementation, the command's refusal paths passed and the same public HTTP assertions passed against `https://projectlocal.app` through a separate non-mutating diagnostic. Because this slice retargets the command and it refuses dirty worktrees, rerun the exact npm command after this checkpoint is committed.
 
-Manual operator Auth evidence is recorded separately in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`: an approved existing Auth email received a magic link, returned through `https://project-local-one.vercel.app/admin/auth/callback`, opened the admin shell, and then failed closed on `/admin/calendar` and `/admin/volunteers` because no Project Local workspace/contact/grant exists yet.
+Manual operator Auth evidence is recorded separately in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`: an approved existing Auth email received a magic link, returned through `https://projectlocal.app/admin/auth/callback`, opened the admin shell, and then failed closed on `/admin/calendar` and `/admin/volunteers` because no Project Local workspace/contact/grant exists yet.

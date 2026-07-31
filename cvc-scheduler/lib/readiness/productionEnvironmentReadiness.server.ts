@@ -56,7 +56,8 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "local uses loopback Supabase and disposable fixtures",
       "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260714122230",
       "production is project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
-      "production deployment uses project-local at https://project-local-one.vercel.app",
+      "production deployment uses project-local at canonical origin https://projectlocal.app",
+      "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
     ],
     requiredAction:
       "Keep production separated from staging and local fixtures; do not create real rows until the remaining launch blockers and reviewed operator provisioning steps pass.",
@@ -67,13 +68,14 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     status: "proven",
     blocking: false,
     evidence: [
-      "Vercel project project-local is live and Ready at https://project-local-one.vercel.app",
+      "Vercel project project-local is live and Ready with temporary fallback alias https://project-local-one.vercel.app",
+      "canonical production origin https://projectlocal.app is connected and loaded successfully over HTTPS without a browser warning",
       "repository root directory is cvc-scheduler and production branch is master",
       "Next server actions, route handlers, dynamic/no-store routes, and HttpOnly cookies need first-class support",
       "Vercel is the lowest-friction fit for this Next.js app and provides preview deployments, env management, domains, HTTPS, logs, and rollback",
     ],
     requiredAction:
-      "Keep using the approved Vercel project and connect the final custom domain before real Bozeman data is provisioned.",
+      "Keep using the approved Vercel project and canonical domain; do not provision real Bozeman data until remaining launch blockers pass.",
   },
   {
     id: "production_supabase",
@@ -92,8 +94,8 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   {
     id: "production_environment_variables",
     title: "Production environment variables",
-    status: "configuration_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       ".env.example lists current app variables",
       "ADMIN_AUTH_MODE must be enforced in production",
@@ -113,24 +115,26 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "/admin/auth/callback exchanges Supabase Auth code",
       "getSafeAdminRedirect accepts only local /admin paths",
       "proxy requires Auth only when ADMIN_AUTH_MODE=enforced",
-      "operator evidence confirms Supabase Auth Site URL is https://project-local-one.vercel.app and exact callback is configured",
-      "manual magic-link sign-in returned through the production callback and opened the admin shell",
+      "operator evidence confirms Supabase Auth Site URL is https://projectlocal.app and exact final-domain callback is configured",
+      "temporary Vercel callback remains allowlisted for fallback",
+      "manual magic-link sign-in returned through the final-domain production callback and opened the admin shell",
+      "no-workspace/no-grant Calendar and Volunteers routes failed closed after sign-in",
     ],
     requiredAction:
-      "Reconfigure the production Site URL and exact /admin/auth/callback redirect after the final custom domain is connected and verified.",
+      "Keep Auth Site URL/callbacks aligned with the canonical production domain and rerun smoke checks after any Auth/domain change.",
   },
   {
     id: "domain_dns",
     title: "Domain and DNS",
-    status: "operator_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
-      "temporary stable production origin is https://project-local-one.vercel.app",
-      "final custom domain is not connected",
-      "production callback and notification base URL require a stable HTTPS origin",
+      "canonical production origin is https://projectlocal.app",
+      "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
+      "HTTPS loaded successfully without a browser warning by operator evidence",
     ],
     requiredAction:
-      "Choose canonical production domain, connect it to the hosting project, verify HTTPS, and only then configure Auth and app base URLs.",
+      "Keep DNS/domain ownership documented privately and rerun smoke checks after any domain, certificate, or redirect change.",
   },
   {
     id: "email_provider",
@@ -151,9 +155,10 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: true,
     evidence: [
       "12.26 adds npm run test:production-deployment-smoke for exact-origin public HTTP validation",
+      "12.27 retargets the exact smoke gate to canonical origin https://projectlocal.app",
       "the command's refusal paths passed during implementation",
-      "the same public HTTP assertions passed against https://project-local-one.vercel.app through a separate non-mutating diagnostic",
-      "manual operator evidence confirms anonymous /admin redirect, login, magic-link callback, no-grant fail-closed admin behavior, and invalid volunteer schedule unavailable behavior",
+      "the same public HTTP assertions passed against https://projectlocal.app through a separate non-mutating diagnostic",
+      "manual operator evidence confirms anonymous /admin redirect, login, final-domain magic-link callback, no-grant fail-closed admin behavior, and invalid volunteer schedule unavailable behavior",
       "current hosted fixture gates are locked to staging and must not run against production",
     ],
     requiredAction:
@@ -216,6 +221,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until the final custom domain/Auth redirect, email provider, observability, backups, rollback, operator provisioning, UI approval, and pilot evidence exist.",
+    "Production environment readiness is a NO-GO until the exact clean-tree final-domain smoke gate, email provider, observability, backups, rollback, operator provisioning, UI approval, and pilot evidence exist.",
   items: productionEnvironmentReadinessItems,
 } as const;

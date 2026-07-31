@@ -19,9 +19,10 @@ Current conclusion: `NO-GO`.
 - Create a new production Supabase project specifically for Project Local production.
 - Do not reuse staging project `project-local-staging` (`kfuujcfxoayukywvtaeh`).
 - Create or approve the Vercel project and connect the GitHub repository.
-- 12.26 operator evidence confirms Vercel project `project-local` is live and Ready at `https://project-local-one.vercel.app`, using repository root `cvc-scheduler` and production branch `master`.
-- Add the chosen domain in the hosting platform.
-- Do not configure DNS until the hosting platform tells you the exact records.
+- 12.27 operator evidence confirms Vercel project `project-local` is live and Ready at canonical origin `https://projectlocal.app`, using repository root `cvc-scheduler` and production branch `master`.
+- Temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available.
+- Keep the chosen domain connected in the hosting platform.
+- Do not change DNS unless the hosting platform tells you the exact records.
 - Do not add real Bozeman data yet.
 
 ## Phase C - Values to collect
@@ -32,9 +33,9 @@ Collect these values into private operator notes or the hosting platform, not in
 - Supabase production project ref.
 - Supabase production project URL.
 - Supabase public anon/publishable key.
-- Hosting deployment URL. Temporary stable origin: `https://project-local-one.vercel.app`.
-- Final production domain.
-- Auth callback URL, usually `https://<final-domain>/admin/auth/callback`.
+- Canonical hosting deployment URL: `https://projectlocal.app`.
+- Temporary Vercel fallback alias: `https://project-local-one.vercel.app`.
+- Auth callback URL: `https://projectlocal.app/admin/auth/callback`.
 
 Creating an Auth user does not grant app access. App access requires:
 
@@ -66,12 +67,10 @@ Creating an Auth user does not grant app access. App access requires:
 - The bootstrap schema gate is migration/type/security/count validation only. It must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, notification deliveries, storage objects, or real Bozeman data.
 - After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist. Do not delete them to satisfy the old bootstrap zero-Auth assertion.
 - Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that accounts for the intended live state.
-- Configure Supabase Auth Site URL after the final HTTPS domain is working.
-- Current temporary Supabase Auth Site URL is `https://project-local-one.vercel.app`.
-- Current temporary exact callback is `https://project-local-one.vercel.app/admin/auth/callback`.
-- Add exact redirect URLs:
-  - `https://<final-domain>/admin/auth/callback`
-  - any approved preview/staging callback URLs separately.
+- Current Supabase Auth Site URL is `https://projectlocal.app`.
+- Current exact final-domain callback is `https://projectlocal.app/admin/auth/callback`.
+- Temporary fallback callback remains allowlisted: `https://project-local-one.vercel.app/admin/auth/callback`.
+- Add any approved preview/staging callback URLs separately.
 - Keep app sign-in invite-only. Unknown emails should not create usable project-contact access.
 - Apply reviewed committed migrations to the new production project.
 - Confirm final migration level `20260714122230` or later reviewed level.
@@ -97,7 +96,7 @@ Ask Codex or the operator to run only documented non-mutating checks first:
 
 - Production deployment smoke:
   ```powershell
-  $env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://project-local-one.vercel.app|wdlaauzknfggoqldolmx|20260714122230'
+  $env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
   npm run test:production-deployment-smoke
   Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
   ```
@@ -115,7 +114,7 @@ Ask Codex or the operator to run only documented non-mutating checks first:
 
 Stop before real Bozeman provisioning until these checks pass.
 
-Manual Auth evidence from 12.26 passed on the temporary origin: an existing approved Auth email received a magic link, returned through the production callback, opened the admin shell, and failed closed on persisted admin routes because no Project Local workspace/contact/grant exists yet. Do not automate production magic-link requests in routine smoke tests.
+Manual Auth evidence from 12.27 passed on the canonical origin: an existing approved Auth email received a magic link, returned through `https://projectlocal.app/admin/auth/callback`, opened the admin shell, and failed closed on persisted admin routes because no Project Local workspace/contact/grant exists yet. Do not automate production magic-link requests in routine smoke tests.
 
 ## Phase H - Before real beta data
 
