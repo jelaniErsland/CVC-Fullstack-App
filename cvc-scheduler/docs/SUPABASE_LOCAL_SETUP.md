@@ -75,7 +75,7 @@ npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
 
-This command sends unauthenticated GET requests only and does not request magic links, create Auth users, create fixtures, call Vercel/Supabase APIs, send email, or mutate data. Manual operator evidence confirms the final production Auth Site URL and callback are configured, magic-link sign-in passed through `https://projectlocal.app/admin/auth/callback`, and a signed-in user without Project Local grants failed closed. Because 12.27 retargets the command and it refuses dirty worktrees, rerun the exact command after this checkpoint is committed; the same public HTTP assertions passed during implementation through a separate non-mutating diagnostic.
+This command sends unauthenticated GET requests only and does not request magic links, create Auth users, create fixtures, call Vercel/Supabase APIs, send email, or mutate data. Manual operator evidence confirms the final production Auth Site URL and callback are configured, magic-link sign-in passed through `https://projectlocal.app/admin/auth/callback`, and a signed-in user without Project Local grants failed closed. Commit `082c960` was pushed to `origin/master`; the Vercel Production deployment sourced from `082c960` reached Ready; and the exact final-domain smoke passed after deployment with exit code `0`. Rerun the command after future deployment, domain, Auth redirect, or production environment changes.
 
 ## Client boundary
 

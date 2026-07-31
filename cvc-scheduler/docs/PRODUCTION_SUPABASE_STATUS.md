@@ -42,7 +42,7 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | Storage object count | Passed: `0` objects |
 | RLS/security structural proof | Passed: 13 RLS-protected product tables; 0 broad direct mutation grants |
 | Public Supabase endpoint connectivity proof | Passed: Auth health endpoint HTTP 200 using anon/publishable key without creating a user |
-| App deployment smoke test | Pending exact clean-tree rerun: `npm run test:production-deployment-smoke`; 12.27 final-domain refusal paths passed, and matching public HTTP diagnostic passed against `https://projectlocal.app` |
+| App deployment smoke test | Passed: canonical origin `https://projectlocal.app`; commit `082c960` was pushed to `origin/master`, Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production deployment smoke passed after deployment with exit code `0`; this was public HTTP-only and did not perform database validation or mutation |
 | Backup verification | Unresolved operator requirement |
 | Email provider | Disabled/unconfigured |
 | Vercel deployment | Live: Vercel project `project-local` at canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available |
@@ -51,6 +51,8 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | Real Bozeman data | Not created |
 
 ## Safety boundaries
+
+Backup, restore, and rollback readiness is now documented in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). This status remains unresolved until Jelani supplies actual production Supabase dashboard evidence for backup availability, retention, point-in-time recovery availability, restore initiation behavior, restore ownership, and restore-test evidence.
 
 This gate may apply reviewed committed migrations only. It must not create fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data.
 

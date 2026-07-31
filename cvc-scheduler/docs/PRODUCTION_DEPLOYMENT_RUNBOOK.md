@@ -2,6 +2,8 @@
 
 Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Production launch remains unavailable until email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
 
+Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification, while keeping backup availability, retention, restore ownership, and restore-test evidence as launch blockers.
+
 Current launch conclusion: `NO-GO`.
 
 ## Hosting recommendation
@@ -221,6 +223,8 @@ Safe logging rules:
 Observability remains `configuration_required` until production ownership and alerting are configured.
 
 ## Backup and recovery
+
+Detailed recovery requirements are recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
 
 Before launch, verify:
 

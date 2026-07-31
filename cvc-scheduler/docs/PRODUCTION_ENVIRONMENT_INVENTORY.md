@@ -20,6 +20,8 @@ The approved production Supabase target for the 12.25 bootstrap schema gate is `
 
 The approved canonical production deployment target for the 12.27 smoke gate is Vercel project `project-local` at `https://projectlocal.app`. The temporary Vercel alias `https://project-local-one.vercel.app` remains available as a fallback deployment URL. Operator evidence confirms `ADMIN_AUTH_MODE=enforced`, production Supabase public URL/key configured in Vercel Production only, `SUPABASE_SERVICE_ROLE_KEY` absent, email/recording transports absent, Supabase Auth Site URL set to `https://projectlocal.app`, exact final-domain callback `https://projectlocal.app/admin/auth/callback`, temporary Vercel callback still allowlisted for fallback, HTTPS loaded without browser warning, manual magic-link sign-in returned through the final-domain callback, and no Project Local product rows were created.
 
+Production backup/recovery requirements are recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). Backup availability, retention, point-in-time recovery availability, restore procedure, restore ownership, restore-test evidence, and incident ownership remain unresolved operator evidence before launch.
+
 ## Variable inventory
 
 | Variable | Required | Visible | Local category | Staging category | Production category | Owner | Secret class | Restart/redeploy | Validation | Safe failure | Commit? |

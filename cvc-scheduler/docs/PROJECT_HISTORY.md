@@ -1,16 +1,27 @@
 # Project History
 
+## Iteration 12.28 - Production Backup, Recovery, and Rollback Readiness
+
+Summary:
+- Added `lib/readiness/productionRecoveryReadiness.server.ts`, [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md), and `npm run test:production-recovery-readiness`.
+- Documented application rollback through Vercel deployment rollback/redeploy, with commit `082c960` as the currently verified production baseline, while explicitly separating application rollback from database rollback.
+- Documented database migration recovery as preserve-history/forward-fix by default, with a separately reviewed established-production migration gate required after approved Auth identities or real product data exist.
+- Documented operational pause through stopping provisioning, revoking/expiring production workspace grants, keeping email disabled, optional app rollback, and Belgrade Sheets/App Script fallback. Auth identity deletion and product-record deletion are not normal pause or rollback mechanisms.
+- Recorded that actual Supabase automatic backup availability, retention, PITR, restore initiation behavior, restore owner, restore-test evidence, and incident ownership remain operator-required launch blockers.
+- No production Supabase access, CLI link, backup, restore, dump, Auth user, product row, Vercel/DNS/Auth/email configuration change, email send, migration, generated-type change, service-role application behavior, commit, or push was performed.
+
 ## Iteration 12.27 - Final Production Domain and Auth Validation
 
 Summary:
 - Retargeted the production deployment smoke gate from the temporary Vercel origin to canonical production origin `https://projectlocal.app`, while preserving exact locks to Vercel project `project-local`, production Supabase ref `wdlaauzknfggoqldolmx`, and migration `20260714122230`.
 - Recorded manual operator evidence that the final domain loads over HTTPS without a browser warning, Supabase Auth Site URL is `https://projectlocal.app`, exact callback `https://projectlocal.app/admin/auth/callback` is configured, the temporary Vercel callback remains allowlisted for fallback, magic-link sign-in returned through the final domain, the admin shell opened, and no-workspace/no-grant Calendar and Volunteers routes still failed closed.
-- No magic link was requested automatically, no Auth users were created or deleted, no workspace/contact/grant/product row was created, no email was sent, no Vercel/DNS/Supabase/Auth configuration was mutated by code, no migrations/generated types changed, and launch remains `NO-GO` until the exact clean-tree final-domain smoke gate plus email, backup/restore, observability, operator provisioning, UI approval, and controlled pilot evidence pass.
+- Commit `082c960` was pushed to `origin/master`; the Vercel Production deployment sourced from `082c960` reached Ready; and the exact final-domain production deployment smoke passed before push and again after deployment with exit code `0`.
+- No magic link was requested automatically, no Auth users were created or deleted, no workspace/contact/grant/product row was created, no email was sent, no Vercel/DNS/Supabase/Auth configuration was mutated by code, no migrations/generated types changed, and launch remains `NO-GO` until email, backup/restore, observability, operator provisioning, UI approval, and controlled pilot evidence pass.
 
 ## Iteration 12.26 - Production Deployment, Auth, and Read-Only Smoke Validation
 
 Summary:
-- Added `scripts/production-deployment-smoke-regression.mjs` and `npm run test:production-deployment-smoke` as an exact-opt-in, public HTTP-only production smoke gate locked to Vercel project `project-local`, origin `https://project-local-one.vercel.app`, Supabase ref `wdlaauzknfggoqldolmx`, and migration `20260714122230`. Because this command is new and refuses dirty worktrees, the exact command must be rerun after this checkpoint is committed.
+- Added `scripts/production-deployment-smoke-regression.mjs` and `npm run test:production-deployment-smoke` as an exact-opt-in, public HTTP-only production smoke gate locked at the time to Vercel project `project-local`, origin `https://project-local-one.vercel.app`, Supabase ref `wdlaauzknfggoqldolmx`, and migration `20260714122230`. This temporary-origin checkpoint was later superseded by the 12.27 final-domain smoke pass.
 - Added `docs/PRODUCTION_DEPLOYMENT_STATUS.md` to record the live Ready Vercel deployment, temporary production origin, production Supabase/Auth configuration, manual magic-link sign-in evidence, no-grant fail-closed admin behavior, invalid volunteer unavailable behavior, and remaining launch blockers.
 - Updated the production readiness artifact and canonical docs to mark temporary deployment/Auth smoke evidence as proven while preserving the `NO-GO` launch conclusion.
 

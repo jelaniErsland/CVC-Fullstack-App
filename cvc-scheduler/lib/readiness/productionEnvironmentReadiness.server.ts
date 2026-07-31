@@ -151,18 +151,20 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   {
     id: "smoke_test",
     title: "Read-only production smoke test",
-    status: "configuration_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "12.26 adds npm run test:production-deployment-smoke for exact-origin public HTTP validation",
       "12.27 retargets the exact smoke gate to canonical origin https://projectlocal.app",
       "the command's refusal paths passed during implementation",
       "the same public HTTP assertions passed against https://projectlocal.app through a separate non-mutating diagnostic",
+      "commit 082c960 was pushed to origin/master and the Vercel Production deployment sourced from 082c960 reached Ready",
+      "the exact production deployment smoke passed before push and again after the Ready deployment with exit code 0",
       "manual operator evidence confirms anonymous /admin redirect, login, final-domain magic-link callback, no-grant fail-closed admin behavior, and invalid volunteer schedule unavailable behavior",
       "current hosted fixture gates are locked to staging and must not run against production",
     ],
     requiredAction:
-      "After this checkpoint is committed, rerun the exact production deployment smoke gate from a clean worktree; rerun it again after domain/Auth redirect/environment changes.",
+      "Rerun the exact production deployment smoke gate after domain, Auth redirect, deployment, or environment changes.",
   },
   {
     id: "observability",
@@ -182,12 +184,13 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     status: "configuration_required",
     blocking: true,
     evidence: [
-      "production Supabase plan is not selected",
-      "restore test and deployment rollback evidence are not recorded",
+      "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
+      "production Supabase backup availability, retention, restore process, and restore ownership evidence are not recorded",
+      "restore test evidence is not recorded",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Verify backup availability, retention, restore procedure, deployment rollback, grant revocation fallback, email disable switch, and Belgrade operational fallback before launch.",
+      "Verify backup availability, retention, restore procedure, restore ownership, restore test evidence, deployment rollback ownership, grant revocation fallback, email disable switch, and Belgrade operational fallback before launch.",
   },
   {
     id: "operator_pilot_approval",
@@ -221,6 +224,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until the exact clean-tree final-domain smoke gate, email provider, observability, backups, rollback, operator provisioning, UI approval, and pilot evidence exist.",
+    "Production environment readiness is a NO-GO until email provider, observability, backups, rollback/restore evidence, operator provisioning, UI approval, and pilot evidence exist.",
   items: productionEnvironmentReadinessItems,
 } as const;

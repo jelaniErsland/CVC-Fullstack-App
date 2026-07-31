@@ -16,10 +16,10 @@ The persisted beta scheduling loop is technically proven through focused local g
 | Integrated hosted beta loop | Proven | 12.23.1 ran one continuous disposable namespace through Volunteer Add/Edit, Calendar scheduling, assignment, publication, recording-only email, secure schedule access, Confirm/Deny/Confirm All, admin response truth, negative paths, and zero residue | Repeat before final launch review if staging/schema changes | No |
 | Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity, focused hosted gates, launch verification, and 12.23.1 integrated zero-residue gate passed | Rerun exact hosted launch/E2E gates before final launch review if needed | No |
 | Beta-critical UI | Pilot required | 12.23 focused polish and browser validations | Product owner review of desktop/390px Calendar, Volunteers, and volunteer schedule | Yes |
-| Production deployment/domain/Auth | Partial | Vercel project `project-local` is live at canonical origin `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available; `ADMIN_AUTH_MODE` is enforced; Supabase Auth Site URL and exact final-domain callback are configured; temporary Vercel callback remains allowlisted; manual magic-link sign-in passed on the final domain; no-grant admin routes failed closed | Commit 12.27 and rerun the exact clean-tree final-domain smoke gate before real data | Yes |
-| Production environment readiness | Partial | 12.27 retargets `npm run test:production-deployment-smoke` to `https://projectlocal.app`; refusal paths are covered; matching public HTTP diagnostic and manual Auth/no-grant fail-closed evidence are recorded | Rerun the exact smoke gate, then complete email, observability, backup/restore, operator provisioning, UI approval, and pilot evidence | Yes |
+| Production deployment/domain/Auth | Proven | Vercel project `project-local` is live at canonical origin `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available; `ADMIN_AUTH_MODE` is enforced; Supabase Auth Site URL and exact final-domain callback are configured; temporary Vercel callback remains allowlisted; manual magic-link sign-in passed on the final domain; no-grant admin routes failed closed; commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production smoke passed before push and after deployment with exit code `0` | Rerun the public smoke only after deployment/domain/Auth/environment changes | No |
+| Production environment readiness | Partial | Production deployment/domain/Auth is proven; production Supabase schema is migrated through `20260714122230`; 12.28 documents recovery procedures | Complete email, observability, backup/restore evidence, operator provisioning, UI approval, and pilot evidence | Yes |
 | Production Supabase schema | Proven | 12.25 ran the initial/bootstrap empty-production `npm run test:production-supabase-schema` gate against `project-local-production` (`wdlaauzknfggoqldolmx`); production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts were zero before Auth setup, public Supabase connectivity passed, and structural RLS/security checks passed | Keep Project Local product rows/storage empty until reviewed operator provisioning; use a separately reviewed established-production migration gate for future live-state migrations | No |
-| Observability and backup/recovery | Configuration required | Runbook defines monitoring and recovery needs | Verify logging, alerts, backups, restore test, rollback, and Belgrade fallback | Yes |
+| Observability and backup/recovery | Configuration required | Runbooks define monitoring and recovery needs; [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) documents rollback, migration-forward policy, operational pause, and recovery checks | Verify logging, alerts, Supabase backup availability/retention/PITR evidence, restore ownership, restore test, rollback owners, and Belgrade fallback | Yes |
 | Real Bozeman pilot | Pilot required | No real Bozeman records created by tests | Run controlled pilot with approved data | Yes |
 | Deferred non-blocking features | Deferred non-blocking | Response-link reveal/copy, public lookup, remembered devices, Communications, `/admin/tasks`, `/v/demo`, import, reminders remain out of scope | Keep out of launch unless separately reviewed | No |
 
@@ -44,11 +44,10 @@ The persisted beta scheduling loop is technically proven through focused local g
 2. Select and configure production email provider.
 3. Verify sender domain and sender identity.
 4. Configure provider secret and production base URL without committing secrets.
-5. Commit 12.27 and run the exact clean-tree production deployment smoke gate against `https://projectlocal.app`.
-6. Verify logging, alerts, and stale-delivery monitoring.
-7. Verify backup availability and restore/rollback procedure.
-8. Complete product-owner UI review on desktop and 390px mobile.
-9. Run a small controlled pilot with approved Bozeman data and approved test recipients.
+5. Verify logging, alerts, and stale-delivery monitoring.
+6. Verify backup availability, retention, restore ownership/procedure, restore-test evidence, and rollback owners using [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
+7. Complete product-owner UI review on desktop and 390px mobile.
+8. Run a small controlled pilot with approved Bozeman data and approved test recipients.
 
 ## Non-blocking deferred items
 

@@ -31,7 +31,8 @@ Production is partially configured but not launch-approved:
 - `ADMIN_AUTH_MODE` is enforced.
 - Supabase Auth Site URL `https://projectlocal.app` and exact callback `https://projectlocal.app/admin/auth/callback` are configured; the temporary Vercel callback remains allowlisted for fallback.
 - Manual magic-link sign-in passed on the final production origin.
-- The exact clean-tree `npm run test:production-deployment-smoke` gate, email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
+- Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
+- Email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -40,6 +41,7 @@ Production-readiness handoff docs:
 
 - [`PRODUCTION_ENVIRONMENT_INVENTORY.md`](./PRODUCTION_ENVIRONMENT_INVENTORY.md)
 - [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md)
+- [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md)
 - [`JELANI_PRODUCTION_SETUP_CHECKLIST.md`](./JELANI_PRODUCTION_SETUP_CHECKLIST.md)
 
 ## Auth and access
@@ -133,7 +135,7 @@ Logs must not include credentials, tokens, full schedule URLs, raw provider payl
 
 ## Backup and recovery
 
-Before launch:
+Detailed backup/recovery/rollback procedure is recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). Before launch:
 
 - Verify Supabase backup availability and retention.
 - Define any manual export procedure needed for pilot data.
@@ -228,6 +230,6 @@ Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 
 This production smoke command uses public unauthenticated GET requests only. It verifies the landing page, anonymous `/admin` redirect to `/admin/login`, safe login page render, invalid volunteer access redirect, unauthenticated `/v/schedule` unavailable state, same-origin redirects, volunteer-route no-store/noindex/no-referrer headers, and absence of raw internal/credential-like details. It does not request magic links, create Auth users, create fixtures, mutate data, call Vercel APIs, call Supabase APIs, configure email, or configure DNS/Auth redirects.
 
-During 12.27 implementation, the command's refusal paths passed and the same public HTTP assertions passed against `https://projectlocal.app` through a separate non-mutating diagnostic. Because this slice retargets the command and it refuses dirty worktrees, rerun the exact npm command after this checkpoint is committed.
+During 12.27 implementation, the command's refusal paths passed and the same public HTTP assertions passed against `https://projectlocal.app` through a separate non-mutating diagnostic. After commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production deployment smoke passed again with exit code `0`. Rerun the command after future deployment, domain, Auth redirect, or production environment changes.
 
 Manual operator Auth evidence is recorded separately in `docs/PRODUCTION_DEPLOYMENT_STATUS.md`: an approved existing Auth email received a magic link, returned through `https://projectlocal.app/admin/auth/callback`, opened the admin shell, and then failed closed on `/admin/calendar` and `/admin/volunteers` because no Project Local workspace/contact/grant exists yet.

@@ -100,6 +100,7 @@ Ask Codex or the operator to run only documented non-mutating checks first:
   npm run test:production-deployment-smoke
   Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
   ```
+  12.27 completion evidence records that commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and this final-domain smoke passed again with exit code `0`. Rerun it after future deployment, domain, Auth redirect, or production environment changes.
 - Build/deployment health.
 - HTTPS domain.
 - Anonymous admin redirect.
@@ -119,6 +120,7 @@ Manual Auth evidence from 12.27 passed on the canonical origin: an existing appr
 ## Phase H - Before real beta data
 
 - Confirm backups and restore/rollback plan.
+- Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) to record backup availability, retention, PITR availability, restore initiation behavior, restore approval owner, post-restore verification, and incident owners.
 - Confirm logging/alerts.
 - Confirm production email provider plan separately.
 - Confirm product-owner UI approval.

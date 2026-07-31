@@ -2,7 +2,7 @@
 
 Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin.
 
-Current status: `FINAL DOMAIN EVIDENCE RECORDED; EXACT SMOKE GATE PENDING CLEAN-TREE RERUN`.
+Current status: `FINAL DOMAIN AND POST-DEPLOYMENT SMOKE VERIFIED`.
 
 Launch conclusion: `NO-GO`.
 
@@ -57,7 +57,7 @@ The gate uses public, non-authenticated, non-mutating HTTP GET requests only. It
 
 The gate refuses missing or mismatched opt-in, non-HTTPS or loopback origin assumptions, staging ref `kfuujcfxoayukywvtaeh`, fixture flags, enabled email/recording transport, service-role runtime configuration, and dirty worktrees for the actual production run.
 
-During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree refusal paths passed. The same public HTTP assertions also passed against `https://project-local-one.vercel.app` through a separate non-mutating diagnostic. During 12.27, the final-domain public HTTP diagnostic passed against `https://projectlocal.app`; because this slice changes the smoke command's canonical origin and the command refuses dirty worktrees, the exact `npm run test:production-deployment-smoke` command must be rerun after this checkpoint is committed from a clean worktree.
+During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree refusal paths passed. The same public HTTP assertions also passed against `https://project-local-one.vercel.app` through a separate non-mutating diagnostic. During 12.27, the canonical final-domain gate was retargeted to `https://projectlocal.app`; the exact clean-tree production deployment smoke passed before push, commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact production deployment smoke passed again against `https://projectlocal.app` with exit code `0`. No production mutation, fixture, email, magic-link request, Vercel API call, Supabase API mutation, or product-data operation occurred.
 
 ## What remains blocking
 
