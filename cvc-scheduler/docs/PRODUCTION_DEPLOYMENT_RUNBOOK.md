@@ -2,7 +2,7 @@
 
 Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Production launch remains unavailable until email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
 
-Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification, while keeping backup availability, retention, restore ownership, and restore-test evidence as launch blockers.
+Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional; the preferred near-term strategy is a tested encrypted independent logical backup path.
 
 Current launch conclusion: `NO-GO`.
 
@@ -226,13 +226,30 @@ Observability remains `configuration_required` until production ownership and al
 
 Detailed recovery requirements are recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
 
-Before launch, verify:
+Before real Bozeman product data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro path.
 
-- Supabase backup availability.
-- Retention period.
-- Point-in-time recovery availability for the selected plan, if applicable.
+For the preferred independent path:
+
+- Implement automated logical PostgreSQL backups.
+- Use reviewed secure operator credentials or a dedicated least-privilege backup credential.
+- Encrypt every backup before persistent storage.
+- Store backup artifacts outside the public repository in private independent storage.
+- Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
+- Record retention.
+- Configure safe failure notification.
+- Perform a separately reviewed restore test into local Supabase or another approved disposable non-production target.
+- Complete post-restore verification for schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup.
+
+For the optional Supabase-managed path:
+
+- Upgrade to Supabase Pro only if the operator chooses this path.
+- Confirm managed scheduled/physical backups.
+- Record retention and successful backup evidence.
+- Complete an approved restore test.
+
+For both paths:
+
 - Manual export expectations for pilot data.
-- Restore test plan.
 - Restore decision owner.
 - How to pause beta by revoking grants.
 - How to disable email.
@@ -241,7 +258,7 @@ Before launch, verify:
 - Why deleting real records is not normal rollback.
 - Belgrade fallback remains intact.
 
-Backup readiness cannot be claimed until the production project and plan are known.
+PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision. Database backups do not automatically prove Supabase Storage object recovery; add a separate storage backup plan before enabling Storage-backed features such as volunteer photos.
 
 ## Read-only production smoke test
 

@@ -1,5 +1,15 @@
 # Project History
 
+## Iteration 12.28.1 - Production Backup Plan Evidence
+
+Summary:
+- Recorded operator Supabase dashboard evidence for `project-local-production` (`wdlaauzknfggoqldolmx`): current plan is Free.
+- Scheduled backups are blocked by the current plan; the dashboard states "Free Plan does not include project backups" and that upgrading to Pro provides up to 7 days of scheduled backups. No scheduled production backup, backup timestamp, successful backup status, or retention exists yet.
+- Point-in-time recovery is unavailable; the dashboard states "Point in Time Recovery is a Pro Plan add-on" and describes PITR as "Roll back your database to a specific second." PITR is intentionally not required for the narrow initial Bozeman beta unless a later operational review changes that decision.
+- Restore to new project is unavailable on the current plan; the dashboard states "Restore to a new project requires Pro Plan and above" and requires Pro plus physical backups for the Supabase-managed path. No restore was started, no second project was created, and no database dump, credentials, or secrets were accessed or exposed.
+- Corrected the recovery policy to avoid a mandatory-Pro assumption: independent encrypted logical backups are the preferred current strategy, Supabase Pro managed backups remain optional, at least one reviewed backup path must be proven before real Bozeman product data is provisioned, and restore testing remains required.
+- Launch remains `NO-GO`. No production access, plan upgrade, backup, restore, project creation, data access, Auth user, product row, Vercel/DNS/Auth/email change, migration, generated-type change, runtime/product behavior change, commit, or push was performed.
+
 ## Iteration 12.28 - Production Backup, Recovery, and Rollback Readiness
 
 Summary:

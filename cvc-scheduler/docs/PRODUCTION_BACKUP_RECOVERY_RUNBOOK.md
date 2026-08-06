@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -15,6 +15,7 @@ Launch conclusion: `NO-GO`.
 - Verified deployed commit: `082c960`
 - Production Supabase project: `project-local-production`
 - Production Supabase ref: `wdlaauzknfggoqldolmx`
+- Production Supabase plan: Free
 - Production migration: `20260714122230`
 - Production Auth: enforced
 - Email transport: disabled
@@ -73,18 +74,55 @@ The 12.25 `npm run test:production-supabase-schema` gate was the initial/bootstr
 
 ## C. Data backup and restore evidence
 
-Do not claim backup readiness until Jelani supplies actual production Supabase dashboard/plan evidence.
+Operator dashboard evidence is now recorded for `project-local-production` (`wdlaauzknfggoqldolmx`):
 
-Jelani/operator must record, outside secrets and without exposing credentials:
+- Current plan: Free.
+- Scheduled backups page: "Free Plan does not include project backups."
+- Scheduled backups page states that upgrading to Pro provides up to 7 days of scheduled backups.
+- No scheduled production backup is currently available.
+- No backup timestamp or successful backup status exists yet.
+- Point in time page: "Point in Time Recovery is a Pro Plan add-on."
+- Point in time page describes PITR as: "Roll back your database to a specific second."
+- PITR add-on starts at $100/month.
+- Pro already includes daily backups at no extra cost.
+- PITR is not currently enabled or available.
+- PITR is not considered necessary for the narrow Bozeman beta unless a later operational review changes that decision.
+- Restore to new project page: "Restore to a new project requires Pro Plan and above."
+- Restore to new project requires upgrading to Pro and having physical backups enabled.
+- Restore to new project is currently unavailable.
+- No restore was started.
+- No second project was created.
+- No database dump, credentials, or secrets were accessed or exposed.
 
-- Whether automatic backups are enabled.
-- Retention period.
-- Visible backup timestamps/status where available.
-- Whether point-in-time recovery is available for the current plan.
-- How a restore would be initiated in Supabase.
-- Who is authorized to approve a restore.
-- Whether restore creates a new project/database or replaces the current one.
-- What verification must follow a restore.
+This evidence does not by itself require upgrading to Supabase Pro. Project Local's approved near-term policy is to minimize recurring subscriptions until there are multiple active users every month, prefer secure free or low-cost self-managed infrastructure where practical, and still preserve recoverability and architectural integrity.
+
+at least one reviewed backup path must be proven before real Bozeman data is provisioned.
+
+### Path A - Preferred independent backup path
+
+Before any real Bozeman product data is provisioned, the preferred current strategy is a tested encrypted independent backup system:
+
+1. Implement an automated logical backup process for the production PostgreSQL database.
+2. Use secure operator credentials or a dedicated least-privilege backup credential reviewed for this purpose.
+3. Never expose the database password, connection string, encryption key, dump contents, service-role key, or volunteer data.
+4. Encrypt every backup before it enters persistent storage.
+5. Store backup artifacts outside the public application repository.
+6. Use private independent storage with a documented retention policy.
+7. Retain a reviewed number of daily and weekly backups.
+8. Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
+9. Configure safe failure notification.
+10. Perform a separately reviewed restore test into local Supabase or another approved disposable non-production target.
+11. Verify schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup.
+12. Document the real disaster-recovery procedure.
+13. Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
+
+Do not claim that this independent backup implementation exists yet. It is the preferred next recovery implementation path.
+
+### Path B - Optional Supabase-managed path
+
+The operator may instead later upgrade to Supabase Pro, confirm managed scheduled/physical backups, record retention and successful backup evidence, and complete an approved restore test. This is optional and should be reconsidered when recurring usage justifies the subscription.
+
+Supabase Pro managed backups remain an optional future path, not a mandatory launch prerequisite.
 
 Do not perform a production restore in this slice. Do not create a second production project automatically. Do not download or expose database credentials or dumps.
 
@@ -137,17 +175,23 @@ Do not guess ownership in source code or tests. Record owners in private operato
 
 Application rollback planning, migration-forward policy, Belgrade fallback, and grant-revocation pause are documented.
 
-Production recovery readiness remains incomplete because the repository still lacks operator evidence for:
+Production recovery readiness remains incomplete because:
 
-- Supabase automatic backups.
-- Retention period.
-- Backup timestamps/status.
-- Point-in-time recovery availability.
-- Restore initiation behavior.
+- Supabase-managed backups are unavailable on the current Free plan.
+- That fact does not by itself require a Pro upgrade.
+- Independent encrypted backups are the preferred current plan, but are not implemented yet.
+- Supabase Pro remains optional.
+- No first successful backup timestamp/status exists.
+- Retention is not yet recorded.
+- At least one reviewed backup path must be proven before real Bozeman data.
+- Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
 - Restore approval owner.
-- Whether restore creates or replaces a project/database.
 - Post-restore verification procedure.
 - Restore-test evidence.
 - Incident ownership.
+
+PITR is unavailable and intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
+
+Database backups do not automatically prove recovery for Supabase Storage objects. Add a separate backup plan before enabling Storage-backed features such as volunteer photos.
 
 Real Bozeman data remains unprovisioned. Launch remains `NO-GO`.

@@ -185,12 +185,16 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: true,
     evidence: [
       "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
-      "production Supabase backup availability, retention, restore process, and restore ownership evidence are not recorded",
+      "operator dashboard evidence confirms production Supabase is on the Free plan and scheduled backups are not available",
+      "no first successful backup timestamp/status exists and retention is not recorded",
+      "preferred independent encrypted logical backup path is not implemented yet",
+      "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
+      "PITR is unavailable and intentionally not required for the initial beta",
       "restore test evidence is not recorded",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Verify backup availability, retention, restore procedure, restore ownership, restore test evidence, deployment rollback ownership, grant revocation fallback, email disable switch, and Belgrade operational fallback before launch.",
+      "Before real Bozeman data is provisioned, implement and restore-test either the preferred independent encrypted backup path or optional Supabase-managed Pro path, then record backup timestamp/status, retention, restore verification, deployment rollback ownership, grant revocation fallback, email disable switch, and Belgrade operational fallback.",
   },
   {
     id: "operator_pilot_approval",
@@ -224,6 +228,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until email provider, observability, backups, rollback/restore evidence, operator provisioning, UI approval, and pilot evidence exist.",
+    "Production environment readiness is a NO-GO until email provider, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, UI approval, and pilot evidence exist.",
   items: productionEnvironmentReadinessItems,
 } as const;

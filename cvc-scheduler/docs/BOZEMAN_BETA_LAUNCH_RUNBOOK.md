@@ -32,7 +32,8 @@ Production is partially configured but not launch-approved:
 - Supabase Auth Site URL `https://projectlocal.app` and exact callback `https://projectlocal.app/admin/auth/callback` are configured; the temporary Vercel callback remains allowlisted for fallback.
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
-- Email provider/sender setup, backup/restore, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete.
+- Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
+- Preferred independent encrypted backup implementation, restore testing, email provider/sender setup, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete. Supabase Pro remains optional.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.

@@ -36,6 +36,7 @@ export const productionRecoveryBaseline = {
   deployedCommit: "082c960",
   supabaseProject: "project-local-production",
   supabaseRef: "wdlaauzknfggoqldolmx",
+  supabasePlan: "Free",
   forbiddenStagingRef: "kfuujcfxoayukywvtaeh",
   migration: "20260714122230",
   emailTransport: "disabled",
@@ -87,29 +88,64 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   },
   {
     id: "backup_availability",
-    title: "Production backup availability and retention",
-    status: "operator_evidence_required",
+    title: "Supabase-managed backup availability and retention",
+    status: "configuration_required",
     blocking: true,
     evidence: [
-      "repository has no Supabase dashboard evidence for automatic backups",
-      "retention period and visible backup status are not recorded",
-      "point-in-time recovery availability for the current plan is unknown",
+      "operator dashboard evidence confirms project-local-production/wdlaauzknfggoqldolmx is on the Free plan",
+      "Supabase Scheduled backups page states: Free Plan does not include project backups",
+      "upgrading to Pro provides up to 7 days of scheduled backups",
+      "no scheduled production backup is currently available",
+      "no backup timestamp or successful backup status exists yet",
+      "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
     requiredAction:
-      "Jelani must inspect the production Supabase dashboard and record plan, automatic backup status, retention, visible backup timestamps/status, and PITR availability without exposing secrets.",
+      "Before real Bozeman data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro backup path with recorded retention and successful backup evidence.",
+  },
+  {
+    id: "independent_backup_path",
+    title: "Preferred independent encrypted backup path",
+    status: "configuration_required",
+    blocking: true,
+    evidence: [
+      "approved policy minimizes recurring subscriptions until Project Local has multiple active users every month",
+      "preferred near-term strategy is a tested encrypted independent logical PostgreSQL backup system",
+      "independent backup implementation does not exist yet",
+      "backup artifacts must never enter the public application repository",
+      "database backups do not automatically prove Supabase Storage object recovery",
+    ],
+    requiredAction:
+      "Implement automated encrypted logical backups using reviewed operator or least-privilege backup credentials, private storage, daily/weekly retention, timestamp/size/checksum/status records, safe failure notification, and a restore test into an approved disposable non-production target before real Bozeman data.",
+  },
+  {
+    id: "point_in_time_recovery",
+    title: "Point-in-time recovery",
+    status: "documented",
+    blocking: false,
+    evidence: [
+      "operator dashboard evidence confirms Point in Time Recovery is a Pro Plan add-on",
+      "PITR is not currently enabled or available on the Free plan",
+      "PITR add-on starts at $100/month",
+      "PITR is intentionally not required for the narrow initial Bozeman beta unless a later operational review changes that decision",
+    ],
+    requiredAction:
+      "Do not treat PITR as an initial beta blocker; revisit only if a later operational review requires second-level recovery.",
   },
   {
     id: "restore_procedure",
     title: "Restore procedure and approval",
-    status: "operator_evidence_required",
+    status: "configuration_required",
     blocking: true,
     evidence: [
-      "restore initiation path is not verified",
-      "whether restore creates a new project/database or replaces the existing one is not recorded",
+      "operator dashboard evidence confirms Restore to new project requires Pro Plan and above",
+      "Supabase-managed restore to new project requires Pro and physical backups",
+      "restore to new project is currently unavailable",
+      "no restore was started and no second project was created",
+      "no database dump, credentials, or secrets were accessed or exposed",
       "restore approval owner is unknown",
     ],
     requiredAction:
-      "Document who may approve restore, where restore is initiated, whether it creates or replaces a project/database, and what verification must follow.",
+      "Complete restore testing for the chosen backup path: independent encrypted backups restore into an approved disposable non-production target, or optional Supabase-managed backups restore to a new project after Pro/physical backups are enabled.",
   },
   {
     id: "restore_test",
@@ -117,12 +153,12 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     status: "restore_test_required",
     blocking: true,
     evidence: [
-      "no production restore was performed in 12.28",
+      "no production restore was performed in 12.28 or 12.28.1",
       "no database dump or second production project was created",
-      "restore readiness cannot be claimed until a reviewed restore test or equivalent operator evidence exists",
+      "restore readiness cannot be claimed until a reviewed restore test for the chosen backup path exists",
     ],
     requiredAction:
-      "Plan a safe non-destructive restore test or operator-approved equivalent before launch; never expose database credentials or dumps in the repository or transcript.",
+      "Run a safe restore test into local Supabase or another approved disposable non-production target, then verify schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup without exposing credentials or dumps.",
   },
   {
     id: "operational_pause",
@@ -184,12 +220,15 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     status: "blocked",
     blocking: true,
     evidence: [
-      "backup availability, retention, restore process, restore ownership, restore test evidence, and incident ownership remain unresolved",
+      "production backup configuration is confirmed blocked by the current Free plan",
+      "preferred independent encrypted backup path is not implemented yet",
+      "at least one reviewed backup path must be proven before real Bozeman data",
+      "first backup timestamp/status, retention, restore owner, restore test evidence, and incident ownership remain unresolved",
       "real Bozeman product data remains unprovisioned",
       "launch remains NO-GO",
     ],
     requiredAction:
-      "Keep launch blocked until operator backup/restore evidence, restore-test evidence, incident ownership, email, observability, provisioning, UI approval, and pilot evidence pass.",
+      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, email, observability, provisioning, UI approval, and pilot evidence pass.",
   },
 ];
 
@@ -198,6 +237,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "Production recovery readiness is incomplete until Supabase backup/retention/PITR evidence, restore ownership/procedure, restore-test evidence, incident ownership, email, observability, operator provisioning, UI approval, and pilot evidence exist.",
+    "Production recovery readiness is incomplete until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented; PITR is unavailable and not required for the initial beta.",
   items: productionRecoveryReadinessItems,
 } as const;

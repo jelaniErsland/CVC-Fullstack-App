@@ -119,8 +119,20 @@ Manual Auth evidence from 12.27 passed on the canonical origin: an existing appr
 
 ## Phase H - Before real beta data
 
-- Confirm backups and restore/rollback plan.
-- Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) to record backup availability, retention, PITR availability, restore initiation behavior, restore approval owner, post-restore verification, and incident owners.
+Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) for the backup, restore, rollback, and operational-pause evidence trail.
+
+- Implement an automated encrypted independent logical backup process before any real Bozeman product data is provisioned.
+- Use secure operator credentials or a dedicated least-privilege backup credential reviewed for this purpose.
+- Store encrypted backup artifacts outside the public application repository in private independent storage.
+- Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
+- Record retention.
+- Configure safe failure notification.
+- Perform a separately reviewed restore test into local Supabase or another approved disposable non-production target.
+- Complete post-restore verification.
+- Record restore approval owner and incident owners.
+- Supabase Pro managed backups are optional and may be chosen later if recurring usage justifies the subscription.
+- PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
+- Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 - Confirm logging/alerts.
 - Confirm production email provider plan separately.
 - Confirm product-owner UI approval.

@@ -47,6 +47,7 @@ async function main() {
   assert.equal(productionRecoveryBaseline.deployedCommit, "082c960");
   assert.equal(productionRecoveryBaseline.supabaseProject, "project-local-production");
   assert.equal(productionRecoveryBaseline.supabaseRef, "wdlaauzknfggoqldolmx");
+  assert.equal(productionRecoveryBaseline.supabasePlan, "Free");
   assert.equal(productionRecoveryBaseline.forbiddenStagingRef, "kfuujcfxoayukywvtaeh");
   assert.equal(productionRecoveryBaseline.migration, "20260714122230");
   assert.equal(productionRecoveryBaseline.emailTransport, "disabled");
@@ -72,6 +73,8 @@ async function main() {
     "application_rollback",
     "migration_recovery",
     "backup_availability",
+    "independent_backup_path",
+    "point_in_time_recovery",
     "restore_procedure",
     "restore_test",
     "operational_pause",
@@ -128,6 +131,19 @@ async function main() {
   assertIncludes(runbook, "Prefer reviewed forward-fix migrations", "backup/recovery runbook");
   assertIncludes(runbook, "Do not perform a production restore", "backup/recovery runbook");
   assertIncludes(runbook, "Do not download or expose database credentials or dumps", "backup/recovery runbook");
+  assertIncludes(runbook, "Free Plan does not include project backups", "backup/recovery runbook");
+  assertIncludes(runbook, "Point in Time Recovery is a Pro Plan add-on", "backup/recovery runbook");
+  assertIncludes(runbook, "Restore to a new project requires Pro Plan and above", "backup/recovery runbook");
+  assertIncludes(runbook, "PITR is not considered necessary for the narrow Bozeman beta", "backup/recovery runbook");
+  assertIncludes(runbook, "Path A - Preferred independent backup path", "backup/recovery runbook");
+  assertIncludes(runbook, "automated logical backup process", "backup/recovery runbook");
+  assertIncludes(runbook, "Encrypt every backup before it enters persistent storage", "backup/recovery runbook");
+  assertIncludes(runbook, "Store backup artifacts outside the public application repository", "backup/recovery runbook");
+  assertIncludes(runbook, "Record backup timestamp, size, checksum/integrity result, and success/failure state", "backup/recovery runbook");
+  assertIncludes(runbook, "Path B - Optional Supabase-managed path", "backup/recovery runbook");
+  assertIncludes(runbook, "Supabase Pro managed backups remain an optional future path", "backup/recovery runbook");
+  assertIncludes(runbook, "at least one reviewed backup path must be proven before real Bozeman data", "backup/recovery runbook");
+  assertIncludes(runbook, "Database backups do not automatically prove recovery for Supabase Storage objects", "backup/recovery runbook");
   assertIncludes(runbook, "revoke or expire production workspace grants", "backup/recovery runbook");
   assertIncludes(runbook, "Auth identity deletion is not the normal pause mechanism", "backup/recovery runbook");
   assertIncludes(runbook, "Product-record deletion is not the normal rollback mechanism", "backup/recovery runbook");
