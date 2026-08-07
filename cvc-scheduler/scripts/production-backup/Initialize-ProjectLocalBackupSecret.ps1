@@ -10,7 +10,7 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepositoryRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 
 function Assert-WindowsOnly {
-  if (-not $IsWindows) {
+  if ($env:OS -ne 'Windows_NT') {
     throw "Project Local production backup secret setup is Windows-only because it uses current-user DPAPI."
   }
 }

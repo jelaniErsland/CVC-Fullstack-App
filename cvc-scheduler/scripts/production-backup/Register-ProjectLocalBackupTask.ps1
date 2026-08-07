@@ -44,7 +44,7 @@ function Get-TaskActionArgument {
   return ($arguments -join " ")
 }
 
-if (-not $IsWindows) {
+if ($env:OS -ne 'Windows_NT') {
   throw "Windows Task Scheduler registration is Windows-only."
 }
 
