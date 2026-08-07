@@ -187,7 +187,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
       "operator dashboard evidence confirms production Supabase is on the Free plan and scheduled backups are not available",
       "no first successful backup timestamp/status exists and retention is not recorded",
-      "preferred independent encrypted logical backup path is not implemented yet",
+      "12.29 adds the preferred independent encrypted logical backup automation foundation with dependency preflights and a guarded local restore boundary, but no production backup has run",
       "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
       "PITR is unavailable and intentionally not required for the initial beta",
       "restore test evidence is not recorded",

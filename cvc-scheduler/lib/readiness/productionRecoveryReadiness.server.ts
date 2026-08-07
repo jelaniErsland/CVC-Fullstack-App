@@ -97,6 +97,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "upgrading to Pro provides up to 7 days of scheduled backups",
       "no scheduled production backup is currently available",
       "no backup timestamp or successful backup status exists yet",
+      "Supabase Pro remains optional",
       "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
     requiredAction:
@@ -110,12 +111,27 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     evidence: [
       "approved policy minimizes recurring subscriptions until Project Local has multiple active users every month",
       "preferred near-term strategy is a tested encrypted independent logical PostgreSQL backup system",
-      "independent backup implementation does not exist yet",
+      "12.29 adds a Windows-first PowerShell automation foundation with Supabase CLI/Docker/age/psql dependency preflights and fixture/static guardrails",
+      "no production backup has run and no restore has passed",
       "backup artifacts must never enter the public application repository",
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Implement automated encrypted logical backups using reviewed operator or least-privilege backup credentials, private storage, daily/weekly retention, timestamp/size/checksum/status records, safe failure notification, and a restore test into an approved disposable non-production target before real Bozeman data.",
+      "Complete operator setup: create real age keys, store the DPAPI secret safely, run the first encrypted production backup, record checksum/status/retention evidence, validate notification behavior, and restore-test into an approved disposable non-production target before real Bozeman data.",
+  },
+  {
+    id: "independent_backup_automation_foundation",
+    title: "Independent backup automation foundation",
+    status: "documented",
+    blocking: false,
+    evidence: [
+      "12.29 adds PowerShell scripts for DPAPI secret setup, guarded logical backup, Task Scheduler registration, and an explicit guarded local restore boundary",
+      "normal regression requires no real Supabase credentials, OneDrive, age, Docker, production access, or running local Supabase",
+      "scripts are route-unused and do not change application runtime behavior",
+      "scheduled task is not registered by the repository or tests",
+    ],
+    requiredAction:
+      "Use the operator guide to install dependencies, create keys, configure the DPAPI secret, run a first manual backup, register the task explicitly, and complete a restore drill before real data.",
   },
   {
     id: "point_in_time_recovery",
@@ -221,7 +237,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: true,
     evidence: [
       "production backup configuration is confirmed blocked by the current Free plan",
-      "preferred independent encrypted backup path is not implemented yet",
+      "preferred independent encrypted backup foundation exists but has not produced a successful encrypted production backup or restore test",
       "at least one reviewed backup path must be proven before real Bozeman data",
       "first backup timestamp/status, retention, restore owner, restore test evidence, and incident ownership remain unresolved",
       "real Bozeman product data remains unprovisioned",

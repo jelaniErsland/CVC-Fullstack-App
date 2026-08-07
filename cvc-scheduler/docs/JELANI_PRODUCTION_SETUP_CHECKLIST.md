@@ -119,10 +119,14 @@ Manual Auth evidence from 12.27 passed on the canonical origin: an existing appr
 
 ## Phase H - Before real beta data
 
-Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) for the backup, restore, rollback, and operational-pause evidence trail.
+Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) for the backup, restore, rollback, and operational-pause evidence trail. Use [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the preferred Windows-first independent backup setup.
 
-- Implement an automated encrypted independent logical backup process before any real Bozeman product data is provisioned.
+- Review the 12.29 PowerShell automation foundation before any real Bozeman product data is provisioned.
+- Create the real age key pair outside the repository.
+- Store the private age recovery identity in at least two secure places.
 - Use secure operator credentials or a dedicated least-privilege backup credential reviewed for this purpose.
+- Run the DPAPI secret setup locally; do not paste secrets into Git, chat, screenshots, or logs.
+- Run the first manual encrypted production backup only after operator review.
 - Store encrypted backup artifacts outside the public application repository in private independent storage.
 - Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
 - Record retention.

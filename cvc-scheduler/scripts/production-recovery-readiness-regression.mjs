@@ -142,7 +142,7 @@ async function main() {
   assertIncludes(runbook, "Record backup timestamp, size, checksum/integrity result, and success/failure state", "backup/recovery runbook");
   assertIncludes(runbook, "Path B - Optional Supabase-managed path", "backup/recovery runbook");
   assertIncludes(runbook, "Supabase Pro managed backups remain an optional future path", "backup/recovery runbook");
-  assertIncludes(runbook, "at least one reviewed backup path must be proven before real Bozeman data", "backup/recovery runbook");
+  assertIncludes(runbook, "At least one reviewed backup path must be proven before real Bozeman data", "backup/recovery runbook");
   assertIncludes(runbook, "Database backups do not automatically prove recovery for Supabase Storage objects", "backup/recovery runbook");
   assertIncludes(runbook, "revoke or expire production workspace grants", "backup/recovery runbook");
   assertIncludes(runbook, "Auth identity deletion is not the normal pause mechanism", "backup/recovery runbook");

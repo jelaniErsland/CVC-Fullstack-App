@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation and operator setup guide without running a production backup or restore.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -96,7 +96,7 @@ Operator dashboard evidence is now recorded for `project-local-production` (`wdl
 
 This evidence does not by itself require upgrading to Supabase Pro. Project Local's approved near-term policy is to minimize recurring subscriptions until there are multiple active users every month, prefer secure free or low-cost self-managed infrastructure where practical, and still preserve recoverability and architectural integrity.
 
-at least one reviewed backup path must be proven before real Bozeman data is provisioned.
+At least one reviewed backup path must be proven before real Bozeman data is provisioned.
 
 ### Path A - Preferred independent backup path
 
@@ -116,7 +116,9 @@ Before any real Bozeman product data is provisioned, the preferred current strat
 12. Document the real disaster-recovery procedure.
 13. Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 
-Do not claim that this independent backup implementation exists yet. It is the preferred next recovery implementation path.
+The 12.29 automation foundation exists, including dependency preflight checks and a guarded executable local restore boundary, but do not claim the independent backup path is proven yet. Operator key creation, DPAPI secret setup, first encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, restore drill execution, post-restore verification, and recovery ownership remain incomplete.
+
+See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
 ### Path B - Optional Supabase-managed path
 
@@ -179,7 +181,8 @@ Production recovery readiness remains incomplete because:
 
 - Supabase-managed backups are unavailable on the current Free plan.
 - That fact does not by itself require a Pro upgrade.
-- Independent encrypted backups are the preferred current plan, but are not implemented yet.
+- Independent encrypted backups are the preferred current plan; the automation foundation exists, but operator setup and proof are incomplete.
+- The 12.29 automation foundation exists, but no production backup has run and no restore has passed.
 - Supabase Pro remains optional.
 - No first successful backup timestamp/status exists.
 - Retention is not yet recorded.

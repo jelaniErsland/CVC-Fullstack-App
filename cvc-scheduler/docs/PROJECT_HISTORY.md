@@ -1,5 +1,14 @@
 # Project History
 
+## Iteration 12.29 - Independent Encrypted Production Backup Automation Foundation
+
+Summary:
+- Added Windows-first operator-owned backup automation foundation scripts under `scripts/production-backup/`: DPAPI secret setup, guarded production logical backup, explicit Task Scheduler registration, and restore-drill guardrails.
+- The backup foundation uses Supabase CLI logical dumps for roles, schema, data, and `supabase_migrations`; packages only plaintext dumps plus a credential-free manifest in a temp directory; encrypts with an age public recipient; writes `.age` artifacts atomically through `.partial`; records SHA-256 and credential-free status; and applies bounded recognition-based daily/weekly retention to encrypted artifacts only.
+- Added [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) and `npm run test:production-independent-backup` to protect route-unused scripts, exact production/staging guards, repository-destination refusal, age-encryption requirements, checksum/status behavior, cleanup, retention safety, Task Scheduler explicitness, restore target refusal, Supabase Pro optionality, PITR non-requirement, and the `NO-GO` launch conclusion.
+- No production Supabase access, production CLI link, real dump, real restore, database password request, age private identity request/generation, OneDrive upload, scheduled task registration, production/staging data, Auth user, Vercel/DNS/Auth/email change, migration, generated-type change, GitHub Actions backup artifact, application runtime behavior change, commit, or push was performed.
+- The preferred independent backup path remains incomplete until operator key creation, safe DPAPI secret setup, first successful encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, local/disposable restore test, post-restore verification, and recovery ownership are complete. Supabase Pro remains optional and PITR remains non-blocking for the initial beta.
+
 ## Iteration 12.28.1 - Production Backup Plan Evidence
 
 Summary:

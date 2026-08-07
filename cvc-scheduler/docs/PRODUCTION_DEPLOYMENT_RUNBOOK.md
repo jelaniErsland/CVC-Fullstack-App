@@ -2,7 +2,7 @@
 
 Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Production launch remains unavailable until email, backup/restore, observability, operator provisioning, UI approval, and pilot gates pass.
 
-Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional; the preferred near-term strategy is a tested encrypted independent logical backup path.
+Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional. Iteration 12.29 adds the Windows-first independent encrypted backup automation foundation and [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md), but no production backup has run and no restore has passed.
 
 Current launch conclusion: `NO-GO`.
 
@@ -226,7 +226,7 @@ Observability remains `configuration_required` until production ownership and al
 
 Detailed recovery requirements are recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
 
-Before real Bozeman product data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro path.
+Before real Bozeman product data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro path. The 12.29 scripts provide the preferred-path foundation only; operator setup and restore proof remain required.
 
 For the preferred independent path:
 

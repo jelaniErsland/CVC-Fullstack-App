@@ -33,6 +33,7 @@
     "test:production-supabase-schema": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-supabase-schema-regression.mjs",
     "test:production-supabase-schema:pristine": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-supabase-schema-pristine-regression.mjs",
     "test:production-deployment-smoke": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-deployment-smoke-regression.mjs",
+    "test:production-independent-backup": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-independent-backup-regression.mjs",
     "test:production-recovery-readiness": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-recovery-readiness-regression.mjs",
     "test:bozeman-workspace-provisioning": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-workspace-provisioning-regression.mjs",
     "test:volunteer-profile-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-regression.mjs",
