@@ -26,6 +26,10 @@ export const BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE = false
 export const BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED = true;
 export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER = "resend" as const;
+export const BOZEMAN_BETA_LAUNCH_GATE_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true;
+export const BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
+export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED = false;
+export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
 export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
 export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
   "docs/design/approved-project-local-ui";
@@ -97,10 +101,13 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "12.22 explicit send boundary exists",
       "12.22.1 hosted staging validation passed through 20260714122230",
       "12.31 selects Resend and validates a server-only production transport through deterministic fake-network regression",
-      "Recording transport remains available for QA; real provider sending was intentionally not performed",
+      "August 10 2026 operator evidence proves projectlocal.app domain verification, the verified Project Local sender, a restricted domain-scoped production key stored only in Vercel Production, canonical base URL and sender configuration, disabled open/click tracking, and direct Resend-dashboard delivery to an approved Gmail inbox",
+      "The direct provider test did not use Project Local's Initial email action or assignment_notification_deliveries claim/provider/finalize boundary",
+      "ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT is currently absent after a Ready/Latest redeployment, so application email is disabled; the recording path is also absent",
+      "No Project Local production product data or notification-delivery row was created during the provider test",
     ],
     requiredAction:
-      "Configure and verify the Resend domain, sender identity, server-only API key, canonical base URL, privacy-first tracking setting, failure monitoring, and a live test-recipient deliverability policy.",
+      "Keep application email disabled until backup/recovery and provisioning prerequisites permit a reviewed controlled app-driven test; then prove the Initial email action through the production ledger/provider/finalize round trip, duplicate behavior, schedule-access link, retry/failure operations, and credential-free monitoring.",
   },
   {
     id: "beta_critical_ui",
@@ -184,7 +191,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop and Resend application adapter are proven through local and hosted staging gates, but real sender/domain/provider configuration, deliverability, observability, backup, provisioning, and pilot prerequisites are unresolved. The honest launch decision is NO-GO until those blocking actions are completed.",
+    "The core persisted scheduling loop, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, email-failure monitoring, backup/recovery, provisioning, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter without configuring or calling the real provider. Production launch remains unavailable until Resend domain/sender/secret configuration and deliverability, backup/restore, observability, real operator provisioning, and controlled pilot gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Production launch remains unavailable until application-driven email/monitoring proof, backup/restore, observability, real operator provisioning, and controlled pilot gates pass.
 
 Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional. Iteration 12.29 adds the Windows-first independent encrypted backup automation foundation and [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md), but no production backup has run and no restore has passed.
 
@@ -133,29 +133,36 @@ Checklist:
 5. Verify HTTPS certificate issuance after any DNS/domain change.
 6. Verify the deployed origin before changing Supabase Auth.
 7. Keep Supabase Site URL and redirect allowlist aligned with the canonical origin.
-8. Add only the exact SPF/DKIM/DMARC records Resend supplies during a separately approved operator configuration step; no email DNS was changed in 12.31.
+8. Preserve the exact Resend-supplied email DNS records that produced the August 10 verified/ready `projectlocal.app` domain state; review any later email DNS change separately.
 9. Roll back DNS by reverting records or detaching the domain in the hosting platform if needed.
 
 If a `.app` domain is chosen, HTTPS is mandatory by browser policy; Vercel-managed HTTPS should satisfy this after certificate issuance.
 
-## Resend activation plan
+## Resend readiness and controlled application-proof plan
 
-Iteration 12.31 completes application integration only. The provider remains disabled in production, no real API key is in the repository, and no external email was sent.
+Iteration 12.31 completes application integration. August 10, 2026 operator evidence proves the following provider prerequisites:
 
-Before enabling the transport, Jelani/operator must:
+1. The Resend account is configured.
+2. `projectlocal.app` is verified and ready as the sending domain.
+3. `Project Local <notifications@projectlocal.app>` is the verified sender.
+4. A restricted Sending-access key scoped to `projectlocal.app` is stored only as `RESEND_API_KEY` in Vercel encrypted Production settings; never use a `NEXT_PUBLIC_` name.
+5. `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and the verified sender are configured in Vercel Production.
+6. `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` is absent.
+7. Resend open and click tracking are disabled.
+8. A direct Resend-dashboard message reached an approved Gmail inbox, proving provider/domain/sender/basic inbox deliverability only.
 
-1. Create or approve the Resend account and least-privilege sending key outside this repository.
-2. Add and verify the approved sending domain and sender identity using only Resend-provided DNS records.
-3. Keep Resend open and click tracking disabled for transactional beta messages.
-4. Store `RESEND_API_KEY` only in Vercel encrypted server environment settings; never use a `NEXT_PUBLIC_` name.
-5. Set `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app`.
-6. Set `ASSIGNMENT_NOTIFICATION_FROM` to the exact verified sender address.
-7. Leave `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` unset in production.
-8. Configure credential-free failure visibility for claim, provider delivery, and ledger finalization stages plus stale `sending` rows.
-9. Approve a narrow test-recipient policy, then set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and perform one controlled deliverability test.
-10. Confirm inbox placement, schedule-link behavior, safe provider message-id persistence, duplicate prevention, and failure/retry behavior without logging the recipient, bearer, full URL, API key, authorization header, or raw provider body.
+The direct dashboard test did not use Project Local's Initial email action, authoritative delivery ledger, schedule-access handoff, duplicate prevention, or retry/failure operations. The application transport was temporarily enabled only after provider readiness; no Project Local assignment email was sent. The transport was then removed, Vercel redeployed, and the resulting `https://projectlocal.app` deployment is Ready/Latest. `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` is currently absent, so Project Local application email is disabled.
 
-If any activation check fails, restore `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` to empty/disabled and redeploy. The database delivery ledger remains the authoritative duplicate-send boundary; Resend's deterministic idempotency header is defense in depth and has a provider-documented 24-hour window.
+Before the Initial Assignment Email launch gate can pass, Jelani/operator must:
+
+1. Complete the reviewed backup/recovery prerequisites and permit the narrow production-data fixture through the real Bozeman provisioning/pilot process.
+2. Configure credential-free failure visibility for claim, provider delivery, schedule access, ledger finalization, and stale `sending` rows.
+3. Approve a narrow test recipient and explicit app-driven procedure.
+4. Only for that reviewed procedure, set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend` and redeploy.
+5. Use Project Local's real Initial email action and confirm the production ledger claim/provider/finalize round trip, inbox placement, app-generated schedule-link behavior, safe provider message-id persistence, duplicate prevention, and failure/retry operations without logging the recipient, bearer, full URL, API key, authorization header, or raw provider body.
+6. Keep or remove the transport only according to the reviewed procedure; on any failure or absent continued-send approval, restore it to empty/disabled and redeploy.
+
+The database delivery ledger remains the authoritative duplicate-send boundary; Resend's deterministic idempotency header is defense in depth and has a provider-documented 24-hour window.
 
 ## Initial deployment plan
 
@@ -163,7 +170,7 @@ If any activation check fails, restore `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT`
 2. Select the intended production branch.
 3. Use Next.js defaults: install command from package manager, build command `npm run build`.
 4. Add production environment variables from `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`.
-5. Keep email transport disabled until every Resend activation-plan prerequisite is complete.
+5. Keep application email transport disabled until the separately reviewed controlled application-proof prerequisites are complete.
 6. Deploy only after production Supabase schema is ready.
 7. Keep the deployment operationally unused until final-domain smoke, email, rollback, and UI review pass.
 

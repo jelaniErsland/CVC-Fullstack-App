@@ -2,7 +2,7 @@
 
 Conclusion: NO-GO
 
-The persisted beta scheduling loop is technically proven through focused local gates, focused hosted staging gates, and the 12.23.1 integrated hosted end-to-end loop. Iteration 12.30 was functionally validated but rejected in product-owner visual review. Iteration 12.30.1 is explicitly product-owner approved by Jelani: the corrected beta-critical UI direction and all six desktop/390px review captures were reviewed and accepted. Iteration 12.31 selects Resend and adds a validated server-only production adapter without sending real email. The UI gate is proven and no longer blocking, but production launch prerequisites remain unresolved. An honest NO-GO means the launch gate is doing its job; it does not mean the implementation failed.
+The persisted beta scheduling loop is technically proven through focused local gates, focused hosted staging gates, and the 12.23.1 integrated hosted end-to-end loop. Iteration 12.30 was functionally validated but rejected in product-owner visual review. Iteration 12.30.1 is explicitly product-owner approved by Jelani: the corrected beta-critical UI direction and all six desktop/390px review captures were reviewed and accepted. Iteration 12.31 selects Resend and adds a validated server-only production adapter. August 10, 2026 operator evidence now proves the Resend domain/sender/key configuration and direct provider-level Gmail inbox delivery, but not Project Local application-driven delivery through the Initial email action and ledger. The application transport is currently disabled. The UI gate is proven and no longer blocking, but production launch prerequisites remain unresolved. An honest NO-GO means the launch gate is doing its job; it does not mean the implementation failed.
 
 ## Decision matrix
 
@@ -12,12 +12,12 @@ The persisted beta scheduling loop is technically proven through focused local g
 | Volunteer Add/Edit | Proven | `/admin/volunteers`, 12.15.1 hosted gate, local/browser regressions | Pilot with approved Bozeman volunteer data | No |
 | Calendar create/edit/source/assignment/publish | Proven | 12.16 through 12.19.1 hosted gates; `npm run test:calendar` | Controlled pilot spot checks | No |
 | Volunteer schedule and Confirm/Deny | Proven | 12.20/12.20.1 and 12.21/12.21.1 hosted gates | Final mobile pilot | No |
-| Initial assignment email boundary | Configuration required | 12.22.1 hosted ledger/recording gate passed through `20260714122230`; 12.31 selected Resend and validated the server-only adapter with fake network responses | Verify/configure the Resend domain, sender identity, server-only secret, canonical base URL, privacy settings, monitoring, and approved test-recipient deliverability proof | Yes |
+| Initial assignment email boundary | Application proof required | 12.22.1 hosted ledger/recording gate passed through `20260714122230`; 12.31 validated the Resend adapter; August 10 operator evidence proves `projectlocal.app`, the verified sender, restricted Vercel-held key, privacy settings, and direct provider-level Gmail inbox delivery only. No app Initial email or production ledger round trip occurred, and application transport is disabled | After backup/recovery and provisioning prerequisites permit a reviewed controlled test, prove the real Initial email claim/provider/finalize round trip, duplicate behavior, schedule link, retry/failure operations, and monitoring | Yes |
 | Integrated hosted beta loop | Proven | 12.23.1 ran one continuous disposable namespace through Volunteer Add/Edit, Calendar scheduling, assignment, publication, recording-only email, secure schedule access, Confirm/Deny/Confirm All, admin response truth, negative paths, and zero residue | Repeat before final launch review if staging/schema changes | No |
 | Hosted staging state | Proven | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through `20260714122230`; generated-type parity, focused hosted gates, launch verification, and 12.23.1 integrated zero-residue gate passed | Rerun exact hosted launch/E2E gates before final launch review if needed | No |
 | Beta-critical UI | Proven | 12.30 was visually rejected despite functional validation. Jelani explicitly product-owner approved the corrected 12.30.1 shared shell, real Calendar, real Volunteers, and secure volunteer schedule against [`design/approved-project-local-ui`](./design/approved-project-local-ui/), and reviewed and accepted all six real-route desktop/390px captures in [`previews/beta-review`](./previews/beta-review/) | Preserve the approved baseline; any later visual direction change requires separate explicit review | No |
 | Production deployment/domain/Auth | Proven | Vercel project `project-local` is live at canonical origin `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available; `ADMIN_AUTH_MODE` is enforced; Supabase Auth Site URL and exact final-domain callback are configured; temporary Vercel callback remains allowlisted; manual magic-link sign-in passed on the final domain; no-grant admin routes failed closed; commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production smoke passed before push and after deployment with exit code `0` | Rerun the public smoke only after deployment/domain/Auth/environment changes | No |
-| Production environment readiness | Partial | Production deployment/domain/Auth is proven; production Supabase schema is migrated through `20260714122230`; 12.28 documents recovery procedures; 12.28.1 confirms production Supabase is on Free and managed backups/restore-to-new-project are unavailable on that plan | Complete email/provider deliverability, observability, a reviewed independent encrypted backup path or optional Supabase-managed Pro path, restore testing, real provisioning, and pilot evidence | Yes |
+| Production environment readiness | Partial | Production deployment/domain/Auth is proven; production Supabase schema is migrated through `20260714122230`; provider/domain/sender configuration and direct Resend-dashboard Gmail delivery are proven; 12.28 documents recovery procedures; 12.28.1 confirms production Supabase is on Free and managed backups/restore-to-new-project are unavailable on that plan | Complete application-driven email proof and monitoring, observability, a reviewed independent encrypted backup path or optional Supabase-managed Pro path, restore testing, real provisioning, and pilot evidence | Yes |
 | Production Supabase schema | Proven | 12.25 ran the initial/bootstrap empty-production `npm run test:production-supabase-schema` gate against `project-local-production` (`wdlaauzknfggoqldolmx`); production is migrated through `20260714122230`, generated-type parity passed, product/Auth/storage counts were zero before Auth setup, public Supabase connectivity passed, and structural RLS/security checks passed | Keep Project Local product rows/storage empty until reviewed operator provisioning; use a separately reviewed established-production migration gate for future live-state migrations | No |
 | Observability and backup/recovery | Configuration required | Runbooks define monitoring and recovery needs; [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) documents rollback, migration-forward policy, operational pause, recovery checks, 12.28.1 Free-plan backup evidence, preferred independent encrypted backups, and optional Supabase-managed Pro backups; 12.29 adds the independent backup automation foundation | Verify logging, alerts, complete operator backup setup, run and record first successful encrypted backup, confirm retention/status/notification, restore-test a reviewed independent encrypted backup path or optional Supabase-managed Pro path, record restore/rollback owners, and preserve Belgrade fallback | Yes |
 | Real Bozeman pilot | Pilot required | No real Bozeman records created by tests | Run controlled pilot with approved data | Yes |
@@ -41,13 +41,11 @@ The persisted beta scheduling loop is technically proven through focused local g
 
 ## Blocking actions before launch
 
-1. Provision real Bozeman workspace/contact/grants through the 12.14 operator boundary.
-2. Configure the selected Resend provider without exposing its server-only secret.
-3. Verify the Resend sender domain and sender identity while keeping open/click tracking disabled.
-4. Configure provider secret and production base URL without committing secrets.
-5. Verify logging, alerts, and stale-delivery monitoring.
-6. Before real Bozeman data, complete the 12.29 independent backup operator setup or optional Supabase-managed Pro path, run and record the first successful encrypted backup, confirm retention/status/notification, restore-test the chosen path, complete post-restore verification, and record restore/rollback owners using [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
-7. Run a small controlled pilot with approved Bozeman data and approved test recipients. Product-owner UI review is already complete through 12.30.1.
+1. Before real Bozeman data, complete the 12.29 independent backup operator setup or optional Supabase-managed Pro path, run and record the first successful encrypted backup, confirm retention/status/notification, restore-test the chosen path, complete post-restore verification, and record restore/rollback owners using [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
+2. Verify deployment/runtime observability, email failure alerts, and stale-delivery monitoring.
+3. Provision real Bozeman workspace/contact/grants through the 12.14 operator boundary after the recovery prerequisites permit it.
+4. As part of a separately reviewed controlled test/pilot, enable `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend` only long enough to prove the Project Local Initial email action, production delivery-ledger claim/provider/finalize flow, duplicate behavior, schedule-access link, and retry/failure procedure with an approved recipient; disable it again if the reviewed step does not authorize continued sending.
+5. Run a small controlled pilot with approved Bozeman data and approved test recipients. Product-owner UI review is already complete through 12.30.1.
 
 ## Non-blocking deferred items
 
@@ -68,13 +66,15 @@ The persisted beta scheduling loop is technically proven through focused local g
 
 ## Production email provider/domain/deployment status
 
-- Production provider: Resend selected; server-only application adapter validated in 12.31 without real network delivery.
-- Production sender domain: not verified in repository.
-- Sender identity: not configured for production.
-- Provider secret: not configured or committed.
-- Production base URL/domain: canonical origin `https://projectlocal.app`; final-domain Auth callback passed manual magic-link evidence.
-- Production deployment: Vercel project `project-local` is live at `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available.
-- Real external email: not sent by 12.23.1 or 12.31.
+- Production provider: Resend selected; server-only application adapter validated in 12.31.
+- Provider/domain/sender evidence: August 10, 2026 operator evidence confirms `projectlocal.app` is verified and ready in Resend and `Project Local <notifications@projectlocal.app>` is the verified production sender.
+- Provider secret: a restricted Sending-access key scoped to `projectlocal.app` is stored only as `RESEND_API_KEY` in encrypted Vercel Production settings; no key value is recorded or committed.
+- Production notification values: `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and `ASSIGNMENT_NOTIFICATION_FROM=Project Local <notifications@projectlocal.app>` are configured in Vercel Production; `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` is absent.
+- Privacy: Resend open tracking and click tracking are both off.
+- Provider-level deliverability: a direct Resend-dashboard test from the verified sender arrived in an approved Gmail inbox. This proves provider/domain/sender/basic inbox delivery only.
+- Application delivery: not proven. The dashboard test did not use Project Local's Initial email action, `assignment_notification_deliveries`, schedule-access handoff, duplicate protection, or application retry/failure paths.
+- Current application state: `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` is absent after it was temporarily enabled without sending an app email and then removed; the resulting `https://projectlocal.app` deployment is Ready/Latest, so Project Local application email is disabled.
+- Data boundary: no production workspace, contact/grant, volunteer, Calendar item, assignment, notification-delivery row, or other real Bozeman product data was created during the provider test.
 
 ## Fallback
 

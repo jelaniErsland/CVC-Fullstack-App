@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation, and 12.31 selects Resend and validates the server-only application adapter without real email. Operator backup setup/proof, Resend domain/sender/key/Vercel configuration, real deliverability proof, observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation, and 12.31 selects Resend and validates the server-only application adapter. August 10, 2026 operator evidence proves the Resend domain/sender/restricted-key/Vercel configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. The direct dashboard test did not use Project Local's Initial email action or ledger, and application transport is currently absent/disabled after a Ready/Latest redeployment. Operator backup setup/proof, application-driven email and monitoring proof, broader observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -94,29 +94,35 @@ Controlled import remains unresolved and must not be improvised through unsafe S
 5. Publish explicitly when the item should become visible.
 6. Verify volunteer schedule visibility.
 7. Review response state and coverage from assignment/current-response truth.
-8. Use the Initial email action only when provider configuration is approved.
+8. Use the Initial email action only during a separately reviewed controlled app-driven proof or later explicitly approved sending state; provider-level approval alone is insufficient.
 
 Publishing is not emailing. Assigning is not emailing. Email failure does not unpublish an assignment.
 
 ## Email
 
-Resend is the selected production provider and its server-only application transport is validated. Required operator evidence before launch:
+Resend is the selected production provider and its server-only application transport is validated. August 10, 2026 operator evidence proves:
 
-- Verified Resend sender domain and sender identity.
-- A least-privilege Resend API key stored only as server-side `RESEND_API_KEY` in encrypted hosting settings.
-- `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend` only after every activation check is ready.
-- `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and an approved verified `ASSIGNMENT_NOTIFICATION_FROM` value.
-- `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` absent from production.
-- Resend open/click tracking left disabled for this transactional beta.
-- Test recipient policy.
-- Deliverability verification.
-- Failure monitoring.
-- Retry and duplicate-send procedure.
-- Incident procedure.
+- `projectlocal.app` is verified and ready as the Resend sending domain.
+- `Project Local <notifications@projectlocal.app>` is the verified sender.
+- A restricted Sending-access key scoped to `projectlocal.app` is stored only as server-side `RESEND_API_KEY` in encrypted Vercel Production settings.
+- `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and the verified `ASSIGNMENT_NOTIFICATION_FROM` value are configured.
+- `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` is absent from production.
+- Resend open and click tracking are disabled.
+- A direct Resend-dashboard message reached an approved Gmail inbox, proving provider/domain/sender/basic inbox deliverability only.
+- `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` is currently absent after a temporary no-send enablement and removal; the resulting production deployment is Ready/Latest, so Project Local application email is disabled.
+
+Still required before the Initial Assignment Email gate can pass:
+
+- Backup/recovery and provisioning prerequisites sufficient for a reviewed controlled production-data test.
+- An approved app-driven test recipient and explicit test procedure.
+- Delivery through Project Local's actual Initial email action and `assignment_notification_deliveries` claim/provider/finalize boundary.
+- Duplicate-send proof with real Resend.
+- Schedule-access link proof from the app-generated assignment email.
+- Failure monitoring, stale-delivery monitoring, retry procedure, and incident ownership.
 
 Do not log credentials, tokens, full schedule URLs, or raw provider payloads.
 
-The validated boundary supports disabled, recording, and Resend transports. The 12.31 Resend regression uses injected fake HTTP responses, not the real provider network; application integration is not production configuration or deliverability proof. Unknown transports and incomplete Resend configuration fail closed with no fallback.
+The validated boundary supports disabled, recording, and Resend transports. The 12.31 Resend regression uses injected fake HTTP responses, not the real provider network. The later direct dashboard message proves provider configuration/basic inbox delivery but does not prove the application boundary. Unknown transports and incomplete Resend configuration fail closed with no fallback. Keep production application transport absent/disabled until a separately reviewed controlled test is authorized.
 
 ## Observability
 

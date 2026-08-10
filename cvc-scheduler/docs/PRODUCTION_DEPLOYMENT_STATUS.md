@@ -1,8 +1,8 @@
 # Production Deployment Status
 
-Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin.
+Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state.
 
-Current status: `FINAL DOMAIN AND POST-DEPLOYMENT SMOKE VERIFIED`.
+Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE AND PROVIDER-LEVEL EMAIL CONFIGURATION VERIFIED; APPLICATION EMAIL DISABLED`.
 
 Launch conclusion: `NO-GO`.
 
@@ -23,8 +23,12 @@ Launch conclusion: `NO-GO`.
 - `ADMIN_AUTH_MODE` is enforced in Vercel Production.
 - Production Supabase URL and public anon/publishable key are configured in Vercel Production only.
 - `SUPABASE_SERVICE_ROLE_KEY` is absent.
-- Email transport and recording transport are absent/disabled.
-- Resend is selected and its 12.31 server-only application adapter is locally validated, but no Resend domain, sender, key, Vercel environment value, or real delivery is configured here.
+- `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` and `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` are absent, so Project Local application email is disabled.
+- Resend is selected and its 12.31 server-only application adapter is locally validated.
+- Operator evidence confirms `projectlocal.app` is verified and ready as the Resend sending domain and `Project Local <notifications@projectlocal.app>` is the verified sender.
+- A restricted Sending-access key scoped to `projectlocal.app` is stored only as `RESEND_API_KEY` in encrypted Vercel Production settings. No key value is recorded here.
+- `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and the verified sender are configured in Vercel Production.
+- Resend open and click tracking are off.
 - Supabase Auth Site URL is `https://projectlocal.app`.
 - Exact final-domain Auth callback is `https://projectlocal.app/admin/auth/callback`.
 - Temporary Vercel callback `https://project-local-one.vercel.app/admin/auth/callback` remains allowlisted for fallback.
@@ -46,6 +50,18 @@ Operator evidence completed before this documentation update; manual magic-link 
 
 This manual Auth evidence is intentionally not automated in 12.26 or 12.27. The smoke gate does not request magic links, create Auth users, or require Vercel/Supabase API credentials.
 
+## Manual Resend provider evidence
+
+Operator evidence from August 10, 2026 confirms:
+
+1. A direct Resend-dashboard test email was sent from `Project Local <notifications@projectlocal.app>` to an approved operator test inbox.
+2. The message arrived in the Gmail inbox.
+3. This proves provider/domain/sender/basic inbox deliverability only.
+4. It did not invoke Project Local's Initial email action, claim or finalize an `assignment_notification_deliveries` row, issue an app-generated schedule-access link, prove application duplicate behavior, or exercise retry/failure operations.
+5. `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend` was temporarily enabled only after provider readiness; no Project Local assignment email was sent while it was enabled.
+6. The transport was removed, Vercel redeployed, and the resulting `https://projectlocal.app` deployment is Ready/Latest.
+7. No production workspace, contact/grant, volunteer, Calendar item, assignment, notification-delivery row, or other real Bozeman product data was created.
+
 ## Automated public smoke gate
 
 ```powershell
@@ -62,7 +78,8 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 
 ## What remains blocking
 
-- Resend sender/domain/key/monitoring and real production deliverability are not configured or proven.
+- Project Local application-driven Initial email delivery through the production claim/provider/finalize ledger is not proven.
+- Production duplicate-send behavior with real Resend, app-generated schedule-access link behavior, retry/failure operations, and email-failure monitoring are not proven.
 - Production backup/restore evidence is unresolved.
 - Production observability/alerts are unresolved.
 - Production workspace/contact/grants are not provisioned.

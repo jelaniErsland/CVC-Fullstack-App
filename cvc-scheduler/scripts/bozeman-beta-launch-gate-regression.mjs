@@ -9,6 +9,10 @@ import {
   BOZEMAN_BETA_LAUNCH_GATE_CAN_MUTATE_DEPLOYMENT,
   BOZEMAN_BETA_LAUNCH_GATE_CAN_SEND_EMAIL,
   BOZEMAN_BETA_LAUNCH_GATE_DECISION,
+  BOZEMAN_BETA_LAUNCH_GATE_EMAIL_PROVIDER_CONFIGURATION_PROVEN,
+  BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
+  BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED,
+  BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER,
   BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE,
@@ -41,6 +45,10 @@ async function main() {
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED, true);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER, "resend");
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_EMAIL_PROVIDER_CONFIGURATION_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED, false);
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -100,6 +108,16 @@ async function main() {
   assert.equal(pilotGate.status, "pilot_required");
   assert.equal(pilotGate.blocking, true);
   assert.match(JSON.stringify(pilotGate.evidence), /no controlled pilot approval/i);
+
+  const emailGate = bozemanBetaLaunchGateItems.find(
+    (item) => item.id === "initial_assignment_email_boundary",
+  );
+  assert(emailGate, "Launch gate is missing the initial-assignment email item.");
+  assert.equal(emailGate.status, "configuration_required");
+  assert.equal(emailGate.blocking, true);
+  assert.match(JSON.stringify(emailGate.evidence), /direct Resend-dashboard delivery/i);
+  assert.match(JSON.stringify(emailGate.evidence), /did not use Project Local's Initial email action/i);
+  assert.match(JSON.stringify(emailGate.evidence), /application email is disabled/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

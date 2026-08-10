@@ -27,6 +27,10 @@ export const PRODUCTION_ENVIRONMENT_READINESS_CAN_ACTIVATE_RESPONSE_LINK_REVEAL 
 export const PRODUCTION_ENVIRONMENT_READINESS_DECISION = "NO-GO" as const;
 export const PRODUCTION_ENVIRONMENT_RECOMMENDED_HOST = "Vercel" as const;
 export const PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION = "20260714122230" as const;
+export const PRODUCTION_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true;
+export const PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
+export const PRODUCTION_APPLICATION_EMAIL_ENABLED = false;
+export const PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
 
 export const productionEnvironmentKnownStagingTarget = {
   name: "project-local-staging",
@@ -103,9 +107,11 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "operator evidence confirms SUPABASE_SERVICE_ROLE_KEY is absent",
       "recording email transport writes to filesystem and must not be production delivery",
       "12.31 adds RESEND_API_KEY as a server-only variable required only when the explicit resend transport is selected",
+      "August 10 2026 operator evidence confirms RESEND_API_KEY is stored only in encrypted Vercel Production settings, with canonical notification base URL and verified sender configured",
+      "ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT and ASSIGNMENT_NOTIFICATION_RECORDING_PATH are currently absent, so application email is disabled",
     ],
     requiredAction:
-      "Keep current production values in encrypted hosting settings and keep email disabled until the verified Resend sender, server-only key, canonical notification origin, and monitoring are ready for the controlled deliverability test.",
+      "Keep the restricted key and non-secret notification values in encrypted Vercel Production settings, keep the application transport disabled, and do not enable it until monitoring plus reviewed backup/recovery, provisioning, and controlled-test prerequisites are ready.",
   },
   {
     id: "auth_redirects",
@@ -145,10 +151,14 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     evidence: [
       "12.22/12.22.1 validate the authoritative claim/finalize ledger and recording transport",
       "12.31 selects Resend and validates a direct server-only HTTPS adapter, provider idempotency, safe response handling, and fail-closed configuration without real network delivery",
-      "no verified Resend sender domain, sender identity, production API key, Vercel secret configuration, real deliverability proof, or provider monitoring evidence exists",
+      "August 10 2026 operator evidence confirms projectlocal.app is verified and ready in Resend, Project Local <notifications@projectlocal.app> is configured, a restricted domain-scoped sending key is stored only in Vercel Production, and open/click tracking are disabled",
+      "a direct Resend-dashboard message from the verified sender arrived in an approved Gmail inbox, proving provider/domain/sender/basic inbox deliverability only",
+      "the provider test did not use Project Local's Initial email action or production delivery ledger, and no application assignment email or product row was created",
+      "the transport was removed after a temporary no-send enablement and the resulting https://projectlocal.app production deployment is Ready/Latest; application email is currently disabled",
+      "application-ledger delivery proof, schedule-link proof, duplicate/retry behavior with real Resend, and production email-failure monitoring remain unavailable",
     ],
     requiredAction:
-      "Keep production email disabled until operators verify the Resend domain and sender, keep open/click tracking disabled, configure the server-only key and canonical origin in Vercel, establish monitoring and an approved test-recipient policy, then record real deliverability proof.",
+      "Keep production application email disabled until a reviewed controlled pilot/test is safe; then prove the actual Initial email claim/provider/finalize round trip, duplicate protection, schedule-access link, retry/failure operations, and credential-free monitoring with an approved recipient.",
   },
   {
     id: "smoke_test",
@@ -231,6 +241,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until Resend domain/sender/secret configuration and real deliverability proof, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence exist. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though Resend domain/sender/secret configuration and direct provider-level inbox delivery are proven. Project Local application-driven delivery and email-failure monitoring, broader observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 import {
   BOZEMAN_BETA_PRINCIPLE,
   BOZEMAN_BETA_ROADMAP_REBASELINE_AVAILABLE,
+  BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN,
+  BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
+  BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN,
   BELGRADE_REMAINS_SHEETS_FALLBACK,
   bozemanBetaAuditDomains,
   bozemanBetaCriticalPath,
@@ -51,6 +54,9 @@ const tasksRoute = await readFile(path.join(root, "app", "admin", "tasks", "page
 assert.equal(BOZEMAN_BETA_ROADMAP_REBASELINE_AVAILABLE, true);
 assert.equal(BELGRADE_REMAINS_SHEETS_FALLBACK, true);
 assert.equal(BOZEMAN_BETA_PRINCIPLE, "cut_features_not_integrity");
+assert.equal(BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN, true);
+assert.equal(BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
+assert.equal(BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
 assert.match(roadmapSource, /^import "server-only";/);
 assert.doesNotMatch(
   roadmapSource,
@@ -66,6 +72,9 @@ assert.equal(description.responseLinkActivationReopened, false);
 assert.equal(description.serviceRoleShortcutAllowed, false);
 assert.equal(description.mockPersistedMixingAllowed, false);
 assert.equal(description.realEmailSendingAvailable, false);
+assert.equal(description.providerConfigurationProven, true);
+assert.equal(description.providerDirectDeliverabilityProven, true);
+assert.equal(description.applicationEmailDeliveryProven, false);
 assert.equal(description.productionDataAccessAvailable, false);
 assert.equal(description.domainCount, 11);
 
@@ -155,7 +164,7 @@ for (const blocker of [
   "manual_volunteer_add_edit_or_controlled_import",
   "calendar_create_edit_archive_publication_mutations",
   "secure_account_light_volunteer_schedule_access",
-  "production_resend_configuration_deliverability_and_observability",
+  "production_resend_application_delivery_and_observability_proof",
 ]) {
   assert.ok(readiness.blockers.includes(blocker), `missing blocker ${blocker}`);
 }

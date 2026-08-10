@@ -1,5 +1,44 @@
 # Project History
 
+## Iteration 12.31.1 - Resend Operator Configuration and Provider Deliverability Evidence
+
+Summary:
+- Recorded August 10, 2026 operator evidence that Resend is configured, `projectlocal.app` is verified and ready as the sending domain, and `Project Local <notifications@projectlocal.app>` is the verified sender. A restricted Sending-access API key scoped to the domain is stored only in encrypted Vercel Production settings as `RESEND_API_KEY`; no secret value is recorded in the repository.
+- Recorded that `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and the verified sender are configured in Vercel Production, `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` remains absent, and Resend open/click tracking are off.
+- Recorded successful direct Resend-dashboard delivery from the verified sender to an approved Gmail inbox. This proves provider/domain/sender/basic inbox deliverability only; it did not use Project Local's Initial email action or authoritative delivery-ledger claim/provider/finalize flow.
+- Recorded that the application transport was temporarily enabled only after provider readiness, no Project Local assignment email was sent, the transport was removed, and the resulting production deployment at `https://projectlocal.app` is Ready/Latest. `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` is currently absent, so Project Local application email is disabled.
+
+Boundaries and remaining proof:
+- No production workspace, contact/grant, volunteer, Calendar item, assignment, notification-delivery row, or other real Bozeman product data was created during the provider test.
+- Project Local application-driven Resend delivery, the production ledger/provider/finalize round trip, duplicate-send behavior with real Resend, schedule-access behavior from an app-generated email, retry/failure operations, and email-failure monitoring remain unproven.
+- The Initial Assignment Email launch gate remains blocking. Controlled application proof must wait for a separately reviewed test/pilot after backup/recovery and provisioning prerequisites permit safe production data. Launch remains `NO-GO`.
+- This slice records supplied operator evidence only. It does not modify application email code, UI, schema, migrations, RPCs, RLS, Auth, Vercel, DNS, Resend, Supabase, production environment values, backup/recovery code, or product data.
+
+Changed files:
+- `lib/readiness/bozemanBetaLaunchGate.server.ts`
+- `lib/readiness/productionEnvironmentReadiness.server.ts`
+- `lib/readiness/bozemanBetaRoadmap.server.ts`
+- `scripts/bozeman-beta-launch-gate-regression.mjs`
+- `scripts/production-environment-readiness-regression.mjs`
+- `scripts/bozeman-beta-roadmap-regression.mjs`
+- `docs/CURRENT_STATE.md`
+- `docs/PROJECT_HISTORY.md`
+- `docs/ROADMAP.md`
+- `docs/BOZEMAN_BETA_GO_NO_GO.md`
+- `docs/BOZEMAN_BETA_LAUNCH_RUNBOOK.md`
+- `docs/BOZEMAN_BETA_ROADMAP.md`
+- `docs/JELANI_PRODUCTION_SETUP_CHECKLIST.md`
+- `docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md`
+- `docs/PRODUCTION_DEPLOYMENT_STATUS.md`
+- `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`
+- `docs/SUPABASE_AUTH_PERSISTENCE_READINESS.md`
+- `docs/SUPABASE_LOCAL_SETUP.md`
+- `docs/CALENDAR_DATA_MODEL_READINESS.md`
+
+Verification:
+- The launch-gate, production-environment-readiness, and beta-roadmap regressions protect the provider-proven/application-unproven distinction, application-disabled state, and `NO-GO` decision.
+- Lint, TypeScript, production build, and diff whitespace checks remain required before review handoff.
+
 ## Iteration 12.31 - Production Transactional Email Provider Integration
 
 Summary:
