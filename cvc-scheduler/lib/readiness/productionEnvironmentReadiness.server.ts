@@ -198,15 +198,16 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   },
   {
     id: "operator_pilot_approval",
-    title: "Operator provisioning, UI approval, and controlled pilot",
+    title: "Operator provisioning and controlled pilot",
     status: "operator_required",
     blocking: true,
     evidence: [
       "12.14 provisioning boundary exists but real Bozeman rows are not created",
-      "12.23 UI polish exists but product-owner approval remains separate",
+      "Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and its six desktop/390px review captures",
+      "real Bozeman provisioning and controlled pilot evidence remain incomplete",
     ],
     requiredAction:
-      "Provision real Bozeman access through reviewed operator steps, complete product-owner desktop/mobile review, and run a controlled pilot before replacing any operational process.",
+      "Provision real Bozeman access through reviewed operator steps and run a controlled pilot before replacing any operational process.",
   },
   {
     id: "deferred_non_blocking_features",
@@ -228,6 +229,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until email provider, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, UI approval, and pilot evidence exist.",
+    "Production environment readiness is a NO-GO until email provider, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence exist. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

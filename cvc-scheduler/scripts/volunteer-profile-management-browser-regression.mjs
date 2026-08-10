@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -25,6 +25,8 @@ const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
+const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
 const secrets = new Set();
 const authUserIds = [];
 const authCookieSets = new Map();
@@ -34,6 +36,21 @@ const fixture = {
   namespace: `qa-12-15-browser-${randomUUID()}`,
   validFrom: "2026-07-01T00:00:00.000Z",
 };
+const reviewValues = writeBetaReviewScreenshots
+  ? {
+      workspaceName: "Bozeman Local Project",
+      createdVolunteerName: "Alex Rivera (new)",
+      volunteerName: "Alex Rivera",
+      volunteerEmail: "alex.rivera@example.invalid",
+      congregation: "Bozeman Congregation",
+    }
+  : {
+      workspaceName: "QA 12.15 Browser Workspace",
+      createdVolunteerName: `${fixture.namespace} Browser Volunteer`,
+      volunteerName: `${fixture.namespace} Browser Edited`,
+      volunteerEmail: `${fixture.namespace}-browser@example.invalid`,
+      congregation: "Bozeman",
+    };
 
 function isLoopbackUrl(value) {
   try {
@@ -209,7 +226,7 @@ async function openVolunteersPage(context) {
     timeout: 30_000,
   });
   assert(response?.ok(), `Volunteers route returned ${response?.status() ?? "no response"}`);
-  await page.getByRole("heading", { name: "Project Volunteers" }).waitFor();
+  await page.getByRole("heading", { name: "Volunteers", exact: true }).waitFor();
   return { page, failures };
 }
 
@@ -238,7 +255,7 @@ async function run() {
     buildWorkspaceAccessProvisioningSql(
       provisioningInput({
         key: targetKey,
-        displayName: "QA 12.15 Browser Workspace",
+        displayName: reviewValues.workspaceName,
         authUserId: fullUserId,
         capabilities: bozemanBetaCapabilitySets.mainScheduler,
       }),
@@ -249,7 +266,7 @@ async function run() {
     buildWorkspaceAccessProvisioningSql(
       provisioningInput({
         key: targetKey,
-        displayName: "QA 12.15 Browser Workspace",
+        displayName: reviewValues.workspaceName,
         authUserId: viewOnlyUserId,
         capabilities: ["workspace.read", "volunteers.view"],
         role: "assistant_contact",
@@ -267,41 +284,56 @@ async function run() {
     const { page, failures } = await openVolunteersPage(context);
     await page.getByText("No volunteers yet").waitFor();
     await page.getByText("Add volunteer").click();
-    await page.getByLabel("Full name").first().fill(`${fixture.namespace} Browser Volunteer`);
-    await page.getByLabel("Email").first().fill(`${fixture.namespace}-browser@example.invalid`);
+    await page.getByLabel("Full name").first().fill(reviewValues.createdVolunteerName);
+    await page.getByLabel("Email").first().fill(reviewValues.volunteerEmail);
     await page.getByLabel("Phone").first().fill("406-555-9090");
-    await page.getByLabel("Congregation").first().fill("Bozeman");
+    await page.getByLabel("Congregation").first().fill(reviewValues.congregation);
     await page.getByLabel("Preferred contact").first().selectOption("Email");
     await Promise.all([
       page.waitForURL(/notice=created/),
       page.getByRole("button", { name: "Save volunteer" }).click(),
     ]);
-    await page.getByText(`${fixture.namespace} Browser Volunteer`).waitFor();
+    await page.getByText(reviewValues.createdVolunteerName).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByText(`${fixture.namespace} Browser Volunteer`).waitFor();
+    await page.getByText(reviewValues.createdVolunteerName).waitFor();
     await page.getByText("Edit volunteer").click();
     const editDetails = page.locator("details").filter({ hasText: "Edit volunteer" }).first();
-    await editDetails.getByLabel("Full name").fill(`${fixture.namespace} Browser Edited`);
+    await editDetails.getByLabel("Full name").fill(reviewValues.volunteerName);
     await Promise.all([
       page.waitForURL(/notice=updated/),
       editDetails.getByRole("button", { name: "Save changes" }).click(),
     ]);
-    await page.getByText(`${fixture.namespace} Browser Edited`).waitFor();
+    await page.getByText(reviewValues.volunteerName).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByText(`${fixture.namespace} Browser Edited`).waitFor();
-    assert.equal(await page.getByText("Alex Rivera").count(), 0, "mock volunteer leaked");
+    await page.getByText(reviewValues.volunteerName).waitFor();
+    if (!writeBetaReviewScreenshots) {
+      assert.equal(await page.getByText("Alex Rivera").count(), 0, "mock volunteer leaked");
+    }
     assert.deepEqual(failures, []);
+    if (writeBetaReviewScreenshots) {
+      await mkdir(betaReviewDir, { recursive: true });
+      await page.screenshot({
+        path: path.join(betaReviewDir, "volunteers-desktop.png"),
+        fullPage: true,
+      });
+    }
     await context.close();
 
     const viewContext = await browser.newContext({ viewport: { width: 390, height: 900 } });
     await applyAuthCookies(viewContext, "view-only");
     const { page: viewPage, failures: viewFailures } = await openVolunteersPage(viewContext);
-    await viewPage.getByText(`${fixture.namespace} Browser Edited`).waitFor();
+    await viewPage.getByText(reviewValues.volunteerName).waitFor();
     await viewPage.getByText("Volunteer profile editing is unavailable").first().waitFor();
     assert.equal(await viewPage.getByRole("button", { name: "Save volunteer" }).count(), 0);
     const overflow = await viewPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     assert.equal(overflow, false, "390px Volunteers route has horizontal overflow");
     assert.deepEqual(viewFailures, []);
+    if (writeBetaReviewScreenshots) {
+      await viewPage.screenshot({
+        path: path.join(betaReviewDir, "volunteers-mobile.png"),
+        fullPage: true,
+      });
+    }
     await viewContext.close();
   } finally {
     await browser.close();

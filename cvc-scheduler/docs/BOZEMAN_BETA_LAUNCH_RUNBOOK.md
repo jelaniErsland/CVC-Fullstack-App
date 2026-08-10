@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation, but operator key creation, safe secret setup, first encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, restore testing, email provider/sender setup, observability, real workspace provisioning, UI approval, and controlled pilot remain incomplete. Supabase Pro remains optional.
+- 12.29 adds the preferred independent encrypted backup automation foundation, but operator key creation, safe secret setup, first encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, restore testing, email provider/sender setup and deliverability, observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.

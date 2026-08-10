@@ -1,5 +1,30 @@
 # Project History
 
+## Iteration 12.30.1 - Beta UI Visual Direction Correction
+
+Summary:
+- Promoted the approved Project Local concept images into the permanent design baseline at [`design/approved-project-local-ui`](./design/approved-project-local-ui/) and added the governing visual contract. These references are authoritative for the product family while functional truth remains authoritative for available data and actions.
+- Rebuilt the beta-critical presentation around a small reusable token set, the approved blue-to-lavender community pin, a crisp persistent admin sidebar, compact app-like mobile navigation, and brighter white/off-white surfaces with restrained blue atmosphere.
+- Recast `/admin/calendar` as one dense scheduling workspace with an integrated toolbar, internally scrolling Day/Week grids, compact events, and a pinned desktop inspector; recast `/admin/volunteers` as a scalable directory; and recast `/v/schedule` around volunteer identity, the next assignment, compact remaining work, and a calm help area.
+- Regenerated the six desktop/390px product-owner review captures from real persisted local routes with deterministic disposable human-readable fixture values. Normal regression mode retains randomized persisted fixtures and mock-data exclusion checks.
+
+Validation, boundaries, and decision:
+- Final local validation passed across persisted Calendar, Volunteers, and volunteer-schedule create/edit/assign/publish/email/response behavior, desktop and 390px states, browser errors, overflow, view-only and security-sensitive states, launch/readiness contracts, lint, TypeScript, production build, and diff checks.
+- No schema, migration, RPC, RLS, authorization/capability, persistence, token/cookie, email, production, staging, Vercel, DNS, or external-infrastructure behavior changed.
+- Jelani completed explicit product-owner visual review and approved the corrected 12.30.1 Project Local beta UI direction, including all six desktop/390px real-route review captures. The beta-critical UI gate is proven and no longer a launch blocker.
+- This approval does not include controlled pilot or production launch approval. Production email/provider deliverability, observability, a proven backup/restore path, real Bozeman provisioning, and controlled pilot evidence remain blocking, so launch remains `NO-GO`.
+
+## Iteration 12.30 - First Beta UI Visual Integration Attempt
+
+Summary:
+- Applied a first presentation-layer integration to the shared admin shell, persisted `/admin/calendar`, persisted `/admin/volunteers`, and secure `/v/schedule`, and generated six desktop/390px review captures.
+- The attempt was functionally validated: persisted Calendar operations, Volunteer Add/Edit, schedule Confirm/Deny/Confirm All, mobile width, browser-error checks, and existing authorization/security boundaries continued to pass.
+- Product-owner visual review rejected this attempt because it remained materially closer to prototype scaffolding than to the approved Project Local concepts: the shell, density, Calendar composition, volunteer directory, schedule hierarchy, and brand identity interpreted the references too loosely.
+
+Boundaries and decision:
+- No database migration, generated type, RPC, RLS/auth/capability rule, email transport, external service, deployment, production target, production data, real Bozeman row, deferred feature, commit, or push was added.
+- Iteration 12.30 did not receive product-owner visual approval and is not an approved design baseline. Its functional validation remains evidence, but visual correction moved to 12.30.1. Launch remained `NO-GO`.
+
 ## Iteration 12.29 - Independent Encrypted Production Backup Automation Foundation
 
 Summary:

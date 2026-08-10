@@ -7,11 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Copy,
   Mail,
-  Pencil,
   Plus,
-  Repeat,
   Search,
   Send,
   SlidersHorizontal,
@@ -692,7 +689,7 @@ function ViewToggle({
   return (
     <div
       aria-label="Calendar view"
-      className="inline-flex min-w-0 flex-1 rounded-full border border-slate-200/80 bg-white/58 p-1 text-sm font-semibold text-slate-500 sm:w-auto sm:flex-none"
+      className="inline-flex w-full min-w-0 rounded-lg border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-0.5 text-xs font-semibold text-[var(--pl-muted)] sm:w-auto sm:flex-none"
       role="group"
     >
       {viewModes.map((view) => (
@@ -700,10 +697,10 @@ function ViewToggle({
           aria-controls="calendar-view-content"
           aria-pressed={activeView === view.id}
           className={[
-            `min-h-11 min-w-0 flex-1 rounded-full px-2 transition sm:flex-none sm:px-4 ${calmFocusRing}`,
+            `min-h-9 min-w-0 flex-1 rounded-md px-2.5 transition sm:flex-none sm:px-3.5 ${calmFocusRing}`,
             activeView === view.id
-              ? "bg-slate-950 text-white shadow-sm"
-              : "hover:bg-white/70",
+              ? "bg-white text-[var(--pl-blue)] shadow-sm ring-1 ring-[var(--pl-border)]"
+              : "hover:bg-white/70 hover:text-[var(--pl-ink)]",
           ].join(" ")}
           key={view.id}
           onClick={() => onChange(view.id)}
@@ -722,49 +719,53 @@ function CalendarWorkspaceHeader({
   activeView,
   filteredItemCount,
   onFilterOpen,
+  onCreate,
   onNavigateNext,
   onNavigatePrevious,
   onNavigateReset,
   onViewChange,
   periodLabel,
   resetDisabled,
+  canCreate,
 }: {
   activeFilterCount: number;
   activeFilterSummary: string;
   activeView: CalendarViewMode;
   filteredItemCount: number;
   onFilterOpen: () => void;
+  onCreate: () => void;
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
   onNavigateReset: () => void;
   onViewChange: (view: CalendarViewMode) => void;
   periodLabel: string;
   resetDisabled: boolean;
+  canCreate: boolean;
 }) {
   const navigationUnit =
     activeView === "day" ? "day" : activeView === "list" ? "week" : activeView;
 
   return (
     <section
-      className="border-b border-slate-200/80 pb-3"
+      className="border-b border-[var(--pl-border)] bg-white px-3 py-3 sm:px-4"
       data-testid="calendar-workspace-header"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
             {periodLabel}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            {filteredItemCount} visible item{filteredItemCount === 1 ? "" : "s"} -{" "}
+          <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
+            {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
             {activeFilterSummary}
           </p>
-        </div>
+          </div>
 
-        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
-          <div className="inline-flex rounded-full border border-slate-200/80 bg-white/58 p-1">
+          <div className="inline-flex shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5">
             <button
               aria-label={`Previous ${navigationUnit}`}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white ${calmFocusRing}`}
+              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
               onClick={onNavigatePrevious}
               title={`Previous ${navigationUnit}`}
               type="button"
@@ -773,7 +774,7 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label={`Next ${navigationUnit}`}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-600 transition hover:bg-white ${calmFocusRing}`}
+              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
               onClick={onNavigateNext}
               title={`Next ${navigationUnit}`}
               type="button"
@@ -781,8 +782,11 @@ function CalendarWorkspaceHeader({
               <ChevronRight aria-hidden="true" className="h-4 w-4" />
             </button>
           </div>
+        </div>
+
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap">
           <button
-            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-white/58 px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-default disabled:opacity-45 sm:px-4 ${calmFocusRing}`}
+            className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] disabled:cursor-default disabled:opacity-45 ${calmFocusRing}`}
             disabled={resetDisabled}
             onClick={onNavigateReset}
             type="button"
@@ -790,30 +794,36 @@ function CalendarWorkspaceHeader({
             <CalendarRange aria-hidden="true" className="h-4 w-4" />
             Project week
           </button>
-        </div>
-      </div>
-
-      <div className="mt-3 flex min-w-0 items-center gap-2 sm:justify-between">
-        <ViewToggle activeView={activeView} onChange={onViewChange} />
-        <button
-          aria-label="Open calendar filters"
-          className={[
-            `inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition sm:px-4 ${calmFocusRing}`,
-            activeFilterCount > 0
-              ? "border-slate-950 bg-slate-950 text-white shadow-sm"
-              : "border-slate-200/80 bg-white/58 text-slate-700 hover:bg-white",
-          ].join(" ")}
-          onClick={onFilterOpen}
-          type="button"
-        >
-          <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
-          Filters
-          {activeFilterCount > 0 ? (
-            <span className="rounded-full bg-white/18 px-2 py-0.5 text-xs">
-              {activeFilterCount}
-            </span>
+          <div className="order-last col-span-3 sm:order-none sm:contents">
+            <ViewToggle activeView={activeView} onChange={onViewChange} />
+          </div>
+          <button
+            aria-label="Open calendar filters"
+            className={[
+              `inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold transition ${calmFocusRing}`,
+              activeFilterCount > 0
+                ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white"
+                : "border-[var(--pl-border)] bg-white text-[var(--pl-text)] hover:bg-[var(--pl-surface-subtle)]",
+            ].join(" ")}
+            onClick={onFilterOpen}
+            type="button"
+          >
+            <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 ? <span>{activeFilterCount}</span> : null}
+          </button>
+          {canCreate ? (
+            <button
+              className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
+              onClick={onCreate}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              <span className="hidden sm:inline">Create item</span>
+              <span className="sm:hidden">Create</span>
+            </button>
           ) : null}
-        </button>
+        </div>
       </div>
     </section>
   );
@@ -834,7 +844,7 @@ function FilterToggleButton({
       className={[
         `inline-flex min-h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
         active
-          ? "border-slate-900 bg-slate-950 text-white"
+          ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white"
           : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white hover:text-slate-950",
       ].join(" ")}
       onClick={onClick}
@@ -1076,15 +1086,9 @@ function FilterPanelContent({
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Preview only
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            These filters are local UI controls. They do not save preferences or change
-            any scheduling data.
-          </p>
-        </div>
+        <p className="mt-5 text-xs leading-5 text-slate-400">
+          Filters reset when you leave the Calendar.
+        </p>
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
@@ -1097,7 +1101,7 @@ function FilterPanelContent({
             Clear filters
           </button>
           <button
-            className={`min-h-11 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm ${calmFocusRing}`}
+            className={`min-h-11 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
             onClick={onClose}
             type="button"
           >
@@ -1153,21 +1157,22 @@ function CalendarBlock({
     <button
       aria-label={getCalendarItemAccessibleLabel(item)}
       className={[
-        `w-full overflow-hidden rounded text-left shadow-none transition ${calmFocusRing}`,
-        fillHeight ? "h-full min-h-11 px-2 py-1.5" : "min-h-[54px] px-2.5 py-2",
+        `w-full overflow-hidden rounded-md border border-white/70 text-left shadow-[0_2px_6px_rgba(32,68,122,.06)] transition hover:brightness-[0.98] ${calmFocusRing}`,
+        fillHeight ? "h-full min-h-10 px-2 py-1.5" : "min-h-[48px] px-2.5 py-2",
         getCalendarEventClasses(item),
-        isSelected ? "ring-2 ring-slate-900/30 ring-offset-1" : "",
+        isSelected ? "ring-2 ring-blue-500 ring-offset-1" : "",
       ].join(" ")}
       onClick={onSelect}
       type="button"
     >
-      <div className="flex min-w-0 items-start gap-1.5">
-        <span className="mt-px shrink-0 text-[11px] font-semibold leading-4 opacity-70">
-          {getCalendarFilledLabel(item)}
-        </span>
-        <p className="line-clamp-2 min-w-0 text-xs font-semibold leading-4">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold leading-4">
           {getCalendarItemDisplayName(item)}
         </p>
+        <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[10px] font-medium leading-3 opacity-75">
+          <span className="truncate">{getCalendarItemTimeWindow(item)}</span>
+          <span className="shrink-0">{getCalendarFilledLabel(item)}</span>
+        </div>
       </div>
     </button>
   );
@@ -1221,13 +1226,13 @@ function WeekGrid({
   );
 
   return (
-    <section className="hidden overflow-x-auto rounded-xl border border-slate-200/80 bg-white/52 lg:block">
-      <div className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/62">
+    <section className="hidden overflow-x-auto bg-white lg:block">
+      <div className="sticky top-0 z-20 grid min-w-[760px] grid-cols-[48px_repeat(7,minmax(0,1fr))] border-b border-[var(--pl-border)] bg-white">
         <div aria-hidden="true" className="border-r border-slate-200/80" />
         {groups.map((group) => (
-          <div className="border-r border-slate-200/80 px-3 py-3 last:border-r-0" key={group.date}>
-            <p className="text-sm font-semibold text-slate-950">{group.dayLabel}</p>
-            <p className="mt-1 text-xs font-medium text-slate-400">
+          <div className="border-r border-[var(--pl-border)] px-2 py-2.5 text-center last:border-r-0" key={group.date}>
+            <p className="text-xs font-semibold text-[var(--pl-ink)]">{group.dayLabel}</p>
+            <p className="mt-0.5 text-[10px] font-medium text-[var(--pl-muted)]">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -1235,7 +1240,7 @@ function WeekGrid({
       </div>
       <div
         aria-label="Project context and date-based work"
-        className="grid min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b border-slate-200/80 bg-white/42"
+        className="grid min-w-[760px] grid-cols-[48px_repeat(7,minmax(0,1fr))] border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/45"
         role="region"
       >
         <div className="border-r border-slate-200/80 px-2 pt-2 text-right text-[10px] font-semibold text-slate-400">
@@ -1318,12 +1323,12 @@ function WeekGrid({
         </div>
       </div>
       <div
-        className="grid h-[720px] min-w-[956px] grid-cols-[56px_repeat(7,minmax(0,1fr))]"
+        className="grid h-[720px] min-w-[760px] grid-cols-[48px_repeat(7,minmax(0,1fr))]"
         data-calendar-arrow-group="week-timed"
       >
         <div
           aria-hidden="true"
-          className="relative border-r border-slate-200/80 bg-white/42"
+          className="relative border-r border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/45"
         >
           {weekTimeLabels.map((slot) => (
             <span
@@ -1340,7 +1345,7 @@ function WeekGrid({
         </div>
         {timedGroups.map((group, dayIndex) => (
           <div
-            className="relative min-w-0 border-r border-slate-200/80 bg-white/28 bg-[linear-gradient(to_bottom,rgba(148,163,184,0.14)_1px,transparent_1px)] last:border-r-0"
+            className="relative min-w-0 border-r border-[var(--pl-border)] bg-white bg-[linear-gradient(to_bottom,rgba(148,163,184,0.13)_1px,transparent_1px)] last:border-r-0"
             key={group.date}
             style={{ backgroundSize: "100% 30px" }}
           >
@@ -1442,6 +1447,7 @@ function DayView({
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
+  const timelineRef = useRef<HTMLDivElement>(null);
   const dayItems = items
     .filter((item) => doesCalendarItemOccurOnDate(item, date))
     .map(enrichCalendarClientItem);
@@ -1450,8 +1456,14 @@ function DayView({
   const visibleContextItem = contextItems[0];
   const contextOverflowCount = Math.max(contextItems.length - 1, 0);
 
+  useEffect(() => {
+    if (timelineRef.current) {
+      timelineRef.current.scrollTop = 7 * 52;
+    }
+  }, [date]);
+
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
+    <section className="overflow-hidden bg-white">
       {visibleContextItem ? (
         <div
           aria-label={`Project context for ${getCalendarCompactDayLabel(date)}`}
@@ -1493,7 +1505,7 @@ function DayView({
           </div>
         </div>
       ) : null}
-      <div data-calendar-arrow-group="day-hours">
+      <div className="max-h-[620px] overflow-y-auto" data-calendar-arrow-group="day-hours" ref={timelineRef}>
         {dayTimelineSlots.map((slot) => {
           const slotItems = timedItems.filter(
             (item) => getCalendarItemStartHour(item) === slot.hour,
@@ -1501,10 +1513,10 @@ function DayView({
 
           return (
             <div
-              className="grid min-h-[58px] grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/20 sm:min-h-[64px] sm:grid-cols-[80px_1fr]"
+              className="grid min-h-[48px] grid-cols-[54px_1fr] border-b border-[var(--pl-border)] bg-white sm:min-h-[52px] sm:grid-cols-[66px_1fr]"
               key={slot.hour}
             >
-              <div className="border-r border-slate-200/80 bg-white/42 px-2 py-2 text-right text-[11px] font-semibold text-slate-400 sm:px-4 sm:py-3 sm:text-xs">
+              <div className="border-r border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-2 py-2 text-right text-[10px] font-semibold text-[var(--pl-muted)] sm:px-3 sm:text-[11px]">
                 {slot.label}
               </div>
               <div className="relative min-w-0">
@@ -1592,7 +1604,7 @@ function MonthView({
   const reference = new Date(`${referenceDate}T00:00:00Z`);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52">
+    <section className="overflow-hidden bg-white">
       <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
@@ -1874,21 +1886,21 @@ function MobileDayGroups({
   const groups = groupCalendarItemsByDay(items, referenceDate);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white/52 lg:hidden">
+    <div className="overflow-hidden bg-white lg:hidden">
       {groups.map((group) => (
         <section
-          className="border-b border-slate-200/80 p-3.5 last:border-b-0"
+          className="border-b border-[var(--pl-border)] px-3 py-2.5 last:border-b-0"
           key={group.date}
         >
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-slate-950">
+            <h2 className="text-sm font-semibold text-[var(--pl-ink)]">
               {getCalendarCompactDayLabel(group.date)}
             </h2>
             <span className="text-xs font-semibold text-slate-400">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </span>
           </div>
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-2 space-y-1.5">
             {group.items.map((item) => (
                 <CalendarBlock
                   isSelected={selectedId === item.id}
@@ -2154,7 +2166,7 @@ function CreatePanelContent({
     dateValidationMessage ||
     timeValidationMessage ||
     (neededCountInvalid && "Needed must be between 0 and 99.") ||
-    (presetMissing && "Choose an available persisted task preset, or use Custom one-off.") ||
+    (presetMissing && "Choose an available task preset, or use a custom item.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
     (isOneOff
@@ -2182,8 +2194,8 @@ function CreatePanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Create a persisted timed Calendar item from a task preset or custom one-off source.
-        The saved item starts as a private draft. Publishing and helper assignment are handled separately.
+        Schedule a task preset or create a one-time item. New items start as private
+        drafts; publishing and volunteer assignment are handled separately.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2236,7 +2248,7 @@ function CreatePanelContent({
               className={[
                 `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 !isOneOff
-                  ? "border-slate-950 bg-slate-950 text-white"
+                  ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white"
                   : hasPresetChoices
                     ? "border-slate-200 bg-white/72 text-slate-600 hover:bg-white"
                     : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-70",
@@ -2260,7 +2272,7 @@ function CreatePanelContent({
               className={[
                 `min-h-11 rounded-full border px-3 text-sm font-semibold transition ${calmFocusRing}`,
                 isOneOff
-                  ? "border-slate-950 bg-slate-950 text-white"
+                  ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
               ].join(" ")}
                 onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
@@ -2272,8 +2284,7 @@ function CreatePanelContent({
 
           {!hasPresetChoices ? (
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              No persisted task presets are available to this Calendar context yet.
-              Custom one-off scheduling remains available.
+              No task presets are available here yet. You can still create a one-time item.
             </p>
           ) : null}
 
@@ -2516,7 +2527,7 @@ function CreatePanelContent({
             ) : null}
             {isOneOff ? (
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                This schedules a persisted one-off item without creating a reusable task preset.
+                This schedules a one-time item without adding a reusable task preset.
               </p>
             ) : null}
           </div>
@@ -2609,7 +2620,7 @@ function CreatePanelContent({
               className={[
                 "min-h-11 rounded-full border px-3 text-sm font-semibold transition",
                 canSubmitPersisted
-                  ? "border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                  ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
                   : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
               ].join(" ")}
               disabled={!canSubmitPersisted}
@@ -2695,38 +2706,18 @@ function CalendarInspector({
   const tone = getCalendarStatusTone(item.status);
 
   return (
-    <div
-      aria-hidden={!isOpen}
-      className={[
-        "fixed inset-0 z-50 transition",
-        isOpen ? "pointer-events-auto" : "pointer-events-none",
-      ].join(" ")}
-      inert={!isOpen}
-    >
-      <button
-        aria-label="Close calendar item inspector backdrop"
-        className={[
-          "absolute inset-0 hidden bg-slate-950/12 transition-opacity lg:block",
-          isOpen ? "opacity-100" : "opacity-0",
-        ].join(" ")}
-        onClick={onClose}
-        tabIndex={-1}
-        type="button"
-      />
+    <>
       <aside
         aria-describedby={`${descriptionId}-desktop`}
         aria-label="Calendar item inspector"
-        aria-modal="true"
-        className={[
-          "absolute right-0 top-0 hidden h-full w-[min(420px,calc(100vw-28px))] px-3 py-3 transition-transform duration-200 ease-out lg:block",
-          isOpen ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
+        aria-modal="false"
+        className={isOpen ? "hidden h-[calc(100vh-176px)] min-h-[560px] max-h-[760px] min-w-0 border-l border-[var(--pl-border)] bg-white lg:block" : "hidden"}
         role="dialog"
         ref={desktopDialogRef}
         tabIndex={-1}
       >
         <div
-          className={`flex h-full flex-col overflow-hidden rounded-2xl border border-white/72 border-l-4 bg-white/88 shadow-[0_24px_90px_rgba(15,23,42,0.22)] backdrop-blur-2xl ${detailAccentStyles[item.category]}`}
+          className={`flex h-full flex-col overflow-hidden border-l-4 bg-white ${detailAccentStyles[item.category]}`}
         >
           <InspectorContent
             assignAction={assignAction}
@@ -2749,13 +2740,10 @@ function CalendarInspector({
         </div>
       </aside>
 
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
+      <div className={isOpen ? "fixed inset-0 z-50 lg:hidden" : "hidden"}>
         <button
           aria-label="Close calendar item inspector backdrop"
-          className={[
-            "fixed inset-0 bg-slate-950/18 transition-opacity",
-            isOpen ? "opacity-100" : "opacity-0",
-          ].join(" ")}
+          className="absolute inset-0 bg-slate-950/22"
           onClick={onClose}
           tabIndex={-1}
           type="button"
@@ -2764,10 +2752,7 @@ function CalendarInspector({
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar item inspector"
           aria-modal="true"
-          className={[
-            `relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 border-t-4 bg-white/92 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out ${detailAccentStyles[item.category].replace("border-l", "border-t")}`,
-            isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
-          ].join(" ")}
+          className={`absolute inset-x-0 bottom-0 max-h-[88vh] overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].replace("border-l", "border-t")}`}
           role="dialog"
           ref={mobileDialogRef}
           tabIndex={-1}
@@ -2792,7 +2777,7 @@ function CalendarInspector({
           />
         </section>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -2882,13 +2867,6 @@ function InspectorContent({
   const assignmentCapacityWarning =
     item.neededCount > 0 &&
     currentAssignments.length + selectedVolunteerIds.length > item.neededCount;
-  const placeholderActions = [
-    { label: "Add to calendar", icon: Plus },
-    { label: "Edit placement", icon: Pencil },
-    { label: "Repeat later", icon: Repeat },
-    { label: "Copy later", icon: Copy },
-  ];
-
   const toggleSelectedVolunteer = (volunteerId: string) => {
     setSelectedVolunteerIds((current) =>
       current.includes(volunteerId)
@@ -2903,20 +2881,20 @@ function InspectorContent({
         {getCalendarItemAccessibleLabel(item)}. Review schedule, helper, status, and
         source details for this Calendar item.
       </p>
-      <div className="shrink-0 border-b border-slate-200/60 px-4 py-4 sm:px-5">
-        <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
+      <div className="shrink-0 border-b border-[var(--pl-border)] px-4 py-3.5">
+        <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-slate-200 lg:hidden" />
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
               Selected item
             </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            <h2 className="mt-1 text-xl font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
               {getCalendarItemDisplayName(item)}
             </h2>
           </div>
           <button
             aria-label="Close calendar item inspector"
-            className={`inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 transition hover:bg-white hover:text-slate-950 ${calmFocusRing}`}
+            className={`inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--pl-border)] bg-white text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] ${calmFocusRing}`}
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -2926,24 +2904,24 @@ function InspectorContent({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white/78 px-3 text-sm font-semibold text-slate-800">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex min-h-7 items-center rounded-full border border-[var(--pl-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--pl-text)]">
             {getCalendarFilledLabel(item)} filled
           </span>
           <span
-            className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold ${categoryStyles[item.category]}`}
+            className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold ${categoryStyles[item.category]}`}
           >
             {getCalendarCategoryLabel(item.category)}
           </span>
           <span
-            className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold ${toneStyles[tone]}`}
+            className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold ${toneStyles[tone]}`}
           >
             {getCalendarStatusLabel(item.status)}
           </span>
           <span
             className={[
-              "inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-semibold",
+              "inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold",
               item.publicationState === "draft"
                 ? "border-slate-300 bg-white/80 text-slate-700"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -2953,14 +2931,14 @@ function InspectorContent({
           </span>
         </div>
 
-        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
+        <div className="mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Visibility
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {item.publicationState === "draft"
-              ? "This draft is visible only to the project contact who created it. Assignments can be prepared here, but volunteer response links and email remain inactive."
-              : "This item is published for authorized project contacts. Email is sent only through the explicit Initial email action below."}
+              ? "Private to its creator until published. Assignments may be prepared now; email stays off."
+              : "Visible to authorized project contacts. Email still requires the explicit action below."}
           </p>
           {item.publishedAt ? (
             <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -2984,13 +2962,13 @@ function InspectorContent({
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
-                      className={`inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 ${calmFocusRing}`}
+                      className={`inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
                       type="submit"
                     >
                       Publish item
                     </button>
                     <button
-                      className={`inline-flex min-h-10 items-center rounded-full border border-amber-200 bg-white/80 px-4 text-sm font-semibold text-amber-900 transition hover:bg-white ${calmFocusRing}`}
+                      className={`inline-flex min-h-10 items-center rounded-lg border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-50 ${calmFocusRing}`}
                       onClick={() => setConfirmingPublish(false)}
                       type="button"
                     >
@@ -3000,7 +2978,7 @@ function InspectorContent({
                 </form>
               ) : (
                 <button
-                  className={`inline-flex min-h-10 items-center rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 ${calmFocusRing}`}
+                  className={`inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
                   onClick={() => setConfirmingPublish(true)}
                   type="button"
                 >
@@ -3011,26 +2989,26 @@ function InspectorContent({
           ) : null}
         </div>
 
-        <div className="mt-4 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-3">
+        <div className="mt-3 flex items-start justify-between gap-3 border-b border-[var(--pl-border)] px-1 pb-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Clock aria-hidden="true" className="h-3.5 w-3.5" />
             {scheduleDisplay.heading}
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-800">
+          <p className="text-right text-sm font-semibold leading-5 text-[var(--pl-ink)]">
             {scheduleDisplay.label}
           </p>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-slate-200/70 bg-white/76 px-4 py-4 shadow-sm">
+        <div className="mt-3 border-b border-[var(--pl-border)] pb-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
             Helpers
           </p>
-          <div className="mt-3 space-y-2">
+          <div className="mt-2 divide-y divide-[var(--pl-border)] overflow-hidden rounded-lg border border-[var(--pl-border)]">
             {currentAssignments.length > 0 ? (
               currentAssignments.map((assignment) => (
                 <div
-                  className="rounded-xl border border-slate-200 bg-white/78 px-3 py-3"
+                  className="bg-white px-3 py-2.5"
                   key={assignment.assignmentId}
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -3056,7 +3034,7 @@ function InspectorContent({
                       <input name="redirectView" type="hidden" value={currentView} />
                       <input name="redirectDate" type="hidden" value={currentDate} />
                       <button
-                        className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
+                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
                         formAction={cancelAssignmentAction}
                         type="submit"
                       >
@@ -3074,7 +3052,7 @@ function InspectorContent({
             )}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+          <div className="mt-3 rounded-lg bg-[var(--pl-surface-subtle)] px-3 py-3">
             {assignmentPicker.kind === "unavailable" ? (
               <p className="text-sm leading-6 text-slate-600">
                 Volunteer choices are unavailable for this signed-in contact.
@@ -3164,9 +3142,9 @@ function InspectorContent({
                 ) : null}
                 <button
                   className={[
-                    "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+                    "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
                     canAssignHelpers && selectedVolunteerIds.length > 0
-                      ? "border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                      ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
                       : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
                   ].join(" ")}
                   disabled={!canAssignHelpers || selectedVolunteerIds.length === 0}
@@ -3185,7 +3163,7 @@ function InspectorContent({
           </div>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-4 shadow-sm">
+        <div className="mt-3 border-b border-[var(--pl-border)] bg-sky-50/45 px-3 py-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
             Initial email
@@ -3196,17 +3174,10 @@ function InspectorContent({
                 <h3 className="text-base font-semibold text-slate-950">
                   Notify volunteers
                 </h3>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  Publishing makes the assignment visible in the volunteer schedule.
-                  This explicit action sends the first email notice through the
-                  configured server transport.
+                <p className="mt-1 text-sm leading-5 text-slate-600">
+                  Send the first notice only after publication. Nothing sends automatically.
                 </p>
               </div>
-              <p className="text-sm leading-6 text-slate-600">
-                Send the first assignment email for this published item. The
-                server rechecks publication, active assignments, volunteer email,
-                Follow-up Contact, and prior successful deliveries at send time.
-              </p>
               <div className="grid gap-2 text-xs font-semibold text-slate-600 sm:grid-cols-2">
                 <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                   Ready to send: {initialNotification.eligibleToSendCount}
@@ -3240,9 +3211,9 @@ function InspectorContent({
                   <input name="redirectDate" type="hidden" value={currentDate} />
                   <button
                     className={[
-                      "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition",
+                      "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
                       canSubmitInitialEmails
-                        ? "border-slate-950 bg-slate-950 text-white hover:bg-slate-800"
+                        ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
                         : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
                     ].join(" ")}
                     disabled={!canSubmitInitialEmails}
@@ -3271,7 +3242,7 @@ function InspectorContent({
           )}
         </div>
 
-        <div className="mt-3 rounded-lg border border-slate-200/70 bg-white/70 px-4 py-4">
+        <div className="mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Schedule notes
           </p>
@@ -3287,9 +3258,6 @@ function InspectorContent({
               Lunch menu
             </div>
             <p className="mt-1">{item.menuSummary ?? "Menu not added yet."}</p>
-            <p className="mt-1 text-xs font-semibold text-emerald-700">
-              Future volunteer-facing lunch schedule source.
-            </p>
           </div>
         ) : null}
 
@@ -3305,13 +3273,13 @@ function InspectorContent({
         </div>
 
         {canEditSelectedItem ? (
-          <form action={updateAction} className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-4">
+          <form action={updateAction} className="mt-4 border-t border-[var(--pl-border)] pt-4">
             <input name="calendarItemId" type="hidden" value={item.id} />
             <input name="redirectView" type="hidden" value={currentView} />
             <input name="redirectDate" type="hidden" value={currentDate} />
             <input name="sourceMode" type="hidden" value={isPresetBackedItem ? "preset" : "oneOff"} />
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              {isPresetBackedItem ? "Edit persisted preset item" : "Edit persisted one-off item"}
+              {isPresetBackedItem ? "Edit scheduled preset" : "Edit scheduled item"}
             </p>
             <div className="mt-3 grid gap-3">
               {isOneOffItem ? (
@@ -3412,7 +3380,7 @@ function InspectorContent({
                 publication state, copy, and delivery changes stay controlled separately.
               </p>
               <button
-                className="min-h-11 rounded-full border border-slate-950 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="min-h-11 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)]"
                 type="submit"
               >
                 Save item changes
@@ -3421,29 +3389,10 @@ function InspectorContent({
           </form>
         ) : (
           <div className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
-            This item is read-only here unless it is a persisted timed one-off or
-            task-preset occurrence and the signed-in contact has Calendar edit access.
+            This item can’t be edited from this Calendar view.
           </div>
         )}
 
-        <div className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Preview actions
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {placeholderActions.map(({ label, icon: Icon }) => (
-              <button
-                className="inline-flex min-h-10 cursor-not-allowed items-center gap-1.5 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
-                disabled
-                key={label}
-                type="button"
-              >
-                <Icon aria-hidden="true" className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </>
   );
@@ -3452,6 +3401,7 @@ function InspectorContent({
 export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
+      workspaceName: string;
       items: Array<
         CalendarItem & {
           assignments: CalendarAssignmentSummary[];
@@ -3495,7 +3445,7 @@ function CalendarNotice({ notice }: { notice?: string }) {
   const copy: Record<string, { title: string; message: string }> = {
     created: {
       title: "Calendar draft saved",
-      message: "The timed item was saved as a private persisted Calendar draft.",
+      message: "The scheduled item was saved as a private draft.",
     },
     updated: {
       title: "Calendar item updated",
@@ -3503,7 +3453,7 @@ function CalendarNotice({ notice }: { notice?: string }) {
     },
     assigned: {
       title: "Volunteer assigned",
-      message: "The assignment was saved with a needs-response state and appears in persisted Calendar coverage.",
+      message: "The volunteer was assigned and is waiting to reply.",
     },
     assignment_canceled: {
       title: "Volunteer removed",
@@ -3515,7 +3465,7 @@ function CalendarNotice({ notice }: { notice?: string }) {
     },
     assignment_email_sent: {
       title: "Initial assignment email sent",
-      message: "Eligible assigned volunteers received a schedule access email. The Calendar reloaded from persisted truth.",
+      message: "Eligible volunteers received their schedule email.",
     },
     assignment_email_already_sent: {
       title: "Initial email already sent",
@@ -3535,16 +3485,16 @@ function CalendarNotice({ notice }: { notice?: string }) {
     },
     error: {
       title: "Calendar change was not saved",
-      message: "Something went wrong while saving. No mock Calendar fallback was used.",
+      message: "Something went wrong while saving. Please try again.",
     },
   };
   const selected = copy[notice];
   if (!selected) return null;
   return (
-    <GlassCard className="border-slate-200/80 bg-white/64 p-4">
-      <p className="text-sm font-semibold text-slate-950">{selected.title}</p>
-      <p className="mt-1 text-sm leading-6 text-slate-500">{selected.message}</p>
-    </GlassCard>
+    <div aria-live="polite" className="flex flex-col gap-0.5 border-b border-blue-100 bg-blue-50/70 px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:gap-2">
+      <p className="font-semibold text-blue-950">{selected.title}</p>
+      <p className="text-xs leading-5 text-blue-800 sm:text-sm">{selected.message}</p>
+    </div>
   );
 }
 
@@ -3601,6 +3551,7 @@ export default function CalendarClient({
     CalendarCreationDraft | undefined
   >();
   const surfaceTriggerRef = useRef<HTMLElement | null>(null);
+  const calendarViewRef = useRef<HTMLDivElement>(null);
 
   const filteredItems = useMemo(
     () => filterCalendarItems(allItems, filters),
@@ -3688,6 +3639,11 @@ export default function CalendarClient({
     };
   }, [activeSurface]);
 
+  useEffect(() => {
+    if (!calendarViewRef.current) return;
+    calendarViewRef.current.scrollTop = activeView === "week" ? 210 : 0;
+  }, [activeView, calendarAnchor]);
+
   const handleSelectCalendarItem = (item: CalendarItemWithPreset) => {
     rememberSurfaceTrigger();
     closeMobileNavigation();
@@ -3766,6 +3722,7 @@ export default function CalendarClient({
   return (
     <AdminShell
       active="calendar"
+      workspaceName={isReady ? state.workspaceName : undefined}
       onMobileMoreClose={closeCalendarSurface}
       onMobileMoreOpen={() => {
         rememberSurfaceTrigger();
@@ -3774,24 +3731,38 @@ export default function CalendarClient({
         setActiveSurface("more");
       }}
     >
-      <header className="px-1 sm:px-0">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-          <CalendarDays aria-hidden="true" className="h-4 w-4" />
-          Belgrade Remodel
+      <header className="flex items-end justify-between gap-4 border-b border-[var(--pl-border)] pb-4">
+        <div>
+        <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
+          <CalendarDays aria-hidden="true" className="h-3.5 w-3.5" />
+          {isReady ? state.workspaceName : "Project Calendar"}
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+        <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
           Calendar
         </h1>
+        </div>
+        <p className="hidden max-w-sm text-right text-xs leading-5 text-[var(--pl-muted)] sm:block">
+          Plan work, assign volunteers, publish, and send the initial notice.
+        </p>
       </header>
 
-      <section className="mt-4 space-y-3">
+      <section className="mt-4">
         {isReady ? (
           <>
+            <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
             <CalendarWorkspaceHeader
               activeFilterCount={activeFilterCount}
               activeFilterSummary={activeFilterSummary}
               activeView={activeView}
+              canCreate={state.canEdit}
               filteredItemCount={visibleItems.length}
+              onCreate={() => handleCreateFromSlot({
+                date: calendarAnchor,
+                label: getCalendarCompactDayLabel(calendarAnchor),
+                contextLabel: "Started from Calendar toolbar",
+                suggestedStartTime: suggestedSlots.morning.start,
+                suggestedEndTime: suggestedSlots.morning.end,
+              })}
               onFilterOpen={handleOpenFilters}
               onNavigateNext={() => handleNavigateCalendar(1)}
               onNavigatePrevious={() => handleNavigateCalendar(-1)}
@@ -3805,8 +3776,10 @@ export default function CalendarClient({
 
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
 
-            {isReadyEmpty && filteredItems.length === 0 ? (
-              <GlassCard className="border-slate-200/80 bg-white/60 p-4">
+            <div className={selectedItem && activeSurface === "inspect" ? "grid lg:grid-cols-[minmax(0,1fr)_360px]" : "grid grid-cols-1"}>
+            <div className="min-w-0 lg:max-h-[calc(100vh-176px)] lg:overflow-auto" id="calendar-view-content" ref={calendarViewRef}>
+              {isReadyEmpty && filteredItems.length === 0 ? (
+              <div className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3">
                 <p className="text-sm font-semibold text-slate-900">
                   No scheduled items in this range
                 </p>
@@ -3814,10 +3787,9 @@ export default function CalendarClient({
                   This Calendar view is ready, but there is no project work scheduled
                   for the selected range yet.
                 </p>
-              </GlassCard>
+              </div>
             ) : null}
 
-            <div className="space-y-3" id="calendar-view-content">
               {activeView === "day" ? (
                 <DayView
                   date={calendarAnchor}
@@ -3865,6 +3837,23 @@ export default function CalendarClient({
                 />
               ) : null}
             </div>
+            <CalendarInspector
+              assignAction={assignAction}
+              assignmentPicker={state.assignmentPicker}
+              canEditAssignments={state.canEditAssignments}
+              canEdit={state.canEdit}
+              cancelAssignmentAction={cancelAssignmentAction}
+              currentDate={calendarAnchor}
+              currentView={activeView}
+              isOpen={activeSurface === "inspect"}
+              item={selectedItem}
+              onClose={closeCalendarSurface}
+              publishAction={publishAction}
+              sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
+              updateAction={updateAction}
+            />
+            </div>
+            </div>
             <CalendarFilterPanel
               filters={filters}
               isOpen={activeSurface === "filter"}
@@ -3882,21 +3871,6 @@ export default function CalendarClient({
               onClose={closeCalendarSurface}
               onDraftChange={setCreationDraft}
               presets={creationPresets}
-            />
-            <CalendarInspector
-              assignAction={assignAction}
-              assignmentPicker={state.assignmentPicker}
-              canEditAssignments={state.canEditAssignments}
-              canEdit={state.canEdit}
-              cancelAssignmentAction={cancelAssignmentAction}
-              currentDate={calendarAnchor}
-              currentView={activeView}
-              isOpen={activeSurface === "inspect"}
-              item={selectedItem}
-              onClose={closeCalendarSurface}
-              publishAction={publishAction}
-              sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
-              updateAction={updateAction}
             />
           </>
         ) : state.kind === "unavailable" || state.kind === "error" ? (

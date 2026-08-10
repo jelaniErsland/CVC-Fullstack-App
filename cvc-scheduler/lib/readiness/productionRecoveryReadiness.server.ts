@@ -244,7 +244,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "launch remains NO-GO",
     ],
     requiredAction:
-      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, email, observability, provisioning, UI approval, and pilot evidence pass.",
+      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, email, observability, provisioning, and pilot evidence pass. Product-owner UI approval is already proven through 12.30.1.",
   },
 ];
 

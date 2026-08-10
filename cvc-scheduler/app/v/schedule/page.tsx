@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { CalendarDays, Info, KeyRound, ShieldCheck } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
+import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { VolunteerScheduleAccessRefresh } from "@/components/VolunteerScheduleAccessRefresh";
 import { VolunteerScheduleClient } from "@/components/VolunteerScheduleClient";
 import {
@@ -47,20 +48,21 @@ async function leaveScheduleAction() {
 
 function PublicHeader() {
   return (
-    <header className="flex items-center justify-between gap-4">
+    <header className="flex items-center justify-between gap-4 border-b border-[var(--pl-border)] pb-3">
       <Link
         href="/"
-        className="rounded-md text-lg font-semibold tracking-[-0.025em] text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-4"
+        aria-label="Project Local home"
+        className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-4"
       >
-        Project Local
+        <ProjectLocalBrand />
       </Link>
       <Link
         href="/admin/login"
         aria-label="Special access for project contacts"
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-white/58 px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+        className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--pl-border)] bg-white text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto sm:px-3"
       >
         <KeyRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
-        <span className="hidden sm:inline">Special access</span>
+        <span className="hidden text-xs sm:inline">Project contact</span>
       </Link>
     </header>
   );
@@ -73,7 +75,7 @@ function StateCard({
 }: Readonly<{ eyebrow: string; title: string; message: string }>) {
   return (
     <PageShell className="flex items-center justify-center px-5 py-12">
-      <article className="w-full max-w-xl rounded-[1.75rem] border border-white/80 bg-white/78 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.11)] backdrop-blur-2xl sm:p-10">
+      <article className="w-full max-w-xl rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white p-7 shadow-[var(--pl-shadow-raised)] sm:p-10">
         <div className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sky-800">
           <Info aria-hidden="true" className="size-5" />
         </div>
@@ -144,16 +146,18 @@ export default async function VolunteerSchedulePage({
   ];
 
   return (
-    <PageShell className="px-5 py-5 sm:px-8 lg:px-10">
+    <PageShell className="bg-[radial-gradient(circle_at_72%_0%,rgba(219,234,254,.72),transparent_25rem),var(--pl-canvas)] px-4 py-4 sm:px-7 lg:px-10">
       <div className="mx-auto w-full max-w-6xl">
         <PublicHeader />
 
-        <main className="pb-12 pt-8 sm:pt-12">
-          <section className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
+        <main className="pb-10 pt-4 sm:pt-6">
+          <section className="relative overflow-hidden rounded-[var(--pl-radius-panel)] border border-blue-100 bg-white p-4 shadow-[var(--pl-shadow-panel)] sm:p-5">
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-violet-500" />
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
               <span
                 aria-hidden="true"
-                className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-800"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue-soft)] text-sm font-bold text-[var(--pl-blue)]"
               >
                 {schedule.volunteerDisplayName
                   .split(/\s+/)
@@ -162,34 +166,32 @@ export default async function VolunteerSchedulePage({
                   .join("")}
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  You&apos;re viewing
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">
+                  {schedule.workspaceDisplayName}
                 </p>
-                <p className="mt-0.5 font-semibold text-slate-950">
+                <p className="mt-0.5 truncate text-sm font-semibold text-[var(--pl-ink)]">
                   {schedule.volunteerDisplayName}
                 </p>
-                <p className="text-sm text-slate-500">{schedule.workspaceDisplayName}</p>
               </div>
             </div>
             <form action={leaveScheduleAction}>
-              <button className="inline-flex min-h-10 items-center gap-2 self-start rounded-lg text-sm font-medium text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 sm:self-auto">
-                Not you? Leave this schedule
+              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-9 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+                Not you?
               </button>
             </form>
-          </section>
+            </div>
 
-          <section className="py-8">
-            <p className="text-sm font-semibold text-sky-700">
-              Welcome, {firstName(schedule.volunteerDisplayName)}
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-[-0.045em] text-slate-950 sm:text-6xl">
-              Your volunteer schedule
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-              These are your current published assignments for {schedule.workspaceDisplayName}.
-              You can confirm or update eligible responses here; schedule details come
-              from the project team&apos;s published Calendar.
-            </p>
+            <div className="mt-4 sm:ml-[52px]">
+              <p className="text-xs font-semibold text-[var(--pl-blue)]">
+                Welcome, {firstName(schedule.volunteerDisplayName)}.
+              </p>
+              <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
+                Here’s your schedule
+              </h1>
+              <p className="mt-1.5 text-sm leading-6 text-[var(--pl-text)]">
+                Review your project work and let the team know what you can make.
+              </p>
+            </div>
           </section>
 
           {schedule.kind === "ready_empty" ? (
@@ -211,16 +213,13 @@ export default async function VolunteerSchedulePage({
               </form>
             </section>
           ) : (
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.7fr)] lg:items-start">
+            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_280px] lg:items-start">
               <section aria-labelledby="assignments-title">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      Published schedule
-                    </p>
                     <h2
                       id="assignments-title"
-                      className="mt-1 text-xl font-semibold tracking-tight text-slate-950"
+                      className="text-lg font-semibold tracking-tight text-[var(--pl-ink)]"
                     >
                       Your assignments
                     </h2>
@@ -232,24 +231,23 @@ export default async function VolunteerSchedulePage({
                 <VolunteerScheduleClient
                   assignments={assignments}
                   confirmAllAction={confirmAllVolunteerScheduleAction}
-                  leaveAction={leaveScheduleAction}
                   submitResponseAction={submitVolunteerScheduleResponseAction}
                 />
               </section>
 
-              <aside className="rounded-[1.5rem] border border-white/80 bg-white/60 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                <div className="flex size-10 items-center justify-center rounded-full bg-sky-100 text-sky-800">
+              <aside className="rounded-[var(--pl-radius-panel)] border border-blue-100 bg-[var(--pl-blue-soft)]/70 p-5">
+                <div className="flex size-9 items-center justify-center rounded-lg bg-white text-[var(--pl-blue)] shadow-sm">
                   <ShieldCheck aria-hidden="true" className="size-5" />
                 </div>
-                <h2 className="mt-4 text-lg font-semibold tracking-tight text-slate-950">
-                  Secure schedule access
+                <h2 className="mt-3 text-base font-semibold tracking-tight text-[var(--pl-ink)]">
+                  Need help?
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  This browser session is limited to your schedule. Closing the browser
-                  ends this session; remembered-device access is not active yet.
+                <p className="mt-2 text-sm leading-6 text-[var(--pl-text)]">
+                  Open any assignment to see notes and your Follow-up Contact. They can
+                  help with arrival details or a last-minute change.
                 </p>
-                <p className="mt-4 text-xs leading-5 text-slate-400">
-                  Timezone: {schedule.workspaceTimezone}
+                <p className="mt-3 text-xs leading-5 text-[var(--pl-muted)]">
+                  Times shown in {schedule.workspaceTimezone}
                 </p>
               </aside>
             </div>

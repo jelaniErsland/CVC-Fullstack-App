@@ -21,10 +21,10 @@ type ButtonProps = LinkButtonProps | NativeButtonProps;
 
 const variants = {
   primary:
-    "bg-slate-950 text-white shadow-[0_14px_28px_rgba(15,23,42,0.20)] hover:bg-slate-800",
+    "bg-[var(--pl-blue)] text-white shadow-[0_8px_18px_rgba(23,105,255,0.22)] hover:bg-[var(--pl-blue-deep)]",
   secondary:
-    "border border-white/80 bg-white/64 text-slate-900 shadow-sm hover:bg-white/86",
-  ghost: "text-slate-600 hover:bg-white/56 hover:text-slate-950",
+    "border border-[var(--pl-border)] bg-white text-[var(--pl-ink)] shadow-sm hover:border-blue-200 hover:bg-[var(--pl-blue-soft)]",
+  ghost: "text-[var(--pl-text)] hover:bg-[var(--pl-blue-soft)] hover:text-[var(--pl-ink)]",
 };
 
 export function Button({
@@ -34,8 +34,8 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = [
-    "inline-flex min-h-12 items-center justify-center rounded-full px-5 text-sm font-semibold",
-    "transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2",
+    "inline-flex min-h-[var(--pl-control-height)] items-center justify-center rounded-[var(--pl-radius-control)] px-4 text-sm font-semibold",
+    "transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
     variants[variant],
     className,
   ].join(" ");

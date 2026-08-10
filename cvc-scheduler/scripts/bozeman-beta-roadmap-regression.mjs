@@ -102,7 +102,11 @@ assert.deepEqual(domainIds, [
 for (const domain of bozemanBetaAuditDomains) {
   assert.ok(domain.statuses.length > 0, `${domain.id} must classify current state`);
   assert.ok(domain.repositoryFindings.length > 0, `${domain.id} must cite repository findings`);
-  assert.ok(domain.blockers.length > 0, `${domain.id} must list blockers or decisions`);
+  if (domain.statuses.includes("proven")) {
+    assert.equal(domain.blockers.length, 0, `${domain.id} is proven and must not retain blockers`);
+  } else {
+    assert.ok(domain.blockers.length > 0, `${domain.id} must list blockers or decisions`);
+  }
 }
 
 const domainText = JSON.stringify(bozemanBetaAuditDomains);
@@ -114,7 +118,7 @@ for (const required of [
   "create/cancel assignment RPCs",
   "assignment_responses persist current",
   "Communications/reminders are mock-only",
-  "sample mockup images",
+  "docs/design/approved-project-local-ui",
   "Belgrade Sheets/App Script remains the operational fallback",
 ]) {
   assert.match(domainText, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -152,10 +156,14 @@ for (const blocker of [
   "calendar_create_edit_archive_publication_mutations",
   "secure_account_light_volunteer_schedule_access",
   "basic_initial_assignment_email_delivery_boundary",
-  "approved_ui_integration_for_beta_critical_surfaces",
 ]) {
   assert.ok(readiness.blockers.includes(blocker), `missing blocker ${blocker}`);
 }
+assert.equal(
+  readiness.blockers.includes("approved_ui_integration_for_beta_critical_surfaces"),
+  false,
+  "product-owner-approved beta-critical UI must not remain a launch blocker",
+);
 
 assert.equal(bozemanBetaRoadmap.implementationAddedInThisSlice, false);
 assert.equal(bozemanBetaRoadmap.migrationAddedInThisSlice, false);
@@ -211,7 +219,7 @@ assert.match(betaDoc, /12\.14 Route-Unused Persisted Tasks Read Model Helper \/ 
 assert.match(betaDoc, /moved and modified|move and modify/i);
 assert.match(betaDoc, /12\.14 Bozeman Workspace Access and Provisioning Readiness/i);
 assert.match(betaDoc, /approved Project Local UI/i);
-assert.match(betaDoc, /sample mockup images/i);
+assert.match(betaDoc, /docs\/design\/approved-project-local-ui/i);
 
 assert.match(roadmapDoc, /Bozeman Scheduling Beta Re-baseline/i);
 assert.match(roadmapDoc, /12\.14 Bozeman Workspace Access and Provisioning Readiness/i);

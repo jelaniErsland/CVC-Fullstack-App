@@ -154,6 +154,7 @@ type CalendarClientState =
   | (CalendarClientStateBase &
       Readonly<{
         kind: "ready_with_items" | "ready_empty";
+        workspaceName: string;
         items: CalendarClientItem[];
         canEdit: boolean;
         canEditAssignments: boolean;
@@ -854,6 +855,7 @@ export async function readCalendarRouteState(
     return items.length > 0
       ? {
           kind: "ready_with_items",
+          workspaceName: workspaceSelection.workspace.displayName,
           items,
           canEdit: workspaceSelection.canEdit,
           canEditAssignments: workspaceSelection.canEditAssignments,
@@ -867,6 +869,7 @@ export async function readCalendarRouteState(
         }
       : {
           kind: "ready_empty",
+          workspaceName: workspaceSelection.workspace.displayName,
           items: [],
           canEdit: workspaceSelection.canEdit,
           canEditAssignments: workspaceSelection.canEditAssignments,

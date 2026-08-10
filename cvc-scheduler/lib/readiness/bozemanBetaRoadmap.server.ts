@@ -14,6 +14,7 @@ export const BOZEMAN_BETA_REAL_EMAIL_SENDING_AVAILABLE = false;
 export const BOZEMAN_BETA_PRODUCTION_DATA_ACCESS_AVAILABLE = false;
 
 type BetaStatus =
+  | "proven"
   | "production_capable_now"
   | "persisted_backend_foundation_exists"
   | "server_helper_boundary_exists_route_integration_missing"
@@ -304,21 +305,16 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
   {
     id: "ui_integration",
     title: "UI integration",
-    statuses: ["mock_prototype_ui_exists", "beta_critical", "blocked_by_dependency"],
+    statuses: ["proven", "beta_critical"],
     repositoryFindings: [
-      "existing prototype and sample mockup images define the approved bright polished Project Local direction",
-      "Calendar currently preserves the approved shell and persisted read behavior",
-      "beta-critical admin/volunteer write and response surfaces are not yet visually integrated",
+      "docs/design/approved-project-local-ui defines the approved bright polished Project Local direction",
+      "12.30 was functionally validated but rejected in product-owner visual review",
+      "Jelani explicitly product-owner approved the corrected 12.30.1 shared-shell Calendar Volunteers and volunteer-schedule direction",
+      "all six desktop and 390px real-route 12.30.1 review captures were reviewed and accepted",
     ],
     betaNeed:
-      "Integrate polish progressively into beta-critical surfaces, then perform one focused consolidation pass before launch.",
-    blockers: [
-      "calendar_create_edit_inspector_visual_integration",
-      "volunteer_picker_visual_integration",
-      "manual_add_edit_volunteer_visual_integration",
-      "volunteer_schedule_and_response_visual_integration",
-      "empty_unavailable_error_state_polish",
-    ],
+      "Preserve the approved Project Local visual baseline while the separately tracked production-readiness and controlled-pilot gates are completed.",
+    blockers: [],
     deferrable: ["full_app_redesign", "non_beta_food_security_visual_rebuild", "all_mockup_image_coverage"],
   },
   {
@@ -356,7 +352,6 @@ export const bozemanBetaBlockers = [
   "secure_account_light_volunteer_schedule_access",
   "confirm_deny_integration_with_admin_visible_response_state",
   "basic_initial_assignment_email_delivery_boundary",
-  "approved_ui_integration_for_beta_critical_surfaces",
   "production_supabase_deployment_auth_email_domain_observability_backup_validation",
 ];
 
@@ -484,7 +479,7 @@ export const bozemanBetaUiSequence = [
   "volunteer_schedule_home_assignment_detail_and_response_states",
   "initial_email_review_send_status_surfaces",
   "empty_loading_unavailable_error_state_consistency",
-  "focused_beta_visual_consolidation_against_sample_mockup_images",
+  "focused_beta_visual_consolidation_against_approved_project_local_ui",
 ];
 
 export const bozemanBetaOld12_14Decision = {

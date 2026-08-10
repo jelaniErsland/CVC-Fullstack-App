@@ -1,6 +1,6 @@
 import { Button } from "./Button";
-import { GlassCard } from "./GlassCard";
 import { StatusPill } from "./StatusPill";
+import { Mail, Phone } from "lucide-react";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerCardProps = {
@@ -32,90 +32,95 @@ function readinessLabel(readiness: VolunteerProfile["readinessStatus"]) {
 
 export function VolunteerCard({ volunteer, canEdit, updateAction }: VolunteerCardProps) {
   const sourceLabel =
-    volunteer.profileSource === "manual" ? "Manual profile" : "Questionnaire profile";
+    volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
+  const initials = volunteer.fullName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
 
   return (
-    <GlassCard className="flex h-full flex-col p-5 transition duration-200 hover:-translate-y-0.5 hover:bg-white/72 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-slate-500">
-            {volunteer.congregation ?? "No congregation listed"}
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            {volunteer.fullName}
-          </h2>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            {sourceLabel}
-          </p>
+    <article className="bg-white transition hover:bg-blue-50/20">
+      <div className="grid min-w-0 gap-3 px-4 py-3.5 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:grid-cols-[minmax(210px,1.3fr)_minmax(190px,1fr)_minmax(150px,.8fr)_auto] lg:items-center lg:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-xs font-bold text-[var(--pl-blue)] ring-1 ring-blue-100">
+            {initials}
+          </span>
+          <div className="min-w-0">
+            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]">
+              {volunteer.fullName}
+            </h2>
+            <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
+              {volunteer.congregation ?? "No congregation listed"}
+            </p>
+          </div>
         </div>
-        <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
+
+        <div className="min-w-0 space-y-1 text-xs text-[var(--pl-text)]">
+          {volunteer.email ? (
+            <a className="flex min-w-0 items-center gap-2 hover:text-[var(--pl-blue)]" href={`mailto:${volunteer.email}`}>
+              <Mail aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-blue)]" />
+              <span className="truncate">{volunteer.email}</span>
+            </a>
+          ) : <p>No email listed</p>}
+          {volunteer.phone ? (
+            <a className="flex items-center gap-2 hover:text-[var(--pl-blue)]" href={`tel:${volunteer.phone}`}>
+              <Phone aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-blue)]" />
+              {volunteer.phone}
+            </a>
+          ) : <p>No phone listed</p>}
+        </div>
+
+        <div className="min-w-0 text-xs leading-5 text-[var(--pl-muted)]">
+          <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Contact:</span> {volunteer.preferredContactMethod ?? "Not set"}</p>
+          <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Source:</span> {sourceLabel}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+            {readinessLabel(volunteer.readinessStatus)}
+          </span>
+          <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-2 text-sm leading-6 text-slate-600">
-        {volunteer.email ? (
-          <a className="break-words hover:text-slate-950" href={`mailto:${volunteer.email}`}>
-            {volunteer.email}
-          </a>
-        ) : (
-          <p>No email listed</p>
-        )}
-        {volunteer.phone ? (
-          <a className="hover:text-slate-950" href={`tel:${volunteer.phone}`}>
-            {volunteer.phone}
-          </a>
-        ) : (
-          <p>No phone listed</p>
-        )}
-      </div>
-
-      <div className="mt-5 grid gap-3 text-sm leading-6 text-slate-600">
-        <p>
-          <span className="font-medium text-slate-800">Preferred contact:</span>{" "}
-          {volunteer.preferredContactMethod ?? "Not set"}
-        </p>
-        <p>
-          <span className="font-medium text-slate-800">Readiness:</span>{" "}
-          {readinessLabel(volunteer.readinessStatus)}
-        </p>
-        <p>
-          <span className="font-medium text-slate-800">Profile notes:</span>{" "}
-          {volunteer.profileNotes || "No notes yet"}
-        </p>
-        <p>
-          <span className="font-medium text-slate-800">Snapshot:</span>{" "}
-          {summarizeSnapshot(volunteer.availabilitySnapshot)}
-        </p>
+      <div className="grid gap-2 border-t border-[var(--pl-border)]/70 bg-[var(--pl-surface-subtle)]/55 px-4 py-2.5 text-xs leading-5 text-[var(--pl-muted)] sm:grid-cols-2 lg:px-5">
+        <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Notes:</span> {volunteer.profileNotes || "No notes yet"}</p>
+        <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Availability:</span> {summarizeSnapshot(volunteer.availabilitySnapshot)}</p>
       </div>
 
       {canEdit && updateAction ? (
-        <details className="mt-6 rounded-2xl border border-white/70 bg-white/42 p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+        <details className="group border-t border-[var(--pl-border)] bg-white">
+          <summary className="cursor-pointer list-none px-4 py-2.5 text-xs font-semibold text-[var(--pl-blue)] marker:hidden hover:bg-[var(--pl-blue-soft)] lg:px-5">
             Edit volunteer
           </summary>
-          <form action={updateAction} className="mt-4 grid gap-3">
+          <form action={updateAction} className="grid gap-3 border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 lg:p-5">
             <input name="profileId" type="hidden" value={volunteer.id} />
             <VolunteerFields volunteer={volunteer} />
-            <Button className="mt-1 w-full" type="submit" variant="secondary">
+            <Button className="mt-1 w-full sm:w-auto" type="submit">
               Save changes
             </Button>
           </form>
         </details>
       ) : (
-        <p className="mt-6 rounded-2xl border border-white/70 bg-white/42 px-4 py-3 text-sm font-medium text-slate-500">
+        <p className="border-t border-[var(--pl-border)] px-4 py-2.5 text-xs font-medium text-[var(--pl-muted)] lg:px-5">
           Editing is unavailable for this signed-in contact.
         </p>
       )}
-    </GlassCard>
+    </article>
   );
 }
 
 export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile }) {
+  const fieldClassName = "mt-1.5 min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:ring-2 focus:ring-blue-100";
+  const selectClassName = `${fieldClassName} font-medium`;
+
   return (
     <>
       <label className="block">
         <span className="text-sm font-medium text-slate-600">Full name</span>
         <input
-          className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+          className={fieldClassName}
           defaultValue={volunteer?.fullName ?? ""}
           maxLength={160}
           name="fullName"
@@ -126,7 +131,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Email</span>
           <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={fieldClassName}
             defaultValue={volunteer?.email ?? ""}
             maxLength={254}
             name="email"
@@ -136,7 +141,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Phone</span>
           <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={fieldClassName}
             defaultValue={volunteer?.phone ?? ""}
             maxLength={40}
             name="phone"
@@ -148,7 +153,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Congregation</span>
           <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={fieldClassName}
             defaultValue={volunteer?.congregation ?? ""}
             maxLength={160}
             name="congregation"
@@ -157,7 +162,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Preferred contact</span>
           <select
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={selectClassName}
             defaultValue={volunteer?.preferredContactMethod ?? ""}
             name="preferredContactMethod"
           >
@@ -172,7 +177,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Lifecycle</span>
           <select
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={selectClassName}
             defaultValue={volunteer?.lifecycle ?? "active"}
             name="lifecycle"
           >
@@ -184,7 +189,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Scheduling readiness</span>
           <select
-            className="mt-2 min-h-11 w-full rounded-2xl border border-white/80 bg-white/70 px-4 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+            className={selectClassName}
             defaultValue={volunteer?.readinessStatus ?? "ready"}
             name="readinessStatus"
           >
@@ -196,7 +201,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
       <label className="block">
         <span className="text-sm font-medium text-slate-600">Profile notes</span>
         <textarea
-          className="mt-2 min-h-24 w-full rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-slate-950 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-300/60"
+          className={`${fieldClassName} min-h-24 py-3`}
           defaultValue={volunteer?.profileNotes ?? ""}
           maxLength={4000}
           name="profileNotes"

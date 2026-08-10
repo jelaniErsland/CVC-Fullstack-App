@@ -728,7 +728,7 @@ async function addAndEditVolunteer(page) {
   const original = `${fixture.namespace} Browser Volunteer`;
   const edited = `${fixture.namespace} Browser Edited`;
   await page.goto(createPreviewUrl(previewBaseUrl, "/admin/volunteers"), { waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Project Volunteers" }).waitFor();
+  await page.getByRole("heading", { name: "Volunteers", exact: true }).waitFor();
   await page.locator("summary").filter({ hasText: "Add volunteer" }).first().click();
   await page.getByLabel("Full name").first().fill(original);
   await page.getByLabel("Email").first().fill(`${fixture.namespace}-browser-volunteer@example.invalid`);
@@ -807,7 +807,7 @@ async function createOneOffDraft(page) {
   assert.equal(row.created_by_project_contact_id, fixture.contacts.scheduler);
   fixture.items.oneOff = row.id;
 
-  const editForm = page.locator('form:visible').filter({ hasText: "Edit persisted one-off item" }).first();
+  const editForm = page.locator('form:visible').filter({ hasText: "Edit scheduled item" }).first();
   await editForm.locator('input[name="title"]').fill(edited);
   await editForm.locator('input[name="startTime"]').fill("15:30");
   await editForm.locator('input[name="endTime"]').fill("16:30");
@@ -947,7 +947,7 @@ async function verifyDraftPrivacy(page, title) {
   const volunteerPage = await publicContext.newPage();
   await volunteerPage.goto(createPreviewUrl(previewBaseUrl, `/v/access/${token}`), { waitUntil: "networkidle" });
   await volunteerPage.waitForURL(/\/v\/schedule/);
-  await volunteerPage.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+  await volunteerPage.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
   assert.equal(await volunteerPage.getByText(title).count(), 0, "Draft item is visible in volunteer schedule.");
   await assertNoRenderedLeak(volunteerPage);
   await volunteerPage.close();

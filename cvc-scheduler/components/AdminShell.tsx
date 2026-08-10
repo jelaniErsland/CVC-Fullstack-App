@@ -24,6 +24,7 @@ import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
+import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { demoProjectId, getProjectById } from "@/lib/mockData";
 
@@ -33,14 +34,19 @@ type AdminShellProps = {
   onMobileMoreClose?: () => void;
   onMobileMoreOpen?: () => void;
   projectId?: string;
+  workspaceName?: string;
 };
 
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 
 function AdminBrand() {
   return (
-    <Link href="/" className="block text-lg font-semibold tracking-tight text-slate-950">
-      CVC Scheduler
+    <Link
+      aria-label="Project Local home"
+      href="/"
+      className="inline-flex rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+    >
+      <ProjectLocalBrand />
     </Link>
   );
 }
@@ -128,15 +134,14 @@ function MobileBottomNav({
   return (
     <nav
       aria-label="Primary admin navigation"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/80 bg-white/86 px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-18px_60px_rgba(15,23,42,0.14)] backdrop-blur-2xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--pl-border)] bg-white/96 px-2 pb-[calc(env(safe-area-inset-bottom)+5px)] pt-1.5 shadow-[0_-8px_24px_rgba(32,68,122,0.08)] backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-5 items-end gap-1">
+      <div className="mx-auto grid max-w-md grid-cols-5 items-center gap-0.5">
         {primaryMobileTabs.slice(0, 2).map((tab) => (
           <MobileTabLink active={active === tab.id} key={tab.id} tab={tab} />
         ))}
         <MobileTabLink
           active={active === "calendar"}
-          emphasized
           tab={primaryMobileTabs[2]}
         />
         <MobileTabLink
@@ -149,16 +154,18 @@ function MobileBottomNav({
           aria-haspopup="dialog"
           aria-label="Open more admin navigation"
           className={[
-            "flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2",
+            "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
             isMoreActive
-              ? "bg-slate-950 text-white shadow-sm"
-              : "text-slate-500 hover:bg-white/80 hover:text-slate-950",
+              ? "text-[var(--pl-blue)]"
+              : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
           ].join(" ")}
           onClick={onMoreClick}
           ref={moreButtonRef}
           type="button"
         >
-          <MoreHorizontal aria-hidden="true" className="h-5 w-5" />
+          <span className={isMoreActive ? "flex size-7 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)]" : "flex size-7 items-center justify-center"}>
+            <MoreHorizontal aria-hidden="true" className="h-[19px] w-[19px]" />
+          </span>
           <span>More</span>
         </button>
       </div>
@@ -168,11 +175,9 @@ function MobileBottomNav({
 
 function MobileTabLink({
   active,
-  emphasized,
   tab,
 }: {
   active: boolean;
-  emphasized?: boolean;
   tab: PrimaryMobileTab;
 }) {
   const Icon = tab.icon;
@@ -182,19 +187,16 @@ function MobileTabLink({
       aria-label={`Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
-        "flex flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2",
-        emphasized ? "min-h-[68px] -translate-y-2" : "min-h-[58px]",
+        "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         active
-          ? emphasized
-            ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.22)]"
-            : "bg-slate-950 text-white shadow-sm"
-          : emphasized
-            ? "border border-white/80 bg-white text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.16)] hover:bg-white"
-            : "text-slate-500 hover:bg-white/80 hover:text-slate-950",
+          ? "text-[var(--pl-blue)]"
+          : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
       ].join(" ")}
       href={tab.href}
     >
-      <Icon aria-hidden="true" className={emphasized ? "h-6 w-6" : "h-5 w-5"} />
+      <span className={active ? "flex size-7 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)]" : "flex size-7 items-center justify-center"}>
+        <Icon aria-hidden="true" className="h-[19px] w-[19px]" />
+      </span>
       <span>{tab.label}</span>
     </Link>
   );
@@ -335,6 +337,7 @@ export function AdminShell({
   onMobileMoreClose,
   onMobileMoreOpen,
   projectId = demoProjectId,
+  workspaceName,
 }: AdminShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -342,6 +345,7 @@ export function AdminShell({
   const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreDialogRef = useRef<HTMLElement>(null);
   const project = getProjectById(projectId);
+  const visibleWorkspaceName = workspaceName ?? project?.name ?? "Admin workspace";
 
   useFocusContainment(isMoreOpen, mobileMoreDialogRef);
 
@@ -396,49 +400,43 @@ export function AdminShell({
   }, [closeMobileMore, isMoreOpen]);
 
   return (
-    <PageShell>
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-4 lg:hidden">
-          <GlassCard className="p-3">
-            <div className="flex min-w-0 items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Workspace
-                </p>
-                <p className="mt-1 truncate text-sm font-semibold text-slate-950">
-                  {project?.name ?? "Admin workspace"}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-2 text-xs font-semibold text-slate-500 xs:inline-flex">
-                  Bottom tabs
-                </span>
-                <button
-                  aria-label="Open navigation menu"
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/80 bg-white/72 text-slate-700 shadow-sm transition hover:bg-white"
-                  onClick={() => setIsDrawerOpen(true)}
-                  type="button"
-                >
-                  <Menu aria-hidden="true" className="h-5 w-5" />
-                </button>
-              </div>
+    <PageShell className="bg-[var(--pl-canvas)]">
+      <div className="sticky top-0 z-30 border-b border-[var(--pl-border)] bg-white/96 px-4 py-2.5 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex min-w-0 max-w-2xl items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <ProjectLocalBrand compact />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold tracking-[-0.01em] text-[var(--pl-ink)]">
+                Project Local
+              </p>
+              <p className="truncate text-xs font-medium text-[var(--pl-muted)]">
+                {visibleWorkspaceName}
+              </p>
             </div>
-          </GlassCard>
+          </div>
+          <button
+            aria-label="Open navigation menu"
+            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--pl-border)] bg-white text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)]"
+            onClick={() => setIsDrawerOpen(true)}
+            type="button"
+          >
+            <Menu aria-hidden="true" className="h-5 w-5" />
+          </button>
         </div>
+      </div>
 
-        <div className="grid min-h-[calc(100vh-40px)] w-full gap-4 lg:grid-cols-[240px_1fr]">
-          <aside className="hidden lg:block lg:py-4">
-            <GlassCard className="p-4 lg:sticky lg:top-6">
+      <div className="grid min-h-screen w-full lg:grid-cols-[248px_minmax(0,1fr)]">
+          <aside className="hidden border-r border-[var(--pl-border)] bg-white lg:block">
+            <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-5 py-6">
               <AdminBrand />
-              <AdminNav active={active} projectId={projectId} />
-            </GlassCard>
+              <AdminNav active={active} projectId={projectId} workspaceName={visibleWorkspaceName} />
+            </div>
           </aside>
 
-          <main className="min-w-0 py-4 lg:py-4">
+          <main className="min-w-0 px-4 py-5 sm:px-6 lg:px-7 lg:py-6 xl:px-8">
             {children}
-            <div aria-hidden="true" className="h-28 lg:hidden" />
+            <div aria-hidden="true" className="h-20 lg:hidden" />
           </main>
-        </div>
       </div>
 
       {isDrawerOpen ? (
@@ -449,13 +447,13 @@ export function AdminShell({
             onClick={() => setIsDrawerOpen(false)}
             type="button"
           />
-          <div className="absolute inset-y-0 left-0 w-[min(320px,calc(100vw-28px))] p-3">
-            <GlassCard className="flex h-full flex-col overflow-y-auto p-4 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
+          <div className="absolute inset-y-0 left-0 w-[min(300px,calc(100vw-28px))]">
+            <div className="flex h-full flex-col overflow-y-auto border-r border-[var(--pl-border)] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
               <div className="flex items-center justify-between gap-3">
                 <AdminBrand />
                 <button
                   aria-label="Close admin navigation"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 text-sm font-semibold text-slate-700"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-[var(--pl-text)]"
                   onClick={() => setIsDrawerOpen(false)}
                   type="button"
                 >
@@ -463,12 +461,13 @@ export function AdminShell({
                   Close
                 </button>
               </div>
-              <AdminNav
-                active={active}
-                onNavigate={() => setIsDrawerOpen(false)}
-                projectId={projectId}
-              />
-            </GlassCard>
+                <AdminNav
+                  active={active}
+                  onNavigate={() => setIsDrawerOpen(false)}
+                  projectId={projectId}
+                  workspaceName={visibleWorkspaceName}
+                />
+            </div>
           </div>
         </div>
       ) : null}

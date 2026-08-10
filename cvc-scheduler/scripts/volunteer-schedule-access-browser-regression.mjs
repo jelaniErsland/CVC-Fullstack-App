@@ -322,7 +322,7 @@ async function runBrowserProof(token, emptyToken) {
     const earlyCookies = await context.cookies(createPreviewUrl(baseUrl, "/v/schedule"));
     const earlyScheduleCookie = earlyCookies.find((cookie) => cookie.name === "pl-volunteer-schedule");
     assert.equal(earlyScheduleCookie?.value === token, true, "schedule cookie did not preserve bearer value");
-    await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+    await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
     await page.getByText(`${fixture.namespace} Browser Volunteer`).waitFor();
     await page.getByText("QA 12.20 Browser Workspace", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
@@ -357,7 +357,7 @@ async function runBrowserProof(token, emptyToken) {
     await detailButton.click();
     await page.getByRole("dialog", { name: /Needs Reply/ }).waitFor();
     await page.getByText("Safe schedule note.").waitFor();
-    await page.getByText("The project team will include contact details in a later beta slice.").waitFor();
+    await page.getByText("Ask the project team for the best contact.").waitFor();
     assert.equal(await page.getByRole("button", { name: /^Confirm$/ }).count(), 1);
     assert((await page.getByRole("button", { name: /make it/ }).count()) >= 1);
     await page.keyboard.press("Escape");

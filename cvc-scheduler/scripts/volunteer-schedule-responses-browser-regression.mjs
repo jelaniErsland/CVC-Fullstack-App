@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -21,6 +21,8 @@ const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
+const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
 const secrets = new Set();
 const authUserIds = [];
 
@@ -52,6 +54,33 @@ const fixture = {
     inside48: randomUUID(),
   },
 };
+const reviewValues = writeBetaReviewScreenshots
+  ? {
+      workspaceName: "Bozeman Local Project",
+      volunteerName: "Alex Rivera",
+      volunteerEmail: "alex.rivera@example.invalid",
+      congregation: "Bozeman Congregation",
+      titles: {
+        confirm: "Gate Attendant",
+        decline: "Drywall Crew",
+        allA: "Site Cleanup",
+        allB: "Material Staging",
+        inside48: "Lunch Support",
+      },
+    }
+  : {
+      workspaceName: "QA 12.21 Browser Workspace",
+      volunteerName: `${fixture.namespace} Volunteer`,
+      volunteerEmail: `${fixture.namespace}@example.invalid`,
+      congregation: "Bozeman QA",
+      titles: {
+        confirm: `${fixture.namespace} Confirm Me`,
+        decline: `${fixture.namespace} Decline Me`,
+        allA: `${fixture.namespace} All A`,
+        allB: `${fixture.namespace} All B`,
+        inside48: `${fixture.namespace} Inside 48`,
+      },
+    };
 
 function isLoopbackUrl(value) {
   try {
@@ -190,7 +219,7 @@ function insertFixtures(containerName, userId) {
   runPsql(
     containerName,
     `insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
-values (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-workspace`)}, 'QA 12.21 Browser Workspace', 'active', 'America/Denver', current_date - 30, current_date + 120, false);
+values (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-workspace`)}, ${sqlText(reviewValues.workspaceName)}, 'active', 'America/Denver', current_date - 30, current_date + 120, false);
 insert into public.project_contacts (id, auth_user_id, status)
 values (${sqlUuid(fixture.contactId)}, ${sqlUuid(userId)}, 'active');
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status, valid_from, valid_until, revoked_at)
@@ -200,7 +229,7 @@ insert into public.volunteer_profiles (
   lifecycle, readiness_status, full_name, email, phone, congregation, preferred_contact_method,
   availability_snapshot, skills_help_snapshot, profile_notes
 )
-values (${sqlUuid(fixture.volunteerId)}, ${sqlUuid(fixture.workspaceId)}, null, 'manual', ${sqlUuid(fixture.contactId)}, clock_timestamp(), 'active', 'ready', ${sqlText(`${fixture.namespace} Volunteer`)}, ${sqlText(`${fixture.namespace}@example.invalid`)}, null, 'Bozeman QA', null, '{}'::jsonb, '{}'::jsonb, '');
+values (${sqlUuid(fixture.volunteerId)}, ${sqlUuid(fixture.workspaceId)}, null, 'manual', ${sqlUuid(fixture.contactId)}, clock_timestamp(), 'active', 'ready', ${sqlText(reviewValues.volunteerName)}, ${sqlText(reviewValues.volunteerEmail)}, null, ${sqlText(reviewValues.congregation)}, null, '{}'::jsonb, '{}'::jsonb, '');
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot, schedule_kind,
   start_date, end_date, start_time, end_time, timezone, needed_count, schedule_notes,
@@ -208,11 +237,11 @@ insert into public.calendar_items (
   publication_state, published_at, published_by_project_contact_id
 )
 values
-  ${itemValues(fixture.items.confirm, `${fixture.namespace} Confirm Me`, "current_date + 10")},
-  ${itemValues(fixture.items.decline, `${fixture.namespace} Decline Me`, "current_date + 11")},
-  ${itemValues(fixture.items.allA, `${fixture.namespace} All A`, "current_date + 12")},
-  ${itemValues(fixture.items.allB, `${fixture.namespace} All B`, "current_date + 13")},
-  ${itemValues(fixture.items.inside48, `${fixture.namespace} Inside 48`, "current_date + 1")};
+  ${itemValues(fixture.items.confirm, reviewValues.titles.confirm, "current_date + 10")},
+  ${itemValues(fixture.items.decline, reviewValues.titles.decline, "current_date + 11")},
+  ${itemValues(fixture.items.allA, reviewValues.titles.allA, "current_date + 12")},
+  ${itemValues(fixture.items.allB, reviewValues.titles.allB, "current_date + 13")},
+  ${itemValues(fixture.items.inside48, reviewValues.titles.inside48, "current_date + 1")};
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 )
@@ -270,33 +299,33 @@ async function runBrowserProof(token) {
     });
     await page.waitForURL(/\/v\/schedule$/, { timeout: 30_000 });
     assert(!page.url().includes(token), "final schedule URL leaked bearer");
-    await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
-    await page.getByText(`${fixture.namespace} Confirm Me`).waitFor();
-    await page.getByRole("button", { name: /Confirm Me/ }).click();
+    await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
+    await page.getByText(reviewValues.titles.confirm).waitFor();
+    await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByRole("button", { name: /^Confirm$/ }).click();
     await page.getByText("Your response is now Confirmed.").waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /Confirm Me/ }).click();
+    await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByText("Confirmed").first().waitFor();
     await page.getByRole("button", { name: "Close assignment details" }).click();
 
-    await page.getByRole("button", { name: /Decline Me/ }).click();
+    await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByPlaceholder("Add a brief note if you can’t make it").fill("Browser note");
     await page.getByRole("button", { name: "Can’t make it" }).last().click();
     await page.getByText("Your response is now Can’t make it.").waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /Decline Me/ }).click();
+    await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByText("Browser note", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Close assignment details" }).click();
 
     await page.getByRole("button", { name: "Confirm all pending" }).click();
     await page.getByText(/Confirmed 3 assignments\./).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /All A/ }).click();
+    await page.getByRole("button", { name: reviewValues.titles.allA, exact: false }).click();
     await page.getByText("Confirmed").first().waitFor();
     await page.getByRole("button", { name: "Close assignment details" }).click();
 
-    await page.getByRole("button", { name: /Inside 48/ }).click();
+    await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
     await page.getByText(/starts within 48 hours/).waitFor();
     assert.equal(await page.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
 
@@ -309,6 +338,14 @@ async function runBrowserProof(token) {
       token,
     );
     assert(noTokenLeak, "bearer leaked into HTML, storage, or readable cookies");
+    if (writeBetaReviewScreenshots) {
+      await page.getByRole("button", { name: "Close assignment details" }).click();
+      await mkdir(betaReviewDir, { recursive: true });
+      await page.screenshot({
+        path: path.join(betaReviewDir, "volunteer-schedule-desktop.png"),
+        fullPage: true,
+      });
+    }
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
@@ -317,6 +354,12 @@ async function runBrowserProof(token) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     assert.equal(overflow, false, "390px volunteer schedule response layout has horizontal overflow");
     assert.equal(failures.length, 0, `Browser errors occurred: ${failures.join(" | ")}`);
+    if (writeBetaReviewScreenshots) {
+      await page.screenshot({
+        path: path.join(betaReviewDir, "volunteer-schedule-mobile.png"),
+        fullPage: true,
+      });
+    }
   } finally {
     await browser.close();
   }

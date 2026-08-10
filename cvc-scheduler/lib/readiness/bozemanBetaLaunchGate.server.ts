@@ -25,6 +25,10 @@ export const BOZEMAN_BETA_LAUNCH_GATE_CAN_MUTATE_DEPLOYMENT = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED = false;
+export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
+export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
+  "docs/design/approved-project-local-ui";
+export const BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT = 6;
 export const BOZEMAN_BETA_LAUNCH_GATE_DECISION = "NO-GO" as const;
 
 export const BOZEMAN_BETA_LAUNCH_STAGING_TARGET = {
@@ -99,14 +103,17 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
   {
     id: "beta_critical_ui",
     title: "Beta-critical Project Local UI polish",
-    status: "pilot_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
-      "Existing prototype and sample mockup images define the approved bright, polished direction",
+      "docs/design/approved-project-local-ui defines the approved bright, polished direction",
       "12.23 performs focused polish on Calendar, Volunteers, and volunteer schedule surfaces",
+      "12.30 was functionally validated but rejected in product-owner visual review",
+      "Jelani explicitly product-owner approved the corrected 12.30.1 Project Local beta UI direction",
+      "All six real-route desktop and 390px 12.30.1 review captures were reviewed and accepted",
     ],
     requiredAction:
-      "Product owner must review final desktop/390px screenshots and complete a small controlled pilot.",
+      "Preserve the approved 12.30.1 visual baseline while the separate provisioning, production-readiness, and controlled-pilot gates are completed.",
   },
   {
     id: "hosted_staging_validation",
@@ -120,6 +127,19 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     ],
     requiredAction:
       "Run 12.23 hosted launch-gate verification against the same staging target before launch decision review.",
+  },
+  {
+    id: "controlled_pilot",
+    title: "Controlled Bozeman beta pilot",
+    status: "pilot_required",
+    blocking: true,
+    evidence: [
+      "Jelani explicitly product-owner approved the 12.30.1 beta-critical UI",
+      "no real Bozeman records were created by the UI review or local regression fixtures",
+      "no controlled pilot approval or production launch approval has been granted",
+    ],
+    requiredAction:
+      "After the remaining production-readiness gates and real Bozeman provisioning are complete, run and document a small controlled pilot with approved data and test recipients.",
   },
   {
     id: "production_environment",

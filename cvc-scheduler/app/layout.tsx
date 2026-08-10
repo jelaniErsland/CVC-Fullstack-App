@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CVC Project Portal",
-  description: "Project volunteer coordination for construction projects.",
+  title: "Project Local",
+  description: "Simple, secure volunteer scheduling for local projects.",
 };
 
 export default function RootLayout({

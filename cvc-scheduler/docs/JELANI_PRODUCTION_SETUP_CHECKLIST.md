@@ -139,7 +139,7 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 - Confirm logging/alerts.
 - Confirm production email provider plan separately.
-- Confirm product-owner UI approval.
+- Product-owner UI approval is complete through 12.30.1; preserve [`design/approved-project-local-ui`](./design/approved-project-local-ui/) and the six accepted desktop/390px review captures.
 - Confirm controlled pilot plan.
 - Keep Belgrade Sheets/App Script as the fallback.
 

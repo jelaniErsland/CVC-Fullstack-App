@@ -13,6 +13,9 @@ import {
   BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE,
   BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE,
   BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
+  BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED,
+  BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH,
+  BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT,
   bozemanBetaLaunchGateItems,
   bozemanBetaLaunchGateSummary,
 } from "../lib/readiness/bozemanBetaLaunchGate.server.ts";
@@ -36,6 +39,9 @@ async function main() {
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED, false);
+  assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
+  assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
+  assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_DECISION, "NO-GO");
   assert.equal(bozemanBetaLaunchGateSummary.decision, "NO-GO");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.name, "project-local-staging");
@@ -64,6 +70,7 @@ async function main() {
     "initial_assignment_email_boundary",
     "beta_critical_ui",
     "hosted_staging_validation",
+    "controlled_pilot",
     "production_environment",
     "production_launch_action",
     "deferred_features",
@@ -78,6 +85,19 @@ async function main() {
       assert.equal(item.blocking, true, `${item.id} unresolved production/operator work must block launch.`);
     }
   }
+
+  const uiGate = bozemanBetaLaunchGateItems.find((item) => item.id === "beta_critical_ui");
+  assert(uiGate, "Launch gate is missing the beta-critical UI item.");
+  assert.equal(uiGate.status, "proven");
+  assert.equal(uiGate.blocking, false);
+  assert.match(JSON.stringify(uiGate.evidence), /Jelani explicitly product-owner approved/i);
+  assert.match(JSON.stringify(uiGate.evidence), /six real-route desktop and 390px/i);
+
+  const pilotGate = bozemanBetaLaunchGateItems.find((item) => item.id === "controlled_pilot");
+  assert(pilotGate, "Launch gate is missing the controlled-pilot item.");
+  assert.equal(pilotGate.status, "pilot_required");
+  assert.equal(pilotGate.blocking, true);
+  assert.match(JSON.stringify(pilotGate.evidence), /no controlled pilot approval/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),
@@ -100,6 +120,8 @@ async function main() {
   assertIncludes(goNoGo, "Production email provider", "go/no-go report");
   assertIncludes(goNoGo, "project-local-staging", "go/no-go report");
   assertIncludes(goNoGo, "20260714122230", "go/no-go report");
+  assertIncludes(goNoGo, "12.30.1", "go/no-go report");
+  assertIncludes(goNoGo, "product-owner approved", "go/no-go report");
 
   const routeFiles = [
     "app/admin/calendar/page.tsx",

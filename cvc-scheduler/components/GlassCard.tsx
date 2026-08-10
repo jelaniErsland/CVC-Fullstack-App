@@ -8,8 +8,7 @@ export function GlassCard({ children, className = "", ...props }: GlassCardProps
   return (
     <div
       className={[
-        "rounded-lg border border-white/70 bg-white/58 shadow-[0_24px_80px_rgba(15,23,42,0.10)]",
-        "backdrop-blur-2xl backdrop-saturate-150",
+        "rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-[var(--pl-surface)] shadow-[var(--pl-shadow-panel)]",
         className,
       ].join(" ")}
       {...props}

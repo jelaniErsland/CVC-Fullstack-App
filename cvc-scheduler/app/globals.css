@@ -1,8 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fb;
-  --foreground: #111827;
+  --background: #f7f9fc;
+  --foreground: #0b1733;
+  --pl-canvas: #f7f9fc;
+  --pl-surface: #ffffff;
+  --pl-surface-subtle: #f3f7fc;
+  --pl-ink: #0b1733;
+  --pl-text: #35435f;
+  --pl-muted: #72809b;
+  --pl-border: #dfe6f1;
+  --pl-blue: #1769ff;
+  --pl-blue-deep: #0757ea;
+  --pl-blue-soft: #eaf2ff;
+  --pl-teal: #14b8a6;
+  --pl-teal-soft: #e7f9f5;
+  --pl-amber: #f59e0b;
+  --pl-amber-soft: #fff7e6;
+  --pl-coral: #ef5b5b;
+  --pl-coral-soft: #fff0ef;
+  --pl-lavender: #8b5cf6;
+  --pl-lavender-soft: #f2edff;
+  --pl-radius-control: 0.7rem;
+  --pl-radius-panel: 1rem;
+  --pl-control-height: 2.625rem;
+  --pl-shadow-panel: 0 8px 28px rgba(32, 68, 122, 0.07);
+  --pl-shadow-raised: 0 16px 42px rgba(32, 68, 122, 0.12);
 }
 
 @theme inline {
@@ -15,10 +38,11 @@
 body {
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(235, 242, 255, 0.94) 42%, rgba(247, 248, 251, 1)),
-    var(--background);
+    radial-gradient(circle at 82% -10%, rgba(191, 219, 254, 0.36), transparent 28rem),
+    var(--pl-canvas);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -26,11 +50,17 @@ body {
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.18);
+  background: rgba(59, 130, 246, 0.2);
 }
 
 input,
 select,
 button {
   font: inherit;
+}
+
+button,
+a,
+summary {
+  -webkit-tap-highlight-color: transparent;
 }

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import {
   CalendarDays,
+  ChevronDown,
   ClipboardList,
+  FolderKanban,
   Home,
   MessageSquare,
   Settings,
@@ -31,6 +33,7 @@ export type AdminNavActive =
 type AdminNavProps = {
   active?: AdminNavActive;
   projectId?: string;
+  workspaceName?: string;
   onNavigate?: () => void;
 };
 
@@ -61,34 +64,35 @@ const navItems: Array<{
 export function AdminNav({
   active = "overview",
   projectId = demoProjectId,
+  workspaceName,
   onNavigate,
 }: AdminNavProps) {
   const project = getProjectById(projectId);
+  const visibleWorkspaceName = workspaceName ?? project?.name ?? "Project workspace";
 
   return (
-    <div className="mt-5">
-      {project ? (
-        <div className="rounded-lg border border-white/70 bg-white/54 p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Workspace
-          </p>
-          <p className="mt-2 text-sm font-semibold leading-5 text-slate-950">
-            {project.name}
-          </p>
-          <div className="mt-3 flex items-center justify-between gap-3 text-xs font-medium text-slate-500">
-            <span className="capitalize">{project.status}</span>
-            <Link
-              href="/admin/projects"
-              className="inline-flex min-h-10 items-center rounded-full px-3 py-1.5 hover:bg-white/56 hover:text-slate-950"
-              onClick={onNavigate}
-            >
-              Switch
-            </Link>
-          </div>
-        </div>
-      ) : null}
+    <div className="mt-7 flex min-h-0 flex-1 flex-col">
+      <Link
+        aria-label={`Open project workspaces. Current workspace: ${visibleWorkspaceName}`}
+        className="flex min-h-[58px] items-center gap-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-3 py-2.5 transition hover:border-blue-200 hover:bg-[var(--pl-blue-soft)]"
+        href="/admin/projects"
+        onClick={onNavigate}
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--pl-blue)] shadow-sm ring-1 ring-[var(--pl-border)]">
+          <FolderKanban aria-hidden="true" className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">
+            Current project
+          </span>
+          <span className="mt-0.5 block line-clamp-2 text-[12px] font-semibold leading-4 text-[var(--pl-ink)]">
+            {visibleWorkspaceName}
+          </span>
+        </span>
+        <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-[var(--pl-muted)]" />
+      </Link>
 
-      <nav className="mt-3 grid gap-1 text-sm font-medium text-slate-600">
+      <nav className="mt-6 grid gap-1 text-sm font-medium text-[var(--pl-text)]">
         {navItems.map((item) => {
           const Icon = item.icon;
 
@@ -96,15 +100,21 @@ export function AdminNav({
             <Link
               key={item.id}
               className={[
-                "flex min-h-11 items-center gap-3 rounded-lg border px-3 py-2 transition hover:border-white/80 hover:bg-white/58 hover:text-slate-950",
+                "flex min-h-[42px] items-center gap-3 rounded-[0.7rem] border border-transparent px-3 py-2 transition",
+                item.id === "settings" ? "mt-4 border-t-[var(--pl-border)] pt-4" : "",
                 active === item.id
-                  ? "border-white/85 bg-white/72 text-slate-950 shadow-sm"
-                  : "border-transparent",
+                  ? "border-blue-100 bg-[var(--pl-blue-soft)] font-semibold text-[var(--pl-blue)]"
+                  : "hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
               ].join(" ")}
               href={item.href}
               onClick={onNavigate}
             >
-              <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
+              <span className={[
+                "flex size-7 shrink-0 items-center justify-center rounded-lg",
+                active === item.id ? "bg-white text-[var(--pl-blue)] shadow-sm" : "text-[var(--pl-muted)]",
+              ].join(" ")}>
+                <Icon aria-hidden="true" className="size-4" />
+              </span>
               <span>{item.label}</span>
             </Link>
           );

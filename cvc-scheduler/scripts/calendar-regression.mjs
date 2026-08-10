@@ -1,7 +1,7 @@
 import nextEnv from "@next/env";
 import { createBrowserClient } from "@supabase/ssr";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -19,6 +19,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
+const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
+const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
+const reviewWorkspaceName = writeBetaReviewScreenshots
+  ? "Bozeman Local Project"
+  : "QA 12.12 Calendar Workspace";
+const reviewVolunteerNames = writeBetaReviewScreenshots
+  ? ["Alex Rivera", "Maya Chen", "Noah Bennett", "Elena Ruiz", "Marcus Lee", "Priya Shah", "Jonah Price"]
+  : Array.from({ length: 7 }, (_, index) => `QA 12.12 Volunteer ${index + 1}`);
+const reviewCongregation = writeBetaReviewScreenshots
+  ? "Bozeman Congregation"
+  : "QA Congregation";
+const reviewGeneralPresetName = writeBetaReviewScreenshots
+  ? "Drywall Crew"
+  : "QA 12.12 General";
 
 const desktopViewport = { width: 1440, height: 1000 };
 const mobileViewport = { width: 390, height: 844 };
@@ -258,10 +272,10 @@ function questionnaireRows() {
     .map((id, index) => {
       const answers = JSON.stringify({
         aboutYou: {
-          name: `QA 12.12 Volunteer ${index + 1}`,
+          name: reviewVolunteerNames[index],
           email: `qa-12-12-volunteer-${index + 1}@example.invalid`,
           phone: "+1 555 120 1100",
-          congregation: "QA Congregation",
+          congregation: reviewCongregation,
         },
         availability: { weekdays: ["Tuesday"] },
         skillsExperience: { categories: ["General"] },
@@ -280,7 +294,7 @@ function volunteerRows() {
   return fixture.volunteerIds
     .map(
       (id, index) =>
-        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', 'QA 12.12 Volunteer ${index + 1}', 'qa-12-12-volunteer-${index + 1}@example.invalid', null, 'QA Congregation', 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
+        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', ${sqlText(reviewVolunteerNames[index])}, 'qa-12-12-volunteer-${index + 1}@example.invalid', null, ${sqlText(reviewCongregation)}, 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
     )
     .join(",\n");
 }
@@ -333,7 +347,7 @@ async function createFixtures(containerName) {
   runPsql(containerName, `begin;
 insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
 values
-  ('${fixture.workspaceId}'::uuid, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.12 Calendar Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
+  ('${fixture.workspaceId}'::uuid, ${sqlText(`${fixture.namespace}-target`)}, ${sqlText(reviewWorkspaceName)}, 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
   ('${fixture.calendarOnlyWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-calendar-only`)}, 'QA 12.12 Calendar Only Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false),
   ('${fixture.otherWorkspaceId}'::uuid, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.12 Other Workspace', 'active', 'America/Denver', '2026-01-01', '2026-04-04', false);
 insert into public.project_contacts (id, auth_user_id, status)
@@ -355,7 +369,7 @@ insert into public.task_presets (
   id, workspace_id, name, description, task_type, default_needed_count, volunteer_visible,
   is_system_preset, custom_field_definitions, lifecycle
 ) values
-  ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.12 General', null, 'general', 1, true, false, '[]'::jsonb, 'active'),
+  ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, ${sqlText(reviewGeneralPresetName)}, null, 'general', 1, true, false, '[]'::jsonb, 'active'),
   ('${fixture.foodTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.12 Food', null, 'food', 1, true, false, '[]'::jsonb, 'active');
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
@@ -677,10 +691,10 @@ const dialogFocusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-async function assertDialogFocusContainment(page, dialog, label) {
+async function assertDialogFocusContainment(page, dialog, label, expectedModal = true) {
   assert(
-    (await dialog.getAttribute("aria-modal")) === "true",
-    `${label} should expose aria-modal=true`,
+    (await dialog.getAttribute("aria-modal")) === String(expectedModal),
+    `${label} should expose aria-modal=${expectedModal}`,
   );
 
   const descriptionId = await dialog.getAttribute("aria-describedby");
@@ -1058,7 +1072,7 @@ async function runDesktop(browser) {
       await dialog.waitFor({ state: "hidden" });
       await waitForFocusLabel(page, "Open calendar filters");
       await assertClosedSurfaceInert(page, "Close calendar filters");
-      await page.getByText("1 visible item - Food", { exact: true }).waitFor();
+      await page.getByText("1 item · Food", { exact: true }).waitFor();
       assert(
         (await page
           .locator('[data-testid="calendar-list-view"] [role="listitem"] > button')
@@ -1093,6 +1107,7 @@ async function runDesktop(browser) {
         page,
         inspector,
         "Desktop inspector",
+        false,
       );
       assert(
         inspectorDescription.includes("Gate attendant") &&
@@ -1156,8 +1171,8 @@ async function runDesktop(browser) {
         "Desktop creation",
       );
       assert(
-        creationDescription.includes("Create a persisted timed Calendar item"),
-        "Creation description lacks persisted source-selection context",
+        creationDescription.includes("Schedule a task preset or create a one-time item"),
+        "Creation description lacks the source-selection context",
       );
       await planner
         .getByText("Suggested Tuesday, Jan 13, 1 PM to 2 PM. Adjust below.", {
@@ -1189,7 +1204,9 @@ async function runDesktop(browser) {
       );
       await taskPresetMode.click();
       await planner.getByLabel("Task preset", { exact: true }).selectOption(fixture.generalTaskPresetId);
-      await planner.getByRole("heading", { name: "QA 12.12 General", exact: true }).waitFor();
+      await planner
+        .getByRole("heading", { name: reviewGeneralPresetName, exact: true })
+        .waitFor();
       await customMode.click();
 
       const endInput = planner.getByLabel("End", { exact: true });
@@ -1394,8 +1411,12 @@ async function runDesktop(browser) {
     });
 
     await step("desktop persisted create/edit round trip", async () => {
-      const createdTitle = `QA persisted browser item ${fixture.namespace.slice(-8)}`;
-      const updatedTitle = `QA edited browser item ${fixture.namespace.slice(-8)}`;
+      const createdTitle = writeBetaReviewScreenshots
+        ? "Material Staging Setup"
+        : `QA persisted browser item ${fixture.namespace.slice(-8)}`;
+      const updatedTitle = writeBetaReviewScreenshots
+        ? "Material Staging"
+        : `QA edited browser item ${fixture.namespace.slice(-8)}`;
 
       await selectView(page, "Day");
       const triggerLabel = "Plan project work on Tue Jan 13 at 3 PM";
@@ -1493,12 +1514,12 @@ async function runDesktop(browser) {
         planner.getByRole("button", { name: "Save draft", exact: true }).click(),
       ]);
       await page.getByText("Calendar draft saved", { exact: true }).waitFor();
-      await page.getByText("QA 12.12 General", { exact: true }).waitFor();
+      await page.getByText(reviewGeneralPresetName, { exact: true }).waitFor();
 
       await page.reload();
-      await page.getByText("QA 12.12 General", { exact: true }).waitFor();
+      await page.getByText(reviewGeneralPresetName, { exact: true }).waitFor();
       const presetCreatedItem = page
-        .getByRole("button", { name: /QA 12\.12 General.*4:00 PM - 5:00 PM/ })
+        .getByRole("button", { name: new RegExp(`${reviewGeneralPresetName}.*4:00 PM - 5:00 PM`) })
         .first();
       await activateWithKeyboard(presetCreatedItem, "Created persisted preset Calendar item");
       await inspector.waitFor();
@@ -1511,7 +1532,7 @@ async function runDesktop(browser) {
       ]);
       await page.getByText("Calendar item updated", { exact: true }).waitFor();
       await page.reload();
-      await page.getByRole("button", { name: /QA 12\.12 General.*4:30 PM - 5:30 PM/ }).first().waitFor();
+      await page.getByRole("button", { name: new RegExp(`${reviewGeneralPresetName}.*4:30 PM - 5:30 PM`) }).first().waitFor();
     });
 
     await step("desktop persisted assignment create/cancel round trip", async () => {
@@ -1530,7 +1551,7 @@ async function runDesktop(browser) {
       await inspector.waitFor();
       await inspector
         .locator("label")
-        .filter({ hasText: "QA 12.12 Volunteer 2" })
+        .filter({ hasText: reviewVolunteerNames[1] })
         .locator('input[type="checkbox"]')
         .click({ force: true });
       await inspector.locator('input[name="volunteerProfileIds"]').waitFor({
@@ -1566,7 +1587,7 @@ async function runDesktop(browser) {
         .first();
       await activateWithKeyboard(assignedItem, "Assigned persisted Calendar item");
       await inspector.waitFor();
-      await inspector.getByText("QA 12.12 Volunteer 2", { exact: true }).waitFor();
+      await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
 
       await Promise.all([
@@ -1592,6 +1613,17 @@ async function runDesktop(browser) {
     await step("desktop has no browser errors", async () => {
       assert(errors.length === 0, errors.join("\n"));
     });
+    if (writeBetaReviewScreenshots) {
+      await mkdir(betaReviewDir, { recursive: true });
+      await selectView(page, "Week");
+      const reviewItem = page.getByRole("button", { name: weekItemLabel, exact: true });
+      await reviewItem.click();
+      await page.getByRole("dialog", { name: "Calendar item inspector", exact: true }).waitFor();
+      await page.screenshot({
+        path: path.join(betaReviewDir, "calendar-desktop.png"),
+        fullPage: true,
+      });
+    }
   } finally {
     await context.close();
   }
@@ -1835,6 +1867,13 @@ async function runMobile(browser) {
       await assertNoHorizontalOverflow(page, "Mobile Calendar after interactions");
       assert(errors.length === 0, errors.join("\n"));
     });
+    if (writeBetaReviewScreenshots) {
+      await mkdir(betaReviewDir, { recursive: true });
+      await page.screenshot({
+        path: path.join(betaReviewDir, "calendar-mobile.png"),
+        fullPage: true,
+      });
+    }
   } finally {
     await context.close();
   }

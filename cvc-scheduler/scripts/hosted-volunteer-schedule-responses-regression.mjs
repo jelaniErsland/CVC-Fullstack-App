@@ -1082,7 +1082,7 @@ where workspace_id = ${sqlUuid(fixture.workspaceId)}
     assert(finalUrl.hostname === "127.0.0.1", "Hosted schedule exchange did not preserve request host.");
     assert(finalUrl.pathname === "/v/schedule" && finalUrl.search === "", "Hosted schedule exchange did not land on a clean URL.");
     assert(!page.url().includes(issuedTokens.second.token), "Hosted schedule final URL leaked bearer.");
-    await page.getByRole("heading", { name: "Your volunteer schedule" }).waitFor();
+    await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
     await page.getByText(`${fixture.namespace} Own Volunteer`).waitFor();
     await page.getByText("QA 12.21.1 Volunteer Schedule Target", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Confirm Me`).waitFor();

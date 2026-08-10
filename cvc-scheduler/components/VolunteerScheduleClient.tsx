@@ -6,7 +6,6 @@ import {
   Check,
   Clock3,
   Loader2,
-  LogOut,
   MessageCircle,
   X,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/
 type VolunteerScheduleClientProps = Readonly<{
   assignments: readonly VolunteerScheduleAssignment[];
   confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
-  leaveAction: () => Promise<void>;
   submitResponseAction: (formData: FormData) => Promise<VolunteerScheduleActionResult>;
 }>;
 
@@ -87,7 +85,6 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
 export function VolunteerScheduleClient({
   assignments,
   confirmAllAction,
-  leaveAction,
   submitResponseAction,
 }: VolunteerScheduleClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -153,31 +150,32 @@ export function VolunteerScheduleClient({
 
   return (
     <>
-      <div className="divide-y divide-slate-200/80 border-y border-slate-200/80">
+      <div className="mt-3 space-y-3">
         {confirmAllCount > 1 ? (
-          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-6 text-slate-600">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 sm:px-4">
+            <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">
               {confirmAllCount} assignments are waiting for your reply.
             </p>
             <button
+              aria-label="Confirm all pending"
               type="button"
               onClick={confirmAll}
               disabled={isConfirmAllPending}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
             >
               {isConfirmAllPending ? (
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
               ) : (
                 <Check aria-hidden="true" className="size-4" />
               )}
-              Confirm all pending
+              Confirm all
             </button>
           </div>
         ) : null}
         {actionNotice ? (
           <div
             aria-live="polite"
-            className={`my-4 rounded-2xl border p-4 text-sm leading-6 ${
+            className={`rounded-xl border px-3 py-2.5 text-sm leading-6 ${
               actionNotice.ok
                 ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                 : "border-amber-200 bg-amber-50 text-amber-900"
@@ -186,7 +184,8 @@ export function VolunteerScheduleClient({
             {actionNotice.message}
           </div>
         ) : null}
-        {assignments.map((assignment) => (
+        <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
+        {assignments.map((assignment, index) => (
           <button
             key={assignment.assignmentReference}
             ref={(node) => {
@@ -199,63 +198,62 @@ export function VolunteerScheduleClient({
               returnFocusRef.current = event.currentTarget;
               setSelectedId(assignment.assignmentReference);
             }}
-            className="group flex w-full min-w-0 items-center gap-4 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+            className={[
+              "group flex w-full min-w-0 items-start gap-3 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
+              index === 0
+                ? "bg-[linear-gradient(115deg,rgba(234,242,255,.95),rgba(255,255,255,1)_64%,rgba(242,237,255,.7))] p-4 sm:p-5"
+                : "px-3.5 py-3 sm:px-4",
+            ].join(" ")}
           >
-            <CalendarDays
-              aria-hidden="true"
-              className="size-5 shrink-0 text-slate-400"
-              strokeWidth={1.7}
-            />
+            <span className={index === 0 ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue)] text-white shadow-[0_8px_18px_rgba(23,105,255,.22)]" : "flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"}>
+              <CalendarDays aria-hidden="true" className={index === 0 ? "size-5" : "size-4"} strokeWidth={1.8} />
+            </span>
             <span className="min-w-0 flex-1">
-              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-semibold text-slate-900">{assignment.taskTitle}</span>
+              {index === 0 ? (
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Next assignment</span>
+              ) : null}
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className={index === 0 ? "text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
                 <span
-                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}
+                  className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}
                 >
                   {responseLabels[assignment.currentResponseStatus]}
                 </span>
               </span>
-              <span className="mt-1 block text-sm leading-5 text-slate-500">
+              <span className={index === 0 ? "mt-1.5 block text-sm font-medium leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
                 {dateTimeLabel(assignment)}
               </span>
-              <span className="mt-0.5 block text-xs leading-5 text-slate-400">
-                {assignment.activeAssignedCount}/{assignment.neededCount} assigned
+              <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
+                {hasFollowUpContact(assignment)
+                  ? `Follow-up: ${assignment.followUpContact.displayName ?? "Project contact"}`
+                  : `${assignment.activeAssignedCount}/${assignment.neededCount} assigned`}
               </span>
             </span>
-            <span className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-sky-700 group-hover:text-sky-900 sm:inline-flex">
-              Details <ArrowRight aria-hidden="true" className="size-4" />
+            <span className="inline-flex shrink-0 items-center self-center text-[var(--pl-blue)]">
+              <ArrowRight aria-hidden="true" className="size-4" />
             </span>
           </button>
         ))}
+        </div>
       </div>
-
-      <form action={leaveAction} className="mt-8">
-        <button
-          type="submit"
-          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
-        >
-          <LogOut aria-hidden="true" className="size-4" />
-          Not you? Leave this schedule
-        </button>
-      </form>
 
       {selected ? (
         <div
           aria-labelledby="assignment-detail-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end bg-slate-950/28 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+          className="fixed inset-0 z-50 flex items-end bg-slate-950/24 p-0 sm:items-center sm:p-6"
           role="dialog"
         >
           <div
             ref={dialogRef}
-            className="max-h-[88vh] w-full overflow-y-auto rounded-t-[2rem] border border-white/80 bg-white p-6 shadow-[0_32px_110px_rgba(15,23,42,0.22)] sm:mx-auto sm:max-w-2xl sm:rounded-[2rem] sm:p-8"
+            className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--pl-border)] bg-white p-5 shadow-[var(--pl-shadow-raised)] sm:mx-auto sm:max-w-2xl sm:rounded-2xl sm:p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-sky-700">Assignment details</p>
+            <p className="text-xs font-semibold text-[var(--pl-blue)]">Assignment details</p>
                 <h2
                   id="assignment-detail-title"
-                  className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950"
+                  className="mt-1 text-2xl font-bold tracking-[-0.04em] text-[var(--pl-ink)]"
                 >
                   {selected.taskTitle}
                 </h2>
@@ -264,15 +262,15 @@ export function VolunteerScheduleClient({
                 ref={closeButtonRef}
                 type="button"
                 onClick={() => setSelectedId(null)}
-                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--pl-border)] text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Close assignment details"
               >
                 <X aria-hidden="true" className="size-5" />
               </button>
             </div>
 
-            <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <dl className="mt-5 grid overflow-hidden rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] sm:grid-cols-2">
+              <div className="border-b border-[var(--pl-border)] p-3 sm:border-r">
                 <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   <Clock3 aria-hidden="true" className="size-4" />
                   Date and time
@@ -281,7 +279,7 @@ export function VolunteerScheduleClient({
                   {dateTimeLabel(selected)}
                 </dd>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="border-b border-[var(--pl-border)] p-3">
                 <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Current response
                 </dt>
@@ -293,7 +291,7 @@ export function VolunteerScheduleClient({
                   </span>
                 </dd>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="border-b border-[var(--pl-border)] p-3 sm:border-b-0 sm:border-r">
                 <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Coverage
                 </dt>
@@ -303,7 +301,7 @@ export function VolunteerScheduleClient({
                   {selected.confirmedCount} confirmed · {selected.declinedCount} can’t make it
                 </dd>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="p-3">
                 <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Follow-up Contact
                 </dt>
@@ -335,14 +333,14 @@ export function VolunteerScheduleClient({
                       ) : null}
                     </>
                   ) : (
-                    "The project team will include contact details in a later beta slice."
+                    "Ask the project team for the best contact."
                   )}
                 </dd>
               </div>
             </dl>
 
             {selected.scheduleNotes ? (
-              <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <section className="mt-4 border-l-2 border-blue-200 bg-blue-50/45 px-3 py-2.5">
                 <h3 className="text-sm font-semibold text-slate-950">Notes</h3>
                 <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
                   {selected.scheduleNotes}
@@ -350,14 +348,14 @@ export function VolunteerScheduleClient({
               </section>
             ) : null}
 
-            <p className="mt-6 flex gap-2 rounded-2xl bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+            <p className="mt-4 flex gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-900">
               <MessageCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               Responses are saved to the project schedule. Need to change close
               to the start time? Contact your Follow-up Contact.
             </p>
 
             {selected.responseNote ? (
-              <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+              <section className="mt-4 border-l-2 border-violet-200 bg-violet-50/45 px-3 py-2.5">
                 <h3 className="text-sm font-semibold text-slate-950">Your note</h3>
                 <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
                   {selected.responseNote}
@@ -406,7 +404,7 @@ function ResponseActions({
 
   return (
     <section
-      className="mt-6 rounded-[1.35rem] border border-slate-200 bg-white p-4 sm:p-5"
+      className="mt-4 border-t border-[var(--pl-border)] pt-4"
       aria-labelledby="volunteer-response-actions-title"
     >
       <h3
@@ -424,7 +422,7 @@ function ResponseActions({
           type="button"
           onClick={() => onSubmit(assignment, "confirmed")}
           disabled={!canSubmitConfirm || isPending}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+          className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
         >
           {isPending && canSubmitConfirm ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
@@ -438,7 +436,7 @@ function ResponseActions({
             type="button"
             onClick={() => onSubmit(assignment, "declined", declineNote)}
             disabled={!canSubmitDecline || isPending}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             <X aria-hidden="true" className="size-4" />
             Can’t make it
