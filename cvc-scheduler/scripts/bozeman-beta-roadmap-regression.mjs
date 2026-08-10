@@ -117,7 +117,7 @@ for (const required of [
   "/admin/calendar uses persisted item truth",
   "create/cancel assignment RPCs",
   "assignment_responses persist current",
-  "Communications/reminders are mock-only",
+  "12.31 selects Resend",
   "docs/design/approved-project-local-ui",
   "Belgrade Sheets/App Script remains the operational fallback",
 ]) {
@@ -155,7 +155,7 @@ for (const blocker of [
   "manual_volunteer_add_edit_or_controlled_import",
   "calendar_create_edit_archive_publication_mutations",
   "secure_account_light_volunteer_schedule_access",
-  "basic_initial_assignment_email_delivery_boundary",
+  "production_resend_configuration_deliverability_and_observability",
 ]) {
   assert.ok(readiness.blockers.includes(blocker), `missing blocker ${blocker}`);
 }

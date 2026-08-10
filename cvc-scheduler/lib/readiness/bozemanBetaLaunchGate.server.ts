@@ -24,7 +24,8 @@ export const BOZEMAN_BETA_LAUNCH_GATE_CAN_SEND_EMAIL = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_CAN_MUTATE_DEPLOYMENT = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE = false;
-export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED = false;
+export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED = true;
+export const BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER = "resend" as const;
 export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
 export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
   "docs/design/approved-project-local-ui";
@@ -95,10 +96,11 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     evidence: [
       "12.22 explicit send boundary exists",
       "12.22.1 hosted staging validation passed through 20260714122230",
-      "Recording transport validated; real provider sending was intentionally not performed",
+      "12.31 selects Resend and validates a server-only production transport through deterministic fake-network regression",
+      "Recording transport remains available for QA; real provider sending was intentionally not performed",
     ],
     requiredAction:
-      "Approve and configure production provider, verified sender domain, sender identity, provider secret, base URL, failure monitoring, and a live test-recipient policy.",
+      "Configure and verify the Resend domain, sender identity, server-only API key, canonical base URL, privacy-first tracking setting, failure monitoring, and a live test-recipient deliverability policy.",
   },
   {
     id: "beta_critical_ui",
@@ -182,7 +184,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop is proven through local and hosted staging gates, but production provider/domain/deployment/observability/backup/pilot prerequisites are unresolved. The honest launch decision is NO-GO until those blocking actions are completed.",
+    "The core persisted scheduling loop and Resend application adapter are proven through local and hosted staging gates, but real sender/domain/provider configuration, deliverability, observability, backup, provisioning, and pilot prerequisites are unresolved. The honest launch decision is NO-GO until those blocking actions are completed.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

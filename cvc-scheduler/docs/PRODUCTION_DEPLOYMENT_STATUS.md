@@ -24,6 +24,7 @@ Launch conclusion: `NO-GO`.
 - Production Supabase URL and public anon/publishable key are configured in Vercel Production only.
 - `SUPABASE_SERVICE_ROLE_KEY` is absent.
 - Email transport and recording transport are absent/disabled.
+- Resend is selected and its 12.31 server-only application adapter is locally validated, but no Resend domain, sender, key, Vercel environment value, or real delivery is configured here.
 - Supabase Auth Site URL is `https://projectlocal.app`.
 - Exact final-domain Auth callback is `https://projectlocal.app/admin/auth/callback`.
 - Temporary Vercel callback `https://project-local-one.vercel.app/admin/auth/callback` remains allowlisted for fallback.
@@ -61,7 +62,7 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 
 ## What remains blocking
 
-- Production email provider/sender/domain/deliverability is not configured.
+- Resend sender/domain/key/monitoring and real production deliverability are not configured or proven.
 - Production backup/restore evidence is unresolved.
 - Production observability/alerts are unresolved.
 - Production workspace/contact/grants are not provisioned.

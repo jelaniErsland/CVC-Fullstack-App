@@ -10,6 +10,7 @@ import {
   BOZEMAN_BETA_LAUNCH_GATE_CAN_SEND_EMAIL,
   BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
+  BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER,
   BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE,
   BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE,
   BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
@@ -38,7 +39,8 @@ async function main() {
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_CAN_MUTATE_DEPLOYMENT, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_SERVICE_ROLE_APPLICATION_AVAILABLE, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE, false);
-  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED, false);
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED, true);
+  assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER, "resend");
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -118,6 +120,7 @@ async function main() {
   assertIncludes(runbook, "Do not log credentials, tokens, full schedule URLs, or raw provider payloads", "runbook");
   assertIncludes(goNoGo, "Conclusion: NO-GO", "go/no-go report");
   assertIncludes(goNoGo, "Production email provider", "go/no-go report");
+  assertIncludes(goNoGo, "Resend selected", "go/no-go report");
   assertIncludes(goNoGo, "project-local-staging", "go/no-go report");
   assertIncludes(goNoGo, "20260714122230", "go/no-go report");
   assertIncludes(goNoGo, "12.30.1", "go/no-go report");

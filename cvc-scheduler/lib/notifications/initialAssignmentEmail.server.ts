@@ -17,12 +17,21 @@ export type InitialAssignmentEmailConfiguration =
       recordingPath: string;
     }>
   | Readonly<{
+      ok: true;
+      origin: string;
+      transport: "resend";
+      from: string;
+      apiKey: string;
+    }>
+  | Readonly<{
       ok: false;
       reason:
         | "transport_disabled"
+        | "transport_unsupported"
         | "origin_unavailable"
         | "from_unavailable"
-        | "recording_path_unavailable";
+        | "recording_path_unavailable"
+        | "resend_api_key_unavailable";
     }>;
 
 export type InitialAssignmentEmailInput = Readonly<{
@@ -53,6 +62,14 @@ export type InitialAssignmentEmailSendResult =
   | Readonly<{ ok: false; safeFailureCode: "provider_send_failed" }>;
 
 const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const providerMessageIdPattern = /^[A-Za-z0-9._:-]{1,200}$/;
+const resendApiUrl = "https://api.resend.com/emails";
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type InitialAssignmentEmailRuntime = Readonly<{
+  fetch: typeof fetch;
+}>;
 
 function normalizeEmail(value: unknown) {
   if (typeof value !== "string") return null;
@@ -63,12 +80,28 @@ function normalizeEmail(value: unknown) {
   return normalized;
 }
 
+function normalizeResendApiKey(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (
+    normalized.length < 12 ||
+    normalized.length > 512 ||
+    !/^re_[^\s\u0000-\u001f\u007f]+$/.test(normalized)
+  ) {
+    return null;
+  }
+  return normalized;
+}
+
 export function readInitialAssignmentEmailConfiguration(
   environment: NodeJS.ProcessEnv = process.env,
 ): InitialAssignmentEmailConfiguration {
   const transport = environment.ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT?.trim();
-  if (transport !== "recording") {
+  if (!transport || transport === "disabled") {
     return { ok: false, reason: "transport_disabled" };
+  }
+  if (transport !== "recording" && transport !== "resend") {
+    return { ok: false, reason: "transport_unsupported" };
   }
 
   let origin: string;
@@ -79,9 +112,25 @@ export function readInitialAssignmentEmailConfiguration(
   } catch {
     return { ok: false, reason: "origin_unavailable" };
   }
+  if (transport === "resend" && !origin.startsWith("https://")) {
+    return { ok: false, reason: "origin_unavailable" };
+  }
 
   const from = normalizeEmail(environment.ASSIGNMENT_NOTIFICATION_FROM);
   if (!from) return { ok: false, reason: "from_unavailable" };
+
+  if (transport === "resend") {
+    const apiKey = normalizeResendApiKey(environment.RESEND_API_KEY);
+    if (!apiKey) return { ok: false, reason: "resend_api_key_unavailable" };
+
+    return {
+      ok: true,
+      origin,
+      transport,
+      from,
+      apiKey,
+    };
+  }
 
   const recordingPath = environment.ASSIGNMENT_NOTIFICATION_RECORDING_PATH?.trim();
   if (!recordingPath) return { ok: false, reason: "recording_path_unavailable" };
@@ -106,11 +155,21 @@ function hash(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
 
-function validateSafeMessage(input: InitialAssignmentEmailInput) {
+export function buildResendInitialAssignmentIdempotencyKey(
+  input: Pick<InitialAssignmentEmailInput, "idempotencyKey">,
+) {
+  return `project-local/initial-assignment/${hash(input.idempotencyKey).slice(0, 48)}`;
+}
+
+function validateSafeMessage(
+  configuration: Extract<InitialAssignmentEmailConfiguration, { ok: true }>,
+  input: InitialAssignmentEmailInput,
+) {
   if (
-    !input.deliveryId ||
-    !input.assignmentId ||
-    !input.idempotencyKey ||
+    !uuidPattern.test(input.deliveryId) ||
+    !uuidPattern.test(input.assignmentId) ||
+    input.idempotencyKey !==
+      `${INITIAL_ASSIGNMENT_EMAIL_KIND}:${INITIAL_ASSIGNMENT_EMAIL_TEMPLATE_VERSION}:${input.assignmentId}` ||
     !normalizeEmail(input.recipientEmail) ||
     !input.volunteerDisplayName.trim() ||
     !input.workspaceDisplayName.trim() ||
@@ -124,18 +183,163 @@ function validateSafeMessage(input: InitialAssignmentEmailInput) {
 
   try {
     const url = new URL(input.scheduleAccessUrl);
-    return /^\/v\/access\/[A-Za-z0-9_-]{43}$/.test(url.pathname);
+    return (
+      url.origin === configuration.origin &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      /^\/v\/access\/[A-Za-z0-9_-]{43}$/.test(url.pathname)
+    );
   } catch {
     return false;
+  }
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    const escaped: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return escaped[character];
+  });
+}
+
+function scheduleTimeLabel(input: InitialAssignmentEmailInput) {
+  if (!input.scheduleStartTime) return "Time not specified";
+  return input.scheduleEndTime
+    ? `${input.scheduleStartTime}–${input.scheduleEndTime}`
+    : input.scheduleStartTime;
+}
+
+function buildResendMessage(input: InitialAssignmentEmailInput) {
+  const subject = `New Project Local assignment · ${input.workspaceDisplayName.trim()}`;
+  const timeLabel = scheduleTimeLabel(input);
+  const followUpPhone = input.followUpContact.phone?.trim();
+  const note = input.scheduleNotes?.trim();
+  const contactLines = [
+    input.followUpContact.displayName.trim(),
+    input.followUpContact.email.trim(),
+    followUpPhone,
+  ].filter((value): value is string => Boolean(value));
+  const textBody = [
+    "PROJECT LOCAL",
+    "",
+    `Hi ${input.volunteerDisplayName.trim()},`,
+    "",
+    `A new assignment is available for ${input.workspaceDisplayName.trim()}.`,
+    "",
+    input.taskTitle.trim(),
+    `Date: ${input.scheduleDate}`,
+    `Time: ${timeLabel}`,
+    ...(note ? [`Details: ${note}`] : []),
+    "",
+    `View your schedule: ${input.scheduleAccessUrl}`,
+    "",
+    "Follow-up Contact",
+    ...contactLines,
+  ].join("\n");
+
+  const detailRows = [
+    ["Date", input.scheduleDate],
+    ["Time", timeLabel],
+    ...(note ? [["Details", note]] : []),
+  ];
+  const htmlBody = `<!doctype html>
+<html lang="en">
+  <body style="margin:0;background:#f5f8fc;color:#10233f;font-family:Arial,sans-serif;">
+    <div style="margin:0 auto;max-width:600px;padding:32px 20px;">
+      <div style="border:1px solid #dbe4ef;border-radius:18px;background:#ffffff;box-shadow:0 8px 24px rgba(16,35,63,.08);overflow:hidden;">
+        <div style="padding:24px 28px 18px;border-bottom:1px solid #e6edf5;">
+          <div style="color:#246bfd;font-size:12px;font-weight:700;letter-spacing:.12em;">PROJECT LOCAL</div>
+          <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25;">A new assignment is available</h1>
+        </div>
+        <div style="padding:24px 28px;">
+          <p style="margin:0 0 18px;line-height:1.6;">Hi ${escapeHtml(input.volunteerDisplayName.trim())},</p>
+          <p style="margin:0 0 20px;line-height:1.6;">You have a new assignment for <strong>${escapeHtml(input.workspaceDisplayName.trim())}</strong>.</p>
+          <div style="margin:0 0 22px;padding:18px;border-radius:12px;background:#f5f8fc;">
+            <div style="margin-bottom:12px;font-size:18px;font-weight:700;">${escapeHtml(input.taskTitle.trim())}</div>
+            ${detailRows.map(([label, value]) => `<div style="margin-top:7px;line-height:1.5;"><span style="color:#60728a;">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`).join("")}
+          </div>
+          <a href="${escapeHtml(input.scheduleAccessUrl)}" style="display:inline-block;border-radius:10px;background:#246bfd;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 18px;">View your schedule</a>
+          <div style="margin-top:26px;padding-top:20px;border-top:1px solid #e6edf5;line-height:1.6;">
+            <div style="font-size:13px;font-weight:700;color:#60728a;">Follow-up Contact</div>
+            <div>${contactLines.map(escapeHtml).join("<br>")}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+
+  return { subject, text: textBody, html: htmlBody };
+}
+
+async function sendWithResend(
+  configuration: Extract<
+    InitialAssignmentEmailConfiguration,
+    { ok: true; transport: "resend" }
+  >,
+  input: InitialAssignmentEmailInput,
+  runtime: InitialAssignmentEmailRuntime,
+): Promise<InitialAssignmentEmailSendResult> {
+  const message = buildResendMessage(input);
+
+  try {
+    const response = await runtime.fetch(resendApiUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${configuration.apiKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": buildResendInitialAssignmentIdempotencyKey(input),
+      },
+      body: JSON.stringify({
+        from: configuration.from,
+        to: [normalizeEmail(input.recipientEmail)],
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+      }),
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) {
+      return { ok: false, safeFailureCode: "provider_send_failed" };
+    }
+
+    const payload: unknown = await response.json();
+    const providerMessageId =
+      typeof payload === "object" && payload !== null && "id" in payload
+        ? (payload as { id?: unknown }).id
+        : null;
+    if (
+      typeof providerMessageId !== "string" ||
+      !providerMessageIdPattern.test(providerMessageId)
+    ) {
+      return { ok: false, safeFailureCode: "provider_send_failed" };
+    }
+    return { ok: true, providerMessageId };
+  } catch {
+    return { ok: false, safeFailureCode: "provider_send_failed" };
   }
 }
 
 export async function sendInitialAssignmentEmail(
   configuration: InitialAssignmentEmailConfiguration,
   input: InitialAssignmentEmailInput,
+  runtime: InitialAssignmentEmailRuntime = { fetch: globalThis.fetch },
 ): Promise<InitialAssignmentEmailSendResult> {
-  if (!configuration.ok || !validateSafeMessage(input)) {
+  if (!configuration.ok || !validateSafeMessage(configuration, input)) {
     return { ok: false, safeFailureCode: "provider_send_failed" };
+  }
+
+  if (configuration.transport === "resend") {
+    return sendWithResend(configuration, input, runtime);
   }
 
   const providerMessageId = `recording-${hash(input.idempotencyKey).slice(0, 24)}`;

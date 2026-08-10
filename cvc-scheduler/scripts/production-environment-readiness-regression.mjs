@@ -51,7 +51,6 @@ async function main() {
     "proven",
     "operator_required",
     "configuration_required",
-    "blocked",
     "deferred_non_blocking",
   ]) {
     assert(statuses.has(status), `Production readiness does not exercise status ${status}.`);
@@ -115,6 +114,8 @@ async function main() {
   assertIncludes(packageJson, "test:production-environment-readiness", "package.json");
   assertIncludes(envExample, "ADMIN_AUTH_MODE=review", ".env.example");
   assertIncludes(envExample, "ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=", ".env.example");
+  assertIncludes(envExample, "RESEND_API_KEY=", ".env.example");
+  assert(!envExample.includes("NEXT_PUBLIC_RESEND"), ".env.example must keep the Resend key server-only.");
   assertIncludes(envExample, "SUPABASE_SERVICE_ROLE_KEY=", ".env.example");
   assert(!/vercel|netlify/i.test(nextConfig), "next.config should not gain ceremonial hosting assumptions.");
   assertIncludes(proxy, 'pathname === "/v/schedule"', "proxy no-store schedule handling");
@@ -130,6 +131,7 @@ async function main() {
 
   assertIncludes(inventory, "NEXT_PUBLIC_SUPABASE_URL", "environment inventory");
   assertIncludes(inventory, "ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT", "environment inventory");
+  assertIncludes(inventory, "RESEND_API_KEY", "environment inventory");
   assertIncludes(inventory, "SUPABASE_SERVICE_ROLE_KEY", "environment inventory");
   assertIncludes(deploymentRunbook, "read-only production smoke test", "deployment runbook");
   assertIncludes(deploymentRunbook, "Do not run hosted disposable fixture scripts against production", "deployment runbook");

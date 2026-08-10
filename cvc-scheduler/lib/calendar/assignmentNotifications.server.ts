@@ -59,7 +59,24 @@ export type InitialAssignmentNotificationSendResult = Readonly<{
   skippedCount: number;
   failedCount: number;
   tokenRevokedAfterFailureCount: number;
+  providerFailureCount: number;
+  finalizationFailureCount: number;
+  scheduleAccessFailureCount: number;
 }>;
+
+export type InitialAssignmentNotificationBoundaryFailureStage =
+  | "configuration"
+  | "claim";
+
+export class InitialAssignmentNotificationBoundaryError extends Error {
+  readonly safeStage: InitialAssignmentNotificationBoundaryFailureStage;
+
+  constructor(safeStage: InitialAssignmentNotificationBoundaryFailureStage) {
+    super("Initial assignment notification operation is unavailable.");
+    this.name = "InitialAssignmentNotificationBoundaryError";
+    this.safeStage = safeStage;
+  }
+}
 
 function normalizeUuid(value: unknown) {
   if (typeof value !== "string" || !uuidPattern.test(value.trim())) return null;
@@ -229,7 +246,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
   const calendarItemId = normalizeUuid(input.calendarItemId);
   if (!calendarItemId) throw new Error("Invalid initial assignment notification request.");
   if (!configuration.ok) {
-    throw new Error("Initial assignment email transport is unavailable.");
+    throw new InitialAssignmentNotificationBoundaryError("configuration");
   }
 
   const { data, error } = await supabase.rpc(
@@ -238,7 +255,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
       p_calendar_item_id: calendarItemId,
     } as PublicRpcArgs<"claim_initial_assignment_notification_deliveries">,
   );
-  if (error) throw new Error("Initial assignment notifications could not be prepared.");
+  if (error) throw new InitialAssignmentNotificationBoundaryError("claim");
 
   const claims = parseClaims(data);
   let sentCount = 0;
@@ -246,6 +263,9 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
   let skippedCount = 0;
   let failedCount = 0;
   let tokenRevokedAfterFailureCount = 0;
+  let providerFailureCount = 0;
+  let finalizationFailureCount = 0;
+  let scheduleAccessFailureCount = 0;
 
   for (const claim of claims) {
     if (claim.sendStatus === "already_sent") {
@@ -267,6 +287,11 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
     }
 
     let issuedTokenId: string | null = null;
+    let failureStage:
+      | "schedule_access"
+      | "provider"
+      | "provider_failure_cleanup"
+      | "finalization" = "schedule_access";
     try {
       const issued = await issueVolunteerScheduleAccessForNotification(
         supabase,
@@ -277,6 +302,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         origin: configuration.origin,
         token: issued.token,
       });
+      failureStage = "provider";
       const sendResult = await sendInitialAssignmentEmail(configuration, {
         deliveryId: claim.deliveryId,
         assignmentId: claim.calendarAssignmentId,
@@ -301,6 +327,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
       });
 
       if (sendResult.ok) {
+        failureStage = "finalization";
         await finalizeDelivery({
           supabase,
           deliveryId: claim.deliveryId,
@@ -309,8 +336,11 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         });
         sentCount += 1;
       } else {
+        providerFailureCount += 1;
+        failureStage = "provider_failure_cleanup";
         await revokeVolunteerScheduleAccessForNotification(supabase, issued.tokenId);
         tokenRevokedAfterFailureCount += 1;
+        failureStage = "finalization";
         await finalizeDelivery({
           supabase,
           deliveryId: claim.deliveryId,
@@ -320,6 +350,13 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         failedCount += 1;
       }
     } catch {
+      if (failureStage === "schedule_access") {
+        scheduleAccessFailureCount += 1;
+      } else if (failureStage === "provider") {
+        providerFailureCount += 1;
+      } else if (failureStage === "finalization") {
+        finalizationFailureCount += 1;
+      }
       if (issuedTokenId) {
         try {
           await revokeVolunteerScheduleAccessForNotification(supabase, issuedTokenId);
@@ -338,7 +375,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
             : "schedule_access_issue_failed",
         });
       } catch {
-        // Preserve the safe product result; diagnostics stay in regression output only.
+        if (failureStage !== "finalization") finalizationFailureCount += 1;
       }
       failedCount += 1;
     }
@@ -350,5 +387,8 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
     skippedCount,
     failedCount,
     tokenRevokedAfterFailureCount,
+    providerFailureCount,
+    finalizationFailureCount,
+    scheduleAccessFailureCount,
   };
 }

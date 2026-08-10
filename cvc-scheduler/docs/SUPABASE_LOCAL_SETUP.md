@@ -55,6 +55,8 @@ The successful gate verifies `ACTIVE_HEALTHY`, migration `20260714122230`, gener
 
 They recommend Vercel for the first production deployment, require a separate production Supabase project, require `ADMIN_AUTH_MODE=enforced`, require exact HTTPS Auth callback URLs, keep email transport disabled until the provider slice, keep `SUPABASE_SERVICE_ROLE_KEY` unset, and keep the launch conclusion `NO-GO`. No production project, migration, DNS change, real data, real email, or deployment is created by 12.24.
 
+12.31 later selects Resend and adds a server-only application adapter, validated with `npm run test:assignment-notification-email:resend` through injected fake HTTP responses. Normal local/hosted database regression remains recording-only, and production transport remains disabled until the Resend domain, sender, server-only key, monitoring, and controlled deliverability steps in [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md) are complete. No real email is sent by the 12.31 regression.
+
 12.25 completed the first production Supabase schema gate for the approved production target, `project-local-production` (`wdlaauzknfggoqldolmx`). This was the initial/bootstrap empty-production gate. Production is validated through migration `20260714122230`; generated-type parity, empty product/Auth/storage counts before Auth setup, public Supabase connectivity, and structural RLS/security checks passed.
 
 ```powershell

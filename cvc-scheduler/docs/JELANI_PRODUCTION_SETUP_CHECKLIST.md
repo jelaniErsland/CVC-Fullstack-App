@@ -11,6 +11,7 @@ Current conclusion: `NO-GO`.
 - Confirm the production Supabase project name.
 - Confirm owner/admin email addresses for Supabase and hosting.
 - Confirm who receives launch alerts.
+- Resend is selected as the initial production transactional email provider; provider selection is complete, but activation is not.
 - Confirm who can approve the final desktop/mobile UI.
 - Confirm who can approve the first controlled Bozeman pilot.
 
@@ -36,6 +37,7 @@ Collect these values into private operator notes or the hosting platform, not in
 - Canonical hosting deployment URL: `https://projectlocal.app`.
 - Temporary Vercel fallback alias: `https://project-local-one.vercel.app`.
 - Auth callback URL: `https://projectlocal.app/admin/auth/callback`.
+- Resend verified sending domain and exact sender identity (after operator setup).
 
 Creating an Auth user does not grant app access. App access requires:
 
@@ -50,7 +52,7 @@ Creating an Auth user does not grant app access. App access requires:
 - Do not paste database passwords into Codex, chat, docs, Git, screenshots, or issue comments.
 - Do not expose the Supabase service-role key.
 - Leave `SUPABASE_SERVICE_ROLE_KEY` unset in production unless a future reviewed slice explicitly requires it.
-- Future email provider secrets must live only in hosting encrypted environment settings.
+- `RESEND_API_KEY` must live only in hosting encrypted server environment settings and must never be copied into source, docs, screenshots, logs, or browser code.
 - Never put a secret in a variable starting with `NEXT_PUBLIC_`.
 - Never paste secrets into Codex.
 
@@ -86,9 +88,22 @@ Creating an Auth user does not grant app access. App access requires:
 - Add production environment variables in encrypted settings.
 - Set `ADMIN_AUTH_MODE=enforced`.
 - Set production Supabase public URL/key.
-- Leave email transport disabled until the production provider slice.
+- Leave email transport disabled until the Resend domain, sender, key, monitoring, and controlled test-recipient steps below are complete.
 - Leave recording path unset.
 - Leave service-role key unset.
+
+### Resend activation (not completed by 12.31)
+
+- Create/approve the Resend account and a least-privilege sending key outside the repository.
+- Verify the approved sending domain and sender using the exact DNS records supplied by Resend.
+- Keep open and click tracking disabled for transactional beta email.
+- Add `RESEND_API_KEY` to Vercel Production as a server-only encrypted secret.
+- Set `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app`.
+- Set `ASSIGNMENT_NOTIFICATION_FROM` to the exact verified sender address.
+- Keep `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` unset.
+- Configure safe monitoring for claim, provider, finalization, and stale-delivery failures.
+- Approve a test recipient; only then set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and perform a controlled deliverability test.
+- Return the transport to empty/disabled immediately if the controlled test is not successful.
 
 ## Phase G - Verification
 
@@ -138,7 +153,7 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 - Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 - Confirm logging/alerts.
-- Confirm production email provider plan separately.
+- Complete and record the Resend activation, real deliverability, and monitoring evidence above; 12.31 proves application integration only.
 - Product-owner UI approval is complete through 12.30.1; preserve [`design/approved-project-local-ui`](./design/approved-project-local-ui/) and the six accepted desktop/390px review captures.
 - Confirm controlled pilot plan.
 - Keep Belgrade Sheets/App Script as the fallback.

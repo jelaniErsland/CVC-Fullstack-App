@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Production launch remains unavailable until email/provider deliverability, backup/restore, observability, real operator provisioning, and controlled pilot gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter without configuring or calling the real provider. Production launch remains unavailable until Resend domain/sender/secret configuration and deliverability, backup/restore, observability, real operator provisioning, and controlled pilot gates pass.
 
 Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional. Iteration 12.29 adds the Windows-first independent encrypted backup automation foundation and [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md), but no production backup has run and no restore has passed.
 
@@ -133,10 +133,29 @@ Checklist:
 5. Verify HTTPS certificate issuance after any DNS/domain change.
 6. Verify the deployed origin before changing Supabase Auth.
 7. Keep Supabase Site URL and redirect allowlist aligned with the canonical origin.
-8. Keep future email DNS records (SPF/DKIM/DMARC) for the email-provider slice; do not add them in 12.24.
+8. Add only the exact SPF/DKIM/DMARC records Resend supplies during a separately approved operator configuration step; no email DNS was changed in 12.31.
 9. Roll back DNS by reverting records or detaching the domain in the hosting platform if needed.
 
 If a `.app` domain is chosen, HTTPS is mandatory by browser policy; Vercel-managed HTTPS should satisfy this after certificate issuance.
+
+## Resend activation plan
+
+Iteration 12.31 completes application integration only. The provider remains disabled in production, no real API key is in the repository, and no external email was sent.
+
+Before enabling the transport, Jelani/operator must:
+
+1. Create or approve the Resend account and least-privilege sending key outside this repository.
+2. Add and verify the approved sending domain and sender identity using only Resend-provided DNS records.
+3. Keep Resend open and click tracking disabled for transactional beta messages.
+4. Store `RESEND_API_KEY` only in Vercel encrypted server environment settings; never use a `NEXT_PUBLIC_` name.
+5. Set `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app`.
+6. Set `ASSIGNMENT_NOTIFICATION_FROM` to the exact verified sender address.
+7. Leave `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` unset in production.
+8. Configure credential-free failure visibility for claim, provider delivery, and ledger finalization stages plus stale `sending` rows.
+9. Approve a narrow test-recipient policy, then set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and perform one controlled deliverability test.
+10. Confirm inbox placement, schedule-link behavior, safe provider message-id persistence, duplicate prevention, and failure/retry behavior without logging the recipient, bearer, full URL, API key, authorization header, or raw provider body.
+
+If any activation check fails, restore `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT` to empty/disabled and redeploy. The database delivery ledger remains the authoritative duplicate-send boundary; Resend's deterministic idempotency header is defense in depth and has a provider-documented 24-hour window.
 
 ## Initial deployment plan
 
@@ -144,7 +163,7 @@ If a `.app` domain is chosen, HTTPS is mandatory by browser policy; Vercel-manag
 2. Select the intended production branch.
 3. Use Next.js defaults: install command from package manager, build command `npm run build`.
 4. Add production environment variables from `docs/PRODUCTION_ENVIRONMENT_INVENTORY.md`.
-5. Keep email transport disabled.
+5. Keep email transport disabled until every Resend activation-plan prerequisite is complete.
 6. Deploy only after production Supabase schema is ready.
 7. Keep the deployment operationally unused until final-domain smoke, email, rollback, and UI review pass.
 
@@ -201,7 +220,7 @@ Minimum production signals:
 - Publication failure.
 - Volunteer schedule-access failure.
 - Confirm/Deny failure.
-- Initial email claim/finalize failure.
+- Initial email claim failure, provider delivery failure, and delivery-ledger finalization failure as distinct credential-free stages.
 - Stale notification delivery rows.
 - Unexpected server errors.
 

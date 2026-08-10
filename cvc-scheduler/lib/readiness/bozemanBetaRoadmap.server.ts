@@ -279,20 +279,17 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
   {
     id: "initial_assignment_email",
     title: "Initial assignment email",
-    statuses: ["mock_prototype_ui_exists", "not_implemented", "beta_critical"],
+    statuses: ["production_capable_now", "blocked_by_dependency", "beta_critical"],
     repositoryFindings: [
-      "Communications/reminders are mock-only and explicitly do not send real email",
-      "no email provider, queue, duplicate-send guard, delivery audit, or recipient resolution is implemented",
+      "12.22/12.22.1 provide explicit recipient resolution, schedule access, duplicate prevention, retry/stale recovery, and credential-free delivery audit",
+      "12.31 selects Resend and validates its server-only adapter through fake network responses without sending real email",
+      "real Resend domain sender secret deliverability and monitoring evidence remain unavailable",
       "response-link delivery remains separate from assignment-detail admin reveal/copy activation",
     ],
     betaNeed:
-      "Add a minimum reliable initial assignment notification path with recipient resolution, secure schedule/action link, Follow-up Contact, duplicate prevention, and observable failure handling.",
+      "Complete Resend operator configuration, privacy-first settings, safe monitoring, and controlled real deliverability proof for the implemented initial assignment path.",
     blockers: [
-      "email_provider_and_environment_configuration",
-      "recipient_resolution_from_volunteer_profiles",
-      "secure_link_generation_for_email",
-      "send_now_or_minimal_queue_decision",
-      "duplicate_send_prevention",
+      "resend_domain_sender_secret_and_deliverability_configuration",
       "delivery_attempt_observability",
     ],
     deferrable: [
@@ -351,7 +348,7 @@ export const bozemanBetaBlockers = [
   "volunteer_picker_and_assignment_create_cancel_ui",
   "secure_account_light_volunteer_schedule_access",
   "confirm_deny_integration_with_admin_visible_response_state",
-  "basic_initial_assignment_email_delivery_boundary",
+  "production_resend_configuration_deliverability_and_observability",
   "production_supabase_deployment_auth_email_domain_observability_backup_validation",
 ];
 
@@ -543,6 +540,6 @@ export function evaluateBozemanBetaLaunchReadiness() {
       bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
     old12_14Decision: bozemanBetaOld12_14Decision.decision,
     reason:
-      "The repo has strong persisted foundations and a stabilized Calendar read cutover, but the Bozeman beta still lacks provisioning, volunteer entry, Calendar writes, assignment UI, publication visibility, secure volunteer schedule access, Confirm/Deny integration, email delivery, production environment gates, and beta-critical UI polish.",
+      "The persisted scheduling loop, beta-critical UI, and Resend application adapter are implemented, but real Bozeman provisioning, Resend configuration and deliverability, observability, backup/restore proof, and a controlled pilot remain incomplete.",
   } as const;
 }

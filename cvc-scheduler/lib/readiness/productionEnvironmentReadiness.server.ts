@@ -102,9 +102,10 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "operator evidence confirms ADMIN_AUTH_MODE is enforced and production Supabase public URL/key are configured in Vercel Production only",
       "operator evidence confirms SUPABASE_SERVICE_ROLE_KEY is absent",
       "recording email transport writes to filesystem and must not be production delivery",
+      "12.31 adds RESEND_API_KEY as a server-only variable required only when the explicit resend transport is selected",
     ],
     requiredAction:
-      "Set production values only in encrypted hosting settings: production Supabase public URL/key, ADMIN_AUTH_MODE=enforced, HTTPS app origins, and disabled email transport until provider setup.",
+      "Keep current production values in encrypted hosting settings and keep email disabled until the verified Resend sender, server-only key, canonical notification origin, and monitoring are ready for the controlled deliverability test.",
   },
   {
     id: "auth_redirects",
@@ -139,14 +140,15 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   {
     id: "email_provider",
     title: "Production email provider",
-    status: "blocked",
+    status: "configuration_required",
     blocking: true,
     evidence: [
-      "12.22/12.22.1 validate disabled/recording transport only",
-      "no provider SDK, sender domain, provider secret, or real deliverability proof exists",
+      "12.22/12.22.1 validate the authoritative claim/finalize ledger and recording transport",
+      "12.31 selects Resend and validates a direct server-only HTTPS adapter, provider idempotency, safe response handling, and fail-closed configuration without real network delivery",
+      "no verified Resend sender domain, sender identity, production API key, Vercel secret configuration, real deliverability proof, or provider monitoring evidence exists",
     ],
     requiredAction:
-      "Keep production email disabled until a separate reviewed provider slice approves provider, sender domain, sender identity, secret, monitoring, and test-send policy.",
+      "Keep production email disabled until operators verify the Resend domain and sender, keep open/click tracking disabled, configure the server-only key and canonical origin in Vercel, establish monitoring and an approved test-recipient policy, then record real deliverability proof.",
   },
   {
     id: "smoke_test",
@@ -229,6 +231,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO until email provider, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence exist. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO until Resend domain/sender/secret configuration and real deliverability proof, observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence exist. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

@@ -1,5 +1,19 @@
 # Project History
 
+## Iteration 12.31 - Production Transactional Email Provider Integration
+
+Summary:
+- Selected Resend as Project Local's initial production transactional email provider and added a direct server-only HTTPS transport behind the existing 12.22 initial-assignment email boundary. Disabled and deterministic recording transports remain intact; `resend` requires explicit origin, sender, and server-only `RESEND_API_KEY` configuration and never falls back silently.
+- Added concise Project Local text and HTML messages using only the existing persisted volunteer, workspace, assignment, schedule, access-link, and Follow-up Contact contract. No marketing, future features, analytics pixel, or promotional content was added; Resend open/click tracking remains an operator requirement to keep disabled.
+- Added deterministic Resend idempotency from the existing non-secret ledger key as defense in depth while retaining `assignment_notification_deliveries` as the authoritative duplicate/retry/stale-recovery boundary. Only a provider id matching the existing bounded ledger shape can be finalized; HTTP, network, malformed-response, and configuration failures stay bounded and credential-free.
+- Added credential-free application-boundary stage information so later observability can distinguish claim failure, provider failure, finalization failure, schedule-access failure, and successful delivery without exposing raw provider details, recipients, bearers, full schedule URLs, API keys, authorization headers, or stack traces.
+
+Validation and boundaries:
+- Added `npm run test:assignment-notification-email:resend`, which uses injected fake HTTP responses to prove disabled/recording/resend configuration, request mapping, sender/recipient/content, in-memory schedule-link delivery, deterministic provider idempotency, safe provider-id acceptance, malformed/non-2xx/network failure handling, and non-leaking output without contacting Resend.
+- Preserved the existing local 12.22 claim/finalize, duplicate, failure-retry, stale-sending, schedule-access secrecy, and recording regression. No schema, migration, RPC, RLS, generated type, Auth, cookie/token, publication, assignment, volunteer-response, approved 12.30.1 UI, staging/production data, Vercel, DNS, provider account/domain/key, or external infrastructure changed.
+- Final local checks passed for the focused Resend adapter, assignment-notification database boundary, launch gate, production-environment readiness, beta roadmap, lint, TypeScript, production build, and diff whitespace. The disposable local Supabase stack was stopped and its temporary port configuration was fully restored.
+- No real email was sent. Domain verification, sender verification, API-key setup, Vercel encrypted-secret configuration, real deliverability proof, and monitoring remain operator-required. Launch remains `NO-GO`.
+
 ## Iteration 12.30.1 - Beta UI Visual Direction Correction
 
 Summary:

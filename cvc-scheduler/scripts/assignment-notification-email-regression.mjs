@@ -447,6 +447,9 @@ async function verifyNotifications(containerName, users) {
   assert.equal(result.sentCount, 1);
   assert.equal(result.skippedCount, 1);
   assert.equal(result.failedCount, 0);
+  assert.equal(result.providerFailureCount, 0);
+  assert.equal(result.finalizationFailureCount, 0);
+  assert.equal(result.scheduleAccessFailureCount, 0);
 
   const lines = (await readFile(recordingPath, "utf8")).trim().split(/\r?\n/);
   assert.equal(lines.length, 1, "Exactly one email provider call should be recorded.");
@@ -489,6 +492,50 @@ async function verifyNotifications(containerName, users) {
   assert.equal(duplicate.alreadySentCount, 1);
   const duplicateLines = (await readFile(recordingPath, "utf8")).trim().split(/\r?\n/);
   assert.equal(duplicateLines.length, 1, "Duplicate send must not call the provider again.");
+
+  runPsql(
+    containerName,
+    `update public.volunteer_profiles
+     set email = ${sqlText(`${fixture.namespace}-retry@example.invalid`)}
+     where id = ${sqlUuid(fixture.volunteers.readyNoEmail)};`,
+  );
+  const failingRecordingConfig = readInitialAssignmentEmailConfiguration({
+    ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT: "recording",
+    ASSIGNMENT_NOTIFICATION_BASE_URL: "http://127.0.0.1:3000",
+    ASSIGNMENT_NOTIFICATION_FROM: "scheduler@example.invalid",
+    ASSIGNMENT_NOTIFICATION_RECORDING_PATH: path.join(
+      tempDir,
+      "missing-directory",
+      "messages.jsonl",
+    ),
+  });
+  assert(failingRecordingConfig.ok);
+  const providerFailure = await sendInitialAssignmentNotificationsForItemWithClient(
+    users.scheduler.client,
+    { calendarItemId: fixture.items.published },
+    failingRecordingConfig,
+  );
+  assert.equal(providerFailure.failedCount, 1);
+  assert.equal(providerFailure.providerFailureCount, 1);
+  assert.equal(providerFailure.finalizationFailureCount, 0);
+  assert.equal(providerFailure.tokenRevokedAfterFailureCount, 1);
+
+  const retry = await sendInitialAssignmentNotificationsForItemWithClient(
+    users.scheduler.client,
+    { calendarItemId: fixture.items.published },
+    config,
+  );
+  assert.equal(retry.sentCount, 1, "A safely finalized provider failure must remain retryable.");
+  assert.equal(retry.providerFailureCount, 0);
+  const retriedDelivery = queryJson(
+    containerName,
+    `select delivery_state, attempt_count, provider_message_id is not null as has_provider_id
+     from public.assignment_notification_deliveries
+     where calendar_assignment_id = ${sqlUuid(fixture.assignments.noEmail)}`,
+  );
+  assert.equal(retriedDelivery[0]?.delivery_state, "sent");
+  assert.equal(retriedDelivery[0]?.attempt_count, 3);
+  assert.equal(retriedDelivery[0]?.has_provider_id, true);
 
   await expectFailure("view-only contact send", () =>
     sendInitialAssignmentNotificationsForItemWithClient(
@@ -632,7 +679,7 @@ async function main() {
   assert(cleanupCompleted, "Cleanup did not complete.");
   if (process.exitCode) return;
   console.log(
-    "Validated initial assignment email claim/finalize delivery ledger, explicit send boundary, schedule access issuance, duplicate prevention, Follow-up Contact eligibility, direct table denial, safe recording transport, and zero disposable residue.",
+    "Validated initial assignment email claim/finalize delivery ledger, explicit send boundary, schedule access issuance, duplicate prevention, provider failure retry, Follow-up Contact eligibility, safe stage counters, direct table denial, recording transport, and zero disposable residue.",
   );
 }
 

@@ -12,7 +12,7 @@ Current launch conclusion: `NO-GO`.
 
 - Loopback Supabase only.
 - Loopback production preview only for browser validation.
-- Recording email transport only.
+- Disabled by default; recording transport only for normal local/QA delivery-ledger validation, with fake-network Resend adapter regression.
 - Disposable QA fixtures only.
 
 ### Staging
@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation, but operator key creation, safe secret setup, first encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, restore testing, email provider/sender setup and deliverability, observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation, and 12.31 selects Resend and validates the server-only application adapter without real email. Operator backup setup/proof, Resend domain/sender/key/Vercel configuration, real deliverability proof, observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -100,13 +100,14 @@ Publishing is not emailing. Assigning is not emailing. Email failure does not un
 
 ## Email
 
-Required production decisions before launch:
+Resend is the selected production provider and its server-only application transport is validated. Required operator evidence before launch:
 
-- Provider.
-- Verified sender domain.
-- Sender identity.
-- Provider secret.
-- Production base URL.
+- Verified Resend sender domain and sender identity.
+- A least-privilege Resend API key stored only as server-side `RESEND_API_KEY` in encrypted hosting settings.
+- `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend` only after every activation check is ready.
+- `ASSIGNMENT_NOTIFICATION_BASE_URL=https://projectlocal.app` and an approved verified `ASSIGNMENT_NOTIFICATION_FROM` value.
+- `ASSIGNMENT_NOTIFICATION_RECORDING_PATH` absent from production.
+- Resend open/click tracking left disabled for this transactional beta.
 - Test recipient policy.
 - Deliverability verification.
 - Failure monitoring.
@@ -115,7 +116,7 @@ Required production decisions before launch:
 
 Do not log credentials, tokens, full schedule URLs, or raw provider payloads.
 
-The current validated transport is recording-only. Recording validation is not production deliverability proof.
+The validated boundary supports disabled, recording, and Resend transports. The 12.31 Resend regression uses injected fake HTTP responses, not the real provider network; application integration is not production configuration or deliverability proof. Unknown transports and incomplete Resend configuration fail closed with no fallback.
 
 ## Observability
 
@@ -190,6 +191,7 @@ Use the current package scripts for focused validation, including:
 - `npm run test:volunteer-profile-management:browser`
 - `npm run test:volunteer-schedule-responses:browser`
 - `npm run test:assignment-notification-email:hosted`
+- `npm run test:assignment-notification-email:resend`
 
 Hosted launch verification requires:
 
