@@ -30,6 +30,8 @@ export const BOZEMAN_BETA_LAUNCH_GATE_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true
 export const BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
+export const BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
+export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = false;
 export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
 export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
   "docs/design/approved-project-local-ui";
@@ -138,6 +140,20 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "Run 12.23 hosted launch-gate verification against the same staging target before launch decision review.",
   },
   {
+    id: "application_observability_foundation",
+    title: "Privacy-safe application observability foundation",
+    status: "proven",
+    blocking: false,
+    evidence: [
+      "12.32 adds a server-only bounded structured event schema with allowlisted event names and failure codes",
+      "Auth, Calendar, Volunteer, assignment, schedule-access, volunteer-response, and assignment-email boundaries emit credential-free operational outcomes",
+      "assignment-email claim, schedule-access, provider, finalization, sent, and stale-sending outcomes remain distinguishable",
+      "deterministic regression proves redaction constraints, non-mutating stale detection, no Client Component import, and logging-failure isolation",
+    ],
+    requiredAction:
+      "Preserve the 12.32 application event contract while completing the separate operator runtime visibility, alert ownership, alert-condition, stale-check cadence, and controlled production observation gate.",
+  },
+  {
     id: "controlled_pilot",
     title: "Controlled Bozeman beta pilot",
     status: "pilot_required",
@@ -156,11 +172,12 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     status: "configuration_required",
     blocking: true,
     evidence: [
-      "No production target was accessed by 12.23",
+      "12.32 application instrumentation is proven locally without production or staging access",
+      "operator runtime event visibility, alert ownership, stale-delivery check cadence, and controlled production observation are not proven",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
-      "Document and verify production Supabase, deployment, domain/base URL, redirect allowlist, secrets inventory, logging, alerts, backups, restore/rollback procedure, and fallback decision.",
+      "Verify production runtime/deployment event visibility, alert and incident ownership, actionable conditions, stale-delivery check cadence, one controlled privacy-safe observation, backups, restore/rollback procedure, and fallback decision.",
   },
   {
     id: "production_launch_action",
@@ -191,7 +208,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, email-failure monitoring, backup/recovery, provisioning, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
+    "The core persisted scheduling loop, privacy-safe application observability foundation, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, operator runtime visibility and alerting, backup/recovery, provisioning, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

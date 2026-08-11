@@ -9,6 +9,8 @@ import {
   BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN,
   BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
   BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN,
+  BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BELGRADE_REMAINS_SHEETS_FALLBACK,
   bozemanBetaAuditDomains,
   bozemanBetaCriticalPath,
@@ -57,6 +59,8 @@ assert.equal(BOZEMAN_BETA_PRINCIPLE, "cut_features_not_integrity");
 assert.equal(BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN, true);
 assert.equal(BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
 assert.equal(BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
+assert.equal(BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
 assert.match(roadmapSource, /^import "server-only";/);
 assert.doesNotMatch(
   roadmapSource,
@@ -75,6 +79,8 @@ assert.equal(description.realEmailSendingAvailable, false);
 assert.equal(description.providerConfigurationProven, true);
 assert.equal(description.providerDirectDeliverabilityProven, true);
 assert.equal(description.applicationEmailDeliveryProven, false);
+assert.equal(description.applicationObservabilityFoundationProven, true);
+assert.equal(description.operatorObservabilityProven, false);
 assert.equal(description.productionDataAccessAvailable, false);
 assert.equal(description.domainCount, 11);
 

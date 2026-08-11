@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Production launch remains unavailable until application-driven email/monitoring proof, backup/restore, observability, real operator provisioning, and controlled pilot gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Iteration 12.32 proves the local privacy-safe application observability foundation, not operator production visibility or alerting. Production launch remains unavailable until application-driven email proof, operator observability, backup/restore, real operator provisioning, and controlled pilot gates pass.
 
 Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records operator evidence that Supabase-managed backups are unavailable on the production Free plan, that Supabase-managed restore-to-new-project requires Pro plus physical backups, and that PITR is unavailable and intentionally not required for the initial beta. Supabase Pro is optional. Iteration 12.29 adds the Windows-first independent encrypted backup automation foundation and [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md), but no production backup has run and no restore has passed.
 
@@ -216,6 +216,8 @@ Do not add broad CSP or HSTS in 12.24. Add HSTS only after the stable HTTPS prod
 
 ## Logging and observability
 
+12.32 application instrumentation is proven. The stable event model, privacy denylist, assignment-email stages, non-mutating stale detector, and remaining operator gate are canonical in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). Structured events use normal server runtime logging and contain only catalogued fields; logging failure cannot change a mutation or delivery outcome.
+
 Minimum production signals:
 
 - Deployment/build failure.
@@ -246,7 +248,7 @@ Safe logging rules:
 - No questionnaire answers or emergency-contact data.
 - No raw stack trace containing environment values.
 
-Observability remains `configuration_required` until production ownership and alerting are configured.
+Application observability is proven, but overall observability remains `configuration_required` until production runtime/deployment visibility, alert and incident ownership, actionable conditions, an authorized stale-delivery read/check cadence, and one controlled observable-event proof are configured and recorded.
 
 ## Backup and recovery
 

@@ -5,7 +5,10 @@ import {
   cancelAssignmentWithClient,
   createAssignmentsBatchWithClient,
 } from "@/lib/assignments/server";
-import { sendInitialAssignmentNotificationsForItemWithClient } from "@/lib/calendar/assignmentNotifications.server";
+import {
+  InitialAssignmentNotificationBoundaryError,
+  sendInitialAssignmentNotificationsForItemWithClient,
+} from "@/lib/calendar/assignmentNotifications.server";
 import {
   readCalendarAssignmentMutationRouteContext,
   readCalendarMutationRouteContext,
@@ -21,6 +24,10 @@ import {
   updateCalendarOneOffTimedItemWithClient,
   updateCalendarPresetTimedItemWithClient,
 } from "@/lib/calendar/server";
+import {
+  emitOperationalEvent,
+  type OperationalEventName,
+} from "@/lib/observability/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -65,14 +72,40 @@ function calendarSourceModeFromFormData(formData: FormData) {
   return formData.get("sourceMode") === "preset" ? "preset" : "oneOff";
 }
 
+function observeMutationFailure(
+  event: Extract<
+    OperationalEventName,
+    | "calendar.create_failure"
+    | "calendar.update_failure"
+    | "calendar.publish_failure"
+    | "assignment.create_failure"
+    | "assignment.cancel_failure"
+    | "assignment_email.request_failure"
+  >,
+  notice: "unavailable" | "validation" | "error",
+) {
+  emitOperationalEvent({
+    event,
+    failureCode:
+      notice === "unavailable"
+        ? "context_unavailable"
+        : notice === "validation"
+          ? "validation_failed"
+          : event === "assignment_email.request_failure"
+            ? "unexpected_failure"
+            : "persistence_failed",
+  });
+}
+
 async function createCalendarItemAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "created" = "error";
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("calendar.create_failure", "unavailable");
     } else {
       const input =
         calendarSourceModeFromFormData(formData) === "preset"
@@ -88,6 +121,10 @@ async function createCalendarItemAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    observeMutationFailure(
+      "calendar.create_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/calendar");
@@ -97,11 +134,12 @@ async function createCalendarItemAction(formData: FormData) {
 async function updateCalendarItemAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "updated" = "error";
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("calendar.update_failure", "unavailable");
     } else {
       if (calendarSourceModeFromFormData(formData) === "preset") {
         const input = calendarPresetTimedUpdateInputFromFormData(formData);
@@ -116,6 +154,10 @@ async function updateCalendarItemAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    observeMutationFailure(
+      "calendar.update_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/calendar");
@@ -125,11 +167,12 @@ async function updateCalendarItemAction(formData: FormData) {
 async function createCalendarAssignmentsAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "assigned" = "error";
   try {
     const context = await readCalendarAssignmentMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("assignment.create_failure", "unavailable");
     } else {
       const calendarItemId = formData.get("calendarItemId");
       const volunteerProfileIds = formData.getAll("volunteerProfileIds");
@@ -144,6 +187,10 @@ async function createCalendarAssignmentsAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    observeMutationFailure(
+      "assignment.create_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/calendar");
@@ -153,11 +200,16 @@ async function createCalendarAssignmentsAction(formData: FormData) {
 async function cancelCalendarAssignmentAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice:
+    | "unavailable"
+    | "validation"
+    | "error"
+    | "assignment_canceled" = "error";
   try {
     const context = await readCalendarAssignmentMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("assignment.cancel_failure", "unavailable");
     } else {
       await cancelAssignmentWithClient(context.supabase, {
         assignmentId: formData.get("assignmentId"),
@@ -168,6 +220,10 @@ async function cancelCalendarAssignmentAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    observeMutationFailure(
+      "assignment.cancel_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/calendar");
@@ -177,11 +233,12 @@ async function cancelCalendarAssignmentAction(formData: FormData) {
 async function publishCalendarItemAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "published" = "error";
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("calendar.publish_failure", "unavailable");
     } else {
       await publishCalendarItemWithClient(context.supabase, {
         calendarItemId: formData.get("calendarItemId"),
@@ -192,6 +249,10 @@ async function publishCalendarItemAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    observeMutationFailure(
+      "calendar.publish_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/calendar");
@@ -201,11 +262,18 @@ async function publishCalendarItemAction(formData: FormData) {
 async function sendInitialAssignmentNotificationsAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice:
+    | "unavailable"
+    | "validation"
+    | "error"
+    | "assignment_email_sent"
+    | "assignment_email_already_sent"
+    | "assignment_email_partial" = "error";
   try {
     const context = await readCalendarAssignmentMutationRouteContext();
     if (!context) {
       notice = "unavailable";
+      observeMutationFailure("assignment_email.request_failure", "unavailable");
     } else {
       const result = await sendInitialAssignmentNotificationsForItemWithClient(
         context.supabase,
@@ -227,6 +295,12 @@ async function sendInitialAssignmentNotificationsAction(formData: FormData) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
       ? "validation"
       : "error";
+    if (!(error instanceof InitialAssignmentNotificationBoundaryError)) {
+      observeMutationFailure(
+        "assignment_email.request_failure",
+        notice === "validation" ? "validation" : "error",
+      );
+    }
   }
 
   revalidatePath("/admin/calendar");

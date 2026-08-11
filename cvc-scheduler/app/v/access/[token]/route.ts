@@ -4,6 +4,7 @@ import {
   readVolunteerSchedule,
   volunteerScheduleAccessCookie,
 } from "@/lib/volunteerScheduleAccess/server";
+import { emitOperationalEvent } from "@/lib/observability/server";
 import { VolunteerScheduleAccessValidationError } from "@/lib/volunteerScheduleAccess/token";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const schedule = await readVolunteerSchedule({ token });
     if (schedule.kind === "unavailable") {
+      emitOperationalEvent({
+        event: "schedule_access.exchange_failure",
+        failureCode: "read_unavailable",
+      });
       return applySafeHeaders(NextResponse.redirect(redirectTarget, 302));
     }
 
@@ -50,8 +55,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return applySafeHeaders(response);
   } catch (error) {
     if (error instanceof VolunteerScheduleAccessValidationError) {
+      emitOperationalEvent({
+        event: "schedule_access.exchange_failure",
+        failureCode: "invalid_credential",
+      });
       return applySafeHeaders(NextResponse.redirect(redirectTarget, 302));
     }
+    emitOperationalEvent({
+      event: "schedule_access.exchange_failure",
+      failureCode: "unexpected_failure",
+    });
     return applySafeHeaders(NextResponse.redirect(redirectTarget, 302));
   }
 }

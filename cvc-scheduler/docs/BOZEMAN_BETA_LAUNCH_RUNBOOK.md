@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation, and 12.31 selects Resend and validates the server-only application adapter. August 10, 2026 operator evidence proves the Resend domain/sender/restricted-key/Vercel configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. The direct dashboard test did not use Project Local's Initial email action or ledger, and application transport is currently absent/disabled after a Ready/Latest redeployment. Operator backup setup/proof, application-driven email and monitoring proof, broader observability, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation, 12.31 selects Resend and validates the server-only application adapter, and 12.32 proves the privacy-safe application observability foundation. August 10, 2026 operator evidence proves the Resend domain/sender/restricted-key/Vercel configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. The direct dashboard test did not use Project Local's Initial email action or ledger, and application transport is currently absent/disabled after a Ready/Latest redeployment. Operator backup setup/proof, application-driven email proof, production runtime visibility/alerting, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -126,6 +126,21 @@ The validated boundary supports disabled, recording, and Resend transports. The 
 
 ## Observability
 
+Application foundation proven in 12.32:
+
+- Server-only, one-line structured runtime events with catalog-derived severity/category/stage/outcome and allowlisted failure codes.
+- Representative Auth, Calendar, Volunteer, assignment, schedule-access, volunteer-response, and assignment-email instrumentation.
+- Distinct assignment-email claim, schedule-access, provider, finalization, and sent outcomes.
+- Route-unused, non-mutating stale-`sending` detection over an injected minimal projection.
+- Deterministic capture tests, strict privacy rejection, and logging-failure isolation.
+
+Operator requirements still blocking:
+
+- Record where Vercel runtime events and deployment failures are reviewed.
+- Name alert and incident owners and define actionable conditions.
+- Define the authorized stale-delivery read path, check cadence, threshold, and response.
+- Prove one controlled production-safe event is actually visible without secret or PII exposure.
+
 Monitor:
 
 - Auth/sign-in failure.
@@ -140,6 +155,8 @@ Monitor:
 - Deployment health.
 
 Logs must not include credentials, tokens, full schedule URLs, raw provider payloads, raw Supabase/provider errors, SQL, stack traces with secrets, grants, or capability arrays.
+
+The canonical event/privacy contract and remaining gate are in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). Application code proof does not by itself prove operator visibility or alerts.
 
 ## Backup and recovery
 

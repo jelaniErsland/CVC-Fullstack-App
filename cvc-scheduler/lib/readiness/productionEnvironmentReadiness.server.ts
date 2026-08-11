@@ -31,6 +31,8 @@ export const PRODUCTION_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true;
 export const PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const PRODUCTION_APPLICATION_EMAIL_ENABLED = false;
 export const PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
+export const PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
+export const PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN = false;
 
 export const productionEnvironmentKnownStagingTarget = {
   name: "project-local-staging",
@@ -184,11 +186,14 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     status: "configuration_required",
     blocking: true,
     evidence: [
-      "launch runbook lists runtime failure signals",
-      "no production logging/alerting evidence exists",
+      "12.32 adds a server-only allowlisted structured event model for beta-critical failures and high-value assignment-email delivery success",
+      "12.32 distinguishes assignment-email configuration, claim, schedule-access, provider, and finalization failures plus successful delivery without logging PII, credentials, URLs, raw errors, or provider payloads",
+      "12.32 adds a deterministic route-unused non-mutating stale-sending detection seam and regression proof",
+      "application events write naturally to server runtime logs and logging failure cannot change product behavior",
+      "production runtime event visibility, alert ownership, alert conditions, stale-delivery check cadence, deployment failure visibility, and controlled observable-event proof remain unproven",
     ],
     requiredAction:
-      "Configure deployment/runtime error visibility and alert ownership without logging credentials, tokens, raw provider payloads, SQL, grants, or capability arrays.",
+      "Define where Vercel runtime/deployment events are reviewed, name the alert and incident owners, set actionable failure conditions and stale-delivery check cadence, and prove one controlled production-safe event is visible without exposing credentials, tokens, PII, provider payloads, SQL, grants, or capability arrays.",
   },
   {
     id: "backup_recovery",
@@ -241,6 +246,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though Resend domain/sender/secret configuration and direct provider-level inbox delivery are proven. Project Local application-driven delivery and email-failure monitoring, broader observability, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application observability foundation, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, operator runtime visibility and alerting, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

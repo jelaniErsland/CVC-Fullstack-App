@@ -98,6 +98,15 @@ async function main() {
     }
   }
 
+  const observability = productionRecoveryReadinessItems.find(
+    (item) => item.id === "observability_alerting",
+  );
+  assert(observability, "Recovery readiness is missing observability/alerting.");
+  assert.equal(observability.status, "configuration_required");
+  assert.equal(observability.blocking, true);
+  assert.match(JSON.stringify(observability.evidence), /12\.32/);
+  assert.match(JSON.stringify(observability.evidence), /no operator stale-delivery check cadence/i);
+
   const [
     contract,
     packageJson,

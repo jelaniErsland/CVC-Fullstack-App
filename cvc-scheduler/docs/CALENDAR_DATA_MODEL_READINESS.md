@@ -306,6 +306,16 @@ The launch gate remains separate from Calendar persistence. `lib/readiness/bozem
 
 August 10, 2026 operator evidence later proves the verified Resend domain/sender, restricted production key in encrypted Vercel settings, canonical base URL/sender configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. That dashboard test did not use Calendar's Initial email action or the delivery-ledger/schedule-access flow. Application transport is currently absent/disabled, no production Calendar/assignment/delivery row was created, and application-driven claim/provider/finalize, duplicate, schedule-link, retry/failure, and monitoring proof remain launch blockers.
 
+## 12.32 Assignment-email observability and stale-delivery detection
+
+12.32 does not change the Calendar schema, migration level, notification RPCs, eligibility, claim lease, finalization, duplicate/retry, schedule-access, publication, assignment, or response semantics. `assignment_notification_deliveries` remains the authoritative delivery state.
+
+The server-only send boundary now emits catalogued credential-free outcomes for configuration, claim, schedule-access issue/revoke, provider send, finalization, and successful finalized delivery. Correlation uses only an existing validated UUID; events never contain recipient email, volunteer name, provider message id or payload, schedule bearer or full URL, API key, authorization header, raw database/provider error, SQL, or stack trace.
+
+The new route-unused stale detector accepts an injected bounded projection containing delivery UUID, `sending` state, and expiry only. It identifies expired `sending` rows relative to an injected clock and may emit a safe detection event, but it has no Supabase client/query/RPC, service-role access, retry, send, cron, background job, or ledger mutation. A later reviewed operator slice must establish the authorized production read path and cadence.
+
+`npm run test:production-observability` proves the event/privacy contract, logging-failure isolation, stage distinction, sent outcome, and non-mutating stale detection with no external service. Application observability is proven; operator runtime visibility and alerting plus the controlled app-driven production email test remain blocking. Launch remains `NO-GO`.
+
 ## 12.20.1 Hosted Staging Volunteer Schedule Access Validation
 
 12.20.1 completes the hosted non-production validation gate for migration `20260714122000_volunteer_schedule_access.sql`, RPCs `issue_volunteer_schedule_access`, `revoke_volunteer_schedule_access`, and `read_volunteer_schedule`, hosted generated public-schema type parity, and hosted-backed `/v/access/[token]` / `/v/schedule` route behavior.

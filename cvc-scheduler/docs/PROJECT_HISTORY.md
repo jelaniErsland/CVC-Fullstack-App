@@ -1,5 +1,29 @@
 # Project History
 
+## Iteration 12.32 - Production Observability Foundation
+
+Summary:
+- Added a server-only structured operational event seam with a small stable schema, catalog-derived severity/category/stage/outcome, allowlisted failure codes, optional UUID correlation, deterministic clock/sink injection, and one-line server runtime output suitable for Vercel logs.
+- Instrumented representative Auth callback, Calendar, Volunteer, assignment, volunteer schedule-access, individual response, Confirm All, and assignment-email boundaries. Email configuration/claim/schedule-access/provider/finalization failure and finalized send success remain distinguishable without PII, credentials, URLs, provider payloads, or raw errors.
+- Added a server-only, route-unused, non-mutating stale-`sending` detector over an injected minimal projection. It creates no client/query/RPC, retry, send, cron, background job, or service-role path.
+- Added `npm run test:production-observability` to prove bounded event shapes, input rejection/redaction, server/client separation, logging-failure isolation, email-stage outcomes, safe success, stale detection, representative wiring, and no observability persistence.
+
+Boundaries and readiness:
+- The existing `assignment_notification_deliveries` ledger remains authoritative. No schema, migration, RPC, RLS, Auth/capability, workspace, token/cookie, publication, assignment, volunteer-response, email delivery, UI, production/staging, Vercel, DNS, Resend, backup/recovery, or product-data semantics changed.
+- No production/staging access, real email, provider call, external telemetry, monitoring service, webhook, alert, or environment change occurred.
+- The application observability foundation is proven locally. Operator production runtime/deployment visibility, alert and incident ownership, actionable conditions, authorized stale-delivery read path/check cadence, and one controlled privacy-safe observation remain blocking. Launch remains `NO-GO`.
+
+Primary files:
+- `lib/observability/server.ts`
+- `lib/observability/staleAssignmentDeliveries.server.ts`
+- `scripts/production-observability-regression.mjs`
+- [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md)
+- Representative server routes/actions and assignment-email boundary
+- Canonical launch/readiness contracts and documentation
+
+Verification:
+- Focused observability, email, Calendar, Volunteer, schedule-access/response, readiness, lint, TypeScript, build, and diff validation is required for review handoff.
+
 ## Iteration 12.31.1 - Resend Operator Configuration and Provider Deliverability Evidence
 
 Summary:

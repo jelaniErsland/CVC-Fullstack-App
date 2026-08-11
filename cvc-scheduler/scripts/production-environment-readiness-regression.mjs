@@ -18,6 +18,8 @@ import {
   PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
   PRODUCTION_APPLICATION_EMAIL_ENABLED,
   PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN,
+  PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN,
   productionEnvironmentKnownStagingTarget,
   productionEnvironmentReadinessItems,
   productionEnvironmentReadinessSummary,
@@ -48,6 +50,8 @@ async function main() {
   assert.equal(PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
   assert.equal(PRODUCTION_APPLICATION_EMAIL_ENABLED, false);
   assert.equal(PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
+  assert.equal(PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+  assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, false);
   assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
   assert.equal(productionEnvironmentKnownStagingTarget.ref, "kfuujcfxoayukywvtaeh");
@@ -100,6 +104,15 @@ async function main() {
   assert.match(JSON.stringify(emailProvider.evidence), /direct Resend-dashboard message/i);
   assert.match(JSON.stringify(emailProvider.evidence), /did not use Project Local's Initial email action/i);
   assert.match(JSON.stringify(emailProvider.evidence), /application email is currently disabled/i);
+
+  const observability = productionEnvironmentReadinessItems.find(
+    (item) => item.id === "observability",
+  );
+  assert(observability, "Production readiness is missing observability.");
+  assert.equal(observability.status, "configuration_required");
+  assert.equal(observability.blocking, true);
+  assert.match(JSON.stringify(observability.evidence), /12\.32/);
+  assert.match(JSON.stringify(observability.evidence), /production runtime event visibility/i);
 
   const [
     contract,

@@ -13,6 +13,8 @@ import {
   BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
   BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED,
   BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN,
+  BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER,
   BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE,
@@ -49,6 +51,8 @@ async function main() {
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
+  assert.equal(BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -80,6 +84,7 @@ async function main() {
     "initial_assignment_email_boundary",
     "beta_critical_ui",
     "hosted_staging_validation",
+    "application_observability_foundation",
     "controlled_pilot",
     "production_environment",
     "production_launch_action",
@@ -118,6 +123,14 @@ async function main() {
   assert.match(JSON.stringify(emailGate.evidence), /direct Resend-dashboard delivery/i);
   assert.match(JSON.stringify(emailGate.evidence), /did not use Project Local's Initial email action/i);
   assert.match(JSON.stringify(emailGate.evidence), /application email is disabled/i);
+
+  const observabilityFoundation = bozemanBetaLaunchGateItems.find(
+    (item) => item.id === "application_observability_foundation",
+  );
+  assert(observabilityFoundation, "Launch gate is missing application observability.");
+  assert.equal(observabilityFoundation.status, "proven");
+  assert.equal(observabilityFoundation.blocking, false);
+  assert.match(JSON.stringify(observabilityFoundation.evidence), /12\.32/);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

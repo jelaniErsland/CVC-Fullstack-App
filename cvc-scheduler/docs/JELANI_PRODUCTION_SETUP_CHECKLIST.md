@@ -109,11 +109,21 @@ Creating an Auth user does not grant app access. App access requires:
 ### Project Local application email proof (still required)
 
 - Complete backup/recovery and provisioning prerequisites before creating the controlled production-data test case.
-- Configure safe monitoring for claim, provider, finalization, schedule-access, and stale-delivery failures.
+- Use the proven 12.32 safe events for claim, provider, finalization, schedule-access, and stale-delivery failures; complete the operator visibility and alerting proof below.
 - Approve a test recipient and a separately reviewed app-driven test procedure.
 - Only during that approved procedure, set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and use the real Initial email action.
 - Prove the production claim/provider/finalize round trip, inbox delivery, app-generated schedule-access link, duplicate prevention, and retry/failure operations without recording secrets or raw provider payloads.
 - Return the transport to empty/disabled immediately if the reviewed procedure does not authorize continued application sending.
+
+### Operator observability (still required)
+
+- Application instrumentation is proven in 12.32; do not add a telemetry key, webhook, or browser tracking script for this gate.
+- Record where Vercel production runtime events and deployment failures are reviewed.
+- Name the alert owner and incident-response owner.
+- Record which Auth, Calendar, Volunteer, assignment, schedule-access, response, assignment-email, unexpected-runtime, and deployment failures require action.
+- Define the authorized stale-delivery read path, check cadence, threshold, and escalation procedure. The 12.32 detector is route-unused and does not query production.
+- Run one separately reviewed controlled privacy-safe event proof and record that the event is visible without recipient data, credentials, tokens, URLs, provider payloads, raw errors, SQL, grants, or capability arrays.
+- Keep the overall observability launch gate blocking until every item above is evidenced. See [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md).
 
 ## Phase G - Verification
 

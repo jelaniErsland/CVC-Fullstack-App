@@ -8,6 +8,7 @@ import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { VolunteerScheduleAccessRefresh } from "@/components/VolunteerScheduleAccessRefresh";
 import { VolunteerScheduleClient } from "@/components/VolunteerScheduleClient";
+import { emitOperationalEvent } from "@/lib/observability/server";
 import {
   readVolunteerSchedule,
   volunteerScheduleAccessCookie,
@@ -127,6 +128,10 @@ export default async function VolunteerSchedulePage({
   try {
     schedule = await readVolunteerSchedule({ token });
   } catch {
+    emitOperationalEvent({
+      event: "schedule_access.exchange_failure",
+      failureCode: "unexpected_failure",
+    });
     schedule = { kind: "unavailable" } as const;
   }
 

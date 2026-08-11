@@ -1,6 +1,6 @@
 # Production Environment Inventory
 
-This inventory began in Iteration 12.24. Iteration 12.31 selects Resend and adds its server-only application adapter. August 10, 2026 operator evidence confirms the provider/domain/sender/Vercel values and direct provider-level Gmail delivery while preserving a disabled Project Local application transport and recording no secret values.
+This inventory began in Iteration 12.24. Iteration 12.31 selects Resend and adds its server-only application adapter. August 10, 2026 operator evidence confirms the provider/domain/sender/Vercel values and direct provider-level Gmail delivery while preserving a disabled Project Local application transport and recording no secret values. Iteration 12.32 adds no variable: its server-only structured events use normal runtime logs, and no telemetry endpoint, token, webhook, or monitoring secret is configured.
 
 Current launch conclusion: `NO-GO`.
 
@@ -63,8 +63,9 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 2. Verify the deployment project does not reference staging ref `kfuujcfxoayukywvtaeh`.
 3. Verify `ADMIN_AUTH_MODE=enforced`.
 4. Verify production application email remains disabled until the backup/recovery, provisioning, monitoring, and controlled app-driven test requirements in the production deployment runbook are complete.
-5. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
-6. Stop on any mismatch; do not “fix” by copying staging values.
+5. Verify the operator observability plan identifies the runtime/deployment log location, alert/incident owners, actionable conditions, stale-delivery read path/check cadence, and controlled privacy-safe proof; 12.32 adds no environment variable or external sink.
+6. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
+7. Stop on any mismatch; do not “fix” by copying staging values.
 
 The 12.25 command remains the documented bootstrap zero-state gate:
 

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isSupabaseAuthConfigured } from "@/lib/auth/config";
 import { getSafeAdminRedirect } from "@/lib/auth/redirects";
+import { emitOperationalEvent } from "@/lib/observability/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -9,6 +10,10 @@ export async function GET(request: NextRequest) {
   const nextPath = getSafeAdminRedirect(request.nextUrl.searchParams.get("next"));
 
   if (!code || !isSupabaseAuthConfigured()) {
+    emitOperationalEvent({
+      event: "auth.callback_failure",
+      failureCode: code ? "configuration_unavailable" : "missing_code",
+    });
     return NextResponse.redirect(
       new URL("/admin/login?error=callback", request.url),
     );
@@ -18,6 +23,10 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    emitOperationalEvent({
+      event: "auth.callback_failure",
+      failureCode: "exchange_failed",
+    });
     return NextResponse.redirect(
       new URL("/admin/login?error=callback", request.url),
     );

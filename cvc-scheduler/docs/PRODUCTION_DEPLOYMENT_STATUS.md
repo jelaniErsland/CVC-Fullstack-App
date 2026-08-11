@@ -1,6 +1,6 @@
 # Production Deployment Status
 
-Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state.
+Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state. Iteration 12.32 proves the local privacy-safe application observability foundation without accessing or changing the production deployment.
 
 Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE AND PROVIDER-LEVEL EMAIL CONFIGURATION VERIFIED; APPLICATION EMAIL DISABLED`.
 
@@ -81,7 +81,7 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 - Project Local application-driven Initial email delivery through the production claim/provider/finalize ledger is not proven.
 - Production duplicate-send behavior with real Resend, app-generated schedule-access link behavior, retry/failure operations, and email-failure monitoring are not proven.
 - Production backup/restore evidence is unresolved.
-- Production observability/alerts are unresolved.
+- Application structured instrumentation is proven, but production runtime/deployment visibility, alerts, incident ownership, stale-delivery check cadence/read path, and a controlled observable-event proof are unresolved.
 - Production workspace/contact/grants are not provisioned.
 - No real Bozeman data has been created.
 - Product-owner/pilot launch approval remains unresolved.

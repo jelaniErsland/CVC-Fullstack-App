@@ -4,6 +4,10 @@ import { AdminShell } from "@/components/AdminShell";
 import { GlassCard } from "@/components/GlassCard";
 import { VolunteerDirectory } from "@/components/VolunteerDirectory";
 import {
+  emitOperationalEvent,
+  type OperationalEventName,
+} from "@/lib/observability/server";
+import {
   createManualVolunteerProfileWithClient,
   manualVolunteerInputFromFormData,
   updateVolunteerProfileManualFieldsWithClient,
@@ -24,14 +28,33 @@ type AdminVolunteersPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
 
+function observeVolunteerMutationFailure(
+  event: Extract<
+    OperationalEventName,
+    "volunteer.create_failure" | "volunteer.update_failure"
+  >,
+  notice: "unavailable" | "validation" | "error",
+) {
+  emitOperationalEvent({
+    event,
+    failureCode:
+      notice === "unavailable"
+        ? "context_unavailable"
+        : notice === "validation"
+          ? "validation_failed"
+          : "persistence_failed",
+  });
+}
+
 async function createManualVolunteerAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "created" = "error";
   try {
     const routeContext = await readVolunteerManagementRouteContext();
     if (!routeContext || !routeContext.canEdit) {
       notice = "unavailable";
+      observeVolunteerMutationFailure("volunteer.create_failure", "unavailable");
     } else {
       const input = manualVolunteerInputFromFormData(formData);
       await createManualVolunteerProfileWithClient(
@@ -43,6 +66,10 @@ async function createManualVolunteerAction(formData: FormData) {
     }
   } catch (error) {
     notice = error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
+    observeVolunteerMutationFailure(
+      "volunteer.create_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/volunteers");
@@ -52,12 +79,13 @@ async function createManualVolunteerAction(formData: FormData) {
 async function updateVolunteerProfileAction(formData: FormData) {
   "use server";
 
-  let notice = "error";
+  let notice: "unavailable" | "validation" | "error" | "updated" = "error";
   try {
     const routeContext = await readVolunteerManagementRouteContext();
     const profileId = formData.get("profileId");
     if (!routeContext || !routeContext.canEdit || typeof profileId !== "string") {
       notice = "unavailable";
+      observeVolunteerMutationFailure("volunteer.update_failure", "unavailable");
     } else {
       const normalizedProfileId = normalizeWorkspaceReference({ id: profileId }).value;
       const input = manualVolunteerInputFromFormData(formData);
@@ -70,6 +98,10 @@ async function updateVolunteerProfileAction(formData: FormData) {
     }
   } catch (error) {
     notice = error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
+    observeVolunteerMutationFailure(
+      "volunteer.update_failure",
+      notice === "validation" ? "validation" : "error",
+    );
   }
 
   revalidatePath("/admin/volunteers");

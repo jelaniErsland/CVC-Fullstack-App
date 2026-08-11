@@ -14,6 +14,8 @@ export const BOZEMAN_BETA_REAL_EMAIL_SENDING_AVAILABLE = false;
 export const BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN = true;
 export const BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
+export const BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
+export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = false;
 export const BOZEMAN_BETA_PRODUCTION_DATA_ACCESS_AVAILABLE = false;
 
 type BetaStatus =
@@ -286,6 +288,7 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     repositoryFindings: [
       "12.22/12.22.1 provide explicit recipient resolution, schedule access, duplicate prevention, retry/stale recovery, and credential-free delivery audit",
       "12.31 selects Resend and validates its server-only adapter through fake network responses without sending real email",
+      "12.32 adds privacy-safe structured assignment-email stage events and a route-unused stale-sending detection seam",
       "August 10 2026 operator evidence proves the Resend domain sender restricted production key privacy settings and direct provider-level Gmail inbox delivery",
       "Project Local application-driven production delivery through the Initial email action and authoritative ledger remains unproven, and the production application transport is currently disabled",
       "response-link delivery remains separate from assignment-detail admin reveal/copy activation",
@@ -324,7 +327,7 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     statuses: ["blocked_by_dependency", "not_implemented", "beta_critical"],
     repositoryFindings: [
       "local and hosted non-production validation patterns exist",
-      "production Supabase deployment domain Auth and provider-level Resend configuration are established, while application email proof observability backup/recovery provisioning and pilot readiness remain incomplete",
+      "production Supabase deployment domain Auth provider-level Resend configuration and the local application observability foundation are established, while application email proof operator runtime visibility and alerting backup/recovery provisioning and pilot readiness remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     betaNeed:
@@ -528,6 +531,9 @@ export function describeBozemanBetaRoadmap() {
     providerConfigurationProven: BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN,
     providerDirectDeliverabilityProven: BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
     applicationEmailDeliveryProven: BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN,
+    applicationObservabilityFoundationProven:
+      BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+    operatorObservabilityProven: BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
     productionDataAccessAvailable: BOZEMAN_BETA_PRODUCTION_DATA_ACCESS_AVAILABLE,
     domainCount: bozemanBetaAuditDomains.length,
     blockers: bozemanBetaBlockers,
@@ -546,6 +552,6 @@ export function evaluateBozemanBetaLaunchReadiness() {
       bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
     old12_14Decision: bozemanBetaOld12_14Decision.decision,
     reason:
-      "The persisted scheduling loop, beta-critical UI, Resend application adapter, provider configuration, and direct provider-level inbox delivery are proven, but Project Local application-driven production email proof, email-failure monitoring, real Bozeman provisioning, broader observability, backup/restore proof, and a controlled pilot remain incomplete.",
+      "The persisted scheduling loop, beta-critical UI, privacy-safe application observability foundation, Resend application adapter, provider configuration, and direct provider-level inbox delivery are proven, but Project Local application-driven production email proof, operator runtime visibility and alerting, real Bozeman provisioning, backup/restore proof, and a controlled pilot remain incomplete.",
   } as const;
 }

@@ -209,12 +209,14 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     status: "configuration_required",
     blocking: true,
     evidence: [
+      "12.32 proves the privacy-safe application event model and a route-unused non-mutating stale-sending detection seam",
       "production runtime alert owner is not recorded",
       "restore/rollback incident logging location is not recorded",
-      "stale email delivery monitoring remains unresolved until the production email slice",
+      "no operator stale-delivery check cadence or alert path is configured",
+      "no controlled production-safe event has been observed in the operator runtime-log workflow",
     ],
     requiredAction:
-      "Configure alert ownership and incident logging without recording credentials, tokens, raw provider payloads, SQL, grants, capability arrays, or secret-bearing stack traces.",
+      "Configure runtime visibility, alert ownership, stale-delivery check cadence, and incident logging, then prove one controlled event is observable without recording credentials, tokens, PII, raw provider payloads, SQL, grants, capability arrays, or secret-bearing stack traces.",
   },
   {
     id: "incident_ownership",

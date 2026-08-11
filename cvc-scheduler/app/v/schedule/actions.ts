@@ -8,6 +8,10 @@ import {
   submitVolunteerScheduleAssignmentResponse,
   volunteerScheduleAccessCookie,
 } from "@/lib/volunteerScheduleAccess/server";
+import {
+  emitOperationalEvent,
+  type OperationalEventName,
+} from "@/lib/observability/server";
 
 export type VolunteerScheduleActionResult = Readonly<{
   ok: boolean;
@@ -52,6 +56,22 @@ function classifyVolunteerScheduleResponseError(error: unknown): VolunteerSchedu
   };
 }
 
+function observeResponseFailure(
+  event: Extract<
+    OperationalEventName,
+    "volunteer_response.submit_failure" | "volunteer_response.confirm_all_failure"
+  >,
+  result: VolunteerScheduleActionResult,
+) {
+  const failureCode =
+    result.code === "changed"
+      ? "response_changed"
+      : result.code === "unavailable"
+        ? "response_unavailable"
+        : "persistence_failed";
+  emitOperationalEvent({ event, failureCode });
+}
+
 async function readScheduleCookie() {
   const cookieStore = await cookies();
   return cookieStore.get(volunteerScheduleAccessCookie.name)?.value ?? null;
@@ -61,7 +81,13 @@ export async function submitVolunteerScheduleResponseAction(
   formData: FormData,
 ): Promise<VolunteerScheduleActionResult> {
   const token = await readScheduleCookie();
-  if (!token) return safeFailure;
+  if (!token) {
+    emitOperationalEvent({
+      event: "volunteer_response.submit_failure",
+      failureCode: "credential_unavailable",
+    });
+    return safeFailure;
+  }
 
   const assignmentId = formData.get("assignmentId");
   const status = formData.get("status");
@@ -85,13 +111,21 @@ export async function submitVolunteerScheduleResponseAction(
           : "Your response is now Can’t make it.",
     };
   } catch (error) {
-    return classifyVolunteerScheduleResponseError(error);
+    const failure = classifyVolunteerScheduleResponseError(error);
+    observeResponseFailure("volunteer_response.submit_failure", failure);
+    return failure;
   }
 }
 
 export async function confirmAllVolunteerScheduleAction(): Promise<VolunteerScheduleActionResult> {
   const token = await readScheduleCookie();
-  if (!token) return safeFailure;
+  if (!token) {
+    emitOperationalEvent({
+      event: "volunteer_response.confirm_all_failure",
+      failureCode: "credential_unavailable",
+    });
+    return safeFailure;
+  }
 
   try {
     const result = await confirmAllVolunteerScheduleAssignments({ token });
@@ -105,6 +139,8 @@ export async function confirmAllVolunteerScheduleAction(): Promise<VolunteerSche
           : `Confirmed ${result.confirmedCount} assignments.`,
     };
   } catch (error) {
-    return classifyVolunteerScheduleResponseError(error);
+    const failure = classifyVolunteerScheduleResponseError(error);
+    observeResponseFailure("volunteer_response.confirm_all_failure", failure);
+    return failure;
   }
 }

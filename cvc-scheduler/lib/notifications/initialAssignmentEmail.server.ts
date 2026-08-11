@@ -67,7 +67,7 @@ const resendApiUrl = "https://api.resend.com/emails";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type InitialAssignmentEmailRuntime = Readonly<{
+export type InitialAssignmentEmailRuntime = Readonly<{
   fetch: typeof fetch;
 }>;
 

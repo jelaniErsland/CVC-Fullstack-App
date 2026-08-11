@@ -6,7 +6,12 @@ import {
   readInitialAssignmentEmailConfiguration,
   sendInitialAssignmentEmail,
   type InitialAssignmentEmailConfiguration,
+  type InitialAssignmentEmailRuntime,
 } from "../notifications/initialAssignmentEmail.server.ts";
+import {
+  emitOperationalEvent,
+  type OperationalEventRuntime,
+} from "../observability/server.ts";
 import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -62,6 +67,11 @@ export type InitialAssignmentNotificationSendResult = Readonly<{
   providerFailureCount: number;
   finalizationFailureCount: number;
   scheduleAccessFailureCount: number;
+}>;
+
+export type InitialAssignmentNotificationRuntime = Readonly<{
+  email?: InitialAssignmentEmailRuntime;
+  observability?: OperationalEventRuntime;
 }>;
 
 export type InitialAssignmentNotificationBoundaryFailureStage =
@@ -242,10 +252,19 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
   supabase: AppSupabaseClient,
   input: { calendarItemId: unknown },
   configuration: InitialAssignmentEmailConfiguration = readInitialAssignmentEmailConfiguration(),
+  runtime: InitialAssignmentNotificationRuntime = {},
 ): Promise<InitialAssignmentNotificationSendResult> {
   const calendarItemId = normalizeUuid(input.calendarItemId);
   if (!calendarItemId) throw new Error("Invalid initial assignment notification request.");
   if (!configuration.ok) {
+    emitOperationalEvent(
+      {
+        event: "assignment_email.configuration_failure",
+        failureCode: configuration.reason,
+        correlationId: calendarItemId,
+      },
+      runtime.observability,
+    );
     throw new InitialAssignmentNotificationBoundaryError("configuration");
   }
 
@@ -255,7 +274,17 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
       p_calendar_item_id: calendarItemId,
     } as PublicRpcArgs<"claim_initial_assignment_notification_deliveries">,
   );
-  if (error) throw new InitialAssignmentNotificationBoundaryError("claim");
+  if (error) {
+    emitOperationalEvent(
+      {
+        event: "assignment_email.claim_failure",
+        failureCode: "claim_unavailable",
+        correlationId: calendarItemId,
+      },
+      runtime.observability,
+    );
+    throw new InitialAssignmentNotificationBoundaryError("claim");
+  }
 
   const claims = parseClaims(data);
   let sentCount = 0;
@@ -303,28 +332,32 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         token: issued.token,
       });
       failureStage = "provider";
-      const sendResult = await sendInitialAssignmentEmail(configuration, {
-        deliveryId: claim.deliveryId,
-        assignmentId: claim.calendarAssignmentId,
-        idempotencyKey: claim.idempotencyKey,
-        recipientEmail: claim.recipientEmail,
-        volunteerDisplayName: claim.volunteerDisplayName,
-        workspaceDisplayName: claim.workspaceDisplayName,
-        taskTitle: claim.taskTitle,
-        taskType: claim.taskType,
-        scheduleDate: claim.scheduleDate,
-        scheduleStartTime: claim.scheduleStartTime,
-        scheduleEndTime: claim.scheduleEndTime,
-        scheduleNotes: claim.scheduleNotes,
-        followUpContact: {
-          displayName: claim.followUpContactDisplayName,
-          email: claim.followUpContactEmail,
-          phone: claim.followUpContactPhone,
+      const sendResult = await sendInitialAssignmentEmail(
+        configuration,
+        {
+          deliveryId: claim.deliveryId,
+          assignmentId: claim.calendarAssignmentId,
+          idempotencyKey: claim.idempotencyKey,
+          recipientEmail: claim.recipientEmail,
+          volunteerDisplayName: claim.volunteerDisplayName,
+          workspaceDisplayName: claim.workspaceDisplayName,
+          taskTitle: claim.taskTitle,
+          taskType: claim.taskType,
+          scheduleDate: claim.scheduleDate,
+          scheduleStartTime: claim.scheduleStartTime,
+          scheduleEndTime: claim.scheduleEndTime,
+          scheduleNotes: claim.scheduleNotes,
+          followUpContact: {
+            displayName: claim.followUpContactDisplayName,
+            email: claim.followUpContactEmail,
+            phone: claim.followUpContactPhone,
+          },
+          scheduleAccessUrl,
+          tokenExpiresAt: issued.expiresAt,
+          templateVersion: INITIAL_ASSIGNMENT_EMAIL_TEMPLATE_VERSION,
         },
-        scheduleAccessUrl,
-        tokenExpiresAt: issued.expiresAt,
-        templateVersion: INITIAL_ASSIGNMENT_EMAIL_TEMPLATE_VERSION,
-      });
+        runtime.email,
+      );
 
       if (sendResult.ok) {
         failureStage = "finalization";
@@ -335,8 +368,23 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
           providerMessageId: sendResult.providerMessageId,
         });
         sentCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.sent",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
       } else {
         providerFailureCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.provider_failure",
+            failureCode: sendResult.safeFailureCode,
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
         failureStage = "provider_failure_cleanup";
         await revokeVolunteerScheduleAccessForNotification(supabase, issued.tokenId);
         tokenRevokedAfterFailureCount += 1;
@@ -352,16 +400,57 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
     } catch {
       if (failureStage === "schedule_access") {
         scheduleAccessFailureCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.schedule_access_failure",
+            failureCode: "issue_failed",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
       } else if (failureStage === "provider") {
         providerFailureCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.provider_failure",
+            failureCode: "provider_send_failed",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
+      } else if (failureStage === "provider_failure_cleanup") {
+        emitOperationalEvent(
+          {
+            event: "assignment_email.schedule_access_failure",
+            failureCode: "revoke_failed",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
       } else if (failureStage === "finalization") {
         finalizationFailureCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.finalization_failure",
+            failureCode: "finalize_unavailable",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
       }
       if (issuedTokenId) {
         try {
           await revokeVolunteerScheduleAccessForNotification(supabase, issuedTokenId);
           tokenRevokedAfterFailureCount += 1;
         } catch {
+          emitOperationalEvent(
+            {
+              event: "assignment_email.schedule_access_failure",
+              failureCode: "revoke_failed",
+              correlationId: claim.deliveryId,
+            },
+            runtime.observability,
+          );
           // The delivery row still receives a safe failure code below.
         }
       }
@@ -376,6 +465,14 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         });
       } catch {
         if (failureStage !== "finalization") finalizationFailureCount += 1;
+        emitOperationalEvent(
+          {
+            event: "assignment_email.finalization_failure",
+            failureCode: "finalize_unavailable",
+            correlationId: claim.deliveryId,
+          },
+          runtime.observability,
+        );
       }
       failedCount += 1;
     }
