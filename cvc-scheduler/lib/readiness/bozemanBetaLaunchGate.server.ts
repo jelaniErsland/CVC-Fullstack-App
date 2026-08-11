@@ -31,6 +31,12 @@ export const BOZEMAN_BETA_LAUNCH_GATE_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = tr
 export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED = false;
 export const BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
 export const BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
+export const BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN = true;
+export const BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN = true;
+export const BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED = true;
+export const BOZEMAN_BETA_DEPLOYMENT_STATUS_VISIBILITY_PROVEN = true;
+export const BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN = false;
+export const BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN = false;
 export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = false;
 export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
 export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
@@ -151,7 +157,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "deterministic regression proves redaction constraints, non-mutating stale detection, no Client Component import, and logging-failure isolation",
     ],
     requiredAction:
-      "Preserve the 12.32 application event contract while completing the separate operator runtime visibility, alert ownership, alert-condition, stale-check cadence, and controlled production observation gate.",
+      "Preserve the 12.32 application event contract and 12.32.1 Vercel review evidence while completing the authorized stale-delivery read path, cadence, threshold/escalation, and practical notification gate.",
   },
   {
     id: "controlled_pilot",
@@ -173,11 +179,12 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     blocking: true,
     evidence: [
       "12.32 application instrumentation is proven locally without production or staging access",
-      "operator runtime event visibility, alert ownership, stale-delivery check cadence, and controlled production observation are not proven",
+      "August 11 2026 operator evidence proves Vercel Production runtime-log search and filtering, Vercel deployment/build status review, named alert and incident ownership, documented action conditions, and one controlled privacy-safe schedule_access.exchange_failure observation",
+      "the authorized stale-delivery production read path, check cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remain unproven",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
-      "Verify production runtime/deployment event visibility, alert and incident ownership, actionable conditions, stale-delivery check cadence, one controlled privacy-safe observation, backups, restore/rollback procedure, and fallback decision.",
+      "Complete the authorized stale-delivery read path, cadence, threshold/escalation, practical operator notification mechanism, backups, restore/rollback procedure, and fallback decision while preserving the proven privacy-safe Vercel review workflow.",
   },
   {
     id: "production_launch_action",
@@ -208,7 +215,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop, privacy-safe application observability foundation, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, operator runtime visibility and alerting, backup/recovery, provisioning, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
+    "The core persisted scheduling loop, privacy-safe application observability foundation, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, stale-delivery monitoring and practical alert notification, backup/recovery, provisioning, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

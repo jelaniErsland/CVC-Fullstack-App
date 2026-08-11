@@ -10,6 +10,11 @@ import {
   BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
   BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN,
   BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN,
+  BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN,
+  BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED,
+  BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN,
+  BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BELGRADE_REMAINS_SHEETS_FALLBACK,
   bozemanBetaAuditDomains,
@@ -60,6 +65,11 @@ assert.equal(BOZEMAN_BETA_PROVIDER_CONFIGURATION_PROVEN, true);
 assert.equal(BOZEMAN_BETA_PROVIDER_DIRECT_DELIVERABILITY_PROVEN, true);
 assert.equal(BOZEMAN_BETA_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
 assert.equal(BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+assert.equal(BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN, true);
+assert.equal(BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
+assert.equal(BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED, true);
+assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, false);
+assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
 assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
 assert.match(roadmapSource, /^import "server-only";/);
 assert.doesNotMatch(
@@ -80,6 +90,11 @@ assert.equal(description.providerConfigurationProven, true);
 assert.equal(description.providerDirectDeliverabilityProven, true);
 assert.equal(description.applicationEmailDeliveryProven, false);
 assert.equal(description.applicationObservabilityFoundationProven, true);
+assert.equal(description.runtimeLogVisibilityProven, true);
+assert.equal(description.controlledObservableEventProven, true);
+assert.equal(description.observabilityOwnershipRecorded, true);
+assert.equal(description.staleDeliveryMonitoringProven, false);
+assert.equal(description.operatorAlertNotificationProven, false);
 assert.equal(description.operatorObservabilityProven, false);
 assert.equal(description.productionDataAccessAvailable, false);
 assert.equal(description.domainCount, 11);

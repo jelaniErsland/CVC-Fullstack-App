@@ -1,8 +1,8 @@
 # Production Deployment Status
 
-Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state. Iteration 12.32 proves the local privacy-safe application observability foundation without accessing or changing the production deployment.
+Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state. Iteration 12.32 proves the local privacy-safe application observability foundation. Iteration 12.32.1 records August 11, 2026 operator evidence for real Vercel Production runtime-log visibility and one controlled privacy-safe event without changing production configuration.
 
-Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE AND PROVIDER-LEVEL EMAIL CONFIGURATION VERIFIED; APPLICATION EMAIL DISABLED`.
+Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE, PROVIDER-LEVEL EMAIL CONFIGURATION, AND NARROW VERCEL RUNTIME-LOG EVIDENCE VERIFIED; APPLICATION EMAIL DISABLED`.
 
 Launch conclusion: `NO-GO`.
 
@@ -62,6 +62,20 @@ Operator evidence from August 10, 2026 confirms:
 6. The transport was removed, Vercel redeployed, and the resulting `https://projectlocal.app` deployment is Ready/Latest.
 7. No production workspace, contact/grant, volunteer, Calendar item, assignment, notification-delivery row, or other real Bozeman product data was created.
 
+## Manual Vercel observability evidence
+
+Operator evidence from August 11, 2026 confirms:
+
+1. Live production request/runtime entries are accessible in Vercel -> `project-local` -> Logs.
+2. The operator can search entries and filter warn/error/fatal severity plus route/request/environment/status.
+3. Deployment and build failures are reviewed in Vercel -> `project-local` -> Deployments and the selected deployment's build status/logs.
+4. The Project Local product/operator owner owns alert review and incident response and may use Codex or engineering assistance without transferring ownership.
+5. A controlled request to `https://projectlocal.app/v/access/not-a-real-token` returned the expected redirect/unavailable behavior, created no data, and sent no email.
+6. Vercel Production Logs showed the matching structured `schedule_access.exchange_failure` warning with category `schedule_access`, stage `exchange`, and outcome `failure`.
+7. The event contained no volunteer identity, bearer/token/full URL, Auth/session credential, provider payload, raw provider/Supabase error, SQL, grant/capability array, API key, or environment secret.
+
+The canonical action policy and remaining stale-delivery/notification blocker are recorded in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). This proof did not add a Vercel alert, paid service, webhook, tracking, analytics, cron, background job, or production configuration change.
+
 ## Automated public smoke gate
 
 ```powershell
@@ -81,7 +95,7 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 - Project Local application-driven Initial email delivery through the production claim/provider/finalize ledger is not proven.
 - Production duplicate-send behavior with real Resend, app-generated schedule-access link behavior, retry/failure operations, and email-failure monitoring are not proven.
 - Production backup/restore evidence is unresolved.
-- Application structured instrumentation is proven, but production runtime/deployment visibility, alerts, incident ownership, stale-delivery check cadence/read path, and a controlled observable-event proof are unresolved.
+- Application structured instrumentation, Vercel runtime/deployment review, named observability ownership, action conditions, and one controlled privacy-safe event are proven. The authorized stale-delivery production read path, cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remain unresolved.
 - Production workspace/contact/grants are not provisioned.
 - No real Bozeman data has been created.
 - Product-owner/pilot launch approval remains unresolved.

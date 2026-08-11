@@ -314,7 +314,7 @@ The server-only send boundary now emits catalogued credential-free outcomes for 
 
 The new route-unused stale detector accepts an injected bounded projection containing delivery UUID, `sending` state, and expiry only. It identifies expired `sending` rows relative to an injected clock and may emit a safe detection event, but it has no Supabase client/query/RPC, service-role access, retry, send, cron, background job, or ledger mutation. A later reviewed operator slice must establish the authorized production read path and cadence.
 
-`npm run test:production-observability` proves the event/privacy contract, logging-failure isolation, stage distinction, sent outcome, and non-mutating stale detection with no external service. Application observability is proven; operator runtime visibility and alerting plus the controlled app-driven production email test remain blocking. Launch remains `NO-GO`.
+`npm run test:production-observability` proves the event/privacy contract, logging-failure isolation, stage distinction, sent outcome, and non-mutating stale detection with no external service. Application observability and the August 11, 2026 Vercel runtime-log/controlled-event review are proven; stale-delivery monitoring, practical alert notification, and the controlled app-driven production email test remain blocking. Launch remains `NO-GO`.
 
 ## 12.20.1 Hosted Staging Volunteer Schedule Access Validation
 

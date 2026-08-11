@@ -1,5 +1,19 @@
 # Project History
 
+## Iteration 12.32.1 - Production Operator Observability Evidence
+
+Summary:
+- Recorded August 11, 2026 operator evidence that Vercel project `project-local` exposes live Production request/runtime logs with search, warn/error/fatal filters, and route/request/environment/status filters, and that deployment/build failures are reviewed through Vercel Deployments/build status.
+- Recorded the Project Local product/operator owner as primary alert and incident-response owner, with Codex or engineering assistance available without transferring ownership.
+- Recorded the investigation/pause policy for fatal/repeated beta-critical failures, later email provider/finalization failures, cross-scope exposure, credential/full-URL leakage, duplicate external email, corrupted response truth, unrecoverable mutation, and provider/security misconfiguration.
+- Recorded a controlled request to `/v/access/not-a-real-token` that returned unavailable safely, created no data or email, and produced a searchable privacy-safe `schedule_access.exchange_failure` warning in actual Vercel Production Logs.
+
+Boundaries and remaining proof:
+- The observed event exposed no volunteer identity, bearer/token/full URL, Auth/session credential, provider payload, raw provider/Supabase error, SQL, grant/capability array, API key, or environment secret.
+- Runtime-log visibility, search/filtering, deployment/build review, ownership, action conditions, and one controlled event are proven.
+- The authorized production read path for stale `assignment_notification_deliveries`, review cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remain unproven and blocking. The 12.32 stale detector remains route-unused, injected, non-mutating, and does not query production.
+- This repository slice records supplied evidence only. It adds no application observability code, route/action behavior, schema/migration/RPC/RLS/Auth change, email, provider/infrastructure change, production data, paid service, webhook, tracking, analytics, cron, or background job. Launch remains `NO-GO`.
+
 ## Iteration 12.32 - Production Observability Foundation
 
 Summary:

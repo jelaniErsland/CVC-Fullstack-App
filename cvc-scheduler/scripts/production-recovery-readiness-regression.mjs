@@ -105,7 +105,10 @@ async function main() {
   assert.equal(observability.status, "configuration_required");
   assert.equal(observability.blocking, true);
   assert.match(JSON.stringify(observability.evidence), /12\.32/);
+  assert.match(JSON.stringify(observability.evidence), /August 11 2026 operator evidence/i);
+  assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
   assert.match(JSON.stringify(observability.evidence), /no operator stale-delivery check cadence/i);
+  assert.match(JSON.stringify(observability.evidence), /manual Vercel Hobby review/i);
 
   const [
     contract,

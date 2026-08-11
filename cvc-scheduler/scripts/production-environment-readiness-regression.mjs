@@ -19,6 +19,12 @@ import {
   PRODUCTION_APPLICATION_EMAIL_ENABLED,
   PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN,
   PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  PRODUCTION_RUNTIME_LOG_VISIBILITY_PROVEN,
+  PRODUCTION_CONTROLLED_OBSERVABLE_EVENT_PROVEN,
+  PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED,
+  PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN,
+  PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN,
+  PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN,
   productionEnvironmentKnownStagingTarget,
   productionEnvironmentReadinessItems,
@@ -51,6 +57,12 @@ async function main() {
   assert.equal(PRODUCTION_APPLICATION_EMAIL_ENABLED, false);
   assert.equal(PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
   assert.equal(PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+  assert.equal(PRODUCTION_RUNTIME_LOG_VISIBILITY_PROVEN, true);
+  assert.equal(PRODUCTION_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
+  assert.equal(PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED, true);
+  assert.equal(PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN, true);
+  assert.equal(PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN, false);
+  assert.equal(PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, false);
   assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
@@ -112,7 +124,9 @@ async function main() {
   assert.equal(observability.status, "configuration_required");
   assert.equal(observability.blocking, true);
   assert.match(JSON.stringify(observability.evidence), /12\.32/);
-  assert.match(JSON.stringify(observability.evidence), /production runtime event visibility/i);
+  assert.match(JSON.stringify(observability.evidence), /August 11 2026 operator evidence/i);
+  assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
+  assert.match(JSON.stringify(observability.evidence), /stale assignment_notification_deliveries/i);
 
   const [
     contract,

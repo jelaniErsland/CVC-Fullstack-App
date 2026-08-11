@@ -14,6 +14,12 @@ import {
   BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED,
   BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN,
   BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN,
+  BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN,
+  BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN,
+  BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED,
+  BOZEMAN_BETA_DEPLOYMENT_STATUS_VISIBILITY_PROVEN,
+  BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN,
+  BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER,
@@ -52,6 +58,12 @@ async function main() {
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_ENABLED, false);
   assert.equal(BOZEMAN_BETA_LAUNCH_GATE_APPLICATION_EMAIL_DELIVERY_PROVEN, false);
   assert.equal(BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED, true);
+  assert.equal(BOZEMAN_BETA_DEPLOYMENT_STATUS_VISIBILITY_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, false);
+  assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
@@ -131,6 +143,16 @@ async function main() {
   assert.equal(observabilityFoundation.status, "proven");
   assert.equal(observabilityFoundation.blocking, false);
   assert.match(JSON.stringify(observabilityFoundation.evidence), /12\.32/);
+
+  const productionEnvironment = bozemanBetaLaunchGateItems.find(
+    (item) => item.id === "production_environment",
+  );
+  assert(productionEnvironment, "Launch gate is missing production environment readiness.");
+  assert.equal(productionEnvironment.status, "configuration_required");
+  assert.equal(productionEnvironment.blocking, true);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /August 11 2026 operator evidence/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /schedule_access\.exchange_failure/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /stale-delivery production read path/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

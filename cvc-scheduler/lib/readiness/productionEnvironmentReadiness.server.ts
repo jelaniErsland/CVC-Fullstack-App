@@ -32,6 +32,12 @@ export const PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const PRODUCTION_APPLICATION_EMAIL_ENABLED = false;
 export const PRODUCTION_APPLICATION_EMAIL_DELIVERY_PROVEN = false;
 export const PRODUCTION_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
+export const PRODUCTION_RUNTIME_LOG_VISIBILITY_PROVEN = true;
+export const PRODUCTION_CONTROLLED_OBSERVABLE_EVENT_PROVEN = true;
+export const PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED = true;
+export const PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN = true;
+export const PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN = false;
+export const PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN = false;
 export const PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN = false;
 
 export const productionEnvironmentKnownStagingTarget = {
@@ -190,10 +196,12 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "12.32 distinguishes assignment-email configuration, claim, schedule-access, provider, and finalization failures plus successful delivery without logging PII, credentials, URLs, raw errors, or provider payloads",
       "12.32 adds a deterministic route-unused non-mutating stale-sending detection seam and regression proof",
       "application events write naturally to server runtime logs and logging failure cannot change product behavior",
-      "production runtime event visibility, alert ownership, alert conditions, stale-delivery check cadence, deployment failure visibility, and controlled observable-event proof remain unproven",
+      "August 11 2026 operator evidence proves Vercel Production runtime-log visibility, event search and filtering, deployment/build status visibility, named alert and incident ownership, actionable conditions, and one controlled privacy-safe schedule_access.exchange_failure event",
+      "the controlled invalid-token request created no data and sent no email, and the observed event exposed no volunteer identity, bearer, full URL, credential, provider payload, raw error, SQL, grant, capability array, API key, or environment secret",
+      "an authorized production read path for stale assignment_notification_deliveries, check cadence, threshold/escalation proof, and a practical notification mechanism beyond manual Vercel Hobby review remain unproven",
     ],
     requiredAction:
-      "Define where Vercel runtime/deployment events are reviewed, name the alert and incident owners, set actionable failure conditions and stale-delivery check cadence, and prove one controlled production-safe event is visible without exposing credentials, tokens, PII, provider payloads, SQL, grants, or capability arrays.",
+      "Define and prove the authorized stale-delivery read path, check cadence, threshold/escalation procedure, and practical operator notification mechanism without adding unsafe data exposure; preserve the proven Vercel Logs/Deployments review workflow and privacy contract.",
   },
   {
     id: "backup_recovery",
@@ -246,6 +254,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application observability foundation, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, operator runtime visibility and alerting, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application observability foundation, Vercel runtime-log review and controlled-event proof, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, stale-delivery monitoring and practical alert notification, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;
