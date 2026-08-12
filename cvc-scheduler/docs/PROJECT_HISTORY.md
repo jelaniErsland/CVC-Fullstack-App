@@ -1,5 +1,16 @@
 # Project History
 
+## Iteration 12.34.1 - Supabase Managed-Role Restore Compatibility and Full Local Restore Proof
+
+Summary:
+- Reused the existing 12.34 encrypted artifact without production/staging access or another backup. Preserved the exact six-file package and original `roles.sql`.
+- Added a quote/comment/dollar-quote-aware deterministic classifier. The actual eight statements are three session settings, one reset, three managed `statement_timeout` settings, and one managed `SET` privilege on `log_min_messages`; four platform roles are represented, with zero user roles, password/verifier statements, ownership statements, or unsupported classes.
+- Added temporary derived role SQL that verifies Supabase-managed roles/settings/privilege rather than recreating them. Synthetic user-defined role create/property/credential/configuration/membership material remains restorable; unknown, mixed, or privilege-sensitive material fails closed. Regression covers success/failure cleanup, exact package membership, loopback guards, and secret-free output.
+- Performed exactly one fresh loopback-only full restore attempt. Roles, schema, 23-version migration history through `20260714122230`, data, baseline functions, pending Notification Health absence, RLS on all 13 tables, and the expected FORCE RLS set passed.
+- Stopped fail-closed on 26 direct `TRUNCATE` grants: `anon` and `authenticated` each held `TRUNCATE` across all 13 Project Local tables. Because `TRUNCATE` bypasses RLS, no normalization, waiver, or second restore was attempted. Production-baseline generated-type parity, product-row state, and remaining application compatibility checks were not reached.
+- The dump represents PostgreSQL Auth schema/data and Storage metadata, but not Supabase Auth platform configuration or Storage object BLOBs. All decrypted/transformed/temp material, suppressed local logs, and disposable containers were removed.
+- Recovery readiness remains blocking, recurring scheduling/failure notification and recovery ownership remain incomplete, application email remains disabled, no real Bozeman data exists, and launch remains `NO-GO`.
+
 ## Iteration 12.34 - Independent Production Backup Execution and Local Restore Proof
 
 Summary:

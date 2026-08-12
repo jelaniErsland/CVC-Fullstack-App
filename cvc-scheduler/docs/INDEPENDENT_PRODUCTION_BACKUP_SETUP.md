@@ -1,6 +1,6 @@
 # Independent Production Backup Setup
 
-Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. Iteration 12.34 proves its first read-only encrypted production backup and records a local managed-role restore blocker without changing the six-file package contract. No scheduled task or real Bozeman product data exists.
+Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. Iteration 12.34 proves its first read-only encrypted production backup. Iteration 12.34.1 resolves the local managed-role replay boundary but records the next fail-closed restore blocker: 26 unsafe restored `TRUNCATE` grants. The six-file package contract is unchanged. No scheduled task or real Bozeman product data exists.
 
 Launch conclusion: `NO-GO`.
 
@@ -224,3 +224,15 @@ A later always-on design using a private runner or private object storage may re
 - PITR remains non-blocking.
 - Real Bozeman data remains unprovisioned.
 - Launch remains `NO-GO`.
+
+## Current 12.34.1 evidence
+
+- The existing 12.34 encrypted artifact was reused; no production or staging connection and no new backup occurred.
+- The exact eight-statement `roles.sql` contains three session settings, one reset, three managed `statement_timeout` settings, and one managed parameter privilege. It contains no user-defined roles, password/verifier material, ownership statement, or unsupported statement.
+- The derived restore SQL exists only in the unique decrypted temp workspace. It verifies `anon`, `authenticated`, `authenticator`, and `supabase_realtime_admin` plus their represented settings/privilege without recreating them. Synthetic supported user roles preserve create/properties/credential/configuration/membership material; unsupported or privileged statements fail closed.
+- Exactly one fresh loopback-only full restore attempt passed the managed-role boundary, schema, all 23 migrations through `20260714122230`, data, baseline functions, pending Notification Health absence, all-table RLS, and expected FORCE RLS.
+- Post-restore verification stopped on 26 unsafe direct `TRUNCATE` grants: `anon` and `authenticated` each held `TRUNCATE` on all 13 Project Local tables. `TRUNCATE` bypasses RLS, so this is not waived.
+- Production-baseline generated-type parity, product-row state, and remaining application compatibility checks were not reached and are not claimed.
+- The logical dump contains PostgreSQL Auth schema/data and Storage metadata, but it does not reconstruct Supabase Auth platform configuration and it does not contain Storage object BLOBs.
+- The disposable stack, suppressed local CLI logs, decrypted archive, derived role SQL, and type temp paths were removed. Production, staging, Vercel, Resend, DNS, Auth, email, product data, and migration state were untouched.
+- Full restore/recovery, recurring scheduling/failure notification, and recovery ownership remain incomplete. Launch remains `NO-GO`.

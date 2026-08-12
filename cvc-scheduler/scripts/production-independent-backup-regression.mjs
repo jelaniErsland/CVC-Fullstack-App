@@ -20,6 +20,7 @@ const fixtureCredentials = [
   "synthetic+Password123",
   "synthetic Password123",
   "synthetic@:/#%?+ Password123",
+  "syntheticScramVerifier123",
 ];
 
 async function read(relativePath) {
@@ -101,6 +102,7 @@ async function main() {
     recoveryContract,
     envContract,
     connectionValidator,
+    roleRestoreHelper,
   ] = await Promise.all([
     read("package.json"),
     read("scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1"),
@@ -112,6 +114,7 @@ async function main() {
     read("lib/readiness/productionRecoveryReadiness.server.ts"),
     read("lib/readiness/productionEnvironmentReadiness.server.ts"),
     read("scripts/production-backup/ProjectLocalProductionConnection.ps1"),
+    read("scripts/production-backup/ProjectLocalRoleRestore.ps1"),
   ]);
 
   assertIncludes(packageJson, "test:production-independent-backup", "package.json");
@@ -196,6 +199,7 @@ async function main() {
   assert(!/\[[^\]]+\]\$[A-Za-z]*Password\b/.test(restore.slice(0, restore.indexOf("Set-StrictMode"))), "restore operator parameters must not include a password parameter.");
   assertNotIncludes(restore, oldRestoreUrlParam, "restore script");
   assertIncludes(restore, "-ExecuteLocalRestore", "restore script");
+  assertIncludes(restore, "VerifyExistingLocalRestore", "restore script");
   assertIncludes(restore, "UseSupabaseLocalDefaults", "restore script");
   assertIncludes(restore, "Assert-SupabaseLocalDefaultsTarget", "restore script");
   assertIncludes(restore, "exact 127.0.0.1:54322 postgres target", "restore script");
@@ -213,10 +217,34 @@ async function main() {
   assertIncludes(restore, "Get-Command \"psql\"", "restore script");
   assertIncludes(restore, "System.Security.Cryptography.SHA256", "restore script");
   assertIncludes(restore, "psql --single-transaction --set ON_ERROR_STOP=1", "restore script");
-  assertIncludes(restore, "select version from supabase_migrations.schema_migrations", "restore script");
-  assertIncludes(restore, "unsafe broad table mutation grants", "restore script");
+  assertIncludes(restore, "string_agg(version, ',' order by version)", "restore script");
+  assertIncludes(restore, "$ExpectedMigrationHistory", "restore script");
+  assertIncludes(restore, "$ExpectedBaselineFunctions", "restore script");
+  assertIncludes(restore, "read_assignment_notification_delivery_health", "restore script");
+  assertIncludes(restore, "production_baseline_generated_type_mismatch", "restore script");
+  assertIncludes(restore, "relation.relforcerowsecurity = true", "restore script");
+  assertNotIncludes(restore, "pg_catalog.pg_tables where schemaname = 'public' and tablename in ($tableList) and forcerowsecurity", "restore script");
+  assertIncludes(restore, "2ebe35912ae3ff203b249d92d8914a8af73bd9ca", "restore script");
+  assertIncludes(restore, "auth_schema_or_data_represented", "restore script");
+  assertIncludes(restore, "storage_object_blobs_represented", "restore script");
+  assertIncludes(restore, "unsafe_broad_table_mutation_grants", "restore script");
   assertIncludes(restore, "decrypted_cleanup_failed", "restore script");
-  assertIncludes(restore, 'throw "Local restore validation failed safely at $restoreStage."', "restore script");
+  assertIncludes(restore, 'throw "Local restore validation failed safely at $restoreStage with $safeFailureCode."', "restore script");
+  assertIncludes(restore, "ProjectLocalRoleRestore.ps1", "restore script");
+  assertIncludes(restore, "Write-ProjectLocalRoleRestoreSql", "restore script");
+  assertIncludes(restore, 'Join-Path $extractRoot "roles-restore.sql"', "restore script");
+  assertIncludes(restore, 'if ($name -eq "roles.sql") { $derivedRolesPath }', "restore script");
+  assertIncludes(roleRestoreHelper, "Split-ProjectLocalSqlStatements", "role restore helper");
+  assertIncludes(roleRestoreHelper, "New-ProjectLocalRoleRestorePlan", "role restore helper");
+  assertIncludes(roleRestoreHelper, "Write-ProjectLocalRoleRestoreSql", "role restore helper");
+  assertIncludes(roleRestoreHelper, "project_local_managed_role_missing", "role restore helper");
+  assertIncludes(roleRestoreHelper, "project_local_managed_role_property_mismatch", "role restore helper");
+  assertIncludes(roleRestoreHelper, "project_local_managed_role_configuration_mismatch", "role restore helper");
+  assertIncludes(roleRestoreHelper, "project_local_managed_parameter_privilege_mismatch", "role restore helper");
+  assertIncludes(roleRestoreHelper, "roles_sql_statement_class_unsupported", "role restore helper");
+  assertIncludes(roleRestoreHelper, "roles_sql_user_privileged_property_refused", "role restore helper");
+  assertIncludes(roleRestoreHelper, '"supabase_realtime_admin"', "role restore helper");
+  assertNotIncludes(roleRestoreHelper, "-replace.*CREATE ROLE", "role restore helper");
   assertOrder(restore, "Get-TargetPsqlArguments", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Get-Sha256Hex -Path $EncryptedBackupPath", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Get-Command \"psql\"", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
@@ -349,6 +377,10 @@ async function main() {
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardUnexpectedArchiveMember"], { expectSuccess: false });
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardPathTraversalArchiveMember"], { expectSuccess: false });
   assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "ChecksumAndCleanup"], { expectSuccess: true }), "fixture_checksum_cleanup_ok", "restore cleanup fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "ManagedRolePlan"], { expectSuccess: true }), "fixture_managed_role_plan_ok", "managed role plan fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "UserRolePlan"], { expectSuccess: true }), "fixture_user_role_application_plan_ok", "user role application plan fixture");
+  runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "UnsupportedRoleStatement"], { expectSuccess: false });
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "RolePlanFailureCleanup"], { expectSuccess: true }), "fixture_failed_role_plan_cleanup_ok", "failed role plan cleanup fixture");
 
   const residueRoot = await mkdtemp(path.join(tmpdir(), "project-local-backup-regression-"));
   await writeFile(path.join(residueRoot, "probe.txt"), "probe", "utf8");

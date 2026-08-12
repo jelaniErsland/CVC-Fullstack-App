@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup and records the managed-role boundary that still blocks a complete local restore.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary but leaves full recovery blocked by unsafe restored `TRUNCATE` grants.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -116,7 +116,11 @@ Before any real Bozeman product data is provisioned, the preferred current strat
 12. Document the real disaster-recovery procedure.
 13. Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 
-12.34 proves the first independent backup execution: exact production Session Pooler and migration preflight, the unchanged six-file package, age encryption before persistence, success at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, recognition-based retention, and no persistent plaintext. The local restore drill then failed closed at `roles.sql` before schema/data. A synthetic local Supabase role-only dump reproduced the same privilege class; the local restore user is not a superuser and all seven required Supabase platform roles already exist. Do not remove `roles.sql` or call the restore proven. The smallest proposed follow-up is a separately reviewed restore rule that verifies pre-existing platform roles and applies only non-platform/user-defined role material, preserving the six-file package and trust model.
+12.34 proves the first independent backup execution: exact production Session Pooler and migration preflight, the unchanged six-file package, age encryption before persistence, success at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, recognition-based retention, and no persistent plaintext.
+
+12.34.1 safely classifies the actual eight-statement `roles.sql`: three session settings, one reset, three `statement_timeout` settings for `anon`/`authenticated`/`authenticator`, and one `SET` privilege on `log_min_messages` for `supabase_realtime_admin`. No user-defined role, password/verifier, ownership statement, or unsupported statement was present. The temporary derived role file verifies those platform roles/settings/privilege rather than recreating platform infrastructure; supported synthetic user-role material remains restorable and unsupported SQL fails closed. The original six-file package and `roles.sql` remain unchanged.
+
+The single fresh 12.34.1 restore attempt then passed the role boundary, schema restore, all 23 migrations through `20260714122230`, data restore, baseline public-function checks, pending Notification Health absence, RLS on all 13 Project Local tables, and expected FORCE RLS. Verification stopped fail-closed because `anon` and `authenticated` each held direct `TRUNCATE` on all 13 Project Local tables: 26 unsafe grants, and `TRUNCATE` bypasses RLS. Do not normalize or waive that mismatch silently. Generated-type parity, product-row state, and remaining application compatibility checks were not reached, so full recovery is not proven.
 
 See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
@@ -182,13 +186,13 @@ Production recovery readiness remains incomplete because:
 - Supabase-managed backups are unavailable on the current Free plan.
 - That fact does not by itself require a Pro upgrade.
 - Independent encrypted backups are the preferred current plan; the first encrypted production backup, checksum/status, and retention behavior are proven.
-- The 12.34 restore drill remains incomplete because `roles.sql` cannot be applied by the non-superuser local restore role to an already initialized Supabase platform-role set.
+- The 12.34.1 managed-role boundary is proven, but the full restore remains incomplete because the restored database exposes 26 direct `TRUNCATE` grants to `anon`/`authenticated` across the 13 Project Local tables.
 - Supabase Pro remains optional.
 - Recurring schedule and safe failure-notification behavior are not yet proven.
 - At least one reviewed backup path must be proven before real Bozeman data.
 - Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
 - Restore approval owner.
-- A separately reviewed restore-compatible managed-role rule and full post-restore verification.
+- A reviewed resolution for the restored `TRUNCATE`-grant mismatch and completion of the remaining post-restore verification.
 - Incident ownership.
 
 PITR is unavailable and intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.

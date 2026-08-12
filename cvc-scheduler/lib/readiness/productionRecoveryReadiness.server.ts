@@ -115,12 +115,13 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "12.29 adds a Windows-first PowerShell automation foundation with Supabase CLI/Docker/age/psql dependency preflights and fixture/static guardrails",
       "12.34 safely validated the current-user-only DPAPI secret ACL and exact production Session Pooler target",
       "the first six-file production package was encrypted before OneDrive persistence, recorded a matching SHA-256 and 62409-byte size, and left no plaintext residue",
-      "the local restore drill stopped at roles.sql because the initialized local Supabase postgres role is not a superuser even though all required platform roles already exist",
+      "12.34.1 classifies the actual eight-statement roles.sql, verifies four represented Supabase-managed roles and their safe configuration/parameter privilege without recreating them, and fails closed on unsupported role material",
+      "the single fresh 12.34.1 restore passed roles, schema, all 23 migrations through 20260714122230, data, baseline functions, pending-function absence, RLS, and FORCE RLS before stopping on 26 unsafe restored TRUNCATE grants",
       "backup artifacts must never enter the public application repository",
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Review the smallest restore-compatible roles boundary, complete a full disposable restore and post-restore verification, then prove scheduling/failure notification and record recovery ownership before real Bozeman data.",
+      "Resolve the fail-closed TRUNCATE-grant recovery blocker without weakening the production security baseline, complete the remaining disposable post-restore checks, then prove scheduling/failure notification and record recovery ownership before real Bozeman data.",
   },
   {
     id: "first_independent_backup",
@@ -134,7 +135,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "daily/weekly recognition-based retention passed and no plaintext SQL, zip, connection value, or private identity persisted in OneDrive or the repository",
     ],
     requiredAction:
-      "Preserve the encrypted artifact and credential-free status evidence while the separately reviewed restore-role adjustment and recurring operator procedure are completed.",
+      "Preserve the encrypted artifact, credential-free status evidence, and managed-role rule while the restored TRUNCATE-grant mismatch and recurring operator procedure are completed.",
   },
   {
     id: "independent_backup_automation_foundation",
@@ -173,10 +174,10 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "operator dashboard evidence confirms Restore to new project requires Pro Plan and above",
       "Supabase-managed restore to new project requires Pro and physical backups",
       "restore to new project is currently unavailable",
-      "12.34 attempted the reviewed loopback-only restore against disposable local Supabase and created no hosted project",
-      "checksum, age decryption, archive-member guards, and cleanup passed before restore execution",
-      "roles.sql failed closed at the local managed-role privilege boundary before schema, migration history, or data restore",
-      "the same failure class reproduced with a synthetic local Supabase role-only dump; all seven required platform roles were already present",
+      "12.34.1 reused the existing encrypted artifact for exactly one fresh loopback-only full restore attempt and created no hosted project",
+      "checksum, age decryption, exact six-member archive guards, managed-role verification, schema, complete migration history, data, baseline functions, pending-function absence, RLS, and FORCE RLS passed",
+      "the restore then failed closed because anon and authenticated each held TRUNCATE on all 13 Project Local tables; TRUNCATE bypasses RLS",
+      "production-baseline generated-type parity, product-row verification, and remaining application compatibility checks were not reached and are not claimed",
       "restore approval owner is unknown",
     ],
     requiredAction:
@@ -189,10 +190,12 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: true,
     evidence: [
       "no production restore was performed",
-      "12.34 attempted two diagnostic-safe executions against fresh loopback-only disposable local Supabase stacks",
-      "both stopped at roles.sql before schema or data because the initialized local postgres role cannot perform the managed-role changes",
-      "decrypted workspaces and disposable containers were removed after diagnosis",
-      "restore readiness cannot be claimed until the roles boundary is separately reviewed and a full restore passes",
+      "12.34.1 performed exactly one fresh full restore attempt using the existing 12.34 encrypted artifact",
+      "the managed-role boundary verified rather than recreated anon, authenticated, authenticator, and supabase_realtime_admin; no user-defined roles or password/verifier statements were present",
+      "schema, 23-version migration history through 20260714122230, data, baseline functions, pending Notification Health absence, all-table RLS, and expected FORCE RLS passed",
+      "verification stopped fail-closed on 26 direct TRUNCATE grants covering anon and authenticated across all 13 Project Local tables",
+      "decrypted/transformed workspaces and disposable containers were removed after diagnosis",
+      "restore readiness cannot be claimed until the grant mismatch is resolved and the remaining type/product/application checks pass",
     ],
     requiredAction:
       "Run a safe restore test into local Supabase or another approved disposable non-production target, then verify schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup without exposing credentials or dumps.",
@@ -263,7 +266,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: true,
     evidence: [
       "production backup configuration is confirmed blocked by the current Free plan",
-      "the preferred independent path has produced its first successful encrypted production backup, but a full restore test remains blocked at roles.sql",
+      "the preferred independent path has produced its first successful encrypted production backup and solved the managed-role restore boundary, but full recovery remains blocked by unsafe restored TRUNCATE grants",
       "at least one reviewed backup path must be proven before real Bozeman data",
       "recurring schedule/failure notification, restore owner, full restore evidence, and incident ownership remain unresolved",
       "real Bozeman product data remains unprovisioned",
@@ -279,6 +282,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "The first independent encrypted production backup is proven, but recovery readiness remains incomplete until the managed-role restore boundary is reviewed, a full disposable restore passes, and recurring operator/ownership evidence is recorded; PITR is unavailable and not required for the initial beta.",
+    "The first independent encrypted production backup and managed-role restore boundary are proven, but recovery readiness remains incomplete until the restored TRUNCATE-grant mismatch is resolved, the remaining disposable verification passes, and recurring operator/ownership evidence is recorded; PITR is unavailable and not required for the initial beta.",
   items: productionRecoveryReadinessItems,
 } as const;

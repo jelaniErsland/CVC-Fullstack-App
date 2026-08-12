@@ -130,7 +130,16 @@ async function main() {
   assert.equal(independentPath.status, "restore_test_required");
   assert.equal(independentPath.blocking, true);
   assert.match(JSON.stringify(independentPath.evidence), /roles\.sql/);
-  assert.match(JSON.stringify(independentPath.evidence), /all required platform roles already exist/i);
+  assert.match(JSON.stringify(independentPath.evidence), /verifies four represented Supabase-managed roles/i);
+  assert.match(JSON.stringify(independentPath.evidence), /26 unsafe restored TRUNCATE grants/i);
+
+  const restoreTest = productionRecoveryReadinessItems.find((item) => item.id === "restore_test");
+  assert(restoreTest, "Recovery readiness is missing restore-test evidence.");
+  assert.equal(restoreTest.status, "restore_test_required");
+  assert.equal(restoreTest.blocking, true);
+  assert.match(JSON.stringify(restoreTest.evidence), /exactly one fresh full restore attempt/i);
+  assert.match(JSON.stringify(restoreTest.evidence), /23-version migration history through 20260714122230/i);
+  assert.match(JSON.stringify(restoreTest.evidence), /TRUNCATE bypasses RLS|direct TRUNCATE grants/i);
 
   const [
     contract,

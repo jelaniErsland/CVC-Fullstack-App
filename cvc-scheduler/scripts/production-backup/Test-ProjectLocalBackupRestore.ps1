@@ -1,8 +1,10 @@
 param(
   [switch]$FixtureMode,
-  [ValidateSet("GuardProductionTarget", "GuardStagingTarget", "GuardNonLoopback", "GuardMissingExecute", "GuardPrivateIdentityInRepo", "GuardPrivateIdentityInBackupDestination", "GuardMalformedArtifact", "GuardUnexpectedArchiveMember", "GuardPathTraversalArchiveMember", "ChecksumAndCleanup", "CommandPlan")]
+  [ValidateSet("GuardProductionTarget", "GuardStagingTarget", "GuardNonLoopback", "GuardMissingExecute", "GuardPrivateIdentityInRepo", "GuardPrivateIdentityInBackupDestination", "GuardMalformedArtifact", "GuardUnexpectedArchiveMember", "GuardPathTraversalArchiveMember", "ChecksumAndCleanup", "CommandPlan", "ManagedRolePlan", "UserRolePlan", "UnsupportedRoleStatement", "RolePlanFailureCleanup")]
   [string]$FixtureScenario,
   [switch]$ExecuteLocalRestore,
+  [switch]$VerifyExistingLocalRestore,
+  [switch]$InspectRolesOnly,
   [switch]$UseSupabaseLocalDefaults,
   [string]$EncryptedBackupPath,
   [string]$ExpectedSha256,
@@ -13,7 +15,8 @@ param(
   [int]$TargetPort = 54322,
   [string]$TargetDatabase = "postgres",
   [string]$TargetUser = "postgres",
-  [string]$ExpectedMigration = "20260714122230"
+  [string]$ExpectedMigration = "20260714122230",
+  [string]$SupabaseWorkdir
 )
 
 Set-StrictMode -Version Latest
@@ -49,8 +52,81 @@ $ProjectLocalTables = @(
   "calendar_assignments",
   "assignment_responses",
   "assignment_response_tokens",
+  "assignment_response_link_reveal_events",
+  "volunteer_schedule_access_tokens",
   "assignment_notification_deliveries"
 )
+$ExpectedForceRlsTables = @(
+  "workspaces",
+  "project_contacts",
+  "workspace_contact_grants",
+  "assignment_notification_deliveries"
+)
+$ExpectedMigrationHistory = @(
+  "20260701000000",
+  "20260701010000",
+  "20260701020000",
+  "20260701030000",
+  "20260701040000",
+  "20260701050000",
+  "20260701060000",
+  "20260701070000",
+  "20260702000000",
+  "20260703000000",
+  "20260704000000",
+  "20260705000000",
+  "20260714121500",
+  "20260714121600",
+  "20260714121700",
+  "20260714121800",
+  "20260714121900",
+  "20260714122000",
+  "20260714122100",
+  "20260714122200",
+  "20260714122210",
+  "20260714122220",
+  "20260714122230"
+)
+$ExpectedBaselineFunctions = @(
+  "archive_calendar_item",
+  "archive_task_preset",
+  "calendar_assignment_response_start_at",
+  "calendar_custom_values_are_valid",
+  "cancel_calendar_assignment",
+  "claim_initial_assignment_notification_deliveries",
+  "confirm_all_volunteer_schedule_assignments",
+  "convert_questionnaire_submission_to_volunteer_profile",
+  "create_calendar_assignment",
+  "create_calendar_assignments_batch",
+  "create_calendar_item",
+  "create_manual_volunteer_profile",
+  "create_task_preset",
+  "finalize_initial_assignment_notification_delivery",
+  "issue_assignment_response_token",
+  "issue_volunteer_schedule_access",
+  "publish_calendar_item",
+  "read_assignment_detail_context",
+  "read_assignment_response_by_token",
+  "read_initial_assignment_notification_summaries",
+  "read_volunteer_schedule",
+  "record_assignment_response_link_reveal_event",
+  "replace_assignment_response_token",
+  "response_link_reveal_metadata_is_valid",
+  "reveal_assignment_response_link",
+  "revoke_assignment_response_token",
+  "revoke_volunteer_schedule_access",
+  "submit_assignment_response_by_token",
+  "submit_questionnaire_submission",
+  "submit_volunteer_schedule_assignment_response",
+  "task_custom_field_definitions_are_valid",
+  "update_assignment_response",
+  "update_calendar_item_one_off_timed",
+  "update_calendar_item_preset_timed",
+  "update_volunteer_profile_manual_fields"
+)
+$ProductionBaselineTypesCommit = "2ebe35912ae3ff203b249d92d8914a8af73bd9ca"
+$ProductionBaselineTypesGitPath = "cvc-scheduler/lib/supabase/database.types.ts"
+. (Join-Path $ScriptRoot "ProjectLocalRoleRestore.ps1")
 
 function Test-IsSubPath {
   param([string]$Child, [string]$Parent)
@@ -248,6 +324,44 @@ function Invoke-ScalarQuery {
   return (Get-Content -LiteralPath $outPath -Raw).Trim()
 }
 
+function ConvertTo-ProjectLocalSqlLiteralList {
+  param([Parameter(Mandatory = $true)][string[]]$Values)
+  return ($Values | ForEach-Object { "'" + $_.Replace("'", "''") + "'" }) -join ","
+}
+
+function Get-ProjectLocalLogicalBackupCoverage {
+  param([Parameter(Mandatory = $true)][string]$ExtractRoot)
+
+  $schemaSql = [System.IO.File]::ReadAllText((Join-Path $ExtractRoot "schema.sql"))
+  $dataSql = [System.IO.File]::ReadAllText((Join-Path $ExtractRoot "data.sql"))
+  $authObjectPattern = '(?im)^\s*(?:CREATE\s+(?:TABLE|SEQUENCE)|COPY|INSERT\s+INTO)\s+(?:"auth"|auth)\s*\.'
+  $storageObjectPattern = '(?im)^\s*(?:CREATE\s+(?:TABLE|SEQUENCE)|COPY|INSERT\s+INTO)\s+(?:"storage"|storage)\s*\.'
+  return [ordered]@{
+    auth_schema_or_data_represented = [regex]::IsMatch($schemaSql, $authObjectPattern) -or [regex]::IsMatch($dataSql, $authObjectPattern)
+    storage_metadata_represented = [regex]::IsMatch($schemaSql, $storageObjectPattern) -or [regex]::IsMatch($dataSql, $storageObjectPattern)
+    auth_platform_configuration_represented = $false
+    storage_object_blobs_represented = $false
+  }
+}
+
+function Get-NormalizedProjectLocalGeneratedTypes {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $source = [System.IO.File]::ReadAllText($Path).Replace("`r`n", "`n")
+  $source = [regex]::Replace(
+    $source,
+    "\n\s*// Allows to automatically instantiate createClient with right options\s*\n\s*// instead of createClient<Database, \{ PostgrestVersion: 'XX' \}>\(URL, KEY\)\s*(?=\n\s*__InternalSupabase:)",
+    "",
+    [System.Text.RegularExpressions.RegexOptions]::Multiline
+  )
+  $source = [regex]::Replace(
+    $source,
+    '\n\s*__InternalSupabase:\s*\{\s*\n\s*PostgrestVersion:\s*"[^"]+"\s*\n\s*\}\s*(?=\n\s*public:)',
+    "",
+    [System.Text.RegularExpressions.RegexOptions]::Multiline
+  )
+  return $source.Trim()
+}
+
 function Invoke-FixtureScenario {
   $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("project-local-restore-fixture-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
@@ -311,6 +425,79 @@ function Invoke-FixtureScenario {
         $commands | ConvertTo-Json
         return
       }
+      "ManagedRolePlan" {
+        $rolesPath = Join-Path $tempRoot "roles.sql"
+        $derivedPath = Join-Path $tempRoot "roles-restore.sql"
+        $fixtureSql = @"
+SET default_transaction_read_only = off;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+RESET ALL;
+CREATE ROLE "anon";
+ALTER ROLE "anon" WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS CONNECTION LIMIT -1;
+ALTER ROLE "anon" SET "statement_timeout" TO '3s';
+GRANT SET ON PARAMETER "log_min_messages" TO "supabase_realtime_admin";
+"@
+        [System.IO.File]::WriteAllText($rolesPath, $fixtureSql, (New-Object System.Text.UTF8Encoding($false)))
+        $summary = Write-ProjectLocalRoleRestoreSql -RolesSqlPath $rolesPath -OutputPath $derivedPath
+        $derived = [System.IO.File]::ReadAllText($derivedPath)
+        if ($summary.managed_role_count -ne 2 -or $summary.user_role_count -ne 0) { throw "fixture_managed_role_count_invalid" }
+        if ($derived -match '(?i)CREATE\s+ROLE\s+"anon"' -or $derived -match '(?i)ALTER\s+ROLE\s+"anon"') { throw "fixture_managed_role_would_be_recreated" }
+        foreach ($marker in @(
+          "project_local_managed_role_missing",
+          "project_local_managed_role_property_mismatch",
+          "project_local_managed_role_configuration_mismatch",
+          "project_local_managed_parameter_privilege_mismatch"
+        )) {
+          if (-not $derived.Contains($marker)) { throw "fixture_managed_verification_missing" }
+        }
+        "fixture_managed_role_plan_ok"
+        return
+      }
+      "UserRolePlan" {
+        $rolesPath = Join-Path $tempRoot "roles.sql"
+        $derivedPath = Join-Path $tempRoot "roles-restore.sql"
+        $fixtureSql = @"
+CREATE ROLE "project_local_worker";
+CREATE ROLE "project_local_reader";
+ALTER ROLE "project_local_worker" WITH NOSUPERUSER INHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 3 PASSWORD 'syntheticScramVerifier123' VALID UNTIL '2030-01-01 00:00:00+00';
+ALTER ROLE "project_local_worker" SET "statement_timeout" TO '10s';
+GRANT "project_local_reader" TO "project_local_worker";
+"@
+        [System.IO.File]::WriteAllText($rolesPath, $fixtureSql, (New-Object System.Text.UTF8Encoding($false)))
+        $summary = Write-ProjectLocalRoleRestoreSql -RolesSqlPath $rolesPath -OutputPath $derivedPath
+        $derived = [System.IO.File]::ReadAllText($derivedPath)
+        if ($summary.user_role_count -ne 2 -or $summary.managed_role_count -ne 0) { throw "fixture_user_role_count_invalid" }
+        foreach ($marker in @(
+          'CREATE ROLE "project_local_worker"',
+          'ALTER ROLE "project_local_worker" WITH',
+          'ALTER ROLE "project_local_worker" SET "statement_timeout"',
+          'GRANT "project_local_reader" TO "project_local_worker"'
+        )) {
+          if (-not $derived.Contains($marker)) { throw "fixture_user_role_application_missing" }
+        }
+        "fixture_user_role_application_plan_ok"
+        return
+      }
+      "UnsupportedRoleStatement" {
+        $rolesPath = Join-Path $tempRoot "roles.sql"
+        [System.IO.File]::WriteAllText($rolesPath, 'DROP ROLE "project_local_worker";', (New-Object System.Text.UTF8Encoding($false)))
+        [void](New-ProjectLocalRoleRestorePlan -RolesSqlPath $rolesPath)
+      }
+      "RolePlanFailureCleanup" {
+        $planRoot = Join-Path $tempRoot "derived"
+        New-Item -ItemType Directory -Path $planRoot -Force | Out-Null
+        try {
+          $rolesPath = Join-Path $planRoot "roles.sql"
+          [System.IO.File]::WriteAllText($rolesPath, 'DROP ROLE "project_local_worker";', (New-Object System.Text.UTF8Encoding($false)))
+          [void](New-ProjectLocalRoleRestorePlan -RolesSqlPath $rolesPath)
+        } catch {
+          Remove-Item -LiteralPath $planRoot -Recurse -Force
+        }
+        if (Test-Path -LiteralPath $planRoot) { throw "fixture_failed_role_plan_cleanup_failed" }
+        "fixture_failed_role_plan_cleanup_ok"
+        return
+      }
       default { throw "Unknown fixture scenario." }
     }
   } finally {
@@ -323,11 +510,21 @@ if ($FixtureMode) {
   return
 }
 
-if (-not $ExecuteLocalRestore) {
+if (-not $ExecuteLocalRestore -and -not $VerifyExistingLocalRestore -and -not $InspectRolesOnly) {
   throw "Local restore execution requires -ExecuteLocalRestore."
 }
+$selectedModeCount = 0
+if ($ExecuteLocalRestore) { $selectedModeCount++ }
+if ($VerifyExistingLocalRestore) { $selectedModeCount++ }
+if ($InspectRolesOnly) { $selectedModeCount++ }
+if ($selectedModeCount -ne 1) {
+  throw "Restore, verification-only, and role-inspection modes are mutually exclusive."
+}
 
-$targetPsqlArguments = Get-TargetPsqlArguments -HostName $TargetHost -Port $TargetPort -DatabaseName $TargetDatabase -UserName $TargetUser
+$targetPsqlArguments = $null
+if ($ExecuteLocalRestore -or $VerifyExistingLocalRestore) {
+  $targetPsqlArguments = Get-TargetPsqlArguments -HostName $TargetHost -Port $TargetPort -DatabaseName $TargetDatabase -UserName $TargetUser
+}
 Assert-OutsideRepository -Path $EncryptedBackupPath -Label "encrypted backup"
 if ([string]::IsNullOrWhiteSpace($AgeIdentityPath)) {
   $AgeIdentityPath = Read-Host "Path to age private identity file"
@@ -370,6 +567,31 @@ try {
       throw "Backup package is missing an approved restore file."
     }
   }
+  $backupCoverage = Get-ProjectLocalLogicalBackupCoverage -ExtractRoot $extractRoot
+
+  if ($InspectRolesOnly) {
+    $restoreStage = "role_inspection"
+    $inspection = Get-ProjectLocalRolesSqlInspection -RolesSqlPath (Join-Path $extractRoot "roles.sql")
+    $restoreStage = "role_plan"
+    $plan = New-ProjectLocalRoleRestorePlan -RolesSqlPath (Join-Path $extractRoot "roles.sql")
+    [ordered]@{
+      inspection = $inspection
+      restore_plan = [ordered]@{
+        statement_count = $plan.statement_count
+        managed_role_count = $plan.managed_role_count
+        managed_roles = $plan.managed_roles
+        user_role_count = $plan.user_role_count
+        user_roles = $plan.user_roles
+        derived_statement_count = $plan.derived_statement_count
+      }
+      logical_backup_coverage = $backupCoverage
+    } | ConvertTo-Json -Depth 10
+    return
+  }
+
+  $restoreStage = "role_plan"
+  $derivedRolesPath = Join-Path $extractRoot "roles-restore.sql"
+  $rolePlanSummary = Write-ProjectLocalRoleRestoreSql -RolesSqlPath (Join-Path $extractRoot "roles.sql") -OutputPath $derivedRolesPath
 
   $restoreStage = "local_database_secret"
   if ($UseSupabaseLocalDefaults) {
@@ -380,39 +602,110 @@ try {
   }
   if ($localRestorePassword.Length -eq 0) { throw "Local restore database password is required." }
 
-  foreach ($name in $RestoreOrder) {
-    $restoreStage = "restore_$($name.Replace('.', '_'))"
-    Invoke-CheckedProcess -FilePath $psql.Source -WorkingDirectory $workRoot -SafeFailureCode "restore_$name" -ChildScopedSecret $localRestorePassword -ArgumentList (@("--single-transaction", "--set", "ON_ERROR_STOP=1") + $targetPsqlArguments + @("-f", (Join-Path $extractRoot $name)))
+  if ($ExecuteLocalRestore) {
+    foreach ($name in $RestoreOrder) {
+      $restoreStage = "restore_$($name.Replace('.', '_'))"
+      $restoreFilePath = if ($name -eq "roles.sql") { $derivedRolesPath } else { Join-Path $extractRoot $name }
+      Invoke-CheckedProcess -FilePath $psql.Source -WorkingDirectory $workRoot -SafeFailureCode "restore_$name" -ChildScopedSecret $localRestorePassword -ArgumentList (@("--single-transaction", "--set", "ON_ERROR_STOP=1") + $targetPsqlArguments + @("-f", $restoreFilePath))
+    }
   }
 
-  $restoreStage = "verify_migration"
-  $migration = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_migration" -ChildScopedSecret $localRestorePassword -Sql "select version from supabase_migrations.schema_migrations order by version desc limit 1;"
-  if ($migration -ne $ExpectedMigration) {
-    throw "Restored database terminal migration mismatch."
+  $restoreStage = "verify_migration_history"
+  $migrationHistory = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_migration_history" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(version, ',' order by version), '') from supabase_migrations.schema_migrations;"
+  if ($migrationHistory -cne ($ExpectedMigrationHistory -join ",") -or $ExpectedMigrationHistory[-1] -cne $ExpectedMigration) {
+    throw "production_baseline_migration_history_mismatch"
   }
 
   $restoreStage = "verify_tables"
-  $tableList = ($ProjectLocalTables | ForEach-Object { "'$_'" }) -join ","
-  $tableCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_tables" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ($tableList);"
-  if ([int]$tableCount -lt $ProjectLocalTables.Count) {
-    throw "Restored database is missing Project Local application tables."
+  $expectedTables = @($ProjectLocalTables | Sort-Object)
+  $tableList = ConvertTo-ProjectLocalSqlLiteralList -Values $ProjectLocalTables
+  $actualTables = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_tables" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(tablename, ',' order by tablename), '') from pg_catalog.pg_tables where schemaname = 'public';"
+  if ($actualTables -cne ($expectedTables -join ",")) {
+    throw "production_baseline_public_tables_mismatch"
   }
 
-  $restoreStage = "verify_rls"
-  $rlsCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_rls" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_tables where schemaname = 'public' and tablename in ($tableList) and rowsecurity = true;"
-  if ([int]$rlsCount -lt 8) {
-    throw "Restored database RLS posture is incomplete."
+  $restoreStage = "verify_functions"
+  $expectedFunctions = @($ExpectedBaselineFunctions | Sort-Object)
+  $actualFunctions = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_functions" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(distinct procedure.proname, ',' order by procedure.proname), '') from pg_catalog.pg_proc as procedure join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace where namespace.nspname = 'public' and procedure.prokind = 'f' and procedure.prorettype <> 'pg_catalog.trigger'::regtype;"
+  if ($actualFunctions -cne ($expectedFunctions -join ",")) {
+    throw "production_baseline_public_functions_mismatch"
   }
+
+  $restoreStage = "verify_pending_function_absent"
+  $pendingFunctionCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_pending_function_absent" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_catalog.pg_proc as procedure join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace where namespace.nspname = 'public' and procedure.proname = 'read_assignment_notification_delivery_health';"
+  if ([int]$pendingFunctionCount -ne 0) { throw "pending_notification_health_function_present" }
+
+  $restoreStage = "verify_rls"
+  $actualRlsTables = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_rls" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(tablename, ',' order by tablename), '') from pg_catalog.pg_tables where schemaname = 'public' and tablename in ($tableList) and rowsecurity = true;"
+  if ($actualRlsTables -cne ($expectedTables -join ",")) { throw "production_baseline_rls_mismatch" }
+
+  $restoreStage = "verify_force_rls"
+  $expectedForceRls = @($ExpectedForceRlsTables | Sort-Object)
+  $actualForceRls = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_force_rls" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(relation.relname, ',' order by relation.relname), '') from pg_catalog.pg_class as relation join pg_catalog.pg_namespace as namespace on namespace.oid = relation.relnamespace where namespace.nspname = 'public' and relation.relname in ($tableList) and relation.relkind = 'r' and relation.relforcerowsecurity = true;"
+  if ($actualForceRls -cne ($expectedForceRls -join ",")) { throw "production_baseline_force_rls_mismatch" }
 
   $restoreStage = "verify_table_grants"
   $unsafeGrantCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_table_grants" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from information_schema.role_table_grants where table_schema = 'public' and table_name in ($tableList) and grantee in ('anon','authenticated','public') and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE');"
-  if ([int]$unsafeGrantCount -ne 0) {
-    throw "Restored database exposes unsafe broad table mutation grants."
-  }
+  if ([int]$unsafeGrantCount -ne 0) { throw "unsafe_broad_table_mutation_grants" }
 
-  "local_restore_validation_ok"
+  $restoreStage = "verify_managed_roles"
+  $managedRoleList = ConvertTo-ProjectLocalSqlLiteralList -Values $rolePlanSummary.managed_roles
+  $managedRoleCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_managed_roles" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_catalog.pg_roles where rolname in ($managedRoleList);"
+  if ([int]$managedRoleCount -ne $rolePlanSummary.managed_role_count) { throw "managed_roles_post_restore_missing" }
+
+  $restoreStage = "verify_no_service_role_runtime_owner"
+  $serviceRoleOwnerCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_no_service_role_runtime_owner" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_catalog.pg_proc as procedure join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace join pg_catalog.pg_roles as owner on owner.oid = procedure.proowner where namespace.nspname = 'public' and owner.rolname = 'service_role';"
+  if ([int]$serviceRoleOwnerCount -ne 0) { throw "service_role_owned_public_function_present" }
+  if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_SERVICE_ROLE_KEY)) { throw "service_role_application_environment_present" }
+
+  $restoreStage = "verify_product_rows"
+  $rowCountParts = $ProjectLocalTables | ForEach-Object { "select count(*)::bigint as row_count from public.$(ConvertTo-ProjectLocalSqlIdentifier -Identifier $_)" }
+  $productRowCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_product_rows" -ChildScopedSecret $localRestorePassword -Sql ("select coalesce(sum(row_count), 0) from (" + ($rowCountParts -join " union all ") + ") as product_rows;")
+  if ([int64]$productRowCount -ne 0) { throw "production_snapshot_product_rows_unexpected" }
+
+  $restoreStage = "verify_public_object_shape"
+  $unexpectedPublicObjectCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_public_object_shape" -ChildScopedSecret $localRestorePassword -Sql "select (select count(*) from pg_catalog.pg_class as relation join pg_catalog.pg_namespace as namespace on namespace.oid = relation.relnamespace where namespace.nspname = 'public' and relation.relkind = 'S') + (select count(*) from pg_catalog.pg_type as type join pg_catalog.pg_namespace as namespace on namespace.oid = type.typnamespace where namespace.nspname = 'public' and type.typtype in ('e','c') and type.typrelid = 0);"
+  if ([int]$unexpectedPublicObjectCount -ne 0) { throw "production_baseline_unexpected_public_objects" }
+
+  $restoreStage = "verify_baseline_types"
+  if ([string]::IsNullOrWhiteSpace($SupabaseWorkdir)) { $SupabaseWorkdir = $RepositoryRoot }
+  if (-not (Test-Path -LiteralPath (Join-Path $SupabaseWorkdir "supabase\config.toml"))) { throw "supabase_workdir_config_missing" }
+  $supabase = Get-Command "supabase" -ErrorAction Stop
+  $git = Get-Command "git" -ErrorAction Stop
+  $generatedTypesPath = Join-Path $workRoot "restored-database.types.ts"
+  $baselineTypesPath = Join-Path $workRoot "production-baseline.types.ts"
+  Invoke-CheckedProcess -FilePath $supabase.Source -WorkingDirectory $workRoot -SafeFailureCode "generate_restored_types" -StdoutPath $generatedTypesPath -ArgumentList @("gen", "types", "typescript", "--local", "--workdir", $SupabaseWorkdir)
+  Invoke-CheckedProcess -FilePath $git.Source -WorkingDirectory $workRoot -SafeFailureCode "read_baseline_types" -StdoutPath $baselineTypesPath -ArgumentList @("-C", $RepositoryRoot, "show", "$ProductionBaselineTypesCommit`:$ProductionBaselineTypesGitPath")
+  $generatedTypes = Get-NormalizedProjectLocalGeneratedTypes -Path $generatedTypesPath
+  $baselineTypes = Get-NormalizedProjectLocalGeneratedTypes -Path $baselineTypesPath
+  if ($baselineTypes.Contains("read_assignment_notification_delivery_health")) { throw "production_baseline_types_are_not_pre_12_33" }
+  if (-not ([System.IO.File]::ReadAllText((Join-Path $RepositoryRoot "lib\supabase\database.types.ts")).Contains("read_assignment_notification_delivery_health"))) { throw "current_head_types_distinction_missing" }
+  if ($generatedTypes -cne $baselineTypes) { throw "production_baseline_generated_type_mismatch" }
+
+  [ordered]@{
+    result = "local_restore_validation_ok"
+    restored_terminal_migration = $ExpectedMigration
+    migration_history_count = $ExpectedMigrationHistory.Count
+    public_table_count = $ProjectLocalTables.Count
+    baseline_public_function_count = $ExpectedBaselineFunctions.Count
+    pending_notification_health_function_count = [int]$pendingFunctionCount
+    rls_table_count = $ProjectLocalTables.Count
+    force_rls_table_count = $ExpectedForceRlsTables.Count
+    unsafe_broad_mutation_grant_count = [int]$unsafeGrantCount
+    managed_role_count = $rolePlanSummary.managed_role_count
+    restored_user_role_count = $rolePlanSummary.user_role_count
+    product_row_count = [int64]$productRowCount
+    production_baseline_types_commit = $ProductionBaselineTypesCommit
+    logical_backup_coverage = $backupCoverage
+  } | ConvertTo-Json -Depth 6
 } catch {
-  throw "Local restore validation failed safely at $restoreStage."
+  $safeFailureCode = if ($_.Exception.Message -match '^[a-z][a-z0-9_]{2,80}$') {
+    $_.Exception.Message
+  } else {
+    $safeType = [regex]::Replace($_.Exception.GetType().Name.ToLowerInvariant(), '[^a-z0-9_]', '_')
+    "stage_failed_$safeType"
+  }
+  throw "Local restore validation failed safely at $restoreStage with $safeFailureCode."
 } finally {
   if ($null -ne $localRestorePassword) { $localRestorePassword.Dispose() }
   if (Test-Path -LiteralPath $workRoot) { Remove-Item -LiteralPath $workRoot -Recurse -Force }
