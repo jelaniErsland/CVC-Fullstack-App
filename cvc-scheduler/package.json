@@ -36,6 +36,8 @@
     "test:production-independent-backup": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-independent-backup-regression.mjs",
     "test:production-recovery-readiness": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-recovery-readiness-regression.mjs",
     "test:production-observability": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-observability-regression.mjs",
+    "test:assignment-notification-health": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-notification-health-regression.mjs",
+    "test:assignment-notification-health:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-assignment-notification-health-regression.mjs",
     "test:bozeman-workspace-provisioning": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-workspace-provisioning-regression.mjs",
     "test:volunteer-profile-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-regression.mjs",
     "test:volunteer-profile-management:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-browser-regression.mjs",

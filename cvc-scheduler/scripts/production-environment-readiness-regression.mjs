@@ -24,6 +24,9 @@ import {
   PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED,
   PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN,
   PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN,
+  PRODUCTION_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN,
+  PRODUCTION_STALE_DELIVERY_PRODUCTION_READ_PROVEN,
+  PRODUCTION_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT,
   PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN,
   productionEnvironmentKnownStagingTarget,
@@ -61,12 +64,16 @@ async function main() {
   assert.equal(PRODUCTION_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
   assert.equal(PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED, true);
   assert.equal(PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN, true);
-  assert.equal(PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN, false);
+  assert.equal(PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN, true);
+  assert.equal(PRODUCTION_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN, true);
+  assert.equal(PRODUCTION_STALE_DELIVERY_PRODUCTION_READ_PROVEN, false);
+  assert.equal(PRODUCTION_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT, true);
   assert.equal(PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
-  assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, false);
+  assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, true);
   assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
   assert.equal(productionEnvironmentKnownStagingTarget.ref, "kfuujcfxoayukywvtaeh");
+  assert.equal(productionEnvironmentKnownStagingTarget.validatedMigration, "20260811123300");
   assert.equal(productionEnvironmentReadinessSummary.decision, "NO-GO");
   assert.equal(productionEnvironmentReadinessSummary.recommendedHost, "Vercel");
 
@@ -121,12 +128,14 @@ async function main() {
     (item) => item.id === "observability",
   );
   assert(observability, "Production readiness is missing observability.");
-  assert.equal(observability.status, "configuration_required");
-  assert.equal(observability.blocking, true);
+  assert.equal(observability.status, "proven");
+  assert.equal(observability.blocking, false);
   assert.match(JSON.stringify(observability.evidence), /12\.32/);
   assert.match(JSON.stringify(observability.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
-  assert.match(JSON.stringify(observability.evidence), /stale assignment_notification_deliveries/i);
+  assert.match(JSON.stringify(observability.evidence), /20260811123300/);
+  assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
+  assert.match(JSON.stringify(observability.evidence), /production execution.*unproven/i);
 
   const [
     contract,

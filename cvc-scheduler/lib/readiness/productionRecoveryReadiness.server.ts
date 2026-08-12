@@ -206,18 +206,20 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "observability_alerting",
     title: "Recovery observability and alerting",
-    status: "configuration_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
-      "12.32 proves the privacy-safe application event model and a route-unused non-mutating stale-sending detection seam",
+      "12.32 proves the privacy-safe application event model and non-mutating stale-sending definition",
       "August 11 2026 operator evidence records Vercel Production Logs as the runtime review location and Vercel Deployments/build status as the deployment-failure review location",
       "Project Local product/operator owner is recorded as the primary alert and incident-response owner and may use Codex or engineering assistance without transferring operational ownership",
       "a controlled invalid schedule-access token request produced the expected safe unavailable behavior and a searchable privacy-safe schedule_access.exchange_failure warning in Vercel Production Logs",
-      "no operator stale-delivery check cadence or alert path is configured",
-      "a practical notification mechanism beyond manual Vercel Hobby review remains unproven",
+      "12.33 adds an authenticated capability-gated bounded read, an unlinked Notification Health route, one-signal detector integration, local proof, and project-local-staging proof through 20260811123300",
+      "the named operator checks after each controlled email test or batch, before manual retry, and at the end of each active email day; any stale row requires immediate ledger reconciliation, while repetition or more than one unresolved row pauses application email",
+      "this explicit pull check plus proven Vercel runtime logs and named ownership is sufficient manual notification for the initial tiny controlled beta; automated alert delivery is unproven and not required at that scale",
+      "production RPC execution and real production stale-row observation remain deferred to the reviewed production migration/provisioning and controlled pilot",
     ],
     requiredAction:
-      "Define and prove the authorized stale-delivery read path, check cadence, threshold/escalation procedure, and practical operator notification mechanism while preserving the proven Vercel review location, named ownership, controlled-event evidence, and privacy contract.",
+      "Preserve the 12.33 cadence and privacy boundary; record the first production Notification Health execution after a separately reviewed migration and provisioning, and add automated alert delivery only if scale, repetition, or response performance makes manual operation inadequate.",
   },
   {
     id: "incident_ownership",
@@ -247,7 +249,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "launch remains NO-GO",
     ],
     requiredAction:
-      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, email, observability, provisioning, and pilot evidence pass. Product-owner UI approval is already proven through 12.30.1.",
+      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, application email, provisioning, production notification-health execution, and pilot evidence pass. Product-owner UI and initial-beta observability architecture are already proven.",
   },
 ];
 

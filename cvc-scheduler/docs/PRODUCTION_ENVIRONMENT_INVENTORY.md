@@ -11,7 +11,7 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | Environment | Supabase | App origin | Email transport | Data policy |
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
-| Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260714122230` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
+| Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260811123300` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
 | Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` | Provider configured and direct dashboard delivery proven; Project Local application transport currently disabled pending app-driven proof | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
@@ -63,7 +63,7 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 2. Verify the deployment project does not reference staging ref `kfuujcfxoayukywvtaeh`.
 3. Verify `ADMIN_AUTH_MODE=enforced`.
 4. Verify production application email remains disabled until the backup/recovery, provisioning, monitoring, and controlled app-driven test requirements in the production deployment runbook are complete.
-5. Preserve the proven Vercel Logs/Deployments review location, named alert/incident owner, action policy, and controlled privacy-safe proof. Complete the authorized stale-delivery read path/check cadence/threshold/escalation and practical notification mechanism; 12.32/12.32.1 add no environment variable or external sink.
+5. Preserve the proven Vercel Logs/Deployments review location, named alert/incident owner, action policy, and controlled privacy-safe proof. Preserve 12.33's authenticated bounded Notification Health path and after-batch/before-retry/end-of-active-day cadence. Manual notification is sufficient for the initial tiny controlled beta; apply the migration to production only through separate review and record the first production check during the controlled pilot.
 6. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
 7. Stop on any mismatch; do not “fix” by copying staging values.
 

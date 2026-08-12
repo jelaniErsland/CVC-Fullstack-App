@@ -1,6 +1,6 @@
 # Production Observability
 
-Iteration 12.32 establishes Project Local's application observability foundation. Iteration 12.32.1 records August 11, 2026 operator evidence that those events reach the actual Vercel Production runtime logs and can be reviewed safely. Runtime visibility, ownership, action conditions, deployment/build review, and one controlled production-safe observation are now proven. The overall observability launch gate remains blocking because stale-delivery monitoring and a practical notification mechanism are not yet proven. Launch remains `NO-GO`.
+Iteration 12.32 establishes Project Local's application observability foundation. Iteration 12.32.1 records August 11, 2026 operator evidence that those events reach the actual Vercel Production runtime logs and can be reviewed safely. Iteration 12.33 adds the minimum authenticated stale-delivery read, reuses the existing detector, exposes an unlinked Notification Health operator check, and proves the contract locally and on approved non-production staging. Runtime visibility, ownership, action conditions, deployment/build review, the controlled production-safe observation, and the initial-beta operator monitoring architecture are now proven. Production execution of the new read is deliberately not claimed. Launch remains `NO-GO` for separate application-email, backup/restore, provisioning, and pilot blockers.
 
 ## Application foundation now proven
 
@@ -58,11 +58,15 @@ The `assignment_notification_deliveries` ledger remains authoritative. Structure
 
 The send boundary emits distinct safe stages for configuration, claim, schedule-access issuance/revocation, provider delivery, ledger finalization, and successful finalized delivery. It never emits the recipient, volunteer, provider request/response, provider message id, schedule bearer, full URL, API key, or raw exception.
 
-## Stale-delivery seam
+## Stale-delivery read and detector
 
-`lib/observability/staleAssignmentDeliveries.server.ts` is a server-only, route-unused, non-mutating detector. It accepts an injected bounded projection containing only delivery UUID, `sending` state, and expiration timestamp; identifies expired `sending` rows relative to an injected clock; and can emit a safe stale-delivery event.
+`public.read_assignment_notification_delivery_health()` is a no-argument, `stable`, `SECURITY DEFINER` RPC with an empty search path. It derives the caller from `auth.uid()`, requires exactly one active workspace reached through an active contact and active, current, non-revoked grant, and requires `workspace.read`, `calendar.view`, `assignments.view`, and `assignments.edit`. No eligible workspace and multiple eligible workspaces both fail closed. Execution is revoked from public/anon and granted only to `authenticated`; direct authenticated access to `assignment_notification_deliveries` remains revoked under FORCE RLS.
 
-It does not create a Supabase client, query a table, call an RPC, use service-role access, retry a delivery, send email, schedule a cron job, or mutate the ledger. A later reviewed operator slice must decide the authorized read path and check cadence.
+The RPC returns only `delivery_id`, `delivery_state`, and `sending_expires_at` for rows currently in `sending` state in the derived workspace. Results are ordered by earliest expiration and bounded to 100. It exposes no recipient, volunteer, provider, token, URL, raw error, grant, or capability data and performs no mutation.
+
+`lib/observability/assignmentNotificationHealth.server.ts` calls only that RPC, validates the exact safe projection, and passes it to `lib/observability/staleAssignmentDeliveries.server.ts`. The existing detector remains the one stale definition: an expired `sending` lease is stale relative to the check clock. One operator check emits at most one existing `assignment_email.stale_delivery_detected` signal, even if multiple rows are stale. Neither helper retries, reclaims, finalizes, resends, revokes credentials, schedules work, or mutates the ledger.
+
+The unlinked `/admin/diagnostics/notification-health` server route is dynamic/no-store and requires the existing Initial Email workspace/capability boundary. It shows only a calm healthy state, a stale count requiring review, or an unavailable state. It displays no delivery UUID or sensitive row detail.
 
 ## 12.32.1 operator evidence now proven
 
@@ -76,7 +80,7 @@ On August 11, 2026, the operator verified:
 - Vercel Production Logs showed the corresponding structured event with `event=schedule_access.exchange_failure`, `severity=warn`, `category=schedule_access`, `stage=exchange`, and `outcome=failure`.
 - The observed entry contained no volunteer name/email, bearer or token, full URL, Auth/session credential, provider payload, raw provider/Supabase error, SQL, grants or capability arrays, API key, or environment secret.
 
-This is one narrow safe proof. It does not prove all failure paths, automated alert delivery, or stale-delivery monitoring.
+This is one narrow safe production-log proof. It does not prove all failure paths, automated alert delivery, or production execution of the 12.33 stale-delivery RPC.
 
 ## Operator action policy now recorded
 
@@ -86,6 +90,7 @@ Investigate immediately when any of the following occurs:
 - repeated `error` events;
 - repeated Auth, Calendar, Volunteer, assignment, schedule-access, or volunteer-response failures that impede normal operation;
 - any assignment-email provider or finalization failure after Project Local application email is later enabled.
+- any stale assignment-email `sending` delivery reported by Notification Health.
 
 Pause affected operations immediately for:
 
@@ -99,19 +104,26 @@ Pause affected operations immediately for:
 
 Assignment-email failures must be reconciled against the authoritative `assignment_notification_deliveries` ledger before retry or operator disposition. Project Local application email remains disabled, so this policy does not authorize enabling the transport or sending a test email.
 
-## Operator observability still required
+## Notification Health cadence and escalation
 
-Before the overall observability launch gate can pass, operators must still document and prove:
+While Project Local application email is disabled, no routine stale-delivery check is required because the application cannot create a new `sending` lease.
 
-1. An authorized production read path for stale `assignment_notification_deliveries` that exposes only the minimum safe operational projection.
-2. A stale-delivery review cadence.
-3. A threshold and escalation procedure demonstrated in an operator workflow.
-4. A practical notification or alert mechanism beyond manual Vercel Hobby log review, if manual review cannot meet the agreed response expectation.
+Once application email is enabled for an authorized controlled test or pilot, the named operator must:
 
-The 12.32 stale detector remains route-unused, injected, non-mutating, and does not query production. No paid service, Vercel alert, Resend webhook, Supabase hook, telemetry backend, browser tracking, analytics, cron, background job, production environment change, or new hosted operation was added in 12.32.1.
+- check Notification Health after each controlled email test or batch;
+- check before manually retrying any failed assignment email; and
+- check at the end of each active scheduling day in which Project Local application email was used.
+
+If any stale delivery exists, investigate immediately and reconcile it against authoritative `assignment_notification_deliveries` truth before any retry. Do not blindly resend. If stale deliveries repeat, or if more than one unresolved stale delivery is present, pause Project Local application email sending until the cause is diagnosed.
+
+For the initial tiny controlled beta, this explicit operator check, the proven Vercel runtime-log workflow, the documented cadence, and named incident ownership are a sufficient practical manual notification mechanism. Automated stale-delivery alerting is not required at that scale and is not claimed as proven. Revisit automated notification if batch size, sending frequency, repeated stale leases, or operator response performance makes the manual cadence inadequate.
+
+Overall application and operator observability architecture is therefore proven for the initial controlled-beta design. The later reviewed production migration/provisioning and controlled pilot must still record one production Notification Health execution. Real production Bozeman workspace/grant behavior and observation of a real production stale row remain unproven; 12.33 did not access production.
 
 ## Local validation
 
-`npm run test:production-observability` proves the server boundary, exact bounded shape, privacy rejection rules, logging-failure isolation, email stage distinction and sent outcome, non-mutating stale detection, representative beta-critical route instrumentation, no Client Component import, and absence of service-role/database observability behavior.
+`npm run test:production-observability` proves the event boundary, exact bounded shape, privacy rejection rules, logging-failure isolation, email stage distinction and sent outcome, non-mutating stale detection, representative beta-critical route instrumentation, no Client Component import, and absence of a service-role observability path.
 
-The focused email, Calendar, Volunteer, schedule-access, response, readiness, lint, TypeScript, build, and diff checks remain the supporting regression set. Application instrumentation, runtime-log visibility, ownership, action conditions, deployment/build review, and the single controlled event may be marked proven. Overall operator observability must remain blocking until the stale-delivery and practical-notification evidence above exists.
+`npm run test:assignment-notification-health` additionally proves migration/type parity, authenticated/capability authorization, role-only denial, unique workspace derivation, ambiguity denial, wrong-workspace isolation, revoked/expired/inactive denial, sending-only minimal projection, the 100-row oldest-first bound, fresh/stale/empty detector states, one bounded event, direct table denial, no mutation, unlinked safe output, and local zero residue.
+
+The opt-in hosted staging gate proves the same database boundary on `project-local-staging` (`kfuujcfxoayukywvtaeh`) through migration `20260811123300`, with exact-run and namespace residue both zero. No email was sent. Production was not accessed. The focused email, Calendar, Volunteer, schedule-access, response, readiness, lint, TypeScript, build, and diff checks remain the supporting regression set.

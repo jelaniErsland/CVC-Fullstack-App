@@ -4,6 +4,8 @@ Iteration 12.25 added the production Supabase schema gate and completed the firs
 
 Iteration 12.25.1 stabilizes the gate for a completely pristine Supabase project by treating a missing `supabase_migrations.schema_migrations` table as an explicit clean initial state only after the exact target and environment guards have passed. Actual migration-history query failures and malformed or unexpected remote history still fail closed.
 
+Iteration 12.33 adds migration `20260811123300` and proves it locally and on approved staging only. Production was not accessed during 12.33, remains at terminal migration `20260714122230`, and does not yet expose the Notification Health RPC. Applying the pending migration requires a separately reviewed established-production migration step.
+
 Current status: `SCHEMA VALIDATED`.
 
 Launch conclusion: `NO-GO`.
@@ -44,7 +46,7 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | Public Supabase endpoint connectivity proof | Passed: Auth health endpoint HTTP 200 using anon/publishable key without creating a user |
 | App deployment smoke test | Passed: canonical origin `https://projectlocal.app`; commit `082c960` was pushed to `origin/master`, Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production deployment smoke passed after deployment with exit code `0`; this was public HTTP-only and did not perform database validation or mutation |
 | Backup verification | Incomplete: production Supabase is on Free; Scheduled backups page states "Free Plan does not include project backups"; no Supabase-managed production backup timestamp/status or retention exists yet; 12.29 adds the preferred independent encrypted backup automation foundation, but no production backup has run and no restore has passed; Supabase Pro managed backups remain optional |
-| Email provider | Disabled/unconfigured |
+| Email provider | Resend provider/domain/sender configured; provider-level inbox delivery proven. Project Local application email transport remains disabled and application-driven delivery remains unproven |
 | Vercel deployment | Live: Vercel project `project-local` at canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available |
 | Final-domain Auth URLs | Configured: Site URL `https://projectlocal.app`; callback `https://projectlocal.app/admin/auth/callback`; manual magic-link/Auth session evidence passed |
 | Temporary Vercel Auth callback | Still allowlisted for fallback: `https://project-local-one.vercel.app/admin/auth/callback` |

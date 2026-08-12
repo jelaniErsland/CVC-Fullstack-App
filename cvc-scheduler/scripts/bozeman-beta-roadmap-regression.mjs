@@ -14,6 +14,9 @@ import {
   BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN,
   BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED,
   BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN,
+  BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN,
+  BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN,
+  BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT,
   BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BELGRADE_REMAINS_SHEETS_FALLBACK,
@@ -68,9 +71,12 @@ assert.equal(BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN, true);
 assert.equal(BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN, true);
 assert.equal(BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
 assert.equal(BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED, true);
-assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, false);
+assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, true);
+assert.equal(BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN, true);
+assert.equal(BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN, false);
+assert.equal(BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT, true);
 assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
-assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
+assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, true);
 assert.match(roadmapSource, /^import "server-only";/);
 assert.doesNotMatch(
   roadmapSource,
@@ -93,9 +99,12 @@ assert.equal(description.applicationObservabilityFoundationProven, true);
 assert.equal(description.runtimeLogVisibilityProven, true);
 assert.equal(description.controlledObservableEventProven, true);
 assert.equal(description.observabilityOwnershipRecorded, true);
-assert.equal(description.staleDeliveryMonitoringProven, false);
+assert.equal(description.staleDeliveryMonitoringProven, true);
+assert.equal(description.staleDeliveryStagingBehaviorProven, true);
+assert.equal(description.staleDeliveryProductionReadProven, false);
+assert.equal(description.manualStaleDeliveryNotificationSufficient, true);
 assert.equal(description.operatorAlertNotificationProven, false);
-assert.equal(description.operatorObservabilityProven, false);
+assert.equal(description.operatorObservabilityProven, true);
 assert.equal(description.productionDataAccessAvailable, false);
 assert.equal(description.domainCount, 11);
 
@@ -185,7 +194,7 @@ for (const blocker of [
   "manual_volunteer_add_edit_or_controlled_import",
   "calendar_create_edit_archive_publication_mutations",
   "secure_account_light_volunteer_schedule_access",
-  "production_resend_application_delivery_and_observability_proof",
+  "production_resend_application_delivery_proof",
 ]) {
   assert.ok(readiness.blockers.includes(blocker), `missing blocker ${blocker}`);
 }

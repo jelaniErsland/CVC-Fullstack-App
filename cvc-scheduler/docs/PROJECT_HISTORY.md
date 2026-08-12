@@ -1,5 +1,19 @@
 # Project History
 
+## Iteration 12.33 - Authenticated Assignment Notification Health
+
+Summary:
+- Added one reviewed migration with a no-argument, authenticated, stable `SECURITY DEFINER` RPC. It derives `auth.uid()`, requires exactly one active authorized workspace plus `workspace.read`, `calendar.view`, `assignments.view`, and `assignments.edit`, and fails closed for missing, ambiguous, inactive, revoked, expired, or role-only authority.
+- The RPC returns only delivery UUID, `sending` state, and lease expiration for the authorized workspace, ordered by earliest expiration and bounded to 100. Public/anon execution is revoked, only authenticated execution is granted, and direct ledger access remains revoked under FORCE RLS.
+- Added a strict server-only RPC reader, reused the 12.32 stale detector with one event per operator check, and added the unlinked dynamic/no-store `/admin/diagnostics/notification-health` route with healthy, stale-count, and unavailable states only.
+- Added focused local and opt-in hosted staging regressions. `project-local-staging` (`kfuujcfxoayukywvtaeh`) advanced only through `20260811123300`; generated types, authorization, ambiguity denial, isolation, projection, bound/order, stale/fresh behavior, no mutation, direct table denial, and exact/namespace zero residue passed.
+
+Operator decision and boundaries:
+- While application email is disabled, routine stale checking is unnecessary because no new sending lease can be created. Once enabled for a controlled test/pilot, check after every test/batch, before manual retry, and at the end of each active email day.
+- Any stale row requires immediate authoritative-ledger reconciliation before retry. Repeated stale rows or more than one unresolved row pause application email until diagnosed.
+- The explicit check, proven Vercel log workflow, cadence, and named ownership are sufficient manual notification for the initial tiny controlled beta. Automated alerting is not proven or required at that scale.
+- Production was not accessed. Production RPC execution, real Bozeman grant behavior, and a real production stale-row observation remain later production/pilot evidence. No email, retry, reclaim, finalize, schema beyond the one RPC, service-role application behavior, UI redesign, Vercel/DNS/Resend configuration, backup change, or production data action occurred. Application email remains disabled and launch remains `NO-GO`.
+
 ## Iteration 12.32.1 - Production Operator Observability Evidence
 
 Summary:
@@ -11,7 +25,7 @@ Summary:
 Boundaries and remaining proof:
 - The observed event exposed no volunteer identity, bearer/token/full URL, Auth/session credential, provider payload, raw provider/Supabase error, SQL, grant/capability array, API key, or environment secret.
 - Runtime-log visibility, search/filtering, deployment/build review, ownership, action conditions, and one controlled event are proven.
-- The authorized production read path for stale `assignment_notification_deliveries`, review cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remain unproven and blocking. The 12.32 stale detector remains route-unused, injected, non-mutating, and does not query production.
+- At the end of 12.32.1, the authorized production read path for stale `assignment_notification_deliveries`, review cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remained unproven and blocking. The 12.32 stale detector was route-unused, injected, non-mutating, and did not query production. The later 12.33 history entry records the superseding architecture/cadence evidence.
 - This repository slice records supplied evidence only. It adds no application observability code, route/action behavior, schema/migration/RPC/RLS/Auth change, email, provider/infrastructure change, production data, paid service, webhook, tracking, analytics, cron, or background job. Launch remains `NO-GO`.
 
 ## Iteration 12.32 - Production Observability Foundation

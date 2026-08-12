@@ -36,14 +36,17 @@ export const PRODUCTION_RUNTIME_LOG_VISIBILITY_PROVEN = true;
 export const PRODUCTION_CONTROLLED_OBSERVABLE_EVENT_PROVEN = true;
 export const PRODUCTION_OBSERVABILITY_OWNERSHIP_RECORDED = true;
 export const PRODUCTION_DEPLOYMENT_STATUS_VISIBILITY_PROVEN = true;
-export const PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN = false;
+export const PRODUCTION_STALE_DELIVERY_MONITORING_PROVEN = true;
+export const PRODUCTION_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN = true;
+export const PRODUCTION_STALE_DELIVERY_PRODUCTION_READ_PROVEN = false;
+export const PRODUCTION_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT = true;
 export const PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN = false;
-export const PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN = false;
+export const PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN = true;
 
 export const productionEnvironmentKnownStagingTarget = {
   name: "project-local-staging",
   ref: "kfuujcfxoayukywvtaeh",
-  validatedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
+  validatedMigration: "20260811123300",
 } as const;
 
 export const productionEnvironmentReadinessItems: readonly ProductionEnvironmentReadinessItem[] = [
@@ -54,7 +57,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: false,
     evidence: [
       "12.23.1 proved the integrated hosted beta loop on project-local-staging/kfuujcfxoayukywvtaeh",
-      "staging remains validated through migration 20260714122230 with generated-type parity and zero residue",
+      "12.33 advances staging through migration 20260811123300 with generated-type parity, focused notification-health behavior proof, and zero residue",
     ],
     requiredAction:
       "Keep staging separate from production and rerun focused staging gates only when staging-facing schema/runtime assumptions change.",
@@ -66,7 +69,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: true,
     evidence: [
       "local uses loopback Supabase and disposable fixtures",
-      "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260714122230",
+      "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260811123300",
       "production is project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
       "production deployment uses project-local at canonical origin https://projectlocal.app",
       "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
@@ -189,19 +192,22 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   {
     id: "observability",
     title: "Logging and observability",
-    status: "configuration_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "12.32 adds a server-only allowlisted structured event model for beta-critical failures and high-value assignment-email delivery success",
       "12.32 distinguishes assignment-email configuration, claim, schedule-access, provider, and finalization failures plus successful delivery without logging PII, credentials, URLs, raw errors, or provider payloads",
-      "12.32 adds a deterministic route-unused non-mutating stale-sending detection seam and regression proof",
+      "12.32 adds the non-mutating stale-sending definition and 12.33 reuses it behind one bounded operator check",
       "application events write naturally to server runtime logs and logging failure cannot change product behavior",
       "August 11 2026 operator evidence proves Vercel Production runtime-log visibility, event search and filtering, deployment/build status visibility, named alert and incident ownership, actionable conditions, and one controlled privacy-safe schedule_access.exchange_failure event",
       "the controlled invalid-token request created no data and sent no email, and the observed event exposed no volunteer identity, bearer, full URL, credential, provider payload, raw error, SQL, grant, capability array, API key, or environment secret",
-      "an authorized production read path for stale assignment_notification_deliveries, check cadence, threshold/escalation proof, and a practical notification mechanism beyond manual Vercel Hobby review remain unproven",
+      "12.33 adds a no-argument authenticated RPC that derives exactly one active authorized workspace, requires workspace.read/calendar.view/assignments.view/assignments.edit, returns only id/state/expiry for at most 100 sending rows, and preserves direct ledger denial",
+      "12.33 local and project-local-staging validation through 20260811123300 proves authorization, ambiguity denial, isolation, oldest-expiry ordering, stale/fresh handling, minimal projection, and no mutation with zero disposable residue",
+      "the unlinked /admin/diagnostics/notification-health route and documented after-batch/end-of-day cadence provide a sufficient manual notification workflow for the initial tiny controlled beta; automated alert delivery remains unproven and is not required at that scale",
+      "production execution of the RPC, production Bozeman grant behavior, and observation of a real production stale row remain unproven and are deferred to the reviewed production migration/provisioning and controlled pilot",
     ],
     requiredAction:
-      "Define and prove the authorized stale-delivery read path, check cadence, threshold/escalation procedure, and practical operator notification mechanism without adding unsafe data exposure; preserve the proven Vercel Logs/Deployments review workflow and privacy contract.",
+      "Preserve the 12.33 read/privacy/cadence contract; after a separately reviewed production migration and Bozeman provisioning, run Notification Health after the first controlled email batch and record production execution evidence. Add automated alerting only if scale, repetition, or response performance makes the manual cadence inadequate.",
   },
   {
     id: "backup_recovery",
@@ -254,6 +260,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application observability foundation, Vercel runtime-log review and controlled-event proof, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, stale-delivery monitoring and practical alert notification, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, 12.33 staging notification-health proof, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

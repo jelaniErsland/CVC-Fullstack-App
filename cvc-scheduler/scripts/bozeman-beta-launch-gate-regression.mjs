@@ -19,6 +19,9 @@ import {
   BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED,
   BOZEMAN_BETA_DEPLOYMENT_STATUS_VISIBILITY_PROVEN,
   BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN,
+  BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN,
+  BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN,
+  BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT,
   BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
@@ -62,9 +65,12 @@ async function main() {
   assert.equal(BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN, true);
   assert.equal(BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED, true);
   assert.equal(BOZEMAN_BETA_DEPLOYMENT_STATUS_VISIBILITY_PROVEN, true);
-  assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, false);
+  assert.equal(BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN, false);
+  assert.equal(BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT, true);
   assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
-  assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, false);
+  assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, true);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -72,7 +78,7 @@ async function main() {
   assert.equal(bozemanBetaLaunchGateSummary.decision, "NO-GO");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.name, "project-local-staging");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.ref, "kfuujcfxoayukywvtaeh");
-  assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.validatedMigration, "20260714122230");
+  assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.validatedMigration, "20260811123300");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.hostedResidueExpectation, 0);
 
   const statuses = new Set(bozemanBetaLaunchGateItems.map((item) => item.status));
@@ -143,6 +149,8 @@ async function main() {
   assert.equal(observabilityFoundation.status, "proven");
   assert.equal(observabilityFoundation.blocking, false);
   assert.match(JSON.stringify(observabilityFoundation.evidence), /12\.32/);
+  assert.match(JSON.stringify(observabilityFoundation.evidence), /12\.33/);
+  assert.match(JSON.stringify(observabilityFoundation.evidence), /sufficient manual notification/i);
 
   const productionEnvironment = bozemanBetaLaunchGateItems.find(
     (item) => item.id === "production_environment",
@@ -152,7 +160,8 @@ async function main() {
   assert.equal(productionEnvironment.blocking, true);
   assert.match(JSON.stringify(productionEnvironment.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /schedule_access\.exchange_failure/i);
-  assert.match(JSON.stringify(productionEnvironment.evidence), /stale-delivery production read path/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /production execution remains deferred/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/restore proof/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),
@@ -175,7 +184,7 @@ async function main() {
   assertIncludes(goNoGo, "Production email provider", "go/no-go report");
   assertIncludes(goNoGo, "Resend selected", "go/no-go report");
   assertIncludes(goNoGo, "project-local-staging", "go/no-go report");
-  assertIncludes(goNoGo, "20260714122230", "go/no-go report");
+  assertIncludes(goNoGo, "20260811123300", "go/no-go report");
   assertIncludes(goNoGo, "12.30.1", "go/no-go report");
   assertIncludes(goNoGo, "product-owner approved", "go/no-go report");
 

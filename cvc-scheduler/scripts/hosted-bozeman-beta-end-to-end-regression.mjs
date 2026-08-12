@@ -23,7 +23,7 @@ const root = process.cwd();
 const expectedName = "project-local-staging";
 const expectedRef = "kfuujcfxoayukywvtaeh";
 const expectedConfirmation = `${expectedName}:${expectedRef}`;
-const expectedMigration = "20260714122230";
+const expectedMigration = "20260811123300";
 const optInName = "RUN_HOSTED_BOZEMAN_BETA_E2E_VALIDATION";
 const hostedUrl = `https://${expectedRef}.supabase.co`;
 const previewBaseUrl = "http://127.0.0.1:3000";
@@ -308,7 +308,9 @@ async function verifyStaticBoundaries() {
   assert(calendarClient.includes("Assign selected"), "Calendar assignment picker action is missing.");
   assert(notificationProvider.includes("/v/access/[redacted]"), "Recording provider must redact schedule access links.");
   assert(packageJson.includes("test:bozeman-beta-launch:hosted"), "Hosted launch verifier package command is missing.");
-  assert(responseRoute.includes("remembered-device access is not active yet"), "Volunteer schedule route must keep remembered-device behavior paused.");
+  assert(responseRoute.includes("leaveScheduleAction"), "Volunteer schedule route must preserve explicit leave-schedule behavior.");
+  assert(responseRoute.includes("cookieStore.delete(volunteerScheduleAccessCookie.name)"), "Leave-schedule behavior must clear the server-owned access cookie.");
+  assert(!/localStorage|sessionStorage|indexedDB/.test(responseRoute), "Volunteer schedule route must not add browser-owned remembered-device storage.");
 }
 
 async function verifyOptInRefusal() {

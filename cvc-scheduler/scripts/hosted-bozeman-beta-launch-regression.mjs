@@ -11,7 +11,7 @@ const expectedName = "project-local-staging";
 const expectedRef = "kfuujcfxoayukywvtaeh";
 const expectedConfirmation = `${expectedName}:${expectedRef}`;
 const optInName = "RUN_HOSTED_BOZEMAN_BETA_LAUNCH_VALIDATION";
-const expectedMigration = "20260714122230";
+const expectedMigration = "20260811123300";
 
 function redact(value) {
   return String(value)

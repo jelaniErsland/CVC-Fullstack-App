@@ -1,8 +1,8 @@
 # Production Deployment Status
 
-Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state. Iteration 12.32 proves the local privacy-safe application observability foundation. Iteration 12.32.1 records August 11, 2026 operator evidence for real Vercel Production runtime-log visibility and one controlled privacy-safe event without changing production configuration.
+Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical production origin. Iteration 12.31.1 records August 10, 2026 operator evidence for Resend provider configuration, direct provider-level inbox delivery, and the restored disabled application-email state. Iteration 12.32 proves the local privacy-safe application observability foundation. Iteration 12.32.1 records August 11, 2026 operator evidence for real Vercel Production runtime-log visibility and one controlled privacy-safe event without changing production configuration. Iteration 12.33 proves the authenticated Notification Health read architecture, local/staging behavior, and manual cadence/escalation decision without accessing production. Production remains at `20260714122230`; migration `20260811123300` and the first production Notification Health execution remain pending separate review.
 
-Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE, PROVIDER-LEVEL EMAIL CONFIGURATION, AND NARROW VERCEL RUNTIME-LOG EVIDENCE VERIFIED; APPLICATION EMAIL DISABLED`.
+Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE, PROVIDER-LEVEL EMAIL CONFIGURATION, AND INITIAL-BETA OBSERVABILITY ARCHITECTURE VERIFIED; APPLICATION EMAIL DISABLED`.
 
 Launch conclusion: `NO-GO`.
 
@@ -74,7 +74,7 @@ Operator evidence from August 11, 2026 confirms:
 6. Vercel Production Logs showed the matching structured `schedule_access.exchange_failure` warning with category `schedule_access`, stage `exchange`, and outcome `failure`.
 7. The event contained no volunteer identity, bearer/token/full URL, Auth/session credential, provider payload, raw provider/Supabase error, SQL, grant/capability array, API key, or environment secret.
 
-The canonical action policy and remaining stale-delivery/notification blocker are recorded in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). This proof did not add a Vercel alert, paid service, webhook, tracking, analytics, cron, background job, or production configuration change.
+The canonical action policy and 12.33 manual Notification Health cadence are recorded in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). The overall initial-beta observability architecture is non-blocking: manual notification is sufficient at the initial tiny scale and automated alerting is not required. Production availability of the RPC is not claimed until migration `20260811123300` is separately applied, and the first real production Notification Health check remains controlled-pilot evidence. This proof did not add a Vercel alert, paid service, webhook, tracking, analytics, cron, background job, or production configuration change.
 
 ## Automated public smoke gate
 
@@ -95,7 +95,7 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 - Project Local application-driven Initial email delivery through the production claim/provider/finalize ledger is not proven.
 - Production duplicate-send behavior with real Resend, app-generated schedule-access link behavior, retry/failure operations, and email-failure monitoring are not proven.
 - Production backup/restore evidence is unresolved.
-- Application structured instrumentation, Vercel runtime/deployment review, named observability ownership, action conditions, and one controlled privacy-safe event are proven. The authorized stale-delivery production read path, cadence, threshold/escalation proof, and practical notification mechanism beyond manual Vercel Hobby review remain unresolved.
+- Application instrumentation, Vercel runtime/deployment review, named ownership/action policy, authenticated Notification Health architecture, local/staging stale-read behavior, and manual cadence/escalation are proven. Manual notification is sufficient for the initial tiny controlled beta, so overall initial-beta observability architecture is non-blocking. Production migration `20260811123300` has not been applied and the first production Notification Health execution has not occurred.
 - Production workspace/contact/grants are not provisioned.
 - No real Bozeman data has been created.
 - Product-owner/pilot launch approval remains unresolved.

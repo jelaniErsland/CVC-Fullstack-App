@@ -1035,6 +1035,14 @@ export type Database = {
           workspace_reference: string
         }[]
       }
+      read_assignment_notification_delivery_health: {
+        Args: never
+        Returns: {
+          delivery_id: string
+          delivery_state: string
+          sending_expires_at: string
+        }[]
+      }
       read_assignment_response_by_token: {
         Args: { p_bearer_token: string }
         Returns: {

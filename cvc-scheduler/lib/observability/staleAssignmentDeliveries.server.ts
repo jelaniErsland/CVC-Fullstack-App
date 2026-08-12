@@ -80,12 +80,11 @@ export function observeStaleAssignmentDeliveries(
   runtime: StaleAssignmentDeliveryRuntime = {},
 ) {
   const staleDeliveries = detectStaleAssignmentDeliveries(candidates, runtime);
-  for (const delivery of staleDeliveries) {
+  if (staleDeliveries.length > 0) {
     emitOperationalEvent(
       {
         event: "assignment_email.stale_delivery_detected",
         failureCode: "sending_expired",
-        correlationId: delivery.deliveryId,
       },
       runtime.observability,
     );

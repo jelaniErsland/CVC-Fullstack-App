@@ -109,22 +109,22 @@ Creating an Auth user does not grant app access. App access requires:
 ### Project Local application email proof (still required)
 
 - Complete backup/recovery and provisioning prerequisites before creating the controlled production-data test case.
-- Use the proven 12.32 safe events for claim, provider, finalization, schedule-access, and stale-delivery failures; preserve the proven 12.32.1 Vercel review workflow and complete the remaining stale-delivery/notification proof below.
+- Use the proven 12.32 safe events for claim, provider, finalization, schedule-access, and stale-delivery failures; preserve the proven 12.32.1 Vercel review workflow and the 12.33 bounded Notification Health/cadence contract below.
 - Approve a test recipient and a separately reviewed app-driven test procedure.
 - Only during that approved procedure, set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and use the real Initial email action.
 - Prove the production claim/provider/finalize round trip, inbox delivery, app-generated schedule-access link, duplicate prevention, and retry/failure operations without recording secrets or raw provider payloads.
 - Return the transport to empty/disabled immediately if the reviewed procedure does not authorize continued application sending.
 
-### Operator observability (partially proven; still blocking)
+### Operator observability (initial-beta architecture proven; production execution pending)
 
 - Application instrumentation is proven in 12.32; do not add a telemetry key, webhook, browser tracking script, analytics, cron, or background job for this gate.
 - Proven August 11, 2026: review production events in Vercel -> `project-local` -> Logs; use search, severity, route/request/environment/status filters. Review deployment/build failures in Vercel -> `project-local` -> Deployments and the selected build status/logs.
 - Proven August 11, 2026: the Project Local product/operator owner owns alerts and incident response. Codex or engineering may assist without transferring ownership.
 - Proven August 11, 2026: the controlled invalid-token schedule-access request returned unavailable safely, created no data or email, and exposed a searchable privacy-safe `schedule_access.exchange_failure` warning without prohibited data.
 - Follow the immediate-investigation and immediate-pause policy in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md).
-- Still required: define and prove the authorized stale-delivery read path, check cadence, threshold, and escalation procedure. The 12.32 detector is route-unused and does not query production.
-- Still required: prove a practical notification mechanism beyond manual Vercel Hobby review if manual review cannot meet the agreed response expectation.
-- Keep the overall observability launch gate blocking until the remaining items above are evidenced.
+- Proven in 12.33 locally and on approved staging: an authenticated, capability-gated, exactly-one-workspace stale-delivery read; the unlinked Notification Health route; and an after-batch/before-retry/end-of-active-day cadence with immediate investigation and pause-on-repeat/multiple-unresolved escalation.
+- Manual notification is sufficient for the initial tiny controlled beta. Automated alerting is not required unless later scale or response performance makes the cadence inadequate.
+- Still required as controlled-pilot evidence: separately review and apply migration `20260811123300` to production, then record the first production Notification Health execution. Do not treat staging proof as production execution.
 
 ## Phase G - Verification
 

@@ -19,7 +19,7 @@ Current launch conclusion: `NO-GO`.
 
 - Approved target: `project-local-staging` (`kfuujcfxoayukywvtaeh`).
 - Required health: `ACTIVE_HEALTHY`.
-- Required migration level for this gate: `20260714122230`.
+- Current approved staging migration level for this gate: `20260811123300`. Historical 12.23/12.23.1 integrated evidence originally passed at `20260714122230`.
 - Hosted validation must use exact opt-ins and disposable `qa-*` fixtures only.
 
 ### Production candidate
@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation, 12.31 selects Resend and validates the server-only application adapter, and 12.32 proves the privacy-safe application observability foundation. August 10, 2026 operator evidence proves the Resend domain/sender/restricted-key/Vercel configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named alert/incident ownership, action conditions, and one controlled privacy-safe `schedule_access.exchange_failure` observation. The direct dashboard email test did not use Project Local's Initial email action or ledger, and application transport is currently absent/disabled after a Ready/Latest redeployment. Operator backup setup/proof, application-driven email proof, stale-delivery monitoring and practical alert notification, real workspace provisioning, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation, 12.31 selects Resend and validates the server-only application adapter, and 12.32 proves the privacy-safe application observability foundation. August 10, 2026 operator evidence proves the Resend domain/sender/restricted-key/Vercel configuration, disabled open/click tracking, and direct provider-level Gmail inbox delivery. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named alert/incident ownership, action conditions, and one controlled privacy-safe `schedule_access.exchange_failure` observation. 12.33 proves the bounded authenticated Notification Health architecture, manual cadence/escalation policy, and approved staging behavior through `20260811123300`; production execution is deferred to a separately reviewed migration and controlled pilot. The direct dashboard email test did not use Project Local's Initial email action or ledger, and application transport is currently absent/disabled after a Ready/Latest redeployment. Operator backup setup/proof, application-driven email proof, real workspace provisioning, production Notification Health execution, and controlled pilot remain incomplete. Supabase Pro remains optional. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures; the UI gate is no longer blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -118,7 +118,7 @@ Still required before the Initial Assignment Email gate can pass:
 - Delivery through Project Local's actual Initial email action and `assignment_notification_deliveries` claim/provider/finalize boundary.
 - Duplicate-send proof with real Resend.
 - Schedule-access link proof from the app-generated assignment email.
-- Failure monitoring, stale-delivery monitoring, retry procedure, and incident ownership.
+- First production execution of the proven failure/stale-delivery monitoring path during the controlled app-driven test, plus real retry/failure procedure proof.
 
 Do not log credentials, tokens, full schedule URLs, or raw provider payloads.
 
@@ -142,10 +142,10 @@ Operator evidence proven August 11, 2026:
 - A controlled invalid schedule-access token request produced expected unavailable behavior, no data/email, and a searchable privacy-safe `schedule_access.exchange_failure` warning.
 - Immediate-investigation and immediate-pause conditions are recorded in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md).
 
-Operator requirements still blocking:
+Operator monitoring procedure:
 
-- Define and prove the authorized stale-delivery read path, check cadence, threshold, and escalation response.
-- Prove a practical notification mechanism beyond manual Vercel Hobby review if manual review cannot meet the agreed response expectation.
+- Preserve the 12.33 Notification Health cadence: after every controlled test/batch, before manual retry, and at the end of each active email day. Investigate any stale row immediately; pause sending for repetition or more than one unresolved stale row.
+- Treat the manual check plus Vercel logs and named ownership as sufficient for the initial tiny beta. Revisit automated notification only if scale or response performance makes the manual cadence inadequate.
 
 Monitor:
 
@@ -162,7 +162,7 @@ Monitor:
 
 Logs must not include credentials, tokens, full schedule URLs, raw provider payloads, raw Supabase/provider errors, SQL, stack traces with secrets, grants, or capability arrays.
 
-The canonical event/privacy contract and remaining gate are in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). The August 11 operator evidence proves a narrow real-log workflow, not complete stale-delivery monitoring or alert notification.
+The canonical event/privacy/cadence contract is in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). The August 11 evidence proves the real-log workflow and 12.33 proves the stale-delivery architecture on local/staging. Production execution must wait for the reviewed production migration and controlled pilot.
 
 ## Backup and recovery
 

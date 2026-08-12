@@ -102,13 +102,15 @@ async function main() {
     (item) => item.id === "observability_alerting",
   );
   assert(observability, "Recovery readiness is missing observability/alerting.");
-  assert.equal(observability.status, "configuration_required");
-  assert.equal(observability.blocking, true);
+  assert.equal(observability.status, "proven");
+  assert.equal(observability.blocking, false);
   assert.match(JSON.stringify(observability.evidence), /12\.32/);
   assert.match(JSON.stringify(observability.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
-  assert.match(JSON.stringify(observability.evidence), /no operator stale-delivery check cadence/i);
-  assert.match(JSON.stringify(observability.evidence), /manual Vercel Hobby review/i);
+  assert.match(JSON.stringify(observability.evidence), /12\.33/);
+  assert.match(JSON.stringify(observability.evidence), /after each controlled email test or batch/i);
+  assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
+  assert.match(JSON.stringify(observability.evidence), /production RPC execution.*remain deferred/i);
 
   const [
     contract,

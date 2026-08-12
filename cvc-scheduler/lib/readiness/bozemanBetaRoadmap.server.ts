@@ -18,9 +18,12 @@ export const BOZEMAN_BETA_APPLICATION_OBSERVABILITY_FOUNDATION_PROVEN = true;
 export const BOZEMAN_BETA_RUNTIME_LOG_VISIBILITY_PROVEN = true;
 export const BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN = true;
 export const BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED = true;
-export const BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN = false;
+export const BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN = true;
+export const BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN = true;
+export const BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN = false;
+export const BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT = true;
 export const BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN = false;
-export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = false;
+export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = true;
 export const BOZEMAN_BETA_PRODUCTION_DATA_ACCESS_AVAILABLE = false;
 
 type BetaStatus =
@@ -300,10 +303,7 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     ],
     betaNeed:
       "After backup/recovery and provisioning prerequisites permit a reviewed controlled test, prove the implemented Initial email action through the production ledger, real Resend delivery, duplicate and retry behavior, schedule access, and safe monitoring.",
-    blockers: [
-      "production_initial_assignment_application_delivery_proof",
-      "delivery_attempt_observability",
-    ],
+    blockers: ["production_initial_assignment_application_delivery_proof"],
     deferrable: [
       "full_communications_authoring",
       "automatic_reminder_cadence",
@@ -332,7 +332,7 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     statuses: ["blocked_by_dependency", "not_implemented", "beta_critical"],
     repositoryFindings: [
       "local and hosted non-production validation patterns exist",
-      "production Supabase deployment domain Auth provider-level Resend configuration application observability foundation and Vercel runtime-log controlled-event review are established, while application email proof stale-delivery monitoring practical alert notification backup/recovery provisioning and pilot readiness remain incomplete",
+      "production Supabase deployment domain Auth provider-level Resend configuration application observability foundation Vercel runtime-log controlled-event review and 12.33 operator notification-health architecture are established, while application email proof backup/recovery provisioning production notification-health execution and pilot readiness remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     betaNeed:
@@ -342,7 +342,6 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
       "deployment_environment_and_domain",
       "application_email_delivery_and_monitoring_proof",
       "hosted_validation_gates",
-      "logging_error_observability",
       "backup_recovery_expectations",
       "realistic_pilot_test",
       "rollback_to_belgrade_sheets_fallback_plan",
@@ -359,8 +358,8 @@ export const bozemanBetaBlockers = [
   "volunteer_picker_and_assignment_create_cancel_ui",
   "secure_account_light_volunteer_schedule_access",
   "confirm_deny_integration_with_admin_visible_response_state",
-  "production_resend_application_delivery_and_observability_proof",
-  "production_supabase_deployment_auth_email_domain_observability_backup_validation",
+  "production_resend_application_delivery_proof",
+  "production_supabase_deployment_auth_email_domain_backup_validation",
 ];
 
 export const bozemanBetaDeferredFeatures = [
@@ -542,6 +541,12 @@ export function describeBozemanBetaRoadmap() {
     controlledObservableEventProven: BOZEMAN_BETA_CONTROLLED_OBSERVABLE_EVENT_PROVEN,
     observabilityOwnershipRecorded: BOZEMAN_BETA_OBSERVABILITY_OWNERSHIP_RECORDED,
     staleDeliveryMonitoringProven: BOZEMAN_BETA_STALE_DELIVERY_MONITORING_PROVEN,
+    staleDeliveryStagingBehaviorProven:
+      BOZEMAN_BETA_STALE_DELIVERY_STAGING_BEHAVIOR_PROVEN,
+    staleDeliveryProductionReadProven:
+      BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN,
+    manualStaleDeliveryNotificationSufficient:
+      BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT,
     operatorAlertNotificationProven: BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
     operatorObservabilityProven: BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
     productionDataAccessAvailable: BOZEMAN_BETA_PRODUCTION_DATA_ACCESS_AVAILABLE,
@@ -562,6 +567,6 @@ export function evaluateBozemanBetaLaunchReadiness() {
       bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
     old12_14Decision: bozemanBetaOld12_14Decision.decision,
     reason:
-      "The persisted scheduling loop, beta-critical UI, privacy-safe application observability foundation, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, and direct provider-level inbox delivery are proven, but Project Local application-driven production email proof, stale-delivery monitoring, practical alert notification, real Bozeman provisioning, backup/restore proof, and a controlled pilot remain incomplete.",
+      "The persisted scheduling loop, beta-critical UI, privacy-safe application and operator observability architecture, 12.33 staging notification-health proof and manual cadence, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, and direct provider-level inbox delivery are proven, but Project Local application-driven production email proof, real Bozeman provisioning, production notification-health execution, backup/restore proof, and a controlled pilot remain incomplete.",
   } as const;
 }
