@@ -8,6 +8,19 @@ const root = process.cwd();
 const backupDir = path.join(root, "scripts", "production-backup");
 const backupScript = path.join(backupDir, "Invoke-ProjectLocalProductionBackup.ps1");
 const restoreScript = path.join(backupDir, "Test-ProjectLocalBackupRestore.ps1");
+const initializeSecretScript = path.join(backupDir, "Initialize-ProjectLocalBackupSecret.ps1");
+const fixtureCredentials = [
+  "syntheticPassword123",
+  "synthetic@Password123",
+  "synthetic:Password123",
+  "synthetic/Password123",
+  "synthetic#Password123",
+  "synthetic%Password123",
+  "synthetic?Password123",
+  "synthetic+Password123",
+  "synthetic Password123",
+  "synthetic@:/#%?+ Password123",
+];
 
 async function read(relativePath) {
   return readFile(path.join(root, relativePath), "utf8");
@@ -39,6 +52,9 @@ function runPowerShell(args, { expectSuccess }) {
     },
   });
   const combined = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  for (const fixtureCredential of fixtureCredentials) {
+    assert(!combined.includes(fixtureCredential), "Fixture output exposed a synthetic credential.");
+  }
   assert(!/postgres(?:ql)?:\/\/|service_role|anon[_-]?key|password=|eyJ[A-Za-z0-9_-]+\./i.test(combined), "Fixture output leaked secret-like material.");
   if (expectSuccess) {
     assert.equal(result.status, 0, combined);
@@ -84,6 +100,7 @@ async function main() {
     setupDoc,
     recoveryContract,
     envContract,
+    connectionValidator,
   ] = await Promise.all([
     read("package.json"),
     read("scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1"),
@@ -94,6 +111,7 @@ async function main() {
     read("docs/INDEPENDENT_PRODUCTION_BACKUP_SETUP.md"),
     read("lib/readiness/productionRecoveryReadiness.server.ts"),
     read("lib/readiness/productionEnvironmentReadiness.server.ts"),
+    read("scripts/production-backup/ProjectLocalProductionConnection.ps1"),
   ]);
 
   assertIncludes(packageJson, "test:production-independent-backup", "package.json");
@@ -105,6 +123,7 @@ async function main() {
     ["restore script", restore],
     ["secret setup script", initSecret],
     ["task script", task],
+    ["connection validator", connectionValidator],
   ]) {
     assertIncludes(source, "Set-StrictMode -Version Latest", label);
     assert(!/SUPABASE_SERVICE_ROLE_KEY\s*=|sk_live|service-role-secret|age-secret-key-|postgres(?:ql)?:\/\/(?!\|)[^\\s`\"]+/i.test(source), `${label} contains secret-like material.`);
@@ -119,6 +138,8 @@ async function main() {
   assertIncludes(backup, "kfuujcfxoayukywvtaeh", "backup script");
   assertIncludes(backup, "SUPABASE_SERVICE_ROLE_KEY", "backup script");
   assertIncludes(backup, "ConvertTo-SecureString", "backup script");
+  assertIncludes(backup, "ProjectLocalProductionConnection.ps1", "backup script");
+  assertIncludes(backup, "ConvertTo-NativeArgumentString", "backup script");
   assertIncludes(backup, "--role-only", "backup script");
   assertIncludes(backup, "--use-copy", "backup script");
   assertIncludes(backup, "Get-Command \"docker\"", "backup script");
@@ -129,7 +150,7 @@ async function main() {
   assertIncludes(backup, "manifest.json", "backup script");
   assertIncludes(backup, "age-encryption.org/v1", "backup script");
   assertIncludes(backup, ".partial", "backup script");
-  assertIncludes(backup, "Get-FileHash", "backup script");
+  assertIncludes(backup, "System.Security.Cryptography.SHA256", "backup script");
   assertIncludes(backup, "latest-status.json", "backup script");
   assertIncludes(backup, "Remove-RecognizedBackups", "backup script");
   assertIncludes(backup, "finally", "backup script");
@@ -144,6 +165,18 @@ async function main() {
   assertIncludes(initSecret, "Read-Host", "secret setup script");
   assertIncludes(initSecret, "-AsSecureString", "secret setup script");
   assertIncludes(initSecret, "ConvertFrom-SecureString", "secret setup script");
+  assertIncludes(initSecret, "ProjectLocalProductionConnection.ps1", "secret setup script");
+  assertIncludes(initSecret, "System.Text.UTF8Encoding($false)", "secret setup script");
+  assertIncludes(initSecret, "secure_string_character_count", "secret setup script");
+  assertIncludes(initSecret, "secure_plaintext_lengths_match", "secret setup script");
+  assertIncludes(initSecret, 'inputBoundary = "SecureString to BSTR to canonical URI"', "secret setup script");
+  assertIncludes(initSecret, "Set-ProjectLocalSecretAcl", "secret setup script");
+  assertIncludes(initSecret, "Test-ProjectLocalSecretAcl", "secret setup script");
+  assertIncludes(initSecret, "SetAccessRuleProtection($true, $false)", "secret setup script");
+  assertIncludes(initSecret, "RemoveAccessRuleSpecific", "secret setup script");
+  assertIncludes(initSecret, '[System.IO.File]::GetAccessControl', "secret setup script");
+  assertIncludes(initSecret, '[System.IO.File]::SetAccessControl', "secret setup script");
+  assertIncludes(initSecret, "Production backup secret ACL verification failed", "secret setup script");
   assertIncludes(initSecret, "ProjectLocal\\ProductionBackup", "secret setup script");
   assertIncludes(initSecret, "Windows-only", "secret setup script");
   assertIncludes(initSecret, "does not create or store the age private recovery identity", "secret setup script");
@@ -163,6 +196,9 @@ async function main() {
   assert(!/\[[^\]]+\]\$[A-Za-z]*Password\b/.test(restore.slice(0, restore.indexOf("Set-StrictMode"))), "restore operator parameters must not include a password parameter.");
   assertNotIncludes(restore, oldRestoreUrlParam, "restore script");
   assertIncludes(restore, "-ExecuteLocalRestore", "restore script");
+  assertIncludes(restore, "UseSupabaseLocalDefaults", "restore script");
+  assertIncludes(restore, "Assert-SupabaseLocalDefaultsTarget", "restore script");
+  assertIncludes(restore, "exact 127.0.0.1:54322 postgres target", "restore script");
   assertIncludes(restore, "Local restore execution requires -ExecuteLocalRestore.", "restore script");
   assertIncludes(restore, "Read-Host \"Local disposable database password\" -AsSecureString", "restore script");
   assertIncludes(restore, "EnvironmentVariables[\"PGPASSWORD\"]", "restore script");
@@ -175,13 +211,14 @@ async function main() {
   assertIncludes(restore, "Backup package contains an unsafe path.", "restore script");
   assertIncludes(restore, "Backup package contains unexpected files.", "restore script");
   assertIncludes(restore, "Get-Command \"psql\"", "restore script");
-  assertIncludes(restore, "Get-FileHash", "restore script");
+  assertIncludes(restore, "System.Security.Cryptography.SHA256", "restore script");
   assertIncludes(restore, "psql --single-transaction --set ON_ERROR_STOP=1", "restore script");
   assertIncludes(restore, "select version from supabase_migrations.schema_migrations", "restore script");
   assertIncludes(restore, "unsafe broad table mutation grants", "restore script");
   assertIncludes(restore, "decrypted_cleanup_failed", "restore script");
+  assertIncludes(restore, 'throw "Local restore validation failed safely at $restoreStage."', "restore script");
   assertOrder(restore, "Get-TargetPsqlArguments", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
-  assertOrder(restore, "Get-FileHash", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
+  assertOrder(restore, "Get-Sha256Hex -Path $EncryptedBackupPath", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Get-Command \"psql\"", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Assert-ApprovedArchiveMembers", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
 
@@ -215,13 +252,91 @@ async function main() {
   assertIncludes(recoveryContract, "PITR is unavailable and not required", "recovery contract");
   assertIncludes(envContract, "reviewed backup path", "environment contract");
 
+  assertIncludes(connectionValidator, '@("postgres", "postgresql")', "connection validator");
+  assertIncludes(connectionValidator, '"postgres.$ExpectedProjectRef"', "connection validator");
+  assertIncludes(connectionValidator, '.pooler.supabase.com', "connection validator");
+  assertIncludes(connectionValidator, "$uri.Port -ne 5432", "connection validator");
+  assertIncludes(connectionValidator, '$uri.AbsolutePath -cne "/postgres"', "connection validator");
+  assertIncludes(connectionValidator, "$uri.Query", "connection validator");
+  assertIncludes(connectionValidator, "$uri.Fragment", "connection validator");
+  assertIncludes(connectionValidator, "scheme_prefix_missing", "connection validator");
+  assertIncludes(connectionValidator, "canonical_uri_parse_failed", "connection validator");
+  for (const safeFact of [
+    "plaintext_character_count",
+    "trimmed_character_count",
+    "starts_with_expected_scheme",
+    "contains_exactly_one_scheme_separator",
+    "contains_expected_username_marker",
+    "contains_at_separator",
+    "contains_expected_pooler_suffix",
+    "contains_expected_port_marker",
+    "ends_with_postgres_path",
+    "contains_control_character",
+    "contains_BOM",
+    "contains_outer_quote",
+    "uri_trycreate_success",
+  ]) {
+    assertIncludes(connectionValidator, safeFact, "connection validator diagnostics");
+  }
+
   await assertNoRouteImports();
+
+  assertIncludes(
+    runPowerShell(["-File", initializeSecretScript, "-FixtureAclValidateOnly"], { expectSuccess: true }),
+    "fixture_secret_acl_ok",
+    "secret ACL fixture",
+  );
 
   runPowerShell(["-File", backupScript], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardStagingRef"], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardRepoDestination"], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardMissingRecipient"], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardMissingSecret"], { expectSuccess: false });
+  runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardMalformedSecret"], { expectSuccess: false });
+
+  const validConnectionUrls = [
+    `postgres://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    ...fixtureCredentials.slice(1).map(
+      (credential) => `postgresql://postgres.wdlaauzknfggoqldolmx:${credential}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    ),
+    `postgresql://postgres.wdlaauzknfggoqldolmx:synthetic%40Password123@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    `  \ufeff"postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres"\r\n`,
+  ];
+  for (const connectionUrl of validConnectionUrls) {
+    assertIncludes(
+      runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "ValidateConnectionUrl", "-FixtureConnectionUrl", connectionUrl], { expectSuccess: true }),
+      "fixture_connection_url_ok",
+      "backup connection fixture",
+    );
+    assertIncludes(
+      runPowerShell(["-File", initializeSecretScript, "-FixtureValidateOnly", "-FixtureConnectionUrl", connectionUrl], { expectSuccess: true }),
+      '"ok"',
+      "initializer connection fixture",
+    );
+  }
+
+  const invalidConnectionUrls = [
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@database.example.invalid:5432/postgres`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:6543/postgres`,
+    `postgresql://postgres.wrongprojectref:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.kfuujcfxoayukywvtaeh:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/template1`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres?host=example.invalid`,
+    `postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres#alternate`,
+    `psql postgresql://postgres.wdlaauzknfggoqldolmx:${fixtureCredentials[0]}@aws-1-us-west-2.pooler.supabase.com:5432/postgres`,
+    "not-an-absolute-postgresql-uri",
+  ];
+  for (const connectionUrl of invalidConnectionUrls) {
+    runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "ValidateConnectionUrl", "-FixtureConnectionUrl", connectionUrl], { expectSuccess: false });
+    const safeInitializerFailure = runPowerShell(["-File", initializeSecretScript, "-FixtureValidateOnly", "-FixtureConnectionUrl", connectionUrl], { expectSuccess: false });
+    assertIncludes(safeInitializerFailure, "Production database connection validation failed safely:", "initializer safe failure");
+    assertIncludes(safeInitializerFailure, "secure_string_character_count=", "initializer safe failure");
+    assertIncludes(safeInitializerFailure, "plaintext_character_count=", "initializer safe failure");
+    assertIncludes(safeInitializerFailure, "starts_with_expected_scheme=", "initializer safe failure");
+    assertIncludes(safeInitializerFailure, "uri_trycreate_success=", "initializer safe failure");
+  }
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "Retention"], { expectSuccess: true }), "fixture_retention_ok", "retention fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "StatusRedaction"], { expectSuccess: true }), "fixture_status_ok", "status fixture");
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardProductionTarget"], { expectSuccess: false });

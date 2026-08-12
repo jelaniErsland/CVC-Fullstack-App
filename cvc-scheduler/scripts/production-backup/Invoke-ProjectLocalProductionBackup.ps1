@@ -1,8 +1,9 @@
 param(
   [switch]$ExecuteProductionBackup,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "Retention", "CleanupAfterFailure", "StatusRedaction")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction")]
   [string]$FixtureScenario,
+  [string]$FixtureConnectionUrl,
   [string]$ProjectName,
   [string]$ProjectRef,
   [string]$ExpectedMigration,
@@ -26,6 +27,7 @@ $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
 $ExpectedTerminalMigration = "20260714122230"
 $BackupFormatVersion = "project-local.logical-backup.v1"
+. (Join-Path $ScriptRoot "ProjectLocalProductionConnection.ps1")
 
 function Test-IsSubPath {
   param([Parameter(Mandatory = $true)][string]$Child, [Parameter(Mandatory = $true)][string]$Parent)
@@ -103,6 +105,32 @@ function Write-SafeStatus {
   return $statusPath
 }
 
+function ConvertTo-NativeArgumentString {
+  param([string[]]$ArgumentList)
+  return (($ArgumentList | ForEach-Object {
+    $arg = [string]$_
+    if ($arg -eq "") {
+      '""'
+    } elseif ($arg -notmatch '[\s"]') {
+      $arg
+    } else {
+      '"' + $arg.Replace('\', '\\').Replace('"', '\"') + '"'
+    }
+  }) -join " ")
+}
+
+function Get-Sha256Hex {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $stream = [System.IO.File]::OpenRead($Path)
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    return ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
+  }
+}
+
 function Invoke-CheckedProcess {
   param(
     [Parameter(Mandatory = $true)][string]$FilePath,
@@ -115,9 +143,7 @@ function Invoke-CheckedProcess {
   $process = [System.Diagnostics.Process]::new()
   $process.StartInfo.FileName = $FilePath
   $process.StartInfo.WorkingDirectory = $WorkingDirectory
-  foreach ($argument in $ArgumentList) {
-    [void]$process.StartInfo.ArgumentList.Add($argument)
-  }
+  $process.StartInfo.Arguments = ConvertTo-NativeArgumentString -ArgumentList $ArgumentList
   $process.StartInfo.RedirectStandardOutput = $true
   $process.StartInfo.RedirectStandardError = $true
   $process.StartInfo.UseShellExecute = $false
@@ -143,13 +169,18 @@ function Read-SecretUrl {
   if (-not (Test-Path -LiteralPath $SecretPath)) {
     throw "Encrypted production database secret is missing."
   }
-  $encrypted = Get-Content -LiteralPath $SecretPath -Raw
+  $encrypted = (Get-Content -LiteralPath $SecretPath -Raw).TrimStart([char]0xFEFF)
   $secure = ConvertTo-SecureString -String $encrypted
   $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
   try {
-    return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    $plainValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    return ConvertTo-ProjectLocalProductionSessionPoolerUrl `
+      -ConnectionInput $plainValue `
+      -ExpectedProjectRef $ExpectedProjectRef `
+      -ForbiddenStagingRef $ForbiddenStagingRef
   } finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    $secure.Dispose()
   }
 }
 
@@ -187,6 +218,29 @@ function Invoke-FixtureScenario {
       "GuardMissingSecret" {
         $script:SecretPath = Join-Path $tempRoot "missing.dpapi.txt"
         [void](Read-SecretUrl)
+      }
+      "GuardMalformedSecret" {
+        $script:SecretPath = Join-Path $tempRoot "malformed.dpapi.txt"
+        $fixtureSecret = ConvertTo-SecureString -String "x" -AsPlainText -Force
+        try {
+          $fixtureCipher = ConvertFrom-SecureString -SecureString $fixtureSecret
+          [System.IO.File]::WriteAllText(
+            $script:SecretPath,
+            $fixtureCipher,
+            (New-Object System.Text.UTF8Encoding($false))
+          )
+        } finally {
+          $fixtureSecret.Dispose()
+        }
+        [void](Read-SecretUrl)
+      }
+      "ValidateConnectionUrl" {
+        [void](ConvertTo-ProjectLocalProductionSessionPoolerUrl `
+          -ConnectionInput $FixtureConnectionUrl `
+          -ExpectedProjectRef $ExpectedProjectRef `
+          -ForbiddenStagingRef $ForbiddenStagingRef)
+        "fixture_connection_url_ok"
+        return
       }
       "Retention" {
         $daily = Join-Path $tempRoot "daily"
@@ -313,7 +367,7 @@ try {
   if ($header -notlike "age-encryption.org/v1*") { throw "encrypted_artifact_not_age" }
   $size = (Get-Item -LiteralPath $partialPath).Length
   if ($size -le 0) { throw "encrypted_artifact_empty" }
-  $hash = (Get-FileHash -LiteralPath $partialPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $hash = Get-Sha256Hex -Path $partialPath
   Move-Item -LiteralPath $partialPath -Destination $finalPath -Force
   $partialPath = $null
 

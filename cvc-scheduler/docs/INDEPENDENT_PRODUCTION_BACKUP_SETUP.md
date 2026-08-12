@@ -1,6 +1,6 @@
 # Independent Production Backup Setup
 
-Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. It does not run a production backup, restore data, register a scheduled task, create credentials, generate a real age private identity, or provision real Bozeman product data.
+Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. Iteration 12.34 proves its first read-only encrypted production backup and records a local managed-role restore blocker without changing the six-file package contract. No scheduled task or real Bozeman product data exists.
 
 Launch conclusion: `NO-GO`.
 
@@ -40,6 +40,7 @@ Key-loss consequence: if the private age recovery identity is lost, encrypted ba
   - Prompts with secure input.
   - Refuses non-Windows execution.
   - Stores under `%LOCALAPPDATA%\ProjectLocal\ProductionBackup`.
+  - Removes inherited ACL entries, grants only the current Windows operator FullControl, and fails closed unless the resulting ACL verifies exactly.
   - Does not create or store the age private recovery identity.
 
 - `scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1`
@@ -111,6 +112,8 @@ Do not paste secrets into chat, Git, screenshots, logs, or shell history.
    ```powershell
    .\scripts\production-backup\Initialize-ProjectLocalBackupSecret.ps1
    ```
+
+   In the Windows secure prompt, use right-click paste. `Ctrl+V` may be captured as a single control character by `Read-Host -AsSecureString` instead of pasting the clipboard. The initializer validates the complete Session Pooler URI and never prints it.
 
 7. Confirm no credential, private identity, plaintext dump, or backup artifact was created in the public repository.
 
@@ -186,6 +189,7 @@ The executable local restore boundary is intentionally explicit:
 ```powershell
 .\scripts\production-backup\Test-ProjectLocalBackupRestore.ps1 `
   -ExecuteLocalRestore `
+  -UseSupabaseLocalDefaults `
   -EncryptedBackupPath '<encrypted-backup.age-outside-repo>' `
   -ExpectedSha256 '<64-character-sha256>' `
   -AgeIdentityPath '<private-age-identity-outside-repo-and-backup-folder>' `
@@ -197,7 +201,7 @@ The executable local restore boundary is intentionally explicit:
   -ExpectedMigration '20260714122230'
 ```
 
-The restore script prompts securely for the local disposable database password with `Read-Host -AsSecureString` only after target, checksum, dependency, identity-path, decrypt, and archive-member guards pass. The password is not placed in PowerShell history, normal process arguments, repository config, task arguments, or inherited environment variables; it is exposed only to each `psql` child process through child-scoped `PGPASSWORD` and cleared from temporary process setup afterward.
+For the exact disposable local Supabase target `127.0.0.1:54322` with database/user `postgres`, `-UseSupabaseLocalDefaults` uses the standard local development credential without placing a value in command arguments. Otherwise the script prompts securely with `Read-Host -AsSecureString` only after target, checksum, dependency, identity-path, decrypt, and archive-member guards pass. The password is not placed in PowerShell history, normal process arguments, repository config, task arguments, or inherited environment variables; it is exposed only to each `psql` child process through child-scoped `PGPASSWORD` and cleared from temporary process setup afterward.
 
 The script verifies the encrypted checksum before decrypting, decrypts only into a unique temp directory, rejects unexpected archive members and path traversal, restores only to loopback targets, uses `psql --single-transaction --set ON_ERROR_STOP=1`, verifies terminal migration, verifies Project Local tables/RLS/no unsafe broad mutation grants, and removes decrypted material in `finally`. The command must not be run against production, staging, hosted databases, or any non-loopback target.
 
@@ -205,15 +209,17 @@ The script verifies the encrypted checksum before decrypting, decrypts only into
 
 A later always-on design using a private runner or private object storage may replace the Windows PC dependency without changing the encrypted logical-backup format. GitHub Actions artifacts/caches and the public repository are not approved backup storage.
 
-## Current 12.29 status
+## Current 12.34 evidence
 
-- Backup automation foundation exists.
-- Backup dependency preflights now explicitly cover Supabase CLI, Docker, age, and psql.
-- No production backup has run.
-- A guarded executable local restore boundary exists, but no restore has passed.
-- No real age recipient/private identity/database credential is committed.
+- The current-user DPAPI secret ACL is proven exact: inheritance disabled, one explicit current-operator FullControl allow, and no other allow entry.
+- Read-only Session Pooler preflight proved exact production target `wdlaauzknfggoqldolmx`, database `postgres`, and terminal migration `20260714122230`.
+- Exactly one backup execution produced the unchanged six-file logical package, encrypted it with age before OneDrive persistence, and recorded success at `2026-08-12T17:26:46.3144615Z` with size `62409` bytes and a matching SHA-256.
+- Daily/weekly retention recognition passed. No plaintext SQL/zip, credential, private identity, partial artifact, repository artifact, or temporary backup workspace persisted.
+- The loopback-only disposable restore reached `roles.sql` and stopped there. A synthetic local Supabase role-only dump reproduced the same managed-role privilege failure; the local restore role is not a superuser, while all seven required Supabase platform roles are already present.
+- The six-file contract remains unchanged. Do not omit `roles.sql`; separately review a restore-compatible rule that verifies pre-existing platform roles and applies only role material the target may safely restore.
+- Schema, migration history, data, RLS, generated-type compatibility, and application compatibility were not restored or claimed. The encrypted source remains valid and preserved.
 - Scheduled task is not registered.
-- Preferred independent path remains incomplete pending operator key creation, safe secret setup, first successful encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, local/disposable restore test, post-restore verification, and recovery ownership.
+- Failure notification, recurring scheduling, full restore/post-restore verification, and recovery ownership remain incomplete.
 - Supabase Pro remains optional.
 - PITR remains non-blocking.
 - Real Bozeman data remains unprovisioned.

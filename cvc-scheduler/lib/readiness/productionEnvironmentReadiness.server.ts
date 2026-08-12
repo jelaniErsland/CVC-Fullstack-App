@@ -217,15 +217,15 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     evidence: [
       "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
       "operator dashboard evidence confirms production Supabase is on the Free plan and scheduled backups are not available",
-      "no first successful backup timestamp/status exists and retention is not recorded",
-      "12.29 adds the preferred independent encrypted logical backup automation foundation with dependency preflights and a guarded local restore boundary, but no production backup has run",
+      "12.34 proves the first read-only independent encrypted backup at 2026-08-12T17:26:46.3144615Z with 62409 bytes, matching SHA-256, and retention recognition",
+      "the disposable local restore stopped at roles.sql because the initialized local restore role is not a superuser even though all required Supabase platform roles already exist",
       "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
       "PITR is unavailable and intentionally not required for the initial beta",
-      "restore test evidence is not recorded",
+      "full schema, migration, data, RLS/security, generated-type, and application restore evidence is not recorded",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, implement and restore-test either the preferred independent encrypted backup path or optional Supabase-managed Pro path, then record backup timestamp/status, retention, restore verification, deployment rollback ownership, grant revocation fallback, email disable switch, and Belgrade operational fallback.",
+      "Before real Bozeman data is provisioned, separately review the managed-role restore boundary, complete the full independent restore and recurring scheduling/failure-notification proof or choose optional Supabase Pro, then record restore/rollback ownership and preserve the operational fallbacks.",
   },
   {
     id: "operator_pilot_approval",

@@ -162,13 +162,12 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - Store the private age recovery identity in at least two secure places.
 - Use secure operator credentials or a dedicated least-privilege backup credential reviewed for this purpose.
 - Run the DPAPI secret setup locally; do not paste secrets into Git, chat, screenshots, or logs.
-- Run the first manual encrypted production backup only after operator review.
+- Completed in 12.34: the first read-only manual production backup was age-encrypted before persistence and its checksum/status/retention evidence passed.
 - Store encrypted backup artifacts outside the public application repository in private independent storage.
-- Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
-- Record retention.
+- Completed in 12.34: safe status at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, and daily/weekly recognition-based retention.
 - Configure safe failure notification.
-- Perform a separately reviewed restore test into local Supabase or another approved disposable non-production target.
-- Complete post-restore verification.
+- The 12.34 disposable loopback restore stopped safely at `roles.sql`: the local restore role is not a superuser, while the required Supabase platform roles already exist. Do not skip or remove `roles.sql` without separate review.
+- Review the smallest restore-compatible role procedure, then complete schema/migration/data/RLS/security/application verification and cleanup proof.
 - Record restore approval owner and incident owners.
 - Supabase Pro managed backups are optional and may be chosen later if recurring usage justifies the subscription.
 - PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.

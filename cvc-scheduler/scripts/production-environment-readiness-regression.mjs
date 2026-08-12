@@ -137,6 +137,15 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
   assert.match(JSON.stringify(observability.evidence), /production execution.*unproven/i);
 
+  const backupRecovery = productionEnvironmentReadinessItems.find(
+    (item) => item.id === "backup_recovery",
+  );
+  assert(backupRecovery, "Production readiness is missing backup/recovery.");
+  assert.equal(backupRecovery.status, "configuration_required");
+  assert.equal(backupRecovery.blocking, true);
+  assert.match(JSON.stringify(backupRecovery.evidence), /2026-08-12T17:26:46\.3144615Z/);
+  assert.match(JSON.stringify(backupRecovery.evidence), /roles\.sql/);
+
   const [
     contract,
     packageJson,

@@ -1,5 +1,15 @@
 # Project History
 
+## Iteration 12.34 - Independent Production Backup Execution and Local Restore Proof
+
+Summary:
+- Confirmed the DPAPI secret file is owned by the current Windows operator with inheritance disabled, one explicit FullControl allow, and no other/inherited allow. Hardened initialization to apply and verify that exact ACL fail-closed. The earlier URI failures were operator-input behavior: `Ctrl+V` inside `Read-Host -AsSecureString` supplied one control character, while right-click paste supplied the complete value.
+- Added one shared strict production Session Pooler validator accepting `postgres://` and `postgresql://` while preserving the exact production ref, pooler host, port, database, credential, no-query/fragment, and staging-ref refusal guards. Safe diagnostics expose structural booleans/counts only.
+- A read-only preflight proved exact `project-local-production` target `wdlaauzknfggoqldolmx`, database `postgres`, and terminal migration `20260714122230`. Exactly one real backup execution produced the unchanged six-file package, encrypted it with age before private OneDrive persistence, and recorded success at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, a matching SHA-256, daily/weekly retention recognition, and zero persistent plaintext.
+- The reviewed loopback-only disposable local restore verified checksum, decrypted in a unique temp workspace, and stopped safely at `roles.sql` before schema/migration/data. A synthetic local Supabase role-only dump reproduced the privilege class: the local restore user is not a superuser and all seven required platform roles already exist. The six-file contract was not changed and `roles.sql` was not skipped.
+- The smallest proposed follow-up is separate review of a restore-compatible role rule that verifies the target's required pre-existing platform roles and applies only non-platform/user-defined role material. Full schema/migration/RLS/security/generated-type/application restore proof, recurring scheduling/failure notification, and recovery ownership remain blocking.
+- Decrypted/temp material and both disposable local stacks were removed. Production was read-only and remained at `20260714122230`; staging, Vercel, Resend, DNS, Auth, email, product data, migration `20260811123300`, and external backup infrastructure were untouched. Application email remains disabled and launch remains `NO-GO`.
+
 ## Iteration 12.33 - Authenticated Assignment Notification Health
 
 Summary:

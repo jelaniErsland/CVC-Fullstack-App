@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation and operator setup guide without running a production backup or restore.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup and records the managed-role boundary that still blocks a complete local restore.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -80,7 +80,7 @@ Operator dashboard evidence is now recorded for `project-local-production` (`wdl
 - Scheduled backups page: "Free Plan does not include project backups."
 - Scheduled backups page states that upgrading to Pro provides up to 7 days of scheduled backups.
 - No scheduled production backup is currently available.
-- No backup timestamp or successful backup status exists yet.
+- No Supabase-managed backup timestamp or successful status exists; the separately managed 12.34 backup evidence is recorded below.
 - Point in time page: "Point in Time Recovery is a Pro Plan add-on."
 - Point in time page describes PITR as: "Roll back your database to a specific second."
 - PITR add-on starts at $100/month.
@@ -90,9 +90,9 @@ Operator dashboard evidence is now recorded for `project-local-production` (`wdl
 - Restore to new project page: "Restore to a new project requires Pro Plan and above."
 - Restore to new project requires upgrading to Pro and having physical backups enabled.
 - Restore to new project is currently unavailable.
-- No restore was started.
+- No Supabase-managed restore was started.
 - No second project was created.
-- No database dump, credentials, or secrets were accessed or exposed.
+- No Supabase-managed dump, credentials, or secrets were accessed or exposed in the 12.28.1 dashboard review.
 
 This evidence does not by itself require upgrading to Supabase Pro. Project Local's approved near-term policy is to minimize recurring subscriptions until there are multiple active users every month, prefer secure free or low-cost self-managed infrastructure where practical, and still preserve recoverability and architectural integrity.
 
@@ -116,7 +116,7 @@ Before any real Bozeman product data is provisioned, the preferred current strat
 12. Document the real disaster-recovery procedure.
 13. Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
 
-The 12.29 automation foundation exists, including dependency preflight checks and a guarded executable local restore boundary, but do not claim the independent backup path is proven yet. Operator key creation, DPAPI secret setup, first encrypted production backup, checksum/status evidence, retention confirmation, notification confirmation, restore drill execution, post-restore verification, and recovery ownership remain incomplete.
+12.34 proves the first independent backup execution: exact production Session Pooler and migration preflight, the unchanged six-file package, age encryption before persistence, success at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, recognition-based retention, and no persistent plaintext. The local restore drill then failed closed at `roles.sql` before schema/data. A synthetic local Supabase role-only dump reproduced the same privilege class; the local restore user is not a superuser and all seven required Supabase platform roles already exist. Do not remove `roles.sql` or call the restore proven. The smallest proposed follow-up is a separately reviewed restore rule that verifies pre-existing platform roles and applies only non-platform/user-defined role material, preserving the six-file package and trust model.
 
 See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
@@ -181,16 +181,14 @@ Production recovery readiness remains incomplete because:
 
 - Supabase-managed backups are unavailable on the current Free plan.
 - That fact does not by itself require a Pro upgrade.
-- Independent encrypted backups are the preferred current plan; the automation foundation exists, but operator setup and proof are incomplete.
-- The 12.29 automation foundation exists, but no production backup has run and no restore has passed.
+- Independent encrypted backups are the preferred current plan; the first encrypted production backup, checksum/status, and retention behavior are proven.
+- The 12.34 restore drill remains incomplete because `roles.sql` cannot be applied by the non-superuser local restore role to an already initialized Supabase platform-role set.
 - Supabase Pro remains optional.
-- No first successful backup timestamp/status exists.
-- Retention is not yet recorded.
+- Recurring schedule and safe failure-notification behavior are not yet proven.
 - At least one reviewed backup path must be proven before real Bozeman data.
 - Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
 - Restore approval owner.
-- Post-restore verification procedure.
-- Restore-test evidence.
+- A separately reviewed restore-compatible managed-role rule and full post-restore verification.
 - Incident ownership.
 
 PITR is unavailable and intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.

@@ -96,7 +96,8 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "Supabase Scheduled backups page states: Free Plan does not include project backups",
       "upgrading to Pro provides up to 7 days of scheduled backups",
       "no scheduled production backup is currently available",
-      "no backup timestamp or successful backup status exists yet",
+      "12.34 produced the first independent age-encrypted production logical backup at 2026-08-12T17:26:46.3144615Z",
+      "recurring scheduling and failure-notification behavior are not yet proven",
       "Supabase Pro remains optional",
       "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
@@ -106,18 +107,34 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "independent_backup_path",
     title: "Preferred independent encrypted backup path",
-    status: "configuration_required",
+    status: "restore_test_required",
     blocking: true,
     evidence: [
       "approved policy minimizes recurring subscriptions until Project Local has multiple active users every month",
       "preferred near-term strategy is a tested encrypted independent logical PostgreSQL backup system",
       "12.29 adds a Windows-first PowerShell automation foundation with Supabase CLI/Docker/age/psql dependency preflights and fixture/static guardrails",
-      "no production backup has run and no restore has passed",
+      "12.34 safely validated the current-user-only DPAPI secret ACL and exact production Session Pooler target",
+      "the first six-file production package was encrypted before OneDrive persistence, recorded a matching SHA-256 and 62409-byte size, and left no plaintext residue",
+      "the local restore drill stopped at roles.sql because the initialized local Supabase postgres role is not a superuser even though all required platform roles already exist",
       "backup artifacts must never enter the public application repository",
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Complete operator setup: create real age keys, store the DPAPI secret safely, run the first encrypted production backup, record checksum/status/retention evidence, validate notification behavior, and restore-test into an approved disposable non-production target before real Bozeman data.",
+      "Review the smallest restore-compatible roles boundary, complete a full disposable restore and post-restore verification, then prove scheduling/failure notification and record recovery ownership before real Bozeman data.",
+  },
+  {
+    id: "first_independent_backup",
+    title: "First independent encrypted production backup",
+    status: "proven",
+    blocking: false,
+    evidence: [
+      "read-only preflight proved project-local-production/wdlaauzknfggoqldolmx, database postgres, and terminal migration 20260714122230",
+      "one real backup execution produced roles.sql, schema.sql, data.sql, supabase_migrations schema/data, and a credential-free manifest",
+      "the age-encrypted artifact was persisted atomically at 2026-08-12T17:26:46.3144615Z with 62409 bytes and a matching 64-character SHA-256",
+      "daily/weekly recognition-based retention passed and no plaintext SQL, zip, connection value, or private identity persisted in OneDrive or the repository",
+    ],
+    requiredAction:
+      "Preserve the encrypted artifact and credential-free status evidence while the separately reviewed restore-role adjustment and recurring operator procedure are completed.",
   },
   {
     id: "independent_backup_automation_foundation",
@@ -156,8 +173,10 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "operator dashboard evidence confirms Restore to new project requires Pro Plan and above",
       "Supabase-managed restore to new project requires Pro and physical backups",
       "restore to new project is currently unavailable",
-      "no restore was started and no second project was created",
-      "no database dump, credentials, or secrets were accessed or exposed",
+      "12.34 attempted the reviewed loopback-only restore against disposable local Supabase and created no hosted project",
+      "checksum, age decryption, archive-member guards, and cleanup passed before restore execution",
+      "roles.sql failed closed at the local managed-role privilege boundary before schema, migration history, or data restore",
+      "the same failure class reproduced with a synthetic local Supabase role-only dump; all seven required platform roles were already present",
       "restore approval owner is unknown",
     ],
     requiredAction:
@@ -169,9 +188,11 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     status: "restore_test_required",
     blocking: true,
     evidence: [
-      "no production restore was performed in 12.28 or 12.28.1",
-      "no database dump or second production project was created",
-      "restore readiness cannot be claimed until a reviewed restore test for the chosen backup path exists",
+      "no production restore was performed",
+      "12.34 attempted two diagnostic-safe executions against fresh loopback-only disposable local Supabase stacks",
+      "both stopped at roles.sql before schema or data because the initialized local postgres role cannot perform the managed-role changes",
+      "decrypted workspaces and disposable containers were removed after diagnosis",
+      "restore readiness cannot be claimed until the roles boundary is separately reviewed and a full restore passes",
     ],
     requiredAction:
       "Run a safe restore test into local Supabase or another approved disposable non-production target, then verify schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup without exposing credentials or dumps.",
@@ -242,9 +263,9 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: true,
     evidence: [
       "production backup configuration is confirmed blocked by the current Free plan",
-      "preferred independent encrypted backup foundation exists but has not produced a successful encrypted production backup or restore test",
+      "the preferred independent path has produced its first successful encrypted production backup, but a full restore test remains blocked at roles.sql",
       "at least one reviewed backup path must be proven before real Bozeman data",
-      "first backup timestamp/status, retention, restore owner, restore test evidence, and incident ownership remain unresolved",
+      "recurring schedule/failure notification, restore owner, full restore evidence, and incident ownership remain unresolved",
       "real Bozeman product data remains unprovisioned",
       "launch remains NO-GO",
     ],
@@ -258,6 +279,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "Production recovery readiness is incomplete until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented; PITR is unavailable and not required for the initial beta.",
+    "The first independent encrypted production backup is proven, but recovery readiness remains incomplete until the managed-role restore boundary is reviewed, a full disposable restore passes, and recurring operator/ownership evidence is recorded; PITR is unavailable and not required for the initial beta.",
   items: productionRecoveryReadinessItems,
 } as const;

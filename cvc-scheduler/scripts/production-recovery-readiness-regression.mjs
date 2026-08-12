@@ -74,6 +74,7 @@ async function main() {
     "migration_recovery",
     "backup_availability",
     "independent_backup_path",
+    "first_independent_backup",
     "point_in_time_recovery",
     "restore_procedure",
     "restore_test",
@@ -111,6 +112,25 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /after each controlled email test or batch/i);
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
   assert.match(JSON.stringify(observability.evidence), /production RPC execution.*remain deferred/i);
+
+  const firstBackup = productionRecoveryReadinessItems.find(
+    (item) => item.id === "first_independent_backup",
+  );
+  assert(firstBackup, "Recovery readiness is missing first independent backup evidence.");
+  assert.equal(firstBackup.status, "proven");
+  assert.equal(firstBackup.blocking, false);
+  assert.match(JSON.stringify(firstBackup.evidence), /2026-08-12T17:26:46\.3144615Z/);
+  assert.match(JSON.stringify(firstBackup.evidence), /62409 bytes/);
+  assert.match(JSON.stringify(firstBackup.evidence), /matching 64-character SHA-256/i);
+
+  const independentPath = productionRecoveryReadinessItems.find(
+    (item) => item.id === "independent_backup_path",
+  );
+  assert(independentPath, "Recovery readiness is missing the independent backup path.");
+  assert.equal(independentPath.status, "restore_test_required");
+  assert.equal(independentPath.blocking, true);
+  assert.match(JSON.stringify(independentPath.evidence), /roles\.sql/);
+  assert.match(JSON.stringify(independentPath.evidence), /all required platform roles already exist/i);
 
   const [
     contract,
@@ -166,6 +186,8 @@ async function main() {
   assertIncludes(runbook, "projectlocal.app", "backup/recovery runbook");
   assertIncludes(runbook, "wdlaauzknfggoqldolmx", "backup/recovery runbook");
   assertIncludes(runbook, "20260714122230", "backup/recovery runbook");
+  assertIncludes(runbook, "2026-08-12T17:26:46.3144615Z", "backup/recovery runbook");
+  assertIncludes(runbook, "roles.sql", "backup/recovery runbook");
 
   for (const source of [deploymentRunbook, goNoGo, roadmap, currentState, history, jelaniChecklist, readinessDoc]) {
     assertIncludes(source, "PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md", "canonical production docs");

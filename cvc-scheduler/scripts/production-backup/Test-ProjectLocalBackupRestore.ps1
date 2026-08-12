@@ -3,6 +3,7 @@ param(
   [ValidateSet("GuardProductionTarget", "GuardStagingTarget", "GuardNonLoopback", "GuardMissingExecute", "GuardPrivateIdentityInRepo", "GuardPrivateIdentityInBackupDestination", "GuardMalformedArtifact", "GuardUnexpectedArchiveMember", "GuardPathTraversalArchiveMember", "ChecksumAndCleanup", "CommandPlan")]
   [string]$FixtureScenario,
   [switch]$ExecuteLocalRestore,
+  [switch]$UseSupabaseLocalDefaults,
   [string]$EncryptedBackupPath,
   [string]$ExpectedSha256,
   [string]$AgeIdentityPath,
@@ -105,6 +106,17 @@ function Get-TargetPsqlArguments {
   return @("-h", $HostName, "-p", ([string]$Port), "-U", $UserName, "-d", $DatabaseName)
 }
 
+function Assert-SupabaseLocalDefaultsTarget {
+  if (
+    $TargetHost -cne "127.0.0.1" -or
+    $TargetPort -ne 54322 -or
+    $TargetDatabase -cne "postgres" -or
+    $TargetUser -cne "postgres"
+  ) {
+    throw "Standard disposable Supabase credentials require the exact 127.0.0.1:54322 postgres target."
+  }
+}
+
 function ConvertTo-NativeArgumentString {
   param([string[]]$ArgumentList)
   return (($ArgumentList | ForEach-Object {
@@ -171,6 +183,18 @@ function Invoke-CheckedProcess {
       [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
     }
     $plainPassword = $null
+  }
+}
+
+function Get-Sha256Hex {
+  param([Parameter(Mandatory = $true)][string]$Path)
+  $stream = [System.IO.File]::OpenRead($Path)
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    return ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+    $stream.Dispose()
   }
 }
 
@@ -263,7 +287,7 @@ function Invoke-FixtureScenario {
       "ChecksumAndCleanup" {
         $artifact = Join-Path $tempRoot "fixture.age"
         Set-Content -LiteralPath $artifact -Value "age-encryption.org/v1`nfixture" -Encoding UTF8
-        $hash = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash.ToLowerInvariant()
+        $hash = Get-Sha256Hex -Path $artifact
         if ($hash.Length -ne 64) { throw "bad_hash" }
         $decrypt = Join-Path $tempRoot "decrypt"
         New-Item -ItemType Directory -Path $decrypt -Force | Out-Null
@@ -320,7 +344,7 @@ if ([string]::IsNullOrWhiteSpace($ExpectedSha256) -or $ExpectedSha256 -notmatch 
 if ((Get-Content -LiteralPath $EncryptedBackupPath -TotalCount 1) -notlike "age-encryption.org/v1*") {
   throw "Encrypted backup is not structurally recognizable as an age file."
 }
-$actualSha = (Get-FileHash -LiteralPath $EncryptedBackupPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$actualSha = Get-Sha256Hex -Path $EncryptedBackupPath
 if ($actualSha -ne $ExpectedSha256.ToLowerInvariant()) { throw "Encrypted backup checksum mismatch." }
 
 $age = Get-Command "age" -ErrorAction Stop
@@ -329,12 +353,15 @@ $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("project-local-restore-
 $zipPath = Join-Path $workRoot "backup-package.zip"
 $extractRoot = Join-Path $workRoot "decrypted"
 $localRestorePassword = $null
+$restoreStage = "prepare"
 
 try {
   New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
   New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
 
+  $restoreStage = "age_decrypt"
   Invoke-CheckedProcess -FilePath $age.Source -WorkingDirectory $workRoot -SafeFailureCode "age_decrypt" -ArgumentList @("-d", "-i", $AgeIdentityPath, "-o", $zipPath, $EncryptedBackupPath)
+  $restoreStage = "archive_validation"
   Assert-ApprovedArchiveMembers -ArchivePath $zipPath
   Expand-Archive -LiteralPath $zipPath -DestinationPath $extractRoot -Force
 
@@ -344,29 +371,40 @@ try {
     }
   }
 
-  $localRestorePassword = Read-Host "Local disposable database password" -AsSecureString
+  $restoreStage = "local_database_secret"
+  if ($UseSupabaseLocalDefaults) {
+    Assert-SupabaseLocalDefaultsTarget
+    $localRestorePassword = ConvertTo-SecureString -String "postgres" -AsPlainText -Force
+  } else {
+    $localRestorePassword = Read-Host "Local disposable database password" -AsSecureString
+  }
   if ($localRestorePassword.Length -eq 0) { throw "Local restore database password is required." }
 
   foreach ($name in $RestoreOrder) {
+    $restoreStage = "restore_$($name.Replace('.', '_'))"
     Invoke-CheckedProcess -FilePath $psql.Source -WorkingDirectory $workRoot -SafeFailureCode "restore_$name" -ChildScopedSecret $localRestorePassword -ArgumentList (@("--single-transaction", "--set", "ON_ERROR_STOP=1") + $targetPsqlArguments + @("-f", (Join-Path $extractRoot $name)))
   }
 
+  $restoreStage = "verify_migration"
   $migration = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_migration" -ChildScopedSecret $localRestorePassword -Sql "select version from supabase_migrations.schema_migrations order by version desc limit 1;"
   if ($migration -ne $ExpectedMigration) {
     throw "Restored database terminal migration mismatch."
   }
 
+  $restoreStage = "verify_tables"
   $tableList = ($ProjectLocalTables | ForEach-Object { "'$_'" }) -join ","
   $tableCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_tables" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from information_schema.tables where table_schema = 'public' and table_name in ($tableList);"
   if ([int]$tableCount -lt $ProjectLocalTables.Count) {
     throw "Restored database is missing Project Local application tables."
   }
 
+  $restoreStage = "verify_rls"
   $rlsCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_rls" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_tables where schemaname = 'public' and tablename in ($tableList) and rowsecurity = true;"
   if ([int]$rlsCount -lt 8) {
     throw "Restored database RLS posture is incomplete."
   }
 
+  $restoreStage = "verify_table_grants"
   $unsafeGrantCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_table_grants" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from information_schema.role_table_grants where table_schema = 'public' and table_name in ($tableList) and grantee in ('anon','authenticated','public') and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE');"
   if ([int]$unsafeGrantCount -ne 0) {
     throw "Restored database exposes unsafe broad table mutation grants."
@@ -374,7 +412,7 @@ try {
 
   "local_restore_validation_ok"
 } catch {
-  throw "Local restore validation failed safely."
+  throw "Local restore validation failed safely at $restoreStage."
 } finally {
   if ($null -ne $localRestorePassword) { $localRestorePassword.Dispose() }
   if (Test-Path -LiteralPath $workRoot) { Remove-Item -LiteralPath $workRoot -Recurse -Force }
