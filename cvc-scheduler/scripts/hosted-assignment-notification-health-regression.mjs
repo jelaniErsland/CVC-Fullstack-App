@@ -7,14 +7,23 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import {
+  buildProjectLocalDefaultTablePrivilegeQuery,
+  buildProjectLocalDirectTablePrivilegeQuery,
+  compareProjectLocalDefaultTablePrivileges,
+  compareProjectLocalDirectTablePrivileges,
+  projectLocalTableNames,
+} from "../lib/security/projectLocalTablePrivileges.server.ts";
+
 const root = process.cwd();
 const expectedName = "project-local-staging";
 const expectedRef = "kfuujcfxoayukywvtaeh";
+const forbiddenProductionRef = "wdlaauzknfggoqldolmx";
 const expectedConfirmation = `${expectedName}:${expectedRef}`;
 const optInName = "RUN_HOSTED_ASSIGNMENT_NOTIFICATION_HEALTH_VALIDATION";
-const expectedBeforeMigration = "20260714122230";
-const expectedAfterMigration = "20260811123300";
-const expectedMigrationFile = `${expectedAfterMigration}_stale_assignment_notification_delivery_health.sql`;
+const expectedBeforeMigration = "20260811123300";
+const expectedAfterMigration = "20260812123430";
+const expectedMigrationFile = `${expectedAfterMigration}_project_local_table_privilege_hardening.sql`;
 const hostedUrl = `https://${expectedRef}.supabase.co`;
 const namespace = `qa-12-33-notification-health-${randomUUID()}`;
 const secrets = new Set();
@@ -181,7 +190,7 @@ function runHostedSql(sql, stage = "Hosted database query") {
   let output;
   try {
     output = runSupabaseCli(
-      ["db", "query", "--linked", "--file", file, "--output", "json"],
+      ["db", "query", "--linked", "--file", file, "--output-format", "json"],
       { sensitiveOutput: true, stage },
     );
   } finally {
@@ -249,12 +258,15 @@ async function verifyTargetAndReadAnonKey() {
     expectedConfirmation,
     `Refusing hosted validation without ${optInName}=${expectedConfirmation}.`,
   );
+  assert.notEqual(expectedRef, forbiddenProductionRef, "Hosted staging gate resolved to production.");
+  assert(!process.env.ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT?.trim(), "Application email must remain disabled during hosted staging validation.");
+  assert(!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(), "Service-role application configuration must remain absent during hosted staging validation.");
   const linkedRef = (
     await readFile(path.join(root, "supabase", ".temp", "project-ref"), "utf8")
   ).trim();
   assert.equal(linkedRef, expectedRef, "Linked Supabase target is not approved staging.");
   const projectList = parseCliJson(
-    runSupabaseCli(["projects", "list", "--output", "json"]),
+    runSupabaseCli(["projects", "list", "--output-format", "json"]),
     "Hosted project discovery",
   );
   const projects = Array.isArray(projectList) ? projectList : projectList.projects;
@@ -265,13 +277,17 @@ async function verifyTargetAndReadAnonKey() {
   );
   projectStatus = project.status;
 
-  const apiKeys = parseCliJson(
+  const apiKeyResult = parseCliJson(
     runSupabaseCli(
-      ["projects", "api-keys", "--project-ref", expectedRef, "--output", "json"],
+      ["projects", "api-keys", "--project-ref", expectedRef, "--output-format", "json"],
       { sensitiveOutput: true, stage: "Hosted API-key discovery" },
     ),
     "Hosted API-key discovery",
   );
+  const apiKeys = Array.isArray(apiKeyResult)
+    ? apiKeyResult
+    : (apiKeyResult.api_keys ?? apiKeyResult.keys);
+  assert(Array.isArray(apiKeys), "Hosted API-key discovery returned an unexpected shape.");
   for (const entry of apiKeys) if (typeof entry.api_key === "string") secrets.add(entry.api_key);
   hostedAnonKey = apiKeys.find((entry) => entry.name === "anon")?.api_key ?? "";
   assert(hostedAnonKey.length > 100, "Hosted anon key is unavailable.");
@@ -281,7 +297,7 @@ async function ensureExpectedMigrationApplied() {
   migrationBefore = latestHostedMigration() ?? "unknown";
   assert(
     [expectedBeforeMigration, expectedAfterMigration].includes(migrationBefore),
-    `Hosted staging latest migration ${migrationBefore} is outside the reviewed 12.33 boundary.`,
+    `Hosted staging latest migration ${migrationBefore} is outside the reviewed 12.34.3 boundary.`,
   );
   if (migrationBefore === expectedBeforeMigration) {
     const pending = await localMigrationVersionsAfter(migrationBefore);
@@ -292,7 +308,7 @@ async function ensureExpectedMigrationApplied() {
     });
     assert(
       dryRun.includes(expectedMigrationFile) || dryRun.includes(expectedAfterMigration),
-      "Hosted dry-run did not identify only the reviewed 12.33 migration.",
+      "Hosted dry-run did not identify only the reviewed 12.34.3 migration.",
     );
     for (const match of dryRun.matchAll(/\b20\d{12}\b/g)) {
       assert(
@@ -302,11 +318,50 @@ async function ensureExpectedMigrationApplied() {
     }
     runSupabaseCli(["db", "push", "--linked", "--yes"], {
       sensitiveOutput: true,
-      stage: "Hosted reviewed 12.33 migration application",
+      stage: "Hosted reviewed 12.34.3 migration application",
     });
   }
   migrationAfter = latestHostedMigration() ?? "unknown";
   assert.equal(migrationAfter, expectedAfterMigration);
+}
+
+function verifyStructuralPrivileges() {
+  const directRows = runHostedSql(
+    buildProjectLocalDirectTablePrivilegeQuery(),
+    "Hosted exact direct table privilege check",
+  );
+  const directDiff = compareProjectLocalDirectTablePrivileges(directRows);
+  assert.equal(directDiff.unexpected.length, 0, "Hosted staging has an unapproved direct table privilege.");
+  assert.equal(directDiff.missing.length, 0, "Hosted staging is missing an approved direct table privilege.");
+
+  const defaultRows = runHostedSql(
+    buildProjectLocalDefaultTablePrivilegeQuery(),
+    "Hosted exact default table privilege check",
+  );
+  const defaultDiff = compareProjectLocalDefaultTablePrivileges(defaultRows);
+  assert.equal(defaultDiff.unexpected.length, 0, "Hosted staging has an unapproved default table privilege.");
+  assert.equal(defaultDiff.missing.length, 0, "Hosted staging is missing an approved default table privilege.");
+
+  const tableList = projectLocalTableNames.map(sqlText).join(", ");
+  const rlsRows = runHostedSql(
+    `select relname as table_name, relrowsecurity as rls_enabled, relforcerowsecurity as force_rls
+from pg_catalog.pg_class as relation
+join pg_catalog.pg_namespace as namespace on namespace.oid = relation.relnamespace
+where namespace.nspname = 'public' and relation.relkind = 'r' and relation.relname in (${tableList})
+order by relation.relname;`,
+    "Hosted RLS/FORCE RLS structural check",
+  );
+  assert.equal(rlsRows.length, 13);
+  assert(rlsRows.every((row) => row.rls_enabled === true), "Hosted staging has a Project Local table without RLS.");
+  assert.deepEqual(
+    rlsRows.filter((row) => row.force_rls === true).map((row) => row.table_name),
+    [
+      "assignment_notification_deliveries",
+      "project_contacts",
+      "workspace_contact_grants",
+      "workspaces",
+    ],
+  );
 }
 
 function hostedClient() {
@@ -491,6 +546,30 @@ async function verifyRpcBehavior() {
     .select("id")
     .limit(1);
   assert(direct.error, "Hosted direct authenticated ledger SELECT must remain denied.");
+  const deniedWorkspaceInsert = await fixture.users.authorized.client
+    .from("workspaces")
+    .insert({
+      id: randomUUID(),
+      workspace_key: `${namespace}-denied-authenticated`,
+      display_name: "Denied authenticated fixture",
+      lifecycle: "active",
+      timezone: "America/Denver",
+      starts_on: "2026-08-12",
+      ends_on: "2026-08-13",
+      public_intake_enabled: false,
+    });
+  assert(deniedWorkspaceInsert.error, "Hosted direct authenticated table mutation must remain denied.");
+  const deniedAnonInsert = await anon.from("workspaces").insert({
+    id: randomUUID(),
+    workspace_key: `${namespace}-denied-anon`,
+    display_name: "Denied anonymous fixture",
+    lifecycle: "active",
+    timezone: "America/Denver",
+    starts_on: "2026-08-12",
+    ends_on: "2026-08-13",
+    public_intake_enabled: false,
+  });
+  assert(deniedAnonInsert.error, "Hosted direct anonymous table mutation must remain denied.");
   const after = runHostedSql(
     `select id::text, delivery_state, attempt_count, sending_started_at, sending_expires_at, sent_at, failed_at, updated_at from public.assignment_notification_deliveries where workspace_id in (${sqlUuid(fixture.workspaces.target)}, ${sqlUuid(fixture.workspaces.other)}) order by id;`,
     "Hosted notification-health post-read state",
@@ -558,6 +637,7 @@ async function main() {
     await verifyTargetAndReadAnonKey();
     await ensureExpectedMigrationApplied();
     await verifyGeneratedTypes();
+    verifyStructuralPrivileges();
     await createAuthFixtures();
     createProductFixtures();
     await signInUsers();

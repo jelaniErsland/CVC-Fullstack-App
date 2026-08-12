@@ -95,20 +95,20 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "operator dashboard evidence confirms project-local-production/wdlaauzknfggoqldolmx is on the Free plan",
       "Supabase Scheduled backups page states: Free Plan does not include project backups",
       "upgrading to Pro provides up to 7 days of scheduled backups",
-      "no scheduled production backup is currently available",
+      "no recurring production backup schedule is currently registered",
       "12.34 produced the first independent age-encrypted production logical backup at 2026-08-12T17:26:46.3144615Z",
       "recurring scheduling and failure-notification behavior are not yet proven",
       "Supabase Pro remains optional",
       "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro backup path with recorded retention and successful backup evidence.",
+      "Before real Bozeman data is provisioned, register and prove the preferred independent encrypted backup schedule and safe failure notification, or choose the optional Supabase-managed Pro backup path.",
   },
   {
     id: "independent_backup_path",
     title: "Preferred independent encrypted backup path",
-    status: "restore_test_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "approved policy minimizes recurring subscriptions until Project Local has multiple active users every month",
       "preferred near-term strategy is a tested encrypted independent logical PostgreSQL backup system",
@@ -117,11 +117,15 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "the first six-file production package was encrypted before OneDrive persistence, recorded a matching SHA-256 and 62409-byte size, and left no plaintext residue",
       "12.34.1 classifies the actual eight-statement roles.sql, verifies four represented Supabase-managed roles and their safe configuration/parameter privilege without recreating them, and fails closed on unsupported role material",
       "the single fresh 12.34.1 restore passed roles, schema, all 23 migrations through 20260714122230, data, baseline functions, pending-function absence, RLS, and FORCE RLS before stopping on 26 unsafe restored TRUNCATE grants",
+      "12.34.2 proved those 26 grants were RESTORE_INTERACTION rather than historical source state",
+      "12.34.3 reconstructs the exact historical source ACL deterministically, proves generated-type and product/application compatibility, advances recovery through 20260811123300 and 20260812123430, and leaves zero fixture residue",
+      "the completed disposable recovery has 25 migrations through 20260812123430, RLS on all 13 Project Local tables, the exact four FORCE RLS tables, no anon or PUBLIC direct table privileges, and authenticated SELECT only on the approved nine tables",
       "backup artifacts must never enter the public application repository",
+      "logical database recovery does not include Supabase Auth platform configuration",
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Resolve the fail-closed TRUNCATE-grant recovery blocker without weakening the production security baseline, complete the remaining disposable post-restore checks, then prove scheduling/failure notification and record recovery ownership before real Bozeman data.",
+      "Preserve the proven six-file recovery and exact ACL contract; separately prove recurring scheduling/failure notification and record recovery/rollback ownership before real Bozeman data.",
   },
   {
     id: "first_independent_backup",
@@ -135,7 +139,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "daily/weekly recognition-based retention passed and no plaintext SQL, zip, connection value, or private identity persisted in OneDrive or the repository",
     ],
     requiredAction:
-      "Preserve the encrypted artifact, credential-free status evidence, and managed-role rule while the restored TRUNCATE-grant mismatch and recurring operator procedure are completed.",
+      "Preserve the encrypted artifact, credential-free status evidence, managed-role rule, and deterministic source ACL reconstruction while the recurring operator procedure is completed.",
   },
   {
     id: "independent_backup_automation_foundation",
@@ -168,7 +172,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "restore_procedure",
     title: "Restore procedure and approval",
-    status: "configuration_required",
+    status: "operator_evidence_required",
     blocking: true,
     evidence: [
       "operator dashboard evidence confirms Restore to new project requires Pro Plan and above",
@@ -178,27 +182,31 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "checksum, age decryption, exact six-member archive guards, managed-role verification, schema, complete migration history, data, baseline functions, pending-function absence, RLS, and FORCE RLS passed",
       "the restore then failed closed because anon and authenticated each held TRUNCATE on all 13 Project Local tables; TRUNCATE bypasses RLS",
       "production-baseline generated-type parity, product-row verification, and remaining application compatibility checks were not reached and are not claimed",
+      "12.34.2 attributed the 26 grants to RESTORE_INTERACTION and 12.34.3 completed deterministic source ACL reconstruction plus the remaining local recovery-forward verification",
+      "the resulting technical recovery procedure is proven without changing the six-file package or weakening the source ACL contract",
       "restore approval owner is unknown",
     ],
     requiredAction:
-      "Complete restore testing for the chosen backup path: independent encrypted backups restore into an approved disposable non-production target, or optional Supabase-managed backups restore to a new project after Pro/physical backups are enabled.",
+      "Record the recovery/rollback decision owner and preserve the proven independent disposable restore procedure; Supabase-managed restore remains an optional Pro path.",
   },
   {
     id: "restore_test",
     title: "Restore test evidence",
-    status: "restore_test_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "no production restore was performed",
       "12.34.1 performed exactly one fresh full restore attempt using the existing 12.34 encrypted artifact",
       "the managed-role boundary verified rather than recreated anon, authenticated, authenticator, and supabase_realtime_admin; no user-defined roles or password/verifier statements were present",
       "schema, 23-version migration history through 20260714122230, data, baseline functions, pending Notification Health absence, all-table RLS, and expected FORCE RLS passed",
       "verification stopped fail-closed on 26 direct TRUNCATE grants covering anon and authenticated across all 13 Project Local tables",
+      "12.34.2 proved the grants were introduced by restore interaction rather than present in the historical source ACL",
+      "12.34.3 reconstructed the source ACL exactly and completed migration, schema, RLS, FORCE RLS, exact direct/default privilege, generated-type, product-row, Notification Health, Calendar, assignment, Volunteer, and volunteer-schedule compatibility proof through 20260812123430",
       "decrypted/transformed workspaces and disposable containers were removed after diagnosis",
-      "restore readiness cannot be claimed until the grant mismatch is resolved and the remaining type/product/application checks pass",
+      "full independent technical recovery is proven; Supabase Auth platform configuration and Storage object BLOB recovery are outside the logical database package and remain explicit coverage limitations",
     ],
     requiredAction:
-      "Run a safe restore test into local Supabase or another approved disposable non-production target, then verify schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup without exposing credentials or dumps.",
+      "Preserve and periodically repeat the reviewed disposable recovery drill after material backup, migration, or privilege-contract changes without exposing credentials or dumps.",
   },
   {
     id: "operational_pause",
@@ -247,7 +255,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   },
   {
     id: "incident_ownership",
-    title: "Incident ownership",
+    title: "Recovery and rollback decision ownership",
     status: "operator_evidence_required",
     blocking: true,
     evidence: [
@@ -257,7 +265,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "email disablement and pilot cancellation owners are not recorded",
     ],
     requiredAction:
-      "Name the decision owners for application rollback, operational pause, database restore, email disablement, and pilot cancellation before launch.",
+      "Record the recovery and rollback decision owners for application rollback, operational pause, database restore, email disablement, and pilot cancellation before launch; the separate observability incident-response owner is already proven.",
   },
   {
     id: "recovery_launch_status",
@@ -266,14 +274,14 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: true,
     evidence: [
       "production backup configuration is confirmed blocked by the current Free plan",
-      "the preferred independent path has produced its first successful encrypted production backup and solved the managed-role restore boundary, but full recovery remains blocked by unsafe restored TRUNCATE grants",
+      "the preferred independent path has produced its first successful encrypted production backup and full technical recovery is proven through deterministic source ACL reconstruction and recovery-forward migration 20260812123430",
       "at least one reviewed backup path must be proven before real Bozeman data",
-      "recurring schedule/failure notification, restore owner, full restore evidence, and incident ownership remain unresolved",
+      "recurring schedule/failure notification and recovery/rollback ownership remain unresolved",
       "real Bozeman product data remains unprovisioned",
       "launch remains NO-GO",
     ],
     requiredAction:
-      "Keep launch blocked until either the preferred independent encrypted backup path or optional Supabase-managed Pro path is implemented, restore-tested, and documented, and until incident ownership, application email, provisioning, production notification-health execution, and pilot evidence pass. Product-owner UI and initial-beta observability architecture are already proven.",
+      "Keep launch blocked until recurring backup scheduling/failure notification, recovery/rollback ownership, application email, provisioning, production notification-health execution, and pilot evidence pass. The independent technical recovery path, product-owner UI, and initial-beta observability architecture are already proven; Supabase Pro remains optional.",
   },
 ];
 
@@ -282,6 +290,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "The first independent encrypted production backup and managed-role restore boundary are proven, but recovery readiness remains incomplete until the restored TRUNCATE-grant mismatch is resolved, the remaining disposable verification passes, and recurring operator/ownership evidence is recorded; PITR is unavailable and not required for the initial beta.",
+    "The first independent encrypted production backup and full independent technical recovery are proven, including managed-role compatibility, deterministic source ACL reconstruction, and recovery-forward through 20260812123430. Operational readiness remains incomplete until recurring backup scheduling/failure notification and recovery/rollback ownership are recorded; PITR is unavailable and not required for the initial beta.",
   items: productionRecoveryReadinessItems,
 } as const;

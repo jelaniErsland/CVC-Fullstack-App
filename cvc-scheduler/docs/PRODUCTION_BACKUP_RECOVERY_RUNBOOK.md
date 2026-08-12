@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary but leaves full recovery blocked by unsafe restored `TRUNCATE` grants.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary, 12.34.2 attributes the 26 restored `TRUNCATE` grants to `RESTORE_INTERACTION`, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430` without changing the six-file package.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -122,6 +122,10 @@ Before any real Bozeman product data is provisioned, the preferred current strat
 
 The single fresh 12.34.1 restore attempt then passed the role boundary, schema restore, all 23 migrations through `20260714122230`, data restore, baseline public-function checks, pending Notification Health absence, RLS on all 13 Project Local tables, and expected FORCE RLS. Verification stopped fail-closed because `anon` and `authenticated` each held direct `TRUNCATE` on all 13 Project Local tables: 26 unsafe grants, and `TRUNCATE` bypasses RLS. Do not normalize or waive that mismatch silently. Generated-type parity, product-row state, and remaining application compatibility checks were not reached, so full recovery is not proven.
 
+12.34.2 proved the 26 grants were introduced by `RESTORE_INTERACTION`, not present in the historical source ACL. 12.34.3 therefore added deterministic, fail-closed parsing of the actual encrypted artifact's table ACL statements and reconstructed the exact historical source posture after restore. The completed local recovery-forward ended at 25 migrations through `20260812123430` and passed generated-type parity, RLS on all 13 tables, the exact four FORCE RLS tables, no direct privileges for `anon` or `PUBLIC`, `authenticated` `SELECT` on exactly the nine approved tables, zero protected-role postgres future-table defaults, product-row state, Notification Health, Calendar/assignment, Volunteer, volunteer-schedule compatibility, and zero residue. Full independent technical recovery is proven.
+
+Migration `20260812123430` codifies that exact direct/default privilege posture. Approved staging advanced to and passed through `20260812123430`; production remains at `20260714122230`, and applying either later migration there requires separate review. The logical database package covers PostgreSQL Auth schema/data and Storage metadata, but it does not prove recovery of Supabase Auth platform configuration or Storage object BLOBs.
+
 See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
 ### Path B - Optional Supabase-managed path
@@ -186,14 +190,11 @@ Production recovery readiness remains incomplete because:
 - Supabase-managed backups are unavailable on the current Free plan.
 - That fact does not by itself require a Pro upgrade.
 - Independent encrypted backups are the preferred current plan; the first encrypted production backup, checksum/status, and retention behavior are proven.
-- The 12.34.1 managed-role boundary is proven, but the full restore remains incomplete because the restored database exposes 26 direct `TRUNCATE` grants to `anon`/`authenticated` across the 13 Project Local tables.
+- The 12.34.1 managed-role boundary, 12.34.2 restore-interaction attribution, and 12.34.3 full independent technical recovery are proven.
 - Supabase Pro remains optional.
 - Recurring schedule and safe failure-notification behavior are not yet proven.
-- At least one reviewed backup path must be proven before real Bozeman data.
 - Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
-- Restore approval owner.
-- A reviewed resolution for the restored `TRUNCATE`-grant mismatch and completion of the remaining post-restore verification.
-- Incident ownership.
+- Recovery/rollback decision ownership is not recorded.
 
 PITR is unavailable and intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 

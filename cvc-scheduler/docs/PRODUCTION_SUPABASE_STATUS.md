@@ -6,6 +6,8 @@ Iteration 12.25.1 stabilizes the gate for a completely pristine Supabase project
 
 Iteration 12.33 adds migration `20260811123300` and proves it locally and on approved staging only. Production was not accessed during 12.33, remains at terminal migration `20260714122230`, and does not yet expose the Notification Health RPC. Applying the pending migration requires a separately reviewed established-production migration step.
 
+Iteration 12.34.3 adds privilege-hardening migration `20260812123430`; approved staging is validated through it with exact direct/default privilege metadata, generated-type parity, RLS/FORCE RLS, Notification Health compatibility, and zero residue. Production remains at `20260714122230`; neither later migration is applied there, and production migration remains separately reviewed and unperformed.
+
 Current status: `SCHEMA VALIDATED`.
 
 Launch conclusion: `NO-GO`.
@@ -45,7 +47,7 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | RLS/security structural proof | Passed: 13 RLS-protected product tables; 0 broad direct mutation grants |
 | Public Supabase endpoint connectivity proof | Passed: Auth health endpoint HTTP 200 using anon/publishable key without creating a user |
 | App deployment smoke test | Passed: canonical origin `https://projectlocal.app`; commit `082c960` was pushed to `origin/master`, Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain production deployment smoke passed after deployment with exit code `0`; this was public HTTP-only and did not perform database validation or mutation |
-| Backup verification | Partial: production Supabase is on Free and has no managed backups; 12.34 produced the first read-only independent age-encrypted backup at `2026-08-12T17:26:46.3144615Z`, with a matching SHA-256, `62409` encrypted bytes, and daily/weekly retention recognition. The disposable local restore stopped safely at `roles.sql` because the initialized local Supabase restore role cannot alter managed platform roles; full restore/post-restore proof remains blocking. Supabase Pro remains optional |
+| Backup verification | Technical path proven; operations partial: production Supabase is on Free and has no managed backups; 12.34 produced the first read-only independent age-encrypted backup at `2026-08-12T17:26:46.3144615Z`, with a matching SHA-256, `62409` encrypted bytes, and daily/weekly retention recognition. 12.34.1 proves managed-role compatibility, 12.34.2 attributes the apparent grant blocker to restore interaction, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430`. Recurring scheduling/failure notification and recovery/rollback ownership remain incomplete. Supabase Pro remains optional |
 | Email provider | Resend provider/domain/sender configured; provider-level inbox delivery proven. Project Local application email transport remains disabled and application-driven delivery remains unproven |
 | Vercel deployment | Live: Vercel project `project-local` at canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available |
 | Final-domain Auth URLs | Configured: Site URL `https://projectlocal.app`; callback `https://projectlocal.app/admin/auth/callback`; manual magic-link/Auth session evidence passed |
@@ -54,7 +56,7 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 
 ## Safety boundaries
 
-Backup, restore, and rollback readiness is documented in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). 12.28.1 confirms Supabase-managed backup/restore limitations on Free; PITR remains unnecessary for the initial beta. 12.34 proves the first independent encrypted backup, checksum/status, and retention behavior while leaving full restore proof blocked at the documented managed-role boundary. Before real Bozeman data, Project Local must complete a separately reviewed restore-compatible role procedure, a full disposable restore/post-restore verification, recurring scheduling/failure notification, and recovery ownership, or choose the optional Supabase-managed Pro path.
+Backup, restore, and rollback readiness is documented in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). 12.28.1 confirms Supabase-managed backup/restore limitations on Free; PITR remains unnecessary for the initial beta. 12.34 proves the first independent encrypted backup, checksum/status, and retention behavior; 12.34.1 through 12.34.3 prove managed-role compatibility, source ACL reconstruction, and full independent technical recovery. Before real Bozeman data, Project Local must prove recurring scheduling/failure notification and record recovery/rollback ownership, or choose the optional Supabase-managed Pro path. The logical database package does not prove Supabase Auth platform configuration or Storage object BLOB recovery.
 
 This gate may apply reviewed committed migrations only. It must not create fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data.
 

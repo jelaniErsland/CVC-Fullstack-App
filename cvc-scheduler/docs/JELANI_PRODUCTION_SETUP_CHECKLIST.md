@@ -165,10 +165,11 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - Completed in 12.34: the first read-only manual production backup was age-encrypted before persistence and its checksum/status/retention evidence passed.
 - Store encrypted backup artifacts outside the public application repository in private independent storage.
 - Completed in 12.34: safe status at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, and daily/weekly recognition-based retention.
+- Completed through 12.34.3: managed-role compatibility, restore-interaction attribution, deterministic source ACL reconstruction, and full independent technical recovery-forward through `20260812123430`.
+- Register and prove the recurring backup schedule.
 - Configure safe failure notification.
-- The 12.34 disposable loopback restore stopped safely at `roles.sql`: the local restore role is not a superuser, while the required Supabase platform roles already exist. Do not skip or remove `roles.sql` without separate review.
-- Review the smallest restore-compatible role procedure, then complete schema/migration/data/RLS/security/application verification and cleanup proof.
-- Record restore approval owner and incident owners.
+- Preserve the proven managed-role and source ACL reconstruction procedures; do not skip or remove `roles.sql`.
+- Record recovery/rollback approval owner.
 - Supabase Pro managed backups are optional and may be chosen later if recurring usage justifies the subscription.
 - PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 - Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.

@@ -1,0 +1,78 @@
+{
+  "version": "20260812123430",
+  "schema": "public",
+  "creatorRole": "postgres",
+  "protectedGrantees": ["anon", "authenticated", "PUBLIC"],
+  "directPrivileges": {
+    "workspaces": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "project_contacts": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "workspace_contact_grants": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "questionnaire_submissions": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "volunteer_profiles": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "task_presets": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "calendar_items": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "calendar_assignments": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "assignment_responses": {
+      "anon": [],
+      "authenticated": ["SELECT"],
+      "PUBLIC": []
+    },
+    "assignment_response_tokens": {
+      "anon": [],
+      "authenticated": [],
+      "PUBLIC": []
+    },
+    "assignment_response_link_reveal_events": {
+      "anon": [],
+      "authenticated": [],
+      "PUBLIC": []
+    },
+    "volunteer_schedule_access_tokens": {
+      "anon": [],
+      "authenticated": [],
+      "PUBLIC": []
+    },
+    "assignment_notification_deliveries": {
+      "anon": [],
+      "authenticated": [],
+      "PUBLIC": []
+    }
+  },
+  "defaultTablePrivileges": {
+    "anon": [],
+    "authenticated": [],
+    "PUBLIC": []
+  }
+}

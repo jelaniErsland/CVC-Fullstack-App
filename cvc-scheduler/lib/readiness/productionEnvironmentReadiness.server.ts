@@ -46,7 +46,7 @@ export const PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN = true;
 export const productionEnvironmentKnownStagingTarget = {
   name: "project-local-staging",
   ref: "kfuujcfxoayukywvtaeh",
-  validatedMigration: "20260811123300",
+  validatedMigration: "20260812123430",
 } as const;
 
 export const productionEnvironmentReadinessItems: readonly ProductionEnvironmentReadinessItem[] = [
@@ -57,7 +57,8 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: false,
     evidence: [
       "12.23.1 proved the integrated hosted beta loop on project-local-staging/kfuujcfxoayukywvtaeh",
-      "12.33 advances staging through migration 20260811123300 with generated-type parity, focused notification-health behavior proof, and zero residue",
+      "12.33 advances staging through migration 20260811123300 with focused notification-health behavior proof",
+      "12.34.3B advances staging through 20260812123430 with exact direct/default privilege, generated-type, RLS/FORCE RLS, notification-health, and zero-residue proof",
     ],
     requiredAction:
       "Keep staging separate from production and rerun focused staging gates only when staging-facing schema/runtime assumptions change.",
@@ -69,7 +70,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: true,
     evidence: [
       "local uses loopback Supabase and disposable fixtures",
-      "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260811123300",
+      "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260812123430",
       "production is project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
       "production deployment uses project-local at canonical origin https://projectlocal.app",
       "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
@@ -202,7 +203,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "August 11 2026 operator evidence proves Vercel Production runtime-log visibility, event search and filtering, deployment/build status visibility, named alert and incident ownership, actionable conditions, and one controlled privacy-safe schedule_access.exchange_failure event",
       "the controlled invalid-token request created no data and sent no email, and the observed event exposed no volunteer identity, bearer, full URL, credential, provider payload, raw error, SQL, grant, capability array, API key, or environment secret",
       "12.33 adds a no-argument authenticated RPC that derives exactly one active authorized workspace, requires workspace.read/calendar.view/assignments.view/assignments.edit, returns only id/state/expiry for at most 100 sending rows, and preserves direct ledger denial",
-      "12.33 local and project-local-staging validation through 20260811123300 proves authorization, ambiguity denial, isolation, oldest-expiry ordering, stale/fresh handling, minimal projection, and no mutation with zero disposable residue",
+      "12.33 local and project-local-staging validation proves authorization, ambiguity denial, isolation, oldest-expiry ordering, stale/fresh handling, minimal projection, and no mutation; 12.34.3B revalidates that behavior on staging through 20260812123430 with zero disposable residue",
       "the unlinked /admin/diagnostics/notification-health route and documented after-batch/end-of-day cadence provide a sufficient manual notification workflow for the initial tiny controlled beta; automated alert delivery remains unproven and is not required at that scale",
       "production execution of the RPC, production Bozeman grant behavior, and observation of a real production stale row remain unproven and are deferred to the reviewed production migration/provisioning and controlled pilot",
     ],
@@ -218,14 +219,16 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
       "operator dashboard evidence confirms production Supabase is on the Free plan and scheduled backups are not available",
       "12.34 proves the first read-only independent encrypted backup at 2026-08-12T17:26:46.3144615Z with 62409 bytes, matching SHA-256, and retention recognition",
-      "the disposable local restore stopped at roles.sql because the initialized local restore role is not a superuser even though all required Supabase platform roles already exist",
+      "12.34.1 proves managed-role compatibility, 12.34.2 attributes the 26 TRUNCATE grants to RESTORE_INTERACTION, and 12.34.3 proves deterministic historical source ACL reconstruction",
+      "full independent technical recovery is proven locally through migration 20260812123430 with exact direct/default privileges, RLS/FORCE RLS, generated-type parity, product-row state, and application/security compatibility",
       "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
       "PITR is unavailable and intentionally not required for the initial beta",
-      "full schema, migration, data, RLS/security, generated-type, and application restore evidence is not recorded",
+      "recurring backup scheduling, safe failure-notification proof, and recovery/rollback ownership are not recorded",
+      "logical database recovery does not prove Supabase Auth platform configuration or Storage object BLOB recovery",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, separately review the managed-role restore boundary, complete the full independent restore and recurring scheduling/failure-notification proof or choose optional Supabase Pro, then record restore/rollback ownership and preserve the operational fallbacks.",
+      "Before real Bozeman data is provisioned, preserve the proven independent technical recovery, complete recurring scheduling/failure-notification proof, record recovery/rollback ownership, and preserve the operational fallbacks; Supabase Pro remains optional.",
   },
   {
     id: "operator_pilot_approval",
@@ -260,6 +263,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, 12.33 staging notification-health proof, Resend domain/sender/secret configuration, and direct provider-level inbox delivery are proven. Project Local application-driven delivery, a reviewed backup path, restore-test evidence, rollback/restore ownership, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, and full independent technical recovery are proven. Project Local application-driven delivery, recurring backup scheduling/failure notification, recovery/rollback ownership, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

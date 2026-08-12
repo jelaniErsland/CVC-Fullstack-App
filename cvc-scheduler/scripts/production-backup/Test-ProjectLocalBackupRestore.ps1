@@ -1,11 +1,13 @@
 param(
   [switch]$FixtureMode,
-  [ValidateSet("GuardProductionTarget", "GuardStagingTarget", "GuardNonLoopback", "GuardMissingExecute", "GuardPrivateIdentityInRepo", "GuardPrivateIdentityInBackupDestination", "GuardMalformedArtifact", "GuardUnexpectedArchiveMember", "GuardPathTraversalArchiveMember", "ChecksumAndCleanup", "CommandPlan", "ManagedRolePlan", "UserRolePlan", "UnsupportedRoleStatement", "RolePlanFailureCleanup")]
+  [ValidateSet("GuardProductionTarget", "GuardStagingTarget", "GuardNonLoopback", "GuardMissingExecute", "GuardPrivateIdentityInRepo", "GuardPrivateIdentityInBackupDestination", "GuardMalformedArtifact", "GuardUnexpectedArchiveMember", "GuardPathTraversalArchiveMember", "ChecksumAndCleanup", "CommandPlan", "ManagedRolePlan", "UserRolePlan", "UnsupportedRoleStatement", "RolePlanFailureCleanup", "SourceAclPlan", "SourceAclUnknownPrivilege", "SourceAclGrantAll", "SourceAclDuplicateTable", "SourceAclMissingTable", "SourceAclUnsupportedOwnership", "SourceAclFunctionBodyFalsePositive")]
   [string]$FixtureScenario,
   [switch]$ExecuteLocalRestore,
   [switch]$VerifyExistingLocalRestore,
   [switch]$InspectRolesOnly,
+  [switch]$ValidateSourceAclPlanOnly,
   [switch]$UseSupabaseLocalDefaults,
+  [switch]$ApplyRecoveryForward,
   [string]$EncryptedBackupPath,
   [string]$ExpectedSha256,
   [string]$AgeIdentityPath,
@@ -16,6 +18,7 @@ param(
   [string]$TargetDatabase = "postgres",
   [string]$TargetUser = "postgres",
   [string]$ExpectedMigration = "20260714122230",
+  [string]$ExpectedRecoveryForwardMigration = "20260812123430",
   [string]$SupabaseWorkdir
 )
 
@@ -126,7 +129,9 @@ $ExpectedBaselineFunctions = @(
 )
 $ProductionBaselineTypesCommit = "2ebe35912ae3ff203b249d92d8914a8af73bd9ca"
 $ProductionBaselineTypesGitPath = "cvc-scheduler/lib/supabase/database.types.ts"
+$PrivilegeContractPath = Join-Path $RepositoryRoot "lib\security\projectLocalTablePrivileges.contract.json"
 . (Join-Path $ScriptRoot "ProjectLocalRoleRestore.ps1")
+. (Join-Path $ScriptRoot "ProjectLocalTableAclRestore.ps1")
 
 function Test-IsSubPath {
   param([string]$Child, [string]$Parent)
@@ -362,6 +367,55 @@ function Get-NormalizedProjectLocalGeneratedTypes {
   return $source.Trim()
 }
 
+function New-ProjectLocalSourceAclFixture {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [string]$AdditionalGrant = "",
+    [string]$OmitTable = "",
+    [switch]$DuplicateFirstTable,
+    [switch]$UnsupportedOwnership,
+    [switch]$IncludeFunctionBodyFalsePositive
+  )
+  $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+  $statements = @()
+  $firstTable = @($contract.directPrivileges.PSObject.Properties.Name)[0]
+  foreach ($table in $contract.directPrivileges.PSObject.Properties.Name) {
+    if ($table -ceq $OmitTable) { continue }
+    $statements += "CREATE TABLE IF NOT EXISTS `"public`".`"$table`" (id uuid);"
+    if ($DuplicateFirstTable -and $table -ceq $firstTable) {
+      $statements += "CREATE TABLE IF NOT EXISTS `"public`".`"$table`" (id uuid);"
+    }
+    if ($UnsupportedOwnership -and $table -ceq $firstTable) {
+      $statements += "ALTER TABLE IF EXISTS `"public`".`"$table`" OWNER TO `"postgres`";"
+    } else {
+      $statements += "ALTER TABLE `"public`".`"$table`" OWNER TO `"postgres`";"
+    }
+    $statements += "GRANT ALL ON TABLE `"public`".`"$table`" TO `"service_role`";"
+  }
+  foreach ($row in Get-ProjectLocalContractPrivilegeRows -Contract $contract) {
+    $granteeSql = if ($row.grantee -ceq "PUBLIC") { "PUBLIC" } else { $row.grantee }
+    if ($row.table_name -cne $OmitTable) {
+      $statements += "GRANT $($row.privilege_type) ON TABLE `"public`".`"$($row.table_name)`" TO $granteeSql;"
+    }
+  }
+  foreach ($grantee in @("anon", "authenticated", "service_role", "postgres")) {
+    $statements += "ALTER DEFAULT PRIVILEGES FOR ROLE `"postgres`" IN SCHEMA `"public`" GRANT ALL ON TABLES TO `"$grantee`";"
+  }
+  if ($IncludeFunctionBodyFalsePositive) {
+    $statements += @'
+CREATE FUNCTION "public"."source_acl_false_positive"() RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM 'CREATE TABLE "public"."workspaces" (id uuid); ALTER TABLE "public"."workspaces" OWNER TO "anon"; GRANT ALL ON TABLE "public"."workspaces" TO "anon";';
+END;
+$$
+'@
+  }
+  if (-not [string]::IsNullOrWhiteSpace($AdditionalGrant)) { $statements += $AdditionalGrant }
+  [System.IO.File]::WriteAllText($Path, ($statements -join "`r`n") + "`r`n", (New-Object System.Text.UTF8Encoding($false)))
+}
+
 function Invoke-FixtureScenario {
   $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("project-local-restore-fixture-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
@@ -417,10 +471,13 @@ function Invoke-FixtureScenario {
       "CommandPlan" {
         $commands = @(
           "psql --single-transaction --set ON_ERROR_STOP=1 -f roles.sql",
+          "psql --single-transaction --set ON_ERROR_STOP=1 -f target-default-acl-neutralization.sql",
           "psql --single-transaction --set ON_ERROR_STOP=1 -f schema.sql",
+          "psql --single-transaction --set ON_ERROR_STOP=1 -f source-table-acl-reconciliation.sql",
           "psql --single-transaction --set ON_ERROR_STOP=1 -f supabase_migrations_schema.sql",
           "psql --single-transaction --set ON_ERROR_STOP=1 -f supabase_migrations_data.sql",
-          "psql --single-transaction --set ON_ERROR_STOP=1 -f data.sql"
+          "psql --single-transaction --set ON_ERROR_STOP=1 -f data.sql",
+          "supabase migration up --local --include-all"
         )
         $commands | ConvertTo-Json
         return
@@ -498,6 +555,67 @@ GRANT "project_local_reader" TO "project_local_worker";
         "fixture_failed_role_plan_cleanup_ok"
         return
       }
+      "SourceAclPlan" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        $neutralizationPath = Join-Path $tempRoot "neutralize.sql"
+        $reconciliationPath = Join-Path $tempRoot "reconcile.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath
+        $plan = Write-ProjectLocalSourceTableAclSql -SchemaSqlPath $schemaPath -ContractPath $PrivilegeContractPath -NeutralizationPath $neutralizationPath -ReconciliationPath $reconciliationPath
+        if (
+          $plan.table_count -ne 13 -or
+          $plan.table_definition_count -ne 13 -or
+          $plan.ownership_statement_count -ne 13 -or
+          $plan.expected_direct_privilege_count -ne 9 -or
+          $plan.service_role_acl_statement_count -ne 13 -or
+          $plan.source_default_privilege_statement_count -ne 4 -or
+          $plan.unclassified_security_relevant_statement_count -ne 0
+        ) { throw "fixture_source_acl_plan_shape_invalid" }
+        $neutralization = [System.IO.File]::ReadAllText($neutralizationPath)
+        $reconciliation = [System.IO.File]::ReadAllText($reconciliationPath)
+        if ($neutralization -notmatch 'ALTER DEFAULT PRIVILEGES FOR ROLE postgres') { throw "fixture_source_acl_neutralization_missing" }
+        if ($reconciliation -notmatch 'REVOKE ALL PRIVILEGES ON TABLE' -or $reconciliation -notmatch 'GRANT SELECT ON TABLE') { throw "fixture_source_acl_reconciliation_missing" }
+        "fixture_source_acl_plan_ok"
+        return
+      }
+      "SourceAclUnknownPrivilege" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -AdditionalGrant 'GRANT SYNTHETIC_FUTURE_PRIVILEGE ON TABLE public."workspaces" TO authenticated;'
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        [void](Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract)
+      }
+      "SourceAclGrantAll" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -AdditionalGrant 'GRANT ALL PRIVILEGES ON TABLE public."workspaces" TO anon;'
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        [void](Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract)
+      }
+      "SourceAclDuplicateTable" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -DuplicateFirstTable
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        [void](Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract)
+      }
+      "SourceAclMissingTable" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -OmitTable "workspaces"
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        [void](Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract)
+      }
+      "SourceAclUnsupportedOwnership" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -UnsupportedOwnership
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        [void](Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract)
+      }
+      "SourceAclFunctionBodyFalsePositive" {
+        $schemaPath = Join-Path $tempRoot "schema.sql"
+        New-ProjectLocalSourceAclFixture -Path $schemaPath -IncludeFunctionBodyFalsePositive
+        $contract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
+        $plan = Get-ProjectLocalSourceTableAclPlan -SchemaSqlPath $schemaPath -Contract $contract
+        if ($plan.table_definition_count -ne 13 -or $plan.ownership_statement_count -ne 13) { throw "fixture_function_body_false_positive_detected" }
+        "fixture_source_acl_function_body_ignored_ok"
+        return
+      }
       default { throw "Unknown fixture scenario." }
     }
   } finally {
@@ -510,15 +628,19 @@ if ($FixtureMode) {
   return
 }
 
-if (-not $ExecuteLocalRestore -and -not $VerifyExistingLocalRestore -and -not $InspectRolesOnly) {
+if (-not $ExecuteLocalRestore -and -not $VerifyExistingLocalRestore -and -not $InspectRolesOnly -and -not $ValidateSourceAclPlanOnly) {
   throw "Local restore execution requires -ExecuteLocalRestore."
 }
 $selectedModeCount = 0
 if ($ExecuteLocalRestore) { $selectedModeCount++ }
 if ($VerifyExistingLocalRestore) { $selectedModeCount++ }
 if ($InspectRolesOnly) { $selectedModeCount++ }
+if ($ValidateSourceAclPlanOnly) { $selectedModeCount++ }
 if ($selectedModeCount -ne 1) {
-  throw "Restore, verification-only, and role-inspection modes are mutually exclusive."
+  throw "Restore, verification-only, role-inspection, and source-ACL-plan modes are mutually exclusive."
+}
+if ($ApplyRecoveryForward -and -not $UseSupabaseLocalDefaults) {
+  throw "Recovery-forward execution requires the exact disposable Supabase local target."
 }
 
 $targetPsqlArguments = $null
@@ -545,7 +667,6 @@ $actualSha = Get-Sha256Hex -Path $EncryptedBackupPath
 if ($actualSha -ne $ExpectedSha256.ToLowerInvariant()) { throw "Encrypted backup checksum mismatch." }
 
 $age = Get-Command "age" -ErrorAction Stop
-$psql = Get-Command "psql" -ErrorAction Stop
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("project-local-restore-" + [guid]::NewGuid().ToString("N"))
 $zipPath = Join-Path $workRoot "backup-package.zip"
 $extractRoot = Join-Path $workRoot "decrypted"
@@ -589,9 +710,46 @@ try {
     return
   }
 
+  if ($ValidateSourceAclPlanOnly) {
+    $restoreStage = "source_acl_plan"
+    $aclNeutralizationPath = Join-Path $extractRoot "target-default-acl-neutralization.sql"
+    $aclReconciliationPath = Join-Path $extractRoot "source-table-acl-reconciliation.sql"
+    $sourceAclPlan = Write-ProjectLocalSourceTableAclSql -SchemaSqlPath (Join-Path $extractRoot "schema.sql") -ContractPath $PrivilegeContractPath -NeutralizationPath $aclNeutralizationPath -ReconciliationPath $aclReconciliationPath
+    [ordered]@{
+      result = "source_acl_plan_validation_ok"
+      checksum_verified = $true
+      checksum_sha256 = $actualSha
+      package_file_count = $ApprovedPackageFiles.Count
+      table_definition_count = $sourceAclPlan.table_definition_count
+      ownership_statement_count = $sourceAclPlan.ownership_statement_count
+      explicit_table_acl_statement_count = $sourceAclPlan.explicit_table_acl_statement_count
+      service_role_acl_statement_count = $sourceAclPlan.service_role_acl_statement_count
+      protected_direct_privilege_count = $sourceAclPlan.expected_direct_privilege_count
+      anon_direct_privilege_count = @($sourceAclPlan.expected_direct_privilege_keys | Where-Object { $_ -match '\|anon\|' }).Count
+      authenticated_direct_privilege_count = @($sourceAclPlan.expected_direct_privilege_keys | Where-Object { $_ -match '\|authenticated\|' }).Count
+      public_direct_privilege_count = @($sourceAclPlan.expected_direct_privilege_keys | Where-Object { $_ -match '\|PUBLIC\|' }).Count
+      source_default_privilege_statement_count = $sourceAclPlan.source_default_privilege_statement_count
+      source_default_privileges = $sourceAclPlan.source_default_privileges
+      unclassified_security_relevant_statement_count = $sourceAclPlan.unclassified_security_relevant_statement_count
+      table_diagnostics = $sourceAclPlan.table_diagnostics
+      target_default_acl_involved = $false
+      database_connection_attempted = $false
+      logical_backup_coverage = $backupCoverage
+    } | ConvertTo-Json -Depth 10
+    return
+  }
+
+  $psql = Get-Command "psql" -ErrorAction Stop
+
   $restoreStage = "role_plan"
   $derivedRolesPath = Join-Path $extractRoot "roles-restore.sql"
   $rolePlanSummary = Write-ProjectLocalRoleRestoreSql -RolesSqlPath (Join-Path $extractRoot "roles.sql") -OutputPath $derivedRolesPath
+
+  $restoreStage = "source_acl_plan"
+  $aclNeutralizationPath = Join-Path $extractRoot "target-default-acl-neutralization.sql"
+  $aclReconciliationPath = Join-Path $extractRoot "source-table-acl-reconciliation.sql"
+  $sourceAclPlan = Write-ProjectLocalSourceTableAclSql -SchemaSqlPath (Join-Path $extractRoot "schema.sql") -ContractPath $PrivilegeContractPath -NeutralizationPath $aclNeutralizationPath -ReconciliationPath $aclReconciliationPath
+  $privilegeContract = Get-ProjectLocalTablePrivilegeContract -ContractPath $PrivilegeContractPath
 
   $restoreStage = "local_database_secret"
   if ($UseSupabaseLocalDefaults) {
@@ -603,10 +761,18 @@ try {
   if ($localRestorePassword.Length -eq 0) { throw "Local restore database password is required." }
 
   if ($ExecuteLocalRestore) {
-    foreach ($name in $RestoreOrder) {
-      $restoreStage = "restore_$($name.Replace('.', '_'))"
-      $restoreFilePath = if ($name -eq "roles.sql") { $derivedRolesPath } else { Join-Path $extractRoot $name }
-      Invoke-CheckedProcess -FilePath $psql.Source -WorkingDirectory $workRoot -SafeFailureCode "restore_$name" -ChildScopedSecret $localRestorePassword -ArgumentList (@("--single-transaction", "--set", "ON_ERROR_STOP=1") + $targetPsqlArguments + @("-f", $restoreFilePath))
+    $restoreSteps = @(
+      [pscustomobject]@{ name = "roles"; path = $derivedRolesPath },
+      [pscustomobject]@{ name = "target_default_acl_neutralization"; path = $aclNeutralizationPath },
+      [pscustomobject]@{ name = "schema"; path = (Join-Path $extractRoot "schema.sql") },
+      [pscustomobject]@{ name = "source_table_acl_reconciliation"; path = $aclReconciliationPath },
+      [pscustomobject]@{ name = "supabase_migrations_schema"; path = (Join-Path $extractRoot "supabase_migrations_schema.sql") },
+      [pscustomobject]@{ name = "supabase_migrations_data"; path = (Join-Path $extractRoot "supabase_migrations_data.sql") },
+      [pscustomobject]@{ name = "data"; path = (Join-Path $extractRoot "data.sql") }
+    )
+    foreach ($step in $restoreSteps) {
+      $restoreStage = "restore_$($step.name)"
+      Invoke-CheckedProcess -FilePath $psql.Source -WorkingDirectory $workRoot -SafeFailureCode "restore_$($step.name)" -ChildScopedSecret $localRestorePassword -ArgumentList (@("--single-transaction", "--set", "ON_ERROR_STOP=1") + $targetPsqlArguments + @("-f", $step.path))
     }
   }
 
@@ -645,8 +811,15 @@ try {
   if ($actualForceRls -cne ($expectedForceRls -join ",")) { throw "production_baseline_force_rls_mismatch" }
 
   $restoreStage = "verify_table_grants"
-  $unsafeGrantCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_table_grants" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from information_schema.role_table_grants where table_schema = 'public' and table_name in ($tableList) and grantee in ('anon','authenticated','public') and privilege_type in ('INSERT','UPDATE','DELETE','TRUNCATE');"
-  if ([int]$unsafeGrantCount -ne 0) { throw "unsafe_broad_table_mutation_grants" }
+  $directPrivilegeSql = Get-ProjectLocalDirectPrivilegeMetadataSql -Contract $privilegeContract
+  $historicalDirectPrivilegeKeys = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_table_grants" -ChildScopedSecret $localRestorePassword -Sql $directPrivilegeSql
+  $expectedSourcePrivilegeKeys = $sourceAclPlan.expected_direct_privilege_keys -join ','
+  if ($historicalDirectPrivilegeKeys -cne $expectedSourcePrivilegeKeys) { throw "source_table_acl_reconstruction_mismatch" }
+
+  $restoreStage = "verify_source_default_privileges"
+  $defaultPrivilegeSql = Get-ProjectLocalDefaultPrivilegeMetadataSql -Contract $privilegeContract
+  $historicalDefaultPrivilegeKeys = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_source_default_privileges" -ChildScopedSecret $localRestorePassword -Sql $defaultPrivilegeSql
+  if ([string]::IsNullOrWhiteSpace($historicalDefaultPrivilegeKeys)) { throw "source_default_table_privileges_missing" }
 
   $restoreStage = "verify_managed_roles"
   $managedRoleList = ConvertTo-ProjectLocalSqlLiteralList -Values $rolePlanSummary.managed_roles
@@ -674,7 +847,7 @@ try {
   $git = Get-Command "git" -ErrorAction Stop
   $generatedTypesPath = Join-Path $workRoot "restored-database.types.ts"
   $baselineTypesPath = Join-Path $workRoot "production-baseline.types.ts"
-  Invoke-CheckedProcess -FilePath $supabase.Source -WorkingDirectory $workRoot -SafeFailureCode "generate_restored_types" -StdoutPath $generatedTypesPath -ArgumentList @("gen", "types", "typescript", "--local", "--workdir", $SupabaseWorkdir)
+  Invoke-CheckedProcess -FilePath $supabase.Source -WorkingDirectory $workRoot -SafeFailureCode "generate_restored_types" -StdoutPath $generatedTypesPath -ArgumentList @("gen", "types", "typescript", "--local", "--schema", "public", "--workdir", $SupabaseWorkdir)
   Invoke-CheckedProcess -FilePath $git.Source -WorkingDirectory $workRoot -SafeFailureCode "read_baseline_types" -StdoutPath $baselineTypesPath -ArgumentList @("-C", $RepositoryRoot, "show", "$ProductionBaselineTypesCommit`:$ProductionBaselineTypesGitPath")
   $generatedTypes = Get-NormalizedProjectLocalGeneratedTypes -Path $generatedTypesPath
   $baselineTypes = Get-NormalizedProjectLocalGeneratedTypes -Path $baselineTypesPath
@@ -682,16 +855,83 @@ try {
   if (-not ([System.IO.File]::ReadAllText((Join-Path $RepositoryRoot "lib\supabase\database.types.ts")).Contains("read_assignment_notification_delivery_health"))) { throw "current_head_types_distinction_missing" }
   if ($generatedTypes -cne $baselineTypes) { throw "production_baseline_generated_type_mismatch" }
 
+  $finalMigration = $ExpectedMigration
+  $finalMigrationHistoryCount = $ExpectedMigrationHistory.Count
+  $currentTypesMatch = $false
+  $currentNotificationHealthFunctionCount = [int]$pendingFunctionCount
+  $currentDirectPrivilegeKeys = $historicalDirectPrivilegeKeys
+  $currentDefaultPrivilegeKeys = $historicalDefaultPrivilegeKeys
+
+  if ($ApplyRecoveryForward) {
+    $restoreStage = "apply_recovery_forward_migrations"
+    Invoke-CheckedProcess -FilePath $supabase.Source -WorkingDirectory $workRoot -SafeFailureCode "apply_recovery_forward_migrations" -ArgumentList @("migration", "up", "--local", "--include-all", "--yes", "--workdir", $SupabaseWorkdir)
+
+    $restoreStage = "verify_recovery_forward_migration_history"
+    $expectedRecoveryForwardHistory = @($ExpectedMigrationHistory + @("20260811123300", $ExpectedRecoveryForwardMigration))
+    $currentMigrationHistory = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_migration_history" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(version, ',' order by version), '') from supabase_migrations.schema_migrations;"
+    if ($currentMigrationHistory -cne ($expectedRecoveryForwardHistory -join ',')) { throw "recovery_forward_migration_history_mismatch" }
+    $finalMigration = $expectedRecoveryForwardHistory[-1]
+    $finalMigrationHistoryCount = $expectedRecoveryForwardHistory.Count
+
+    $restoreStage = "verify_recovery_forward_functions"
+    $expectedCurrentFunctions = @($ExpectedBaselineFunctions + @("read_assignment_notification_delivery_health") | Sort-Object)
+    $actualCurrentFunctions = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_functions" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(distinct procedure.proname, ',' order by procedure.proname), '') from pg_catalog.pg_proc as procedure join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace where namespace.nspname = 'public' and procedure.prokind = 'f' and procedure.prorettype <> 'pg_catalog.trigger'::regtype;"
+    if ($actualCurrentFunctions -cne ($expectedCurrentFunctions -join ',')) { throw "recovery_forward_public_functions_mismatch" }
+    $currentNotificationHealthFunctionCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_notification_health" -ChildScopedSecret $localRestorePassword -Sql "select count(*) from pg_catalog.pg_proc as procedure join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace where namespace.nspname = 'public' and procedure.proname = 'read_assignment_notification_delivery_health';"
+    if ([int]$currentNotificationHealthFunctionCount -ne 1) { throw "recovery_forward_notification_health_missing" }
+
+    $restoreStage = "verify_recovery_forward_rls"
+    $currentRlsTables = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_rls" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(tablename, ',' order by tablename), '') from pg_catalog.pg_tables where schemaname = 'public' and tablename in ($tableList) and rowsecurity = true;"
+    if ($currentRlsTables -cne ($expectedTables -join ',')) { throw "recovery_forward_rls_mismatch" }
+    $currentForceRls = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_force_rls" -ChildScopedSecret $localRestorePassword -Sql "select coalesce(string_agg(relation.relname, ',' order by relation.relname), '') from pg_catalog.pg_class as relation join pg_catalog.pg_namespace as namespace on namespace.oid = relation.relnamespace where namespace.nspname = 'public' and relation.relname in ($tableList) and relation.relkind = 'r' and relation.relforcerowsecurity = true;"
+    if ($currentForceRls -cne ($expectedForceRls -join ',')) { throw "recovery_forward_force_rls_mismatch" }
+
+    $restoreStage = "verify_recovery_forward_direct_privileges"
+    $currentDirectPrivilegeKeys = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_direct_privileges" -ChildScopedSecret $localRestorePassword -Sql $directPrivilegeSql
+    $expectedCurrentPrivilegeKeys = (ConvertTo-ProjectLocalPrivilegeKeys -Rows (Get-ProjectLocalContractPrivilegeRows -Contract $privilegeContract)) -join ','
+    if ($currentDirectPrivilegeKeys -cne $expectedCurrentPrivilegeKeys) { throw "recovery_forward_direct_privilege_contract_mismatch" }
+
+    $restoreStage = "verify_recovery_forward_default_privileges"
+    $currentDefaultPrivilegeKeys = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_default_privileges" -ChildScopedSecret $localRestorePassword -Sql $defaultPrivilegeSql
+    $expectedDefaultPrivilegeKeys = @()
+    foreach ($grantee in $privilegeContract.protectedGrantees) {
+      foreach ($privilege in $privilegeContract.defaultTablePrivileges.$grantee) {
+        $expectedDefaultPrivilegeKeys += "postgres|public|$grantee|$(([string]$privilege).ToUpperInvariant())"
+      }
+    }
+    if ($currentDefaultPrivilegeKeys -cne (($expectedDefaultPrivilegeKeys | Sort-Object -Unique) -join ',')) { throw "recovery_forward_default_privilege_contract_mismatch" }
+
+    $restoreStage = "verify_recovery_forward_product_rows"
+    $currentProductRowCount = Invoke-ScalarQuery -PsqlPath $psql.Source -TargetArguments $targetPsqlArguments -WorkingDirectory $workRoot -SafeFailureCode "verify_recovery_forward_product_rows" -ChildScopedSecret $localRestorePassword -Sql ("select coalesce(sum(row_count), 0) from (" + ($rowCountParts -join " union all ") + ") as product_rows;")
+    if ([int64]$currentProductRowCount -ne [int64]$productRowCount) { throw "recovery_forward_product_rows_changed" }
+
+    $restoreStage = "verify_recovery_forward_types"
+    $currentGeneratedTypesPath = Join-Path $workRoot "recovery-forward-database.types.ts"
+    Invoke-CheckedProcess -FilePath $supabase.Source -WorkingDirectory $workRoot -SafeFailureCode "generate_recovery_forward_types" -StdoutPath $currentGeneratedTypesPath -ArgumentList @("gen", "types", "typescript", "--local", "--schema", "public", "--workdir", $SupabaseWorkdir)
+    $currentGeneratedTypes = Get-NormalizedProjectLocalGeneratedTypes -Path $currentGeneratedTypesPath
+    $currentRepositoryTypes = Get-NormalizedProjectLocalGeneratedTypes -Path (Join-Path $RepositoryRoot "lib\supabase\database.types.ts")
+    if ($currentGeneratedTypes -cne $currentRepositoryTypes) { throw "recovery_forward_generated_type_mismatch" }
+    $currentTypesMatch = $true
+  }
+
   [ordered]@{
-    result = "local_restore_validation_ok"
+    result = if ($ApplyRecoveryForward) { "local_recovery_forward_validation_ok" } else { "local_restore_validation_ok" }
     restored_terminal_migration = $ExpectedMigration
     migration_history_count = $ExpectedMigrationHistory.Count
+    recovery_forward_terminal_migration = $finalMigration
+    recovery_forward_migration_history_count = $finalMigrationHistoryCount
     public_table_count = $ProjectLocalTables.Count
     baseline_public_function_count = $ExpectedBaselineFunctions.Count
     pending_notification_health_function_count = [int]$pendingFunctionCount
+    recovery_forward_notification_health_function_count = [int]$currentNotificationHealthFunctionCount
     rls_table_count = $ProjectLocalTables.Count
     force_rls_table_count = $ExpectedForceRlsTables.Count
-    unsafe_broad_mutation_grant_count = [int]$unsafeGrantCount
+    source_direct_privilege_count = $sourceAclPlan.expected_direct_privilege_count
+    source_direct_privileges_reconstructed = ($historicalDirectPrivilegeKeys -ceq $expectedSourcePrivilegeKeys)
+    source_default_privileges_preserved = -not [string]::IsNullOrWhiteSpace($historicalDefaultPrivilegeKeys)
+    recovery_forward_direct_privileges_match = ($currentDirectPrivilegeKeys -ceq ((ConvertTo-ProjectLocalPrivilegeKeys -Rows (Get-ProjectLocalContractPrivilegeRows -Contract $privilegeContract)) -join ','))
+    recovery_forward_default_privileges_match = [string]::IsNullOrWhiteSpace($currentDefaultPrivilegeKeys)
+    recovery_forward_generated_types_match = $currentTypesMatch
     managed_role_count = $rolePlanSummary.managed_role_count
     restored_user_role_count = $rolePlanSummary.user_role_count
     product_row_count = [int64]$productRowCount

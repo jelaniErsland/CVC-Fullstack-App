@@ -51,7 +51,7 @@ export const BOZEMAN_BETA_LAUNCH_STAGING_TARGET = {
   name: "project-local-staging",
   ref: "kfuujcfxoayukywvtaeh",
   requiredHealth: "ACTIVE_HEALTHY",
-  validatedMigration: "20260811123300",
+  validatedMigration: "20260812123430",
   hostedResidueExpectation: 0,
 } as const;
 
@@ -141,10 +141,11 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     status: "proven",
     blocking: false,
     evidence: [
-      "Non-production project-local-staging/kfuujcfxoayukywvtaeh validated through 20260811123300",
+      "Non-production project-local-staging/kfuujcfxoayukywvtaeh validated through 20260812123430",
       "Generated public-schema type parity passed",
       "12.33 proves authenticated notification-health authorization, workspace isolation, minimal projection, stale/fresh behavior, no mutation, and exact/namespace zero residue",
       "after current gate expectations were advanced from the historical 12.23.1 level, the hosted launch verification and full disposable E2E loop both passed again at 20260811123300 with exact, namespace, and Auth residue all zero",
+      "12.34.3B proves the exact 13-table direct privilege allowlist, protected postgres future-table default denials, RLS on all 13 tables, exact FORCE RLS, Notification Health compatibility, and zero hosted residue at 20260812123430",
     ],
     requiredAction:
       "Run 12.23 hosted launch-gate verification against the same staging target before launch decision review.",
@@ -159,7 +160,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "Auth, Calendar, Volunteer, assignment, schedule-access, volunteer-response, and assignment-email boundaries emit credential-free operational outcomes",
       "assignment-email claim, schedule-access, provider, finalization, sent, and stale-sending outcomes remain distinguishable",
       "deterministic regression proves redaction constraints, non-mutating stale detection, no Client Component import, and logging-failure isolation",
-      "12.33 adds the bounded authenticated notification-health RPC, strict server reader, unlinked operator route, one-signal detector integration, local proof, and hosted staging proof through 20260811123300",
+      "12.33 adds the bounded authenticated notification-health RPC, strict server reader, unlinked operator route, one-signal detector integration, and local/hosted staging proof; 12.34.3B revalidates it through 20260812123430",
       "the documented after-test/batch and active-day cadence plus immediate investigation and repeated/multiple-stale pause policy is sufficient manual notification for the initial tiny controlled beta",
       "automated alert delivery is not proven or required for the initial beta; production RPC execution and real stale-row observation remain controlled-pilot evidence",
     ],
@@ -188,11 +189,12 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "12.32 application instrumentation is proven locally without production or staging access",
       "August 11 2026 operator evidence proves Vercel Production runtime-log search and filtering, Vercel deployment/build status review, named alert and incident ownership, documented action conditions, and one controlled privacy-safe schedule_access.exchange_failure observation",
       "12.33 proves the stale-delivery operator architecture, manual cadence/escalation policy, and staging behavior; production execution remains deferred to the separately reviewed production migration, Bozeman provisioning, and controlled pilot",
-      "backup/restore proof, real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
+      "12.34.3 proves full independent technical recovery; recurring backup scheduling/failure notification and recovery/rollback ownership remain incomplete",
+      "real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
-      "Complete backups and restore/rollback ownership, real Bozeman provisioning, application-driven email proof, and the controlled pilot; include the first production Notification Health execution after the reviewed migration without weakening the proven privacy-safe Vercel and manual-cadence workflow.",
+      "Complete recurring backup scheduling/failure notification and recovery/rollback ownership, real Bozeman provisioning, application-driven email proof, and the controlled pilot; include the first production Notification Health execution after separately reviewed production migrations without weakening the proven privacy-safe Vercel and manual-cadence workflow.",
   },
   {
     id: "production_launch_action",
@@ -223,7 +225,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, 12.33 staging notification-health proof and manual cadence, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, and direct provider-level inbox delivery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, backup/recovery, provisioning, production notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
+    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, staging through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, direct provider-level inbox delivery, and full independent technical recovery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, recurring backup operations and recovery ownership, provisioning, production notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

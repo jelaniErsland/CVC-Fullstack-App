@@ -78,7 +78,7 @@ async function main() {
   assert.equal(bozemanBetaLaunchGateSummary.decision, "NO-GO");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.name, "project-local-staging");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.ref, "kfuujcfxoayukywvtaeh");
-  assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.validatedMigration, "20260811123300");
+  assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.validatedMigration, "20260812123430");
   assert.equal(BOZEMAN_BETA_LAUNCH_STAGING_TARGET.hostedResidueExpectation, 0);
 
   const statuses = new Set(bozemanBetaLaunchGateItems.map((item) => item.status));
@@ -161,7 +161,8 @@ async function main() {
   assert.match(JSON.stringify(productionEnvironment.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /schedule_access\.exchange_failure/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /production execution remains deferred/i);
-  assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/restore proof/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /full independent technical recovery/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /recurring backup scheduling\/failure notification/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),
@@ -184,7 +185,7 @@ async function main() {
   assertIncludes(goNoGo, "Production email provider", "go/no-go report");
   assertIncludes(goNoGo, "Resend selected", "go/no-go report");
   assertIncludes(goNoGo, "project-local-staging", "go/no-go report");
-  assertIncludes(goNoGo, "20260811123300", "go/no-go report");
+  assertIncludes(goNoGo, "20260812123430", "go/no-go report");
   assertIncludes(goNoGo, "12.30.1", "go/no-go report");
   assertIncludes(goNoGo, "product-owner approved", "go/no-go report");
 

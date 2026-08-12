@@ -73,7 +73,7 @@ async function main() {
   assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
   assert.equal(productionEnvironmentKnownStagingTarget.ref, "kfuujcfxoayukywvtaeh");
-  assert.equal(productionEnvironmentKnownStagingTarget.validatedMigration, "20260811123300");
+  assert.equal(productionEnvironmentKnownStagingTarget.validatedMigration, "20260812123430");
   assert.equal(productionEnvironmentReadinessSummary.decision, "NO-GO");
   assert.equal(productionEnvironmentReadinessSummary.recommendedHost, "Vercel");
 
@@ -133,7 +133,7 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /12\.32/);
   assert.match(JSON.stringify(observability.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
-  assert.match(JSON.stringify(observability.evidence), /20260811123300/);
+  assert.match(JSON.stringify(observability.evidence), /20260812123430/);
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
   assert.match(JSON.stringify(observability.evidence), /production execution.*unproven/i);
 
@@ -144,7 +144,9 @@ async function main() {
   assert.equal(backupRecovery.status, "configuration_required");
   assert.equal(backupRecovery.blocking, true);
   assert.match(JSON.stringify(backupRecovery.evidence), /2026-08-12T17:26:46\.3144615Z/);
-  assert.match(JSON.stringify(backupRecovery.evidence), /roles\.sql/);
+  assert.match(JSON.stringify(backupRecovery.evidence), /full independent technical recovery is proven/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /recurring backup scheduling/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /Auth platform configuration.*Storage object BLOB recovery/i);
 
   const [
     contract,

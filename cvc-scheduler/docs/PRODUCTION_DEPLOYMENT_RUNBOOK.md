@@ -1,8 +1,8 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Iteration 12.32 proves the privacy-safe application observability foundation. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named ownership/action policy, and one controlled safe event. Iteration 12.33 proves the bounded Notification Health architecture, hosted staging behavior, and manual cadence/escalation policy without accessing production. Production launch remains unavailable until application-driven email proof, the separately reviewed production migration and first controlled health check, backup/restore, real operator provisioning, and controlled pilot gates pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Iteration 12.32 proves the privacy-safe application observability foundation. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named ownership/action policy, and one controlled safe event. Iteration 12.33 proves the bounded Notification Health architecture, hosted staging behavior, and manual cadence/escalation policy without accessing production. Iteration 12.34.3 proves full independent technical recovery, and staging is validated through `20260812123430`. Production launch remains unavailable until application-driven email proof, separately reviewed production migrations and the first controlled health check, recurring backup operations/recovery ownership, real operator provisioning, and controlled pilot gates pass.
 
-Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records production Free-plan managed-backup limitations; Supabase Pro remains optional and PITR unnecessary for the initial beta. Iteration 12.29 adds the Windows-first independent encrypted backup foundation. Iteration 12.34 proves the first independent encrypted production backup/checksum/status/retention evidence. Iteration 12.34.1 solves the local managed-role replay boundary but stops full recovery on 26 unsafe restored `TRUNCATE` grants, so recovery proof remains blocking.
+Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records production Free-plan managed-backup limitations; Supabase Pro remains optional and PITR unnecessary for the initial beta. Iteration 12.29 adds the Windows-first independent encrypted backup foundation. Iteration 12.34 proves the first independent encrypted production backup/checksum/status/retention evidence. Iterations 12.34.1 through 12.34.3 prove managed-role compatibility, restore-interaction attribution, deterministic source ACL reconstruction, and complete local recovery-forward; recurring backup scheduling/failure notification and recovery/rollback ownership remain blocking.
 
 Current launch conclusion: `NO-GO`.
 
@@ -252,25 +252,24 @@ Safe logging rules:
 - No questionnaire answers or emergency-contact data.
 - No raw stack trace containing environment values.
 
-Application observability plus runtime/deployment visibility, ownership, action-policy, controlled-event proof, and the 12.33 operator Notification Health architecture are proven. The bounded read and manual after-batch/before-retry/end-of-active-day cadence passed locally and on approved staging through `20260811123300`; repeated or multiple unresolved stale rows pause sending. That manual mechanism is sufficient for the initial tiny controlled beta, so automated alert delivery is not required. Production execution is not yet proven: apply `20260811123300` only through separate production review and record the first Notification Health check during the controlled pilot.
+Application observability plus runtime/deployment visibility, ownership, action-policy, controlled-event proof, and the 12.33 operator Notification Health architecture are proven. The bounded read and manual after-batch/before-retry/end-of-active-day cadence passed locally and on approved staging through `20260812123430`; repeated or multiple unresolved stale rows pause sending. That manual mechanism is sufficient for the initial tiny controlled beta, so automated alert delivery is not required. Production execution is not yet proven: apply `20260811123300` and `20260812123430` only through separate production review and record the first Notification Health check during the controlled pilot.
 
 ## Backup and recovery
 
 Detailed recovery requirements are recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md).
 
-Before real Bozeman product data is provisioned, prove either the preferred independent encrypted backup path or the optional Supabase-managed Pro path. The 12.29 scripts provide the preferred-path foundation only; operator setup and restore proof remain required.
+The preferred independent encrypted backup and full technical recovery path are proven. Before real Bozeman product data is provisioned, preserve that path, prove recurring backup scheduling/failure notification, and record recovery/rollback ownership. The Supabase-managed Pro path remains optional.
 
 For the preferred independent path:
 
-- Implement automated logical PostgreSQL backups.
+- Register and prove recurring logical PostgreSQL backups.
 - Use reviewed secure operator credentials or a dedicated least-privilege backup credential.
 - Encrypt every backup before persistent storage.
 - Store backup artifacts outside the public repository in private independent storage.
 - Record backup timestamp, size, checksum/integrity result, and success/failure state without exposing contents.
 - Record retention.
 - Configure safe failure notification.
-- Perform a separately reviewed restore test into local Supabase or another approved disposable non-production target.
-- Complete post-restore verification for schema, migration level, expected records, RLS/security assumptions, application compatibility, and cleanup.
+- Preserve and periodically repeat the proven disposable recovery drill after material backup, migration, or privilege-contract changes.
 
 For the optional Supabase-managed path:
 

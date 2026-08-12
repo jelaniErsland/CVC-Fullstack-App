@@ -7,6 +7,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import {
+  buildProjectLocalDefaultTablePrivilegeQuery,
+  buildProjectLocalDirectTablePrivilegeQuery,
+  compareProjectLocalDefaultTablePrivileges,
+  compareProjectLocalDirectTablePrivileges,
+  projectLocalTableNames,
+} from "../lib/security/projectLocalTablePrivileges.server.ts";
+
 const root = process.cwd();
 const expectedName = "project-local-production";
 const expectedRef = "wdlaauzknfggoqldolmx";
@@ -15,21 +23,7 @@ const expectedConfirmation = `${expectedName}:${expectedRef}`;
 const expectedMigration = "20260714122230";
 const optInName = "RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION";
 
-const productTables = [
-  "workspaces",
-  "project_contacts",
-  "workspace_contact_grants",
-  "questionnaire_submissions",
-  "volunteer_profiles",
-  "task_presets",
-  "calendar_items",
-  "calendar_assignments",
-  "assignment_responses",
-  "assignment_response_tokens",
-  "assignment_response_link_reveal_events",
-  "volunteer_schedule_access_tokens",
-  "assignment_notification_deliveries",
-];
+const productTables = [...projectLocalTableNames];
 
 function redact(value) {
   return String(value)
@@ -82,7 +76,7 @@ function runLinkedSql(sql, stage) {
   const file = path.join(tmpdir(), `project-local-production-schema-${randomUUID()}.sql`);
   writeFileSync(file, sql, "utf8");
   try {
-    const output = runSupabaseCli(["db", "query", "--linked", "--file", file, "--output", "json"], {
+    const output = runSupabaseCli(["db", "query", "--linked", "--file", file, "--output-format", "json"], {
       sensitiveOutput: true,
       stage,
     });
@@ -179,7 +173,7 @@ function verifyEnvironmentRefusalPreconditions() {
 
 function verifyTargetDiscovery() {
   const projectsResult = parseJson(
-    runSupabaseCli(["projects", "list", "--output", "json"], {
+    runSupabaseCli(["projects", "list", "--output-format", "json"], {
       stage: "Production project discovery",
     }),
     "Production project discovery",
@@ -323,7 +317,7 @@ function verifyGeneratedTypes() {
 
 function discoverAnonKey(projectRef) {
   const result = parseJson(
-    runSupabaseCli(["projects", "api-keys", "--project-ref", projectRef, "--output", "json"], {
+    runSupabaseCli(["projects", "api-keys", "--project-ref", projectRef, "--output-format", "json"], {
       sensitiveOutput: true,
       stage: "Production public-key discovery",
     }),
@@ -362,17 +356,21 @@ order by c.relname;`,
   const rlsMissing = rlsRows.filter((row) => !row.rls_enabled).map((row) => row.table_name);
   assert.equal(rlsMissing.length, 0, `Production tables missing RLS: ${rlsMissing.join(", ")}`);
 
-  const broadGrants = runLinkedSql(
-    `select grantee, table_name, privilege_type
-from information_schema.role_table_grants
-where table_schema = 'public'
-  and table_name = any(array[${productTables.map((table) => `'${table}'`).join(", ")}])
-  and grantee in ('anon', 'authenticated')
-  and privilege_type in ('INSERT', 'UPDATE', 'DELETE')
-order by grantee, table_name, privilege_type;`,
-    "Production broad direct table mutation grant check",
+  const directPrivileges = runLinkedSql(
+    buildProjectLocalDirectTablePrivilegeQuery(),
+    "Production exact direct table privilege check",
   );
-  assert.equal(broadGrants.length, 0, "Production exposes broad direct table mutation grants to anon/authenticated roles.");
+  const directPrivilegeDiff = compareProjectLocalDirectTablePrivileges(directPrivileges);
+  assert.equal(directPrivilegeDiff.unexpected.length, 0, "Production exposes an unapproved direct table privilege.");
+  assert.equal(directPrivilegeDiff.missing.length, 0, "Production is missing an approved direct table privilege.");
+
+  const defaultPrivileges = runLinkedSql(
+    buildProjectLocalDefaultTablePrivilegeQuery(),
+    "Production exact default table privilege check",
+  );
+  const defaultPrivilegeDiff = compareProjectLocalDefaultTablePrivileges(defaultPrivileges);
+  assert.equal(defaultPrivilegeDiff.unexpected.length, 0, "Production exposes an unapproved future-table default privilege.");
+  assert.equal(defaultPrivilegeDiff.missing.length, 0, "Production is missing an approved future-table default privilege.");
 
   const tokenColumns = runLinkedSql(
     `select table_name, column_name
@@ -400,7 +398,8 @@ order by column_name;`,
 
   return {
     protectedTables: rlsRows.length,
-    directMutationGrantRows: broadGrants.length,
+    directPrivilegeRows: directPrivileges.length,
+    defaultPrivilegeRows: defaultPrivileges.length,
   };
 }
 
@@ -435,7 +434,7 @@ async function main() {
   console.log(`Migration plan: ${plan}. Generated-type parity passed.`);
   console.log(`Public connectivity passed: ${publicConnectivity.endpoint} HTTP ${publicConnectivity.status}.`);
   console.log(`Application data remained empty. Product rows: ${afterData.counts.reduce((sum, row) => sum + Number(row.row_count ?? 0), 0)}. Auth users: ${afterData.authUsers}. Storage objects: ${afterData.storageObjects}.`);
-  console.log(`Structural security installed: RLS protected tables ${security.protectedTables}; broad direct mutation grants ${security.directMutationGrantRows}.`);
+  console.log(`Structural security installed: RLS protected tables ${security.protectedTables}; exact direct privilege rows ${security.directPrivilegeRows}; protected default privilege rows ${security.defaultPrivilegeRows}.`);
   console.log("No fixtures, Auth users, product data, deployment, DNS change, email transport, real email, service-role runtime path, response-link reveal/copy, staging mutation, or seed data were used.");
 }
 

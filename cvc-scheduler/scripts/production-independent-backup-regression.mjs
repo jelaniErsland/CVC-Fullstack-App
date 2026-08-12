@@ -103,6 +103,7 @@ async function main() {
     envContract,
     connectionValidator,
     roleRestoreHelper,
+    tableAclRestoreHelper,
   ] = await Promise.all([
     read("package.json"),
     read("scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1"),
@@ -115,6 +116,7 @@ async function main() {
     read("lib/readiness/productionEnvironmentReadiness.server.ts"),
     read("scripts/production-backup/ProjectLocalProductionConnection.ps1"),
     read("scripts/production-backup/ProjectLocalRoleRestore.ps1"),
+    read("scripts/production-backup/ProjectLocalTableAclRestore.ps1"),
   ]);
 
   assertIncludes(packageJson, "test:production-independent-backup", "package.json");
@@ -227,13 +229,19 @@ async function main() {
   assertIncludes(restore, "2ebe35912ae3ff203b249d92d8914a8af73bd9ca", "restore script");
   assertIncludes(restore, "auth_schema_or_data_represented", "restore script");
   assertIncludes(restore, "storage_object_blobs_represented", "restore script");
-  assertIncludes(restore, "unsafe_broad_table_mutation_grants", "restore script");
+  assertIncludes(restore, "source_table_acl_reconstruction_mismatch", "restore script");
+  assertIncludes(restore, "recovery_forward_direct_privilege_contract_mismatch", "restore script");
+  assertIncludes(restore, "recovery_forward_default_privilege_contract_mismatch", "restore script");
+  assertIncludes(restore, "ApplyRecoveryForward", "restore script");
+  assertIncludes(restore, "ValidateSourceAclPlanOnly", "restore script");
+  assertIncludes(restore, "database_connection_attempted = $false", "restore script");
   assertIncludes(restore, "decrypted_cleanup_failed", "restore script");
   assertIncludes(restore, 'throw "Local restore validation failed safely at $restoreStage with $safeFailureCode."', "restore script");
   assertIncludes(restore, "ProjectLocalRoleRestore.ps1", "restore script");
   assertIncludes(restore, "Write-ProjectLocalRoleRestoreSql", "restore script");
   assertIncludes(restore, 'Join-Path $extractRoot "roles-restore.sql"', "restore script");
-  assertIncludes(restore, 'if ($name -eq "roles.sql") { $derivedRolesPath }', "restore script");
+  assertIncludes(restore, "target_default_acl_neutralization", "restore script");
+  assertIncludes(restore, "source_table_acl_reconciliation", "restore script");
   assertIncludes(roleRestoreHelper, "Split-ProjectLocalSqlStatements", "role restore helper");
   assertIncludes(roleRestoreHelper, "New-ProjectLocalRoleRestorePlan", "role restore helper");
   assertIncludes(roleRestoreHelper, "Write-ProjectLocalRoleRestoreSql", "role restore helper");
@@ -245,6 +253,11 @@ async function main() {
   assertIncludes(roleRestoreHelper, "roles_sql_user_privileged_property_refused", "role restore helper");
   assertIncludes(roleRestoreHelper, '"supabase_realtime_admin"', "role restore helper");
   assertNotIncludes(roleRestoreHelper, "-replace.*CREATE ROLE", "role restore helper");
+  assertIncludes(tableAclRestoreHelper, "Get-ProjectLocalSourceTableAclPlan", "table ACL restore helper");
+  assertIncludes(tableAclRestoreHelper, "ALTER DEFAULT PRIVILEGES FOR ROLE postgres", "table ACL restore helper");
+  assertIncludes(tableAclRestoreHelper, "REVOKE ALL PRIVILEGES ON TABLE", "table ACL restore helper");
+  assertIncludes(tableAclRestoreHelper, "source_table_acl_contract_mismatch", "table ACL restore helper");
+  assertNotIncludes(tableAclRestoreHelper, "privilege_type in", "table ACL restore helper");
   assertOrder(restore, "Get-TargetPsqlArguments", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Get-Sha256Hex -Path $EncryptedBackupPath", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
   assertOrder(restore, "Get-Command \"psql\"", "Read-Host \"Local disposable database password\" -AsSecureString", "restore password prompt order");
@@ -278,7 +291,8 @@ async function main() {
   assertIncludes(recoveryContract, "independent_backup_automation_foundation", "recovery contract");
   assertIncludes(recoveryContract, "Supabase Pro remains optional", "recovery contract");
   assertIncludes(recoveryContract, "PITR is unavailable and not required", "recovery contract");
-  assertIncludes(envContract, "reviewed backup path", "environment contract");
+  assertIncludes(envContract, "full independent technical recovery is proven", "environment contract");
+  assertIncludes(envContract, "recurring backup scheduling", "environment contract");
 
   assertIncludes(connectionValidator, '@("postgres", "postgresql")', "connection validator");
   assertIncludes(connectionValidator, '"postgres.$ExpectedProjectRef"', "connection validator");
@@ -381,6 +395,13 @@ async function main() {
   assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "UserRolePlan"], { expectSuccess: true }), "fixture_user_role_application_plan_ok", "user role application plan fixture");
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "UnsupportedRoleStatement"], { expectSuccess: false });
   assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "RolePlanFailureCleanup"], { expectSuccess: true }), "fixture_failed_role_plan_cleanup_ok", "failed role plan cleanup fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclPlan"], { expectSuccess: true }), "fixture_source_acl_plan_ok", "source ACL plan fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclUnknownPrivilege"], { expectSuccess: false }), "source_table_acl_contract_mismatch", "source ACL unknown privilege fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclGrantAll"], { expectSuccess: false }), "source_protected_table_grant_all_unsupported", "source ACL grant-all fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclDuplicateTable"], { expectSuccess: false }), "source_table_shape_mismatch", "source ACL duplicate table fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclMissingTable"], { expectSuccess: false }), "source_table_shape_mismatch", "source ACL missing table fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclUnsupportedOwnership"], { expectSuccess: false }), "source_security_statement_shape_unclassified", "source ACL unsupported ownership fixture");
+  assertIncludes(runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "SourceAclFunctionBodyFalsePositive"], { expectSuccess: true }), "fixture_source_acl_function_body_ignored_ok", "source ACL function-body false-positive fixture");
 
   const residueRoot = await mkdtemp(path.join(tmpdir(), "project-local-backup-regression-"));
   await writeFile(path.join(residueRoot, "probe.txt"), "probe", "utf8");

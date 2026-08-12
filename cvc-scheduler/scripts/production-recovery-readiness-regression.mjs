@@ -59,7 +59,6 @@ async function main() {
   for (const status of [
     "documented",
     "operator_evidence_required",
-    "restore_test_required",
     "configuration_required",
     "proven",
     "blocked",
@@ -127,19 +126,22 @@ async function main() {
     (item) => item.id === "independent_backup_path",
   );
   assert(independentPath, "Recovery readiness is missing the independent backup path.");
-  assert.equal(independentPath.status, "restore_test_required");
-  assert.equal(independentPath.blocking, true);
+  assert.equal(independentPath.status, "proven");
+  assert.equal(independentPath.blocking, false);
   assert.match(JSON.stringify(independentPath.evidence), /roles\.sql/);
   assert.match(JSON.stringify(independentPath.evidence), /verifies four represented Supabase-managed roles/i);
-  assert.match(JSON.stringify(independentPath.evidence), /26 unsafe restored TRUNCATE grants/i);
+  assert.match(JSON.stringify(independentPath.evidence), /RESTORE_INTERACTION/i);
+  assert.match(JSON.stringify(independentPath.evidence), /recovery through 20260811123300 and 20260812123430/i);
 
   const restoreTest = productionRecoveryReadinessItems.find((item) => item.id === "restore_test");
   assert(restoreTest, "Recovery readiness is missing restore-test evidence.");
-  assert.equal(restoreTest.status, "restore_test_required");
-  assert.equal(restoreTest.blocking, true);
+  assert.equal(restoreTest.status, "proven");
+  assert.equal(restoreTest.blocking, false);
   assert.match(JSON.stringify(restoreTest.evidence), /exactly one fresh full restore attempt/i);
   assert.match(JSON.stringify(restoreTest.evidence), /23-version migration history through 20260714122230/i);
   assert.match(JSON.stringify(restoreTest.evidence), /TRUNCATE bypasses RLS|direct TRUNCATE grants/i);
+  assert.match(JSON.stringify(restoreTest.evidence), /full independent technical recovery is proven/i);
+  assert.match(JSON.stringify(restoreTest.evidence), /Auth platform configuration.*Storage object BLOB recovery/i);
 
   const [
     contract,

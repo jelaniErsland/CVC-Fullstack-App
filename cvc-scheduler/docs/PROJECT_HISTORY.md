@@ -1,5 +1,29 @@
 # Project History
 
+## Iteration 12.34.3B - Hosted Staging Privilege-Hardening Migration Validation
+
+Summary:
+- Preserved the 12.34 encrypted artifact and six-file package, 12.34.1 managed-role compatibility, 12.34.2 `RESTORE_INTERACTION` attribution, and 12.34.3 deterministic source ACL recovery-forward proof without repeating the full restore.
+- Added migration `20260812123430` and a centralized exact privilege contract: `anon` and `PUBLIC` have no direct privileges on the 13 Project Local tables; `authenticated` has `SELECT` only on the approved nine; protected postgres-owned future public-table defaults are empty; service-role/owner behavior remains available.
+- Advanced only approved `project-local-staging` (`kfuujcfxoayukywvtaeh`) from `20260811123300` to `20260812123430`. Hosted generated-type parity, exact direct/default privileges, RLS on all 13 tables, the exact FORCE RLS set, authenticated Notification Health authorization/isolation/bounds/no-mutation behavior, and a transactionally rolled-back future-table probe passed.
+- Hosted fixture namespace, Auth, product-row, and probe-object residue are zero. No email was sent. Production was not accessed and remains recorded at `20260714122230`; neither later migration was applied there.
+- Full independent technical recovery is proven. Recurring backup scheduling, backup failure-notification proof, recovery/rollback ownership, application-driven production Initial Email proof, real Bozeman provisioning, and controlled pilot remain incomplete. Application email remains disabled and launch remains `NO-GO`.
+- The logical database package does not prove Supabase Auth platform configuration or Storage object BLOB recovery.
+
+## Iteration 12.34.3 - Deterministic Source ACL Reconstruction and Complete Local Recovery-Forward
+
+Summary:
+- Added fail-closed parsing and deterministic reconstruction of the actual encrypted artifact's historical 13-table ACL state. Unknown privileges, malformed shape, broad `GRANT ALL`, unsupported ownership, and statement-shape ambiguity are rejected.
+- Completed recovery-forward from production baseline `20260714122230` through `20260811123300` and `20260812123430`, ending at exactly 25 migrations.
+- Proved current generated public-schema type parity, all-table RLS, the exact four FORCE RLS tables, exact direct/default table privileges, Notification Health, Calendar/assignment, Volunteer, volunteer-schedule behavior, zero product rows, zero Bozeman workspaces, zero fixture residue, and cleanup.
+- Full independent technical recovery is proven without changing the six-file backup package. Production/staging were not touched in this local recovery slice.
+
+## Iteration 12.34.2 - Restored Grant Attribution
+
+Summary:
+- Attributed the 26 direct `TRUNCATE` grants found in 12.34.1 to `RESTORE_INTERACTION`, not historical source ACL truth.
+- Preserved fail-closed behavior and the unchanged six-file package; no source grant was waived, silently removed, or normalized without evidence.
+
 ## Iteration 12.34.1 - Supabase Managed-Role Restore Compatibility and Full Local Restore Proof
 
 Summary:
