@@ -332,11 +332,11 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     statuses: ["blocked_by_dependency", "not_implemented", "beta_critical"],
     repositoryFindings: [
       "local and hosted non-production validation patterns exist",
-      "production Supabase deployment domain Auth provider-level Resend configuration application observability Vercel runtime-log controlled-event review 12.33 operator notification-health architecture and full independent technical recovery are established, while application email proof recurring backup operations recovery ownership provisioning production notification-health execution and pilot readiness remain incomplete",
+      "production Supabase deployment domain Auth provider-level Resend configuration application observability Vercel runtime-log controlled-event review 12.33 operator notification-health architecture full independent technical recovery recurring task registration safe failure notification and recovery ownership are established, while application email proof successful scheduled backup execution provisioning production notification-health execution and pilot readiness remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     betaNeed:
-      "Complete production environment, recurring backup operations, recovery/rollback ownership, pilot testing, mobile proof, and fallback plan before real Bozeman use.",
+      "Complete successful scheduled backup proof, production environment, pilot testing, mobile proof, and fallback plan before real Bozeman use.",
     blockers: [
       "production_supabase_environment",
       "deployment_environment_and_domain",
@@ -567,6 +567,6 @@ export function evaluateBozemanBetaLaunchReadiness() {
       bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
     old12_14Decision: bozemanBetaOld12_14Decision.decision,
     reason:
-      "The persisted scheduling loop, beta-critical UI, privacy-safe application and operator observability architecture, staging proof through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, direct provider-level inbox delivery, and full independent technical recovery are proven, but Project Local application-driven production email proof, recurring backup scheduling/failure notification, recovery/rollback ownership, real Bozeman provisioning, production notification-health execution, and a controlled pilot remain incomplete.",
+      "The persisted scheduling loop, beta-critical UI, privacy-safe application and operator observability architecture, staging proof through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, direct provider-level inbox delivery, full independent technical recovery, recurring task registration, safe failure notification, and recovery ownership are proven, but Project Local application-driven production email proof, successful scheduled backup execution, real Bozeman provisioning, production notification-health execution, and a controlled pilot remain incomplete.",
   } as const;
 }

@@ -1,5 +1,15 @@
 # Project History
 
+## Iteration 12.35 - Windows Recurring Backup Operations
+
+Summary:
+- Preserved the proven six-file backup/recovery contract and derived the existing public age recipient with standard age tooling without printing or copying the private identity.
+- Registered exactly one enabled current-operator Interactive Windows task, `Project Local Production Backup`, daily at `03:15` local time with `StartWhenAvailable`, exact production/migration locks, failure notification, and no database credential or private age identity in task arguments.
+- The single authorized scheduled production execution stopped safely at `migration_preflight_failed`, returned Task Scheduler result `1`, and produced no new encrypted artifact. No retry occurred; scheduled checksum/retention execution remains unproven and blocking.
+- A separately named scheduled pre-network fixture returned the expected nonzero result with `injected_pre_network_failure`, atomic credential-free failure/notification status, zero artifact, zero production connection, and zero temp workspace. Jelani confirmed the Windows notification was visible. The temporary task/status were removed; the real recurring task remains enabled and Ready.
+- Jelani/the Project Local product-operator owner owns recurring backup operations/failure response, database restore approval/execution, Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation. Codex/engineering may assist technically without receiving operational authority.
+- Production remains recorded at `20260714122230`; the attempt was read-only and did not migrate or mutate production. Staging, Vercel, Resend, DNS, Auth, email, product data, and restore infrastructure were untouched. Application email remains disabled, no real Bozeman data exists, backup/recovery remains blocking only on successful scheduled execution within this slice, and launch remains `NO-GO`.
+
 ## Iteration 12.34.3B - Hosted Staging Privilege-Hardening Migration Validation
 
 Summary:

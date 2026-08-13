@@ -33,7 +33,7 @@ Production is partially configured but not launch-approved:
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation; 12.34 proves its first read-only age-encrypted production backup, checksum/status, and retention behavior. 12.34.1 solves the managed-role boundary, 12.34.2 attributes the 26 grants to restore interaction, and 12.34.3 proves deterministic source ACL reconstruction and full local recovery-forward. 12.34.3B validates staging through `20260812123430`. 12.31 selects Resend, 12.32 proves the privacy-safe event foundation, and 12.33 proves the bounded Notification Health architecture/cadence. Application-driven email, recurring backup scheduling/failure notification, recovery/rollback ownership, real workspace provisioning, production migrations/Notification Health execution, and controlled pilot remain incomplete. Application transport is disabled, Supabase Pro remains optional, and Jelani's approved 12.30.1 UI remains non-blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation; 12.34 proves its first read-only age-encrypted production backup, checksum/status, and retention behavior. 12.34.1 solves the managed-role boundary, 12.34.2 attributes the 26 grants to restore interaction, and 12.34.3 proves deterministic source ACL reconstruction and full local recovery-forward. 12.34.3B validates staging through `20260812123430`. 12.35 proves daily `03:15`/`StartWhenAvailable` task registration, safe human-visible failure notification, and recovery/rollback ownership, but its single scheduled production attempt failed at `migration_preflight_failed` without a new artifact. 12.31 selects Resend, 12.32 proves the privacy-safe event foundation, and 12.33 proves the bounded Notification Health architecture/cadence. Application-driven email, successful scheduled backup execution, real workspace provisioning, production migrations/Notification Health execution, and controlled pilot remain incomplete. Application transport is disabled, Supabase Pro remains optional, and Jelani's approved 12.30.1 UI remains non-blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -169,8 +169,7 @@ The canonical event/privacy/cadence contract is in [`PRODUCTION_OBSERVABILITY.md
 Detailed backup/recovery/rollback procedure is recorded in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). Before launch:
 
 - Preserve the proven independent encrypted backup, retention, and full technical recovery procedure.
-- Register and prove recurring backup scheduling and safe failure notification.
-- Record recovery/rollback ownership.
+- Preserve the proven recurring task, safe failure notification, and named recovery/rollback ownership; diagnose `migration_preflight_failed` and separately authorize one successful scheduled checksum/retention proof.
 - Document app deployment rollback.
 - Document migration-forward posture.
 - Document workspace/grant deactivation fallback.

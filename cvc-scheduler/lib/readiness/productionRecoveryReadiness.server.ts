@@ -61,16 +61,17 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "application_rollback",
     title: "Application rollback",
-    status: "documented",
+    status: "proven",
     blocking: false,
     evidence: [
       "Vercel project project-local is the production host",
       "currently verified deployment baseline is commit 082c960 on branch master",
       "application rollback means Vercel rollback or redeploying a known-good commit",
       "application rollback is not database rollback",
+      "Jelani, as the Project Local product/operator owner, owns Vercel application rollback approval and execution; Codex or engineering may assist without receiving operational authority",
     ],
     requiredAction:
-      "Before launch, confirm who can approve and execute Vercel rollback, then verify the canonical-domain smoke gate after any rollback.",
+      "Preserve the named product/operator ownership and verify the canonical-domain smoke gate after any approved Vercel rollback.",
   },
   {
     id: "migration_recovery",
@@ -95,14 +96,15 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "operator dashboard evidence confirms project-local-production/wdlaauzknfggoqldolmx is on the Free plan",
       "Supabase Scheduled backups page states: Free Plan does not include project backups",
       "upgrading to Pro provides up to 7 days of scheduled backups",
-      "no recurring production backup schedule is currently registered",
+      "12.35 registered one enabled current-operator Interactive Task Scheduler task for the independent path, daily at 03:15 local time with StartWhenAvailable enabled",
       "12.34 produced the first independent age-encrypted production logical backup at 2026-08-12T17:26:46.3144615Z",
-      "recurring scheduling and failure-notification behavior are not yet proven",
+      "12.35 proved credential-free atomic failure status, Windows notification emission, a deterministic pre-network scheduled failure, zero fixture artifact, complete temporary-task cleanup, and Jelani's human-visible notification confirmation",
+      "the single authorized scheduled production backup attempt returned failure at migration_preflight_failed and produced no new encrypted artifact, so scheduled backup success, new checksum, and retention execution are not proven",
       "Supabase Pro remains optional",
       "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, register and prove the preferred independent encrypted backup schedule and safe failure notification, or choose the optional Supabase-managed Pro backup path.",
+      "Before real Bozeman data is provisioned, diagnose the credential-free migration-preflight failure and obtain separate authorization to prove one successful Task Scheduler backup, checksum, and retention execution; the optional Supabase-managed Pro path remains available.",
   },
   {
     id: "independent_backup_path",
@@ -125,7 +127,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Preserve the proven six-file recovery and exact ACL contract; separately prove recurring scheduling/failure notification and record recovery/rollback ownership before real Bozeman data.",
+      "Preserve the proven six-file recovery, exact ACL contract, safe failure notification, and named ownership; separately prove one successful scheduled backup before real Bozeman data.",
   },
   {
     id: "first_independent_backup",
@@ -144,16 +146,19 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "independent_backup_automation_foundation",
     title: "Independent backup automation foundation",
-    status: "documented",
+    status: "proven",
     blocking: false,
     evidence: [
       "12.29 adds PowerShell scripts for DPAPI secret setup, guarded logical backup, Task Scheduler registration, and an explicit guarded local restore boundary",
       "normal regression requires no real Supabase credentials, OneDrive, age, Docker, production access, or running local Supabase",
       "scripts are route-unused and do not change application runtime behavior",
-      "scheduled task is not registered by the repository or tests",
+      "12.35 registers one enabled current-operator Interactive task daily at 03:15 local time with StartWhenAvailable, exact production locks, failure notification, and no database credential or private age identity in task arguments",
+      "the current Windows operator must be logged in; a missed 03:15 start while asleep, powered off, or logged out runs when the task is next available after wake/login",
+      "if the operator is logged in and the PC is awake but offline, the task starts and fails safely at its connection preflight; restored connectivity does not itself retry that run",
+      "atomic status and notification records, unexpected-task replacement refusal, and the deterministic pre-network scheduled failure seam are regression-proven",
     ],
     requiredAction:
-      "Use the operator guide to install dependencies, create keys, configure the DPAPI secret, run a first manual backup, register the task explicitly, and complete a restore drill before real data.",
+      "Preserve the registered task and operator-only secret boundary; diagnose the scheduled migration-preflight failure before a separately authorized successful execution proof.",
   },
   {
     id: "point_in_time_recovery",
@@ -172,8 +177,8 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "restore_procedure",
     title: "Restore procedure and approval",
-    status: "operator_evidence_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "operator dashboard evidence confirms Restore to new project requires Pro Plan and above",
       "Supabase-managed restore to new project requires Pro and physical backups",
@@ -184,10 +189,10 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "production-baseline generated-type parity, product-row verification, and remaining application compatibility checks were not reached and are not claimed",
       "12.34.2 attributed the 26 grants to RESTORE_INTERACTION and 12.34.3 completed deterministic source ACL reconstruction plus the remaining local recovery-forward verification",
       "the resulting technical recovery procedure is proven without changing the six-file package or weakening the source ACL contract",
-      "restore approval owner is unknown",
+      "Jelani, as the Project Local product/operator owner, owns database restore approval and execution; Codex or engineering may assist without receiving operational authority",
     ],
     requiredAction:
-      "Record the recovery/rollback decision owner and preserve the proven independent disposable restore procedure; Supabase-managed restore remains an optional Pro path.",
+      "Preserve the named ownership and proven independent disposable restore procedure; Supabase-managed restore remains an optional Pro path.",
   },
   {
     id: "restore_test",
@@ -211,13 +216,14 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "operational_pause",
     title: "Operational pause without deletion",
-    status: "documented",
+    status: "proven",
     blocking: false,
     evidence: [
       "workspace_contact_grants support revocation, inactive state, and validity windows",
       "email transport remains disabled",
       "Belgrade Sheets/App Script remains operational fallback",
       "Auth identity deletion and product-record deletion are not normal pause mechanisms",
+      "Jelani, as the Project Local product/operator owner, owns operational pause, email disablement, and pilot cancellation",
     ],
     requiredAction:
       "Pause Project Local by stopping provisioning, revoking/expiring production workspace grants, keeping email disabled, and optionally rolling back app deployment.",
@@ -256,16 +262,16 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "incident_ownership",
     title: "Recovery and rollback decision ownership",
-    status: "operator_evidence_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
-      "application rollback owner is not recorded",
-      "operational pause owner is not recorded",
-      "database restore owner is not recorded",
-      "email disablement and pilot cancellation owners are not recorded",
+      "Jelani, as the Project Local product/operator owner, owns recurring backup operations and backup failure response",
+      "the same owner approves and executes database restore and Vercel application rollback",
+      "the same owner owns operational pause, email disablement, and pilot cancellation",
+      "Codex or engineering assistance may investigate or execute technical steps, but operational authority remains with the Project Local product/operator owner",
     ],
     requiredAction:
-      "Record the recovery and rollback decision owners for application rollback, operational pause, database restore, email disablement, and pilot cancellation before launch; the separate observability incident-response owner is already proven.",
+      "Preserve the named product/operator ownership and do not infer that engineering assistance transfers approval or operational authority.",
   },
   {
     id: "recovery_launch_status",
@@ -276,12 +282,12 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "production backup configuration is confirmed blocked by the current Free plan",
       "the preferred independent path has produced its first successful encrypted production backup and full technical recovery is proven through deterministic source ACL reconstruction and recovery-forward migration 20260812123430",
       "at least one reviewed backup path must be proven before real Bozeman data",
-      "recurring schedule/failure notification and recovery/rollback ownership remain unresolved",
+      "recurring task registration, failure notification, and recovery/rollback ownership are proven, but the one authorized scheduled production execution failed safely at migration_preflight_failed and produced no artifact",
       "real Bozeman product data remains unprovisioned",
       "launch remains NO-GO",
     ],
     requiredAction:
-      "Keep launch blocked until recurring backup scheduling/failure notification, recovery/rollback ownership, application email, provisioning, production notification-health execution, and pilot evidence pass. The independent technical recovery path, product-owner UI, and initial-beta observability architecture are already proven; Supabase Pro remains optional.",
+      "Keep launch blocked until one successful scheduled backup execution, application email, provisioning, production notification-health execution, and pilot evidence pass. The safe failure notification, named recovery ownership, independent technical recovery path, product-owner UI, and initial-beta observability architecture are already proven; Supabase Pro remains optional.",
   },
 ];
 
@@ -290,6 +296,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "The first independent encrypted production backup and full independent technical recovery are proven, including managed-role compatibility, deterministic source ACL reconstruction, and recovery-forward through 20260812123430. Operational readiness remains incomplete until recurring backup scheduling/failure notification and recovery/rollback ownership are recorded; PITR is unavailable and not required for the initial beta.",
+    "The first independent encrypted production backup, full independent technical recovery, recurring task registration, human-confirmed safe failure notification, and recovery/rollback ownership are proven. Operational readiness remains incomplete because the single authorized scheduled production execution failed at migration preflight and produced no new encrypted artifact; PITR is unavailable and not required for the initial beta.",
   items: productionRecoveryReadinessItems,
 } as const;

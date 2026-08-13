@@ -1,6 +1,6 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary, 12.34.2 attributes the 26 restored `TRUNCATE` grants to `RESTORE_INTERACTION`, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430` without changing the six-file package.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary, 12.34.2 attributes the 26 restored `TRUNCATE` grants to `RESTORE_INTERACTION`, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430` without changing the six-file package. Iteration 12.35 registers the Windows recurring task, proves safe human-visible failure notification, and records operational ownership, but its single authorized scheduled production execution stops safely at migration preflight without producing a new artifact.
 
 Current status: `RECOVERY READINESS INCOMPLETE`.
 
@@ -49,12 +49,7 @@ If the deployed application needs to be rolled back:
 6. After rollback, run the exact clean-tree production smoke gate against `https://projectlocal.app`.
 7. If Auth/domain/environment settings changed, manually verify Auth callback behavior with an approved operator flow; do not automate magic-link requests in routine checks.
 
-Required operator evidence before launch:
-
-- Who can approve application rollback.
-- Who can execute Vercel rollback.
-- Where rollback/audit notes are recorded.
-- Which commit is considered the latest known-good deployment after each production change.
+Jelani, as the Project Local product/operator owner, approves and executes Vercel application rollback. Codex or engineering may assist with technical investigation or execution, but operational authority remains with that owner. Record rollback/audit notes and the latest known-good deployment after each production change.
 
 ## B. Database migration recovery
 
@@ -79,7 +74,7 @@ Operator dashboard evidence is now recorded for `project-local-production` (`wdl
 - Current plan: Free.
 - Scheduled backups page: "Free Plan does not include project backups."
 - Scheduled backups page states that upgrading to Pro provides up to 7 days of scheduled backups.
-- No scheduled production backup is currently available.
+- No Supabase-managed scheduled production backup is currently available; the independent Windows task is recorded below.
 - No Supabase-managed backup timestamp or successful status exists; the separately managed 12.34 backup evidence is recorded below.
 - Point in time page: "Point in Time Recovery is a Pro Plan add-on."
 - Point in time page describes PITR as: "Roll back your database to a specific second."
@@ -126,6 +121,14 @@ The single fresh 12.34.1 restore attempt then passed the role boundary, schema r
 
 Migration `20260812123430` codifies that exact direct/default privilege posture. Approved staging advanced to and passed through `20260812123430`; production remains at `20260714122230`, and applying either later migration there requires separate review. The logical database package covers PostgreSQL Auth schema/data and Storage metadata, but it does not prove recovery of Supabase Auth platform configuration or Storage object BLOBs.
 
+12.35 registered exactly one enabled Windows Task Scheduler task named `Project Local Production Backup`. It runs daily at `03:15` local time with `StartWhenAvailable`, `IgnoreNew`, a two-hour limit, the current operator's `Interactive`/limited principal, exact `project-local-production` / `wdlaauzknfggoqldolmx` / `20260714122230` locks, and safe failure notification enabled. Its arguments include the public age recipient but no database credential, DPAPI value, service-role value, or private age identity.
+
+Because the task uses an Interactive principal, the current Windows operator must be logged in for it to run. If the computer is asleep, powered off, or logged out at `03:15`, it cannot start then. `StartWhenAvailable` causes that missed start to run when Task Scheduler next has the operator's interactive session and the computer is awake/available; it does not make the PC an always-on backup host. If the PC is awake and the operator is logged in but the network is offline, the task still starts at `03:15`; its connection preflight fails safely and notifies the operator, and this task configuration does not automatically retry merely because connectivity later returns.
+
+The single authorized Task Scheduler production execution reached the read-only migration-preflight stage, returned `migration_preflight_failed`, and produced no new encrypted artifact. New scheduled-path checksum and retention execution therefore remain unproven, and no retry is authorized by this record. The task remains enabled and Ready for the next daily trigger, but this failed execution must be diagnosed and a new proof separately authorized before real Bozeman data.
+
+12.35 also ran one separately named deterministic pre-network Task Scheduler fixture. It exited nonzero with `injected_pre_network_failure`, wrote atomic credential-free failure and notification status, emitted the Windows-local notification, created no backup/plaintext artifact, made no production connection, and left no backup workspace. Jelani confirmed the human-visible Windows notification, and the temporary task and status root were removed. Safe failure-notification behavior is proven.
+
 See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
 ### Path B - Optional Supabase-managed path
@@ -169,17 +172,16 @@ No routine recovery check should request magic links automatically, create produ
 
 ## F. Incident ownership
 
-Unknown ownership remains a launch blocker.
+Jelani, as the Project Local product/operator owner, is the responsible owner for:
 
-Before launch, record who decides:
-
-- Application rollback.
+- Recurring backup operations and backup failure response.
+- Database restore approval and execution.
+- Vercel application rollback approval and execution.
 - Operational pause.
-- Database restore.
 - Email disablement.
 - Pilot cancellation.
 
-Do not guess ownership in source code or tests. Record owners in private operator notes or an approved operational location.
+Codex or engineering assistance may be used to investigate or execute technical steps, but operational authority remains with the Project Local product/operator owner.
 
 ## Current NO-GO reason
 
@@ -192,9 +194,10 @@ Production recovery readiness remains incomplete because:
 - Independent encrypted backups are the preferred current plan; the first encrypted production backup, checksum/status, and retention behavior are proven.
 - The 12.34.1 managed-role boundary, 12.34.2 restore-interaction attribution, and 12.34.3 full independent technical recovery are proven.
 - Supabase Pro remains optional.
-- Recurring schedule and safe failure-notification behavior are not yet proven.
+- Recurring task registration and safe human-confirmed failure notification are proven.
+- The single authorized scheduled production backup attempt failed safely at `migration_preflight_failed` and produced no new encrypted artifact, so successful recurring execution/checksum/retention proof remains blocking.
 - Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
-- Recovery/rollback decision ownership is not recorded.
+- Recovery/rollback decision ownership is recorded under the Project Local product/operator owner.
 
 PITR is unavailable and intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 

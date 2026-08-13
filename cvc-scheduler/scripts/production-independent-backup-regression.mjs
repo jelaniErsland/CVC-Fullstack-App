@@ -137,6 +137,7 @@ async function main() {
   assert(!/postgres(?:ql)?:\/\/\S+:\S+@/i.test(setupDoc), "independent backup setup doc contains a password-bearing PostgreSQL URL.");
 
   assertIncludes(backup, "-ExecuteProductionBackup", "backup script");
+  assertIncludes(backup, "-ExecuteProductionPreflight", "backup script");
   assertIncludes(backup, "project-local-production", "backup script");
   assertIncludes(backup, "wdlaauzknfggoqldolmx", "backup script");
   assertIncludes(backup, "20260714122230", "backup script");
@@ -157,6 +158,24 @@ async function main() {
   assertIncludes(backup, ".partial", "backup script");
   assertIncludes(backup, "System.Security.Cryptography.SHA256", "backup script");
   assertIncludes(backup, "latest-status.json", "backup script");
+  assertIncludes(backup, "latest-notification.json", "backup script");
+  assertIncludes(backup, "SafeInjectedFailure", "backup script");
+  assertIncludes(backup, "injected_pre_network_failure", "backup script");
+  assertIncludes(backup, "msg.exe", "backup script");
+  assertIncludes(backup, "migration_preflight", "backup script");
+  assertIncludes(backup, "current_database()", "backup script");
+  assertIncludes(backup, "Invoke-ProjectLocalMigrationPreflight", "backup script");
+  assertIncludes(backup, "BEGIN TRANSACTION READ ONLY", "backup script");
+  assertIncludes(backup, 'EnvironmentVariables["PGPASSWORD"]', "backup script");
+  assertIncludes(backup, 'EnvironmentVariables["PGOPTIONS"] = "-c default_transaction_read_only=on"', "backup script");
+  assertIncludes(backup, 'EnvironmentVariables["PGSSLMODE"]', "backup script");
+  assertIncludes(backup, 'EnvironmentVariables.Remove($name)', "backup script");
+  assertIncludes(backup, "migration_preflight_query_failed", "backup script");
+  assertIncludes(backup, "migration_preflight_output_invalid", "backup script");
+  assertIncludes(backup, "migration_preflight_history_invalid", "backup script");
+  assertIncludes(backup, "migration_preflight_mismatch", "backup script");
+  assertNotIncludes(backup, '@("db", "query"', "backup script");
+  assertIncludes(backup, "Move-Item -LiteralPath $temporaryStatusPath", "backup script");
   assertIncludes(backup, "Remove-RecognizedBackups", "backup script");
   assertIncludes(backup, "finally", "backup script");
   assertIncludes(backup, "Remove-Item -LiteralPath $workRoot -Recurse -Force", "backup script");
@@ -190,6 +209,19 @@ async function main() {
   assertIncludes(task, "-StartWhenAvailable", "task script");
   assertIncludes(task, "-ConfirmTaskAction", "task script");
   assertIncludes(task, "Refusing to silently replace", "task script");
+  assertIncludes(task, '[string]$DailyTime = "03:15"', "task script");
+  assertIncludes(task, '"-NotifyOnFailure"', "task script");
+  assertIncludes(task, "-LogonType Interactive", "task script");
+  assertIncludes(task, "-RunLevel Limited", "task script");
+  assertIncludes(task, '$taskAction = New-ScheduledTaskAction', "task script");
+  assertIncludes(task, 'Register-ScheduledTask -TaskName $TaskName -Action $taskAction', "task script");
+  assertIncludes(task, "Test-IsCurrentOperatorIdentity", "task script");
+  assertIncludes(task, '$triggers[0].CimClass.CimClassName -eq "MSFT_TaskDailyTrigger"', "task script");
+  assertIncludes(task, '([datetime]$triggers[0].StartBoundary).ToString("HH:mm") -eq "03:15"', "task script");
+  assertIncludes(task, '[string]$Task.Principal.LogonType -eq "Interactive"', "task script");
+  assertIncludes(task, "Get-SafeTaskMetadata", "task script");
+  assertIncludes(task, "SecretBearingArgumentsPresent", "task script");
+  assertIncludes(task, "Refusing to modify an unexpected scheduled task", "task script");
   assertNotIncludes(task, "production-db-url", "task script");
 
   assertIncludes(restore, "Refusing production, staging, or hosted restore target", "restore script");
@@ -292,7 +324,8 @@ async function main() {
   assertIncludes(recoveryContract, "Supabase Pro remains optional", "recovery contract");
   assertIncludes(recoveryContract, "PITR is unavailable and not required", "recovery contract");
   assertIncludes(envContract, "full independent technical recovery is proven", "environment contract");
-  assertIncludes(envContract, "recurring backup scheduling", "environment contract");
+  assertIncludes(envContract, "daily 03:15 StartWhenAvailable task registration", "environment contract");
+  assertIncludes(envContract, "migration_preflight_failed", "environment contract");
 
   assertIncludes(connectionValidator, '@("postgres", "postgresql")', "connection validator");
   assertIncludes(connectionValidator, '"postgres.$ExpectedProjectRef"', "connection validator");
@@ -381,6 +414,39 @@ async function main() {
   }
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "Retention"], { expectSuccess: true }), "fixture_retention_ok", "retention fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "StatusRedaction"], { expectSuccess: true }), "fixture_status_ok", "status fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightExpected"], { expectSuccess: true }), "fixture_migration_preflight_expected_ok", "migration preflight expected fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightWrong"], { expectSuccess: true }), "fixture_migration_preflight_wrong_rejected", "migration preflight wrong fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMissing"], { expectSuccess: true }), "fixture_migration_preflight_missing_rejected", "migration preflight missing fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMalformed"], { expectSuccess: true }), "fixture_migration_preflight_malformed_rejected", "migration preflight malformed fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightQueryFailure"], { expectSuccess: true }), "fixture_migration_preflight_query_failure_rejected", "migration preflight query-failure fixture");
+  const failureProofRoot = await mkdtemp(path.join(tmpdir(), "project-local-backup-failure-proof-"));
+  try {
+    const notificationSink = path.join(failureProofRoot, "operator-signal.txt");
+    const failureOutput = runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "SafeInjectedFailure",
+      "-ConfirmSafeInjectedFailure",
+      "-NotifyOnFailure",
+      "-FailureTestStatusRoot", failureProofRoot,
+      "-NotificationTestSinkPath", notificationSink,
+    ], { expectSuccess: false });
+    assertIncludes(failureOutput, "Safe injected pre-network failure completed", "safe injected failure");
+    const failureStatus = JSON.parse(await readFile(path.join(failureProofRoot, "latest-status.json"), "utf8"));
+    assert.equal(failureStatus.status, "failure");
+    assert.equal(failureStatus.safeFailureCode, "injected_pre_network_failure");
+    assert.equal(failureStatus.encryptedFileName, null);
+    assert.equal(failureStatus.sha256, null);
+    const notificationStatus = JSON.parse(await readFile(path.join(failureProofRoot, "latest-notification.json"), "utf8"));
+    assert.equal(notificationStatus.notificationState, "emitted");
+    assert.equal(notificationStatus.safeFailureCode, "injected_pre_network_failure");
+    const operatorSignal = await readFile(notificationSink, "utf8");
+    assert.match(operatorSignal, /Project Local production backup failed/);
+    assert.match(operatorSignal, /injected_pre_network_failure/);
+    assert(!/postgres(?:ql)?:\/\/|password|AGE-SECRET-KEY|service.role|eyJ[A-Za-z0-9_-]+\./i.test(operatorSignal));
+  } finally {
+    await rm(failureProofRoot, { recursive: true, force: true });
+  }
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardProductionTarget"], { expectSuccess: false });
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardStagingTarget"], { expectSuccess: false });
   runPowerShell(["-File", restoreScript, "-FixtureMode", "-FixtureScenario", "GuardNonLoopback"], { expectSuccess: false });

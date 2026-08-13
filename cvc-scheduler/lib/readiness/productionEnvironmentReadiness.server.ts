@@ -223,12 +223,13 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "full independent technical recovery is proven locally through migration 20260812123430 with exact direct/default privileges, RLS/FORCE RLS, generated-type parity, product-row state, and application/security compatibility",
       "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
       "PITR is unavailable and intentionally not required for the initial beta",
-      "recurring backup scheduling, safe failure-notification proof, and recovery/rollback ownership are not recorded",
+      "12.35 proves daily 03:15 StartWhenAvailable task registration, safe human-visible failure notification, and recovery/rollback ownership",
+      "the single authorized scheduled production execution stopped at migration_preflight_failed without a new encrypted artifact, so successful scheduled checksum and retention execution remain unproven",
       "logical database recovery does not prove Supabase Auth platform configuration or Storage object BLOB recovery",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, preserve the proven independent technical recovery, complete recurring scheduling/failure-notification proof, record recovery/rollback ownership, and preserve the operational fallbacks; Supabase Pro remains optional.",
+      "Before real Bozeman data is provisioned, preserve the proven independent technical recovery, failure notification, ownership, and fallbacks; diagnose migration_preflight_failed and separately authorize one successful scheduled checksum/retention proof. Supabase Pro remains optional.",
   },
   {
     id: "operator_pilot_approval",
@@ -263,6 +264,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, and full independent technical recovery are proven. Project Local application-driven delivery, recurring backup scheduling/failure notification, recovery/rollback ownership, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, full independent technical recovery, recurring task registration, safe failure notification, and recovery ownership are proven. Project Local application-driven delivery, successful scheduled backup execution, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

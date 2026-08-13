@@ -151,7 +151,7 @@ The repository does not register the task automatically. Use explicit operator a
   -DestinationRoot "$env:OneDrive\Project Local Backups\production"
 ```
 
-The task should run under the current reviewed Windows user. It should use "run as soon as possible after a scheduled start is missed." Do not embed database credentials, decrypted secrets, or private age identities in task arguments.
+The reviewed task runs daily at `03:15` local time under the current Windows operator using an Interactive, limited principal with `StartWhenAvailable`. The operator must be logged in. If the PC is asleep, powered off, or logged out at `03:15`, the task waits until Task Scheduler next has an awake/available interactive session after wake or login. If the PC is awake/logged in but offline, the task starts and its connection preflight fails safely/notifies; reconnecting does not itself retry that failed run. Do not embed database credentials, decrypted secrets, or private age identities in task arguments.
 
 ## Retention
 
@@ -168,7 +168,7 @@ The backup script writes a credential-free `latest-status.json` outside the repo
 
 It must not include raw exception text, SQL, connection values, credentials, local usernames, full sensitive paths, or database contents.
 
-An optional Windows operator notification seam exists. Notification failure must not hide backup failure. Observability remains incomplete until the operator validates notification behavior.
+The Windows operator notification seam is non-blocking and writes a separate credential-free notification status; notification failure must not hide backup failure. 12.35 proves emission through a scheduled pre-network failure fixture, and Jelani confirmed the notification was human-visible.
 
 ## Restore drill
 
@@ -236,3 +236,14 @@ A later always-on design using a private runner or private object storage may re
 - The logical dump contains PostgreSQL Auth schema/data and Storage metadata, but it does not reconstruct Supabase Auth platform configuration and it does not contain Storage object BLOBs.
 - The disposable stack, suppressed local CLI logs, decrypted archive, derived role SQL, and type temp paths were removed. Production, staging, Vercel, Resend, DNS, Auth, email, product data, and migration state were untouched.
 - Full restore/recovery, recurring scheduling/failure notification, and recovery ownership remain incomplete. Launch remains `NO-GO`.
+
+## Current 12.35 evidence
+
+- The public age recipient was derived locally with standard age tooling without printing or copying the private identity.
+- Exactly one real recurring task is registered and enabled: `Project Local Production Backup`, daily at `03:15` local time, `StartWhenAvailable`, current-operator Interactive/limited principal, exact production/migration locks, and no database credential or private age identity in arguments.
+- The single authorized scheduled production execution stopped safely at `migration_preflight_failed`, created no new encrypted artifact, and did not reach encryption or retention. Scheduled success, new checksum, and scheduled retention execution remain unproven; do not retry without separate authorization and diagnosis.
+- One separately named scheduled pre-network fixture returned the expected nonzero result, recorded `injected_pre_network_failure`, emitted a credential-free Windows notification, created no backup or plaintext artifact, made no production connection, and left no temp workspace. Jelani confirmed the human-visible notification.
+- The temporary fixture task and status root were removed. The real recurring task remains enabled and Ready.
+- Jelani, as the Project Local product/operator owner, owns recurring backup operations/failure response, database restore approval/execution, Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation. Engineering help does not transfer operational authority.
+- Full independent technical recovery, safe failure notification, and ownership are proven. Aggregate backup/recovery remains blocking only on successful scheduled backup execution within this slice.
+- Production remains recorded at `20260714122230`; the 12.35 path was read-only and did not apply migrations or mutate data. Application email remains disabled, real Bozeman data remains unprovisioned, and launch remains `NO-GO`.

@@ -145,7 +145,8 @@ async function main() {
   assert.equal(backupRecovery.blocking, true);
   assert.match(JSON.stringify(backupRecovery.evidence), /2026-08-12T17:26:46\.3144615Z/);
   assert.match(JSON.stringify(backupRecovery.evidence), /full independent technical recovery is proven/i);
-  assert.match(JSON.stringify(backupRecovery.evidence), /recurring backup scheduling/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /daily 03:15 StartWhenAvailable task registration/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /migration_preflight_failed/i);
   assert.match(JSON.stringify(backupRecovery.evidence), /Auth platform configuration.*Storage object BLOB recovery/i);
 
   const [

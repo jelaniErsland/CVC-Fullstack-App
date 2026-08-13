@@ -189,12 +189,12 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "12.32 application instrumentation is proven locally without production or staging access",
       "August 11 2026 operator evidence proves Vercel Production runtime-log search and filtering, Vercel deployment/build status review, named alert and incident ownership, documented action conditions, and one controlled privacy-safe schedule_access.exchange_failure observation",
       "12.33 proves the stale-delivery operator architecture, manual cadence/escalation policy, and staging behavior; production execution remains deferred to the separately reviewed production migration, Bozeman provisioning, and controlled pilot",
-      "12.34.3 proves full independent technical recovery; recurring backup scheduling/failure notification and recovery/rollback ownership remain incomplete",
+      "12.34.3 proves full independent technical recovery; 12.35 proves recurring task registration, safe human-visible failure notification, and recovery/rollback ownership, but its one scheduled production execution failed at migration_preflight_failed without an artifact",
       "real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
-      "Complete recurring backup scheduling/failure notification and recovery/rollback ownership, real Bozeman provisioning, application-driven email proof, and the controlled pilot; include the first production Notification Health execution after separately reviewed production migrations without weakening the proven privacy-safe Vercel and manual-cadence workflow.",
+      "Diagnose migration_preflight_failed and separately authorize one successful scheduled checksum/retention proof; complete real Bozeman provisioning, application-driven email proof, and the controlled pilot; include the first production Notification Health execution after separately reviewed production migrations without weakening the proven privacy-safe Vercel and manual-cadence workflow.",
   },
   {
     id: "production_launch_action",
@@ -225,7 +225,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, staging through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, direct provider-level inbox delivery, and full independent technical recovery are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, recurring backup operations and recovery ownership, provisioning, production notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
+    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, staging through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, direct provider-level inbox delivery, full independent technical recovery, recurring task registration, safe backup-failure notification, and recovery ownership are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, successful scheduled backup execution, provisioning, production notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

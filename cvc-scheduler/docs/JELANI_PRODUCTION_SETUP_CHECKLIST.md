@@ -166,10 +166,10 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - Store encrypted backup artifacts outside the public application repository in private independent storage.
 - Completed in 12.34: safe status at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, and daily/weekly recognition-based retention.
 - Completed through 12.34.3: managed-role compatibility, restore-interaction attribution, deterministic source ACL reconstruction, and full independent technical recovery-forward through `20260812123430`.
-- Register and prove the recurring backup schedule.
-- Configure safe failure notification.
+- Completed in 12.35: registered the enabled daily `03:15` current-operator task with `StartWhenAvailable` and proved the credential-free, human-visible Windows failure notification.
+- Still required: diagnose `migration_preflight_failed` and separately authorize one successful scheduled backup/checksum/retention execution.
 - Preserve the proven managed-role and source ACL reconstruction procedures; do not skip or remove `roles.sql`.
-- Record recovery/rollback approval owner.
+- Completed in 12.35: Jelani/the Project Local product-operator owner owns backup operations/failure response, database restore and Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation; engineering help does not transfer authority.
 - Supabase Pro managed backups are optional and may be chosen later if recurring usage justifies the subscription.
 - PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 - Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.

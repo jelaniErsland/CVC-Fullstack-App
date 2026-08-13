@@ -58,7 +58,6 @@ async function main() {
   const statuses = new Set(productionRecoveryReadinessItems.map((item) => item.status));
   for (const status of [
     "documented",
-    "operator_evidence_required",
     "configuration_required",
     "proven",
     "blocked",
@@ -133,6 +132,45 @@ async function main() {
   assert.match(JSON.stringify(independentPath.evidence), /RESTORE_INTERACTION/i);
   assert.match(JSON.stringify(independentPath.evidence), /recovery through 20260811123300 and 20260812123430/i);
 
+  const backupAvailability = productionRecoveryReadinessItems.find(
+    (item) => item.id === "backup_availability",
+  );
+  assert(backupAvailability, "Recovery readiness is missing backup availability.");
+  assert.equal(backupAvailability.status, "configuration_required");
+  assert.equal(backupAvailability.blocking, true);
+  assert.match(JSON.stringify(backupAvailability.evidence), /daily at 03:15 local time/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /StartWhenAvailable/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /human-visible notification confirmation/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /migration_preflight_failed/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /produced no new encrypted artifact/i);
+
+  const automation = productionRecoveryReadinessItems.find(
+    (item) => item.id === "independent_backup_automation_foundation",
+  );
+  assert(automation, "Recovery readiness is missing the backup automation foundation.");
+  assert.equal(automation.status, "proven");
+  assert.equal(automation.blocking, false);
+  assert.match(JSON.stringify(automation.evidence), /current Windows operator must be logged in/i);
+  assert.match(JSON.stringify(automation.evidence), /wake\/login/i);
+  assert.match(JSON.stringify(automation.evidence), /awake but offline.*starts and fails safely/i);
+
+  const restoreProcedure = productionRecoveryReadinessItems.find(
+    (item) => item.id === "restore_procedure",
+  );
+  assert(restoreProcedure, "Recovery readiness is missing restore ownership.");
+  assert.equal(restoreProcedure.status, "proven");
+  assert.equal(restoreProcedure.blocking, false);
+  assert.match(JSON.stringify(restoreProcedure.evidence), /owns database restore approval and execution/i);
+
+  const ownership = productionRecoveryReadinessItems.find(
+    (item) => item.id === "incident_ownership",
+  );
+  assert(ownership, "Recovery readiness is missing recovery ownership.");
+  assert.equal(ownership.status, "proven");
+  assert.equal(ownership.blocking, false);
+  assert.match(JSON.stringify(ownership.evidence), /owns recurring backup operations/i);
+  assert.match(JSON.stringify(ownership.evidence), /operational authority remains/i);
+
   const restoreTest = productionRecoveryReadinessItems.find((item) => item.id === "restore_test");
   assert(restoreTest, "Recovery readiness is missing restore-test evidence.");
   assert.equal(restoreTest.status, "proven");
@@ -199,6 +237,11 @@ async function main() {
   assertIncludes(runbook, "20260714122230", "backup/recovery runbook");
   assertIncludes(runbook, "2026-08-12T17:26:46.3144615Z", "backup/recovery runbook");
   assertIncludes(runbook, "roles.sql", "backup/recovery runbook");
+  assertIncludes(runbook, "daily at `03:15` local time", "backup/recovery runbook");
+  assertIncludes(runbook, "StartWhenAvailable", "backup/recovery runbook");
+  assertIncludes(runbook, "migration_preflight_failed", "backup/recovery runbook");
+  assertIncludes(runbook, "human-visible Windows notification", "backup/recovery runbook");
+  assertIncludes(runbook, "Project Local product/operator owner", "backup/recovery runbook");
 
   for (const source of [deploymentRunbook, goNoGo, roadmap, currentState, history, jelaniChecklist, readinessDoc]) {
     assertIncludes(source, "PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md", "canonical production docs");
