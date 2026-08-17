@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.38 - Persisted Overview Cutover and Real Project Home
+
+- Replaced `/admin/dashboard` mock Calendar, Needs Attention, questionnaire, task, workspace, and role-guidance truth with one dynamic/no-store server-owned persisted Overview. Effective `workspace.read` resolves exactly one active RLS-visible workspace without browser-supplied workspace, contact, role, or capability scope; ambiguous, revoked, expired, inactive, and missing contexts fail closed.
+- Reused the reviewed Calendar read model for a seven-day, six-item maximum upcoming list and a five-signal maximum schedule-review summary derived only from real assignment/current-response coverage. Reused Tasks and Volunteers read helpers for active reusable-task and ready-active-volunteer counts only when their view capabilities exist. No independent Needs Attention persistence or contact detail is exposed.
+- Added a Calendar-first Project Local desktop/mobile composition, authorized quick actions, calm partial-capability behavior, and one intentional ready-empty project state. Disposable persisted browser fixtures produced five 1440px/390px review captures with zero residue; product-owner functional and visual review remains pending.
+- Added focused route-contract and browser regressions for mock exclusion, dynamic/no-store behavior, deterministic scope, grant lifecycle and role non-authorization, capability-hidden sections/actions, bounded ordering, coverage signals, archived/readiness summary rules, Calendar row destinations, empty state, 390px overflow, safe output, and zero GET/direct-write/service-role behavior.
+- No migration, generated type, SQL/RPC/table/view, schema/RLS/Auth/token, production/staging, backup task, email, real Bozeman data, commit, or push is part of this review checkpoint. Communications, dedicated Needs Attention, and `/v/demo` remain prototypes. Launch remains `NO-GO`.
+
 ## Iteration 12.37 - Persisted Tasks Page Cutover and Reusable Task Creation
 
 - Replaced `/admin/tasks` mock truth with a server-owned dynamic/no-store persisted task-preset library. The route derives authenticated project-contact scope and exactly one active eligible workspace, requires effective `tasks.view`, uses an explicit minimal projection, and provides ready-with-presets, ready-empty, unavailable, and safe error states without mock fallback or mock/persisted mixing.
