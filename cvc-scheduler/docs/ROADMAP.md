@@ -110,11 +110,13 @@ Critical path from the post-12.13 state:
 40. `12.37 Persisted Tasks Page Cutover and Reusable Task Creation`
    - Cuts `/admin/tasks` over to persisted `task_presets` with server-derived exactly-one-workspace context, effective `tasks.view` reads, useful read-only behavior, and `tasks.edit` create/archive through the existing RPCs. The compact approved UI provides local search/category/status filters, desktop inspector, mobile detail/create sheets, archive confirmation, safe route states, and no mock fallback. New active presets flow into Calendar's existing selector; archive removes them from new selection without altering existing Calendar occurrences. General persisted edit remains deferred. No migration, generated type, hosted target, backup task, email, or real Bozeman data changed; launch remains `NO-GO`.
 41. `12.38 Persisted Overview Cutover and Real Project Home`
-   - Replaces `/admin/dashboard` mock truth with a dynamic/no-store persisted project home rooted in effective `workspace.read` and deterministic server-owned workspace scope. Existing Calendar, Tasks, and Volunteers readers supply capability-aware bounded summaries; schedule-review rows are derived only from real assignment/current-response coverage and are not a persisted Needs Attention system. The page includes an intentional new-project state and authorized quick actions, with no new query, RPC, table, migration, generated type, service-role path, or GET mutation. Five disposable local real-route captures await product-owner functional and visual review; launch remains `NO-GO`.
+   - Replaces `/admin/dashboard` mock truth with a dynamic/no-store persisted project home rooted in effective `workspace.read` and deterministic server-owned workspace scope. Existing Calendar, Tasks, and Volunteers readers supply capability-aware bounded summaries; schedule-review rows are derived only from real assignment/current-response coverage and are not a persisted Needs Attention system. The page includes an intentional new-project state and authorized quick actions, with no new query, RPC, table, migration, generated type, service-role path, or GET mutation. Jelani approved the five local real-route captures and 12.38.1 committed the reviewed cutover; launch remains `NO-GO`.
+42. `12.39 Persisted Needs Attention Staffing and Response Inbox`
+   - Replaces the `/admin/needs-attention` mock index with a dynamic/no-store read-only projection over the existing authorized Calendar read model. Exactly one active server-resolved workspace plus effective `workspace.read`, `calendar.view`, and `assignments.view` are required. Published underfilled work is included within 14 days; pending and denied current responses are included within 21 days; workspace-timezone urgency, deterministic chronological ordering, a 100-signal bound, inline detail, Calendar context links, a calm all-caught-up state, and canonical desktop/mobile navigation are implemented. The historical mock detail route remains isolated. No issue rows, dismiss/resolve/history workflow, availability/conflict heuristics, mutation, migration, SQL/RPC/type change, hosted access, email, backup change, or real Bozeman data is added. Six local review captures await product-owner functional and visual review; launch remains `NO-GO`.
 
 The old `12.14 Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review` was moved and modified during the beta critical path. Calendar received its narrow persisted selector first in 12.17; 12.37 now completes the full `/admin/tasks` persisted read/create/archive cutover without adding schema.
 
-Features explicitly deferred behind the beta gate include Belgrade migration, general persisted task-preset edit and advanced custom-field authoring, full public questionnaire cutover, manual public lookup, remembered devices, assignment-detail response-link admin reveal/copy activation, full Communications authoring, automatic reminders, delivery analytics, advanced availability/conflict engine, drag/drop/resize/recurrence Calendar persistence, Food/Security restoration as separate modules, Needs Attention persistence, and broad assignment directory/search.
+Features explicitly deferred behind the beta gate include Belgrade migration, general persisted task-preset edit and advanced custom-field authoring, full public questionnaire cutover, manual public lookup, remembered devices, assignment-detail response-link admin reveal/copy activation, full Communications authoring, automatic reminders, delivery analytics, advanced availability/conflict engine, drag/drop/resize/recurrence Calendar persistence, Food/Security restoration as separate modules, persisted Needs Attention dismiss/resolve/history workflow, and broad assignment directory/search.
 
 Response-link activation remains paused after 11.50.
 
@@ -481,13 +483,13 @@ security/night-watch coverage. These detail pages show calm explanations,
 related assignments/people, suggested next steps, related links, and
 placeholder-only actions.
 
-Needs Attention is mock-only. Future work still needs:
+Iteration 12.39 replaces the mock index with real derived staffing and response follow-ups from existing Calendar/assignment/current-response truth. The historical mock detail route remains isolated and is not linked from real rows. Future work still needs:
 
 - Real conflict detection.
 - Real resolution actions.
 - Notification logic.
 - Role-scoped follow-up views.
-- Real persistence.
+- Persisted dismissal, accepted-exception, resolution, and history state.
 
 Canonical timing is three weeks for pending/denied assignments and two weeks for underfilled published items. Needs Attention is a primary-navigation action inbox with per-user dismissal and Main Contact global accepted-exception behavior.
 

@@ -52,8 +52,9 @@ function AdminBrand() {
 }
 
 type PrimaryMobileTab = {
-  id: "overview" | "tasks" | "calendar" | "volunteers";
+  id: "overview" | "tasks" | "calendar" | "needs-attention";
   label: string;
+  ariaLabel?: string;
   href: string;
   icon: LucideIcon;
 };
@@ -62,7 +63,13 @@ const primaryMobileTabs: PrimaryMobileTab[] = [
   { id: "overview", label: "Overview", href: "/admin/dashboard", icon: Home },
   { id: "tasks", label: "Tasks", href: "/admin/tasks", icon: ClipboardList },
   { id: "calendar", label: "Calendar", href: "/admin/calendar", icon: CalendarDays },
-  { id: "volunteers", label: "Volunteers", href: "/admin/volunteers", icon: Users },
+  {
+    id: "needs-attention",
+    label: "Attention",
+    ariaLabel: "Open Needs Attention",
+    href: "/admin/needs-attention",
+    icon: Bell,
+  },
 ];
 
 type MoreLink = {
@@ -88,9 +95,9 @@ const moreGroups: Array<{
     ],
   },
   {
-    title: "Follow-up",
+    title: "People & follow-up",
     links: [
-      { label: "Needs Attention", href: "/admin/needs-attention", icon: Bell },
+      { label: "Volunteers", href: "/admin/volunteers", icon: Users },
       { label: "Questionnaires", href: "/admin/questionnaires", icon: FileQuestion },
     ],
   },
@@ -115,7 +122,7 @@ const primaryMobileTabIds = new Set<AdminNavActive>([
   "overview",
   "tasks",
   "calendar",
-  "volunteers",
+  "needs-attention",
 ]);
 
 function MobileBottomNav({
@@ -145,7 +152,7 @@ function MobileBottomNav({
           tab={primaryMobileTabs[2]}
         />
         <MobileTabLink
-          active={active === "volunteers"}
+          active={active === "needs-attention"}
           tab={primaryMobileTabs[3]}
         />
         <button
@@ -184,7 +191,7 @@ function MobileTabLink({
 
   return (
     <Link
-      aria-label={`Open ${tab.label}`}
+      aria-label={tab.ariaLabel ?? `Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
         "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
@@ -323,6 +330,7 @@ function getActiveIdForMoreHref(href: string): AdminNavActive | undefined {
     "/admin/projects": "projects",
     "/admin/questionnaires": "questionnaires",
     "/admin/needs-attention": "needs-attention",
+    "/admin/volunteers": "volunteers",
     "/admin/schedule": "schedule",
     "/admin/food": "food",
     "/admin/security": "security",

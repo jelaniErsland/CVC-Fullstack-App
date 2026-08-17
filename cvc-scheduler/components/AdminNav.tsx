@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Bell,
   CalendarDays,
   ChevronDown,
   ClipboardList,
@@ -51,6 +52,12 @@ const navItems: Array<{
     href: "/admin/calendar",
   },
   { id: "tasks", icon: ClipboardList, label: "Tasks", href: "/admin/tasks" },
+  {
+    id: "needs-attention",
+    icon: Bell,
+    label: "Needs Attention",
+    href: "/admin/needs-attention",
+  },
   { id: "volunteers", icon: Users, label: "Volunteers", href: "/admin/volunteers" },
   {
     id: "announcements",
@@ -98,6 +105,7 @@ export function AdminNav({
 
           return (
             <Link
+              aria-current={active === item.id ? "page" : undefined}
               key={item.id}
               className={[
                 "flex min-h-[42px] items-center gap-3 rounded-[0.7rem] border border-transparent px-3 py-2 transition",
