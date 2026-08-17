@@ -32,7 +32,7 @@ $RepositoryRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
-$ExpectedTerminalMigration = "20260714122230"
+$AllowedTerminalMigrations = @("20260714122230", "20260812123430")
 $BackupFormatVersion = "project-local.logical-backup.v1"
 . (Join-Path $ScriptRoot "ProjectLocalProductionConnection.ps1")
 
@@ -61,7 +61,7 @@ function Assert-SafeTarget {
     throw "Refusing staging project ref."
   }
   if ($ExecuteProductionBackup -or $ExecuteProductionPreflight) {
-    if ($ProjectName -ne $ExpectedProjectName -or $ProjectRef -ne $ExpectedProjectRef -or $ExpectedMigration -ne $ExpectedTerminalMigration) {
+    if ($ProjectName -ne $ExpectedProjectName -or $ProjectRef -ne $ExpectedProjectRef -or $ExpectedMigration -notin $AllowedTerminalMigrations) {
       throw "Refusing production backup because exact project locks do not match."
     }
   }

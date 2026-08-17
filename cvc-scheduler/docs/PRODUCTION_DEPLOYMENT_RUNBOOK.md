@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Iteration 12.32 proves the privacy-safe application observability foundation. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named ownership/action policy, and one controlled safe event. Iteration 12.33 proves the bounded Notification Health architecture, hosted staging behavior, and manual cadence/escalation policy without accessing production. Iteration 12.34.3 proves full independent technical recovery, and staging is validated through `20260812123430`. Iteration 12.35 proves daily task registration, safe human-visible backup-failure notification, and recovery/rollback ownership; its first scheduled execution failed safely. Iteration 12.35.11 proves one successful controlled scheduled-host production backup/checksum/retention execution, and 12.35.12 safely enables the unchanged permanent task without catch-up execution. Backup/recovery is complete and non-blocking. Production launch remains unavailable until application-driven email proof, separately reviewed production migrations and the first controlled health check, real operator provisioning, controlled pilot evidence, and explicit launch approval pass.
+Iteration 12.24 prepared this runbook. Iteration 12.25 completed the production Supabase schema gate for the approved production target. Iteration 12.26 records the live Vercel production deployment at `https://project-local-one.vercel.app`, manual Auth/session evidence, and a public read-only smoke gate. Iteration 12.27 records the final production domain `https://projectlocal.app`, final-domain Auth callback evidence, and smoke-gate retargeting. Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and all six desktop/390px review captures. Iteration 12.31 selects Resend and validates the server-only adapter. August 10, 2026 operator evidence proves provider/domain/sender configuration and direct provider-level Gmail inbox delivery while confirming the Project Local application transport is currently disabled. Iteration 12.32 proves the privacy-safe application observability foundation. August 11, 2026 operator evidence proves Vercel Production runtime-log review/search/filtering, deployment/build status review, named ownership/action policy, and one controlled safe event. Iteration 12.33 proves the bounded Notification Health architecture, hosted staging behavior, and manual cadence/escalation policy without accessing production. Iteration 12.34.3 proves full independent technical recovery, and staging is validated through `20260812123430`. Iteration 12.35 proves daily task registration, safe human-visible backup-failure notification, and recovery/rollback ownership; its first scheduled execution failed safely. Iteration 12.35.11 proves one successful controlled scheduled-host production backup/checksum/retention execution, and 12.35.12 safely enables the unchanged permanent task without catch-up execution. Iteration 12.36 locally proves a separate established-production gate for the exact `20260714122230` to `20260812123430` transition while preserving legitimate Auth identities and synthetic product rows; neither hosted target was contacted. Backup/recovery is complete and non-blocking. Production launch remains unavailable until the separately authorized production migration, application-driven email proof and first controlled health check, real operator provisioning, controlled pilot evidence, and explicit launch approval pass.
 
 Iteration 12.28 adds the dedicated backup/recovery/rollback runbook: [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). It documents application rollback, migration-forward recovery, operational pause, and recovery verification. Iteration 12.28.1 records production Free-plan managed-backup limitations; Supabase Pro remains optional and PITR unnecessary for the initial beta. Iteration 12.29 adds the Windows-first independent encrypted backup foundation. Iteration 12.34 proves the first independent encrypted production backup/checksum/status/retention evidence. Iterations 12.34.1 through 12.34.3 prove managed-role compatibility, restore-interaction attribution, deterministic source ACL reconstruction, and complete local recovery-forward. 12.35 proves task registration, safe notification, and ownership; 12.35.11 proves successful scheduled-host backup/checksum/retention; and 12.35.12 enables the permanent task through a harmless no-catch-up transition. Backup/recovery is complete and non-blocking.
 
@@ -63,23 +63,15 @@ Creating an Auth user does not grant app access. Application access requires a `
 
 Expected current terminal migration: `20260714122230`.
 
-Procedure:
+Pending reviewed chain: `20260811123300` then `20260812123430`, with no later migration included. Production remains unapplied at `20260714122230`.
 
-1. Verify the local migration list from `supabase/migrations`.
-2. Verify the target project name/ref is the production project and is not `project-local-staging` / `kfuujcfxoayukywvtaeh`.
-3. Verify the project is healthy.
-4. Apply only reviewed committed migrations.
-5. Confirm the final migration level.
-6. Generate hosted public-schema types with the established UTF-8-safe workflow.
-7. Compare generated types to `lib/supabase/database.types.ts`.
-8. Stop on mismatch.
-9. Do not rewrite applied migration history.
-10. If a production-specific defect is found after a migration is applied, add a forward migration.
-11. Do not copy staging data into production.
-12. Do not run hosted disposable fixture scripts against production.
-13. Verify production tables contain no real Bozeman data after schema setup until operator provisioning begins.
+Forbidden hosted target: `project-local-staging` / `kfuujcfxoayukywvtaeh`.
 
-12.25 completed the exact-target initial/bootstrap empty-production schema command. Production advanced from a clean initial migration state to `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed before Auth setup. Preserve that evidence, but do not treat the command as a generic live-production migration gate after approved Auth identities or real product data exist.
+The future production procedure must use the separate established-production gate in three explicit modes. It must begin from a clean committed worktree, exact healthy production link, disabled application email, absent service-role application configuration, and exact current migration history. It allows legitimate Auth identities, requires the currently expected pre-provisioning Project Local row state, creates no fixtures, and compares Auth/product/storage state around the mutation.
+
+12.36 proves the complete local transition from exactly `20260714122230`: one synthetic Auth identity and a minimal workspace/contact/grant fixture survived both migrations unchanged; generated public-schema types, Notification Health behavior, exact direct/default privileges, all-table RLS, the exact four-table FORCE RLS set, owner/service-role posture, and a rolled-back future-table probe passed. Approved staging already has equivalent post-state evidence through `20260812123430`; staging was not contacted in 12.36.
+
+12.25 completed the exact-target initial/bootstrap empty-production schema command. Production advanced from a clean initial migration state to `20260714122230`; generated-type parity, empty product/Auth/storage counts, public Supabase connectivity, and structural RLS/security checks passed before Auth setup. Preserve that evidence, but do not rerun or treat the command as a generic live-production migration gate after approved Auth identities or real product data exist.
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -87,9 +79,47 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-The command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It applies only reviewed committed migrations to the expected production database, compares generated public-schema types, checks read-only structural security and public Supabase connectivity, and verifies the bootstrap zero-state assumptions.
+The historical command refuses staging, wrong project identity, fixture flags, enabled email transport, service-role runtime configuration, and uncommitted worktrees. It verifies bootstrap zero-state assumptions that are no longer valid after approved Auth setup.
 
-After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that accounts for the intended live state, verifies safe before/after behavior, and does not require zero Auth users.
+After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. `npm run test:production-established-schema` is the local-only 12.36 regression for that lifecycle; it starts and removes a disposable local stack and cannot accept production target arguments.
+
+Future production execution requires separate authorization. The exact commands are documented now for review and must not be run merely because they exist:
+
+```powershell
+$before = '20260714122230'
+$after = '20260812123430'
+$target = 'project-local-production'
+$ref = 'wdlaauzknfggoqldolmx'
+
+$env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE="$target`:$ref`:production-preflight`:$before`:$after"
+npm run gate:production-established-schema -- --mode production-preflight --project-name $target --project-ref $ref --expected-before $before --expected-after $after
+Remove-Item Env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE
+
+# Only after a separately reviewed recent-backup check and after the permanent task is disabled:
+$env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE="$target`:$ref`:production-apply`:$before`:$after"
+$env:RUN_ESTABLISHED_PRODUCTION_BACKUP_WINDOW="$target`:task-disabled`:$before`:$after"
+npm run gate:production-established-schema -- --mode production-apply --project-name $target --project-ref $ref --expected-before $before --expected-after $after
+Remove-Item Env:RUN_ESTABLISHED_PRODUCTION_BACKUP_WINDOW
+Remove-Item Env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE
+
+$env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE="$target`:$ref`:production-postflight`:$before`:$after"
+npm run gate:production-established-schema -- --mode production-postflight --project-name $target --project-ref $ref --expected-before $before --expected-after $after
+Remove-Item Env:RUN_ESTABLISHED_PRODUCTION_SCHEMA_GATE
+```
+
+The apply mode independently repeats the exact baseline, zero-fixture, product-state, security, and two-file dry-run checks before mutation; it also verifies that the permanent backup task is disabled, not running, and still locked to `20260714122230`. It applies only the exact two reviewed migrations and then verifies migration history, Auth/product/storage preservation, types, Notification Health metadata, direct/default privileges, RLS/FORCE RLS, and owner/platform behavior.
+
+The current permanent task remains enabled/Ready and locked to `20260714122230`; 12.36 did not change it. That lock will intentionally fail after production advances. A separately authorized migration window must:
+
+1. Verify a recent successful encrypted backup/status before mutation.
+2. Disable the task with its current `20260714122230` lock and verify it is not running.
+3. Run the reviewed preflight, apply, and postflight commands above.
+4. Update only the task action's lock with `Register-ProjectLocalBackupTask.ps1 -Action UpdateExpectedMigration -ConfirmTaskAction -CurrentExpectedMigration 20260714122230 -ExpectedMigration 20260812123430`.
+5. Compare action, principal, trigger, settings, notification, destination, and secret-free argument metadata; only the expected-migration value may differ.
+6. Re-enable with `-Action Enable -ConfirmTaskAction -ExpectedMigration 20260812123430`, without manually starting a backup.
+7. Leave the task Ready for its next normal run and require that run to prove the new lock.
+
+Do not rewrite applied migration history, copy staging data, or repair a post-application defect by down-migrating; use a reviewed forward migration. Do not run hosted disposable fixture scripts against production.
 
 ## Auth URL and redirect plan
 

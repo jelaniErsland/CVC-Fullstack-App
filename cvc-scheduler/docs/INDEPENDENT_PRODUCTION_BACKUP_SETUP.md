@@ -45,7 +45,7 @@ Key-loss consequence: if the private age recovery identity is lost, encrypted ba
 
 - `scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1`
   - Requires `-ExecuteProductionBackup` for real production backup execution.
-  - Requires exact production locks: `project-local-production`, `wdlaauzknfggoqldolmx`, migration `20260714122230`.
+  - Requires exact production locks: `project-local-production`, `wdlaauzknfggoqldolmx`, and one reviewed terminal migration. The live task remains on `20260714122230`; source also permits the exact future `20260812123430` lock only for the separately reviewed post-migration transition.
   - Refuses staging ref `kfuujcfxoayukywvtaeh`.
   - Refuses repository destinations.
   - Requires an age public recipient.
@@ -257,3 +257,10 @@ A later always-on design using a private runner or private object storage may re
 - 12.35.12 let a disabled harmless daily clone miss a real occurrence with `StartWhenAvailable=true`. Enabling the clone did not catch up, did not write its marker, and did not advance LastRunTime/result; its next run moved to the next day.
 - The permanent `Project Local Production Backup` task was then enabled without a start command. It remained `Ready`, did not execute, preserved its historical LastRunTime/result, and scheduled the next future daily `03:15` occurrence. Its action, exact production/migration locks, current-operator `Interactive`/limited principal, `StartWhenAvailable`, `IgnoreNew`, and secret-free arguments remain reviewed.
 - Backup/recovery is `NON-BLOCKING / COMPLETE`. Supabase Pro remains optional. Production remains at `20260714122230`, application email remains disabled, no real Bozeman data exists, and overall launch remains `NO-GO` for unrelated production-migration/health-check, application-email, provisioning, pilot, and explicit launch-approval gates.
+
+## Iteration 12.36 migration-lock dependency
+
+- The live permanent task was not changed: it remains enabled/Ready and expects `20260714122230`.
+- Once production is separately authorized and successfully migrated to `20260812123430`, the old lock would intentionally fail the next backup preflight.
+- The task registration script therefore exposes one exact update from `20260714122230` to `20260812123430`. It requires the task to be disabled and not running, rejects wrong/duplicate locks, changes only the action argument, and revalidates the managed task contract.
+- The future operator sequence is: verify a recent artifact; disable/inspect the task; run exact established-production migration preflight/apply/postflight; update only the migration lock; compare all other task metadata; enable with `-ExpectedMigration 20260812123430`; do not manually start it.

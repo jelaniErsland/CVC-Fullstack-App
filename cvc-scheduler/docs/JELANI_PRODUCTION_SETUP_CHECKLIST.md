@@ -68,14 +68,15 @@ Creating an Auth user does not grant app access. App access requires:
 - If Supabase CLI asks for the database password, enter it directly in the local terminal from the password manager. Do not paste it into Codex, chat, docs, Git, screenshots, or issue comments.
 - The bootstrap schema gate is migration/type/security/count validation only. It must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, notification deliveries, storage objects, or real Bozeman data.
 - After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist. Do not delete them to satisfy the old bootstrap zero-Auth assertion.
-- Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that accounts for the intended live state.
+- 12.36 locally proves the separate established-production gate for exact baseline `20260714122230`, pending migrations `20260811123300` then `20260812123430`, legitimate Auth preservation, product-state preservation, generated types, Notification Health, privileges, and RLS/FORCE RLS. Production execution remains separately reviewed and has not occurred.
+- Before the future apply step, verify a recent encrypted backup, disable the permanent backup task, and confirm it is not running and still expects `20260714122230`. After successful postflight, update only that task lock to `20260812123430` with the reviewed registration action, verify all other task metadata unchanged, and re-enable without manually starting it.
 - Current Supabase Auth Site URL is `https://projectlocal.app`.
 - Current exact final-domain callback is `https://projectlocal.app/admin/auth/callback`.
 - Temporary fallback callback remains allowlisted: `https://project-local-one.vercel.app/admin/auth/callback`.
 - Add any approved preview/staging callback URLs separately.
 - Keep app sign-in invite-only. Unknown emails should not create usable project-contact access.
 - Apply reviewed committed migrations to the new production project.
-- Confirm final migration level `20260714122230` or later reviewed level.
+- Current production terminal migration remains exactly `20260714122230`; the next reviewed target is exactly `20260812123430`.
 - Compare generated public-schema types.
 - Confirm RLS/Auth before adding real data.
 - Verify backups and retention.

@@ -14,6 +14,9 @@ import {
   PRODUCTION_ENVIRONMENT_READINESS_CAN_USE_SERVICE_ROLE_APPLICATION,
   PRODUCTION_ENVIRONMENT_READINESS_DECISION,
   PRODUCTION_ENVIRONMENT_RECOMMENDED_HOST,
+  PRODUCTION_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN,
+  PRODUCTION_PENDING_SCHEMA_TARGET,
+  PRODUCTION_PENDING_SCHEMA_APPLIED,
   PRODUCTION_EMAIL_PROVIDER_CONFIGURATION_PROVEN,
   PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN,
   PRODUCTION_APPLICATION_EMAIL_ENABLED,
@@ -71,6 +74,9 @@ async function main() {
   assert.equal(PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, true);
   assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
+  assert.equal(PRODUCTION_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN, true);
+  assert.equal(PRODUCTION_PENDING_SCHEMA_TARGET, "20260812123430");
+  assert.equal(PRODUCTION_PENDING_SCHEMA_APPLIED, false);
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
   assert.equal(productionEnvironmentKnownStagingTarget.ref, "kfuujcfxoayukywvtaeh");
   assert.equal(productionEnvironmentKnownStagingTarget.validatedMigration, "20260812123430");
@@ -113,6 +119,16 @@ async function main() {
       assert.equal(item.blocking, true, `${item.id} should remain blocking until proven.`);
     }
   }
+
+  const productionSupabase = productionEnvironmentReadinessItems.find(
+    (item) => item.id === "production_supabase",
+  );
+  assert(productionSupabase, "Production readiness is missing the production Supabase item.");
+  assert.equal(productionSupabase.status, "configuration_required");
+  assert.equal(productionSupabase.blocking, true);
+  assert.match(JSON.stringify(productionSupabase.evidence), /12\.36 locally proves/i);
+  assert.match(JSON.stringify(productionSupabase.evidence), /production remains at 20260714122230/i);
+  assert.match(productionSupabase.requiredAction, /update only the task lock to 20260812123430/i);
 
   const emailProvider = productionEnvironmentReadinessItems.find(
     (item) => item.id === "email_provider",

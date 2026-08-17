@@ -434,6 +434,8 @@ async function main() {
   assertIncludes(backup, "project-local-production", "backup script");
   assertIncludes(backup, "wdlaauzknfggoqldolmx", "backup script");
   assertIncludes(backup, "20260714122230", "backup script");
+  assertIncludes(backup, "20260812123430", "backup script");
+  assertIncludes(backup, "AllowedTerminalMigrations", "backup script");
   assertIncludes(backup, "kfuujcfxoayukywvtaeh", "backup script");
   assertIncludes(backup, "SUPABASE_SERVICE_ROLE_KEY", "backup script");
   assertIncludes(backup, "ConvertTo-SecureString", "backup script");
@@ -503,6 +505,10 @@ async function main() {
   assertNotIncludes(backup, "-p ", "backup script");
   assertNotIncludes(backup, "--passphrase", "backup script");
   assertNotIncludes(backup, "AGE-SECRET-KEY", "backup script");
+
+  assertIncludes(task, "UpdateExpectedMigration", "task script");
+  assertIncludes(task, "Get-ExpectedMigrationArgumentValues", "task script");
+  assertIncludes(task, "20260812123430", "task script");
 
   assertIncludes(initSecret, "Read-Host", "secret setup script");
   assertIncludes(initSecret, "-AsSecureString", "secret setup script");

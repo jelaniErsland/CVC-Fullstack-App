@@ -41,6 +41,8 @@ export const BOZEMAN_BETA_STALE_DELIVERY_PRODUCTION_READ_PROVEN = false;
 export const BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT = true;
 export const BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN = false;
 export const BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN = true;
+export const BOZEMAN_BETA_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN = true;
+export const BOZEMAN_BETA_PRODUCTION_PENDING_SCHEMA_APPLIED = false;
 export const BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED = true;
 export const BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH =
   "docs/design/approved-project-local-ui";
@@ -190,12 +192,13 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
       "August 11 2026 operator evidence proves Vercel Production runtime-log search and filtering, Vercel deployment/build status review, named alert and incident ownership, documented action conditions, and one controlled privacy-safe schedule_access.exchange_failure observation",
       "12.33 proves the stale-delivery operator architecture, manual cadence/escalation policy, and staging behavior; production execution remains deferred to the separately reviewed production migration, Bozeman provisioning, and controlled pilot",
       "12.34.3 proves full independent technical recovery; 12.35 proves recurring task registration, safe human-visible failure notification, and recovery/rollback ownership; 12.35.11 proves the successful scheduled-host production backup/checksum/retention path; and 12.35.12 safely enables the permanent daily task without catch-up execution",
+      "12.36 locally proves the separate no-fixture established-production gate for exactly 20260811123300 then 20260812123430 and the future backup-task lock transition without contacting production or staging",
       "backup/recovery is complete and non-blocking",
-      "real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
+      "production still remains at 20260714122230; production migration, real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
-      "Complete real Bozeman provisioning, application-driven email proof, and the controlled pilot; include the first production Notification Health execution after separately reviewed production migrations without weakening the proven privacy-safe Vercel, manual-cadence, or backup/recovery workflows.",
+      "In a separately authorized window, run the proven exact production migration and backup-lock transition; then complete real Bozeman provisioning, application-driven email proof with the first production Notification Health execution, and the controlled pilot without weakening the proven privacy-safe Vercel, manual-cadence, or backup/recovery workflows.",
   },
   {
     id: "production_launch_action",
@@ -226,7 +229,7 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
 export const bozemanBetaLaunchGateSummary = {
   decision: BOZEMAN_BETA_LAUNCH_GATE_DECISION,
   reason:
-    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, staging through 20260812123430, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, direct provider-level inbox delivery, and complete non-blocking backup/recovery with enabled recurrence are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, provisioning, production migrations and notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
+    "The core persisted scheduling loop, privacy-safe application and operator observability architecture, staging through 20260812123430, the locally proven established-production migration gate, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider/domain/sender configuration, direct provider-level inbox delivery, and complete non-blocking backup/recovery with enabled recurrence are proven. Project Local application-driven production delivery through its ledger and schedule-access boundary, provisioning, production application of the pending migrations and backup-lock transition, notification-health execution, and pilot prerequisites remain unresolved, so the honest launch decision is NO-GO.",
   target: BOZEMAN_BETA_LAUNCH_STAGING_TARGET,
   items: bozemanBetaLaunchGateItems,
 } as const;

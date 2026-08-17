@@ -27,6 +27,9 @@ export const PRODUCTION_ENVIRONMENT_READINESS_CAN_ACTIVATE_RESPONSE_LINK_REVEAL 
 export const PRODUCTION_ENVIRONMENT_READINESS_DECISION = "NO-GO" as const;
 export const PRODUCTION_ENVIRONMENT_RECOMMENDED_HOST = "Vercel" as const;
 export const PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION = "20260714122230" as const;
+export const PRODUCTION_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN = true;
+export const PRODUCTION_PENDING_SCHEMA_TARGET = "20260812123430" as const;
+export const PRODUCTION_PENDING_SCHEMA_APPLIED = false;
 export const PRODUCTION_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true;
 export const PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const PRODUCTION_APPLICATION_EMAIL_ENABLED = false;
@@ -95,17 +98,20 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   },
   {
     id: "production_supabase",
-    title: "Production Supabase project",
-    status: "proven",
-    blocking: false,
+    title: "Production Supabase project and pending schema transition",
+    status: "configuration_required",
+    blocking: true,
     evidence: [
       "12.25 validated the initial/bootstrap empty production schema on project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
       "production product rows, Auth users, and storage objects remained empty before 12.26 manual Auth proof",
       "after 12.26, approved Auth identities may exist while Project Local product rows and storage remain unprovisioned",
+      "12.36 locally proves the separate established-production gate for exactly 20260811123300 then 20260812123430 with Auth/product preservation, types, Notification Health, privileges, RLS/FORCE RLS, and zero residue",
+      "production and staging were not contacted in 12.36; production remains at 20260714122230 and the pending chain is unapplied",
+      "the permanent backup task remains enabled and locked to 20260714122230; its reviewed future lock transition must occur only after successful migration postflight",
       "production must not reuse kfuujcfxoayukywvtaeh",
     ],
     requiredAction:
-      "Keep Project Local product rows/storage empty until reviewed Bozeman operator provisioning; use a separately reviewed established-production migration gate after Auth identities or real product data exist.",
+      "In a separately authorized window, verify a recent backup, disable the recurring task, run the exact established-production preflight/apply/postflight, update only the task lock to 20260812123430, and re-enable without manual execution before provisioning.",
   },
   {
     id: "production_environment_variables",
@@ -265,6 +271,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, production notification-health execution, production migrations, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, the locally proven established-production migration gate, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, production notification-health execution, production application of the pending migrations and backup-lock transition, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

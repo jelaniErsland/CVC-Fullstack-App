@@ -32,6 +32,8 @@
     "test:production-environment-readiness": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-environment-readiness-regression.mjs",
     "test:production-supabase-schema": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-supabase-schema-regression.mjs",
     "test:production-supabase-schema:pristine": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-supabase-schema-pristine-regression.mjs",
+    "gate:production-established-schema": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-established-schema-gate.mjs",
+    "test:production-established-schema": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-established-schema-gate.mjs --mode local-regression",
     "test:production-deployment-smoke": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-deployment-smoke-regression.mjs",
     "test:production-independent-backup": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-independent-backup-regression.mjs",
     "test:production-recovery-readiness": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-recovery-readiness-regression.mjs",

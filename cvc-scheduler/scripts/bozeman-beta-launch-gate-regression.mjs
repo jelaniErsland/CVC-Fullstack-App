@@ -24,6 +24,8 @@ import {
   BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT,
   BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN,
   BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN,
+  BOZEMAN_BETA_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN,
+  BOZEMAN_BETA_PRODUCTION_PENDING_SCHEMA_APPLIED,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER_APPROVED,
   BOZEMAN_BETA_LAUNCH_GATE_PRODUCTION_EMAIL_PROVIDER,
   BOZEMAN_BETA_LAUNCH_GATE_RESPONSE_LINK_REVEAL_COPY_AVAILABLE,
@@ -71,6 +73,8 @@ async function main() {
   assert.equal(BOZEMAN_BETA_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT, true);
   assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN, true);
+  assert.equal(BOZEMAN_BETA_PRODUCTION_PENDING_SCHEMA_APPLIED, false);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -166,6 +170,8 @@ async function main() {
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.11/);
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.12/);
   assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/recovery is complete and non-blocking/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /12\.36 locally proves/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /production still remains at 20260714122230/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

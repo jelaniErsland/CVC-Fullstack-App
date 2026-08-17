@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.36 - Established-Production Migration Gate Readiness
+
+- Added a separate established-production schema gate with local regression plus exact production preflight/apply/postflight modes; the historical 12.25 pristine/bootstrap zero-Auth gate remains unchanged and is not the live-state migration procedure.
+- The disposable local proof began at exactly `20260714122230`, created one legitimate synthetic Auth identity plus a minimal workspace/contact/grant fixture, dry-ran and applied exactly `20260811123300` then `20260812123430`, preserved the fixture, and finished with exact migration history, generated-type parity, Notification Health regression compatibility, exact direct/default privileges, RLS on all 13 tables, exact four-table FORCE RLS, owner/service-role posture, a rolled-back future-table probe, and zero residue.
+- Production modes are exact-target/ref, exact-opt-in, clean-tree, no-fixture, email-disabled, and no-service-role-application guarded. Apply additionally verifies the permanent backup task is disabled/not running and still holds `20260714122230` before any hosted discovery or mutation.
+- Added a fail-closed task-registration action and backup-script allowlist for the future exact `20260714122230` to `20260812123430` lock transition. Only the migration-lock argument may change; malformed, duplicate, wrong-current, and wrong-target fixtures fail. The live permanent task was not modified and remains enabled/Ready at `20260714122230`.
+- Production and staging were not contacted. Neither pending migration was applied to production, no email or real data was created, and no Vercel/Resend/DNS/Auth/external configuration changed. Production migrations, first production Notification Health execution, application-driven Initial email, real Bozeman provisioning, and controlled pilot remain blocking; launch remains `NO-GO`.
+
 ## Iteration 12.35.12 - Backup/Recovery Evidence Reconciliation and Recurring Task Decision
 
 - Reconciled every governing backup/recovery requirement against 12.34-12.35.11 evidence and reran the independent-backup and production-recovery readiness suites locally.

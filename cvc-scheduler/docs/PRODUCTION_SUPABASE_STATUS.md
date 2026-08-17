@@ -8,6 +8,8 @@ Iteration 12.33 adds migration `20260811123300` and proves it locally and on app
 
 Iteration 12.34.3 adds privilege-hardening migration `20260812123430`; approved staging is validated through it with exact direct/default privilege metadata, generated-type parity, RLS/FORCE RLS, Notification Health compatibility, and zero residue. Production remains at `20260714122230`; neither later migration is applied there, and production migration remains separately reviewed and unperformed.
 
+Iteration 12.36 adds and locally proves the separate established-production gate for the exact pending chain `20260811123300` then `20260812123430`. Its disposable baseline preserves one legitimate synthetic Auth identity and minimal product rows, proves the exact dry-run/application/post-state contracts, and leaves zero residue. Production and staging were not contacted; production remains at `20260714122230`.
+
 Current status: `SCHEMA VALIDATED`.
 
 Launch conclusion: `NO-GO`.
@@ -19,7 +21,7 @@ Launch conclusion: `NO-GO`.
 - Forbidden staging ref: `kfuujcfxoayukywvtaeh`
 - Expected terminal migration: `20260714122230`
 
-## Bootstrap gate command
+## Historical bootstrap gate command
 
 ```powershell
 $env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION='project-local-production:wdlaauzknfggoqldolmx'
@@ -29,7 +31,13 @@ Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 
 The command is intentionally exact-target locked and must refuse missing/wrong opt-in, staging ref, fixture flags, enabled email transport, service-role application configuration, and uncommitted worktree state.
 
-This is the initial/bootstrap empty-production schema gate. It was designed to prove a pristine production database before Auth setup or real operator provisioning, including zero product rows, zero Auth users, and zero storage objects. That historical 12.25 evidence remains valid. After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist, so this bootstrap zero-state gate is not the generic established-production migration gate. Future production migrations after Auth identities or real product data exist require a separately reviewed established-production migration/schema gate that verifies the intended live before/after state without requiring zero Auth users.
+This is the initial/bootstrap empty-production schema gate. It was designed to prove a pristine production database before Auth setup or real operator provisioning, including zero product rows, zero Auth users, and zero storage objects. That historical 12.25 evidence remains valid. After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist, so do not rerun or reinterpret this bootstrap zero-state gate as the established-production migration gate.
+
+## Established-production gate
+
+`npm run test:production-established-schema` is the local-only regression. It proves exact target/ref and opt-in refusal, exact migration inventory and pending plan, legitimate Auth/product preservation from `20260714122230`, Notification Health, types, exact direct/default privileges, all-table RLS, the exact FORCE RLS set, owner/platform posture, and zero local residue. Production-capable `production-preflight`, `production-apply`, and `production-postflight` modes remain separately authorized and unexecuted; see [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+
+The permanent backup task still expects `20260714122230` and was not modified. The future production migration window must disable it before apply, verify the current lock, apply and validate the exact chain, update only the lock to `20260812123430` through the reviewed task-registration action, and re-enable without catch-up or manual execution.
 
 ## Current validation state
 
@@ -40,6 +48,8 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 | Migration level before | Passed: clean initial state before migration application |
 | Migration application through `20260714122230` | Passed: reviewed committed migrations only; no seeds or roles |
 | Migration level after | Passed: `20260714122230` |
+| Established-production local transition | Passed: exact `20260714122230` -> `20260811123300` -> `20260812123430`, with preserved synthetic Auth/product state and zero residue |
+| Established-production production execution | Pending / blocking: production remains `20260714122230` |
 | Generated public-schema type parity | Passed |
 | Product application table counts | Passed: `0` rows |
 | Auth user count | Passed as `0` during 12.25 schema gate before manual Auth evidence; no longer assumed zero after 12.26 manual approved Auth sign-in |
@@ -58,7 +68,7 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 
 Backup, restore, and rollback readiness is documented in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). 12.28.1 confirms Supabase-managed backup/restore limitations on Free; PITR remains unnecessary for the initial beta. 12.34 proves the first independent encrypted backup, checksum/status, and retention behavior; 12.34.1 through 12.34.3 prove managed-role compatibility, source ACL reconstruction, and full independent technical recovery; 12.35 proves recurring registration, safe notification, and ownership; 12.35.11 proves successful scheduled-host backup/checksum/retention; and 12.35.12 safely enables the permanent task. Backup/recovery is complete and non-blocking. The optional Supabase-managed Pro path remains available. The logical database package does not prove Supabase Auth platform configuration or Storage object BLOB recovery.
 
-This gate may apply reviewed committed migrations only. It must not create fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data.
+The future production mode may apply only the exact reviewed two-migration chain. It must not create fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data. Fixture behavior exists only inside the disposable local regression and is structurally unavailable in production modes.
 
 It must not run hosted staging fixture gates against production. It must not configure or send email. It must not add service-role runtime behavior. It must not activate response-link reveal/copy.
 
