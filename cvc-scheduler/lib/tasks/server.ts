@@ -1,16 +1,24 @@
 import "server-only";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
+import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 import {
   parseTaskPreset,
+  TaskPresetValidationError,
   validateCreateTaskPresetInput,
   type CreateTaskPresetInput,
   type TaskPreset,
-} from "@/lib/tasks/preset";
-import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
+} from "./preset.ts";
+import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
 
 export type TaskPresetMutationResult = Readonly<{ presetId: string }>;
+
+const taskPresetCreateFormFields = new Set([
+  "name",
+  "description",
+  "taskType",
+  "defaultNeededCount",
+  "volunteerVisible",
+]);
 
 const taskPresetColumns = [
   "id",
@@ -38,6 +46,11 @@ async function requireAuthenticatedContact(supabase: AppSupabaseClient) {
   }
 }
 
+async function createTaskPresetServerClient() {
+  const { createServerSupabaseClient } = await import("../supabase/server.ts");
+  return createServerSupabaseClient();
+}
+
 export async function readTaskPresetsWithClient(
   supabase: AppSupabaseClient,
   workspaceId: string,
@@ -47,7 +60,9 @@ export async function readTaskPresetsWithClient(
     .from("task_presets")
     .select(taskPresetColumns)
     .eq("workspace_id", normalizedWorkspaceId)
-    .order("name");
+    .order("lifecycle", { ascending: true })
+    .order("name", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) {
     throw new Error("Task presets could not be read.", { cause: error });
@@ -56,8 +71,51 @@ export async function readTaskPresetsWithClient(
 }
 
 export async function readCurrentContactTaskPresets(workspaceId: string) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createTaskPresetServerClient();
   return readTaskPresetsWithClient(supabase, workspaceId);
+}
+
+export function taskPresetCreateInputFromFormData(
+  formData: FormData,
+  workspaceId: string,
+) {
+  const submittedFields = [...new Set(formData.keys())].filter(
+    (key) => !key.startsWith("$ACTION_"),
+  );
+  const unsupportedFields = submittedFields.filter(
+    (key) => !taskPresetCreateFormFields.has(key),
+  );
+  const duplicatedFields = submittedFields.filter(
+    (key) => formData.getAll(key).length !== 1,
+  );
+  const volunteerVisible = formData.get("volunteerVisible");
+
+  if (
+    unsupportedFields.length > 0 ||
+    duplicatedFields.length > 0 ||
+    (volunteerVisible !== null && volunteerVisible !== "true")
+  ) {
+    throw new TaskPresetValidationError([
+      "The submitted task contains unsupported fields.",
+    ]);
+  }
+
+  const description = formData.get("description");
+  const neededCount = formData.get("defaultNeededCount");
+
+  return validateCreateTaskPresetInput({
+    workspaceId,
+    name: formData.get("name"),
+    description:
+      typeof description === "string" && description.trim().length > 0
+        ? description
+        : null,
+    taskType: formData.get("taskType"),
+    defaultNeededCount:
+      typeof neededCount === "string" ? Number(neededCount) : Number.NaN,
+    volunteerVisible: volunteerVisible === "true",
+    customFields: [],
+  });
 }
 
 export async function createTaskPresetWithClient(
@@ -85,7 +143,7 @@ export async function createTaskPresetWithClient(
 }
 
 export async function createTaskPreset(input: CreateTaskPresetInput | unknown) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createTaskPresetServerClient();
   return createTaskPresetWithClient(supabase, input);
 }
 
@@ -105,6 +163,6 @@ export async function archiveTaskPresetWithClient(
 }
 
 export async function archiveTaskPreset(presetId: string) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createTaskPresetServerClient();
   return archiveTaskPresetWithClient(supabase, presetId);
 }

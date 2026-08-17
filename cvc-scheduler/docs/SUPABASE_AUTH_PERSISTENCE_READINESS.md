@@ -12,6 +12,14 @@ The near-term production-readiness target is now a narrow Bozeman scheduling bet
 
 The beta launch gate requires permanent workspace/contact/grant foundations for Bozeman, volunteer profile entry/import on the existing `volunteer_profiles` architecture, Calendar create/edit/write boundaries on top of the stabilized persisted Calendar read route, assignment commands and picker UI, publication visibility truth, secure account-light volunteer schedule access, Confirm/Deny persistence and admin response visibility, a minimal initial assignment email boundary, approved Project Local UI integration on beta-critical surfaces, and production environment/hosted validation/observability/backup/rollback proof.
 
+## 12.37 Persisted Tasks route cutover
+
+Iteration 12.37 connects `/admin/tasks` to the existing 11.8 task-preset persistence boundary without a migration. The route is server-owned, dynamic/no-store, derives authenticated project-contact identity and exactly one active eligible workspace, requires effective `tasks.view`, and reads `task_presets` with an explicit selector. Role/title strings and browser-supplied workspace, contact, capability, selector, or table values do not authorize or scope the read. Ready-with-presets, ready-empty, unavailable, and error states never fall back to mock data.
+
+Contacts with effective `tasks.edit` can create through `create_task_preset` and archive eligible active non-system rows through `archive_task_preset`. The server injects workspace scope and accepts only name, description, task type, default needed count, volunteer visibility, and an intentionally empty initial custom-field set from the product form. System identity and scheduling-shaped fields are rejected; direct authenticated table writes remain denied. Contacts with `tasks.view` but not `tasks.edit` retain the complete read-only Tasks library.
+
+The safe route projection is limited to id, name, description, task type, default needed count, volunteer visibility, system indicator, bounded custom-field definitions, and lifecycle. It includes no Calendar rows, dates/times, assignment/response data, volunteer contacts, raw grants/capabilities, tokens, provider data, or broad selectors. Calendar remains the scheduled-occurrence owner: a created active preset appears through Calendar's existing `tasks.view` selector, archive excludes it from new selection, and existing preset-backed occurrence snapshots remain valid. General persisted task-preset edit and advanced custom-field authoring remain deferred.
+
 ## 12.22 Initial assignment notification email
 
 12.22 locally adds the first initial assignment notification email boundary. The product route does not send automatically: publication, assignment creation, render, GET, prefetch, hover/focus, and client effects have no delivery side effect. A scheduler uses one explicit `/admin/calendar` server action, and the server re-derives all trusted context before any claim or send.

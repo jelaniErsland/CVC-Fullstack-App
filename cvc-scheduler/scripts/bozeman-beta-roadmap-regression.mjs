@@ -236,9 +236,11 @@ assert.doesNotMatch(
 assert.match(calendarRoute, /readCalendarRouteState/);
 assert.doesNotMatch(
   tasksRoute,
-  /bozemanBetaRoadmap|tasks\/readModelContract|readTaskPresets|task_presets|createServerSupabaseClient|\.from\(|\.rpc\(/i,
+  /bozemanBetaRoadmap|@\/lib\/mockData|createServerSupabaseClient|\.from\(|\.rpc\(/i,
 );
-assert.match(tasksRoute, /@\/lib\/mockData/);
+assert.match(tasksRoute, /readTaskManagementRouteState/);
+assert.match(tasksRoute, /createTaskPresetWithClient/);
+assert.match(tasksRoute, /archiveTaskPresetWithClient/);
 
 for (const doc of [currentState, roadmapDoc, historyDoc, authDoc, betaDoc]) {
   assert.match(doc, /Bozeman/i);

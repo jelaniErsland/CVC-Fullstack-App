@@ -11,8 +11,8 @@ Belgrade remains on the existing Google Sheets/App Script workflow and is the op
 - Workspace, project-contact grant, questionnaire submission, volunteer profile, task preset, Calendar item, Calendar assignment/current response, public response-token, response route, and assignment-detail foundations exist.
 - `/admin/calendar` is already cut over to persisted Calendar item reads and now supports the first narrow persisted one-off timed item create/edit path. It is server-owned, dynamic/no-store, bounded by server-derived Day/Week/Month/List ranges, workspace/contact/capability scoped, and free of mock/persisted item mixing.
 - The Calendar read states remain ready with items, ready empty, unavailable, and error; the beta roadmap does not change those state semantics.
-- `/admin/volunteers` is now cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path. `/admin/tasks`, `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
-- `lib/tasks/readModelContract.server.ts` defines the future persisted Tasks read-model contract, but `/admin/tasks` is not cut over.
+- `/admin/volunteers` is cut over to persisted volunteer-profile truth for the narrow manual Add/Edit path, and `/admin/tasks` is cut over to persisted task-preset read/create/archive truth. `/admin/announcements`, Needs Attention, and the public `/v/demo` volunteer portal remain mock/prototype surfaces.
+- `lib/tasks/readModelContract.server.ts` now records the route-used 12.37 persisted Tasks contract: effective `tasks.view` reads, `tasks.edit` create/archive, no general edit, no mock fallback, and no Calendar-occurrence decoration.
 - Calendar task-preset selection, the first Calendar volunteer assignment picker/create/cancel path, the draft/private versus published/live Calendar visibility boundary, secure account-light volunteer schedule access, volunteer Confirm/Deny from `/v/schedule`, and initial assignment notification email delivery are implemented and hosted-validated through 12.22.1. Communications persistence, public lookup, remembered devices, and response-link admin reveal/copy activation remain unimplemented or intentionally paused.
 - The approved visual direction is represented by the permanent references in [`docs/design/approved-project-local-ui`](./design/approved-project-local-ui/); beta-critical surfaces must launch with that polished Project Local direction, not a utilitarian developer/admin interface.
 
@@ -116,6 +116,8 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
     - Maps every recovery requirement to durable evidence, confirms local independent-backup/recovery suites, proves with a harmless missed-trigger clone that enabling does not catch up on this host, and enables the unchanged permanent daily `03:15` task without execution. Backup/recovery is complete and non-blocking. Application-driven Initial email, production migrations/first Notification Health execution, real Bozeman provisioning, controlled pilot, and explicit launch approval remain blocking; launch remains `NO-GO`.
 39. `12.36 Established-Production Migration Gate Readiness`
     - Preserves the historical 12.25 bootstrap gate and adds a separate established-production preflight/apply/postflight contract. The local disposable transition from exactly `20260714122230` through exactly `20260811123300` and `20260812123430` preserves synthetic Auth/product state and proves exact history, generated types, Notification Health, direct/default privileges, RLS/FORCE RLS, platform ownership, future-table defaults, refusal paths, and zero residue. The future backup-task lock transition is locally proven, but the live enabled/Ready task remains unchanged at `20260714122230`. Production/staging were not contacted; the production application and first health execution remain blocking, and launch remains `NO-GO`.
+40. `12.37 Persisted Tasks Page Cutover and Reusable Task Creation`
+    - Replaces `/admin/tasks` mock truth with a polished persisted task-preset library using server-derived exactly-one-workspace context, effective `tasks.view`, and existing `tasks.edit` create/archive RPCs. The route has no mock fallback, read-only users keep a useful library, system presets remain protected, and Calendar's active selector sees created presets but excludes archived ones while preserving existing occurrence snapshots. General persisted edit remains deferred. This local-only slice adds no migration, hosted access, backup change, email, or real Bozeman data; launch remains `NO-GO`.
 
 ## Repository-grounded beta blockers
 
@@ -134,7 +136,7 @@ Belgrade Sheets/App Script remains the fallback if this gate is not safely met.
 ## Non-blocking features deferred behind the beta gate
 
 - Belgrade migration from Sheets.
-- Full `/admin/tasks` route cutover if not needed for Calendar creation.
+- General persisted task-preset edit and advanced custom-field authoring.
 - Full public questionnaire workflow.
 - Manual public volunteer lookup.
 - Remembered-device behavior.

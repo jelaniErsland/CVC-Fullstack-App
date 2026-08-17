@@ -241,7 +241,7 @@ for (const file of routeFiles) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
-assert.deepEqual(routeImports, [], "Existing Tasks routes must remain mock-only");
+assert.deepEqual(routeImports, ["app/admin/tasks/page.tsx"]);
 
 console.log("Task preset persistence and authorization checks passed.");
-console.log("Confirmed reusable definitions, scoped reads/writes, and no route cutover.");
+console.log("Confirmed reusable definitions, scoped reads/writes, and the persisted Tasks route boundary.");

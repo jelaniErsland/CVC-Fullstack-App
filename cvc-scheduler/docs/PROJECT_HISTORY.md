@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.37 - Persisted Tasks Page Cutover and Reusable Task Creation
+
+- Replaced `/admin/tasks` mock truth with a server-owned dynamic/no-store persisted task-preset library. The route derives authenticated project-contact scope and exactly one active eligible workspace, requires effective `tasks.view`, uses an explicit minimal projection, and provides ready-with-presets, ready-empty, unavailable, and safe error states without mock fallback or mock/persisted mixing.
+- Added the approved Project Local compact list/inspector Tasks workspace with local name/category/status filters, a desktop modal/mobile sheet creation flow, and mobile task-detail sheet. A `tasks.view`-only contact receives the full read-only library without create/archive controls.
+- Reused the existing `create_task_preset` and `archive_task_preset` RPC boundaries. The server injects trusted workspace scope, accepts only create-safe fields, rejects scheduling/system-shaped fields, and permits archive only for authorized active non-system presets after confirmation. No general persisted edit was added.
+- Added focused local persisted-data and browser regressions covering capability and grant lifecycle, workspace isolation, system-preset protection, direct-write denial, reload truth, desktop/390px behavior, Calendar selector eligibility, archived exclusion, existing occurrence snapshot preservation, and zero disposable residue.
+- No migration, generated type, schema/RLS/RPC change, service-role path, hosted target, production/staging access, backup operation/task change, email, or real Bozeman data was added. Launch remains `NO-GO`.
+
 ## Iteration 12.36 - Established-Production Migration Gate Readiness
 
 - Added a separate established-production schema gate with local regression plus exact production preflight/apply/postflight modes; the historical 12.25 pristine/bootstrap zero-Auth gate remains unchanged and is not the live-state migration procedure.

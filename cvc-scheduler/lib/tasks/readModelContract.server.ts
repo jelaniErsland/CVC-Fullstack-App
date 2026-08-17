@@ -1,10 +1,10 @@
 import "server-only";
 
 export const TASKS_PERSISTED_READ_MODEL_CONTRACT_AVAILABLE = true;
-export const TASKS_PERSISTED_READ_MODEL_IMPLEMENTATION_AVAILABLE = false;
-export const TASKS_ROUTE_PERSISTED_READ_CUTOVER_AVAILABLE = false;
+export const TASKS_PERSISTED_READ_MODEL_IMPLEMENTATION_AVAILABLE = true;
+export const TASKS_ROUTE_PERSISTED_READ_CUTOVER_AVAILABLE = true;
 export const TASKS_ROUTE_MOCK_TO_REAL_MIXING_ALLOWED = false;
-export const TASKS_ROUTE_PERSISTED_WRITE_AVAILABLE = false;
+export const TASKS_ROUTE_PERSISTED_WRITE_AVAILABLE = true;
 export const TASKS_CALENDAR_OCCURRENCE_DECORATION_AVAILABLE = false;
 export const TASKS_ASSIGNMENT_COVERAGE_DECORATION_AVAILABLE = false;
 export const TASKS_SERVICE_ROLE_READ_AVAILABLE = false;
@@ -16,11 +16,11 @@ export const TASKS_REMINDER_DELIVERY_AVAILABLE = false;
 export const TASKS_REMEMBERED_DEVICE_AVAILABLE = false;
 
 export const persistedTasksReadModelContract = {
-  milestone: "12.13",
-  routeUnused: true,
+  milestone: "12.37",
+  routeUnused: false,
   eligibleFutureRoute: "/admin/tasks",
-  currentRouteCutover: false,
-  currentRouteTruthSource: "mock_prototype_until_separate_cutover",
+  currentRouteCutover: true,
+  currentRouteTruthSource: "persisted_task_presets_only",
   canonicalEntity:
     "task_template_or_preset_reusable_scheduling_definition_not_calendar_occurrence",
   requiredCapability: "tasks.view",
@@ -133,7 +133,7 @@ export const persistedTasksReadModelContract = {
     lifecycleFilters: ["active", "archived"],
     stableDefaultSort: ["active_before_archived", "name", "id"],
     nondeterministicDatabaseRowOrderAllowed: false,
-    clientQueryIntegrationImplemented: false,
+    clientQueryIntegrationImplemented: true,
   },
   futureQueryShapeRules: {
     explicitAllowlistedSelectorRequired: true,
@@ -197,10 +197,9 @@ export const persistedTasksReadModelContract = {
     "unrelated_workspace_rows",
   ],
   blockedInThisSlice: [
-    "admin_tasks_route_cutover",
-    "tasks_route_loader",
+    "general_task_preset_edit",
+    "advanced_custom_field_creation_ui",
     "client_side_supabase_tasks_read",
-    "tasks_create_edit_archive_ui_behavior",
     "calendar_write_behavior",
     "response_link_activation",
     "email_reminder_delivery",
@@ -212,9 +211,10 @@ export const persistedTasksReadModelContract = {
     "seed_data",
   ],
   recommendedNextSlice: {
-    id: "12.14",
-    title: "Route-Unused Persisted Tasks Read Model Helper / Query-Shape Review",
-    authorizesAdminTasksCutover: false,
+    id: "12.38",
+    title: "Richer Calendar Creation UX Using the Persisted Tasks Library",
+    adminTasksCutoverComplete: true,
+    requiresMigration: false,
   },
 } as const;
 
@@ -245,18 +245,8 @@ export function describePersistedTasksReadModelContract() {
 
 export function evaluatePersistedTasksReadModelReadiness() {
   return {
-    allowedForAdminTasksCutover: false,
-    blockers: [
-      "read_model_implementation_unavailable",
-      "admin_tasks_route_cutover_unavailable",
-      "mock_to_real_mixing_disallowed",
-      "persisted_writes_unavailable",
-      "calendar_occurrence_decoration_unavailable",
-      "assignment_coverage_decoration_unavailable",
-      "service_role_read_unavailable",
-      "seed_data_unavailable",
-      "response_link_activation_paused_after_11_50",
-    ],
+    allowedForAdminTasksCutover: true,
+    blockers: [],
     recommendedNextImplementationSlice:
       persistedTasksReadModelContract.recommendedNextSlice,
   } as const;
