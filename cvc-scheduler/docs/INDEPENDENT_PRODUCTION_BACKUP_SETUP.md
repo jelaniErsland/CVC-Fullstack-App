@@ -1,6 +1,6 @@
 # Independent Production Backup Setup
 
-Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. Iteration 12.34 proves its first read-only encrypted production backup. Iteration 12.34.1 resolves the local managed-role replay boundary but records the next fail-closed restore blocker: 26 unsafe restored `TRUNCATE` grants. The six-file package contract is unchanged. No scheduled task or real Bozeman product data exists.
+Iteration 12.29 implements the Project Local independent encrypted production backup automation foundation. Iterations 12.34 through 12.34.3 prove the first read-only encrypted production backup and complete local recovery-forward. Iteration 12.35 proves task registration, safe human-visible failure notification, and recovery/rollback ownership; 12.35.11 proves one successful scheduled-host production backup/checksum/retention execution; and 12.35.12 safely enables the unchanged permanent daily task without catch-up execution. The six-file package contract is unchanged, backup/recovery is complete and non-blocking, and no real Bozeman product data exists.
 
 Launch conclusion: `NO-GO`.
 
@@ -209,7 +209,7 @@ The script verifies the encrypted checksum before decrypting, decrypts only into
 
 A later always-on design using a private runner or private object storage may replace the Windows PC dependency without changing the encrypted logical-backup format. GitHub Actions artifacts/caches and the public repository are not approved backup storage.
 
-## Current 12.34 evidence
+## Historical 12.34 evidence
 
 - The current-user DPAPI secret ACL is proven exact: inheritance disabled, one explicit current-operator FullControl allow, and no other allow entry.
 - Read-only Session Pooler preflight proved exact production target `wdlaauzknfggoqldolmx`, database `postgres`, and terminal migration `20260714122230`.
@@ -225,7 +225,7 @@ A later always-on design using a private runner or private object storage may re
 - Real Bozeman data remains unprovisioned.
 - Launch remains `NO-GO`.
 
-## Current 12.34.1 evidence
+## Historical 12.34.1 evidence
 
 - The existing 12.34 encrypted artifact was reused; no production or staging connection and no new backup occurred.
 - The exact eight-statement `roles.sql` contains three session settings, one reset, three managed `statement_timeout` settings, and one managed parameter privilege. It contains no user-defined roles, password/verifier material, ownership statement, or unsupported statement.
@@ -237,7 +237,7 @@ A later always-on design using a private runner or private object storage may re
 - The disposable stack, suppressed local CLI logs, decrypted archive, derived role SQL, and type temp paths were removed. Production, staging, Vercel, Resend, DNS, Auth, email, product data, and migration state were untouched.
 - Full restore/recovery, recurring scheduling/failure notification, and recovery ownership remain incomplete. Launch remains `NO-GO`.
 
-## Current 12.35 evidence
+## Historical 12.35 evidence
 
 - The public age recipient was derived locally with standard age tooling without printing or copying the private identity.
 - Exactly one real recurring task is registered and enabled: `Project Local Production Backup`, daily at `03:15` local time, `StartWhenAvailable`, current-operator Interactive/limited principal, exact production/migration locks, and no database credential or private age identity in arguments.
@@ -247,3 +247,13 @@ A later always-on design using a private runner or private object storage may re
 - Jelani, as the Project Local product/operator owner, owns recurring backup operations/failure response, database restore approval/execution, Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation. Engineering help does not transfer operational authority.
 - Full independent technical recovery, safe failure notification, and ownership are proven. Aggregate backup/recovery remains blocking only on successful scheduled backup execution within this slice.
 - Production remains recorded at `20260714122230`; the 12.35 path was read-only and did not apply migrations or mutate data. Application email remains disabled, real Bozeman data remains unprovisioned, and launch remains `NO-GO`.
+
+## Current 12.35.11 and 12.35.12 evidence
+
+- 12.35.11 ran one triggerless temporary task with the reviewed production action and issued exactly one manual start. The task ran once, the permanent task ran zero times, and no duplicate occurred.
+- Read-only production preflight through `20260714122230`, all five native dump stages, the unchanged six-file package, ZIP, age encryption, atomic daily publication, Sunday weekly promotion, checksum/status, retention, and cleanup passed.
+- `project-local-production-20260816T203034Z-c438e330.zip.age` is `62622` bytes. Its independently recomputed daily and weekly SHA-256 is `dfdbb535fc41098e411d0a2b70bbe11c1ef60e2fc6d4601b16d420e6ece72a15`, exactly matching safe status.
+- Artifact counts changed from one to two daily and zero to one weekly. Retention correctly deleted zero recognized artifacts because both sets remain below the newest-`14`/newest-`8` thresholds. No plaintext SQL/ZIP, `.partial`, decrypted material, temporary task, or native backup process remained.
+- 12.35.12 let a disabled harmless daily clone miss a real occurrence with `StartWhenAvailable=true`. Enabling the clone did not catch up, did not write its marker, and did not advance LastRunTime/result; its next run moved to the next day.
+- The permanent `Project Local Production Backup` task was then enabled without a start command. It remained `Ready`, did not execute, preserved its historical LastRunTime/result, and scheduled the next future daily `03:15` occurrence. Its action, exact production/migration locks, current-operator `Interactive`/limited principal, `StartWhenAvailable`, `IgnoreNew`, and secret-free arguments remain reviewed.
+- Backup/recovery is `NON-BLOCKING / COMPLETE`. Supabase Pro remains optional. Production remains at `20260714122230`, application email remains disabled, no real Bozeman data exists, and overall launch remains `NO-GO` for unrelated production-migration/health-check, application-email, provisioning, pilot, and explicit launch-approval gates.

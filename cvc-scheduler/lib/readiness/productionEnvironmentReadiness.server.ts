@@ -213,8 +213,8 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   {
     id: "backup_recovery",
     title: "Backup, restore, and rollback",
-    status: "configuration_required",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
       "docs/PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md documents application rollback, migration-forward recovery, operational pause, and recovery verification",
       "operator dashboard evidence confirms production Supabase is on the Free plan and scheduled backups are not available",
@@ -224,12 +224,13 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "Supabase-managed restore to new project is unavailable unless the optional Pro path is chosen and physical backups are enabled",
       "PITR is unavailable and intentionally not required for the initial beta",
       "12.35 proves daily 03:15 StartWhenAvailable task registration, safe human-visible failure notification, and recovery/rollback ownership",
-      "the single authorized scheduled production execution stopped at migration_preflight_failed without a new encrypted artifact, so successful scheduled checksum and retention execution remain unproven",
+      "12.35.11 proves one successful controlled Task Scheduler production execution through read-only migration preflight, five credential-safe native dump stages, the six-file package, age encryption, atomic publication, matching SHA-256, Sunday weekly promotion, retention, and zero plaintext residue",
+      "12.35.12 proves on a harmless missed-trigger clone that enabling does not catch up on this host, then enables the unchanged permanent daily task Ready for its next future 03:15 occurrence without execution",
       "logical database recovery does not prove Supabase Auth platform configuration or Storage object BLOB recovery",
       "Belgrade Sheets/App Script remains fallback",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, preserve the proven independent technical recovery, failure notification, ownership, and fallbacks; diagnose migration_preflight_failed and separately authorize one successful scheduled checksum/retention proof. Supabase Pro remains optional.",
+      "Preserve the enabled recurring task, independent encrypted artifacts, checksum/status evidence, full disposable recovery procedure, failure notification, named ownership, and Belgrade fallback. Supabase Pro remains optional.",
   },
   {
     id: "operator_pilot_approval",
@@ -264,6 +265,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, full independent technical recovery, recurring task registration, safe failure notification, and recovery ownership are proven. Project Local application-driven delivery, successful scheduled backup execution, operator provisioning, production notification-health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, production notification-health execution, production migrations, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
   items: productionEnvironmentReadinessItems,
 } as const;

@@ -1,8 +1,8 @@
 # Production Backup, Recovery, and Rollback Runbook
 
-Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary, 12.34.2 attributes the 26 restored `TRUNCATE` grants to `RESTORE_INTERACTION`, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430` without changing the six-file package. Iteration 12.35 registers the Windows recurring task, proves safe human-visible failure notification, and records operational ownership, but its single authorized scheduled production execution stops safely at migration preflight without producing a new artifact.
+Iteration 12.28 defines Project Local's production backup, recovery, rollback, and operational-pause boundaries before any real Bozeman workspace or product data is provisioned. Iteration 12.28.1 records operator Supabase dashboard evidence for the current production backup plan state. Iteration 12.29 adds the independent encrypted backup automation foundation. Iteration 12.34 proves the first encrypted production backup. Iteration 12.34.1 solves the managed-role replay boundary, 12.34.2 attributes the 26 restored `TRUNCATE` grants to `RESTORE_INTERACTION`, and 12.34.3 proves deterministic source ACL reconstruction plus complete local recovery-forward through `20260812123430` without changing the six-file package. Iteration 12.35 registers the Windows recurring task, proves safe human-visible failure notification, and records operational ownership; its first scheduled production attempt fails safely at migration preflight. Iteration 12.35.11 then proves one successful controlled Scheduled Task production execution, and 12.35.12 reconciles the complete evidence and safely enables the permanent task after a harmless missed-trigger proof.
 
-Current status: `RECOVERY READINESS INCOMPLETE`.
+Current status: `RECOVERY READY / NON-BLOCKING`.
 
 Launch conclusion: `NO-GO`.
 
@@ -125,9 +125,13 @@ Migration `20260812123430` codifies that exact direct/default privilege posture.
 
 Because the task uses an Interactive principal, the current Windows operator must be logged in for it to run. If the computer is asleep, powered off, or logged out at `03:15`, it cannot start then. `StartWhenAvailable` causes that missed start to run when Task Scheduler next has the operator's interactive session and the computer is awake/available; it does not make the PC an always-on backup host. If the PC is awake and the operator is logged in but the network is offline, the task still starts at `03:15`; its connection preflight fails safely and notifies the operator, and this task configuration does not automatically retry merely because connectivity later returns.
 
-The single authorized Task Scheduler production execution reached the read-only migration-preflight stage, returned `migration_preflight_failed`, and produced no new encrypted artifact. New scheduled-path checksum and retention execution therefore remain unproven, and no retry is authorized by this record. The task remains enabled and Ready for the next daily trigger, but this failed execution must be diagnosed and a new proof separately authorized before real Bozeman data.
+The historical 12.35 Task Scheduler production execution reached the read-only migration-preflight stage, returned `migration_preflight_failed`, and produced no new encrypted artifact. No retry occurred in that iteration. This failed attempt remains part of the record because it motivated the credential-safe native dump and classification repairs.
 
 12.35 also ran one separately named deterministic pre-network Task Scheduler fixture. It exited nonzero with `injected_pre_network_failure`, wrote atomic credential-free failure and notification status, emitted the Windows-local notification, created no backup/plaintext artifact, made no production connection, and left no backup workspace. Jelani confirmed the human-visible Windows notification, and the temporary task and status root were removed. Safe failure-notification behavior is proven.
+
+12.35.11 used one temporary triggerless Scheduled Task with the reviewed permanent action, current-operator `Interactive`/limited principal, exact production locks, and no secret-bearing arguments. Exactly one manual start produced exactly one successful read-only production execution. Migration preflight through `20260714122230`, roles/schema/data/migration-schema/migration-data native dumps, the unchanged six-file package, ZIP construction, age encryption, atomic publication, safe status, and cleanup all passed. The new `project-local-production-20260816T203034Z-c438e330.zip.age` artifact is `62622` bytes. Its independently recomputed SHA-256 is `dfdbb535fc41098e411d0a2b70bbe11c1ef60e2fc6d4601b16d420e6ece72a15`, matching the safe status and Sunday weekly copy. Daily artifacts changed from one to two, weekly artifacts from zero to one, retention correctly deleted zero files below the `14`/`8` limits, and no plaintext SQL/ZIP, `.partial`, decrypted material, or duplicate execution remained.
+
+12.35.12 registered a completely harmless daily clone with `StartWhenAvailable`, `IgnoreNew`, and the same `Interactive`/limited principal. The task remained disabled through a real scheduled occurrence; enabling it afterward did not run or catch up, did not write its marker, and left its never-run LastRunTime/result unchanged while advancing NextRunTime to the next day. The clone was removed. With the permanent task action, locks, principal, trigger, and hash otherwise verified, the permanent `Project Local Production Backup` task was enabled directly. It remained `Ready`, did not execute, retained its historical LastRunTime/result, and scheduled the next future daily `03:15` occurrence. Only the enabled flag changed; `StartWhenAvailable`, `IgnoreNew`, the two-hour limit, principal, action, and exact production/migration locks remain intact.
 
 See [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the Windows-first operator setup and restore-drill guide.
 
@@ -183,11 +187,11 @@ Jelani, as the Project Local product/operator owner, is the responsible owner fo
 
 Codex or engineering assistance may be used to investigate or execute technical steps, but operational authority remains with the Project Local product/operator owner.
 
-## Current NO-GO reason
+## Current recovery decision
 
 Application rollback planning, migration-forward policy, Belgrade fallback, and grant-revocation pause are documented.
 
-Production recovery readiness remains incomplete because:
+Production recovery readiness is complete and non-blocking because:
 
 - Supabase-managed backups are unavailable on the current Free plan.
 - That fact does not by itself require a Pro upgrade.
@@ -195,7 +199,8 @@ Production recovery readiness remains incomplete because:
 - The 12.34.1 managed-role boundary, 12.34.2 restore-interaction attribution, and 12.34.3 full independent technical recovery are proven.
 - Supabase Pro remains optional.
 - Recurring task registration and safe human-confirmed failure notification are proven.
-- The single authorized scheduled production backup attempt failed safely at `migration_preflight_failed` and produced no new encrypted artifact, so successful recurring execution/checksum/retention proof remains blocking.
+- 12.35.11 proves one successful scheduled-host production backup, five native dump stages, six-file packaging, age encryption, daily/weekly publication, independently matching SHA-256, retention execution, duplicate prevention, and plaintext cleanup.
+- 12.35.12 proves the no-catch-up enablement behavior on this Windows host and leaves the permanent daily `03:15` task enabled and `Ready` without an extra execution.
 - Restore to new project is unavailable unless the optional Supabase-managed Pro path is chosen and physical backups are enabled.
 - Recovery/rollback decision ownership is recorded under the Project Local product/operator owner.
 
@@ -203,4 +208,4 @@ PITR is unavailable and intentionally not required for the initial Bozeman beta 
 
 Database backups do not automatically prove recovery for Supabase Storage objects. Add a separate backup plan before enabling Storage-backed features such as volunteer photos.
 
-Real Bozeman data remains unprovisioned. Launch remains `NO-GO`.
+Real Bozeman data remains unprovisioned. Overall launch remains `NO-GO` for the separate production migrations/first Notification Health execution, application-driven Initial email, real Bozeman provisioning, controlled pilot, and explicit launch-approval gates; backup/recovery is no longer among the blockers.

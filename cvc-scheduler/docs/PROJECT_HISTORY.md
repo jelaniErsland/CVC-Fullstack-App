@@ -1,5 +1,19 @@
 # Project History
 
+## Iteration 12.35.12 - Backup/Recovery Evidence Reconciliation and Recurring Task Decision
+
+- Reconciled every governing backup/recovery requirement against 12.34-12.35.11 evidence and reran the independent-backup and production-recovery readiness suites locally.
+- Registered a harmless current-operator `Interactive`/limited daily clone with `StartWhenAvailable` and `IgnoreNew`, kept it disabled through a real scheduled occurrence, and enabled it afterward without a manual start. Windows did not catch up: no marker was written, LastRunTime/result remained at never-run sentinels, and NextRunTime advanced to the next day. The clone and marker were removed.
+- Enabled the unchanged permanent `Project Local Production Backup` task directly. It remained `Ready`, did not execute, retained its historical LastRunTime/result, and scheduled the next future daily `03:15` occurrence. Action, exact production/migration locks, principal, `StartWhenAvailable`, `IgnoreNew`, and secret-free arguments remain intact.
+- Backup/recovery is now `NON-BLOCKING / COMPLETE`. Overall launch remains `NO-GO` for production migrations/first Notification Health execution, Project Local application-driven Initial email proof, real Bozeman provisioning, controlled pilot evidence, and explicit launch approval.
+
+## Iteration 12.35.11 - Controlled One-Shot Scheduled Production Backup Proof
+
+- Registered one temporary triggerless Scheduled Task using the reviewed permanent action and current-operator `Interactive`/limited principal, observed it dormant, and issued exactly one manual start. The temporary task executed once, the permanent task executed zero times, and no duplicate occurred.
+- Read-only production migration preflight through `20260714122230`, roles/schema/data/migration-schema/migration-data native dumps, the unchanged six-file package, ZIP, age encryption, atomic publication, checksum/status, Sunday weekly promotion, retention, and plaintext/temp cleanup passed.
+- Published `project-local-production-20260816T203034Z-c438e330.zip.age` at `62622` bytes to daily and weekly locations. Independent SHA-256 recomputation matched `dfdbb535fc41098e411d0a2b70bbe11c1ef60e2fc6d4601b16d420e6ece72a15`; daily artifacts changed `1 -> 2`, weekly `0 -> 1`, and retention correctly deleted zero files below its thresholds.
+- Production was read but not mutated; no migration, restore, staging access, email, application data, Vercel, Resend, DNS, or Auth change occurred. The temporary task was removed and no plaintext SQL/ZIP, `.partial`, decrypted material, native process, or repository artifact remained.
+
 ## Iteration 12.35 - Windows Recurring Backup Operations
 
 Summary:

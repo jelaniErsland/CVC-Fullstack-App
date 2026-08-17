@@ -30,8 +30,8 @@ function assertIncludes(source, needle, label) {
 
 async function main() {
   assert.equal(PRODUCTION_RECOVERY_READINESS_AVAILABLE, true);
-  assert.equal(PRODUCTION_RECOVERY_READINESS_COMPLETE, false);
-  assert.equal(PRODUCTION_RECOVERY_READINESS_DECISION, "NO-GO");
+  assert.equal(PRODUCTION_RECOVERY_READINESS_COMPLETE, true);
+  assert.equal(PRODUCTION_RECOVERY_READINESS_DECISION, "GO");
   assert.equal(PRODUCTION_RECOVERY_CAN_ACCESS_PRODUCTION, false);
   assert.equal(PRODUCTION_RECOVERY_CAN_MUTATE_PRODUCTION, false);
   assert.equal(PRODUCTION_RECOVERY_CAN_PERFORM_RESTORE, false);
@@ -52,15 +52,13 @@ async function main() {
   assert.equal(productionRecoveryBaseline.migration, "20260714122230");
   assert.equal(productionRecoveryBaseline.emailTransport, "disabled");
 
-  assert.equal(productionRecoveryReadinessSummary.decision, "NO-GO");
-  assert.equal(productionRecoveryReadinessSummary.complete, false);
+  assert.equal(productionRecoveryReadinessSummary.decision, "GO");
+  assert.equal(productionRecoveryReadinessSummary.complete, true);
 
   const statuses = new Set(productionRecoveryReadinessItems.map((item) => item.status));
   for (const status of [
     "documented",
-    "configuration_required",
     "proven",
-    "blocked",
   ]) {
     assert(statuses.has(status), `Production recovery readiness does not exercise status ${status}.`);
   }
@@ -88,13 +86,7 @@ async function main() {
   for (const item of productionRecoveryReadinessItems) {
     assert(item.evidence.length > 0, `${item.id} needs evidence.`);
     assert(item.requiredAction.length > 32, `${item.id} needs a concrete required action.`);
-    if (
-      item.status === "operator_evidence_required" ||
-      item.status === "restore_test_required" ||
-      item.status === "blocked"
-    ) {
-      assert.equal(item.blocking, true, `${item.id} must block launch until resolved.`);
-    }
+    assert.equal(item.blocking, false, `${item.id} must be non-blocking after reconciliation.`);
   }
 
   const observability = productionRecoveryReadinessItems.find(
@@ -136,13 +128,16 @@ async function main() {
     (item) => item.id === "backup_availability",
   );
   assert(backupAvailability, "Recovery readiness is missing backup availability.");
-  assert.equal(backupAvailability.status, "configuration_required");
-  assert.equal(backupAvailability.blocking, true);
+  assert.equal(backupAvailability.status, "proven");
+  assert.equal(backupAvailability.blocking, false);
   assert.match(JSON.stringify(backupAvailability.evidence), /daily at 03:15 local time/i);
   assert.match(JSON.stringify(backupAvailability.evidence), /StartWhenAvailable/i);
   assert.match(JSON.stringify(backupAvailability.evidence), /human-visible notification confirmation/i);
-  assert.match(JSON.stringify(backupAvailability.evidence), /migration_preflight_failed/i);
-  assert.match(JSON.stringify(backupAvailability.evidence), /produced no new encrypted artifact/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /12\.35\.11/);
+  assert.match(JSON.stringify(backupAvailability.evidence), /62622 bytes/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /dfdbb535fc41098e411d0a2b70bbe11c1ef60e2fc6d4601b16d420e6ece72a15/i);
+  assert.match(JSON.stringify(backupAvailability.evidence), /12\.35\.12/);
+  assert.match(JSON.stringify(backupAvailability.evidence), /enabled the unchanged permanent task/i);
 
   const automation = productionRecoveryReadinessItems.find(
     (item) => item.id === "independent_backup_automation_foundation",
@@ -153,6 +148,7 @@ async function main() {
   assert.match(JSON.stringify(automation.evidence), /current Windows operator must be logged in/i);
   assert.match(JSON.stringify(automation.evidence), /wake\/login/i);
   assert.match(JSON.stringify(automation.evidence), /awake but offline.*starts and fails safely/i);
+  assert.match(JSON.stringify(automation.evidence), /no catch-up-on-enable/i);
 
   const restoreProcedure = productionRecoveryReadinessItems.find(
     (item) => item.id === "restore_procedure",
@@ -180,6 +176,15 @@ async function main() {
   assert.match(JSON.stringify(restoreTest.evidence), /TRUNCATE bypasses RLS|direct TRUNCATE grants/i);
   assert.match(JSON.stringify(restoreTest.evidence), /full independent technical recovery is proven/i);
   assert.match(JSON.stringify(restoreTest.evidence), /Auth platform configuration.*Storage object BLOB recovery/i);
+
+  const launchStatus = productionRecoveryReadinessItems.find(
+    (item) => item.id === "recovery_launch_status",
+  );
+  assert(launchStatus, "Recovery readiness is missing its reconciled launch status.");
+  assert.equal(launchStatus.status, "proven");
+  assert.equal(launchStatus.blocking, false);
+  assert.match(JSON.stringify(launchStatus.evidence), /backup\/recovery is complete and non-blocking/i);
+  assert.match(JSON.stringify(launchStatus.evidence), /overall launch remains NO-GO/i);
 
   const [
     contract,
@@ -240,6 +245,8 @@ async function main() {
   assertIncludes(runbook, "daily at `03:15` local time", "backup/recovery runbook");
   assertIncludes(runbook, "StartWhenAvailable", "backup/recovery runbook");
   assertIncludes(runbook, "migration_preflight_failed", "backup/recovery runbook");
+  assertIncludes(runbook, "project-local-production-20260816T203034Z-c438e330.zip.age", "backup/recovery runbook");
+  assertIncludes(runbook, "RECOVERY READY / NON-BLOCKING", "backup/recovery runbook");
   assertIncludes(runbook, "human-visible Windows notification", "backup/recovery runbook");
   assertIncludes(runbook, "Project Local product/operator owner", "backup/recovery runbook");
 
@@ -262,7 +269,7 @@ async function main() {
     assert(!source.includes("productionRecoveryReadiness"), `${file} must not import the production recovery readiness contract.`);
   }
 
-  console.log("Production recovery readiness contract is server-only, route-unused, NO-GO honest, and documentation-backed.");
+  console.log("Production recovery readiness is server-only, route-unused, complete for its dimension, and overall-NO-GO honest.");
 }
 
 main().catch((error) => {

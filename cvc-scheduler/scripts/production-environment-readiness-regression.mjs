@@ -141,12 +141,15 @@ async function main() {
     (item) => item.id === "backup_recovery",
   );
   assert(backupRecovery, "Production readiness is missing backup/recovery.");
-  assert.equal(backupRecovery.status, "configuration_required");
-  assert.equal(backupRecovery.blocking, true);
+  assert.equal(backupRecovery.status, "proven");
+  assert.equal(backupRecovery.blocking, false);
   assert.match(JSON.stringify(backupRecovery.evidence), /2026-08-12T17:26:46\.3144615Z/);
   assert.match(JSON.stringify(backupRecovery.evidence), /full independent technical recovery is proven/i);
   assert.match(JSON.stringify(backupRecovery.evidence), /daily 03:15 StartWhenAvailable task registration/i);
-  assert.match(JSON.stringify(backupRecovery.evidence), /migration_preflight_failed/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /12\.35\.11/);
+  assert.match(JSON.stringify(backupRecovery.evidence), /five credential-safe native dump stages/i);
+  assert.match(JSON.stringify(backupRecovery.evidence), /12\.35\.12/);
+  assert.match(JSON.stringify(backupRecovery.evidence), /enables the unchanged permanent daily task/i);
   assert.match(JSON.stringify(backupRecovery.evidence), /Auth platform configuration.*Storage object BLOB recovery/i);
 
   const [

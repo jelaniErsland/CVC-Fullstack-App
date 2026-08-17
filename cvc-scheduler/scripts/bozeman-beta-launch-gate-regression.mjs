@@ -163,7 +163,9 @@ async function main() {
   assert.match(JSON.stringify(productionEnvironment.evidence), /production execution remains deferred/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /full independent technical recovery/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /recurring task registration/i);
-  assert.match(JSON.stringify(productionEnvironment.evidence), /migration_preflight_failed/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.11/);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.12/);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/recovery is complete and non-blocking/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

@@ -18,8 +18,8 @@ export type ProductionRecoveryReadinessItem = Readonly<{
 }>;
 
 export const PRODUCTION_RECOVERY_READINESS_AVAILABLE = true;
-export const PRODUCTION_RECOVERY_READINESS_DECISION = "NO-GO" as const;
-export const PRODUCTION_RECOVERY_READINESS_COMPLETE = false;
+export const PRODUCTION_RECOVERY_READINESS_DECISION = "GO" as const;
+export const PRODUCTION_RECOVERY_READINESS_COMPLETE = true;
 export const PRODUCTION_RECOVERY_CAN_ACCESS_PRODUCTION = false;
 export const PRODUCTION_RECOVERY_CAN_MUTATE_PRODUCTION = false;
 export const PRODUCTION_RECOVERY_CAN_PERFORM_RESTORE = false;
@@ -89,22 +89,25 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   },
   {
     id: "backup_availability",
-    title: "Supabase-managed backup availability and retention",
-    status: "configuration_required",
-    blocking: true,
+    title: "Independent backup availability and retention",
+    status: "proven",
+    blocking: false,
     evidence: [
       "operator dashboard evidence confirms project-local-production/wdlaauzknfggoqldolmx is on the Free plan",
       "Supabase Scheduled backups page states: Free Plan does not include project backups",
       "upgrading to Pro provides up to 7 days of scheduled backups",
-      "12.35 registered one enabled current-operator Interactive Task Scheduler task for the independent path, daily at 03:15 local time with StartWhenAvailable enabled",
+      "12.35 registered the current-operator Interactive Task Scheduler task for the independent path, daily at 03:15 local time with StartWhenAvailable enabled",
       "12.34 produced the first independent age-encrypted production logical backup at 2026-08-12T17:26:46.3144615Z",
       "12.35 proved credential-free atomic failure status, Windows notification emission, a deterministic pre-network scheduled failure, zero fixture artifact, complete temporary-task cleanup, and Jelani's human-visible notification confirmation",
-      "the single authorized scheduled production backup attempt returned failure at migration_preflight_failed and produced no new encrypted artifact, so scheduled backup success, new checksum, and retention execution are not proven",
+      "the historical 12.35 scheduled attempt failed safely at migration_preflight_failed and produced no artifact",
+      "12.35.11 then ran exactly one controlled triggerless Task Scheduler production backup through the reviewed principal and action boundary; all five native dump stages, the six-file package, age encryption, atomic publication, checksum, Sunday weekly promotion, retention, and plaintext cleanup passed",
+      "the 12.35.11 artifact project-local-production-20260816T203034Z-c438e330.zip.age is 62622 bytes and its independently recomputed SHA-256 matches dfdbb535fc41098e411d0a2b70bbe11c1ef60e2fc6d4601b16d420e6ece72a15 in both daily and weekly locations",
+      "12.35.12 proved on a harmless disabled daily clone that enabling after a missed occurrence does not catch up on this host, then enabled the unchanged permanent task without execution for its next future 03:15 occurrence",
       "Supabase Pro remains optional",
       "Supabase Pro managed backups are optional, not a mandatory initial beta prerequisite",
     ],
     requiredAction:
-      "Before real Bozeman data is provisioned, diagnose the credential-free migration-preflight failure and obtain separate authorization to prove one successful Task Scheduler backup, checksum, and retention execution; the optional Supabase-managed Pro path remains available.",
+      "Preserve the enabled reviewed task, current-operator DPAPI boundary, daily/weekly retention, safe status and failure notification, and periodic disposable recovery drill; the optional Supabase-managed Pro path remains available.",
   },
   {
     id: "independent_backup_path",
@@ -127,7 +130,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "database backups do not automatically prove Supabase Storage object recovery",
     ],
     requiredAction:
-      "Preserve the proven six-file recovery, exact ACL contract, safe failure notification, and named ownership; separately prove one successful scheduled backup before real Bozeman data.",
+      "Preserve the proven six-file recovery, exact ACL contract, safe failure notification, named ownership, and enabled recurring task; repeat reviewed recovery proof after material package, migration, or privilege-contract changes.",
   },
   {
     id: "first_independent_backup",
@@ -152,13 +155,15 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "12.29 adds PowerShell scripts for DPAPI secret setup, guarded logical backup, Task Scheduler registration, and an explicit guarded local restore boundary",
       "normal regression requires no real Supabase credentials, OneDrive, age, Docker, production access, or running local Supabase",
       "scripts are route-unused and do not change application runtime behavior",
-      "12.35 registers one enabled current-operator Interactive task daily at 03:15 local time with StartWhenAvailable, exact production locks, failure notification, and no database credential or private age identity in task arguments",
+      "12.35 registered one current-operator Interactive task daily at 03:15 local time with StartWhenAvailable, exact production locks, failure notification, and no database credential or private age identity in task arguments",
       "the current Windows operator must be logged in; a missed 03:15 start while asleep, powered off, or logged out runs when the task is next available after wake/login",
       "if the operator is logged in and the PC is awake but offline, the task starts and fails safely at its connection preflight; restored connectivity does not itself retry that run",
       "atomic status and notification records, unexpected-task replacement refusal, and the deterministic pre-network scheduled failure seam are regression-proven",
+      "12.35.11 proved the Scheduled Task host, Interactive/Limited principal, action, exact target locks, native dump, encrypted publication, checksum, retention, and cleanup path in one successful controlled production execution",
+      "12.35.12 proved no catch-up-on-enable for a genuinely missed disabled occurrence on this host and enabled the unchanged permanent task Ready for the next future daily 03:15 occurrence without advancing LastRunTime",
     ],
     requiredAction:
-      "Preserve the registered task and operator-only secret boundary; diagnose the scheduled migration-preflight failure before a separately authorized successful execution proof.",
+      "Preserve the enabled task, exact action and target locks, Interactive/Limited principal, IgnoreNew concurrency rule, StartWhenAvailable policy, operator-only secret boundary, and daily operator review of status/failure evidence.",
   },
   {
     id: "point_in_time_recovery",
@@ -276,18 +281,20 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
   {
     id: "recovery_launch_status",
     title: "Recovery readiness launch status",
-    status: "blocked",
-    blocking: true,
+    status: "proven",
+    blocking: false,
     evidence: [
-      "production backup configuration is confirmed blocked by the current Free plan",
+      "Supabase-managed backups are unavailable on the current Free plan, but the reviewed independent encrypted path is the approved initial-beta backup strategy",
       "the preferred independent path has produced its first successful encrypted production backup and full technical recovery is proven through deterministic source ACL reconstruction and recovery-forward migration 20260812123430",
       "at least one reviewed backup path must be proven before real Bozeman data",
-      "recurring task registration, failure notification, and recovery/rollback ownership are proven, but the one authorized scheduled production execution failed safely at migration_preflight_failed and produced no artifact",
+      "12.35.11 proves one successful credential-safe Scheduled Task production execution, all native dump/package/encryption/checksum/retention stages, and zero plaintext residue",
+      "12.35.12 safely enables the permanent daily task after a harmless missed-trigger proof showed no catch-up execution on this Windows host",
+      "recurring task registration, human-visible failure notification, duplicate protection, and recovery/rollback ownership are proven",
       "real Bozeman product data remains unprovisioned",
-      "launch remains NO-GO",
+      "backup/recovery is complete and non-blocking, while overall launch remains NO-GO for unrelated application-email, production-migration/health-check, provisioning, pilot, and explicit launch-approval gates",
     ],
     requiredAction:
-      "Keep launch blocked until one successful scheduled backup execution, application email, provisioning, production notification-health execution, and pilot evidence pass. The safe failure notification, named recovery ownership, independent technical recovery path, product-owner UI, and initial-beta observability architecture are already proven; Supabase Pro remains optional.",
+      "Keep the backup/recovery dimension non-blocking while preserving the enabled task, encrypted artifacts, status/checksum evidence, recovery drill, and named ownership; do not infer overall launch approval from this completed dimension.",
   },
 ];
 
@@ -296,6 +303,6 @@ export const productionRecoveryReadinessSummary = {
   complete: PRODUCTION_RECOVERY_READINESS_COMPLETE,
   baseline: productionRecoveryBaseline,
   reason:
-    "The first independent encrypted production backup, full independent technical recovery, recurring task registration, human-confirmed safe failure notification, and recovery/rollback ownership are proven. Operational readiness remains incomplete because the single authorized scheduled production execution failed at migration preflight and produced no new encrypted artifact; PITR is unavailable and not required for the initial beta.",
+    "Backup/recovery is complete and non-blocking: independent encrypted production backup, credential-safe scheduled-host execution, five native dump stages, six-file packaging, encryption, publication, checksum, daily/weekly retention, plaintext cleanup, full disposable technical recovery, safe human-confirmed failure notification, enabled recurrence, and recovery/rollback ownership are proven. PITR remains unavailable and unnecessary for the initial beta; overall launch remains separately NO-GO.",
   items: productionRecoveryReadinessItems,
 } as const;

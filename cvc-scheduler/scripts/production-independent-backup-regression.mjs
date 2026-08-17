@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 
 const root = process.cwd();
 const backupDir = path.join(root, "scripts", "production-backup");
@@ -21,6 +22,8 @@ const fixtureCredentials = [
   "synthetic Password123",
   "synthetic@:/#%?+ Password123",
   "syntheticScramVerifier123",
+  "ProjectLocalDumpBoundaryMarker123",
+  "ProjectLocalParentPasswordBoundary123",
 ];
 
 async function read(relativePath) {
@@ -43,14 +46,17 @@ function assertOrder(source, before, after, label) {
   assert(beforeIndex < afterIndex, `${label} expected ${before} before ${after}.`);
 }
 
-function runPowerShell(args, { expectSuccess }) {
+function runPowerShell(args, { expectSuccess, env = {}, unsetEnv = [] }) {
+  const childEnvironment = {
+    ...process.env,
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    ...env,
+  };
+  for (const name of unsetEnv) delete childEnvironment[name];
   const result = spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args], {
     cwd: root,
     encoding: "utf8",
-    env: {
-      ...process.env,
-      SUPABASE_SERVICE_ROLE_KEY: "",
-    },
+    env: childEnvironment,
   });
   const combined = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
   for (const fixtureCredential of fixtureCredentials) {
@@ -88,6 +94,293 @@ async function assertNoRouteImports() {
     assert(!source.includes("production-backup"), `${path.relative(root, file)} must not import production backup scripts.`);
     assert(!source.includes("ProjectLocalProductionBackup"), `${path.relative(root, file)} must not import production backup scripts.`);
   }
+}
+
+function runLocalCommand(file, args, { expectSuccess = true } = {}) {
+  const result = spawnSync(file, args, { cwd: root, encoding: "utf8" });
+  const combined = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
+  for (const fixtureCredential of fixtureCredentials) {
+    assert(!combined.includes(fixtureCredential), `${file} output exposed a synthetic credential.`);
+  }
+  if (expectSuccess) {
+    assert.equal(result.status, 0, combined);
+  } else {
+    assert.notEqual(result.status, 0, `Expected ${file} to fail closed.`);
+  }
+  return combined;
+}
+
+async function runNativeDumpLoopbackProof() {
+  const fixturePassword = "ProjectLocalDumpBoundaryMarker123";
+  const containerName = `project-local-native-dump-${process.pid}-${Date.now()}`;
+  const proofRoot = await mkdtemp(path.join(tmpdir(), "project-local-native-dump-proof-"));
+  const argumentAuditPath = path.join(proofRoot, "native-dump-arguments.ndjson");
+  const connectionFailureAuditPath = path.join(proofRoot, "connection-failure-arguments.ndjson");
+  const authenticationFailureAuditPath = path.join(proofRoot, "authentication-failure-arguments.ndjson");
+  const launchFailureAuditPath = path.join(proofRoot, "launch-failure-environment.ndjson");
+  const tempPrefix = "project-local-backup-fixture-";
+  const platformOwnerQuery = "SELECT string_agg(n.nspname || '|' || pg_get_userbyid(n.nspowner), ',' ORDER BY n.nspname) FROM pg_namespace n WHERE n.nspname IN ('auth','storage')";
+  let containerStarted = false;
+  let fixtureSetupAttempted = false;
+  let originalPlatformOwners = null;
+  let originalPlatformObjectCount = null;
+  let optionalSchemasBefore = [];
+  try {
+    runLocalCommand("docker", ["version", "--format", "{{.Server.Version}}"]);
+    runLocalCommand("docker", [
+      "run", "--detach", "--name", containerName,
+      "--publish", "127.0.0.1::5432",
+      "--env", `POSTGRES_PASSWORD=${fixturePassword}`,
+      "public.ecr.aws/supabase/postgres:17.6.1.158",
+    ]);
+    containerStarted = true;
+    let consecutiveReadyChecks = 0;
+    for (let attempt = 0; attempt < 60 && consecutiveReadyChecks < 3; attempt += 1) {
+      const probe = spawnSync("docker", ["exec", containerName, "pg_isready", "-U", "postgres", "-d", "postgres"], { cwd: root, encoding: "utf8" });
+      if (probe.status === 0) {
+        consecutiveReadyChecks += 1;
+      } else {
+        consecutiveReadyChecks = 0;
+      }
+      await delay(750);
+    }
+    assert.equal(consecutiveReadyChecks, 3, "Disposable native-dump PostgreSQL fixture did not become stably ready.");
+    const portOutput = runLocalCommand("docker", ["port", containerName, "5432/tcp"]);
+    const portMatch = portOutput.match(/127\.0\.0\.1:(\d+)/);
+    assert(portMatch, "Disposable native-dump fixture did not expose a loopback port.");
+    const fixturePort = Number.parseInt(portMatch[1], 10);
+    assert(fixturePort > 0 && fixturePort <= 65535);
+
+    originalPlatformOwners = runLocalCommand("docker", [
+      "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c", platformOwnerQuery,
+    ]).trim();
+    assert.equal(originalPlatformOwners, "auth|supabase_admin,storage|supabase_admin", "Disposable Supabase platform schema owners were unexpected.");
+    originalPlatformObjectCount = runLocalCommand("docker", [
+      "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c",
+      "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname IN ('auth','storage')",
+    ]).trim();
+    optionalSchemasBefore = runLocalCommand("docker", [
+      "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c",
+      "SELECT nspname FROM pg_namespace WHERE nspname IN ('supabase_functions','supabase_migrations') ORDER BY nspname",
+    ]).trim().split(/\r?\n/).filter(Boolean);
+    assert(!optionalSchemasBefore.includes("supabase_migrations"), "Disposable fixture already contains production-like migration state that the regression will not alter.");
+
+    const postgresFixtureSql = [
+      "DO $$ BEGIN IF to_regclass('auth.schema_migrations') IS NULL THEN RAISE EXCEPTION 'fixture_auth_migration_relation_missing'; END IF; IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'project_local_dump_fixture_role') THEN RAISE EXCEPTION 'fixture_role_collision'; END IF; END $$",
+      "CREATE ROLE project_local_dump_fixture_role",
+      "CREATE TABLE public.project_local_dump_fixture(id integer PRIMARY KEY, label text NOT NULL)",
+      "INSERT INTO public.project_local_dump_fixture VALUES (1, 'fixture-public-row')",
+      ...(!optionalSchemasBefore.includes("supabase_functions") ? [
+        "CREATE SCHEMA supabase_functions AUTHORIZATION postgres",
+        "CREATE TABLE supabase_functions.project_local_dump_fixture_data(id integer, label text)",
+        "INSERT INTO supabase_functions.project_local_dump_fixture_data VALUES (1, 'fixture-functions-row')",
+      ] : []),
+      "CREATE SCHEMA supabase_migrations AUTHORIZATION postgres",
+      "CREATE TABLE supabase_migrations.schema_migrations(version text NOT NULL)",
+      "INSERT INTO supabase_migrations.schema_migrations VALUES ('20991231235959')",
+    ].join("; ") + ";";
+    const platformOwnerFixtureSql = [
+      "CREATE TABLE auth.project_local_dump_fixture_data(id integer, label text)",
+      "INSERT INTO auth.project_local_dump_fixture_data VALUES (1, 'fixture-auth-row')",
+      "CREATE TABLE storage.project_local_dump_fixture_metadata(id integer, label text)",
+      "INSERT INTO storage.project_local_dump_fixture_metadata VALUES (1, 'fixture-storage-row')",
+    ].join("; ") + ";";
+    fixtureSetupAttempted = true;
+    runLocalCommand("docker", ["exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-v", "ON_ERROR_STOP=1", "-q", "-c", postgresFixtureSql]);
+    runLocalCommand("docker", ["exec", containerName, "psql", "-U", "supabase_admin", "-d", "postgres", "-X", "-v", "ON_ERROR_STOP=1", "-q", "-c", platformOwnerFixtureSql]);
+
+    const fixtureUrl = `postgresql://postgres:${encodeURIComponent(fixturePassword)}@127.0.0.1:${fixturePort}/postgres`;
+    const tempBefore = new Set((await readdir(tmpdir())).filter((name) => name.startsWith(tempPrefix)));
+    const successOutput = runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "NativeDumpPackageLoopback",
+      "-FixtureArgumentAuditPath", argumentAuditPath,
+    ], {
+      expectSuccess: true,
+      env: { PROJECT_LOCAL_NATIVE_DUMP_FIXTURE_URL: fixtureUrl },
+      unsetEnv: ["PGHOST", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PGSSLMODE", "PGOPTIONS", "PGCONNECT_TIMEOUT"],
+    });
+    assertIncludes(successOutput, "fixture_native_dump_package_ok", "native dump loopback package fixture");
+
+    const auditText = await readFile(argumentAuditPath, "utf8");
+    assert(!auditText.includes(fixturePassword), "Native dump argument audit exposed the synthetic password.");
+    assert(!/postgres(?:ql)?:\/\//i.test(auditText), "Native dump argument audit contained a credential-bearing URI.");
+    const auditRecords = auditText.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line.replace(/^\uFEFF/, "")));
+    const processAuditRecords = auditRecords.filter((record) => record.record_type === "process_arguments");
+    const environmentAuditRecords = auditRecords.filter((record) => record.record_type === "parent_environment");
+    assert.equal(processAuditRecords.length, 5, "Native dump package must launch exactly five database dump processes.");
+    assert.equal(environmentAuditRecords.length, 5, "Native dump package must restore the parent environment after all five processes.");
+    assert.deepEqual(processAuditRecords.map((record) => record.label).sort(), ["data", "migrations_data", "migrations_schema", "roles", "schema"]);
+    for (const record of processAuditRecords) {
+      assert.equal(record.password_environment_present, true, `${record.label} did not receive child-scoped PGPASSWORD.`);
+      assert.equal(record.fixture_url_environment_absent, true, `${record.label} inherited the synthetic connection URL.`);
+      assert.equal(record.password_argument_present, false, `${record.label} exposed the password in arguments.`);
+      assert.equal(record.credential_uri_argument_present, false, `${record.label} exposed a connection URI in arguments.`);
+      assert.equal(record.ssl_mode, "disable", `${record.label} did not use the loopback-only SSL override.`);
+      assert(Array.isArray(record.arguments) && record.arguments.length > 0, `${record.label} argument audit was empty.`);
+    }
+    for (const record of environmentAuditRecords) {
+      assert.equal(record.parent_environment_restored, true, `${record.label} did not restore the parent PostgreSQL environment.`);
+      assert.equal(record.pgpassword_present_before, false, `${record.label} unexpectedly began with parent PGPASSWORD.`);
+      assert.equal(record.pgpassword_present_after, false, `${record.label} left PGPASSWORD in the parent environment.`);
+      assert.equal(record.pgsslmode_present_before, false, `${record.label} unexpectedly began with parent PGSSLMODE.`);
+      assert.equal(record.pgsslmode_present_after, false, `${record.label} left PGSSLMODE in the parent environment.`);
+    }
+    const dataAudit = processAuditRecords.find((record) => record.label === "data");
+    assert(dataAudit.arguments.includes("auth.schema_migrations"), "Native data dump did not exclude auth migration state.");
+    assert(dataAudit.arguments.includes("storage.migrations"), "Native data dump did not exclude storage migration state.");
+    assert(dataAudit.arguments.includes("supabase_functions.migrations"), "Native data dump did not exclude functions migration state.");
+    assert(dataAudit.arguments.includes("storage.buckets_vectors"), "Native data dump did not exclude storage vector buckets.");
+    assert(dataAudit.arguments.includes("storage.vector_indexes"), "Native data dump did not exclude storage vector indexes.");
+
+    const connectionFailureUrl = `postgresql://postgres:${encodeURIComponent(fixturePassword)}@127.0.0.1:1/postgres`;
+    const connectionFailureOutput = runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "NativeDumpConnectionFailure",
+      "-FixtureArgumentAuditPath", connectionFailureAuditPath,
+    ], {
+      expectSuccess: false,
+      env: {
+        PROJECT_LOCAL_NATIVE_DUMP_FIXTURE_URL: connectionFailureUrl,
+        PGPASSWORD: "ProjectLocalParentPasswordBoundary123",
+        PGSSLMODE: "verify-full",
+        PGHOST: "parent.invalid",
+        PGPORT: "6543",
+        PGDATABASE: "parent_database",
+        PGUSER: "parent_user",
+        PGOPTIONS: "-c statement_timeout=12345",
+        PGCONNECT_TIMEOUT: "29",
+      },
+    });
+    assertIncludes(connectionFailureOutput, "dump_connection_or_authentication_failed_roles", "native dump connection failure fixture");
+    const connectionFailureAudit = await readFile(connectionFailureAuditPath, "utf8");
+    assert(!connectionFailureAudit.includes(fixturePassword), "Connection-failure argument audit exposed the synthetic password.");
+    const connectionFailureRecords = connectionFailureAudit.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line.replace(/^\uFEFF/, "")));
+    const connectionProcessAudit = connectionFailureRecords.find((record) => record.record_type === "process_arguments");
+    const connectionEnvironmentAudit = connectionFailureRecords.find((record) => record.record_type === "parent_environment");
+    assert.equal(connectionFailureRecords.length, 2, "Connection failure must audit and restore only the roles process.");
+    assert.equal(connectionProcessAudit.password_argument_present, false, "Connection failure exposed the password in arguments.");
+    assert.equal(connectionProcessAudit.credential_uri_argument_present, false, "Connection failure exposed a credential URI in arguments.");
+    assert.equal(connectionEnvironmentAudit.parent_environment_restored, true, "Connection failure did not restore the parent PostgreSQL environment.");
+    assert.equal(connectionEnvironmentAudit.pgpassword_present_before, true, "Connection failure did not exercise a pre-existing parent PGPASSWORD.");
+    assert.equal(connectionEnvironmentAudit.pgpassword_present_after, true, "Connection failure removed the pre-existing parent PGPASSWORD.");
+    assert.equal(connectionEnvironmentAudit.pgsslmode_present_before, true, "Connection failure did not exercise a pre-existing parent PGSSLMODE.");
+    assert.equal(connectionEnvironmentAudit.pgsslmode_present_after, true, "Connection failure removed the pre-existing parent PGSSLMODE.");
+
+    const wrongPasswordUrl = `postgresql://postgres:${encodeURIComponent(`${fixturePassword}Wrong`)}@127.0.0.1:${fixturePort}/postgres`;
+    const authenticationFailureOutput = runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "NativeDumpAuthenticationFailure",
+      "-FixtureArgumentAuditPath", authenticationFailureAuditPath,
+    ], {
+      expectSuccess: false,
+      env: {
+        PROJECT_LOCAL_NATIVE_DUMP_FIXTURE_URL: wrongPasswordUrl,
+        PGPASSWORD: "ProjectLocalParentPasswordBoundary123",
+        PGSSLMODE: "verify-full",
+        PGHOST: "parent.invalid",
+        PGPORT: "6543",
+        PGDATABASE: "parent_database",
+        PGUSER: "parent_user",
+        PGOPTIONS: "-c statement_timeout=12345",
+        PGCONNECT_TIMEOUT: "29",
+      },
+    });
+    assertIncludes(authenticationFailureOutput, "dump_connection_or_authentication_failed_roles", "native dump authentication failure fixture");
+    const authenticationFailureAudit = await readFile(authenticationFailureAuditPath, "utf8");
+    assert(!authenticationFailureAudit.includes(`${fixturePassword}Wrong`), "Authentication-failure argument audit exposed the synthetic password.");
+    const authenticationFailureRecords = authenticationFailureAudit.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line.replace(/^\uFEFF/, "")));
+    const authenticationProcessAudit = authenticationFailureRecords.find((record) => record.record_type === "process_arguments");
+    const authenticationEnvironmentAudit = authenticationFailureRecords.find((record) => record.record_type === "parent_environment");
+    assert.equal(authenticationFailureRecords.length, 2, "Authentication failure must audit and restore only the roles process.");
+    assert.equal(authenticationProcessAudit.password_argument_present, false, "Authentication failure exposed the password in arguments.");
+    assert.equal(authenticationProcessAudit.credential_uri_argument_present, false, "Authentication failure exposed a credential URI in arguments.");
+    assert.equal(authenticationEnvironmentAudit.parent_environment_restored, true, "Authentication failure did not restore the parent PostgreSQL environment.");
+    assert.equal(authenticationEnvironmentAudit.pgpassword_present_before, true, "Authentication failure did not exercise a pre-existing parent PGPASSWORD.");
+    assert.equal(authenticationEnvironmentAudit.pgpassword_present_after, true, "Authentication failure removed the pre-existing parent PGPASSWORD.");
+    assert.equal(authenticationEnvironmentAudit.pgsslmode_present_before, true, "Authentication failure did not exercise a pre-existing parent PGSSLMODE.");
+    assert.equal(authenticationEnvironmentAudit.pgsslmode_present_after, true, "Authentication failure removed the pre-existing parent PGSSLMODE.");
+
+    const launchFailureOutput = runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "NativeDumpLaunchFailure",
+      "-FixtureArgumentAuditPath", launchFailureAuditPath,
+    ], {
+      expectSuccess: false,
+      env: {
+        PROJECT_LOCAL_NATIVE_DUMP_FIXTURE_URL: fixtureUrl,
+        PGPASSWORD: "ProjectLocalParentPasswordBoundary123",
+        PGSSLMODE: "verify-full",
+      },
+    });
+    assertIncludes(launchFailureOutput, "dump_executable_unavailable_roles", "native dump launch failure fixture");
+    const launchFailureAudit = await readFile(launchFailureAuditPath, "utf8");
+    assert(!launchFailureAudit.includes(fixturePassword), "Launch-failure environment audit exposed the synthetic password.");
+    const launchFailureRecords = launchFailureAudit.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line.replace(/^\uFEFF/, "")));
+    assert.equal(launchFailureRecords.length, 1, "Launch failure must not record a process argument boundary.");
+    assert.equal(launchFailureRecords[0].record_type, "parent_environment");
+    assert.equal(launchFailureRecords[0].parent_environment_restored, true, "Launch failure did not preserve the parent environment.");
+    assert.equal(launchFailureRecords[0].pgpassword_present_before, true, "Launch failure did not exercise a pre-existing parent PGPASSWORD.");
+    assert.equal(launchFailureRecords[0].pgpassword_present_after, true, "Launch failure removed the pre-existing parent PGPASSWORD.");
+    assert.equal(launchFailureRecords[0].pgsslmode_present_before, true, "Launch failure did not exercise a pre-existing parent PGSSLMODE.");
+    assert.equal(launchFailureRecords[0].pgsslmode_present_after, true, "Launch failure removed the pre-existing parent PGSSLMODE.");
+
+    const tempAfter = (await readdir(tmpdir())).filter((name) => name.startsWith(tempPrefix) && !tempBefore.has(name));
+    assert.deepEqual(tempAfter, [], "Native dump fixture left a plaintext temporary package directory.");
+  } finally {
+    if (containerStarted) {
+      try {
+        if (fixtureSetupAttempted) {
+          const platformOwnerCleanupSql = [
+            "DROP TABLE IF EXISTS auth.project_local_dump_fixture_data",
+            "DROP TABLE IF EXISTS storage.project_local_dump_fixture_metadata",
+          ].join("; ") + ";";
+          runLocalCommand("docker", ["exec", containerName, "psql", "-U", "supabase_admin", "-d", "postgres", "-X", "-v", "ON_ERROR_STOP=1", "-q", "-c", platformOwnerCleanupSql]);
+          const postgresCleanupSql = [
+            "DROP TABLE IF EXISTS public.project_local_dump_fixture",
+            "DROP TABLE IF EXISTS supabase_functions.project_local_dump_fixture_data",
+            "DROP TABLE IF EXISTS supabase_migrations.schema_migrations",
+            ...(!optionalSchemasBefore.includes("supabase_functions") ? ["DROP SCHEMA IF EXISTS supabase_functions"] : []),
+            ...(!optionalSchemasBefore.includes("supabase_migrations") ? ["DROP SCHEMA IF EXISTS supabase_migrations"] : []),
+            "DROP ROLE IF EXISTS project_local_dump_fixture_role",
+          ].join("; ") + ";";
+          runLocalCommand("docker", ["exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-v", "ON_ERROR_STOP=1", "-q", "-c", postgresCleanupSql]);
+          const fixtureResidue = runLocalCommand("docker", [
+            "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c",
+            "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE (n.nspname, c.relname) IN (('public','project_local_dump_fixture'),('auth','project_local_dump_fixture_data'),('storage','project_local_dump_fixture_metadata'),('supabase_functions','project_local_dump_fixture_data'),('supabase_migrations','schema_migrations'))",
+          ]).trim();
+          assert.equal(fixtureResidue, "0", "Fixture-owned database objects were not removed.");
+          const optionalSchemasAfter = runLocalCommand("docker", [
+            "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c",
+            "SELECT nspname FROM pg_namespace WHERE nspname IN ('supabase_functions','supabase_migrations') ORDER BY nspname",
+          ]).trim().split(/\r?\n/).filter(Boolean);
+          assert.deepEqual(optionalSchemasAfter, optionalSchemasBefore, "Fixture-created optional schemas were not restored to their original state.");
+          const finalPlatformOwners = runLocalCommand("docker", [
+            "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c", platformOwnerQuery,
+          ]).trim();
+          assert.equal(finalPlatformOwners, originalPlatformOwners, "Platform schema ownership changed during the fixture run.");
+          const finalPlatformObjectCount = runLocalCommand("docker", [
+            "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c",
+            "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname IN ('auth','storage')",
+          ]).trim();
+          assert.equal(finalPlatformObjectCount, originalPlatformObjectCount, "Pre-existing platform object inventory changed during the fixture run.");
+          const authMigrationRelation = runLocalCommand("docker", [
+            "exec", containerName, "psql", "-U", "postgres", "-d", "postgres", "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c", "SELECT to_regclass('auth.schema_migrations') IS NOT NULL",
+          ]).trim();
+          assert.equal(authMigrationRelation, "t", "Pre-existing auth migration state was damaged by the fixture.");
+        }
+      } finally {
+        spawnSync("docker", ["rm", "--force", containerName], { cwd: root, encoding: "utf8" });
+      }
+    }
+    await rm(proofRoot, { recursive: true, force: true });
+  }
+  const remaining = spawnSync("docker", ["ps", "-a", "--filter", `name=^/${containerName}$`, "--format", "{{.Names}}"], { cwd: root, encoding: "utf8" });
+  assert.equal((remaining.stdout ?? "").trim(), "", "Native dump diagnostic container was not removed.");
 }
 
 async function main() {
@@ -146,10 +439,15 @@ async function main() {
   assertIncludes(backup, "ConvertTo-SecureString", "backup script");
   assertIncludes(backup, "ProjectLocalProductionConnection.ps1", "backup script");
   assertIncludes(backup, "ConvertTo-NativeArgumentString", "backup script");
-  assertIncludes(backup, "--role-only", "backup script");
-  assertIncludes(backup, "--use-copy", "backup script");
-  assertIncludes(backup, "Get-Command \"docker\"", "backup script");
-  assertIncludes(backup, "docker_preflight", "backup script");
+  assertIncludes(backup, "Invoke-ProjectLocalNativeDumpPackage", "backup script");
+  assertIncludes(backup, "Invoke-ProjectLocalNativeDumpProcess", "backup script");
+  assertIncludes(backup, "Get-Command \"pg_dump\"", "backup script");
+  assertIncludes(backup, "Get-Command \"pg_dumpall\"", "backup script");
+  assertIncludes(backup, "--roles-only", "backup script");
+  assertIncludes(backup, "--data-only", "backup script");
+  assertIncludes(backup, "--file", "backup script");
+  assertIncludes(backup, 'dumpTool = "postgresql-native"', "backup script");
+  assertIncludes(backup, 'dockerPreflight = "not_required_native_dump"', "backup script");
   assertIncludes(backup, "supabase_migrations", "backup script");
   assertIncludes(backup, "storage.buckets_vectors", "backup script");
   assertIncludes(backup, "storage.vector_indexes", "backup script");
@@ -166,15 +464,35 @@ async function main() {
   assertIncludes(backup, "current_database()", "backup script");
   assertIncludes(backup, "Invoke-ProjectLocalMigrationPreflight", "backup script");
   assertIncludes(backup, "BEGIN TRANSACTION READ ONLY", "backup script");
+  assertIncludes(backup, "to_regclass('supabase_migrations.schema_migrations')", "backup script");
+  assertIncludes(backup, "migration_relation_present", "backup script");
   assertIncludes(backup, 'EnvironmentVariables["PGPASSWORD"]', "backup script");
   assertIncludes(backup, 'EnvironmentVariables["PGOPTIONS"] = "-c default_transaction_read_only=on"', "backup script");
   assertIncludes(backup, 'EnvironmentVariables["PGSSLMODE"]', "backup script");
   assertIncludes(backup, 'EnvironmentVariables.Remove($name)', "backup script");
   assertIncludes(backup, "migration_preflight_query_failed", "backup script");
   assertIncludes(backup, "migration_preflight_output_invalid", "backup script");
+  assertIncludes(backup, "migration_preflight_history_missing", "backup script");
   assertIncludes(backup, "migration_preflight_history_invalid", "backup script");
   assertIncludes(backup, "migration_preflight_mismatch", "backup script");
   assertNotIncludes(backup, '@("db", "query"', "backup script");
+  assertNotIncludes(backup, '"--db-url"', "backup script");
+  assertNotIncludes(backup, '"--password"', "backup script");
+  assertNotIncludes(backup, "$supabase.Source", "backup script");
+  assertIncludes(backup, "dump_argument_secret_detected", "backup script");
+  assertIncludes(backup, "dump_executable_unavailable", "backup script");
+  assertIncludes(backup, "dump_process_launch_failed", "backup script");
+  assertIncludes(backup, "dump_connection_or_authentication_failed", "backup script");
+  assertNotIncludes(backup, 'throw "dump_connection_failed_', "backup script");
+  assertNotIncludes(backup, 'throw "dump_authentication_failed_', "backup script");
+  assertIncludes(backup, "Write-ProjectLocalDumpEnvironmentAudit", "backup script");
+  assertIncludes(backup, "parent_environment_restored", "backup script");
+  assertIncludes(backup, "dump_process_failed", "backup script");
+  assertIncludes(backup, "dump_output_missing", "backup script");
+  assertIncludes(backup, "dump_output_empty", "backup script");
+  assertIncludes(backup, "dump_package_construction_failed", "backup script");
+  assertIncludes(backup, "PROJECT_LOCAL_NATIVE_DUMP_FIXTURE_URL", "backup script");
+  assertIncludes(backup, "fixture_url_environment_absent", "backup script");
   assertIncludes(backup, "Move-Item -LiteralPath $temporaryStatusPath", "backup script");
   assertIncludes(backup, "Remove-RecognizedBackups", "backup script");
   assertIncludes(backup, "finally", "backup script");
@@ -322,10 +640,10 @@ async function main() {
 
   assertIncludes(recoveryContract, "independent_backup_automation_foundation", "recovery contract");
   assertIncludes(recoveryContract, "Supabase Pro remains optional", "recovery contract");
-  assertIncludes(recoveryContract, "PITR is unavailable and not required", "recovery contract");
+  assertIncludes(recoveryContract, "PITR remains unavailable and unnecessary", "recovery contract");
   assertIncludes(envContract, "full independent technical recovery is proven", "environment contract");
   assertIncludes(envContract, "daily 03:15 StartWhenAvailable task registration", "environment contract");
-  assertIncludes(envContract, "migration_preflight_failed", "environment contract");
+  assertIncludes(envContract, "12.35.11 proves one successful controlled Task Scheduler production execution", "environment contract");
 
   assertIncludes(connectionValidator, '@("postgres", "postgresql")', "connection validator");
   assertIncludes(connectionValidator, '"postgres.$ExpectedProjectRef"', "connection validator");
@@ -472,6 +790,10 @@ async function main() {
   const residueRoot = await mkdtemp(path.join(tmpdir(), "project-local-backup-regression-"));
   await writeFile(path.join(residueRoot, "probe.txt"), "probe", "utf8");
   await rm(residueRoot, { recursive: true, force: true });
+
+  if (process.argv.includes("--native-dump-loopback")) {
+    await runNativeDumpLoopbackProof();
+  }
 
   console.log("Production independent backup foundation is route-unused, credential-free, guardrailed, fixture-safe, and NO-GO honest.");
 }

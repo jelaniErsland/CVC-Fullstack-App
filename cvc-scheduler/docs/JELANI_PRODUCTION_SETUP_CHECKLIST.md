@@ -167,12 +167,14 @@ Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBO
 - Completed in 12.34: safe status at `2026-08-12T17:26:46.3144615Z`, `62409` encrypted bytes, matching SHA-256, and daily/weekly recognition-based retention.
 - Completed through 12.34.3: managed-role compatibility, restore-interaction attribution, deterministic source ACL reconstruction, and full independent technical recovery-forward through `20260812123430`.
 - Completed in 12.35: registered the enabled daily `03:15` current-operator task with `StartWhenAvailable` and proved the credential-free, human-visible Windows failure notification.
-- Still required: diagnose `migration_preflight_failed` and separately authorize one successful scheduled backup/checksum/retention execution.
+- Completed in 12.35.11: one controlled scheduled-host production execution passed read-only preflight, all five native dumps, the unchanged six-file package, age encryption, `62622`-byte daily/weekly publication, matching SHA-256, retention, and plaintext cleanup.
+- Completed in 12.35.12: a harmless clone proved no catch-up-on-enable on this host, and the unchanged permanent task was enabled without execution for its next future daily `03:15` occurrence.
 - Preserve the proven managed-role and source ACL reconstruction procedures; do not skip or remove `roles.sql`.
 - Completed in 12.35: Jelani/the Project Local product-operator owner owns backup operations/failure response, database restore and Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation; engineering help does not transfer authority.
 - Supabase Pro managed backups are optional and may be chosen later if recurring usage justifies the subscription.
 - PITR is unavailable on the current Free plan and is intentionally not required for the initial Bozeman beta unless a later operational review changes that decision.
 - Add a separate backup plan before any Supabase Storage objects such as volunteer photos are enabled.
+- Backup/recovery is complete and non-blocking for the initial beta; preserve its enabled task, artifacts, status/checksum, notification, recovery drill, and ownership.
 - Confirm logging/alerts.
 - Preserve the proven Resend provider configuration, then complete and record the still-required Project Local application-driven delivery and monitoring evidence above. Direct dashboard delivery is not a substitute for the Initial email boundary proof.
 - Product-owner UI approval is complete through 12.30.1; preserve [`design/approved-project-local-ui`](./design/approved-project-local-ui/) and the six accepted desktop/390px review captures.
