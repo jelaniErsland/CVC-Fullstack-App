@@ -1,5 +1,11 @@
 # Project History
 
+## Iteration 12.43A - First Controlled Real Bozeman Scheduling Data Through Product UI
+
+- Completed the first production scheduling-data flow through the existing authenticated Bozeman product UI: created exactly one active schedule-ready volunteer profile, one active General reusable task preset with needed count one, one future timed preset-backed Calendar item, and one active volunteer assignment. Repository records contain no volunteer personal data.
+- Verified the Calendar item began as a private draft, assignment initialized the current response to `needs_response`, coverage remained derived at `1/1`, and the explicit publish action preserved the assignment and response state across reload and normal navigation.
+- Confirmed publication sent no email and created no intentional delivery. Application email remains disabled; no schedule-access bearer, response token issuance/reveal, Notification Health invocation, workspace/contact/grant mutation, direct SQL/table creation, service role, schema/migration/RPC/type change, staging access, or unrelated production record was used. Controlled app-driven Initial email, secure schedule access, volunteer response, and Notification Health proof remain next.
+
 ## Iteration 12.42.4 - Admin Navigation Feedback and Performance Wrap-Up
 
 - Recorded owner/operator production evidence: Supabase production is in Oregon (`us-west-2`); Vercel Functions were observed in `iad1`; the Vercel Function Region was manually changed to Portland (`pdx1`), and the same reviewed application was redeployed. Product-owner verification reports dramatically snappier authenticated admin navigation. No precise latency is claimed.
