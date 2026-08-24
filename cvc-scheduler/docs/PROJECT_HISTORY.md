@@ -1,5 +1,12 @@
 # Project History
 
+## Iteration 12.42.2 - Autonomous Admin Navigation Performance Debugging and Targeted Fix
+
+- Recorded that deployed 12.42.1 did not produce an owner-observed navigation speed improvement, then replaced repeated manual timing with a deterministic local harness over disposable active Auth/contact/workspace/canonical-main-scheduler fixtures. The harness records client/Auth/PostgREST-RPC call counts, dependency stages, concurrent groups, and critical paths at synthetic 100/250/400 ms remote latency for Overview, Tasks, Calendar, Volunteers, and Needs Attention.
+- Compared the pre-12.42.1 serial context, current concurrent three-read context, and a proposed single authenticated context RPC. The RPC reduces calls but leaves the current four-stage critical path unchanged on non-Calendar routes and the six-stage pre-fix Calendar path unchanged, so no migration/RPC/security surface was added.
+- Applied the smallest material source-only correction to Calendar: run its unchanged bounded core and capability-gated task selector together, then run its unchanged assignment picker and notification summary together after calendar item ids are known. Empty Calendar stays at eight calls and improves from six to five critical stages; the populated model stays at fourteen calls and improves from eleven to nine. At 100/250/400 ms synthetic latency, those paths improve from 600/1500/2400 to 500/1250/2000 ms and from 1100/2750/4400 to 900/2250/3600 ms respectively.
+- Preserved proxy and page Auth verification, RLS, active lifecycle/effective grants, exactly-one-workspace selectors, capability-gated optional readers, bounded query shapes, Assignment Detail, and independently fresh mutations. Duplicate Calendar task/assignment/response data families remain; no production performance claim, schema/migration/RPC/RLS/type/privilege/service-role/hosted/email/Notification Health/backup/workspace-switching change, commit, push, or deployment is included.
+
 ## Iteration 12.42.1 - Request-Scoped Verified Admin Context Performance Fix
 
 - Added one explicit server-only request context for persisted Dashboard, Tasks, Volunteers, Needs Attention, and Calendar page reads. Proxy Auth remains unchanged; the page keeps one cookie-bound Supabase client and now performs one fresh verified `auth.getUser()` instead of three before reusing that identity through explicit trusted-context seams.

@@ -777,16 +777,23 @@ export async function readCalendarRouteState(
     });
     if (!range) return unavailableState("invalid_period_or_range");
 
-    const query = await readCalendarReadModelWithClient({
-      client: verified.supabase as unknown as CalendarReadModelQueryClient,
-      workspaceId: workspaceSelection.workspace.id,
-      actorContactId: workspaceSelection.projectContactId,
-      workspaceTimezone: workspaceSelection.workspace.timezone,
-      rangeStart: range.rangeStart,
-      rangeEnd: range.rangeEnd,
-      periodKind: range.periodKind,
-      capabilities: workspaceSelection.capabilities,
-    });
+    const [query, taskPresetSelector] = await Promise.all([
+      readCalendarReadModelWithClient({
+        client: verified.supabase as unknown as CalendarReadModelQueryClient,
+        workspaceId: workspaceSelection.workspace.id,
+        actorContactId: workspaceSelection.projectContactId,
+        workspaceTimezone: workspaceSelection.workspace.timezone,
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd,
+        periodKind: range.periodKind,
+        capabilities: workspaceSelection.capabilities,
+      }),
+      readTaskPresetSelectorState({
+        supabase: verified.supabase,
+        workspaceId: workspaceSelection.workspace.id,
+        canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+      }),
+    ]);
 
     if (!query.ok) {
       return isUnavailableQueryFailure(query.reason)
@@ -797,17 +804,20 @@ export async function readCalendarRouteState(
     const readModelItems = query.items.filter((item) =>
       readModelItemOverlapsRouteRange(item, range),
     );
-    const taskPresetSelector = await readTaskPresetSelectorState({
-      supabase: verified.supabase,
-      workspaceId: workspaceSelection.workspace.id,
-      canViewTaskPresets: workspaceSelection.canViewTaskPresets,
-    });
-    const assignmentPicker = await readAssignmentPickerState({
-      supabase: verified.supabase,
-      workspaceId: workspaceSelection.workspace.id,
-      calendarItemIds: readModelItems.map((item) => item.calendarItemId),
-      canViewVolunteers: workspaceSelection.canViewVolunteers,
-    });
+    const calendarItemIds = readModelItems.map((item) => item.calendarItemId);
+    const [assignmentPicker, notificationState] = await Promise.all([
+      readAssignmentPickerState({
+        supabase: verified.supabase,
+        workspaceId: workspaceSelection.workspace.id,
+        calendarItemIds,
+        canViewVolunteers: workspaceSelection.canViewVolunteers,
+      }),
+      readInitialAssignmentNotificationState({
+        supabase: verified.supabase,
+        calendarItemIds,
+        canEditAssignments: workspaceSelection.canEditAssignments,
+      }),
+    ]);
     const assignmentsByItemId = new Map<string, CalendarClientAssignment[]>();
     if (assignmentPicker.kind === "ready") {
       for (const assignment of assignmentPicker.assignments) {
@@ -816,11 +826,6 @@ export async function readCalendarRouteState(
         assignmentsByItemId.set(assignment.calendarItemId, existing);
       }
     }
-    const notificationState = await readInitialAssignmentNotificationState({
-      supabase: verified.supabase,
-      calendarItemIds: readModelItems.map((item) => item.calendarItemId),
-      canEditAssignments: workspaceSelection.canEditAssignments,
-    });
     const items = readModelItems.map((item) =>
       mapPersistedItemToCalendarItem(
         item,

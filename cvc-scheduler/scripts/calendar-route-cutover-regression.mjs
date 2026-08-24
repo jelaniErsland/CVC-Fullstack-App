@@ -95,6 +95,14 @@ assert.match(routeReadSource, /deriveCalendarRouteReadRange/);
 assert.match(routeReadSource, /server_derived_start_inclusive_end_exclusive/);
 assert.match(routeReadSource, /dataBoundary: "readCalendarReadModelWithClient"/);
 assert.match(routeReadSource, /strictCapabilities: \["calendar\.view", "assignments\.view"\]/);
+assert.match(
+  routeReadSource,
+  /const \[query, taskPresetSelector\] = await Promise\.all\(\[\s*readCalendarReadModelWithClient\([\s\S]*?readTaskPresetSelectorState\(/,
+);
+assert.match(
+  routeReadSource,
+  /const \[assignmentPicker, notificationState\] = await Promise\.all\(\[\s*readAssignmentPickerState\([\s\S]*?readInitialAssignmentNotificationState\(/,
+);
 
 const queryHelper = describeCalendarReadModelQueryHelper();
 assert.equal(queryHelper.dependencyInjected, true);
