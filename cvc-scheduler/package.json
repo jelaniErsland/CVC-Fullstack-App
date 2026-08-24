@@ -18,6 +18,7 @@
     "test:calendar-items": "node --no-warnings --experimental-strip-types scripts/calendar-item-persistence-regression.mjs",
     "test:assignments": "node --no-warnings --experimental-strip-types scripts/assignment-persistence-regression.mjs",
     "test:assignment-detail-context": "node scripts/assignment-detail-context-regression.mjs",
+    "test:assignment-detail-product-entry": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-product-entry-regression.mjs",
     "test:assignment-detail-route": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-route-regression.mjs",
     "test:assignment-detail-action-adapter": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-action-adapter-regression.mjs",
     "test:assignment-detail-server-action": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-detail-server-action-regression.mjs",

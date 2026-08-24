@@ -158,6 +158,14 @@ function asString(value: unknown) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function asUuid(value: unknown) {
+  const normalized = asString(value)?.toLowerCase() ?? null;
+  return normalized && uuidPattern.test(normalized) ? normalized : null;
+}
+
 function asOptionalString(value: unknown) {
   return value === null || value === undefined ? null : asString(value);
 }
@@ -290,13 +298,13 @@ function toCoverageRows(
 ): readonly CalendarAssignmentCoverageRow[] {
   const responseByAssignmentId = new Map<string, AnyRow>();
   for (const responseRow of responseRows) {
-    const assignmentId = asString(responseRow.assignment_id);
+    const assignmentId = asUuid(responseRow.assignment_id);
     if (assignmentId) responseByAssignmentId.set(assignmentId, responseRow);
   }
 
   const coverageRows: CalendarAssignmentCoverageRow[] = [];
   for (const assignmentRow of assignmentRows) {
-    const assignmentId = asString(assignmentRow.id);
+    const assignmentId = asUuid(assignmentRow.id);
     const workspaceId = asString(assignmentRow.workspace_id);
     const calendarItemId = asString(assignmentRow.calendar_item_id);
     const assignmentLifecycle = normalizeAssignmentLifecycle(assignmentRow.lifecycle);
@@ -410,7 +418,7 @@ export async function readCalendarReadModelWithClient(
     }
     assignmentRows = asRows(assignmentsResult.data);
     const assignmentIds = assignmentRows
-      .map((row) => asString(row.id))
+      .map((row) => asUuid(row.id))
       .filter((id): id is string => Boolean(id));
 
     if (assignmentIds.length > 0) {

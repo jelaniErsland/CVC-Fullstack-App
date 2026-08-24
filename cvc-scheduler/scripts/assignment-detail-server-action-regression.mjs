@@ -203,7 +203,10 @@ for (const file of appAndComponentFiles) {
   }
 }
 assert.deepEqual(serverActionImporters, ["app/admin/assignments/[assignmentId]/page.tsx"]);
-assert.deepEqual(assignmentDetailInboundLinks, []);
+assert.deepEqual(assignmentDetailInboundLinks.sort(), [
+  "app/admin/needs-attention/page.tsx",
+  "components/CalendarClient.tsx",
+]);
 
 const description = describeDisabledAssignmentResponseLinkServerAction();
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_ACTION_STUB_AVAILABLE, true);
@@ -404,7 +407,7 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ROUTE_SERVER_ACTION_IMPLEMENTATION_AVA
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE, false);
-assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_ROUTE_WIRING_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);

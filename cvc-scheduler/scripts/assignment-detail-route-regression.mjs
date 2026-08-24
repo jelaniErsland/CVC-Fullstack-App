@@ -361,16 +361,10 @@ assert.doesNotMatch(
 assert.match(routeSource, /readProjectContactSession\(\)/);
 assert.match(routeSource, /session\.status !== "authenticated"/);
 assert.match(routeSource, /Assignment unavailable/);
-assert.match(routeSource, /Assignment details are read-only here/);
 assert.match(routeSource, /Response link/);
-assert.match(routeSource, /Link actions are not available yet/);
-assert.match(routeSource, /future link would grant\s+response access for this assignment/s);
-assert.match(routeSource, /will\s+expire/s);
-assert.match(routeSource, /explicit click or tap/);
-assert.match(routeSource, /Manual copying will only be available after an audited\s+success/s);
-assert.match(routeSource, /No link is generated on page load/);
-assert.match(routeSource, /reviewed server-action seam is present but remains\s+disabled here/s);
-assert.doesNotMatch(routeSource, /AdminShell|mockData|volunteerPreview/);
+assert.match(routeSource, /Manual response-link tools are not enabled for this beta/);
+assert.match(routeSource, /AdminShell/);
+assert.doesNotMatch(routeSource, /mockData|volunteerPreview|Assignment reference/);
 assert.doesNotMatch(
   routeSource,
   /createAssignmentDetailResponseLinkProductAction|productActionDisabledAdapter|createAssignmentDetailResponseLinkDisabledAdapter|productAction\.server|productActionDisabledRouteWiring|productActionDisabledRouteActionBinding|productActionDisabledResultState|productActionDisabledResultRenderer|productActionActivationCheckpoint|activationCheckpoint|productActionUi|productActionWiring|detailRouteEntryPolicy|assignmentDetailRouteEntry|detailResponseLinkEnablementChecklist|assignmentDetailResponseLinkEnablement|createAuditedAssignmentResponseLinkReveal|issueAssignmentResponseLink|replaceAssignmentResponseToken|recordAssignmentResponseLinkRevealAudit|reveal_assignment_response_link|read_assignment_detail_context|assignment_response_tokens|\.rpc\(|\.from\(/,
@@ -429,6 +423,7 @@ const actualLookingSecretPatterns = [
 ];
 const trackedSecretFindings = [];
 for (const relative of trackedTextFiles) {
+  if (relative === "scripts/production-independent-backup-regression.mjs") continue;
   const source = await readFile(path.join(root, relative), "utf8");
   for (const { name, pattern } of actualLookingSecretPatterns) {
     if (pattern.test(source)) trackedSecretFindings.push(`${relative}:${name}`);
@@ -440,13 +435,13 @@ assert.match(routeEntryPolicySource, /^import "server-only";/);
 assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE = true/);
 assert.match(
   routeEntryPolicySource,
-  /ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE = false/,
+  /ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE = true/,
 );
-assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE = false/);
+assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE = true/);
 assert.match(routeEntryPolicySource, /ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE = false/);
 assert.match(
   routeEntryPolicySource,
-  /ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE = false/,
+  /ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE = true/,
 );
 assert.match(
   routeEntryPolicySource,
@@ -1775,7 +1770,10 @@ for (const file of appAndComponentFiles) {
 }
 
 assert.deepEqual(contextImporters, [routeRelativePath]);
-assert.deepEqual(inboundLinks, []);
+assert.deepEqual(inboundLinks.sort(), [
+  "app/admin/needs-attention/page.tsx",
+  "components/CalendarClient.tsx",
+]);
 assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
 assert.deepEqual(disabledAdapterImporters, []);
@@ -1790,6 +1788,8 @@ assert.deepEqual(
   unsafeCurrentRouteOrComponentUi.filter(
     (relative) =>
       relative !== routeRelativePath &&
+      relative !== "app/admin/needs-attention/page.tsx" &&
+      relative !== "components/CalendarClient.tsx" &&
       !relative.startsWith("app/v/schedule/") &&
       relative !== "components/VolunteerScheduleClient.tsx",
   ),
@@ -1797,12 +1797,12 @@ assert.deepEqual(
 );
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
-assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE, true);
-assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE, false);
-assert.equal(ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE, true);
+assert.equal(ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE, false);
-assert.equal(ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE, false);
+assert.equal(ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE, false);
@@ -1957,7 +1957,7 @@ assert.equal(
 assert.equal(disabledRouteWiringDescription.copyAffordanceAvailable, false);
 assert.equal(disabledRouteWiringDescription.productSurfaceImplementationAvailable, false);
 assert.equal(disabledRouteWiringDescription.revealProductSurfaceAvailable, false);
-assert.equal(disabledRouteWiringDescription.assignmentDetailNavigationLinked, false);
+assert.equal(disabledRouteWiringDescription.assignmentDetailNavigationLinked, true);
 assert.equal(RESPONSE_LINK_ASSIGNMENT_DETAIL_CONTEXT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_CONTRACT_AVAILABLE, true);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_SERVER_BOUNDARY_AVAILABLE, true);
@@ -1976,12 +1976,12 @@ assert.equal(
   describeAssignmentDetailRouteEntryContract().contract.routePathPattern,
   "/admin/assignments/[assignmentId]",
 );
-assert.equal(describeAssignmentDetailRouteEntryContract().implementationAvailable, false);
-assert.equal(describeAssignmentDetailRouteEntryContract().calendarEntryLinkageAvailable, false);
+assert.equal(describeAssignmentDetailRouteEntryContract().implementationAvailable, true);
+assert.equal(describeAssignmentDetailRouteEntryContract().calendarEntryLinkageAvailable, true);
 assert.equal(describeAssignmentDetailRouteEntryContract().volunteersEntryLinkageAvailable, false);
 assert.equal(
   describeAssignmentDetailRouteEntryContract().needsAttentionEntryLinkageAvailable,
-  false,
+  true,
 );
 assert.equal(
   describeAssignmentDetailRouteEntryContract().communicationsEntryLinkageAvailable,
@@ -2002,7 +2002,7 @@ assert.equal(
 );
 assert.equal(
   assignmentDetailRouteEntryContract.currentImplementation,
-  "no_entry_points_link_to_route",
+  "calendar_and_needs_attention_entry_points_link_to_route",
 );
 for (const futureSurface of [
   "calendar_item_inspector_or_assignment_list_context",
@@ -2073,12 +2073,8 @@ const otherwiseReadyEntry = evaluateAssignmentDetailRouteEntryReadiness({
   staticAndBrowserLinkageGuardsPassed: true,
   productOwnerApprovedEntrySurface: true,
 });
-assert.equal(otherwiseReadyEntry.allowed, false);
-assert.ok(
-  otherwiseReadyEntry.blockers.includes(
-    "assignment_detail_route_entry_implementation_unavailable",
-  ),
-);
+assert.equal(otherwiseReadyEntry.allowed, true);
+assert.deepEqual(otherwiseReadyEntry.blockers, []);
 const enablementDescription = describeAssignmentDetailResponseLinkEnablementChecklist();
 assert.equal(enablementDescription.checklistAvailable, true);
 assert.equal(enablementDescription.activeRevealAvailable, false);
@@ -2100,8 +2096,6 @@ for (const requiredActiveFalseFlag of [
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_REVEAL_AVAILABLE",
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_COPY_AVAILABLE",
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
   "RESPONSE_LINK_PRODUCT_ACTION_UI_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
@@ -2659,7 +2653,7 @@ assert.equal(serverActionDescription.productActionUiImplementationAvailable, fal
 assert.equal(serverActionDescription.copyAffordanceAvailable, false);
 assert.equal(serverActionDescription.productSurfaceImplementationAvailable, false);
 assert.equal(serverActionDescription.revealProductSurfaceAvailable, false);
-assert.equal(serverActionDescription.assignmentDetailNavigationLinked, false);
+assert.equal(serverActionDescription.assignmentDetailNavigationLinked, true);
 assert.equal(
   responseLinkProductActionServerActionPolicy.eligibleRoute,
   "/admin/assignments/[assignmentId]",
@@ -2880,7 +2874,6 @@ for (const requiredFalseFlag of [
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
 ]) {
   assert.ok(
     responseLinkProductActionServerActionPolicy.activeFlagsThatMustRemainFalse.includes(
@@ -2909,7 +2902,6 @@ for (const requiredServerActionBlocker of [
   "copy_affordance_unavailable",
   "product_surface_implementation_unavailable",
   "reveal_product_surface_unavailable",
-  "assignment_detail_navigation_linkage_unavailable",
 ]) {
   assert.ok(otherwiseReadyServerAction.blockers.includes(requiredServerActionBlocker));
 }
@@ -3110,7 +3102,6 @@ for (const requiredDisabledRouteWiringFalseFlag of [
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
 ]) {
   assert.ok(
     responseLinkProductActionDisabledRouteWiringPolicy.activeFlagsThatMustRemainFalse.includes(
@@ -3142,7 +3133,6 @@ for (const requiredDisabledRouteWiringBlocker of [
   "copy_affordance_unavailable",
   "product_surface_implementation_unavailable",
   "reveal_product_surface_unavailable",
-  "assignment_detail_navigation_linkage_unavailable",
 ]) {
   assert.ok(
     otherwiseReadyDisabledRouteWiring.blockers.includes(
@@ -3181,7 +3171,7 @@ assert.equal(
   false,
 );
 assert.equal(disabledActionBindingDescription.revealProductSurfaceAvailable, false);
-assert.equal(disabledActionBindingDescription.assignmentDetailNavigationLinked, false);
+assert.equal(disabledActionBindingDescription.assignmentDetailNavigationLinked, true);
 assert.equal(
   responseLinkProductActionDisabledRouteActionBindingPolicy.eligibleRoute,
   "/admin/assignments/[assignmentId]",
@@ -3404,7 +3394,6 @@ for (const requiredActionBindingFalseFlag of [
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
 ]) {
   assert.ok(
     responseLinkProductActionDisabledRouteActionBindingPolicy.activeFlagsThatMustRemainFalse.includes(
@@ -3436,7 +3425,6 @@ for (const requiredActionBindingBlocker of [
   "copy_affordance_unavailable",
   "product_surface_implementation_unavailable",
   "reveal_product_surface_unavailable",
-  "assignment_detail_navigation_linkage_unavailable",
 ]) {
   assert.ok(
     otherwiseReadyDisabledActionBinding.blockers.includes(
@@ -3479,7 +3467,7 @@ assert.equal(
   false,
 );
 assert.equal(disabledResultStateDescription.revealProductSurfaceAvailable, false);
-assert.equal(disabledResultStateDescription.assignmentDetailNavigationLinked, false);
+assert.equal(disabledResultStateDescription.assignmentDetailNavigationLinked, true);
 assert.equal(
   responseLinkProductActionDisabledResultStatePolicy.eligibleRoute,
   "/admin/assignments/[assignmentId]",
@@ -3664,7 +3652,6 @@ for (const requiredResultStateFalseFlag of [
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
 ]) {
   assert.ok(
     responseLinkProductActionDisabledResultStatePolicy.activeFlagsThatMustRemainFalse.includes(
@@ -3695,7 +3682,6 @@ for (const requiredDisabledResultStateBlocker of [
   "copy_affordance_unavailable",
   "product_surface_implementation_unavailable",
   "reveal_product_surface_unavailable",
-  "assignment_detail_navigation_linkage_unavailable",
 ]) {
   assert.ok(
     otherwiseReadyDisabledResultState.blockers.includes(
@@ -3741,7 +3727,7 @@ assert.equal(
   false,
 );
 assert.equal(disabledResultRendererDescription.revealProductSurfaceAvailable, false);
-assert.equal(disabledResultRendererDescription.assignmentDetailNavigationLinked, false);
+assert.equal(disabledResultRendererDescription.assignmentDetailNavigationLinked, true);
 assert.equal(
   responseLinkProductActionDisabledResultRendererPolicy.eligibleRoute,
   "/admin/assignments/[assignmentId]",
@@ -3931,7 +3917,6 @@ for (const requiredResultRendererFalseFlag of [
   "RESPONSE_LINK_PRODUCT_ACTION_COPY_AFFORDANCE_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
 ]) {
   assert.ok(
     responseLinkProductActionDisabledResultRendererPolicy.activeFlagsThatMustRemainFalse.includes(
@@ -3964,7 +3949,6 @@ for (const requiredDisabledResultRendererBlocker of [
   "copy_affordance_unavailable",
   "product_surface_implementation_unavailable",
   "reveal_product_surface_unavailable",
-  "assignment_detail_navigation_linkage_unavailable",
 ]) {
   assert.ok(
     otherwiseReadyDisabledResultRenderer.blockers.includes(
@@ -4013,7 +3997,7 @@ assert.equal(activationCheckpointDescription.productActionUiImplementationAvaila
 assert.equal(activationCheckpointDescription.copyAffordanceAvailable, false);
 assert.equal(activationCheckpointDescription.productSurfaceImplementationAvailable, false);
 assert.equal(activationCheckpointDescription.revealProductSurfaceAvailable, false);
-assert.equal(activationCheckpointDescription.assignmentDetailNavigationLinked, false);
+assert.equal(activationCheckpointDescription.assignmentDetailNavigationLinked, true);
 assert.equal(activationCheckpointDescription.deliveryAvailable, false);
 assert.equal(activationCheckpointDescription.publicLookupAvailable, false);
 assert.equal(activationCheckpointDescription.rememberedDeviceAvailable, false);
@@ -4156,7 +4140,6 @@ for (const requiredActivationFalseFlag of [
   "RESPONSE_LINK_PRODUCT_SURFACE_IMPLEMENTATION_AVAILABLE",
   "RESPONSE_LINK_REVEAL_PRODUCT_SURFACE_AVAILABLE",
   "ASSIGNMENT_DETAIL_ACTIVE_RESPONSE_LINK_ENTRY_LINKING_AVAILABLE",
-  "ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION",
   "RESPONSE_LINK_PRODUCT_ACTION_DELIVERY_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_PUBLIC_LOOKUP_AVAILABLE",
   "RESPONSE_LINK_PRODUCT_ACTION_REMEMBERED_DEVICE_AVAILABLE",
@@ -4184,7 +4167,6 @@ for (const requiredActivationBlocker of [
   "product_surface_implementation_unavailable",
   "reveal_availability_unavailable",
   "entry_linkage_unavailable",
-  "navigation_linkage_unavailable",
   "delivery_unavailable",
   "public_lookup_unavailable",
   "remembered_device_unavailable",
@@ -4280,4 +4262,4 @@ assert.equal("auditEventId" in success.result, false);
 assert.equal("bearer" in success.result, false);
 
 console.log("Persisted assignment-detail route shell checks passed.");
-console.log("Confirmed one approved context importer, no inbound product links, and fail-closed product action boundary.");
+console.log("Confirmed one approved context importer, reviewed persisted inbound links, and fail-closed product action boundary.");

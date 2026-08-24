@@ -1,10 +1,10 @@
 import "server-only";
 
 export const ASSIGNMENT_DETAIL_ROUTE_ENTRY_CONTRACT_AVAILABLE = true;
-export const ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE = false;
-export const ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE = false;
+export const ASSIGNMENT_DETAIL_ROUTE_ENTRY_IMPLEMENTATION_AVAILABLE = true;
+export const ASSIGNMENT_DETAIL_CALENDAR_ENTRY_LINKAGE_AVAILABLE = true;
 export const ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE = false;
-export const ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE = false;
+export const ASSIGNMENT_DETAIL_NEEDS_ATTENTION_ENTRY_LINKAGE_AVAILABLE = true;
 export const ASSIGNMENT_DETAIL_COMMUNICATIONS_ENTRY_LINKAGE_AVAILABLE = false;
 export const ASSIGNMENT_DETAIL_PUBLIC_VOLUNTEER_ENTRY_LINKAGE_AVAILABLE = false;
 export const ASSIGNMENT_DETAIL_RESPONSE_TOKEN_ROUTE_LINKAGE_AVAILABLE = false;
@@ -15,7 +15,7 @@ export const assignmentDetailRouteEntryContract = {
   routeRole: "secure_project_contact_direct_access_fallback",
   routeUxExpectation:
     "routine_assignment_details_should_remain_contextual_in_inspectors_drawers_or_modals",
-  currentImplementation: "no_entry_points_link_to_route",
+  currentImplementation: "calendar_and_needs_attention_entry_points_link_to_route",
   futureEligibleEntrySurfaces: [
     {
       surface: "calendar_item_inspector_or_assignment_list_context",

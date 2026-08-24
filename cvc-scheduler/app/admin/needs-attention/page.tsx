@@ -85,6 +85,7 @@ function scheduleLabel(signal: NeedsAttentionSignal) {
 }
 
 function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
+  const assignmentLinks = signal.group === "responses" ? signal.affectedAssignments : [];
   return (
     <details
       className="group border-t border-[var(--pl-border)] first:border-t-0"
@@ -143,14 +144,53 @@ function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
               It clears automatically when the underlying schedule changes.
             </p>
           </div>
-          <Link
-            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            href={signal.href}
-          >
-            Open in Calendar
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-bold text-[var(--pl-text)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              href={signal.href}
+            >
+              Open in Calendar
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Link>
+            {assignmentLinks.length === 1 ? (
+              <Link
+                aria-label={`View assignment for ${signal.title}`}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                href={`/admin/assignments/${encodeURIComponent(assignmentLinks[0].assignmentId)}`}
+              >
+                View assignment
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+            ) : null}
+          </div>
         </div>
+        {assignmentLinks.length > 1 ? (
+          <div className="mt-4 border-t border-[var(--pl-border)] pt-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+              Affected assignments
+            </p>
+            <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              {assignmentLinks.map((assignment, index) => (
+                <li
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-[var(--pl-border)] bg-white px-3 py-2"
+                  key={assignment.assignmentId}
+                >
+                  <span className="text-xs font-semibold text-[var(--pl-text)]">
+                    {signal.kind === "pending" ? "Pending response" : "Can’t make it"} {index + 1}
+                  </span>
+                  <Link
+                    aria-label={`View affected assignment ${index + 1} for ${signal.title}`}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}
+                  >
+                    View assignment
+                    <ArrowRight aria-hidden="true" className="size-3.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </details>
   );

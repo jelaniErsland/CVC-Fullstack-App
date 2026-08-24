@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   CalendarDays,
   CalendarRange,
@@ -11,6 +12,7 @@ import {
   Plus,
   Search,
   Send,
+  SquareArrowOutUpRight,
   SlidersHorizontal,
   Soup,
   UserPlus,
@@ -3029,7 +3031,16 @@ function InspectorContent({
                     </span>
                   </div>
                   {canEditAssignments && cancelAssignmentAction ? (
-                    <form action={cancelAssignmentAction} className="mt-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Link
+                        aria-label={`View assignment for ${assignment.volunteerDisplayName}`}
+                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`}
+                        href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}
+                      >
+                        <SquareArrowOutUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+                        View assignment
+                      </Link>
+                      <form action={cancelAssignmentAction}>
                       <input name="assignmentId" type="hidden" value={assignment.assignmentId} />
                       <input name="redirectView" type="hidden" value={currentView} />
                       <input name="redirectDate" type="hidden" value={currentDate} />
@@ -3041,8 +3052,18 @@ function InspectorContent({
                         <UserMinus aria-hidden="true" className="h-3.5 w-3.5" />
                         Remove assignment
                       </button>
-                    </form>
-                  ) : null}
+                      </form>
+                    </div>
+                  ) : (
+                    <Link
+                      aria-label={`View assignment for ${assignment.volunteerDisplayName}`}
+                      className={`mt-3 inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`}
+                      href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}
+                    >
+                      <SquareArrowOutUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+                      View assignment
+                    </Link>
+                  )}
                 </div>
               ))
             ) : (

@@ -154,6 +154,7 @@ export type CalendarReadModelItem = Readonly<{
   taskPresetLabel: string | null;
   taskPresetType: CalendarReadModelDisplayType | null;
   coverage: CalendarCoverageSummary;
+  assignments: readonly CalendarAssignmentCoverageRow[];
   assignedFractionLabel: string;
 }>;
 
@@ -524,6 +525,11 @@ export function mapCalendarReadModelItem(
   const taskSourceLabel = row.titleSnapshot;
   const displayType = row.taskTypeSnapshot;
   const assignable = row.scheduleKind === "timed" || row.scheduleKind === "date_based";
+  const scopedAssignments = assignments.filter(
+    (assignment) =>
+      (assignment.workspaceId === undefined || assignment.workspaceId === row.workspaceId) &&
+      (assignment.calendarItemId === undefined || assignment.calendarItemId === row.id),
+  );
 
   return {
     calendarItemId: row.id,
@@ -548,6 +554,7 @@ export function mapCalendarReadModelItem(
     taskPresetLabel,
     taskPresetType: row.taskPresetType ?? null,
     coverage,
+    assignments: scopedAssignments,
     assignedFractionLabel: coverage.assignedFractionLabel,
   };
 }

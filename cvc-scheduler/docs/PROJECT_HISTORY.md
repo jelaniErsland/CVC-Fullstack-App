@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.40 - Persisted Assignment Detail Product Entry and Admin Drill-Down
+
+- Promoted the existing persisted `/admin/assignments/[assignmentId]` route into the product from Calendar assignment roster rows and Needs Attention pending/denied response signals. Every href is built only from the exact authorized persisted assignment UUID; multi-assignment response signals render separate labeled destinations and never choose an arbitrary first assignment.
+- Preserved the narrow authenticated assignment-detail read boundary and its effective `assignments.view`, active-contact/workspace/grant, workspace-isolation, minimal-projection, and calm unavailable behavior. Needs Attention reuses its existing Calendar projection and derives assignment destinations in memory, so the change adds no second truth source or per-row query.
+- Reworked the detail presentation into the approved Project Local admin shell for desktop and 390px mobile, with volunteer identity, task, schedule, context, response state, Calendar/dated-day return actions, and an intentionally inactive response-link panel. No raw assignment id, token, response URL, copy control, response mutation, or edit workflow is exposed.
+- Added focused static and persisted browser regressions for Calendar and Needs Attention round trips, single/multiple response mappings, confirmed/pending/declined detail states, invalid/unavailable ids, safe hrefs, mobile overflow, zero mutation/email/token activity, and zero disposable fixture/Auth residue. Review captures are in `docs/previews/iteration-12-40-assignment-detail-review`.
+- No migration, generated type, SQL/RPC/RLS/Auth change, response-token issuance, response-link reveal/copy activation, render/GET mutation, email, hosted access, production/staging, backup task, service-role application path, or real Bozeman data is part of this checkpoint. Broad assignment search/directory and Volunteer-page entry are deferred. Product-owner review remains pending; launch remains `NO-GO`.
+
 ## Iteration 12.39 - Persisted Needs Attention Staffing and Response Inbox
 
 - Replaced the `/admin/needs-attention` mock index with a dynamic/no-store, server-owned read-only inbox derived from the existing authorized Calendar item, assignment, and current-response projection. Effective `workspace.read`, `calendar.view`, and `assignments.view` plus exactly one active RLS-visible workspace are required; edit capability, role/title labels, and browser-supplied scope do not authorize the read.

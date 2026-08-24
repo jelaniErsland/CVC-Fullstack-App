@@ -28,6 +28,10 @@ export type NeedsAttentionSignal = Readonly<{
   neededCount: number;
   assignedCount: number;
   assignedFractionLabel: string;
+  affectedAssignments: readonly Readonly<{
+    assignmentId: string;
+    responseStatus: "needs_response" | "declined";
+  }>[];
   href: string;
 }>;
 
@@ -157,6 +161,23 @@ function signal(
   workspaceTimezone: string,
   affectedCount: number,
 ): NeedsAttentionSignal {
+  const affectedAssignments = (item.assignments ?? [])
+    .filter(
+      (assignment) =>
+        assignment.assignmentLifecycle === "active" &&
+        (kind === "pending"
+          ? assignment.currentResponseStatus === "needs_response"
+          : kind === "denied"
+            ? assignment.currentResponseStatus === "declined" ||
+              assignment.currentResponseStatus === "denied"
+            : false),
+    )
+    .map((assignment) => ({
+      assignmentId: assignment.assignmentId,
+      responseStatus: (kind === "pending" ? "needs_response" : "declined") as
+        | "needs_response"
+        | "declined",
+    }));
   const problem =
     kind === "coverage"
       ? `${countLabel(affectedCount, "volunteer")} still needed`
@@ -180,6 +201,7 @@ function signal(
     neededCount: item.neededCount,
     assignedCount: item.coverage.assignedCount,
     assignedFractionLabel: item.assignedFractionLabel,
+    affectedAssignments,
     href: calendarHref(item.startDate),
   };
 }

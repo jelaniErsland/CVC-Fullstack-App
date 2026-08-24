@@ -19,18 +19,29 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
-const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
+const writeAssignmentDetailReviewScreenshots =
+  process.env.WRITE_ASSIGNMENT_DETAIL_REVIEW_SCREENSHOTS === "1";
+const betaReviewDir = path.join(
+  root,
+  "docs",
+  "previews",
+  writeAssignmentDetailReviewScreenshots
+    ? "iteration-12-40-assignment-detail-review"
+    : "beta-review",
+);
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
-const reviewWorkspaceName = writeBetaReviewScreenshots
+const writeNamedReviewScreenshots =
+  writeBetaReviewScreenshots || writeAssignmentDetailReviewScreenshots;
+const reviewWorkspaceName = writeNamedReviewScreenshots
   ? "Bozeman Local Project"
   : "QA 12.12 Calendar Workspace";
-const reviewVolunteerNames = writeBetaReviewScreenshots
+const reviewVolunteerNames = writeNamedReviewScreenshots
   ? ["Alex Rivera", "Maya Chen", "Noah Bennett", "Elena Ruiz", "Marcus Lee", "Priya Shah", "Jonah Price"]
   : Array.from({ length: 7 }, (_, index) => `QA 12.12 Volunteer ${index + 1}`);
-const reviewCongregation = writeBetaReviewScreenshots
+const reviewCongregation = writeNamedReviewScreenshots
   ? "Bozeman Congregation"
   : "QA Congregation";
-const reviewGeneralPresetName = writeBetaReviewScreenshots
+const reviewGeneralPresetName = writeNamedReviewScreenshots
   ? "Drywall Crew"
   : "QA 12.12 General";
 
@@ -1589,6 +1600,32 @@ async function runDesktop(browser) {
       await inspector.waitFor();
       await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
+      const assignmentDetailLink = inspector.getByRole("link", {
+        name: `View assignment for ${reviewVolunteerNames[1]}`,
+        exact: true,
+      });
+      await assignmentDetailLink.waitFor();
+      if (writeAssignmentDetailReviewScreenshots) {
+        await mkdir(betaReviewDir, { recursive: true });
+        await page.screenshot({
+          path: path.join(
+            betaReviewDir,
+            "calendar-assignment-drill-down-desktop-1440x1000.png",
+          ),
+          fullPage: false,
+        });
+      }
+      await assignmentDetailLink.click();
+      await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
+      await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
+      await page.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
+      await page.getByRole("link", { name: "Open scheduled day", exact: true }).click();
+      await page.waitForURL(/\/admin\/calendar\?view=day&date=2026-01-13$/);
+      const returnedAssignedItem = page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first();
+      await activateWithKeyboard(returnedAssignedItem, "Returned assigned Calendar item");
+      await inspector.waitFor();
 
       await Promise.all([
         page.waitForURL(/notice=assignment_canceled/),
@@ -1861,6 +1898,32 @@ async function runMobile(browser) {
       );
       await planner.getByText("Suggested from calendar day", { exact: true }).waitFor();
       await closeWithEscape(page, "Plan project work", triggerLabel);
+    });
+
+    await step("mobile assignment drill-down affordance is usable", async () => {
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
+        waitUntil: "domcontentloaded",
+      });
+      const assignedItem = page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first();
+      await assignedItem.click();
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      await inspector.waitFor();
+      await inspector.getByRole("link", { name: /View assignment for/ }).first().waitFor();
+      if (writeAssignmentDetailReviewScreenshots) {
+        await mkdir(betaReviewDir, { recursive: true });
+        await page.screenshot({
+          path: path.join(
+            betaReviewDir,
+            "calendar-assignment-drill-down-mobile-390x844.png",
+          ),
+          fullPage: false,
+        });
+      }
     });
 
     await step("mobile has no overflow or browser errors", async () => {

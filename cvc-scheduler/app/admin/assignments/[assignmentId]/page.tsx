@@ -2,17 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
-  CheckCircle2,
   Clock3,
+  Info,
   LockKeyhole,
   MapPin,
   UserRound,
   UsersRound,
 } from "lucide-react";
 
+import { AdminShell } from "@/components/AdminShell";
 import { GlassCard } from "@/components/GlassCard";
-import { PageShell } from "@/components/PageShell";
 import { readAssignmentDetailContext } from "@/lib/assignments/detailContext.server";
 import type { AssignmentDetailContext } from "@/lib/assignments/detailContext.server";
 import { readProjectContactSession } from "@/lib/auth/session";
@@ -50,6 +51,15 @@ const responseStatusLabels: Record<
   needs_response: "Needs response",
   confirmed: "Confirmed",
   declined: "Can’t make it",
+};
+
+const responseStatusStyles: Record<
+  AssignmentDetailContext["currentResponseStatus"],
+  string
+> = {
+  needs_response: "border-amber-200 bg-[var(--pl-amber-soft)] text-[#8b5a12]",
+  confirmed: "border-emerald-200 bg-[var(--pl-teal-soft)] text-[#177b6f]",
+  declined: "border-rose-200 bg-[var(--pl-coral-soft)] text-[#a44437]",
 };
 
 const responseSourceLabels: Record<
@@ -132,12 +142,15 @@ function getDisabledResponseLinkWiringState(disabledServerActionBinding: unknown
   } as const;
 }
 
-function PageFrame({ children }: Readonly<{ children: React.ReactNode }>) {
+function PageFrame({
+  children,
+  workspaceName,
+}: Readonly<{ children: React.ReactNode; workspaceName?: string }>) {
   return (
-    <PageShell className="px-5 py-8 sm:px-8 sm:py-12">
-      <div className="mx-auto w-full max-w-4xl">
+    <AdminShell active="calendar" workspaceName={workspaceName ?? "Project workspace"}>
+      <div className="mx-auto w-full max-w-5xl">
         <Link
-          className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-slate-600 transition hover:bg-white/60 hover:text-slate-950"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-bold text-[var(--pl-text)] transition hover:bg-white hover:text-[var(--pl-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pl-blue)]"
           href="/admin/calendar"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
@@ -145,19 +158,19 @@ function PageFrame({ children }: Readonly<{ children: React.ReactNode }>) {
         </Link>
         {children}
       </div>
-    </PageShell>
+    </AdminShell>
   );
 }
 
 function UnavailableState({ signInHref }: Readonly<{ signInHref?: string }>) {
   return (
     <PageFrame>
-      <GlassCard className="mt-4 p-6 sm:p-8">
+      <GlassCard className="mt-3 p-6 sm:p-8">
         <div className="flex size-11 items-center justify-center rounded-full bg-slate-100 text-slate-600">
           <LockKeyhole aria-hidden="true" className="size-5" />
         </div>
         <p className="mt-5 text-sm font-semibold uppercase tracking-[0.16em] text-slate-400">
-          Project contact access
+          Assignment
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">
           Assignment unavailable
@@ -170,14 +183,14 @@ function UnavailableState({ signInHref }: Readonly<{ signInHref?: string }>) {
         <div className="mt-6 flex flex-wrap gap-3">
           {signInHref ? (
             <Link
-              className="inline-flex min-h-11 items-center rounded-full bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center rounded-lg bg-[var(--pl-blue)] px-5 text-sm font-bold text-white transition hover:bg-blue-700"
               href={signInHref}
             >
               Sign in as a project contact
             </Link>
           ) : null}
           <Link
-            className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-white/70 px-5 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-slate-950"
+            className="inline-flex min-h-11 items-center rounded-lg border border-[var(--pl-border)] bg-white px-5 text-sm font-bold text-[var(--pl-text)] transition hover:text-[var(--pl-ink)]"
             href="/admin/dashboard"
           >
             Return to Overview
@@ -198,13 +211,13 @@ function DetailItem({
   value: React.ReactNode;
 }>) {
   return (
-    <div className="flex gap-3 rounded-xl border border-white/80 bg-white/52 p-4">
+    <div className="flex gap-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4">
       <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-slate-400" />
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
           {label}
         </p>
-        <div className="mt-1 break-words text-sm font-semibold leading-6 text-slate-800">
+        <div className="mt-1 break-words text-sm font-bold leading-6 text-[var(--pl-ink)]">
           {value}
         </div>
       </div>
@@ -247,33 +260,52 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
   const responseLinkWiringState = getDisabledResponseLinkWiringState(
     disabledResponseLinkAction,
   );
+  void responseLinkWiringState;
 
   return (
-    <PageFrame>
-      <div className="mt-4 space-y-5">
-        <header className="rounded-2xl border border-white/70 bg-white/35 px-5 py-6 backdrop-blur-xl sm:px-7 sm:py-7">
+    <PageFrame workspaceName={context.workspaceDisplayName}>
+      <div className="mt-3 space-y-5">
+        <header className="rounded-2xl border border-[var(--pl-border)] bg-white px-5 py-6 shadow-[var(--pl-shadow-card)] sm:px-7 sm:py-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="break-words text-sm font-semibold text-sky-700">
+              <p className="break-words text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
                 {context.workspaceDisplayName}
               </p>
-              <h1 className="mt-2 break-words text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-5xl">
-                {context.taskTitle}
+              <h1 className="mt-1 break-words text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
+                Assignment
               </h1>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                Assignment reference {context.assignmentId.slice(0, 8).toUpperCase()}
+              <p className="mt-2 break-words text-base font-semibold text-[var(--pl-text)] sm:text-lg">
+                {context.taskTitle}
               </p>
             </div>
-            <span className="inline-flex min-h-8 w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700">
-              Active assignment
+            <span
+              className={`inline-flex min-h-9 w-fit items-center rounded-lg border px-3 text-xs font-bold ${responseStatusStyles[context.currentResponseStatus]}`}
+            >
+              {responseStatusLabels[context.currentResponseStatus]}
             </span>
           </div>
         </header>
 
-        <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
           <GlassCard className="p-5 sm:p-6">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-950">
-              Schedule and volunteer
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+              Assigned volunteer
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]">
+                <UserRound aria-hidden="true" className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="break-words text-xl font-bold tracking-[-0.02em] text-[var(--pl-ink)]">
+                  {context.volunteerDisplayName}
+                </h2>
+                <p className="mt-0.5 text-sm font-medium text-[var(--pl-muted)]">
+                  {context.volunteerCongregation ?? "Project volunteer"}
+                </p>
+              </div>
+            </div>
+            <h2 className="mt-6 text-lg font-bold tracking-tight text-[var(--pl-ink)]">
+              Schedule
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <DetailItem
@@ -282,11 +314,6 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                 value={formatSchedule(context)}
               />
               <DetailItem icon={Clock3} label="Project timezone" value={context.timezone} />
-              <DetailItem
-                icon={UserRound}
-                label="Assigned volunteer"
-                value={context.volunteerDisplayName}
-              />
               <DetailItem
                 icon={MapPin}
                 label="Congregation"
@@ -297,19 +324,22 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                 label="Planned volunteers"
                 value={context.plannedNeededCount}
               />
-              <DetailItem
-                icon={CheckCircle2}
-                label="Current response"
-                value={responseStatusLabels[context.currentResponseStatus]}
-              />
             </div>
           </GlassCard>
 
           <div className="space-y-4">
             <GlassCard className="p-5 sm:p-6">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-950">
+              <h2 className="text-lg font-bold tracking-tight text-[var(--pl-ink)]">
                 Response status
               </h2>
+              <div className={`mt-4 rounded-xl border p-4 ${responseStatusStyles[context.currentResponseStatus]}`}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] opacity-75">
+                  Current response
+                </p>
+                <p className="mt-1 text-lg font-bold">
+                  {responseStatusLabels[context.currentResponseStatus]}
+                </p>
+              </div>
               <dl className="mt-4 space-y-4 text-sm">
                 <div>
                   <dt className="font-medium text-slate-500">Recorded by</dt>
@@ -323,62 +353,42 @@ export default async function AssignmentDetailPage({ params }: AssignmentDetailP
                     {formatUpdatedAt(context.currentResponseUpdatedAt, context.timezone)}
                   </dd>
                 </div>
-                <div>
-                  <dt className="font-medium text-slate-500">Assignment editing</dt>
-                  <dd className="mt-1 font-semibold text-slate-800">
-                    {context.canEditAssignment
-                      ? "Permission available"
-                      : "Read-only permission"}
-                  </dd>
-                </div>
               </dl>
             </GlassCard>
 
-            <GlassCard className="border-slate-200/80 bg-slate-50/72 p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Response link
-              </p>
-              <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-                Link actions are not available yet.
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Assignment details are read-only here. A future link would grant
-                response access for this assignment and will expire. It will
-                require an explicit click or tap after a reviewed warning flow.
-              </p>
-              <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/55 p-4">
-                <span
-                  aria-disabled="true"
-                  className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-500"
-                >
-                  Unavailable in this read-only shell
-                </span>
-                <ul className="mt-4 space-y-2 text-sm leading-6 text-slate-600">
-                  <li>No link is generated on page load.</li>
-                  <li>No email or reminder is sent from this page.</li>
-                  {responseLinkWiringState.reviewedDisabledServerActionImport &&
-                  !responseLinkWiringState.enabled ? (
-                    <li>
-                      The reviewed server-action seam is present but remains
-                      disabled here.
-                    </li>
-                  ) : null}
-                  {responseLinkWiringState.reviewedDisabledActionBinding &&
-                  !responseLinkWiringState.enabled ? (
-                    <li>
-                      A disabled action binding is present but cannot be
-                      submitted from this page.
-                    </li>
-                  ) : null}
-                  <li>
-                    Manual copying will only be available after an audited
-                    success in a later reviewed slice.
-                  </li>
-                </ul>
+            <GlassCard
+              className="border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5 sm:p-6"
+            >
+              <div className="flex items-start gap-3">
+                <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-[var(--pl-muted)]" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+                    Response link
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--pl-text)]">
+                    Manual response-link tools are not enabled for this beta.
+                  </p>
+                </div>
               </div>
             </GlassCard>
           </div>
         </section>
+
+        <div className="flex flex-wrap gap-2 border-t border-[var(--pl-border)] pt-4">
+          <Link
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-bold text-white transition hover:bg-blue-700"
+            href={`/admin/calendar?view=day&date=${encodeURIComponent(context.scheduledDate)}`}
+          >
+            Open scheduled day
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+          <Link
+            className="inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-bold text-[var(--pl-text)] transition hover:text-[var(--pl-ink)]"
+            href="/admin/needs-attention"
+          >
+            Needs Attention
+          </Link>
+        </div>
       </div>
     </PageFrame>
   );

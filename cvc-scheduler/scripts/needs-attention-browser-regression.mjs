@@ -22,12 +22,18 @@ const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-const writeScreenshots = process.env.WRITE_NEEDS_ATTENTION_REVIEW_SCREENSHOTS === "1";
+const writeAssignmentDetailReviewScreenshots =
+  process.env.WRITE_ASSIGNMENT_DETAIL_REVIEW_SCREENSHOTS === "1";
+const writeScreenshots =
+  process.env.WRITE_NEEDS_ATTENTION_REVIEW_SCREENSHOTS === "1" ||
+  writeAssignmentDetailReviewScreenshots;
 const screenshotDirectory = path.join(
   root,
   "docs",
   "previews",
-  "iteration-12-39-needs-attention-review",
+  writeAssignmentDetailReviewScreenshots
+    ? "iteration-12-40-assignment-detail-review"
+    : "iteration-12-39-needs-attention-review",
 );
 const namespace = `qa-12-39-needs-attention-${randomUUID()}`;
 const labels = ["populated", "empty", "under-capability", "inactive-contact"];
@@ -396,6 +402,39 @@ async function verifyPopulatedDesktop(browser) {
   assert.equal(await calendarLink.getAttribute("href"), `/admin/calendar?view=day&date=${expectedDate}`);
   await page.evaluate(() => window.scrollTo(0, 0));
   await capture(page, "needs-attention-desktop-expanded-1440x1000.png");
+
+  const pendingRow = page
+    .locator('details[data-signal-kind="pending"]')
+    .filter({ hasText: "Gate Attendant" });
+  await pendingRow.locator("summary").click();
+  const pendingLinks = pendingRow.getByRole("link", { name: /View affected assignment/ });
+  assert.equal(await pendingLinks.count(), 2);
+  await capture(page, "needs-attention-pending-drill-down-desktop-1440x1000.png");
+  await pendingLinks.first().click();
+  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
+  await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
+  await page.getByText("Gate Attendant", { exact: true }).waitFor();
+  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
+    waitUntil: "domcontentloaded",
+  });
+
+  const deniedRow = page
+    .locator('details[data-signal-kind="denied"]')
+    .filter({ hasText: "Site Cleanup" });
+  await deniedRow.locator("summary").click();
+  const deniedLink = deniedRow.getByRole("link", {
+    name: "View assignment for Site Cleanup",
+    exact: true,
+  });
+  assert.equal(await deniedLink.count(), 1);
+  await deniedLink.click();
+  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
+  await page.getByText("Site Cleanup", { exact: true }).waitFor();
+  await page.getByText("Can’t make it", { exact: true }).first().waitFor();
+  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
+    waitUntil: "domcontentloaded",
+  });
+
   const calendarResponse = await page.goto(
     createPreviewUrl(baseUrl, `/admin/calendar?view=day&date=${expectedDate}`),
     { waitUntil: "domcontentloaded", timeout: 30_000 },
@@ -450,12 +489,21 @@ async function verifyMobile(browser) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
   await capture(page, "needs-attention-mobile-populated-390x844.png");
 
-  const coverageRow = page.locator('details[data-signal-kind="coverage"]').filter({ hasText: "Drywall Crew" });
-  await coverageRow.locator("summary").click();
-  await coverageRow.scrollIntoViewIfNeeded();
-  await coverageRow.getByRole("link", { name: "Open in Calendar", exact: true }).waitFor();
+  const pendingRow = page.locator('details[data-signal-kind="pending"]').filter({ hasText: "Gate Attendant" });
+  await pendingRow.locator("summary").click();
+  await pendingRow.scrollIntoViewIfNeeded();
+  const mobileAssignmentLink = pendingRow.getByRole("link", {
+    name: /View affected assignment 1/,
+  });
+  await mobileAssignmentLink.waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-  await capture(page, "needs-attention-mobile-expanded-390x844.png");
+  await capture(page, "needs-attention-assignment-drill-down-mobile-390x844.png");
+  await mobileAssignmentLink.click();
+  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
+  await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
+  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
+    waitUntil: "domcontentloaded",
+  });
 
   await page.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
   const more = page.getByRole("dialog", { name: "More admin navigation", exact: true });

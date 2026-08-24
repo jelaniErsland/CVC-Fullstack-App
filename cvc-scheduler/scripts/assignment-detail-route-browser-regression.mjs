@@ -1,7 +1,7 @@
 import nextEnv from "@next/env";
 import { createBrowserClient } from "@supabase/ssr";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -20,6 +20,14 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const previewBaseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
+const writeReviewScreenshots =
+  process.env.WRITE_ASSIGNMENT_DETAIL_REVIEW_SCREENSHOTS === "1";
+const reviewScreenshotDirectory = path.join(
+  process.cwd(),
+  "docs",
+  "previews",
+  "iteration-12-40-assignment-detail-review",
+);
 const secrets = new Set();
 
 const fixture = {
@@ -54,6 +62,7 @@ let authClient = null;
 let authUserId = null;
 let browser = null;
 let cleanupCompleted = false;
+let activeContainerName = null;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -295,7 +304,8 @@ insert into public.task_presets (
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, start_time, end_time, timezone, needed_count,
-  custom_values, lifecycle
+  custom_values, lifecycle, created_by_project_contact_id, publication_state,
+  published_at, published_by_project_contact_id
 ) values
   (
     '${fixture.calendarItemId}'::uuid,
@@ -310,7 +320,11 @@ insert into public.calendar_items (
     'America/Denver',
     3,
     '{}'::jsonb,
-    'active'
+    'active',
+    '${fixture.contactId}'::uuid,
+    'published',
+    now(),
+    '${fixture.contactId}'::uuid
   ),
   (
     '${fixture.unrelatedCalendarItemId}'::uuid,
@@ -325,7 +339,11 @@ insert into public.calendar_items (
     'America/Denver',
     1,
     '{}'::jsonb,
-    'active'
+    'active',
+    '${fixture.contactId}'::uuid,
+    'published',
+    now(),
+    '${fixture.contactId}'::uuid
   );
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, created_by_auth_user_id
@@ -438,6 +456,27 @@ function assertNoForbiddenRequests(requests, startIndex, message) {
   assert(offending.length === 0, message);
 }
 
+async function captureReview(page, filename) {
+  if (!writeReviewScreenshots) return;
+  await mkdir(reviewScreenshotDirectory, { recursive: true });
+  await page.screenshot({
+    path: path.join(reviewScreenshotDirectory, filename),
+    fullPage: false,
+  });
+}
+
+function setFixtureResponseStatus(status) {
+  assert(activeContainerName, "The local assignment-detail fixture container is unavailable.");
+  runPsql(
+    activeContainerName,
+    `update public.assignment_responses
+set response_status = '${status}',
+    responded_at = ${status === "needs_response" ? "null" : "now()"},
+    updated_at = now()
+where assignment_id = '${fixture.assignmentId}'::uuid;`,
+  );
+}
+
 async function exerciseBrowserRoute() {
   browser = await chromium.launch(
     browserExecutable ? { executablePath: browserExecutable } : undefined,
@@ -490,7 +529,7 @@ async function exerciseBrowserRoute() {
   for (const expected of [
     fixture.workspaceName,
     fixture.taskTitle,
-    "Active assignment",
+    "Assignment",
     "Scheduled time",
     "Jul 15, 2031",
     "9:00 AM",
@@ -501,30 +540,17 @@ async function exerciseBrowserRoute() {
     "Planned volunteers",
     "Confirmed",
     "Project contact",
-    "Permission available",
     "Response link",
-    "Link actions are not available yet.",
-    "Assignment details are read-only here.",
-    "future link would grant response access for this assignment",
-    "will expire",
-    "explicit click or tap",
-    "Unavailable in this read-only shell",
-    "No link is generated on page load.",
-    "No email or reminder is sent from this page.",
-    "The reviewed server-action seam is present but remains disabled here.",
-    "A disabled action binding is present but cannot be submitted from this page.",
-    "Manual copying will only be available after an audited success",
+    "Manual response-link tools are not enabled for this beta.",
+    "Open scheduled day",
+    "Needs Attention",
   ]) {
     assert(
       visibleTextLower.includes(expected.toLowerCase()),
       `The assignment detail is missing safe context: ${expected}.`,
     );
   }
-  assert(
-    visibleTextLower.includes("assignment reference") &&
-      visibleTextLower.includes(fixture.assignmentId.slice(0, 8).toLowerCase()),
-    "The assignment detail is missing its shortened assignment reference.",
-  );
+  assert(!visibleTextLower.includes("assignment reference"));
 
   for (const forbidden of [
     fixture.workspaceId,
@@ -612,7 +638,7 @@ async function exerciseBrowserRoute() {
       "The assignment page HTML exposed action, clipboard, or credential-bearing markup.",
     );
   }
-  assert((await page.locator("button").count()) === 0, "The read-only route rendered an active button.");
+  assert((await page.locator("main main button").count()) === 0, "The read-only detail rendered an active button.");
   assert((await page.locator("form").count()) === 0, "The read-only route rendered a form.");
   assert(
     (await page.locator('input[type="hidden"], [formaction]').count()) === 0,
@@ -622,13 +648,9 @@ async function exerciseBrowserRoute() {
     (await page.locator('[action], [formaction], [data-assignment-id], [data-token-id], [data-audit-id], [data-response-url], [data-bearer], [data-verifier]').count()) === 0,
     "The read-only route rendered browser-discoverable action or credential metadata.",
   );
-  assert(
-    (await page.locator('[aria-disabled="true"]').count()) >= 1,
-    "The inert response-link shell did not expose a disabled visual state.",
-  );
   const responseLinkPanel = page
     .locator("div")
-    .filter({ hasText: "Link actions are not available yet." })
+    .filter({ hasText: "Manual response-link tools are not enabled for this beta." })
     .last();
   assert(
     (await responseLinkPanel.count()) === 1,
@@ -675,20 +697,8 @@ async function exerciseBrowserRoute() {
   await page.waitForTimeout(150);
   await page.keyboard.press("Tab");
   await page.waitForTimeout(100);
-  const activeElementSummary = await page.evaluate(() => {
-    const activeElement = document.activeElement;
-    if (!activeElement) return { interactive: false, text: "" };
-    const tagName = activeElement.tagName.toLowerCase();
-    const role = activeElement.getAttribute("role") ?? "";
-    return {
-      interactive:
-        ["a", "button", "input", "select", "textarea"].includes(tagName) ||
-        ["button", "link", "menuitem"].includes(role),
-      text: activeElement.textContent ?? "",
-    };
-  });
   assert(
-    !activeElementSummary.interactive || !/copy|submit|generate|reveal|retry|download|open|send/i.test(activeElementSummary.text),
+    !(await responseLinkPanel.evaluate((panel) => panel.contains(document.activeElement))),
     "Tabbing exposed an active response-link submit, copy, or renderer affordance.",
   );
   assert(
@@ -703,7 +713,27 @@ async function exerciseBrowserRoute() {
   assert(browserErrors.length === 0, "The authorized assignment route emitted a browser error.");
   await assertNoHorizontalOverflow(page, "Desktop assignment detail");
 
+  if (writeReviewScreenshots) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await captureReview(page, "assignment-detail-confirmed-desktop-1440x1000.png");
+    setFixtureResponseStatus("needs_response");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByText("Needs response", { exact: true }).first().waitFor();
+    await captureReview(page, "assignment-detail-pending-desktop-1440x1000.png");
+    setFixtureResponseStatus("declined");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByText("Can’t make it", { exact: true }).first().waitFor();
+    await captureReview(page, "assignment-detail-declined-desktop-1440x1000.png");
+  }
+
   await page.setViewportSize({ width: 390, height: 844 });
+  if (writeReviewScreenshots) {
+    setFixtureResponseStatus("needs_response");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByText("Needs response", { exact: true }).first().waitFor();
+    await captureReview(page, "assignment-detail-pending-mobile-390x844.png");
+    setFixtureResponseStatus("confirmed");
+  }
   await assertNoHorizontalOverflow(page, "Mobile assignment detail");
 
   const missingNavigation = await page.goto(
@@ -776,6 +806,7 @@ commit;`);
 async function main() {
   await verifyLocalPreflight();
   const containerName = await resolveLocalDatabaseContainer();
+  activeContainerName = containerName;
   try {
     await createFixtures(containerName);
     await exerciseBrowserRoute();
