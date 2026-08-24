@@ -1,5 +1,11 @@
 # Project History
 
+## Iteration 12.42 - Authenticated Admin Navigation Performance Investigation
+
+- Traced the current production-like admin execution path without changing source behavior. Every `/admin` request passes proxy Auth verification; each persisted page then creates a page client and serializes page Auth, grant Auth/read, project-contact Auth/read, and granted-workspace read. Tasks and Volunteers each add one persisted query; Overview parallelizes its three authorized summaries only after that context chain; Needs Attention uses the bounded 21-day Calendar model; Calendar adds bounded core, selector, picker, and notification-summary work.
+- Confirmed code-level round-trip pressure: Communications is the mock/in-memory control with no page-level persisted read; empty Calendar has ten network round trips, while populated Calendar can reach sixteen across fifteen sequential stages and repeats task-preset plus assignment/response families for distinct consumers. No unsafe caching, auth/session shortcut, RLS change, query-scope expansion, migration, deployment, or production mutation was made.
+- Queued the smallest safe follow-up: 12.42.1 should introduce a request-scoped verified admin context and carefully test authorized Calendar parallelization/deduplication. Workspace/project switching is a separate secondary Settings UX issue; the old prototype `/admin/projects` remains non-production workspace truth.
+
 ## Iteration 12.41 - First Real Bozeman Production Workspace and Admin Provisioning
 
 - Used the reviewed 12.14 operator boundary against exact production to create workspace `bozeman` (`Bozeman`, active, `America/Denver`), one active project contact for the single existing approved Auth identity, and one active `main_contact` grant.
