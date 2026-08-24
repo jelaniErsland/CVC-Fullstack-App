@@ -1,5 +1,17 @@
 # Project History
 
+## Iteration 12.41 - First Real Bozeman Production Workspace and Admin Provisioning
+
+- Used the reviewed 12.14 operator boundary against exact production to create workspace `bozeman` (`Bozeman`, active, `America/Denver`), one active project contact for the single existing approved Auth identity, and one active `main_contact` grant.
+- Granted only `workspace.read`, `questionnaires.review`, `volunteers.view`, `volunteers.edit`, `tasks.view`, `tasks.edit`, `calendar.view`, `calendar.edit`, `assignments.view`, and `assignments.edit`. Exact association, zero duplicates/unknown capabilities, and authenticated RLS visibility of exactly one workspace/contact/grant passed.
+- Production remained at `20260812123430`; every other Project Local product/storage count remained zero. No staging, schema/migration, service-role application path, Auth mutation, backup/task action, email, Resend change, or Notification Health execution occurred. Launch remains `NO-GO`.
+
+## Iteration 12.41A - Provisioning Record Reconciliation
+
+- Recorded safe human product-route evidence: normal production Auth resolves the approved contact into the real `Bozeman` workspace and renders the persisted empty-project Overview. No personal identifier, session value, or browser token is recorded.
+- Corrected current readiness wording to distinguish installed Notification Health schema/function and completed provisioning from the still-pending first authorized production execution.
+- Recorded the observed approximately 2–5 second authenticated admin navigation latency (Calendar near 5 seconds, Tasks near 2 seconds, including repeated navigation) as an investigation required before controlled-pilot expansion. No cause, performance change, hosted operation, email, Notification Health execution, or production mutation is claimed.
+
 ## Iteration 12.40 - Persisted Assignment Detail Product Entry and Admin Drill-Down
 
 - Promoted the existing persisted `/admin/assignments/[assignmentId]` route into the product from Calendar assignment roster rows and Needs Attention pending/denied response signals. Every href is built only from the exact authorized persisted assignment UUID; multi-assignment response signals render separate labeled destinations and never choose an arbitrary first assignment.

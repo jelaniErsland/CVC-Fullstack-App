@@ -104,13 +104,11 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     repositoryFindings: [
       "workspace identity, project contacts, grants, Auth shell, and contact-scoped grant readers exist",
       "calendar route selection now requires exactly one eligible active workspace and fails closed on ambiguity",
-      "real Bozeman provisioning and contact invitation/grant workflow are not yet productized",
+      "12.41 completed exact production Bozeman workspace/contact/grant provisioning through the reviewed operator boundary; no productized provisioning UI was added",
     ],
     betaNeed:
-      "Create/provision one Bozeman workspace and authorized contacts with explicit capabilities before any real beta data entry.",
+      "Preserve the exact 12.41 workspace/contact/grant scope while later pilot data uses normal authenticated product routes.",
     blockers: [
-      "bozeman_workspace_provisioning_runbook_or_admin_flow",
-      "project_contact_invite_and_grant_assignment_process",
       "multiple_workspace_operator_policy_before_more_than_one_live_workspace",
     ],
     deferrable: ["full_platform_workspace_switcher", "belgrade_migration"],
@@ -298,7 +296,7 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
       "response-link delivery remains separate from assignment-detail admin reveal/copy activation",
     ],
     betaNeed:
-      "After backup/recovery and provisioning prerequisites permit a reviewed controlled test, prove the implemented Initial email action through the production ledger, real Resend delivery, duplicate and retry behavior, schedule access, and safe monitoring.",
+      "In a reviewed controlled test, prove the implemented Initial email action through the production ledger, real Resend delivery, duplicate and retry behavior, schedule access, and safe monitoring.",
     blockers: ["production_initial_assignment_application_delivery_proof"],
     deferrable: [
       "full_communications_authoring",
@@ -328,11 +326,11 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
     statuses: ["blocked_by_dependency", "not_implemented", "beta_critical"],
     repositoryFindings: [
       "local and hosted non-production validation patterns exist",
-      "production Supabase deployment domain Auth provider-level Resend configuration application observability Vercel runtime-log controlled-event review 12.33 operator notification-health architecture complete non-blocking backup/recovery with enabled recurrence and the 12.36 locally proven established-production migration gate are established, while application email proof provisioning production migration execution and notification-health execution and pilot readiness remain incomplete",
+      "production Supabase deployment domain Auth provider-level Resend configuration application observability Vercel runtime-log controlled-event review 12.33 operator notification-health architecture complete non-blocking backup/recovery enabled recurrence completed 12.36.5 production migration exact 12.41 Bozeman workspace/contact/grant provisioning and normal Auth-to-empty-Overview access are established, while authenticated admin navigation performance investigation application email proof notification-health execution and pilot readiness remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     betaNeed:
-      "Complete the separately authorized exact production migration and backup-lock transition, application-driven email and Notification Health execution, real provisioning, pilot testing, mobile proof, and fallback review before real Bozeman use.",
+      "Investigate authenticated admin navigation performance before controlled-pilot expansion, then complete application-driven email and Notification Health execution, pilot testing, mobile proof, and fallback review before real Bozeman operational use.",
     blockers: [
       "production_supabase_environment",
       "deployment_environment_and_domain",
@@ -346,7 +344,6 @@ export const bozemanBetaAuditDomains: readonly BetaDomain[] = [
 ];
 
 export const bozemanBetaBlockers = [
-  "bozeman_workspace_provisioning_and_project_contact_grants",
   "manual_volunteer_add_edit_or_controlled_import",
   "calendar_create_edit_archive_publication_mutations",
   "draft_private_vs_published_live_visibility_truth",
@@ -354,7 +351,7 @@ export const bozemanBetaBlockers = [
   "secure_account_light_volunteer_schedule_access",
   "confirm_deny_integration_with_admin_visible_response_state",
   "production_resend_application_delivery_proof",
-  "production_migrations_email_provisioning_and_pilot_validation",
+  "production_email_notification_health_and_pilot_validation",
 ];
 
 export const bozemanBetaDeferredFeatures = [
@@ -449,7 +446,7 @@ export const bozemanBetaCriticalPath = [
 
 export const bozemanBetaSafestFirsts = {
   firstRealBozemanVolunteerRecord:
-    "provision Bozeman workspace/contact/grants, then add one volunteer through permanent volunteer_profile Add/Edit or controlled import path",
+    "with the 12.41 Bozeman workspace/contact/grants already provisioned, add one approved volunteer through permanent volunteer_profile Add/Edit or controlled import path",
   firstRealPersistedScheduledItemCreatedFromProductUi:
     "keep /admin/calendar read route, add reviewed calendar.edit server action for one bounded create/edit path, then refresh the persisted route",
   firstRealVolunteerAssignment:
@@ -490,7 +487,7 @@ export const bozemanBetaOld12_14Decision = {
   rationale:
     "A full /admin/tasks persisted read helper remains useful, but it is not the highest-priority beta unblocker. Calendar writes can proceed with a narrower reviewed task-preset selector/read seam, while Bozeman workspace provisioning and volunteer data entry are more immediate critical-path blockers.",
   immediateNextImplementationSlice:
-    "12.14 Bozeman Workspace Access and Provisioning Readiness",
+    "Controlled application-driven Initial Assignment Email proof and first production Notification Health check",
   tasksHelperReturnPoint:
     "Revisit as a scoped Calendar task-preset selector seam before or during Calendar create/edit work, or as the full /admin/tasks helper after beta-critical scheduling is safe.",
 } as const;
@@ -562,6 +559,6 @@ export function evaluateBozemanBetaLaunchReadiness() {
       bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
     old12_14Decision: bozemanBetaOld12_14Decision.decision,
     reason:
-      "The persisted scheduling loop, beta-critical UI, privacy-safe application and operator observability architecture, staging proof through 20260812123430, the 12.36 locally proven established-production migration gate, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, direct provider-level inbox delivery, and complete non-blocking backup/recovery with enabled recurrence are proven, but Project Local application-driven production email proof, real Bozeman provisioning, production application of the pending migrations and backup-lock transition, notification-health execution, and a controlled pilot remain incomplete.",
+      "The persisted scheduling loop, beta-critical UI, privacy-safe application and operator observability architecture, staging and production through 20260812123430, exact 12.41 Bozeman workspace/contact/grant provisioning, Vercel runtime-log review and controlled-event proof, Resend application adapter, provider configuration, direct provider-level inbox delivery, and complete non-blocking backup/recovery with enabled recurrence are proven, but Project Local application-driven production email proof, notification-health execution, and a controlled pilot remain incomplete.",
   } as const;
 }

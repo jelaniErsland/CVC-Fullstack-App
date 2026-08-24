@@ -24,7 +24,7 @@ Current conclusion: `NO-GO`.
 - Temporary Vercel fallback alias `https://project-local-one.vercel.app` remains available.
 - Keep the chosen domain connected in the hosting platform.
 - Do not change DNS unless the hosting platform tells you the exact records.
-- Do not add real Bozeman data yet.
+- Preserve the exact 12.41 Bozeman workspace/contact/grant foundation; do not add volunteer or scheduling data until the next controlled step is reviewed.
 
 ## Phase C - Values to collect
 
@@ -75,11 +75,9 @@ Creating an Auth user does not grant app access. App access requires:
 - Temporary fallback callback remains allowlisted: `https://project-local-one.vercel.app/admin/auth/callback`.
 - Add any approved preview/staging callback URLs separately.
 - Keep app sign-in invite-only. Unknown emails should not create usable project-contact access.
-- Apply reviewed committed migrations to the new production project.
+- Do not apply the completed production migrations again. For any future migration, require a separately reviewed established-production gate and exact backup-lock transition.
 - Current production terminal migration is exactly `20260812123430`; the reviewed 12.36.5 transition is complete and must not be rerun.
-- Compare generated public-schema types.
-- Confirm RLS/Auth before adding real data.
-- Verify backups and retention.
+- Preserve the verified generated public-schema types, RLS/Auth association, and backup/retention evidence; revalidate only as required by a separately reviewed future change.
 
 ## Phase F - Hosting setup
 
@@ -109,7 +107,7 @@ Creating an Auth user does not grant app access. App access requires:
 
 ### Project Local application email proof (still required)
 
-- Complete backup/recovery and provisioning prerequisites before creating the controlled production-data test case.
+- Backup/recovery and exact workspace/contact/grant provisioning prerequisites are complete; separately review the controlled production-data test case before creating it.
 - Use the proven 12.32 safe events for claim, provider, finalization, schedule-access, and stale-delivery failures; preserve the proven 12.32.1 Vercel review workflow and the 12.33 bounded Notification Health/cadence contract below.
 - Approve a test recipient and a separately reviewed app-driven test procedure.
 - Only during that approved procedure, set `ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT=resend`, redeploy, and use the real Initial email action.
@@ -125,7 +123,7 @@ Creating an Auth user does not grant app access. App access requires:
 - Follow the immediate-investigation and immediate-pause policy in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md).
 - Proven in 12.33 locally and on approved staging: an authenticated, capability-gated, exactly-one-workspace stale-delivery read; the unlinked Notification Health route; and an after-batch/before-retry/end-of-active-day cadence with immediate investigation and pause-on-repeat/multiple-unresolved escalation.
 - Manual notification is sufficient for the initial tiny controlled beta. Automated alerting is not required unless later scale or response performance makes the cadence inadequate.
-- Still required as controlled-pilot evidence: after real Bozeman workspace/contact/grant provisioning, record the first authorized production Notification Health execution. The schema/function is present; do not provision fake production rows merely to make the diagnostic green.
+- Still required as controlled-pilot evidence: record the first authorized production Notification Health execution. The schema/function and 12.41 access foundation are present; do not provision fake production rows merely to make the diagnostic green.
 
 ## Phase G - Verification
 
@@ -150,15 +148,15 @@ Ask Codex or the operator to run only documented non-mutating checks first:
 - No real data mutation.
 - No raw errors or credentials.
 
-Stop before real Bozeman provisioning until these checks pass.
+12.41 completed the reviewed Bozeman workspace/contact/grant provisioning after these checks passed.
 
-Manual Auth evidence from 12.27 passed on the canonical origin: an existing approved Auth email received a magic link, returned through `https://projectlocal.app/admin/auth/callback`, opened the admin shell, and failed closed on persisted admin routes because no Project Local workspace/contact/grant exists yet. Do not automate production magic-link requests in routine smoke tests.
+Manual Auth evidence from 12.27 passed on the canonical origin. 12.41 maps that single approved Auth identity to exactly one active Bozeman contact and grant; server/RLS verification resolves exactly one workspace. Normal production Auth sign-in now resolves the approved contact into the real `Bozeman` workspace and renders the persisted empty-project Overview. A fresh browser session may still require the normal manual magic-link flow. Do not automate production magic-link requests.
 
 ## Phase H - Before real beta data
 
 Use [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md) for the backup, restore, rollback, and operational-pause evidence trail. Use [`INDEPENDENT_PRODUCTION_BACKUP_SETUP.md`](./INDEPENDENT_PRODUCTION_BACKUP_SETUP.md) for the preferred Windows-first independent backup setup.
 
-- Review the 12.29 PowerShell automation foundation before any real Bozeman product data is provisioned.
+- Preserve the reviewed backup automation evidence before adding any product data beyond the exact 12.41 workspace/contact/grant foundation.
 - Create the real age key pair outside the repository.
 - Store the private age recovery identity in at least two secure places.
 - Use secure operator credentials or a dedicated least-privilege backup credential reviewed for this purpose.

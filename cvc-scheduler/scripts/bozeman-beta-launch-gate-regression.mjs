@@ -74,7 +74,7 @@ async function main() {
   assert.equal(BOZEMAN_BETA_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(BOZEMAN_BETA_OPERATOR_OBSERVABILITY_PROVEN, true);
   assert.equal(BOZEMAN_BETA_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN, true);
-  assert.equal(BOZEMAN_BETA_PRODUCTION_PENDING_SCHEMA_APPLIED, false);
+  assert.equal(BOZEMAN_BETA_PRODUCTION_PENDING_SCHEMA_APPLIED, true);
   assert.equal(BOZEMAN_BETA_PRODUCT_OWNER_UI_APPROVED, true);
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REFERENCE_PATH, "docs/design/approved-project-local-ui");
   assert.equal(BOZEMAN_BETA_APPROVED_UI_REVIEW_CAPTURE_COUNT, 6);
@@ -88,7 +88,6 @@ async function main() {
   const statuses = new Set(bozemanBetaLaunchGateItems.map((item) => item.status));
   for (const status of [
     "proven",
-    "operator_required",
     "configuration_required",
     "pilot_required",
     "blocked",
@@ -129,6 +128,15 @@ async function main() {
   assert.equal(uiGate.blocking, false);
   assert.match(JSON.stringify(uiGate.evidence), /Jelani explicitly product-owner approved/i);
   assert.match(JSON.stringify(uiGate.evidence), /six real-route desktop and 390px/i);
+
+  const provisioningGate = bozemanBetaLaunchGateItems.find(
+    (item) => item.id === "workspace_contact_grant_provisioning",
+  );
+  assert(provisioningGate, "Launch gate is missing workspace/contact/grant provisioning.");
+  assert.equal(provisioningGate.status, "proven");
+  assert.equal(provisioningGate.blocking, false);
+  assert.match(JSON.stringify(provisioningGate.evidence), /12\.41/);
+  assert.match(JSON.stringify(provisioningGate.evidence), /exactly one workspace\/contact\/grant/i);
 
   const pilotGate = bozemanBetaLaunchGateItems.find((item) => item.id === "controlled_pilot");
   assert(pilotGate, "Launch gate is missing the controlled-pilot item.");
@@ -172,6 +180,7 @@ async function main() {
   assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/recovery is complete and non-blocking/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.36 locally proves/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /production is at 20260812123430/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /12\.41.*provisioning is complete/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

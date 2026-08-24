@@ -184,13 +184,12 @@ assert.match(
 );
 assert.match(
   bozemanBetaOld12_14Decision.immediateNextImplementationSlice,
-  /Bozeman Workspace Access/i,
+  /Initial Assignment Email proof.*Notification Health/i,
 );
 
 const readiness = evaluateBozemanBetaLaunchReadiness();
 assert.equal(readiness.allowedToLaunch, false);
 for (const blocker of [
-  "bozeman_workspace_provisioning_and_project_contact_grants",
   "manual_volunteer_add_edit_or_controlled_import",
   "calendar_create_edit_archive_publication_mutations",
   "secure_account_light_volunteer_schedule_access",
@@ -198,6 +197,11 @@ for (const blocker of [
 ]) {
   assert.ok(readiness.blockers.includes(blocker), `missing blocker ${blocker}`);
 }
+assert.equal(
+  readiness.blockers.includes("bozeman_workspace_provisioning_and_project_contact_grants"),
+  false,
+  "completed 12.41 provisioning must not remain a launch blocker",
+);
 assert.equal(
   readiness.blockers.includes("approved_ui_integration_for_beta_critical_surfaces"),
   false,

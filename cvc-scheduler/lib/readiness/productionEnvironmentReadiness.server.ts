@@ -79,7 +79,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
     ],
     requiredAction:
-      "Keep production separated from staging and local fixtures; do not create real rows until the remaining launch blockers and reviewed operator provisioning steps pass.",
+      "Keep production separated from staging and local fixtures; preserve the exact 12.41 foundation and add further real rows only through separately reviewed pilot steps.",
   },
   {
     id: "hosting_recommendation",
@@ -94,7 +94,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "Vercel is the lowest-friction fit for this Next.js app and provides preview deployments, env management, domains, HTTPS, logs, and rollback",
     ],
     requiredAction:
-      "Keep using the approved Vercel project and canonical domain; do not provision real Bozeman data until remaining launch blockers pass.",
+      "Keep using the approved Vercel project and canonical domain; do not broaden the exact 12.41 production foundation until remaining launch blockers pass.",
   },
   {
     id: "production_supabase",
@@ -104,14 +104,14 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     evidence: [
       "12.25 validated the initial/bootstrap empty production schema on project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
       "production product rows, Auth users, and storage objects remained empty before 12.26 manual Auth proof",
-      "after 12.26, approved Auth identities may exist while Project Local product rows and storage remain unprovisioned",
+      "12.41 provisions exactly one Bozeman workspace, one approved-Auth-associated project contact, and one canonical mainScheduler grant while every other product/storage count remains zero",
       "12.36 locally proves the separate established-production gate for exactly 20260811123300 then 20260812123430 with Auth/product preservation, types, Notification Health, privileges, RLS/FORCE RLS, and zero residue",
       "12.36.5 completed the separately authorized production transition through 20260811123300 then 20260812123430 with independent postflight",
       "the permanent backup task is enabled/Ready and locked to 20260812123430 after the reviewed transition",
       "production must not reuse kfuujcfxoayukywvtaeh",
     ],
     requiredAction:
-      "Do not rerun the completed migration or move the backup lock backward. For a future migration, require a newly reviewed gate and exact task-lock transition before provisioning.",
+      "Do not rerun the completed migration or move the backup lock backward. Require a newly reviewed gate and exact task-lock transition for any future migration.",
   },
   {
     id: "production_environment_variables",
@@ -142,8 +142,8 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "proxy requires Auth only when ADMIN_AUTH_MODE=enforced",
       "operator evidence confirms Supabase Auth Site URL is https://projectlocal.app and exact final-domain callback is configured",
       "temporary Vercel callback remains allowlisted for fallback",
-      "manual magic-link sign-in returned through the final-domain production callback and opened the admin shell",
-      "no-workspace/no-grant Calendar and Volunteers routes failed closed after sign-in",
+      "12.27 manual magic-link sign-in returned through the final-domain production callback and opened the admin shell; the historical no-workspace/no-grant Calendar and Volunteers routes then failed closed",
+      "after 12.41, normal production Auth resolves the approved contact into the real Bozeman workspace and persisted empty-project Overview",
     ],
     requiredAction:
       "Keep Auth Site URL/callbacks aligned with the canonical production domain and rerun smoke checks after any Auth/domain change.",
@@ -211,10 +211,10 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "12.33 adds a no-argument authenticated RPC that derives exactly one active authorized workspace, requires workspace.read/calendar.view/assignments.view/assignments.edit, returns only id/state/expiry for at most 100 sending rows, and preserves direct ledger denial",
       "12.33 local and project-local-staging validation proves authorization, ambiguity denial, isolation, oldest-expiry ordering, stale/fresh handling, minimal projection, and no mutation; 12.34.3B revalidates that behavior on staging through 20260812123430 with zero disposable residue",
       "the unlinked /admin/diagnostics/notification-health route and documented after-batch/end-of-day cadence provide a sufficient manual notification workflow for the initial tiny controlled beta; automated alert delivery remains unproven and is not required at that scale",
-      "the Notification Health function is present in production; its first real authorized operator execution, production Bozeman grant behavior, and observation of a real production stale row remain deferred to provisioning and a controlled pilot",
+      "the Notification Health function is present in production and 12.41 proves authenticated Bozeman grant resolution; its first real authorized operator execution and observation of a real production stale row remain deferred to a controlled pilot",
     ],
     requiredAction:
-      "Preserve the 12.33 read/privacy/cadence contract; after a separately reviewed production migration and Bozeman provisioning, run Notification Health after the first controlled email batch and record production execution evidence. Add automated alerting only if scale, repetition, or response performance makes the manual cadence inadequate.",
+      "Preserve the 12.33 read/privacy/cadence contract; during the separately reviewed controlled email pilot, run Notification Health after the first batch and record production execution evidence. Add automated alerting only if scale, repetition, or response performance makes the manual cadence inadequate.",
   },
   {
     id: "backup_recovery",
@@ -240,16 +240,16 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   },
   {
     id: "operator_pilot_approval",
-    title: "Operator provisioning and controlled pilot",
+    title: "Controlled production pilot",
     status: "operator_required",
     blocking: true,
     evidence: [
-      "12.14 provisioning boundary exists but real Bozeman rows are not created",
+      "12.41 used the reviewed 12.14 boundary to create exactly one active Bozeman workspace, one active approved-Auth-associated project contact, and one active canonical mainScheduler grant",
       "Jelani explicitly product-owner approved the 12.30.1 beta-critical UI and its six desktop/390px review captures",
-      "real Bozeman provisioning and controlled pilot evidence remain incomplete",
+      "every other Project Local product/storage count remains zero; authenticated admin navigation is observed at approximately 2–5 seconds and controlled pilot evidence remains incomplete",
     ],
     requiredAction:
-      "Provision real Bozeman access through reviewed operator steps and run a controlled pilot before replacing any operational process.",
+      "Investigate authenticated admin navigation performance before controlled-pilot expansion, then run a separately reviewed controlled email and Bozeman pilot before replacing any operational process.",
   },
   {
     id: "deferred_non_blocking_features",
@@ -271,6 +271,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging and production through 20260812123430, the completed established-production migration, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, the first real authorized production Notification Health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.40.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging and production through 20260812123430, the completed established-production migration, exact 12.41 Bozeman workspace/contact/grant provisioning, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, the first real authorized production Notification Health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.40.",
   items: productionEnvironmentReadinessItems,
 } as const;

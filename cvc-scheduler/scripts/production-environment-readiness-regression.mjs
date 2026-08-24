@@ -153,6 +153,15 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
   assert.match(JSON.stringify(observability.evidence), /first real authorized operator execution.*remain deferred/i);
 
+  const operatorPilot = productionEnvironmentReadinessItems.find(
+    (item) => item.id === "operator_pilot_approval",
+  );
+  assert(operatorPilot, "Production readiness is missing controlled pilot approval.");
+  assert.equal(operatorPilot.status, "operator_required");
+  assert.equal(operatorPilot.blocking, true);
+  assert.match(JSON.stringify(operatorPilot.evidence), /12\.41/);
+  assert.match(JSON.stringify(operatorPilot.evidence), /exactly one active Bozeman workspace/i);
+
   const backupRecovery = productionEnvironmentReadinessItems.find(
     (item) => item.id === "backup_recovery",
   );
