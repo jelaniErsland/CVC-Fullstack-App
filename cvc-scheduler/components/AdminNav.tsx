@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
 import { demoProjectId, getProjectById } from "@/lib/mockData";
 
 export type AdminNavActive =
@@ -124,6 +125,7 @@ export function AdminNav({
                 <Icon aria-hidden="true" className="size-4" />
               </span>
               <span>{item.label}</span>
+              <AdminNavigationPendingIndicator disabled={active === item.id} />
             </Link>
           );
         })}

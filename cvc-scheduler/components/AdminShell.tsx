@@ -22,6 +22,7 @@ import type { ReactNode, Ref } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
+import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
@@ -194,7 +195,7 @@ function MobileTabLink({
       aria-label={tab.ariaLabel ?? `Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
-        "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+        "relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         active
           ? "text-[var(--pl-blue)]"
           : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
@@ -205,6 +206,7 @@ function MobileTabLink({
         <Icon aria-hidden="true" className="h-[19px] w-[19px]" />
       </span>
       <span>{tab.label}</span>
+      <AdminNavigationPendingIndicator compact disabled={active} />
     </Link>
   );
 }
@@ -304,6 +306,7 @@ function MobileMoreSheet({
                           className="h-4 w-4 shrink-0 text-slate-400"
                         />
                         <span className="min-w-0 flex-1">{link.label}</span>
+                        <AdminNavigationPendingIndicator disabled={isActive} />
                         {link.note ? (
                           <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500">
                             {link.note}

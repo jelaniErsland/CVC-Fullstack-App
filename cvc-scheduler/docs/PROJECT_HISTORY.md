@@ -1,5 +1,11 @@
 # Project History
 
+## Iteration 12.42.4 - Admin Navigation Feedback and Performance Wrap-Up
+
+- Recorded owner/operator production evidence: Supabase production is in Oregon (`us-west-2`); Vercel Functions were observed in `iad1`; the Vercel Function Region was manually changed to Portland (`pdx1`), and the same reviewed application was redeployed. Product-owner verification reports dramatically snappier authenticated admin navigation. No precise latency is claimed.
+- Added a shell-preserving, decorative Next `useLinkStatus` pending indicator to the existing desktop and mobile admin links. It begins with a normal Link transition, resolves when the destination becomes active, ignores the current destination, keeps keyboard and mobile Link behavior intact, uses reduced-motion-safe styling, and has no focus or live-region behavior.
+- 12.42.2 Calendar orchestration remains a valid secondary optimization. General admin navigation performance is no longer the primary pre-pilot blocker; a specifically problematic route still requires evidence. No Auth, RLS, capability, workspace, contact/grant, read/write, email, Notification Health, backup, schema/migration/RPC/type, service-role, staging, production, or infrastructure change was made by this source-only iteration.
+
 ## Iteration 12.42.2 - Autonomous Admin Navigation Performance Debugging and Targeted Fix
 
 - Recorded that deployed 12.42.1 did not produce an owner-observed navigation speed improvement, then replaced repeated manual timing with a deterministic local harness over disposable active Auth/contact/workspace/canonical-main-scheduler fixtures. The harness records client/Auth/PostgREST-RPC call counts, dependency stages, concurrent groups, and critical paths at synthetic 100/250/400 ms remote latency for Overview, Tasks, Calendar, Volunteers, and Needs Attention.
