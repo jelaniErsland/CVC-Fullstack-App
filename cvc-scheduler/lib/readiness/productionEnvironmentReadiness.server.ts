@@ -26,10 +26,10 @@ export const PRODUCTION_ENVIRONMENT_READINESS_CAN_USE_SERVICE_ROLE_APPLICATION =
 export const PRODUCTION_ENVIRONMENT_READINESS_CAN_ACTIVATE_RESPONSE_LINK_REVEAL = false;
 export const PRODUCTION_ENVIRONMENT_READINESS_DECISION = "NO-GO" as const;
 export const PRODUCTION_ENVIRONMENT_RECOMMENDED_HOST = "Vercel" as const;
-export const PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION = "20260714122230" as const;
+export const PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION = "20260812123430" as const;
 export const PRODUCTION_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN = true;
 export const PRODUCTION_PENDING_SCHEMA_TARGET = "20260812123430" as const;
-export const PRODUCTION_PENDING_SCHEMA_APPLIED = false;
+export const PRODUCTION_PENDING_SCHEMA_APPLIED = true;
 export const PRODUCTION_EMAIL_PROVIDER_CONFIGURATION_PROVEN = true;
 export const PRODUCTION_EMAIL_PROVIDER_DIRECT_DELIVERABILITY_PROVEN = true;
 export const PRODUCTION_APPLICATION_EMAIL_ENABLED = false;
@@ -74,7 +74,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     evidence: [
       "local uses loopback Supabase and disposable fixtures",
       "staging is project-local-staging/kfuujcfxoayukywvtaeh through 20260812123430",
-      "production is project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
+      "production is project-local-production/wdlaauzknfggoqldolmx through 20260812123430",
       "production deployment uses project-local at canonical origin https://projectlocal.app",
       "temporary Vercel fallback alias remains https://project-local-one.vercel.app",
     ],
@@ -98,20 +98,20 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
   },
   {
     id: "production_supabase",
-    title: "Production Supabase project and pending schema transition",
-    status: "configuration_required",
-    blocking: true,
+    title: "Production Supabase project and established schema",
+    status: "proven",
+    blocking: false,
     evidence: [
       "12.25 validated the initial/bootstrap empty production schema on project-local-production/wdlaauzknfggoqldolmx through 20260714122230",
       "production product rows, Auth users, and storage objects remained empty before 12.26 manual Auth proof",
       "after 12.26, approved Auth identities may exist while Project Local product rows and storage remain unprovisioned",
       "12.36 locally proves the separate established-production gate for exactly 20260811123300 then 20260812123430 with Auth/product preservation, types, Notification Health, privileges, RLS/FORCE RLS, and zero residue",
-      "production and staging were not contacted in 12.36; production remains at 20260714122230 and the pending chain is unapplied",
-      "the permanent backup task remains enabled and locked to 20260714122230; its reviewed future lock transition must occur only after successful migration postflight",
+      "12.36.5 completed the separately authorized production transition through 20260811123300 then 20260812123430 with independent postflight",
+      "the permanent backup task is enabled/Ready and locked to 20260812123430 after the reviewed transition",
       "production must not reuse kfuujcfxoayukywvtaeh",
     ],
     requiredAction:
-      "In a separately authorized window, verify a recent backup, disable the recurring task, run the exact established-production preflight/apply/postflight, update only the task lock to 20260812123430, and re-enable without manual execution before provisioning.",
+      "Do not rerun the completed migration or move the backup lock backward. For a future migration, require a newly reviewed gate and exact task-lock transition before provisioning.",
   },
   {
     id: "production_environment_variables",
@@ -211,7 +211,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
       "12.33 adds a no-argument authenticated RPC that derives exactly one active authorized workspace, requires workspace.read/calendar.view/assignments.view/assignments.edit, returns only id/state/expiry for at most 100 sending rows, and preserves direct ledger denial",
       "12.33 local and project-local-staging validation proves authorization, ambiguity denial, isolation, oldest-expiry ordering, stale/fresh handling, minimal projection, and no mutation; 12.34.3B revalidates that behavior on staging through 20260812123430 with zero disposable residue",
       "the unlinked /admin/diagnostics/notification-health route and documented after-batch/end-of-day cadence provide a sufficient manual notification workflow for the initial tiny controlled beta; automated alert delivery remains unproven and is not required at that scale",
-      "production execution of the RPC, production Bozeman grant behavior, and observation of a real production stale row remain unproven and are deferred to the reviewed production migration/provisioning and controlled pilot",
+      "the Notification Health function is present in production; its first real authorized operator execution, production Bozeman grant behavior, and observation of a real production stale row remain deferred to provisioning and a controlled pilot",
     ],
     requiredAction:
       "Preserve the 12.33 read/privacy/cadence contract; after a separately reviewed production migration and Bozeman provisioning, run Notification Health after the first controlled email batch and record production execution evidence. Add automated alerting only if scale, repetition, or response performance makes the manual cadence inadequate.",
@@ -258,7 +258,7 @@ export const productionEnvironmentReadinessItems: readonly ProductionEnvironment
     blocking: false,
     evidence: [
       "response-link reveal/copy remains paused",
-      "public lookup, remembered devices, /admin/tasks cutover, imports, Communications, reminders, and Belgrade migration are out of scope",
+      "public lookup, remembered devices, imports, Communications, reminders, and Belgrade migration are out of scope",
     ],
     requiredAction:
       "Do not add deferred features as production-readiness shortcuts; revisit only through separate reviewed slices.",
@@ -271,6 +271,6 @@ export const productionEnvironmentReadinessSummary = {
   expectedMigration: PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION,
   stagingTarget: productionEnvironmentKnownStagingTarget,
   reason:
-    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging through 20260812123430, the locally proven established-production migration gate, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, production notification-health execution, production application of the pending migrations and backup-lock transition, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.30.1.",
+    "Production environment readiness is a NO-GO even though the privacy-safe application and operator observability architecture, Vercel runtime-log review, controlled-event proof, staging and production through 20260812123430, the completed established-production migration, Resend domain/sender/secret configuration, direct provider-level inbox delivery, complete non-blocking backup/recovery, enabled recurrence, and recovery ownership are proven. Project Local application-driven delivery, operator provisioning, the first real authorized production Notification Health execution, and pilot evidence remain incomplete. Product-owner UI approval is proven through 12.40.",
   items: productionEnvironmentReadinessItems,
 } as const;

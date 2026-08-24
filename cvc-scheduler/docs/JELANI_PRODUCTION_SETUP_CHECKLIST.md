@@ -68,15 +68,15 @@ Creating an Auth user does not grant app access. App access requires:
 - If Supabase CLI asks for the database password, enter it directly in the local terminal from the password manager. Do not paste it into Codex, chat, docs, Git, screenshots, or issue comments.
 - The bootstrap schema gate is migration/type/security/count validation only. It must not create Auth users, workspaces, contacts, volunteer profiles, Calendar rows, assignments, notification deliveries, storage objects, or real Bozeman data.
 - After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist. Do not delete them to satisfy the old bootstrap zero-Auth assertion.
-- 12.36 locally proves the separate established-production gate for exact baseline `20260714122230`, pending migrations `20260811123300` then `20260812123430`, legitimate Auth preservation, product-state preservation, generated types, Notification Health, privileges, and RLS/FORCE RLS. Production execution remains separately reviewed and has not occurred.
-- Before the future apply step, verify a recent encrypted backup, disable the permanent backup task, and confirm it is not running and still expects `20260714122230`. After successful postflight, update only that task lock to `20260812123430` with the reviewed registration action, verify all other task metadata unchanged, and re-enable without manually starting it.
+- 12.36 locally proved the separate established-production gate. 12.36.5 completed the authorized production preflight/apply/postflight through exactly `20260811123300` then `20260812123430`, preserving the approved Auth identity and zero product/storage state while passing generated types, Notification Health metadata, privileges, and RLS/FORCE RLS.
+- The permanent backup task is re-enabled/Ready and now expects `20260812123430`; every other reviewed task property is preserved and no manual backup was started. Do not rerun the completed migration or revert the task lock.
 - Current Supabase Auth Site URL is `https://projectlocal.app`.
 - Current exact final-domain callback is `https://projectlocal.app/admin/auth/callback`.
 - Temporary fallback callback remains allowlisted: `https://project-local-one.vercel.app/admin/auth/callback`.
 - Add any approved preview/staging callback URLs separately.
 - Keep app sign-in invite-only. Unknown emails should not create usable project-contact access.
 - Apply reviewed committed migrations to the new production project.
-- Current production terminal migration remains exactly `20260714122230`; the next reviewed target is exactly `20260812123430`.
+- Current production terminal migration is exactly `20260812123430`; the reviewed 12.36.5 transition is complete and must not be rerun.
 - Compare generated public-schema types.
 - Confirm RLS/Auth before adding real data.
 - Verify backups and retention.
@@ -125,7 +125,7 @@ Creating an Auth user does not grant app access. App access requires:
 - Follow the immediate-investigation and immediate-pause policy in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md).
 - Proven in 12.33 locally and on approved staging: an authenticated, capability-gated, exactly-one-workspace stale-delivery read; the unlinked Notification Health route; and an after-batch/before-retry/end-of-active-day cadence with immediate investigation and pause-on-repeat/multiple-unresolved escalation.
 - Manual notification is sufficient for the initial tiny controlled beta. Automated alerting is not required unless later scale or response performance makes the cadence inadequate.
-- Still required as controlled-pilot evidence: separately review and apply migration `20260811123300` to production, then record the first production Notification Health execution. Do not treat staging proof as production execution.
+- Still required as controlled-pilot evidence: after real Bozeman workspace/contact/grant provisioning, record the first authorized production Notification Health execution. The schema/function is present; do not provision fake production rows merely to make the diagnostic green.
 
 ## Phase G - Verification
 
@@ -133,7 +133,7 @@ Ask Codex or the operator to run only documented non-mutating checks first:
 
 - Production deployment smoke:
   ```powershell
-  $env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
+  $env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
   npm run test:production-deployment-smoke
   Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
   ```

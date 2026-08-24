@@ -10,6 +10,8 @@ Iteration 12.34.3 adds privilege-hardening migration `20260812123430`; approved 
 
 Iteration 12.36 adds and locally proves the separate established-production gate for the exact pending chain `20260811123300` then `20260812123430`. Its disposable baseline preserves one legitimate synthetic Auth identity and minimal product rows, proves the exact dry-run/application/post-state contracts, and leaves zero residue. Production and staging were not contacted; production remains at `20260714122230`.
 
+Iteration 12.36.5 completed the separately authorized production application on August 24, 2026. The exact established-production preflight proved terminal migration `20260714122230` and only the two reviewed pending migrations; apply advanced production through `20260811123300` then `20260812123430`; and independent postflight passed exact migration history, generated public-schema type parity, Notification Health metadata, direct/default privileges, RLS on all 13 Project Local tables, the exact four-table FORCE RLS set, postgres ownership, service-role platform posture, one preserved Auth identity, zero Project Local product rows, zero storage objects, and zero fixture residue. Staging was not contacted. Production now terminates at `20260812123430`.
+
 Current status: `SCHEMA VALIDATED`.
 
 Launch conclusion: `NO-GO`.
@@ -19,7 +21,7 @@ Launch conclusion: `NO-GO`.
 - Project name: `project-local-production`
 - Project ref: `wdlaauzknfggoqldolmx`
 - Forbidden staging ref: `kfuujcfxoayukywvtaeh`
-- Expected terminal migration: `20260714122230`
+- Historical bootstrap terminal migration: `20260714122230`; current production terminal migration: `20260812123430`
 
 ## Historical bootstrap gate command
 
@@ -35,9 +37,9 @@ This is the initial/bootstrap empty-production schema gate. It was designed to p
 
 ## Established-production gate
 
-`npm run test:production-established-schema` is the local-only regression. It proves exact target/ref and opt-in refusal, exact migration inventory and pending plan, legitimate Auth/product preservation from `20260714122230`, Notification Health, types, exact direct/default privileges, all-table RLS, the exact FORCE RLS set, owner/platform posture, and zero local residue. Production-capable `production-preflight`, `production-apply`, and `production-postflight` modes remain separately authorized and unexecuted; see [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md).
+`npm run test:production-established-schema` is the local-only regression. It proves exact target/ref and opt-in refusal, exact migration inventory and pending plan, legitimate Auth/product preservation from `20260714122230`, Notification Health, types, exact direct/default privileges, all-table RLS, the exact FORCE RLS set, owner/platform posture, and zero local residue. The production-capable modes ran once in 12.36.5; do not rerun them against the already-migrated target.
 
-The permanent backup task still expects `20260714122230` and was not modified. The future production migration window must disable it before apply, verify the current lock, apply and validate the exact chain, update only the lock to `20260812123430` through the reviewed task-registration action, and re-enable without catch-up or manual execution.
+The permanent backup task now expects `20260812123430`. During 12.36.5 it was disabled without execution, changed only through the reviewed single-lock transition, and re-enabled `Ready` for its next normal daily `03:15` occurrence. Do not rerun the completed migration or move the lock backward. The first real authorized production Notification Health operator execution remains pending real Bozeman provisioning/controlled-pilot authority.
 
 ## Current validation state
 
@@ -49,7 +51,7 @@ The permanent backup task still expects `20260714122230` and was not modified. T
 | Migration application through `20260714122230` | Passed: reviewed committed migrations only; no seeds or roles |
 | Migration level after | Passed: `20260714122230` |
 | Established-production local transition | Passed: exact `20260714122230` -> `20260811123300` -> `20260812123430`, with preserved synthetic Auth/product state and zero residue |
-| Established-production production execution | Pending / blocking: production remains `20260714122230` |
+| Established-production production execution | Passed: exact `20260714122230` -> `20260811123300` -> `20260812123430`; current terminal `20260812123430` |
 | Generated public-schema type parity | Passed |
 | Product application table counts | Passed: `0` rows |
 | Auth user count | Passed as `0` during 12.25 schema gate before manual Auth evidence; no longer assumed zero after 12.26 manual approved Auth sign-in |
@@ -68,7 +70,7 @@ The permanent backup task still expects `20260714122230` and was not modified. T
 
 Backup, restore, and rollback readiness is documented in [`PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md`](./PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md). 12.28.1 confirms Supabase-managed backup/restore limitations on Free; PITR remains unnecessary for the initial beta. 12.34 proves the first independent encrypted backup, checksum/status, and retention behavior; 12.34.1 through 12.34.3 prove managed-role compatibility, source ACL reconstruction, and full independent technical recovery; 12.35 proves recurring registration, safe notification, and ownership; 12.35.11 proves successful scheduled-host backup/checksum/retention; and 12.35.12 safely enables the permanent task. Backup/recovery is complete and non-blocking. The optional Supabase-managed Pro path remains available. The logical database package does not prove Supabase Auth platform configuration or Storage object BLOB recovery.
 
-The future production mode may apply only the exact reviewed two-migration chain. It must not create fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data. Fixture behavior exists only inside the disposable local regression and is structurally unavailable in production modes.
+The completed production mode applied only the exact reviewed two-migration chain and created no fixtures, Auth users, workspaces, contacts, volunteers, task presets, Calendar items, assignments, response rows, tokens, notification deliveries, storage objects, real Bozeman data, or Belgrade data. Fixture behavior exists only inside the disposable local regression and is structurally unavailable in production modes. Do not rerun the completed mode.
 
 It must not run hosted staging fixture gates against production. It must not configure or send email. It must not add service-role runtime behavior. It must not activate response-link reveal/copy.
 

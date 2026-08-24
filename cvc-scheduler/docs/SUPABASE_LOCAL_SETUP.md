@@ -69,12 +69,12 @@ This production command is schema/read-only bootstrap validation only. It refuse
 
 After 12.26 manual Auth proof, one or more approved Auth identities may legitimately exist. Do not rerun or reinterpret the bootstrap zero-state gate as the generic established-production migration gate after Auth identities or real product data exist.
 
-12.36 adds `npm run test:production-established-schema` as the local-only established-production proof. It owns a disposable local stack, begins at exactly `20260714122230`, preserves a synthetic Auth identity and minimal product fixture through exactly `20260811123300` and `20260812123430`, reuses the Notification Health regression, validates types/privileges/RLS/FORCE RLS/defaults, and removes all fixture/stack residue. Its production modes accept no fixture options and require separate exact opt-ins; they were not executed in 12.36. The permanent backup task remains enabled/Ready with its old migration lock and is unchanged.
+12.36 adds `npm run test:production-established-schema` as the local-only established-production proof. It owns a disposable local stack, begins at exactly `20260714122230`, preserves a synthetic Auth identity and minimal product fixture through exactly `20260811123300` and `20260812123430`, reuses the Notification Health regression, validates types/privileges/RLS/FORCE RLS/defaults, and removes all fixture/stack residue. 12.36.5 separately completed the authorized production modes; the permanent backup task is enabled/Ready at lock `20260812123430`.
 
 12.27 retargets the public HTTP-only production deployment smoke gate for Vercel project `project-local` to canonical production origin `https://projectlocal.app`. The temporary Vercel fallback alias remains `https://project-local-one.vercel.app`.
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```

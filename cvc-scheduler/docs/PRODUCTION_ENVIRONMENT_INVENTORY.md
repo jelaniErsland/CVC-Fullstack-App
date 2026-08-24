@@ -12,7 +12,7 @@ Recommended host: Vercel, because this repository is a plain Next.js 16 app with
 | --- | --- | --- | --- | --- |
 | Local | Loopback/local Supabase only | `http://127.0.0.1:3000` or `http://localhost:3000` | Recording-only for QA | Disposable fixtures only |
 | Staging | `project-local-staging` (`kfuujcfxoayukywvtaeh`) validated through migration `20260812123430` | Loopback preview for hosted browser QA, or approved staging preview | Recording-only | Disposable `qa-*` fixtures only |
-| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260714122230` | Canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` | Provider configured and direct dashboard delivery proven; Project Local application transport currently disabled pending app-driven proof | Real Bozeman data only through reviewed operator procedures |
+| Production | `project-local-production` (`wdlaauzknfggoqldolmx`) validated through migration `20260812123430` | Canonical origin `https://projectlocal.app`; temporary Vercel fallback alias `https://project-local-one.vercel.app` | Provider configured and direct dashboard delivery proven; Project Local application transport currently disabled pending app-driven proof | Real Bozeman data only through reviewed operator procedures |
 
 Production must never reuse staging project ref `kfuujcfxoayukywvtaeh`, staging Auth users, staging rows, staging notification ledger, or hosted fixture scripts.
 
@@ -63,7 +63,7 @@ No secret may use a `NEXT_PUBLIC_` prefix. No production secret may enter Git, d
 2. Verify the deployment project does not reference staging ref `kfuujcfxoayukywvtaeh`.
 3. Verify `ADMIN_AUTH_MODE=enforced`.
 4. Verify production application email remains disabled until the backup/recovery, provisioning, monitoring, and controlled app-driven test requirements in the production deployment runbook are complete.
-5. Preserve the proven Vercel Logs/Deployments review location, named alert/incident owner, action policy, and controlled privacy-safe proof. Preserve 12.33's authenticated bounded Notification Health path and after-batch/before-retry/end-of-active-day cadence. Manual notification is sufficient for the initial tiny controlled beta; apply the migration to production only through separate review and record the first production check during the controlled pilot.
+5. Preserve the proven Vercel Logs/Deployments review location, named alert/incident owner, action policy, and controlled privacy-safe proof. Preserve 12.33's authenticated bounded Notification Health path and after-batch/before-retry/end-of-active-day cadence. Manual notification is sufficient for the initial tiny controlled beta; the schema/function is already present in production, and the first authorized check remains a controlled-pilot record after provisioning.
 6. Run a read-only production smoke test only after the operator supplies the exact production project name/ref and HTTPS origin.
 7. Stop on any mismatch; do not “fix” by copying staging values.
 
@@ -75,10 +75,10 @@ npm run test:production-supabase-schema
 Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 ```
 
-Do not rerun the bootstrap gate as the established-production migration check after approved Auth identities or real product data exist. 12.36 locally proves `npm run test:production-established-schema` and the separate no-fixture preflight/apply/postflight contract for exactly `20260811123300` and `20260812123430`; production execution remains unperformed and separately authorized. The future apply window must disable the permanent backup task while it still holds `20260714122230`, then update only its expected-migration lock to `20260812123430` after successful postflight. After deployment, Auth, or origin changes, rerun the production deployment smoke gate:
+Do not rerun the bootstrap gate as the established-production migration check after approved Auth identities or real product data exist. 12.36 locally proved `npm run test:production-established-schema`; 12.36.5 then completed the separately authorized no-fixture production preflight/apply/postflight through exactly `20260811123300` and `20260812123430`. Production and the permanent backup task now both terminate/expect `20260812123430`. Do not rerun that completed migration or move the task lock backward. After deployment, Auth, or origin changes, rerun the production deployment smoke gate:
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```

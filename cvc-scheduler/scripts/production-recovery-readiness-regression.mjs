@@ -49,7 +49,7 @@ async function main() {
   assert.equal(productionRecoveryBaseline.supabaseRef, "wdlaauzknfggoqldolmx");
   assert.equal(productionRecoveryBaseline.supabasePlan, "Free");
   assert.equal(productionRecoveryBaseline.forbiddenStagingRef, "kfuujcfxoayukywvtaeh");
-  assert.equal(productionRecoveryBaseline.migration, "20260714122230");
+  assert.equal(productionRecoveryBaseline.migration, "20260812123430");
   assert.equal(productionRecoveryBaseline.emailTransport, "disabled");
 
   assert.equal(productionRecoveryReadinessSummary.decision, "GO");
@@ -101,7 +101,7 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /12\.33/);
   assert.match(JSON.stringify(observability.evidence), /after each controlled email test or batch/i);
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
-  assert.match(JSON.stringify(observability.evidence), /production RPC execution.*remain deferred/i);
+  assert.match(JSON.stringify(observability.evidence), /first real authorized execution.*remain deferred/i);
 
   const firstBackup = productionRecoveryReadinessItems.find(
     (item) => item.id === "first_independent_backup",

@@ -26,14 +26,14 @@ Current launch conclusion: `NO-GO`.
 
 Production is partially configured but not launch-approved:
 
-- Production Supabase exists as `project-local-production` (`wdlaauzknfggoqldolmx`) and is migrated through `20260714122230`.
+- Production Supabase exists as `project-local-production` (`wdlaauzknfggoqldolmx`) and is migrated through `20260812123430`.
 - Vercel project `project-local` is live at canonical origin `https://projectlocal.app`; temporary Vercel alias `https://project-local-one.vercel.app` remains available.
 - `ADMIN_AUTH_MODE` is enforced.
 - Supabase Auth Site URL `https://projectlocal.app` and exact callback `https://projectlocal.app/admin/auth/callback` are configured; the temporary Vercel callback remains allowlisted for fallback.
 - Manual magic-link sign-in passed on the final production origin.
 - Commit `082c960` was pushed to `origin/master`, the Vercel Production deployment sourced from `082c960` reached Ready, and the exact final-domain `npm run test:production-deployment-smoke` gate passed after deployment with exit code `0`.
 - Production Supabase is on the Free plan; Supabase-managed scheduled backups and restore-to-new-project are unavailable on that plan; PITR is unavailable and intentionally not required for the initial beta.
-- 12.29 adds the preferred independent encrypted backup automation foundation; 12.34 proves its first read-only age-encrypted production backup, checksum/status, and retention behavior. 12.34.1 solves the managed-role boundary, 12.34.2 attributes the 26 grants to restore interaction, and 12.34.3 proves deterministic source ACL reconstruction and full local recovery-forward. 12.34.3B validates staging through `20260812123430`. 12.35 proves daily `03:15`/`StartWhenAvailable` task registration, safe human-visible failure notification, and recovery/rollback ownership; its first scheduled production attempt failed safely at `migration_preflight_failed`. 12.35.11 then proves one successful controlled scheduled-host production backup, checksum, Sunday promotion, retention, and cleanup. 12.35.12 proves no catch-up-on-enable on this Windows host and enables the unchanged permanent task for its next future `03:15` occurrence without execution. Backup/recovery is complete and non-blocking. 12.36 locally proves the separate established-production migration gate and future backup-task lock transition without contacting production/staging. 12.31 selects Resend, 12.32 proves the privacy-safe event foundation, and 12.33 proves the bounded Notification Health architecture/cadence. Application-driven email, real workspace provisioning, production migrations/Notification Health execution, and controlled pilot remain incomplete. Application transport is disabled, Supabase Pro remains optional, and Jelani's approved 12.30.1 UI remains non-blocking.
+- 12.29 adds the preferred independent encrypted backup automation foundation; 12.34 proves its first read-only age-encrypted production backup, checksum/status, and retention behavior. 12.34.1 solves the managed-role boundary, 12.34.2 attributes the 26 grants to restore interaction, and 12.34.3 proves deterministic source ACL reconstruction and full local recovery-forward. 12.34.3B validates staging through `20260812123430`. 12.35 proves daily `03:15`/`StartWhenAvailable` task registration, safe human-visible failure notification, and recovery/rollback ownership; its first scheduled production attempt failed safely at `migration_preflight_failed`. 12.35.11 then proves one successful controlled scheduled-host production backup, checksum, Sunday promotion, retention, and cleanup. 12.35.12 proves no catch-up-on-enable on this Windows host and enables the unchanged permanent task for its next future `03:15` occurrence without execution. Backup/recovery is complete and non-blocking. 12.36 locally proves the separate established-production migration gate, and 12.36.5 completes the authorized production transition through `20260812123430` with the permanent backup lock updated to that value. 12.31 selects Resend, 12.32 proves the privacy-safe event foundation, and 12.33 proves the bounded Notification Health architecture/cadence. The Notification Health schema/function is present in production; first real authorized operator execution remains pending real Bozeman provisioning and controlled-pilot authority. Application-driven email, real workspace provisioning, and controlled pilot remain incomplete. Application transport is disabled, Supabase Pro remains optional, and Jelani's approved 12.30.1 UI remains non-blocking.
 - Launch remains `NO-GO`.
 
 Do not store secrets in documentation.
@@ -162,7 +162,7 @@ Monitor:
 
 Logs must not include credentials, tokens, full schedule URLs, raw provider payloads, raw Supabase/provider errors, SQL, stack traces with secrets, grants, or capability arrays.
 
-The canonical event/privacy/cadence contract is in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). The August 11 evidence proves the real-log workflow and 12.33 proves the stale-delivery architecture on local/staging. Production execution must wait for the reviewed production migration and controlled pilot.
+The canonical event/privacy/cadence contract is in [`PRODUCTION_OBSERVABILITY.md`](./PRODUCTION_OBSERVABILITY.md). The August 11 evidence proves the real-log workflow and 12.33 proves the stale-delivery architecture on local/staging. The Notification Health schema/function is already installed in production; the first real authorized operator execution waits for real Bozeman provisioning and controlled-pilot authority.
 
 ## Backup and recovery
 
@@ -249,14 +249,14 @@ Remove-Item Env:RUN_PRODUCTION_SUPABASE_SCHEMA_VALIDATION
 
 This production command is no-fixture and must refuse uncommitted worktrees, staging ref `kfuujcfxoayukywvtaeh`, enabled email transport, service-role runtime configuration, fixture flags, and wrong target identity. The 12.25 run confirmed generated-type parity, empty product/Auth/storage counts before Auth setup, public Supabase connectivity, and structural RLS/security checks; it did not create real data, send email, deploy, configure DNS, or configure Auth redirects.
 
-After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Do not delete or alter those identities to satisfy the historical bootstrap zero-Auth assertion. Do not rerun the historical bootstrap command for the pending production transition.
+After 12.26 manual Auth evidence, one or more approved Auth identities may legitimately exist. Do not delete or alter those identities to satisfy the historical bootstrap zero-Auth assertion. The historical bootstrap command must not be rerun for the completed established-production transition.
 
-12.36 locally proves the separate `npm run test:production-established-schema` contract from exactly `20260714122230` through exactly `20260811123300` and `20260812123430`, including legitimate Auth/product preservation, Notification Health, type parity, privileges, RLS/FORCE RLS, and zero residue. Production and staging were not contacted. A separately authorized production iteration must run the exact preflight/apply/postflight sequence in [`PRODUCTION_DEPLOYMENT_RUNBOOK.md`](./PRODUCTION_DEPLOYMENT_RUNBOOK.md), prevent the permanent backup task from running during the migration window, and update only its expected-migration lock after successful postflight. Production remains unapplied and launch remains `NO-GO`.
+12.36 locally proves the separate `npm run test:production-established-schema` contract from exactly `20260714122230` through exactly `20260811123300` and `20260812123430`. 12.36.5 completed the separately authorized production preflight/apply/postflight, preserved the approved Auth identity and empty product state, and moved the enabled/Ready backup lock to `20260812123430`. The Notification Health schema/function is present; its first real authorized execution remains pending real Bozeman provisioning and a controlled pilot. Launch remains `NO-GO`.
 
 Production deployment smoke validation is retargeted in 12.27 for the canonical production origin:
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```

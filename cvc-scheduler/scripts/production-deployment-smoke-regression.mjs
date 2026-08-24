@@ -8,7 +8,7 @@ const expectedProject = "project-local";
 const expectedOrigin = "https://projectlocal.app";
 const expectedSupabaseRef = "wdlaauzknfggoqldolmx";
 const forbiddenStagingRef = "kfuujcfxoayukywvtaeh";
-const expectedMigration = "20260714122230";
+const expectedMigration = "20260812123430";
 const optInName = "RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION";
 const expectedOptIn = `${expectedProject}|${expectedOrigin}|${expectedSupabaseRef}|${expectedMigration}`;
 

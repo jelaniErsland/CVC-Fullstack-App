@@ -32,6 +32,12 @@
 - Added focused local persisted-data and browser regressions covering capability and grant lifecycle, workspace isolation, system-preset protection, direct-write denial, reload truth, desktop/390px behavior, Calendar selector eligibility, archived exclusion, existing occurrence snapshot preservation, and zero disposable residue.
 - No migration, generated type, schema/RLS/RPC change, service-role path, hosted target, production/staging access, backup operation/task change, email, or real Bozeman data was added. Launch remains `NO-GO`.
 
+## Iteration 12.36.5 - Controlled Established-Production Migration Application
+
+- Completed the separately authorized exact production transition on `project-local-production` (`wdlaauzknfggoqldolmx`): `20260714122230` -> `20260811123300` -> `20260812123430`.
+- Preflight, one apply, and independent postflight passed exact history, generated public-schema type parity, Notification Health security metadata, direct/default privileges, all 13 RLS tables, the exact four FORCE RLS tables, postgres ownership, service-role platform posture, preservation of one existing Auth identity, and zero Project Local product rows, storage objects, or fixture residue.
+- Changed only the reviewed backup-task migration argument during the authorized window. The permanent task is re-enabled/Ready at `20260812123430`; no backup was manually started. Production email remains disabled, real Bozeman provisioning remains absent, and the first real authorized Notification Health execution remains pending a controlled pilot. Launch remains `NO-GO`.
+
 ## Iteration 12.36 - Established-Production Migration Gate Readiness
 
 - Added a separate established-production schema gate with local regression plus exact production preflight/apply/postflight modes; the historical 12.25 pristine/bootstrap zero-Auth gate remains unchanged and is not the live-state migration procedure.

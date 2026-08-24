@@ -38,7 +38,7 @@ export const productionRecoveryBaseline = {
   supabaseRef: "wdlaauzknfggoqldolmx",
   supabasePlan: "Free",
   forbiddenStagingRef: "kfuujcfxoayukywvtaeh",
-  migration: "20260714122230",
+  migration: "20260812123430",
   emailTransport: "disabled",
   launchDecision: PRODUCTION_RECOVERY_READINESS_DECISION,
 } as const;
@@ -52,7 +52,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     evidence: [
       "canonical production origin is https://projectlocal.app",
       "Vercel project project-local deployed commit 082c960 from branch master",
-      "production Supabase project-local-production/wdlaauzknfggoqldolmx is migrated through 20260714122230",
+      "production Supabase project-local-production/wdlaauzknfggoqldolmx is migrated through 20260812123430",
       "exact post-deployment production smoke passed after 12.27",
     ],
     requiredAction:
@@ -79,7 +79,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     status: "documented",
     blocking: false,
     evidence: [
-      "production is migrated through 20260714122230",
+      "production is migrated through 20260812123430",
       "applied migration history must be preserved",
       "reviewed forward-fix migrations are the normal recovery path after an applied production migration",
       "future production migrations need an established-production gate because approved Auth identities may now exist",
@@ -240,7 +240,7 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
     blocking: false,
     evidence: [
       "canonical-domain smoke gate exists for public route checks",
-      "production migration level is 20260714122230",
+      "production migration level is 20260812123430",
       "no routine recovery check should request magic links automatically or create production fixtures",
     ],
     requiredAction:
@@ -259,10 +259,10 @@ export const productionRecoveryReadinessItems: readonly ProductionRecoveryReadin
       "12.33 adds an authenticated capability-gated bounded read, an unlinked Notification Health route, one-signal detector integration, local proof, and project-local-staging proof through 20260811123300",
       "the named operator checks after each controlled email test or batch, before manual retry, and at the end of each active email day; any stale row requires immediate ledger reconciliation, while repetition or more than one unresolved row pauses application email",
       "this explicit pull check plus proven Vercel runtime logs and named ownership is sufficient manual notification for the initial tiny controlled beta; automated alert delivery is unproven and not required at that scale",
-      "production RPC execution and real production stale-row observation remain deferred to the reviewed production migration/provisioning and controlled pilot",
+      "the Notification Health schema/function is present in production; its first real authorized execution and real stale-row observation remain deferred to provisioning and controlled pilot",
     ],
     requiredAction:
-      "Preserve the 12.33 cadence and privacy boundary; record the first production Notification Health execution after a separately reviewed migration and provisioning, and add automated alert delivery only if scale, repetition, or response performance makes manual operation inadequate.",
+      "Preserve the 12.33 cadence and privacy boundary; record the first production Notification Health execution after provisioning, and add automated alert delivery only if scale, repetition, or response performance makes manual operation inadequate.",
   },
   {
     id: "incident_ownership",

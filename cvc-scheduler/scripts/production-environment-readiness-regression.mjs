@@ -73,10 +73,10 @@ async function main() {
   assert.equal(PRODUCTION_MANUAL_STALE_DELIVERY_NOTIFICATION_SUFFICIENT, true);
   assert.equal(PRODUCTION_OPERATOR_ALERT_NOTIFICATION_PROVEN, false);
   assert.equal(PRODUCTION_OPERATOR_OBSERVABILITY_PROVEN, true);
-  assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260714122230");
+  assert.equal(PRODUCTION_ENVIRONMENT_EXPECTED_MIGRATION, "20260812123430");
   assert.equal(PRODUCTION_ESTABLISHED_SCHEMA_GATE_LOCAL_PROVEN, true);
   assert.equal(PRODUCTION_PENDING_SCHEMA_TARGET, "20260812123430");
-  assert.equal(PRODUCTION_PENDING_SCHEMA_APPLIED, false);
+  assert.equal(PRODUCTION_PENDING_SCHEMA_APPLIED, true);
   assert.equal(productionEnvironmentKnownStagingTarget.name, "project-local-staging");
   assert.equal(productionEnvironmentKnownStagingTarget.ref, "kfuujcfxoayukywvtaeh");
   assert.equal(productionEnvironmentKnownStagingTarget.validatedMigration, "20260812123430");
@@ -124,11 +124,11 @@ async function main() {
     (item) => item.id === "production_supabase",
   );
   assert(productionSupabase, "Production readiness is missing the production Supabase item.");
-  assert.equal(productionSupabase.status, "configuration_required");
-  assert.equal(productionSupabase.blocking, true);
+  assert.equal(productionSupabase.status, "proven");
+  assert.equal(productionSupabase.blocking, false);
   assert.match(JSON.stringify(productionSupabase.evidence), /12\.36 locally proves/i);
-  assert.match(JSON.stringify(productionSupabase.evidence), /production remains at 20260714122230/i);
-  assert.match(productionSupabase.requiredAction, /update only the task lock to 20260812123430/i);
+  assert.match(JSON.stringify(productionSupabase.evidence), /production transition through 20260811123300 then 20260812123430/i);
+  assert.match(productionSupabase.requiredAction, /Do not rerun the completed migration/i);
 
   const emailProvider = productionEnvironmentReadinessItems.find(
     (item) => item.id === "email_provider",
@@ -151,7 +151,7 @@ async function main() {
   assert.match(JSON.stringify(observability.evidence), /schedule_access\.exchange_failure/i);
   assert.match(JSON.stringify(observability.evidence), /20260812123430/);
   assert.match(JSON.stringify(observability.evidence), /sufficient manual notification/i);
-  assert.match(JSON.stringify(observability.evidence), /production execution.*unproven/i);
+  assert.match(JSON.stringify(observability.evidence), /first real authorized operator execution.*remain deferred/i);
 
   const backupRecovery = productionEnvironmentReadinessItems.find(
     (item) => item.id === "backup_recovery",
@@ -208,7 +208,7 @@ async function main() {
 
   for (const source of [inventory, deploymentRunbook, jelaniChecklist, goNoGo, launchRunbook, readinessDoc]) {
     assertIncludes(source, "NO-GO", "production readiness docs");
-    assertIncludes(source, "20260714122230", "production readiness docs");
+    assertIncludes(source, "20260812123430", "production readiness docs");
     assertIncludes(source, "project-local-staging", "production readiness docs");
     assertIncludes(source, "kfuujcfxoayukywvtaeh", "production readiness docs");
     assertIncludes(source, "Vercel", "production readiness docs");

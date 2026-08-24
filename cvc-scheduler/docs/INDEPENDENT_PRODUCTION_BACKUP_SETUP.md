@@ -45,7 +45,7 @@ Key-loss consequence: if the private age recovery identity is lost, encrypted ba
 
 - `scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1`
   - Requires `-ExecuteProductionBackup` for real production backup execution.
-  - Requires exact production locks: `project-local-production`, `wdlaauzknfggoqldolmx`, and one reviewed terminal migration. The live task remains on `20260714122230`; source also permits the exact future `20260812123430` lock only for the separately reviewed post-migration transition.
+  - Requires exact production locks: `project-local-production`, `wdlaauzknfggoqldolmx`, and one reviewed terminal migration. After the completed 12.36.5 production transition, the live task is enabled/Ready on `20260812123430`; do not move it backward to `20260714122230`.
   - Refuses staging ref `kfuujcfxoayukywvtaeh`.
   - Refuses repository destinations.
   - Requires an age public recipient.
@@ -126,7 +126,7 @@ Do not run this until the operator has reviewed credentials, recipient, destinat
   -ExecuteProductionBackup `
   -ProjectName 'project-local-production' `
   -ProjectRef 'wdlaauzknfggoqldolmx' `
-  -ExpectedMigration '20260714122230' `
+  -ExpectedMigration '20260812123430' `
   -AgeRecipient '<reviewed-age1-public-recipient>' `
   -DestinationRoot "$env:OneDrive\Project Local Backups\production"
 ```
@@ -179,7 +179,7 @@ Before real Bozeman product data is provisioned, perform a separately reviewed r
 3. Decrypt only into a unique temp directory.
 4. Restore roles, schema, migration history, and data in reviewed order.
 5. Use `psql --single-transaction` and `ON_ERROR_STOP=1` where applicable.
-6. Verify schema, terminal migration `20260714122230`, Project Local tables, RLS/security assumptions, no unsafe broad mutation grants, app compatibility, and cleanup.
+6. Verify schema, current terminal migration `20260812123430`, Project Local tables, RLS/security assumptions, no unsafe broad mutation grants, app compatibility, and cleanup.
 7. Remove decrypted files.
 
 Do not restore to production or staging. Do not restore to a hosted target without a future exact reviewed opt-in.
@@ -198,7 +198,7 @@ The executable local restore boundary is intentionally explicit:
   -TargetPort 54322 `
   -TargetDatabase 'postgres' `
   -TargetUser 'postgres' `
-  -ExpectedMigration '20260714122230'
+  -ExpectedMigration '20260812123430'
 ```
 
 For the exact disposable local Supabase target `127.0.0.1:54322` with database/user `postgres`, `-UseSupabaseLocalDefaults` uses the standard local development credential without placing a value in command arguments. Otherwise the script prompts securely with `Read-Host -AsSecureString` only after target, checksum, dependency, identity-path, decrypt, and archive-member guards pass. The password is not placed in PowerShell history, normal process arguments, repository config, task arguments, or inherited environment variables; it is exposed only to each `psql` child process through child-scoped `PGPASSWORD` and cleared from temporary process setup afterward.
@@ -246,7 +246,7 @@ A later always-on design using a private runner or private object storage may re
 - The temporary fixture task and status root were removed. The real recurring task remains enabled and Ready.
 - Jelani, as the Project Local product/operator owner, owns recurring backup operations/failure response, database restore approval/execution, Vercel rollback approval/execution, operational pause, email disablement, and pilot cancellation. Engineering help does not transfer operational authority.
 - Full independent technical recovery, safe failure notification, and ownership are proven. Aggregate backup/recovery remains blocking only on successful scheduled backup execution within this slice.
-- Production remains recorded at `20260714122230`; the 12.35 path was read-only and did not apply migrations or mutate data. Application email remains disabled, real Bozeman data remains unprovisioned, and launch remains `NO-GO`.
+- Historical 12.35 backup evidence was read-only at `20260714122230`. After 12.36.5, current production and the enabled/Ready task lock are `20260812123430`. Application email remains disabled, real Bozeman data remains unprovisioned, and launch remains `NO-GO`.
 
 ## Current 12.35.11 and 12.35.12 evidence
 
@@ -256,11 +256,10 @@ A later always-on design using a private runner or private object storage may re
 - Artifact counts changed from one to two daily and zero to one weekly. Retention correctly deleted zero recognized artifacts because both sets remain below the newest-`14`/newest-`8` thresholds. No plaintext SQL/ZIP, `.partial`, decrypted material, temporary task, or native backup process remained.
 - 12.35.12 let a disabled harmless daily clone miss a real occurrence with `StartWhenAvailable=true`. Enabling the clone did not catch up, did not write its marker, and did not advance LastRunTime/result; its next run moved to the next day.
 - The permanent `Project Local Production Backup` task was then enabled without a start command. It remained `Ready`, did not execute, preserved its historical LastRunTime/result, and scheduled the next future daily `03:15` occurrence. Its action, exact production/migration locks, current-operator `Interactive`/limited principal, `StartWhenAvailable`, `IgnoreNew`, and secret-free arguments remain reviewed.
-- Backup/recovery is `NON-BLOCKING / COMPLETE`. Supabase Pro remains optional. Production remains at `20260714122230`, application email remains disabled, no real Bozeman data exists, and overall launch remains `NO-GO` for unrelated production-migration/health-check, application-email, provisioning, pilot, and explicit launch-approval gates.
+- Backup/recovery is `NON-BLOCKING / COMPLETE`. Supabase Pro remains optional. Production and the live task lock are at `20260812123430`, application email remains disabled, no real Bozeman data exists, and overall launch remains `NO-GO` for first real Notification Health execution, application-email, provisioning, pilot, and explicit launch-approval gates.
 
 ## Iteration 12.36 migration-lock dependency
 
-- The live permanent task was not changed: it remains enabled/Ready and expects `20260714122230`.
-- Once production is separately authorized and successfully migrated to `20260812123430`, the old lock would intentionally fail the next backup preflight.
-- The task registration script therefore exposes one exact update from `20260714122230` to `20260812123430`. It requires the task to be disabled and not running, rejects wrong/duplicate locks, changes only the action argument, and revalidates the managed task contract.
-- The future operator sequence is: verify a recent artifact; disable/inspect the task; run exact established-production migration preflight/apply/postflight; update only the migration lock; compare all other task metadata; enable with `-ExpectedMigration 20260812123430`; do not manually start it.
+- 12.36.5 completed the task transition: the live permanent task is enabled/Ready and expects `20260812123430`.
+- The task registration script's exact `20260714122230` to `20260812123430` action is historical completed evidence only; it must not be rerun.
+- A future migration requires a newly reviewed gate and exact task-lock transition; do not manually start the task.

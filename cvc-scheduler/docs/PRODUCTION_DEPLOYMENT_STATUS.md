@@ -1,6 +1,6 @@
 # Production Deployment Status
 
-Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical origin. Iteration 12.31.1 records provider-level delivery evidence and the disabled application-email state. Iterations 12.32/12.32.1 prove the application observability foundation and operator workflow. Iteration 12.33 proves authenticated Notification Health architecture and the initial-beta manual cadence. Iteration 12.34 proves the first independent encrypted production backup; 12.34.1 through 12.34.3 prove managed-role compatibility, restore-interaction attribution, exact source ACL reconstruction, and full independent technical recovery. Approved staging is validated through `20260812123430`. Iteration 12.36 locally proves the separate established-production gate and future backup-task lock transition without contacting either hosted target. Production remains at `20260714122230`; migrations `20260811123300` and `20260812123430` plus the first production Notification Health execution remain pending separate authorization.
+Iteration 12.26 records the first production deployment/Auth evidence and adds a no-fixture public HTTP smoke gate. Iteration 12.27 records the final production domain/Auth evidence and retargets the smoke gate to the canonical origin. Iteration 12.31.1 records provider-level delivery evidence and the disabled application-email state. Iterations 12.32/12.32.1 prove the application observability foundation and operator workflow. Iteration 12.33 proves authenticated Notification Health architecture and the initial-beta manual cadence. Iteration 12.34 proves the first independent encrypted production backup; 12.34.1 through 12.34.3 prove managed-role compatibility, restore-interaction attribution, exact source ACL reconstruction, and full independent technical recovery. Approved staging is validated through `20260812123430`. Iteration 12.36 locally proves the separate established-production gate, and 12.36.5 applies it to production through exactly `20260811123300` then `20260812123430` with full postflight and preserved Auth/empty product state. The permanent backup task is re-enabled with migration lock `20260812123430`. The first real authorized production Notification Health operator execution remains pending real provisioning/controlled-pilot authority.
 
 Current status: `FINAL DOMAIN/POST-DEPLOYMENT SMOKE, PROVIDER-LEVEL EMAIL CONFIGURATION, AND INITIAL-BETA OBSERVABILITY ARCHITECTURE VERIFIED; APPLICATION EMAIL DISABLED`.
 
@@ -16,7 +16,7 @@ Launch conclusion: `NO-GO`.
 - Temporary Vercel fallback alias: `https://project-local-one.vercel.app`
 - Production Supabase project: `project-local-production`
 - Production Supabase ref: `wdlaauzknfggoqldolmx`
-- Production migration: `20260714122230`
+- Production migration: `20260812123430`
 
 ## Confirmed operator configuration
 
@@ -79,7 +79,7 @@ The canonical action policy and 12.33 manual Notification Health cadence are rec
 ## Automated public smoke gate
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260714122230'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
@@ -95,7 +95,7 @@ During the 12.26 implementation turn, missing/wrong opt-in and dirty-worktree re
 - Project Local application-driven Initial email delivery through the production claim/provider/finalize ledger is not proven.
 - Production duplicate-send behavior with real Resend, app-generated schedule-access link behavior, retry/failure operations, and email-failure monitoring are not proven.
 - Independent encrypted backup, checksum/status, retention, managed-role compatibility, exact source ACL reconstruction, full local recovery-forward, daily task registration, safe human-visible failure notification, and recovery/rollback ownership are proven. 12.35.11 passed one controlled scheduled-host production backup through five native dumps, six-file packaging, encryption, daily/weekly publication, matching checksum, retention, and cleanup. 12.35.12 safely enabled the permanent task without catch-up execution. Backup/recovery is complete and non-blocking; Supabase Auth platform configuration and Storage object BLOB recovery remain outside the logical package.
-- Application instrumentation, Vercel runtime/deployment review, named ownership/action policy, authenticated Notification Health architecture, local/staging stale-read behavior, and manual cadence/escalation are proven. Manual notification is sufficient for the initial tiny controlled beta, so overall initial-beta observability architecture is non-blocking. Production migration `20260811123300` has not been applied and the first production Notification Health execution has not occurred.
+- Application instrumentation, Vercel runtime/deployment review, named ownership/action policy, authenticated Notification Health architecture, local/staging stale-read behavior, and manual cadence/escalation are proven. Manual notification is sufficient for the initial tiny controlled beta, so overall initial-beta observability architecture is non-blocking. The Notification Health schema/function is now present in production through `20260811123300`; the first real authorized operator execution has not occurred because real Bozeman access is not yet provisioned.
 - Production workspace/contact/grants are not provisioned.
 - No real Bozeman data has been created.
 - Product-owner/pilot launch approval remains unresolved.

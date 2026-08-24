@@ -164,14 +164,14 @@ async function main() {
   assert.equal(productionEnvironment.blocking, true);
   assert.match(JSON.stringify(productionEnvironment.evidence), /August 11 2026 operator evidence/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /schedule_access\.exchange_failure/i);
-  assert.match(JSON.stringify(productionEnvironment.evidence), /production execution remains deferred/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /first real authorized execution remains deferred/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /full independent technical recovery/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /recurring task registration/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.11/);
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.35\.12/);
   assert.match(JSON.stringify(productionEnvironment.evidence), /backup\/recovery is complete and non-blocking/i);
   assert.match(JSON.stringify(productionEnvironment.evidence), /12\.36 locally proves/i);
-  assert.match(JSON.stringify(productionEnvironment.evidence), /production still remains at 20260714122230/i);
+  assert.match(JSON.stringify(productionEnvironment.evidence), /production is at 20260812123430/i);
 
   const [contract, packageJson, roadmap, runbook, goNoGo] = await Promise.all([
     read("lib/readiness/bozemanBetaLaunchGate.server.ts"),

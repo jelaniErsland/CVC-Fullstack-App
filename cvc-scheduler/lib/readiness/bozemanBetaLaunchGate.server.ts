@@ -190,11 +190,11 @@ export const bozemanBetaLaunchGateItems: readonly BozemanBetaLaunchGateItem[] = 
     evidence: [
       "12.32 application instrumentation is proven locally without production or staging access",
       "August 11 2026 operator evidence proves Vercel Production runtime-log search and filtering, Vercel deployment/build status review, named alert and incident ownership, documented action conditions, and one controlled privacy-safe schedule_access.exchange_failure observation",
-      "12.33 proves the stale-delivery operator architecture, manual cadence/escalation policy, and staging behavior; production execution remains deferred to the separately reviewed production migration, Bozeman provisioning, and controlled pilot",
+      "12.33 proves the stale-delivery operator architecture, manual cadence/escalation policy, and staging behavior; the schema/function is present in production, while its first real authorized execution remains deferred to Bozeman provisioning and controlled pilot",
       "12.34.3 proves full independent technical recovery; 12.35 proves recurring task registration, safe human-visible failure notification, and recovery/rollback ownership; 12.35.11 proves the successful scheduled-host production backup/checksum/retention path; and 12.35.12 safely enables the permanent daily task without catch-up execution",
-      "12.36 locally proves the separate no-fixture established-production gate for exactly 20260811123300 then 20260812123430 and the future backup-task lock transition without contacting production or staging",
+      "12.36 locally proves the separate no-fixture established-production gate; 12.36.5 completed the authorized production transition through exactly 20260811123300 then 20260812123430 and updated the backup-task lock",
       "backup/recovery is complete and non-blocking",
-      "production still remains at 20260714122230; production migration, real Bozeman provisioning, application-driven email proof, and controlled pilot evidence remain incomplete",
+      "production is at 20260812123430; real Bozeman provisioning, application-driven email proof, first real authorized Notification Health execution, and controlled pilot evidence remain incomplete",
       "Belgrade Sheets/App Script remains the operational fallback",
     ],
     requiredAction:
