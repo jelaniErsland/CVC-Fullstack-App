@@ -68,39 +68,19 @@ export function selectNeedsAttentionWorkspaceContext(input: {
 }
 
 async function readNeedsAttentionRouteContext(at: Date) {
-  const { createServerSupabaseClient } = await import("../supabase/server.ts");
-  const {
-    loadProjectContactGrantsWithClient,
-    readAuthenticatedProjectContactIdWithClient,
-  } = await import("../auth/project-contact-grants.ts");
-  const { readGrantedWorkspacesWithClient } = await import("../workspaces/granted.ts");
-
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) return null;
-
-  const grantState = await loadProjectContactGrantsWithClient(supabase, user.id);
-  if (grantState.status !== "authorized") return null;
-  const projectContactId = await readAuthenticatedProjectContactIdWithClient(
-    supabase,
-    user.id,
+  const { readVerifiedAdminContext } = await import(
+    "../auth/verified-admin-context.server.ts"
   );
-  if (!projectContactId) return null;
-  const ownGrants = grantState.grants.filter(
-    (grant) => grant.projectContactId === projectContactId,
-  );
-  const workspaces = await readGrantedWorkspacesWithClient(supabase);
+  const verified = await readVerifiedAdminContext();
+  if (!verified) return null;
   const selection = selectNeedsAttentionWorkspaceContext({
-    projectContactId,
-    ownGrants,
-    workspaces,
+    projectContactId: verified.projectContactId,
+    ownGrants: verified.ownGrants,
+    workspaces: verified.workspaces,
     at,
   });
   if (!selection.ok) return null;
-  return { supabase, ...selection } as const;
+  return { supabase: verified.supabase, ...selection } as const;
 }
 
 async function readNeedsAttentionCalendar(

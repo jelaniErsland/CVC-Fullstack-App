@@ -754,37 +754,18 @@ export async function readCalendarRouteState(
   if (!routeRequest.ok) return unavailableState("invalid_period_or_range");
 
   try {
-    const { createServerSupabaseClient } = await import("../supabase/server.ts");
-    const {
-      loadProjectContactGrantsWithClient,
-      readAuthenticatedProjectContactIdWithClient,
-    } = await import("../auth/project-contact-grants.ts");
-    const { readGrantedWorkspacesWithClient } = await import("../workspaces/granted.ts");
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) return unavailableState("unauthenticated");
-
-    const grantState = await loadProjectContactGrantsWithClient(supabase, user.id);
-    if (grantState.status !== "authorized") return unavailableState("unauthorized");
-    const projectContactId = await readAuthenticatedProjectContactIdWithClient(
-      supabase,
-      user.id,
+    const { resolveVerifiedAdminContext } = await import(
+      "../auth/verified-admin-context.server.ts"
     );
-    if (!projectContactId) return unavailableState("unauthorized");
-    const ownGrants = grantState.grants.filter(
-      (grant) => grant.projectContactId === projectContactId,
-    );
-    if (ownGrants.length === 0) return unavailableState("unauthorized");
-
-    const workspaces = await readGrantedWorkspacesWithClient(supabase);
+    const verifiedResult = await resolveVerifiedAdminContext();
+    if (verifiedResult.kind !== "ready") {
+      return unavailableState(verifiedResult.kind);
+    }
+    const verified = verifiedResult.context;
     const workspaceSelection = selectCalendarRouteWorkspaceContext({
-      projectContactId,
-      ownGrants,
-      workspaces,
+      projectContactId: verified.projectContactId,
+      ownGrants: verified.ownGrants,
+      workspaces: verified.workspaces,
     });
 
     if (!workspaceSelection.ok) return unavailableState(workspaceSelection.reason);
@@ -797,7 +778,7 @@ export async function readCalendarRouteState(
     if (!range) return unavailableState("invalid_period_or_range");
 
     const query = await readCalendarReadModelWithClient({
-      client: supabase as unknown as CalendarReadModelQueryClient,
+      client: verified.supabase as unknown as CalendarReadModelQueryClient,
       workspaceId: workspaceSelection.workspace.id,
       actorContactId: workspaceSelection.projectContactId,
       workspaceTimezone: workspaceSelection.workspace.timezone,
@@ -817,12 +798,12 @@ export async function readCalendarRouteState(
       readModelItemOverlapsRouteRange(item, range),
     );
     const taskPresetSelector = await readTaskPresetSelectorState({
-      supabase: supabase as AppSupabaseClient,
+      supabase: verified.supabase,
       workspaceId: workspaceSelection.workspace.id,
       canViewTaskPresets: workspaceSelection.canViewTaskPresets,
     });
     const assignmentPicker = await readAssignmentPickerState({
-      supabase: supabase as AppSupabaseClient,
+      supabase: verified.supabase,
       workspaceId: workspaceSelection.workspace.id,
       calendarItemIds: readModelItems.map((item) => item.calendarItemId),
       canViewVolunteers: workspaceSelection.canViewVolunteers,
@@ -836,7 +817,7 @@ export async function readCalendarRouteState(
       }
     }
     const notificationState = await readInitialAssignmentNotificationState({
-      supabase: supabase as AppSupabaseClient,
+      supabase: verified.supabase,
       calendarItemIds: readModelItems.map((item) => item.calendarItemId),
       canEditAssignments: workspaceSelection.canEditAssignments,
     });
@@ -906,7 +887,7 @@ export function describeCalendarRoutePersistedReadCutover() {
     states: ["ready_with_items", "ready_empty", "unavailable", "error"],
     dataBoundary: "readCalendarReadModelWithClient",
     authBoundary:
-      "server_supabase_auth_user_plus_contact_scoped_loadProjectContactGrantsWithClient_plus_readGrantedWorkspacesWithClient",
+      "one_page_auth_getUser_plus_parallel_RLS_contact_grant_workspace_context",
     strictCapabilities: ["calendar.view", "assignments.view"],
     taskPresetSelectorCapability: "tasks.view",
     assignmentPickerCapabilities: ["assignments.edit", "volunteers.view"],

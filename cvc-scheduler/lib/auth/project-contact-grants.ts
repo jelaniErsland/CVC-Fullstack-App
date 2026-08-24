@@ -5,7 +5,6 @@ import {
   parseProjectContactGrant,
   type ProjectContactGrant,
 } from "./grant.ts";
-import { createServerSupabaseClient } from "../supabase/server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
 
 export type { ProjectContactGrant } from "./grant.ts";
@@ -27,6 +26,17 @@ export async function readAuthenticatedProjectContactIdWithClient(
 
   if (userError || !user || user.id !== authenticatedUserId) return null;
 
+  return readVerifiedProjectContactIdWithClient(supabase, authenticatedUserId);
+}
+
+/**
+ * Trusted request-local seam for callers that already verified this user with
+ * this Supabase client. It deliberately performs no independent Auth lookup.
+ */
+export async function readVerifiedProjectContactIdWithClient(
+  supabase: AppSupabaseClient,
+  authenticatedUserId: string,
+): Promise<string | null> {
   const { data, error } = await supabase
     .from("project_contacts")
     .select("id")
@@ -59,6 +69,16 @@ export async function loadProjectContactGrantsWithClient(
     };
   }
 
+  return loadVerifiedProjectContactGrantsWithClient(supabase);
+}
+
+/**
+ * Trusted request-local seam for callers that already verified the Auth user
+ * on this Supabase client. RLS still limits the visible grant rows.
+ */
+export async function loadVerifiedProjectContactGrantsWithClient(
+  supabase: AppSupabaseClient,
+): Promise<ProjectContactGrantState> {
   const { data, error } = await supabase
     .from("workspace_contact_grants")
     .select(
@@ -97,6 +117,7 @@ export async function loadProjectContactGrants(
   authenticatedUserId: string,
 ): Promise<ProjectContactGrantState> {
   try {
+    const { createServerSupabaseClient } = await import("../supabase/server.ts");
     const supabase = await createServerSupabaseClient();
 
     return await loadProjectContactGrantsWithClient(supabase, authenticatedUserId);

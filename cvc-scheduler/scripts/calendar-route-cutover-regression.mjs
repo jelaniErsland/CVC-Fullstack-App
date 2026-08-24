@@ -129,7 +129,11 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   calendarClientSource,
-  /local mock UI|mock item|This mock|sendEmail|enqueueReminder|navigator\.clipboard|\/admin\/assignments\//i,
+  /local mock UI|mock item|This mock|sendEmail|enqueueReminder|navigator\.clipboard/i,
+);
+assert.match(
+  calendarClientSource,
+  /href=\{`\/admin\/assignments\/\$\{encodeURIComponent\(assignment\.assignmentId\)\}`\}/,
 );
 
 const appAndComponentFiles = [
@@ -175,7 +179,10 @@ assert.deepEqual(queryHelperImporters, []);
 assert.deepEqual(dryRunImporters, []);
 assert.deepEqual(finalPreflightImporters, []);
 assert.deepEqual(directCalendarTableMarkers, []);
-assert.deepEqual(assignmentDetailLinks, []);
+assert.deepEqual(assignmentDetailLinks, [
+  "app/admin/needs-attention/page.tsx",
+  "components/CalendarClient.tsx",
+]);
 
 const activationCheckpoint = describeResponseLinkProductActionActivationCheckpoint();
 assert.equal(activationCheckpoint.checkpointAvailable, true);

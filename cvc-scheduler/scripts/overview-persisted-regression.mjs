@@ -246,8 +246,8 @@ const [pageSource, routeSource, packageSource] = await Promise.all([
 assert.match(pageSource, /export const dynamic = "force-dynamic"/);
 assert.match(pageSource, /fetchCache = "force-no-store"/);
 assert.match(pageSource, /readOverviewRouteState/);
-assert.match(routeSource, /loadProjectContactGrantsWithClient/);
-assert.match(routeSource, /readGrantedWorkspacesWithClient/);
+assert.match(routeSource, /readVerifiedAdminContext/);
+assert.doesNotMatch(routeSource, /auth\.getUser\(\)|loadProjectContactGrantsWithClient|readAuthenticatedProjectContactIdWithClient/);
 assert.match(routeSource, /readCalendarReadModelWithClient/);
 assert.match(routeSource, /readTaskPresetsWithClient/);
 assert.match(routeSource, /readVolunteerProfilesWithClient/);

@@ -1,5 +1,13 @@
 # Project History
 
+## Iteration 12.42.1 - Request-Scoped Verified Admin Context Performance Fix
+
+- Added one explicit server-only request context for persisted Dashboard, Tasks, Volunteers, Needs Attention, and Calendar page reads. Proxy Auth remains unchanged; the page keeps one cookie-bound Supabase client and now performs one fresh verified `auth.getUser()` instead of three before reusing that identity through explicit trusted-context seams.
+- Preserved the existing RLS-scoped active-contact, effective-grant, and granted-workspace reads while starting those three independent DB reads concurrently after Auth. Existing per-route selectors still fail closed on missing/inactive contact or workspace, missing/revoked/expired/inactive grants, missing capabilities, ambiguous workspaces, wrong-workspace grants, role-only authority, cross-contact borrowing, and cross-workspace capability mixing. Standalone helper verification and all mutation authorization remain fresh and independent.
+- Deterministic call-graph proof records one page client, page Auth `3 -> 1`, and context DB stages `3 -> 1` with the same three narrow reads. Expected total remote calls including proxy are Tasks `8 -> 6`, Volunteers `8 -> 6`, Needs Attention `8 -> 6`, Overview `10 -> 8`, and empty Calendar `10 -> 8`.
+- Kept Calendar's route-specific core, task selector, assignment picker, and notification reads serialized; duplicated task-preset and assignment/response families remain. Server-derived visible-range bounds, draft privacy, same-workspace publication visibility, assignment/current-response truth, and capability-gated optional reads are unchanged.
+- Added focused call-count, authorization, route, and preservation regressions. No cross-request cache, mutation optimization, schema/migration, RPC, RLS, generated-type, service-role, hosted configuration, staging/production contact, email, Notification Health, backup/task, UI, or workspace-switching change was made. Production speed improvement is not claimed before owner testing after deployment.
+
 ## Iteration 12.42 - Authenticated Admin Navigation Performance Investigation
 
 - Traced the current production-like admin execution path without changing source behavior. Every `/admin` request passes proxy Auth verification; each persisted page then creates a page client and serializes page Auth, grant Auth/read, project-contact Auth/read, and granted-workspace read. Tasks and Volunteers each add one persisted query; Overview parallelizes its three authorized summaries only after that context chain; Needs Attention uses the bounded 21-day Calendar model; Calendar adds bounded core, selector, picker, and notification-summary work.

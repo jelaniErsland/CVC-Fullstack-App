@@ -160,45 +160,21 @@ export function normalizeVolunteerManagementNotice(
 }
 
 export async function readVolunteerManagementRouteContext() {
-  const { createServerSupabaseClient } = await import("../supabase/server.ts");
-  const {
-    loadProjectContactGrantsWithClient,
-    readAuthenticatedProjectContactIdWithClient,
-  } = await import("../auth/project-contact-grants.ts");
-  const { readGrantedWorkspacesWithClient } = await import("../workspaces/granted.ts");
-
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) return null;
-
-  const grantState = await loadProjectContactGrantsWithClient(supabase, user.id);
-  if (grantState.status !== "authorized") return null;
-  const projectContactId = await readAuthenticatedProjectContactIdWithClient(
-    supabase,
-    user.id,
+  const { readVerifiedAdminContext } = await import(
+    "../auth/verified-admin-context.server.ts"
   );
-  if (!projectContactId) return null;
-  const ownGrants = grantState.grants.filter(
-    (grant) => grant.projectContactId === projectContactId,
-  );
-  if (ownGrants.length === 0) return null;
-
-  const workspaces = await readGrantedWorkspacesWithClient(supabase);
+  const verified = await readVerifiedAdminContext();
+  if (!verified) return null;
   const workspaceSelection = selectVolunteerManagementWorkspaceContext({
-    projectContactId,
-    ownGrants,
-    workspaces,
+    projectContactId: verified.projectContactId,
+    ownGrants: verified.ownGrants,
+    workspaces: verified.workspaces,
   });
 
   if (!workspaceSelection.ok) return null;
 
   return {
-    supabase,
-    user,
+    supabase: verified.supabase,
     ...workspaceSelection,
   };
 }
