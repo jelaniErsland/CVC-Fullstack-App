@@ -27,7 +27,8 @@ $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
-$AllowedTerminalMigrations = @($ProductionBaselineMigration, $EstablishedProductionMigration)
+$FollowUpContactProductionMigration = "20260824123500"
+$AllowedTerminalMigrations = @($ProductionBaselineMigration, $EstablishedProductionMigration, $FollowUpContactProductionMigration)
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
 $PrivateAgeIdentityMarker = ("AGE" + "-SECRET-KEY")
 
@@ -152,11 +153,12 @@ function Get-UpdatedExpectedMigrationArguments {
     [Parameter(Mandatory = $true)][string]$CurrentMigration,
     [Parameter(Mandatory = $true)][string]$TargetMigration
   )
-  if (
-    $CurrentMigration -cne $ProductionBaselineMigration -or
-    $TargetMigration -cne $EstablishedProductionMigration
-  ) {
-    throw "Only the reviewed 20260714122230 to 20260812123430 backup-lock transition is supported."
+  $reviewedTransition = (
+    ($CurrentMigration -ceq $ProductionBaselineMigration -and $TargetMigration -ceq $EstablishedProductionMigration) -or
+    ($CurrentMigration -ceq $EstablishedProductionMigration -and $TargetMigration -ceq $FollowUpContactProductionMigration)
+  )
+  if (-not $reviewedTransition) {
+    throw "Only the reviewed production backup-lock transitions are supported."
   }
   $argumentValues = @(Get-ExpectedMigrationArgumentValues -Arguments $Arguments)
   if ($argumentValues.Count -ne 1 -or $argumentValues[0] -cne $CurrentMigration) {
@@ -234,14 +236,14 @@ if ($FixtureMode) {
   $fixtureCurrent = if ($FixtureScenario -ceq "WrongCurrent") { "20260714122220" } else { $CurrentExpectedMigration }
   $fixtureTarget = if ($FixtureScenario -ceq "WrongTarget") { "20260811123300" } else { $ExpectedMigration }
   Assert-MigrationLockUpdateWindow -Enabled ($FixtureScenario -ceq "Enabled") -State $(if ($FixtureScenario -ceq "Running") { "Running" } else { "Disabled" })
-  $fixtureArguments = "-NoProfile -File `"Synthetic-Invoke-ProjectLocalProductionBackup.ps1`" -ExpectedMigration `"$ProductionBaselineMigration`""
+  $fixtureArguments = "-NoProfile -File `"Synthetic-Invoke-ProjectLocalProductionBackup.ps1`" -ExpectedMigration `"$CurrentExpectedMigration`""
   if ($FixtureScenario -ceq "Duplicate") {
-    $fixtureArguments += " -ExpectedMigration `"$ProductionBaselineMigration`""
+    $fixtureArguments += " -ExpectedMigration `"$CurrentExpectedMigration`""
   }
   $updatedFixtureArguments = Get-UpdatedExpectedMigrationArguments -Arguments $fixtureArguments -CurrentMigration $fixtureCurrent -TargetMigration $fixtureTarget
   if (
-    $updatedFixtureArguments -notlike "*-ExpectedMigration*20260812123430*" -or
-    $updatedFixtureArguments -like "*-ExpectedMigration*20260714122230*"
+    $updatedFixtureArguments -notlike "*-ExpectedMigration*$fixtureTarget*" -or
+    $updatedFixtureArguments -like "*-ExpectedMigration*$fixtureCurrent*"
   ) {
     throw "Fixture expected-migration transition did not produce the exact reviewed target."
   }
@@ -289,10 +291,11 @@ switch ($Action) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
   }
   "UpdateExpectedMigration" {
-    if (
-      $CurrentExpectedMigration -cne $ProductionBaselineMigration -or
-      $ExpectedMigration -cne $EstablishedProductionMigration
-    ) {
+    $reviewedTransition = (
+      ($CurrentExpectedMigration -ceq $ProductionBaselineMigration -and $ExpectedMigration -ceq $EstablishedProductionMigration) -or
+      ($CurrentExpectedMigration -ceq $EstablishedProductionMigration -and $ExpectedMigration -ceq $FollowUpContactProductionMigration)
+    )
+    if (-not $reviewedTransition) {
       throw "Only the reviewed production backup migration-lock transition is allowed."
     }
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop

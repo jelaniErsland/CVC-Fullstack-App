@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import {
+  copyFileSync,
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -51,6 +54,7 @@ const expectedMigrationFiles = Object.freeze([
   "20260811123300_stale_assignment_notification_delivery_health.sql",
   "20260812123430_project_local_table_privilege_hardening.sql",
 ]);
+const currentGeneratedTypeMigration = "20260824123500";
 const fixtureEnvironmentNames = Object.freeze([
   "RUN_PRODUCTION_FIXTURES",
   "SEED_PRODUCTION_DATA",
@@ -87,15 +91,18 @@ function command(commandName, args, options = {}) {
 
 function runSupabaseCli(args, options = {}) {
   const isWindows = process.platform === "win32";
+  const supabaseArgs = options.workdir
+    ? ["--workdir", options.workdir, ...args]
+    : args;
   const executable = isWindows ? process.execPath : "npx";
   const executableArgs = isWindows
     ? [
         path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js"),
         "--yes",
         "supabase",
-        ...args,
+        ...supabaseArgs,
       ]
-    : ["--yes", "supabase", ...args];
+    : ["--yes", "supabase", ...supabaseArgs];
   const result = command(executable, executableArgs, options.commandOptions);
   if (result.status !== 0) {
     const detail = options.sensitiveOutput
@@ -141,24 +148,44 @@ function migrationVersion(fileName) {
 export function assertMigrationInventory(files = localMigrationFiles()) {
   const versions = files.map(migrationVersion);
   assert.equal(new Set(versions).size, versions.length, "Migration versions must be unique.");
-  assert.deepEqual(
-    files.slice(-2),
-    expectedMigrationFiles,
-    "The repository terminal migration files are not the reviewed two-file chain.",
-  );
-  assert.equal(
-    versions.at(-1),
-    establishedProductionTarget.afterMigration,
-    "A later or missing migration changes the reviewed production target.",
-  );
   const beforeIndex = versions.indexOf(establishedProductionTarget.beforeMigration);
   assert(beforeIndex >= 0, "The established production baseline migration is missing.");
+  const historicalTerminalIndex = versions.indexOf(establishedProductionTarget.afterMigration);
+  assert(historicalTerminalIndex >= 0, "The established production terminal migration is missing.");
   assert.deepEqual(
-    versions.slice(beforeIndex + 1),
+    files.slice(beforeIndex + 1, historicalTerminalIndex + 1),
+    expectedMigrationFiles,
+    "The reviewed historical established-production migration chain is missing, reordered, or contains an unexpected migration.",
+  );
+  assert.deepEqual(
+    versions.slice(beforeIndex + 1, historicalTerminalIndex + 1),
     [...establishedProductionTarget.pendingMigrations],
     "The pending migration set must be exactly the two reviewed migrations.",
   );
-  return { files, versions, beforeIndex };
+  const historicalVersions = versions.slice(0, historicalTerminalIndex + 1);
+  assert.equal(
+    historicalVersions.at(-1),
+    establishedProductionTarget.afterMigration,
+    "The historical established-production migration view has the wrong terminal version.",
+  );
+  return { files, versions: historicalVersions, repositoryVersions: versions, beforeIndex, historicalTerminalIndex };
+}
+
+function createLocalMigrationWorkdir(terminalMigration, label) {
+  assert.match(terminalMigration, /^\d{14}$/, "Disposable migration view requires an exact terminal migration.");
+  const workdir = path.join(tmpdir(), `project-local-established-schema-${label}-${randomUUID()}`);
+  const supabaseDirectory = path.join(workdir, "supabase");
+  const migrationDirectory = path.join(supabaseDirectory, "migrations");
+  mkdirSync(migrationDirectory, { recursive: true });
+  copyFileSync(path.join(root, "supabase", "config.toml"), path.join(supabaseDirectory, "config.toml"));
+  for (const fileName of localMigrationFiles()) {
+    if (migrationVersion(fileName) > terminalMigration) continue;
+    copyFileSync(
+      path.join(root, "supabase", "migrations", fileName),
+      path.join(migrationDirectory, fileName),
+    );
+  }
+  return workdir;
 }
 
 function assertMigrationFilesCommittedAndUnchanged() {
@@ -890,6 +917,19 @@ function verifyRefusalMatrix(localVersions) {
 
 async function runLocalRegression() {
   const inventory = assertMigrationInventory();
+  assert(
+    inventory.repositoryVersions
+      .slice(inventory.historicalTerminalIndex + 1)
+      .includes("20260824123500"),
+    "The separately reviewed later migration must remain outside the historical 12.36 chain.",
+  );
+  assert.throws(
+    () => assertMigrationInventory([
+      ...inventory.files,
+      "20260812000000_unexpected_inside_established_transition.sql",
+    ].sort()),
+    /historical established-production migration chain is missing, reordered, or contains an unexpected migration/,
+  );
   assertMigrationFilesCommittedAndUnchanged();
   await verifyStaticMigrationRiskMap();
   verifyRefusalMatrix(inventory.versions);
@@ -902,6 +942,8 @@ async function runLocalRegression() {
   let startedLocalStack = false;
   let containerName;
   let fixture;
+  let historicalWorkdir;
+  let currentTypeWorkdir;
   try {
     const initialStatus = command(
       process.platform === "win32" ? process.execPath : "npx",
@@ -937,20 +979,45 @@ async function runLocalRegression() {
     const fixtureBefore = readLocalFixtureSnapshot(containerName, fixture);
     assertLocalFixturePreserved(fixtureBefore);
 
+    historicalWorkdir = createLocalMigrationWorkdir(establishedProductionTarget.afterMigration, "history");
     const dryRun = runSupabaseCli(
       ["db", "push", "--local", "--include-all", "--skip-vault", "--dry-run", "--yes"],
-      { sensitiveOutput: true, includeStderr: true, stage: "Disposable exact migration dry-run" },
+      { sensitiveOutput: true, includeStderr: true, stage: "Disposable exact migration dry-run", workdir: historicalWorkdir },
     );
     assertExactPendingPlan(parseDryRunVersions(dryRun));
     runSupabaseCli(
       ["migration", "up", "--local", "--include-all", "--yes"],
-      { sensitiveOutput: true, stage: "Disposable exact migration application" },
+      { sensitiveOutput: true, stage: "Disposable exact migration application", workdir: historicalWorkdir },
     );
 
     const afterHistory = readMigrationHistory(query);
     assertAfterMigrationHistory(afterHistory, inventory.versions);
     assertLocalFixturePreserved(readLocalFixtureSnapshot(containerName, fixture));
     assertPostSecurity(query);
+
+    currentTypeWorkdir = createLocalMigrationWorkdir(currentGeneratedTypeMigration, "current-types");
+    const currentTypeDryRun = runSupabaseCli(
+      ["db", "push", "--local", "--include-all", "--skip-vault", "--dry-run", "--yes"],
+      { sensitiveOutput: true, includeStderr: true, stage: "Disposable current-type migration dry-run", workdir: currentTypeWorkdir },
+    );
+    assert.deepEqual(
+      parseDryRunVersions(currentTypeDryRun),
+      [currentGeneratedTypeMigration],
+      "Current generated-type compatibility must apply only the separately reviewed later migration.",
+    );
+    runSupabaseCli(
+      ["migration", "up", "--local", "--include-all", "--yes"],
+      { sensitiveOutput: true, stage: "Disposable current-type migration application", workdir: currentTypeWorkdir },
+    );
+    const currentTypeVersions = inventory.repositoryVersions.filter(
+      (version) => version <= currentGeneratedTypeMigration,
+    );
+    assert.deepEqual(
+      readMigrationHistory(query),
+      currentTypeVersions,
+      "Current generated-type compatibility changed or skipped the reviewed migration history.",
+    );
+    assertLocalFixturePreserved(readLocalFixtureSnapshot(containerName, fixture));
     verifyGeneratedTypes("local");
     verifyFutureTableDefaults(containerName, namespace);
     runExistingNotificationHealthRegression(status);
@@ -973,6 +1040,12 @@ async function runLocalRegression() {
         console.error(redact(error));
         process.exitCode = 1;
       }
+    }
+    if (historicalWorkdir) {
+      rmSync(historicalWorkdir, { recursive: true, force: true });
+    }
+    if (currentTypeWorkdir) {
+      rmSync(currentTypeWorkdir, { recursive: true, force: true });
     }
   }
   if (!process.exitCode) {

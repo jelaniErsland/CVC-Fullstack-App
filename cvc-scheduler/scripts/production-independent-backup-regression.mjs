@@ -10,6 +10,12 @@ const backupDir = path.join(root, "scripts", "production-backup");
 const backupScript = path.join(backupDir, "Invoke-ProjectLocalProductionBackup.ps1");
 const restoreScript = path.join(backupDir, "Test-ProjectLocalBackupRestore.ps1");
 const initializeSecretScript = path.join(backupDir, "Initialize-ProjectLocalBackupSecret.ps1");
+const taskRegistrationScript = path.join(backupDir, "Register-ProjectLocalBackupTask.ps1");
+const reviewedBackupTerminalMigrations = Object.freeze([
+  "20260714122230",
+  "20260812123430",
+  "20260824123500",
+]);
 const fixtureCredentials = [
   "syntheticPassword123",
   "synthetic@Password123",
@@ -435,7 +441,13 @@ async function main() {
   assertIncludes(backup, "wdlaauzknfggoqldolmx", "backup script");
   assertIncludes(backup, "20260714122230", "backup script");
   assertIncludes(backup, "20260812123430", "backup script");
+  assertIncludes(backup, "20260824123500", "backup script");
   assertIncludes(backup, "AllowedTerminalMigrations", "backup script");
+  assertIncludes(
+    backup,
+    '$AllowedTerminalMigrations = @("20260714122230", "20260812123430", "20260824123500")',
+    "backup script explicit terminal-migration contract",
+  );
   assertIncludes(backup, "kfuujcfxoayukywvtaeh", "backup script");
   assertIncludes(backup, "SUPABASE_SERVICE_ROLE_KEY", "backup script");
   assertIncludes(backup, "ConvertTo-SecureString", "backup script");
@@ -509,6 +521,12 @@ async function main() {
   assertIncludes(task, "UpdateExpectedMigration", "task script");
   assertIncludes(task, "Get-ExpectedMigrationArgumentValues", "task script");
   assertIncludes(task, "20260812123430", "task script");
+  assertIncludes(task, '$FollowUpContactProductionMigration = "20260824123500"', "task script");
+  assertIncludes(
+    task,
+    "$AllowedTerminalMigrations = @($ProductionBaselineMigration, $EstablishedProductionMigration, $FollowUpContactProductionMigration)",
+    "task script explicit terminal-migration contract",
+  );
 
   assertIncludes(initSecret, "Read-Host", "secret setup script");
   assertIncludes(initSecret, "-AsSecureString", "secret setup script");
@@ -688,6 +706,73 @@ async function main() {
 
   runPowerShell(["-File", backupScript], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardStagingRef"], { expectSuccess: false });
+  for (const migration of reviewedBackupTerminalMigrations) {
+    assertIncludes(
+      runPowerShell([
+        "-File", backupScript,
+        "-FixtureMode",
+        "-FixtureScenario", "GuardProductionMigrationContract",
+        "-ProjectName", "project-local-production",
+        "-ProjectRef", "wdlaauzknfggoqldolmx",
+        "-ExpectedMigration", migration,
+      ], { expectSuccess: true }),
+      "fixture_production_migration_contract_ok",
+      `production backup migration guard ${migration}`,
+    );
+  }
+  for (const migration of ["20991231235959", "not-a-migration"]) {
+    runPowerShell([
+      "-File", backupScript,
+      "-FixtureMode",
+      "-FixtureScenario", "GuardProductionMigrationContract",
+      "-ProjectName", "project-local-production",
+      "-ProjectRef", "wdlaauzknfggoqldolmx",
+      "-ExpectedMigration", migration,
+    ], { expectSuccess: false });
+  }
+  runPowerShell([
+    "-File", backupScript,
+    "-FixtureMode",
+    "-FixtureScenario", "GuardProductionMigrationContract",
+    "-ProjectName", "wrong-production-project",
+    "-ProjectRef", "wdlaauzknfggoqldolmx",
+    "-ExpectedMigration", "20260824123500",
+  ], { expectSuccess: false });
+  runPowerShell([
+    "-File", backupScript,
+    "-FixtureMode",
+    "-FixtureScenario", "GuardProductionMigrationContract",
+    "-ProjectName", "project-local-production",
+    "-ProjectRef", "kfuujcfxoayukywvtaeh",
+    "-ExpectedMigration", "20260824123500",
+  ], { expectSuccess: false });
+  for (const [currentMigration, targetMigration] of [
+    ["20260714122230", "20260812123430"],
+    ["20260812123430", "20260824123500"],
+  ]) {
+    assertIncludes(
+      runPowerShell([
+        "-File", taskRegistrationScript,
+        "-FixtureMode",
+        "-Action", "UpdateExpectedMigration",
+        "-FixtureScenario", "Success",
+        "-CurrentExpectedMigration", currentMigration,
+        "-ExpectedMigration", targetMigration,
+      ], { expectSuccess: true }),
+      "fixture_backup_migration_lock_transition_ok",
+      `${currentMigration} to ${targetMigration} task migration-lock transition`,
+    );
+  }
+  for (const targetMigration of ["20991231235959", "not-a-migration"]) {
+    runPowerShell([
+      "-File", taskRegistrationScript,
+      "-FixtureMode",
+      "-Action", "UpdateExpectedMigration",
+      "-FixtureScenario", "Success",
+      "-CurrentExpectedMigration", "20260824123500",
+      "-ExpectedMigration", targetMigration,
+    ], { expectSuccess: false });
+  }
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardRepoDestination"], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardMissingRecipient"], { expectSuccess: false });
   runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "GuardMissingSecret"], { expectSuccess: false });

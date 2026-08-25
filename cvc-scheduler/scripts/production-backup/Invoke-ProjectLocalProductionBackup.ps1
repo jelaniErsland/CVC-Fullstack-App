@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -32,7 +32,7 @@ $RepositoryRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
-$AllowedTerminalMigrations = @("20260714122230", "20260812123430")
+$AllowedTerminalMigrations = @("20260714122230", "20260812123430", "20260824123500")
 $BackupFormatVersion = "project-local.logical-backup.v1"
 . (Join-Path $ScriptRoot "ProjectLocalProductionConnection.ps1")
 
@@ -831,6 +831,13 @@ function Invoke-FixtureScenario {
       "GuardStagingRef" {
         $script:ProjectRef = $ForbiddenStagingRef
         Assert-SafeTarget
+      }
+      "GuardProductionMigrationContract" {
+        $script:FixtureMode = $false
+        $script:ExecuteProductionPreflight = $true
+        Assert-SafeTarget
+        "fixture_production_migration_contract_ok"
+        return
       }
       "GuardRepoDestination" {
         Assert-NotRepositoryPath -Path (Join-Path $RepositoryRoot "tmp-backups") -Label "backup destination"
