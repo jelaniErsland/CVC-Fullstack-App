@@ -1233,6 +1233,15 @@ export type Database = {
         }
         Returns: string
       }
+      update_current_project_contact_volunteer_facing_details: {
+        Args: {
+          p_display_name: string
+          p_email: string
+          p_phone: string
+          p_workspace_id: string
+        }
+        Returns: boolean
+      }
       update_volunteer_profile_manual_fields: {
         Args: {
           p_congregation?: string

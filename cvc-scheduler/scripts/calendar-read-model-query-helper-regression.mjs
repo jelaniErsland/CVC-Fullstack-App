@@ -94,8 +94,21 @@ for (const forbiddenFrom of [
 }
 for (const selector of Object.values(CALENDAR_READ_MODEL_QUERY_SELECTORS)) {
   assert.equal(selector.includes("*"), false, `selector must be explicit: ${selector}`);
-  assert.equal(/volunteer|email|phone|questionnaire|emergency|token|bearer|verifier|audit|grant|capabil/i.test(selector), false);
+  const withoutReviewedFollowUpContact = selector.replace(
+    /,follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey\(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone\)/,
+    "",
+  );
+  assert.equal(
+    /volunteer|email|phone|questionnaire|emergency|token|bearer|verifier|audit|grant|capabil/i.test(
+      withoutReviewedFollowUpContact,
+    ),
+    false,
+  );
 }
+assert.match(
+  CALENDAR_READ_MODEL_QUERY_SELECTORS.calendarItems,
+  /follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey\(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone\)/,
+);
 
 assert.equal(CALENDAR_READ_MODEL_QUERY_HELPER_AVAILABLE, true);
 assert.equal(CALENDAR_READ_MODEL_QUERY_HELPER_ROUTE_UNUSED, true);

@@ -122,6 +122,12 @@ export type CalendarReadModelItemRow = Readonly<{
   lifecycle: CalendarReadModelLifecycleFilter;
   publicationState: CalendarReadModelPublicationState;
   createdByProjectContactId: string | null;
+  followUpProjectContactId?: string | null;
+  followUpContactDetails?: Readonly<{
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+  }> | null;
   publishedAt?: string | null;
   scheduleNotes?: string | null;
   taskPresetId?: string | null;
@@ -146,6 +152,12 @@ export type CalendarReadModelItem = Readonly<{
   lifecycle: CalendarReadModelLifecycleFilter;
   publicationState: CalendarReadModelPublicationState;
   isOwnDraft: boolean;
+  followUpProjectContactId: string | null;
+  followUpContactDetails: Readonly<{
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+  }> | null;
   publishedAt: string | null;
   scheduleNotes: string | null;
   taskPresetId: string | null;
@@ -398,11 +410,15 @@ export function buildCalendarReadModelQueryShape(input: unknown) {
             "lifecycle",
             "publication_state",
             "created_by_project_contact_id",
+            "follow_up_project_contact_id",
             "published_at",
             "schedule_notes",
             "task_preset_id",
           ],
-          joins: ["optional_task_presets_label_type_only"],
+          joins: [
+            "optional_task_presets_label_type_only",
+            "rls_scoped_current_follow_up_contact_volunteer_facing_details_only",
+          ],
         },
         assignmentAggregateRows: {
           tables: ["calendar_assignments", "assignment_responses"],
@@ -546,6 +562,8 @@ export function mapCalendarReadModelItem(
     lifecycle: row.lifecycle,
     publicationState: row.publicationState,
     isOwnDraft: row.publicationState === "draft",
+    followUpProjectContactId: row.followUpProjectContactId ?? null,
+    followUpContactDetails: row.followUpContactDetails ?? null,
     publishedAt: row.publishedAt ?? null,
     scheduleNotes: row.scheduleNotes ?? null,
     taskPresetId: row.taskPresetId ?? null,

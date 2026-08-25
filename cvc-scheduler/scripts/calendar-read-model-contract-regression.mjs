@@ -232,6 +232,11 @@ assert.match(
 assert.equal(calendarPersistedReadModelContract.capabilityContract.volunteerLabelsAllowedInListRead, false);
 assert.equal(calendarPersistedReadModelContract.capabilityContract.volunteerContactDetailsAllowedInListRead, false);
 assert.equal(calendarPersistedReadModelContract.capabilityContract.broadVolunteerValuesAllowed, false);
+assert.equal(
+  calendarPersistedReadModelContract.itemProjection
+    .currentFollowUpContactVolunteerFacingDetailsAllowed,
+  true,
+);
 
 assert.equal(calendarPersistedReadModelContract.filtersAndSorting.explicitDateRangeRequired, true);
 for (const filter of [

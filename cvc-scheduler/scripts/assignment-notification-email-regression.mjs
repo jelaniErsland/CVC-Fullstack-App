@@ -314,8 +314,8 @@ function insertFixtures(containerName, users) {
     containerName,
     `insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
 values
-  (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.22 Email Target', 'active', 'America/Denver', '2026-08-01'::date, '2026-12-31'::date, false),
-  (${sqlUuid(fixture.otherWorkspaceId)}, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.22 Email Other', 'active', 'America/Denver', '2026-08-01'::date, '2026-12-31'::date, false);
+  (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-target`)}, 'QA 12.22 Email Target', 'active', 'America/Denver', '2026-08-01'::date, '2099-12-31'::date, false),
+  (${sqlUuid(fixture.otherWorkspaceId)}, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.22 Email Other', 'active', 'America/Denver', '2026-08-01'::date, '2099-12-31'::date, false);
 
 insert into public.project_contacts (
   id, auth_user_id, status, volunteer_facing_display_name, volunteer_facing_email, volunteer_facing_phone
@@ -347,9 +347,9 @@ insert into public.calendar_items (
   custom_values, lifecycle, follow_up_project_contact_id, created_by_project_contact_id,
   publication_state, published_at, published_by_project_contact_id
 ) values
-  (${sqlUuid(fixture.items.published)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(`${fixture.namespace} Email Shift`)}, 'general', 'timed', '2026-08-20'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 2, 'Email QA notes.', '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.scheduler)}, ${sqlUuid(fixture.contacts.scheduler)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.scheduler)}),
-  (${sqlUuid(fixture.items.missingFollowUp)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(`${fixture.namespace} Missing Follow-up`)}, 'general', 'timed', '2026-08-21'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, null, '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.roleOnly)}, ${sqlUuid(fixture.contacts.scheduler)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.scheduler)}),
-  (${sqlUuid(fixture.items.other)}, ${sqlUuid(fixture.otherWorkspaceId)}, null, ${sqlText(`${fixture.namespace} Other`)}, 'general', 'timed', '2026-08-20'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, null, '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.other)}, ${sqlUuid(fixture.contacts.other)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.other)});
+  (${sqlUuid(fixture.items.published)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(`${fixture.namespace} Email Shift`)}, 'general', 'timed', '2099-08-20'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 2, 'Email QA notes.', '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.scheduler)}, ${sqlUuid(fixture.contacts.scheduler)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.scheduler)}),
+  (${sqlUuid(fixture.items.missingFollowUp)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(`${fixture.namespace} Missing Follow-up`)}, 'general', 'timed', '2099-08-21'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, null, '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.roleOnly)}, ${sqlUuid(fixture.contacts.scheduler)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.scheduler)}),
+  (${sqlUuid(fixture.items.other)}, ${sqlUuid(fixture.otherWorkspaceId)}, null, ${sqlText(`${fixture.namespace} Other`)}, 'general', 'timed', '2099-08-20'::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, null, '{}'::jsonb, 'active', ${sqlUuid(fixture.contacts.other)}, ${sqlUuid(fixture.contacts.other)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contacts.other)});
 
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id

@@ -28,6 +28,10 @@ import {
   emitOperationalEvent,
   type OperationalEventName,
 } from "@/lib/observability/server";
+import {
+  updateCurrentVolunteerFacingContactDetails,
+  VolunteerFacingContactDetailsValidationError,
+} from "@/lib/projectContacts/volunteerFacingDetails.server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,6 +50,10 @@ const supportedNoticeValues = new Set([
   "assignment_email_already_sent",
   "assignment_email_partial",
   "published",
+  "follow_up_contact_updated",
+  "follow_up_contact_validation",
+  "follow_up_contact_unavailable",
+  "follow_up_contact_error",
   "validation",
   "unavailable",
   "error",
@@ -307,6 +315,32 @@ async function sendInitialAssignmentNotificationsAction(formData: FormData) {
   redirect(safeCalendarRedirect(formData, notice));
 }
 
+async function updateCurrentVolunteerFacingContactDetailsAction(formData: FormData) {
+  "use server";
+
+  let notice:
+    | "follow_up_contact_updated"
+    | "follow_up_contact_validation"
+    | "follow_up_contact_unavailable"
+    | "follow_up_contact_error" = "follow_up_contact_error";
+  try {
+    const updated = await updateCurrentVolunteerFacingContactDetails({
+      displayName: formData.get("volunteerFacingDisplayName"),
+      email: formData.get("volunteerFacingEmail"),
+      phone: formData.get("volunteerFacingPhone"),
+    });
+    notice = updated ? "follow_up_contact_updated" : "follow_up_contact_unavailable";
+  } catch (error) {
+    notice =
+      error instanceof VolunteerFacingContactDetailsValidationError
+        ? "follow_up_contact_validation"
+        : "follow_up_contact_error";
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice));
+}
+
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
   const state = await readCalendarRouteState(resolvedSearchParams);
@@ -322,6 +356,9 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       notice={notice}
       publishAction={publishCalendarItemAction}
       sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
+      updateCurrentVolunteerFacingContactDetailsAction={
+        updateCurrentVolunteerFacingContactDetailsAction
+      }
       state={state}
       updateAction={updateCalendarItemAction}
     />

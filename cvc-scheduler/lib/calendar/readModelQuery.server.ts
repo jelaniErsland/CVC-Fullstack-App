@@ -50,7 +50,7 @@ export const CALENDAR_READ_MODEL_QUERY_ALLOWED_TABLES = [
 
 export const CALENDAR_READ_MODEL_QUERY_SELECTORS = {
   calendarItems:
-    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,lifecycle,publication_state,created_by_project_contact_id,published_at",
+    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,lifecycle,publication_state,created_by_project_contact_id,follow_up_project_contact_id,published_at,follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone)",
   taskPresets: "id,workspace_id,name,task_type",
   calendarAssignments: "id,workspace_id,calendar_item_id,lifecycle",
   assignmentResponses: "assignment_id,workspace_id,response_status",
@@ -266,6 +266,7 @@ function toItemRow(
   const taskPresetLabel = taskPreset ? asOptionalString(taskPreset.name) : null;
   const taskPresetType = taskPreset ? normalizeDisplayType(taskPreset.task_type) : null;
   const hasPreset = Boolean(taskPresetId);
+  const followUpContact = isRecord(row.follow_up_contact) ? row.follow_up_contact : null;
 
   return {
     id,
@@ -282,6 +283,14 @@ function toItemRow(
     lifecycle,
     publicationState,
     createdByProjectContactId: asOptionalString(row.created_by_project_contact_id),
+    followUpProjectContactId: asOptionalString(row.follow_up_project_contact_id),
+    followUpContactDetails: followUpContact
+      ? {
+          displayName: asOptionalString(followUpContact.volunteer_facing_display_name),
+          email: asOptionalString(followUpContact.volunteer_facing_email),
+          phone: asOptionalString(followUpContact.volunteer_facing_phone),
+        }
+      : null,
     publishedAt: asOptionalString(row.published_at),
     scheduleNotes: asOptionalString(row.schedule_notes),
     taskPresetId,

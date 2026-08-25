@@ -158,6 +158,17 @@ type CalendarInitialAssignmentNotificationSummary =
   | Readonly<{ kind: "unavailable"; emailConfigured: boolean }>
   | Readonly<{ kind: "error"; emailConfigured: boolean }>;
 
+type CalendarFollowUpContactSelfEdit =
+  | Readonly<{
+      kind: "current_contact";
+      complete: boolean;
+      displayName: string;
+      email: string;
+      phone: string;
+    }>
+  | Readonly<{ kind: "not_current_contact" }>
+  | Readonly<{ kind: "unavailable" }>;
+
 type CalendarAssignmentPickerVolunteer = {
   id: string;
   displayName: string;
@@ -176,6 +187,7 @@ type CalendarAssignmentPickerState =
 type CalendarClientDisplayItem = CalendarItemWithPreset & {
   assignments?: readonly CalendarAssignmentSummary[];
   initialAssignmentNotification?: CalendarInitialAssignmentNotificationSummary;
+  followUpContactSelfEdit?: CalendarFollowUpContactSelfEdit;
   publicationState?: CalendarPublicationState;
   canPublish?: boolean;
   publishedAt?: string;
@@ -2659,6 +2671,7 @@ function CalendarInspector({
   onClose,
   publishAction,
   sendInitialAssignmentNotificationsAction,
+  updateCurrentVolunteerFacingContactDetailsAction,
   updateAction,
   currentDate,
   currentView,
@@ -2673,6 +2686,7 @@ function CalendarInspector({
   onClose: () => void;
   publishAction?: CalendarMutationAction;
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
+  updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
   currentDate: string;
   currentView: CalendarViewMode;
@@ -2736,6 +2750,9 @@ function CalendarInspector({
             onClose={onClose}
             publishAction={publishAction}
             sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
+            updateCurrentVolunteerFacingContactDetailsAction={
+              updateCurrentVolunteerFacingContactDetailsAction
+            }
             tone={tone}
             updateAction={updateAction}
           />
@@ -2774,6 +2791,9 @@ function CalendarInspector({
             onClose={onClose}
             publishAction={publishAction}
             sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
+            updateCurrentVolunteerFacingContactDetailsAction={
+              updateCurrentVolunteerFacingContactDetailsAction
+            }
             tone={tone}
             updateAction={updateAction}
           />
@@ -2798,6 +2818,7 @@ function InspectorContent({
   onClose,
   publishAction,
   sendInitialAssignmentNotificationsAction,
+  updateCurrentVolunteerFacingContactDetailsAction,
   updateAction,
 }: {
   assignAction?: CalendarMutationAction;
@@ -2814,6 +2835,7 @@ function InspectorContent({
   onClose: () => void;
   publishAction?: CalendarMutationAction;
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
+  updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
 }) {
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
@@ -2828,6 +2850,8 @@ function InspectorContent({
     Boolean(item.endTimeValue);
   const currentAssignments = item.assignments ?? [];
   const [confirmingPublish, setConfirmingPublish] = useState(false);
+  const [editingContactDetails, setEditingContactDetails] = useState(false);
+  const contactNameInputRef = useRef<HTMLInputElement>(null);
   const canPublishSelectedItem =
     canEdit &&
     Boolean(publishAction) &&
@@ -2859,6 +2883,7 @@ function InspectorContent({
     pickerReady &&
     eligibleVolunteers.length > 0;
   const initialNotification = item.initialAssignmentNotification;
+  const followUpContactSelfEdit = item.followUpContactSelfEdit;
   const canSubmitInitialEmails =
     Boolean(sendInitialAssignmentNotificationsAction) &&
     canEditAssignments &&
@@ -2869,6 +2894,11 @@ function InspectorContent({
   const assignmentCapacityWarning =
     item.neededCount > 0 &&
     currentAssignments.length + selectedVolunteerIds.length > item.neededCount;
+  useEffect(() => {
+    if (!editingContactDetails) return;
+    const frame = window.requestAnimationFrame(() => contactNameInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [editingContactDetails]);
   const toggleSelectedVolunteer = (volunteerId: string) => {
     setSelectedVolunteerIds((current) =>
       current.includes(volunteerId)
@@ -3213,6 +3243,93 @@ function InspectorContent({
                   Needs Follow-up Contact: {initialNotification.missingFollowUpContactCount}
                 </span>
               </div>
+              {followUpContactSelfEdit?.kind === "current_contact" &&
+              updateCurrentVolunteerFacingContactDetailsAction ? (
+                <div className="rounded-xl border border-sky-200 bg-white/80 px-3 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900">
+                        Follow-up Contact
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        These details are shown to volunteers for schedule questions.
+                      </p>
+                    </div>
+                    {!editingContactDetails ? (
+                      <button
+                        className={`inline-flex min-h-9 items-center rounded-lg border border-sky-200 bg-white px-3 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-sky-50 ${calmFocusRing}`}
+                        onClick={() => setEditingContactDetails(true)}
+                        type="button"
+                      >
+                        {followUpContactSelfEdit.complete
+                          ? "Edit contact details"
+                          : "Add contact details"}
+                      </button>
+                    ) : null}
+                  </div>
+                  {editingContactDetails ? (
+                    <form
+                      action={updateCurrentVolunteerFacingContactDetailsAction}
+                      className="mt-3 space-y-3 border-t border-sky-100 pt-3"
+                    >
+                      <input name="redirectView" type="hidden" value={currentView} />
+                      <input name="redirectDate" type="hidden" value={currentDate} />
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Name
+                        <input
+                          className={`mt-1.5 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 ${calmFocusRing}`}
+                          defaultValue={followUpContactSelfEdit.displayName}
+                          maxLength={160}
+                          name="volunteerFacingDisplayName"
+                          ref={contactNameInputRef}
+                          required
+                        />
+                      </label>
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Email
+                        <input
+                          className={`mt-1.5 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 ${calmFocusRing}`}
+                          defaultValue={followUpContactSelfEdit.email}
+                          maxLength={254}
+                          name="volunteerFacingEmail"
+                          required
+                          type="email"
+                        />
+                      </label>
+                      <label className="block text-xs font-semibold text-slate-700">
+                        Phone <span className="font-medium text-slate-400">(optional)</span>
+                        <input
+                          className={`mt-1.5 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 ${calmFocusRing}`}
+                          defaultValue={followUpContactSelfEdit.phone}
+                          maxLength={40}
+                          name="volunteerFacingPhone"
+                          type="tel"
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          className={`inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
+                          type="submit"
+                        >
+                          Save contact details
+                        </button>
+                        <button
+                          className={`inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 ${calmFocusRing}`}
+                          onClick={() => setEditingContactDetails(false)}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </div>
+              ) : initialNotification.missingFollowUpContactCount > 0 ? (
+                <p className="rounded-xl border border-slate-200 bg-white/75 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
+                  The assigned Follow-up Contact must add their own volunteer-facing
+                  details before email is ready.
+                </p>
+              ) : null}
               {!initialNotification.emailConfigured ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
                   Email transport is not configured for this environment, so no
@@ -3427,6 +3544,7 @@ export type CalendarClientState =
         CalendarItem & {
           assignments: CalendarAssignmentSummary[];
           initialAssignmentNotification: CalendarInitialAssignmentNotificationSummary;
+          followUpContactSelfEdit: CalendarFollowUpContactSelfEdit;
           taskPreset?: CalendarTaskPresetOption;
           publicationState: CalendarPublicationState;
           canPublish: boolean;
@@ -3496,6 +3614,22 @@ function CalendarNotice({ notice }: { notice?: string }) {
       title: "Initial email partially sent",
       message: "Some eligible emails were sent and any failed deliveries were recorded with safe retry state.",
     },
+    follow_up_contact_updated: {
+      title: "Follow-up Contact updated",
+      message: "Contact details were saved. Calendar email readiness was refreshed.",
+    },
+    follow_up_contact_validation: {
+      title: "Check the contact details",
+      message: "Enter a name, a valid email, and an optional valid phone number.",
+    },
+    follow_up_contact_unavailable: {
+      title: "Contact editing is unavailable",
+      message: "This signed-in contact cannot safely update these details right now.",
+    },
+    follow_up_contact_error: {
+      title: "Contact details were not saved",
+      message: "Something went wrong while saving. Please try again.",
+    },
     validation: {
       title: "Check the Calendar details",
       message: "Use a timed item with a real date, ordered start/end times, 0-99 helpers, and bounded notes.",
@@ -3533,6 +3667,7 @@ export default function CalendarClient({
   notice,
   publishAction,
   sendInitialAssignmentNotificationsAction,
+  updateCurrentVolunteerFacingContactDetailsAction,
   state,
   updateAction,
 }: Readonly<{
@@ -3542,6 +3677,7 @@ export default function CalendarClient({
   notice?: string;
   publishAction?: CalendarMutationAction;
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
+  updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   state: CalendarClientState;
   updateAction?: CalendarMutationAction;
 }>) {
@@ -3871,6 +4007,9 @@ export default function CalendarClient({
               onClose={closeCalendarSurface}
               publishAction={publishAction}
               sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
+              updateCurrentVolunteerFacingContactDetailsAction={
+                updateCurrentVolunteerFacingContactDetailsAction
+              }
               updateAction={updateAction}
             />
             </div>

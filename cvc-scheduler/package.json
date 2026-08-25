@@ -79,6 +79,8 @@
     "test:volunteer-schedule-responses:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-schedule-responses-browser-regression.mjs",
     "test:volunteer-schedule-responses:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-volunteer-schedule-responses-regression.mjs",
     "test:assignment-notification-email": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-notification-email-regression.mjs",
+    "test:follow-up-contact-self-edit": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/follow-up-contact-self-edit-regression.mjs",
+    "test:follow-up-contact-self-edit:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/follow-up-contact-self-edit-browser-regression.mjs",
     "test:assignment-notification-email:resend": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/resend-initial-assignment-email-regression.mjs",
     "test:assignment-notification-email:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-assignment-notification-email-regression.mjs",
     "test:response-tokens": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/response-token-persistence-regression.mjs",

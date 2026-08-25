@@ -53,6 +53,7 @@ export const calendarPersistedReadModelContract = {
     ],
     clientBroadWorkspaceExposureAllowed: false,
     volunteerContactValuesAllowed: false,
+    currentFollowUpContactVolunteerFacingDetailsAllowed: true,
   },
   assignmentDerivedCoverageSummary: {
     sourceOfTruth: "calendar_assignments_and_current_assignment_responses",

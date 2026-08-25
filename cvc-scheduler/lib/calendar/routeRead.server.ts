@@ -99,7 +99,18 @@ type CalendarClientItem = {
     customFields: never[];
   };
   initialAssignmentNotification: CalendarClientInitialAssignmentNotification;
+  followUpContactSelfEdit: CalendarClientFollowUpContactSelfEdit;
 };
+type CalendarClientFollowUpContactSelfEdit =
+  | Readonly<{
+      kind: "current_contact";
+      complete: boolean;
+      displayName: string;
+      email: string;
+      phone: string;
+    }>
+  | Readonly<{ kind: "not_current_contact" }>
+  | Readonly<{ kind: "unavailable" }>;
 type CalendarClientAssignment = {
   assignmentId: string;
   calendarItemId: string;
@@ -606,10 +617,25 @@ function mapPersistedItemToCalendarItem(
     kind: "unavailable",
     emailConfigured: false,
   },
+  currentProjectContactId = "",
 ): CalendarClientItem {
   const startTime = formatTime(item.startTime);
   const endTime = formatTime(item.endTime);
   const category = mapDisplayTypeToCategory(item.displayType);
+  const followUpContactSelfEdit: CalendarClientFollowUpContactSelfEdit =
+    item.followUpProjectContactId !== currentProjectContactId
+      ? { kind: "not_current_contact" }
+      : item.followUpContactDetails
+        ? {
+            kind: "current_contact",
+            complete: Boolean(
+              item.followUpContactDetails.displayName && item.followUpContactDetails.email,
+            ),
+            displayName: item.followUpContactDetails.displayName ?? "",
+            email: item.followUpContactDetails.email ?? "",
+            phone: item.followUpContactDetails.phone ?? "",
+          }
+        : { kind: "unavailable" };
 
   return {
     id: item.calendarItemId,
@@ -655,6 +681,7 @@ function mapPersistedItemToCalendarItem(
           customFields: [],
         },
     initialAssignmentNotification,
+    followUpContactSelfEdit,
   };
 }
 
@@ -836,6 +863,7 @@ export async function readCalendarRouteState(
           stateKind: notificationState.kind,
           emailConfigured: notificationState.emailConfigured,
         }),
+        workspaceSelection.projectContactId,
       ),
     );
     return items.length > 0
