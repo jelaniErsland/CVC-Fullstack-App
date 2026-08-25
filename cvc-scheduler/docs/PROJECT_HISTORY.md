@@ -1,5 +1,12 @@
 # Project History
 
+## Iteration 12.43B.3A - Production Sender Format Contract Correction
+
+- The first controlled production Initial Assignment Email attempt enabled only the reviewed Resend transport and redeployed the approved source, but Calendar remained fail-closed before sending because `ASSIGNMENT_NOTIFICATION_FROM` reused a bare-address-only normalizer while the approved provider sender uses bounded display-name angle-address form. No send action, provider call, delivery claim, schedule-access credential, response token, product mutation, or Notification Health execution occurred.
+- Removed the temporary transport setting immediately and restored a Ready production deployment with application email disabled, `Ready 1 / Already sent 0`, and zero email/delivery/token side effects. Provider domain, sender verification, key, canonical base URL, and tracking settings were not changed or proven faulty.
+- Added one narrow deterministic sender-mailbox parser inside the existing server-only notification configuration boundary. It preserves bare-address support and the exact visible display name for one bounded angle-address mailbox while rejecting malformed addresses, mailbox lists, commas, CR/LF/control characters, nested/repeated angles, unrelated leading/trailing content, and oversized display/total values. Recipient, message, provider, idempotency, ledger, schedule-access, retry/stale, and Calendar UI architecture remain unchanged.
+- Extended the existing fake-network Resend/config regression to prove accepted/refused sender cases, exact display-name sender mapping, unchanged deterministic idempotency and server-derived recipient, credential-free configuration failure, and Calendar's existing configured/unconfigured integration. The real production send remains paused pending review, commit, deployment, and resumption of the controlled procedure.
+
 ## Iteration 12.43B.2 - Controlled Production Follow-up Contact Rollout
 
 - Created exactly one fresh pre-migration encrypted production backup after the controlled 12.43A data creation. The unchanged six-file logical package completed successfully, the published age artifact was recognized, its independently recomputed SHA-256 matched safe status, and persistent plaintext, partial, status-temp, and backup/preflight temp residue were all zero. The temporary triggerless one-shot task ran exactly once and was removed; the permanent recurring task did not run.

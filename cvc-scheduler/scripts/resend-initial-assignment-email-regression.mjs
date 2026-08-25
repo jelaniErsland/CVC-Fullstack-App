@@ -18,6 +18,7 @@ const root = process.cwd();
 const apiKey = "re_qa_only_not_a_real_resend_key";
 const bearer = "A".repeat(43);
 const scheduleAccessUrl = `https://project-local.example.test/v/access/${bearer}`;
+const approvedSender = "Project Local <notifications@projectlocal.app>";
 const input = {
   deliveryId: "11111111-1111-4111-8111-111111111111",
   assignmentId: "22222222-2222-4222-8222-222222222222",
@@ -96,6 +97,48 @@ async function main() {
     ),
     { ok: false, reason: "from_unavailable" },
   );
+
+  const validSenderCases = [
+    ["notifications@projectlocal.app", "notifications@projectlocal.app"],
+    [approvedSender, approvedSender],
+    [
+      "Project Local Assignments <updates@projectlocal.app>",
+      "Project Local Assignments <updates@projectlocal.app>",
+    ],
+  ];
+  for (const [configuredSender, expectedSender] of validSenderCases) {
+    const configuration = readInitialAssignmentEmailConfiguration(
+      resendEnvironment({ ASSIGNMENT_NOTIFICATION_FROM: configuredSender }),
+    );
+    assert(configuration.ok && configuration.transport === "resend");
+    assert.equal(configuration.from, expectedSender);
+  }
+
+  const maximumLengthAddress = `${"a".repeat(64)}@${"b".repeat(63)}.${"c".repeat(63)}.${"d".repeat(57)}.com`;
+  const invalidSenderCases = [
+    "",
+    "not-an-email",
+    "Project Local <>",
+    "<notifications@projectlocal.app",
+    "Project Local notifications@projectlocal.app>",
+    "first@projectlocal.app second@projectlocal.app",
+    "first@projectlocal.app,second@projectlocal.app",
+    "Project Local <notifications@projectlocal.app>\r\nBcc: other@example.test",
+    "Project <Nested <notifications@projectlocal.app>>",
+    "Project Local <notifications@projectlocal.app> trailing",
+    "other@example.test Project Local <notifications@projectlocal.app>",
+    `${"A".repeat(101)} <notifications@projectlocal.app>`,
+    `${"A".repeat(100)} <${maximumLengthAddress}>`,
+  ];
+  for (const configuredSender of invalidSenderCases) {
+    assert.deepEqual(
+      readInitialAssignmentEmailConfiguration(
+        resendEnvironment({ ASSIGNMENT_NOTIFICATION_FROM: configuredSender }),
+      ),
+      { ok: false, reason: "from_unavailable" },
+      `Malformed sender should fail closed: ${JSON.stringify(configuredSender)}`,
+    );
+  }
   assert.deepEqual(
     readInitialAssignmentEmailConfiguration(resendEnvironment({ RESEND_API_KEY: "" })),
     { ok: false, reason: "resend_api_key_unavailable" },
@@ -108,7 +151,7 @@ async function main() {
   );
 
   const resendConfiguration = readInitialAssignmentEmailConfiguration(
-    resendEnvironment(),
+    resendEnvironment({ ASSIGNMENT_NOTIFICATION_FROM: approvedSender }),
   );
   assert(resendConfiguration.ok && resendConfiguration.transport === "resend");
 
@@ -133,6 +176,27 @@ async function main() {
       error instanceof InitialAssignmentNotificationBoundaryError &&
       error.safeStage === "configuration",
   );
+  const configurationEvents = [];
+  const malformedSenderConfiguration = readInitialAssignmentEmailConfiguration(
+    resendEnvironment({ ASSIGNMENT_NOTIFICATION_FROM: "Project Local <>" }),
+  );
+  await assert.rejects(
+    sendInitialAssignmentNotificationsForItemWithClient(
+      { rpc: async () => assert.fail("Malformed configuration must fail before claim.") },
+      { calendarItemId: input.assignmentId },
+      malformedSenderConfiguration,
+      { observability: { write: (event) => configurationEvents.push(event) } },
+    ),
+    (error) =>
+      error instanceof InitialAssignmentNotificationBoundaryError &&
+      error.safeStage === "configuration",
+  );
+  assert.equal(configurationEvents.length, 1);
+  assert.equal(configurationEvents[0].failureCode, "from_unavailable");
+  const configurationSummary = JSON.stringify(configurationEvents);
+  for (const sensitiveValue of ["Project Local <>", apiKey, bearer, scheduleAccessUrl]) {
+    assert(!configurationSummary.includes(sensitiveValue));
+  }
 
   const providerRequests = [];
   const success = await sendInitialAssignmentEmail(resendConfiguration, input, {
@@ -162,7 +226,7 @@ async function main() {
   }
 
   const body = JSON.parse(request.init.body);
-  assert.equal(body.from, "assignments@project-local.example.test");
+  assert.equal(body.from, approvedSender);
   assert.deepEqual(body.to, [input.recipientEmail]);
   assert.match(body.subject, /Project Local assignment/);
   assert.match(body.subject, /Bozeman Local Project/);
@@ -328,11 +392,12 @@ async function main() {
     await rm(tempDirectory, { recursive: true, force: true });
   }
 
-  const [providerSource, calendarClient, migration] = await Promise.all([
+  const [providerSource, calendarRouteRead, calendarClient, migration] = await Promise.all([
     readFile(
       path.join(root, "lib", "notifications", "initialAssignmentEmail.server.ts"),
       "utf8",
     ),
+    readFile(path.join(root, "lib", "calendar", "routeRead.server.ts"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(
       path.join(
@@ -347,6 +412,11 @@ async function main() {
   assert(providerSource.startsWith('import "server-only";'));
   assert(!providerSource.includes("console."));
   assert(!providerSource.includes("NEXT_PUBLIC_RESEND"));
+  assert.match(
+    calendarRouteRead,
+    /const emailConfigured = readInitialAssignmentEmailConfiguration\(\)\.ok;/,
+  );
+  assert(calendarClient.includes("initialNotification.emailConfigured"));
   assert(!calendarClient.includes("RESEND_API_KEY"));
   const deliveryLedgerDefinition = migration.slice(
     migration.indexOf("create table public.assignment_notification_deliveries"),
@@ -356,7 +426,7 @@ async function main() {
   assert(!deliveryLedgerDefinition.includes("bearer_token"));
 
   console.log(
-    "Validated disabled, recording, and Resend initial-assignment transports with fake-network request mapping, deterministic provider idempotency, bounded failures, and credential-safe output.",
+    "Validated narrow bare/display-name sender parsing, Calendar readiness integration, disabled/recording/Resend transports, fake-network request mapping, deterministic provider idempotency, bounded failures, and credential-safe output.",
   );
 }
 

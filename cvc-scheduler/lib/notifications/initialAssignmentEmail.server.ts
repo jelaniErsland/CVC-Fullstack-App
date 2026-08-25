@@ -62,6 +62,13 @@ export type InitialAssignmentEmailSendResult =
   | Readonly<{ ok: false; safeFailureCode: "provider_send_failed" }>;
 
 const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const senderAddressPattern =
+  /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
+const senderDisplayNamePattern =
+  /^[A-Za-z0-9](?:[A-Za-z0-9 .&'()/-]*[A-Za-z0-9.)'])?$/;
+const senderControlCharacterPattern = /[\u0000-\u001f\u007f]/;
+const maximumSenderDisplayNameLength = 100;
+const maximumSenderMailboxLength = 320;
 const providerMessageIdPattern = /^[A-Za-z0-9._:-]{1,200}$/;
 const resendApiUrl = "https://api.resend.com/emails";
 const uuidPattern =
@@ -78,6 +85,43 @@ function normalizeEmail(value: unknown) {
     return null;
   }
   return normalized;
+}
+
+function normalizeSenderAddress(value: string) {
+  const normalized = normalizeEmail(value);
+  if (!normalized || !senderAddressPattern.test(normalized)) return null;
+  const localPart = normalized.slice(0, normalized.indexOf("@"));
+  return localPart.length <= 64 ? normalized : null;
+}
+
+function normalizeSenderMailbox(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (
+    normalized.length < 3 ||
+    normalized.length > maximumSenderMailboxLength ||
+    senderControlCharacterPattern.test(normalized)
+  ) {
+    return null;
+  }
+
+  if (!normalized.includes("<") && !normalized.includes(">")) {
+    return normalizeSenderAddress(normalized);
+  }
+
+  const angleAddress = /^(.+?) <([^<>]+)>$/.exec(normalized);
+  if (!angleAddress) return null;
+  const displayName = angleAddress[1];
+  const address = normalizeSenderAddress(angleAddress[2]);
+  if (
+    !address ||
+    displayName.length > maximumSenderDisplayNameLength ||
+    !senderDisplayNamePattern.test(displayName)
+  ) {
+    return null;
+  }
+
+  return `${displayName} <${address}>`;
 }
 
 function normalizeResendApiKey(value: unknown) {
@@ -116,7 +160,7 @@ export function readInitialAssignmentEmailConfiguration(
     return { ok: false, reason: "origin_unavailable" };
   }
 
-  const from = normalizeEmail(environment.ASSIGNMENT_NOTIFICATION_FROM);
+  const from = normalizeSenderMailbox(environment.ASSIGNMENT_NOTIFICATION_FROM);
   if (!from) return { ok: false, reason: "from_unavailable" };
 
   if (transport === "resend") {
