@@ -219,6 +219,12 @@ function itemRow(id, title, date, lifecycle, publication, notes = null) {
   return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(title)}, 'general', 'timed', ${sqlText(date)}::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, ${sqlText(notes)}, '{}'::jsonb, ${sqlText(lifecycle)}, ${sqlUuid(fixture.contactId)}, ${sqlUuid(fixture.contactId)}, ${sqlText(publication)}, ${publishedAt}, ${publisher})`;
 }
 
+function futureDate(daysFromNow) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + daysFromNow);
+  return date.toISOString().slice(0, 10);
+}
+
 function assignmentRow(id, itemId, volunteerId, lifecycle = "active") {
   return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, ${sqlUuid(itemId)}, ${sqlUuid(volunteerId)}, ${sqlText(lifecycle)}, null, null)`;
 }
@@ -233,8 +239,8 @@ function insertFixtures(containerName, userId) {
     containerName,
     `insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
 values
-  (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-workspace`)}, 'QA 12.20 Browser Workspace', 'active', 'America/Denver', '2026-08-01', '2026-12-31', false),
-  (${sqlUuid(fixture.otherWorkspaceId)}, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.20 Browser Other', 'active', 'America/Denver', '2026-08-01', '2026-12-31', false);
+  (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-workspace`)}, 'QA 12.20 Browser Workspace', 'active', 'America/Denver', current_date - 30, current_date + 365, false),
+  (${sqlUuid(fixture.otherWorkspaceId)}, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.20 Browser Other', 'active', 'America/Denver', current_date - 30, current_date + 365, false);
 insert into public.project_contacts (id, auth_user_id, status)
 values (${sqlUuid(fixture.contactId)}, ${sqlUuid(userId)}, 'active');
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status, valid_from, valid_until, revoked_at)
@@ -255,11 +261,11 @@ insert into public.calendar_items (
   publication_state, published_at, published_by_project_contact_id
 )
 values
-  ${itemRow(fixture.items.needs, `${fixture.namespace} Needs Reply`, "2026-08-10", "active", "published", "Safe schedule note.")},
-  ${itemRow(fixture.items.confirmed, `${fixture.namespace} Confirmed`, "2026-08-11", "active", "published")},
-  ${itemRow(fixture.items.declined, `${fixture.namespace} Declined`, "2026-08-12", "active", "published")},
-  ${itemRow(fixture.items.draft, `${fixture.namespace} Draft Hidden`, "2026-08-13", "active", "draft")},
-  ${itemRow(fixture.items.canceled, `${fixture.namespace} Canceled Hidden`, "2026-08-14", "canceled", "published")};
+  ${itemRow(fixture.items.needs, `${fixture.namespace} Needs Reply`, futureDate(10), "active", "published", "Safe schedule note.")},
+  ${itemRow(fixture.items.confirmed, `${fixture.namespace} Confirmed`, futureDate(11), "active", "published")},
+  ${itemRow(fixture.items.declined, `${fixture.namespace} Declined`, futureDate(12), "active", "published")},
+  ${itemRow(fixture.items.draft, `${fixture.namespace} Draft Hidden`, futureDate(13), "active", "draft")},
+  ${itemRow(fixture.items.canceled, `${fixture.namespace} Canceled Hidden`, futureDate(14), "canceled", "published")};
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 )

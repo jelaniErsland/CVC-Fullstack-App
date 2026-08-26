@@ -23,6 +23,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44B5_CAPTURES === "1";
+const iterationReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44b5-volunteer-ux",
+);
 const secrets = new Set();
 const authUserIds = [];
 
@@ -54,7 +63,7 @@ const fixture = {
     inside48: randomUUID(),
   },
 };
-const reviewValues = writeBetaReviewScreenshots
+const reviewValues = writeBetaReviewScreenshots || writeIterationReviewScreenshots
   ? {
       workspaceName: "Bozeman Local Project",
       volunteerName: "Alex Rivera",
@@ -81,6 +90,10 @@ const reviewValues = writeBetaReviewScreenshots
         inside48: `${fixture.namespace} Inside 48`,
       },
     };
+const longScheduleNote = Array.from(
+  { length: 22 },
+  (_, index) => `Arrival detail ${index + 1}: use the marked volunteer entrance and check in with the project team.`,
+).join("\n");
 
 function isLoopbackUrl(value) {
   try {
@@ -212,7 +225,7 @@ async function createAuthenticatedUser() {
 }
 
 function itemValues(id, title, dateSql) {
-  return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(title)}, 'general', 'timed', (${dateSql})::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, ${sqlText("QA response browser note.")}, '{}'::jsonb, 'active', ${sqlUuid(fixture.contactId)}, ${sqlUuid(fixture.contactId)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contactId)})`;
+  return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(title)}, 'general', 'timed', (${dateSql})::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, ${sqlText(longScheduleNote)}, '{}'::jsonb, 'active', ${sqlUuid(fixture.contactId)}, ${sqlUuid(fixture.contactId)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contactId)})`;
 }
 
 function insertFixtures(containerName, userId) {
@@ -301,6 +314,116 @@ async function runBrowserProof(token) {
     assert(!page.url().includes(token), "final schedule URL leaked bearer");
     await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
     await page.getByText(reviewValues.titles.confirm).waitFor();
+    await page.getByText("5 assignments need your response.", { exact: true }).waitFor();
+    assert.equal(
+      await page.getByText("Review & respond", { exact: true }).count(),
+      5,
+      "Each pending assignment must expose a response-oriented row action.",
+    );
+
+    if (writeIterationReviewScreenshots) {
+      await mkdir(iterationReviewDir, { recursive: true });
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "schedule-home-desktop.png"),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+      const desktopDialog = page.getByRole("dialog");
+      await desktopDialog.getByRole("heading", { name: reviewValues.titles.confirm }).waitFor();
+      assert.equal(
+        await desktopDialog.getByText("Coverage", { exact: true }).count(),
+        0,
+        "Volunteer assignment detail still exposes the Coverage heading.",
+      );
+      assert.equal(
+        await desktopDialog.getByText(/assigned$/).count(),
+        0,
+        "Volunteer assignment detail still exposes aggregate assigned counts.",
+      );
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "assignment-detail-desktop.png"),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Close assignment details" }).click();
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "schedule-home-mobile.png"),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "assignment-detail-mobile.png"),
+      });
+      const reviewDetailScroll = page.getByTestId("volunteer-assignment-detail-scroll");
+      assert(
+        await reviewDetailScroll.evaluate(
+          (element) => element.scrollHeight > element.clientHeight,
+        ),
+        "390px long assignment detail fixture must exercise internal scrolling.",
+      );
+      await reviewDetailScroll.evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      const closeButton = page.getByRole("button", { name: "Close assignment details" });
+      await closeButton.focus();
+      await page.waitForTimeout(100);
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "assignment-detail-mobile-scrolled.png"),
+      });
+      await page.keyboard.press("Shift+Tab");
+      assert(
+        await page.getByTestId("volunteer-assignment-detail-panel").evaluate(
+          (panel) => panel.contains(document.activeElement),
+        ),
+        "Shift+Tab escaped the assignment detail focus boundary.",
+      );
+      await page.keyboard.press("Tab");
+      assert.equal(
+        await closeButton.evaluate((element) => document.activeElement === element),
+        true,
+        "Tab did not wrap focus back to the assignment detail close control.",
+      );
+      await closeButton.click();
+      assert.equal(await page.getByRole("dialog").count(), 0);
+      assert.notEqual(
+        await page.evaluate(() => getComputedStyle(document.body).overflow),
+        "hidden",
+        "Closing assignment detail did not restore page scrolling.",
+      );
+
+      await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+      const lockedDialog = page.getByRole("dialog");
+      await lockedDialog.getByText("A response is still needed.", { exact: false }).waitFor();
+      assert.equal(
+        await lockedDialog.getByRole("button", { name: "Can’t make it" }).count(),
+        0,
+        "Close-to-start assignment exposes a normal decline action.",
+      );
+      assert.equal(
+        await lockedDialog.getByRole("button", { name: "Confirm" }).count(),
+        1,
+        "Close-to-start pending assignment does not preserve its allowed Confirm action.",
+      );
+      await lockedDialog.getByTestId("volunteer-assignment-detail-scroll").evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await page.getByRole("button", { name: "Close assignment details" }).focus();
+      await page.waitForTimeout(100);
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "assignment-detail-mobile-locked.png"),
+      });
+      await page.getByRole("button", { name: "Close assignment details" }).click();
+
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
+        waitUntil: "domcontentloaded",
+      });
+    }
+
     await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByRole("button", { name: /^Confirm$/ }).click();
     await page.getByText("Your response is now Confirmed.").waitFor();
@@ -326,8 +449,11 @@ async function runBrowserProof(token) {
     await page.getByRole("button", { name: "Close assignment details" }).click();
 
     await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
-    await page.getByText(/starts within 48 hours/).waitFor();
-    assert.equal(await page.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
+    await page.getByText(/Changes are closed this close to the assignment/).waitFor();
+    const finalLockedDialog = page.getByRole("dialog");
+    assert.equal(await finalLockedDialog.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
+    assert.equal(await finalLockedDialog.getByRole("button", { name: /^Confirm$/ }).count(), 0);
+    assert.equal(await finalLockedDialog.getByRole("button", { name: "Can’t make it" }).count(), 0);
 
     const noTokenLeak = await page.evaluate(
       (secret) =>
@@ -351,6 +477,36 @@ async function runBrowserProof(token) {
     await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
       waitUntil: "domcontentloaded",
     });
+    await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+    const mobileDetailScroll = page.getByTestId("volunteer-assignment-detail-scroll");
+    await mobileDetailScroll.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    const mobileCloseReachable = await page
+      .getByRole("button", { name: "Close assignment details" })
+      .evaluate((element) => {
+        const rectangle = element.getBoundingClientRect();
+        return rectangle.top >= 0 && rectangle.bottom <= window.innerHeight;
+      });
+    assert.equal(
+      mobileCloseReachable,
+      true,
+      "390px long assignment detail scrolls the close control out of reach",
+    );
+    const backgroundScrollLocked = await page.evaluate(
+      () => getComputedStyle(document.body).overflow === "hidden",
+    );
+    assert.equal(
+      backgroundScrollLocked,
+      true,
+      "390px assignment detail does not intentionally lock background scrolling",
+    );
+    assert(
+      await mobileDetailScroll.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+      "390px long assignment detail did not exercise its internal scroll container",
+    );
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     assert.equal(overflow, false, "390px volunteer schedule response layout has horizontal overflow");
     assert.equal(failures.length, 0, `Browser errors occurred: ${failures.join(" | ")}`);

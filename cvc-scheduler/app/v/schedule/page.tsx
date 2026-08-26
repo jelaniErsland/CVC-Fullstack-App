@@ -186,11 +186,11 @@ export default async function VolunteerSchedulePage({
             </form>
             </div>
 
-            <div className="mt-4 sm:ml-[52px]">
+            <div className="mt-3 sm:ml-[52px] sm:mt-4">
               <p className="text-xs font-semibold text-[var(--pl-blue)]">
                 Welcome, {firstName(schedule.volunteerDisplayName)}.
               </p>
-              <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
+              <h1 className="mt-1 text-2xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
                 Here’s your schedule
               </h1>
               <p className="mt-1.5 text-sm leading-6 text-[var(--pl-text)]">
@@ -240,9 +240,9 @@ export default async function VolunteerSchedulePage({
                 />
               </section>
 
-              <aside className="rounded-[var(--pl-radius-panel)] border border-blue-100 bg-[var(--pl-blue-soft)]/70 p-5">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-white text-[var(--pl-blue)] shadow-sm">
-                  <ShieldCheck aria-hidden="true" className="size-5" />
+              <aside className="rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white/70 p-4 lg:border-blue-100 lg:bg-[var(--pl-blue-soft)]/70 lg:p-5">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)] lg:size-9 lg:bg-white lg:shadow-sm">
+                  <ShieldCheck aria-hidden="true" className="size-4 lg:size-5" />
                 </div>
                 <h2 className="mt-3 text-base font-semibold tracking-tight text-[var(--pl-ink)]">
                   Need help?

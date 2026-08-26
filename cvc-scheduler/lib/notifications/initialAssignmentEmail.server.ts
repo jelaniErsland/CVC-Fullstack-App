@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { appendFile } from "node:fs/promises";
 
 import { validateResponseLinkBaseUrl } from "../responseTokens/link.ts";
+import { formatScheduleClockRange, formatScheduleDate } from "../scheduleFormatting.ts";
 
 export const INITIAL_ASSIGNMENT_EMAIL_TEMPLATE_VERSION = "initial-assignment.v1";
 export const INITIAL_ASSIGNMENT_EMAIL_KIND = "initial_assignment";
@@ -254,14 +255,15 @@ function escapeHtml(value: string) {
 }
 
 function scheduleTimeLabel(input: InitialAssignmentEmailInput) {
-  if (!input.scheduleStartTime) return "Time not specified";
-  return input.scheduleEndTime
-    ? `${input.scheduleStartTime}–${input.scheduleEndTime}`
-    : input.scheduleStartTime;
+  return (
+    formatScheduleClockRange(input.scheduleStartTime, input.scheduleEndTime) ??
+    "Time not specified"
+  );
 }
 
 function buildResendMessage(input: InitialAssignmentEmailInput) {
   const subject = `New Project Local assignment · ${input.workspaceDisplayName.trim()}`;
+  const dateLabel = formatScheduleDate(input.scheduleDate);
   const timeLabel = scheduleTimeLabel(input);
   const followUpPhone = input.followUpContact.phone?.trim();
   const note = input.scheduleNotes?.trim();
@@ -275,21 +277,22 @@ function buildResendMessage(input: InitialAssignmentEmailInput) {
     "",
     `Hi ${input.volunteerDisplayName.trim()},`,
     "",
-    `A new assignment is available for ${input.workspaceDisplayName.trim()}.`,
+    `An assignment needs your review for ${input.workspaceDisplayName.trim()}.`,
+    "Please let the project know whether you can make it.",
     "",
     input.taskTitle.trim(),
-    `Date: ${input.scheduleDate}`,
+    `Date: ${dateLabel}`,
     `Time: ${timeLabel}`,
     ...(note ? [`Details: ${note}`] : []),
     "",
-    `View your schedule: ${input.scheduleAccessUrl}`,
+    `Review assignment & respond: ${input.scheduleAccessUrl}`,
     "",
     "Follow-up Contact",
     ...contactLines,
   ].join("\n");
 
   const detailRows = [
-    ["Date", input.scheduleDate],
+    ["Date", dateLabel],
     ["Time", timeLabel],
     ...(note ? [["Details", note]] : []),
   ];
@@ -300,16 +303,16 @@ function buildResendMessage(input: InitialAssignmentEmailInput) {
       <div style="border:1px solid #dbe4ef;border-radius:18px;background:#ffffff;box-shadow:0 8px 24px rgba(16,35,63,.08);overflow:hidden;">
         <div style="padding:24px 28px 18px;border-bottom:1px solid #e6edf5;">
           <div style="color:#246bfd;font-size:12px;font-weight:700;letter-spacing:.12em;">PROJECT LOCAL</div>
-          <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25;">A new assignment is available</h1>
+          <h1 style="margin:10px 0 0;font-size:24px;line-height:1.25;">Please review your assignment</h1>
         </div>
         <div style="padding:24px 28px;">
           <p style="margin:0 0 18px;line-height:1.6;">Hi ${escapeHtml(input.volunteerDisplayName.trim())},</p>
-          <p style="margin:0 0 20px;line-height:1.6;">You have a new assignment for <strong>${escapeHtml(input.workspaceDisplayName.trim())}</strong>.</p>
+          <p style="margin:0 0 20px;line-height:1.6;">You have an assignment for <strong>${escapeHtml(input.workspaceDisplayName.trim())}</strong>. Please let the project know whether you can make it.</p>
           <div style="margin:0 0 22px;padding:18px;border-radius:12px;background:#f5f8fc;">
             <div style="margin-bottom:12px;font-size:18px;font-weight:700;">${escapeHtml(input.taskTitle.trim())}</div>
             ${detailRows.map(([label, value]) => `<div style="margin-top:7px;line-height:1.5;"><span style="color:#60728a;">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`).join("")}
           </div>
-          <a href="${escapeHtml(input.scheduleAccessUrl)}" style="display:inline-block;border-radius:10px;background:#246bfd;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 18px;">View your schedule</a>
+          <a href="${escapeHtml(input.scheduleAccessUrl)}" style="display:inline-block;border-radius:10px;background:#246bfd;color:#ffffff;font-weight:700;text-decoration:none;padding:12px 18px;">Review assignment &amp; respond</a>
           <div style="margin-top:26px;padding-top:20px;border-top:1px solid #e6edf5;line-height:1.6;">
             <div style="font-size:13px;font-weight:700;color:#60728a;">Follow-up Contact</div>
             <div>${contactLines.map(escapeHtml).join("<br>")}</div>

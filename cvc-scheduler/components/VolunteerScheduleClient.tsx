@@ -6,12 +6,12 @@ import {
   Check,
   Clock3,
   Loader2,
-  MessageCircle,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import type { VolunteerScheduleActionResult } from "@/app/v/schedule/actions";
+import { formatScheduleClockRange } from "@/lib/scheduleFormatting";
 import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/token";
 
 type VolunteerScheduleClientProps = Readonly<{
@@ -51,27 +51,15 @@ function formatDate(value: string) {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function formatTime(value: string | null) {
-  if (!value) return null;
-  const match = /^(\d{2}):(\d{2})/.exec(value);
-  if (!match) return value;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (hour > 23 || minute > 59) return value;
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(2026, 0, 1, hour, minute)));
-}
-
 function dateTimeLabel(assignment: VolunteerScheduleAssignment) {
   const dateLabel = assignment.endDate
     ? `${formatDate(assignment.startDate)} – ${formatDate(assignment.endDate)}`
     : formatDate(assignment.startDate);
-  const start = formatTime(assignment.startTime);
-  const end = formatTime(assignment.endTime);
-  return `${dateLabel} · ${start ? `${start}${end ? `–${end}` : ""}` : "No specific time"}`;
+  const timeLabel = formatScheduleClockRange(
+    assignment.startTime,
+    assignment.endTime,
+  );
+  return `${dateLabel} · ${timeLabel ?? "No specific time"}`;
 }
 
 function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
@@ -132,15 +120,49 @@ export function VolunteerScheduleClient({
 
   useEffect(() => {
     if (!selected) return undefined;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyOverscrollBehavior = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
     closeButtonRef.current?.focus();
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         setSelectedId(null);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter(
+        (element) => !element.hasAttribute("hidden") && element.getClientRects().length > 0,
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+    };
   }, [selected]);
 
   useEffect(() => {
@@ -152,9 +174,9 @@ export function VolunteerScheduleClient({
     <>
       <div className="mt-3 space-y-3">
         {confirmAllCount > 1 ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 sm:px-4">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-2.5">
             <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">
-              {confirmAllCount} assignments are waiting for your reply.
+              {confirmAllCount} assignments need your response.
             </p>
             <button
               aria-label="Confirm all pending"
@@ -226,10 +248,13 @@ export function VolunteerScheduleClient({
               <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
                 {hasFollowUpContact(assignment)
                   ? `Follow-up: ${assignment.followUpContact.displayName ?? "Project contact"}`
-                  : `${assignment.activeAssignedCount}/${assignment.neededCount} assigned`}
+                  : "Open for assignment details"}
               </span>
             </span>
-            <span className="inline-flex shrink-0 items-center self-center text-[var(--pl-blue)]">
+            <span className="inline-flex shrink-0 items-center gap-1 self-center rounded-lg px-1.5 py-1 text-[11px] font-semibold text-[var(--pl-blue)] sm:px-2">
+              {assignment.currentResponseStatus === "needs_response" ? (
+                <span>Review &amp; respond</span>
+              ) : null}
               <ArrowRight aria-hidden="true" className="size-4" />
             </span>
           </button>
@@ -241,16 +266,18 @@ export function VolunteerScheduleClient({
         <div
           aria-labelledby="assignment-detail-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end bg-slate-950/24 p-0 sm:items-center sm:p-6"
+          className="fixed inset-0 z-50 flex items-end overflow-hidden overscroll-none bg-slate-950/24 p-0 sm:items-center sm:p-6"
           role="dialog"
         >
           <div
             ref={dialogRef}
-            className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--pl-border)] bg-white p-5 shadow-[var(--pl-shadow-raised)] sm:mx-auto sm:max-w-2xl sm:rounded-2xl sm:p-6"
+            data-testid="volunteer-assignment-detail-panel"
+            tabIndex={-1}
+            className="flex max-h-[100vh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)] sm:mx-auto sm:max-h-[90vh] sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-2xl"
           >
-            <div className="flex items-start justify-between gap-4">
+            <div className="relative z-10 flex shrink-0 items-start justify-between gap-4 border-b border-[var(--pl-border)] bg-white px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6">
               <div>
-            <p className="text-xs font-semibold text-[var(--pl-blue)]">Assignment details</p>
+                <p className="text-xs font-semibold text-[var(--pl-blue)]">Assignment details</p>
                 <h2
                   id="assignment-detail-title"
                   className="mt-1 text-2xl font-bold tracking-[-0.04em] text-[var(--pl-ink)]"
@@ -269,107 +296,96 @@ export function VolunteerScheduleClient({
               </button>
             </div>
 
-            <dl className="mt-5 grid overflow-hidden rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] sm:grid-cols-2">
-              <div className="border-b border-[var(--pl-border)] p-3 sm:border-r">
-                <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  <Clock3 aria-hidden="true" className="size-4" />
-                  Date and time
-                </dt>
-                <dd className="mt-2 text-sm leading-6 text-slate-800">
-                  {dateTimeLabel(selected)}
-                </dd>
-              </div>
-              <div className="border-b border-[var(--pl-border)] p-3">
-                <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Current response
-                </dt>
-                <dd className="mt-2">
-                  <span
-                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${responseStyles[selected.currentResponseStatus]}`}
-                  >
-                    {responseLabels[selected.currentResponseStatus]}
-                  </span>
-                </dd>
-              </div>
-              <div className="border-b border-[var(--pl-border)] p-3 sm:border-b-0 sm:border-r">
-                <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Coverage
-                </dt>
-                <dd className="mt-2 text-sm leading-6 text-slate-800">
-                  {selected.activeAssignedCount}/{selected.neededCount} assigned
-                  <br />
-                  {selected.confirmedCount} confirmed · {selected.declinedCount} can’t make it
-                </dd>
-              </div>
-              <div className="p-3">
-                <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  Follow-up Contact
-                </dt>
-                <dd className="mt-2 text-sm leading-6 text-slate-800">
-                  {hasFollowUpContact(selected) ? (
-                    <>
-                      {selected.followUpContact.displayName ?? "Project contact"}
-                      {selected.followUpContact.email ? (
-                        <>
-                          <br />
-                          <a
-                            className="font-semibold text-sky-700"
-                            href={`mailto:${selected.followUpContact.email}`}
-                          >
-                            Email
-                          </a>
-                        </>
-                      ) : null}
-                      {selected.followUpContact.phone ? (
-                        <>
-                          <br />
-                          <a
-                            className="font-semibold text-sky-700"
-                            href={`sms:${selected.followUpContact.phone}`}
-                          >
-                            Text
-                          </a>
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    "Ask the project team for the best contact."
-                  )}
-                </dd>
-              </div>
-            </dl>
+            <div
+              data-testid="volunteer-assignment-detail-scroll"
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-6"
+            >
+              <dl className="grid overflow-hidden rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] sm:grid-cols-2">
+                <div className="border-b border-[var(--pl-border)] p-3 sm:border-r">
+                  <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    <Clock3 aria-hidden="true" className="size-4" />
+                    Date and time
+                  </dt>
+                  <dd className="mt-2 text-sm leading-6 text-slate-800">
+                    {dateTimeLabel(selected)}
+                  </dd>
+                </div>
+                <div className="border-b border-[var(--pl-border)] p-3">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Current response
+                  </dt>
+                  <dd className="mt-2">
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${responseStyles[selected.currentResponseStatus]}`}
+                    >
+                      {responseLabels[selected.currentResponseStatus]}
+                    </span>
+                  </dd>
+                </div>
+                <div className="p-3 sm:col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                    Follow-up Contact
+                  </dt>
+                  <dd className="mt-2 text-sm leading-6 text-slate-800">
+                    {hasFollowUpContact(selected) ? (
+                      <>
+                        {selected.followUpContact.displayName ?? "Project contact"}
+                        {selected.followUpContact.email ? (
+                          <>
+                            <br />
+                            <a
+                              className="font-semibold text-sky-700"
+                              href={`mailto:${selected.followUpContact.email}`}
+                            >
+                              Email
+                            </a>
+                          </>
+                        ) : null}
+                        {selected.followUpContact.phone ? (
+                          <>
+                            <br />
+                            <a
+                              className="font-semibold text-sky-700"
+                              href={`sms:${selected.followUpContact.phone}`}
+                            >
+                              Text
+                            </a>
+                          </>
+                        ) : null}
+                      </>
+                    ) : (
+                      "Ask the project team for the best contact."
+                    )}
+                  </dd>
+                </div>
+              </dl>
 
-            {selected.scheduleNotes ? (
-              <section className="mt-4 border-l-2 border-blue-200 bg-blue-50/45 px-3 py-2.5">
-                <h3 className="text-sm font-semibold text-slate-950">Notes</h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
-                  {selected.scheduleNotes}
-                </p>
-              </section>
-            ) : null}
+              {selected.scheduleNotes ? (
+                <section className="mt-4 border-l-2 border-blue-200 bg-blue-50/45 px-3 py-2.5">
+                  <h3 className="text-sm font-semibold text-slate-950">Notes</h3>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                    {selected.scheduleNotes}
+                  </p>
+                </section>
+              ) : null}
 
-            <p className="mt-4 flex gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-900">
-              <MessageCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              Responses are saved to the project schedule. Need to change close
-              to the start time? Contact your Follow-up Contact.
-            </p>
+              {selected.responseNote ? (
+                <section className="mt-4 border-l-2 border-violet-200 bg-violet-50/45 px-3 py-2.5">
+                  <h3 className="text-sm font-semibold text-slate-950">Your note</h3>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                    {selected.responseNote}
+                  </p>
+                </section>
+              ) : null}
 
-            {selected.responseNote ? (
-              <section className="mt-4 border-l-2 border-violet-200 bg-violet-50/45 px-3 py-2.5">
-                <h3 className="text-sm font-semibold text-slate-950">Your note</h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
-                  {selected.responseNote}
-                </p>
-              </section>
-            ) : null}
-
-            <ResponseActions
-              assignment={selected}
-              isPending={
-                isResponsePending && pendingAssignmentId === selected.assignmentReference
-              }
-              onSubmit={submitResponse}
-            />
+              <ResponseActions
+                assignment={selected}
+                isPending={
+                  isResponsePending && pendingAssignmentId === selected.assignmentReference
+                }
+                onSubmit={submitResponse}
+              />
+            </div>
           </div>
         </div>
       ) : null}
@@ -395,11 +411,14 @@ function ResponseActions({
     assignment.canConfirm && assignment.currentResponseStatus !== "confirmed";
   const canSubmitDecline =
     assignment.canDecline && assignment.currentResponseStatus !== "declined";
-  const lockCopy =
-    assignment.responseLockReason === "started"
-      ? "This assignment has already started, so responses are locked."
-      : assignment.responseLockReason === "inside_48_hours"
-        ? "This assignment starts within 48 hours. You can still confirm, but please contact the project team if you can’t make it."
+  const isStarted = assignment.responseLockReason === "started";
+  const isCloseToStart = assignment.responseLockReason === "inside_48_hours";
+  const lockCopy = isStarted
+    ? "This assignment has already started, so responses are locked."
+    : isCloseToStart && canSubmitConfirm
+      ? "A response is still needed. You can still confirm. If you can’t make it, contact your Follow-up Contact."
+      : isCloseToStart
+        ? "Need to change your response? Changes are closed this close to the assignment. Contact your Follow-up Contact."
         : null;
 
   return (
@@ -414,54 +433,73 @@ function ResponseActions({
         Your response
       </h3>
       {lockCopy ? (
-        <p className="mt-2 text-sm leading-6 text-slate-600">{lockCopy}</p>
+        <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm leading-6 text-amber-900">
+          {lockCopy}
+        </p>
       ) : null}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {isStarted || (isCloseToStart && !canSubmitConfirm) ? null : isCloseToStart ? (
         <button
           type="button"
           onClick={() => onSubmit(assignment, "confirmed")}
-          disabled={!canSubmitConfirm || isPending}
-          className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+          disabled={isPending}
+          className="mt-4 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200 sm:w-auto"
         >
-          {isPending && canSubmitConfirm ? (
+          {isPending ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : (
             <Check aria-hidden="true" className="size-4" />
           )}
-          {assignment.currentResponseStatus === "confirmed" ? "Confirmed" : "Confirm"}
+          Confirm
         </button>
-        {canSubmitDecline || assignment.currentResponseStatus === "declined" ? (
-          <button
-            type="button"
-            onClick={() => onSubmit(assignment, "declined", declineNote)}
-            disabled={!canSubmitDecline || isPending}
-            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-          >
-            <X aria-hidden="true" className="size-4" />
-            Can’t make it
-          </button>
-        ) : (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-            Need to change? Contact your Follow-up Contact.
-          </p>
-        )}
-      </div>
+      ) : (
+        <>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => onSubmit(assignment, "confirmed")}
+              disabled={!canSubmitConfirm || isPending}
+              className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
+            >
+              {isPending && canSubmitConfirm ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <Check aria-hidden="true" className="size-4" />
+              )}
+              {assignment.currentResponseStatus === "confirmed" ? "Confirmed" : "Confirm"}
+            </button>
+            {canSubmitDecline || assignment.currentResponseStatus === "declined" ? (
+              <button
+                type="button"
+                onClick={() => onSubmit(assignment, "declined", declineNote)}
+                disabled={!canSubmitDecline || isPending}
+                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <X aria-hidden="true" className="size-4" />
+                Can’t make it
+              </button>
+            ) : (
+              <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                Need to change? Contact your Follow-up Contact.
+              </p>
+            )}
+          </div>
 
-      {canSubmitDecline ? (
-        <label className="mt-4 block text-sm font-semibold text-slate-700">
-          Notes{" "}
-          <span className="font-normal text-slate-400">(optional)</span>
-          <textarea
-            value={declineNote}
-            onChange={(event) => setDeclineNote(event.target.value)}
-            maxLength={1000}
-            rows={3}
-            className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-            placeholder="Add a brief note if you can’t make it"
-          />
-        </label>
-      ) : null}
+          {canSubmitDecline ? (
+            <label className="mt-4 block text-sm font-semibold text-slate-700">
+              Notes <span className="font-normal text-slate-400">(optional)</span>
+              <textarea
+                value={declineNote}
+                onChange={(event) => setDeclineNote(event.target.value)}
+                maxLength={1000}
+                rows={3}
+                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                placeholder="Add a brief note if you can’t make it"
+              />
+            </label>
+          ) : null}
+        </>
+      )}
     </section>
   );
 }

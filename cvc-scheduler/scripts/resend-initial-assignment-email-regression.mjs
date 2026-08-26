@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { chromium } from "playwright";
 
 import {
   InitialAssignmentNotificationBoundaryError,
@@ -13,8 +14,18 @@ import {
   readInitialAssignmentEmailConfiguration,
   sendInitialAssignmentEmail,
 } from "../lib/notifications/initialAssignmentEmail.server.ts";
+import { resolvePreviewBrowserExecutable } from "./preview-config.mjs";
 
 const root = process.cwd();
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44B5_CAPTURES === "1";
+const iterationReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44b5-volunteer-ux",
+);
 const apiKey = "re_qa_only_not_a_real_resend_key";
 const bearer = "A".repeat(43);
 const scheduleAccessUrl = `https://project-local.example.test/v/access/${bearer}`;
@@ -226,6 +237,9 @@ async function main() {
   }
 
   const body = JSON.parse(request.init.body);
+  assert.equal(input.scheduleDate, "2026-08-18");
+  assert.equal(input.scheduleStartTime, "08:00:00");
+  assert.equal(input.scheduleEndTime, "12:00:00");
   assert.equal(body.from, approvedSender);
   assert.deepEqual(body.to, [input.recipientEmail]);
   assert.match(body.subject, /Project Local assignment/);
@@ -234,13 +248,46 @@ async function main() {
   assert.match(body.text, /Gate & Welcome/);
   assert.match(body.text, /Jordan Lee/);
   assert.match(body.text, /jordan\.lee@example\.test/);
+  assert.match(body.text, /An assignment needs your review/);
+  assert.match(body.text, /Please let the project know whether you can make it\./);
+  assert.match(body.text, /Review assignment & respond:/);
+  assert.match(body.text, /Date: Tuesday, August 18, 2026/);
+  assert.match(body.text, /Time: 8:00 AM – 12:00 PM/);
   assert(body.text.includes(scheduleAccessUrl));
   assert(body.html.includes(scheduleAccessUrl));
   assert.match(body.html, /Gate &amp; Welcome/);
+  assert.match(body.html, /Please review your assignment/);
+  assert.match(body.html, /Review assignment &amp; respond/);
+  assert.match(body.html, /Tuesday, August 18, 2026/);
+  assert.match(body.html, /8:00 AM – 12:00 PM/);
+  assert(!body.text.includes("Date: 2026-08-18"));
+  assert(!body.html.includes("Date: 2026-08-18"));
+  assert(!body.text.includes("08:00:00"));
+  assert(!body.text.includes("12:00:00"));
+  assert(!body.html.includes("08:00:00"));
+  assert(!body.html.includes("12:00:00"));
   assert(!request.init.body.includes(apiKey));
   assert(!JSON.stringify(success).includes(apiKey));
   assert(!JSON.stringify(success).includes(scheduleAccessUrl));
   assert(!JSON.stringify(success).includes(bearer));
+
+  if (writeIterationReviewScreenshots) {
+    await mkdir(iterationReviewDir, { recursive: true });
+    const browser = await chromium.launch({
+      executablePath: resolvePreviewBrowserExecutable(),
+      headless: true,
+    });
+    try {
+      const page = await browser.newPage({ viewport: { width: 720, height: 900 } });
+      await page.setContent(body.html, { waitUntil: "load" });
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "initial-assignment-email.png"),
+        fullPage: true,
+      });
+    } finally {
+      await browser.close();
+    }
+  }
 
   const malformedId = await sendInitialAssignmentEmail(resendConfiguration, input, {
     fetch: async () => jsonResponse({ id: "unsafe provider id with spaces" }),
