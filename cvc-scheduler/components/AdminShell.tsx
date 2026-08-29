@@ -8,7 +8,6 @@ import {
   FileQuestion,
   Home,
   LayoutGrid,
-  Menu,
   MessageSquare,
   MoreHorizontal,
   Settings,
@@ -26,6 +25,7 @@ import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPen
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { demoProjectId, getProjectById } from "@/lib/mockData";
 
@@ -106,13 +106,13 @@ const moreGroups: Array<{
     title: "Workspace",
     links: [
       { label: "Settings", href: "/admin/settings", icon: Settings },
-      { label: "Project Workspaces", href: "/admin/projects", icon: LayoutGrid },
+      { label: "Project Workspaces", href: "/admin/projects", icon: LayoutGrid, note: "Preview" },
     ],
   },
   {
     title: "Prototype / legacy",
     links: [
-      { label: "Legacy Schedule", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Legacy Schedule", href: "/admin/schedule", icon: CalendarDays, note: "Legacy" },
       { label: "Food prototype", href: "/admin/food", icon: Soup, note: "Prototype" },
       { label: "Security prototype", href: "/admin/security", icon: Shield, note: "Prototype" },
     ],
@@ -137,7 +137,7 @@ function MobileBottomNav({
   moreButtonRef: Ref<HTMLButtonElement>;
   onMoreClick: () => void;
 }) {
-  const isMoreActive = isMoreOpen || !primaryMobileTabIds.has(active);
+  const isMoreActive = !primaryMobileTabIds.has(active);
 
   return (
     <nav
@@ -230,7 +230,7 @@ function MobileMoreSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 lg:hidden"
+      className="fixed inset-0 z-30 lg:hidden"
     >
       <button
         aria-label="Close more navigation backdrop"
@@ -243,19 +243,20 @@ function MobileMoreSheet({
         aria-describedby="mobile-more-navigation-description"
         aria-label="More admin navigation"
         aria-modal="true"
-        className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+96px)]"
+        className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+64px)] px-3 pb-2"
         id="mobile-more-navigation"
         ref={dialogRef}
         role="dialog"
         tabIndex={-1}
       >
-        <GlassCard className="mx-auto max-h-[calc(100vh-126px)] max-w-md overflow-y-auto rounded-2xl p-4 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
+        <GlassCard className="mx-auto flex max-h-[70dvh] max-w-md flex-col overflow-hidden rounded-2xl p-0 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
           <p className="sr-only" id="mobile-more-navigation-description">
             Additional admin destinations for communications, follow-up, workspace,
             and prototype tools.
           </p>
-          <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
-          <div className="flex items-center justify-between gap-3">
+          <div className="shrink-0 px-4 pb-3 pt-3">
+            <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
+            <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                 More
@@ -273,9 +274,14 @@ function MobileMoreSheet({
             >
               <X aria-hidden="true" className="h-4 w-4" />
             </button>
+            </div>
           </div>
 
-          <div className="mt-4 grid gap-4">
+          <div
+            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-4"
+            data-overlay-scroll="mobile-more"
+          >
+            <div className="grid gap-4">
             {moreGroups.map((group) => (
               <div key={group.title}>
                 <p className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -319,6 +325,7 @@ function MobileMoreSheet({
               </div>
             ))}
           </div>
+          </div>
         </GlassCard>
       </section>
     </div>
@@ -350,7 +357,6 @@ export function AdminShell({
   projectId = demoProjectId,
   workspaceName,
 }: AdminShellProps) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -359,10 +365,10 @@ export function AdminShell({
   const visibleWorkspaceName = workspaceName ?? project?.name ?? "Admin workspace";
 
   useFocusContainment(isMoreOpen, mobileMoreDialogRef);
+  useBodyScrollLock(isMoreOpen, "(max-width: 1023px)");
 
   useEffect(() => {
     const closeMobileNavigation = () => {
-      setIsDrawerOpen(false);
       setIsMoreOpen(false);
     };
 
@@ -382,7 +388,12 @@ export function AdminShell({
     });
   }, [onMobileMoreClose]);
 
-  const openMobileMore = () => {
+  const toggleMobileMore = () => {
+    if (isMoreOpen) {
+      closeMobileMore();
+      return;
+    }
+
     onMobileMoreOpen?.();
     setIsMoreOpen(true);
   };
@@ -413,7 +424,7 @@ export function AdminShell({
   return (
     <PageShell className="bg-[var(--pl-canvas)]">
       <div className="sticky top-0 z-30 border-b border-[var(--pl-border)] bg-white/96 px-4 py-2.5 backdrop-blur-xl lg:hidden">
-        <div className="mx-auto flex min-w-0 max-w-2xl items-center justify-between gap-3">
+        <div className="mx-auto flex min-w-0 max-w-2xl items-center gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <ProjectLocalBrand compact />
             <div className="min-w-0">
@@ -424,16 +435,8 @@ export function AdminShell({
                 {visibleWorkspaceName}
               </p>
             </div>
+            </div>
           </div>
-          <button
-            aria-label="Open navigation menu"
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--pl-border)] bg-white text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)]"
-            onClick={() => setIsDrawerOpen(true)}
-            type="button"
-          >
-            <Menu aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </div>
       </div>
 
       <div className="grid min-h-screen w-full lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -450,44 +453,11 @@ export function AdminShell({
           </main>
       </div>
 
-      {isDrawerOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            aria-label="Close navigation drawer backdrop"
-            className="absolute inset-0 h-full w-full bg-slate-950/24"
-            onClick={() => setIsDrawerOpen(false)}
-            type="button"
-          />
-          <div className="absolute inset-y-0 left-0 w-[min(300px,calc(100vw-28px))]">
-            <div className="flex h-full flex-col overflow-y-auto border-r border-[var(--pl-border)] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
-              <div className="flex items-center justify-between gap-3">
-                <AdminBrand />
-                <button
-                  aria-label="Close admin navigation"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-[var(--pl-text)]"
-                  onClick={() => setIsDrawerOpen(false)}
-                  type="button"
-                >
-                  <X aria-hidden="true" className="h-4 w-4" />
-                  Close
-                </button>
-              </div>
-                <AdminNav
-                  active={active}
-                  onNavigate={() => setIsDrawerOpen(false)}
-                  projectId={projectId}
-                  workspaceName={visibleWorkspaceName}
-                />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <MobileBottomNav
         active={active}
         isMoreOpen={isMoreOpen}
         moreButtonRef={mobileMoreButtonRef}
-        onMoreClick={openMobileMore}
+        onMoreClick={toggleMobileMore}
       />
       <MobileMoreSheet
         active={active}

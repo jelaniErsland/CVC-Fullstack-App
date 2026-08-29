@@ -228,7 +228,7 @@ const captures = [
     route: "/admin/announcements",
     fileName: "mobile-admin-drawer-open.jpg",
     viewport: mobileViewport,
-    openMobileDrawer: true,
+    openMobileMore: true,
   },
   {
     route: "/admin/dashboard",
@@ -316,7 +316,6 @@ async function main() {
       focusCalendarWorkspace,
       openCalendarCreate,
       openCalendarFilters,
-      openMobileDrawer,
       openMobileMore,
       auditPage,
       auditVolunteerLookup,
@@ -372,10 +371,6 @@ async function main() {
           calendarView,
         );
         await page.waitForTimeout(200);
-      }
-
-      if (openMobileDrawer) {
-        await page.getByRole("button", { name: "Open navigation menu" }).click();
       }
 
       if (openMobileMore) {

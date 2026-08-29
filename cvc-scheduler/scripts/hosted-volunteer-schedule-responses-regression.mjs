@@ -1178,10 +1178,10 @@ where workspace_id = ${sqlUuid(fixture.workspaceId)}
     assert(responseState(fixture.assignments.past).response_status === "needs_response", "Hosted route changed started assignment unexpectedly.");
 
     await Promise.all([
-      page.waitForURL(/\/v\/schedule$/),
+      page.waitForURL(/\/v\/schedule\?left=1$/),
       page.getByRole("button", { name: /Not you\? Leave this schedule/ }).first().click(),
     ]);
-    await page.getByRole("heading", { name: "This schedule link is unavailable" }).waitFor();
+    await page.getByRole("heading", { name: "You’ve left this schedule" }).waitFor();
     assert(
       !(await context.cookies(createPreviewUrl(previewBaseUrl, "/v/schedule"))).some(
         (cookie) => cookie.name === "pl-volunteer-schedule" && cookie.value,

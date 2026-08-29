@@ -11,6 +11,8 @@ import {
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import type { VolunteerScheduleActionResult } from "@/app/v/schedule/actions";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { formatScheduleClockRange } from "@/lib/scheduleFormatting";
 import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/token";
 
@@ -92,6 +94,9 @@ export function VolunteerScheduleClient({
       assignment.currentResponseStatus === "needs_response" && assignment.canConfirm,
   ).length;
 
+  useBodyScrollLock(Boolean(selected));
+  useFocusContainment(Boolean(selected), dialogRef);
+
   function submitResponse(
     assignment: VolunteerScheduleAssignment,
     status: "confirmed" | "declined",
@@ -120,48 +125,18 @@ export function VolunteerScheduleClient({
 
   useEffect(() => {
     if (!selected) return undefined;
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyOverscrollBehavior = document.body.style.overscrollBehavior;
-    document.body.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = "none";
-    closeButtonRef.current?.focus();
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         setSelectedId(null);
-        return;
-      }
-      if (event.key !== "Tab" || !dialogRef.current) return;
-
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter(
-        (element) => !element.hasAttribute("hidden") && element.getClientRects().length > 0,
-      );
-      if (focusable.length === 0) {
-        event.preventDefault();
-        dialogRef.current.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.overscrollBehavior = previousBodyOverscrollBehavior;
     };
   }, [selected]);
 
@@ -266,14 +241,21 @@ export function VolunteerScheduleClient({
         <div
           aria-labelledby="assignment-detail-title"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end overflow-hidden overscroll-none bg-slate-950/24 p-0 sm:items-center sm:p-6"
+          className="fixed inset-0 z-50 flex items-end overflow-hidden overscroll-none p-0 sm:items-center sm:p-6"
           role="dialog"
         >
+          <button
+            aria-label="Close assignment details backdrop"
+            className="absolute inset-0 bg-slate-950/24"
+            onClick={() => setSelectedId(null)}
+            tabIndex={-1}
+            type="button"
+          />
           <div
             ref={dialogRef}
             data-testid="volunteer-assignment-detail-panel"
             tabIndex={-1}
-            className="flex max-h-[100vh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)] sm:mx-auto sm:max-h-[90vh] sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-2xl"
+            className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top)-1rem)] w-full min-w-0 flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)] sm:mx-auto sm:max-h-[90dvh] sm:max-w-2xl sm:rounded-2xl"
           >
             <div className="relative z-10 flex shrink-0 items-start justify-between gap-4 border-b border-[var(--pl-border)] bg-white px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 sm:pt-6">
               <div>

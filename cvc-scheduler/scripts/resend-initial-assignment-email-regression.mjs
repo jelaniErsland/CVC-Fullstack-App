@@ -17,14 +17,20 @@ import {
 import { resolvePreviewBrowserExecutable } from "./preview-config.mjs";
 
 const root = process.cwd();
-const writeIterationReviewScreenshots =
+const writeVolunteerUxReviewScreenshots =
   process.env.WRITE_ITERATION_12_44B5_CAPTURES === "1";
+const writeMobileOverlayReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const writeIterationReviewScreenshots =
+  writeVolunteerUxReviewScreenshots || writeMobileOverlayReviewScreenshots;
 const iterationReviewDir = path.resolve(
   root,
   "..",
   "previews",
   "beta-review",
-  "iteration-12-44b5-volunteer-ux",
+  writeMobileOverlayReviewScreenshots
+    ? "iteration-12-44d1-mobile-overlays"
+    : "iteration-12-44b5-volunteer-ux",
 );
 const apiKey = "re_qa_only_not_a_real_resend_key";
 const bearer = "A".repeat(43);
@@ -248,8 +254,8 @@ async function main() {
   assert.match(body.text, /Gate & Welcome/);
   assert.match(body.text, /Jordan Lee/);
   assert.match(body.text, /jordan\.lee@example\.test/);
-  assert.match(body.text, /An assignment needs your review/);
-  assert.match(body.text, /Please let the project know whether you can make it\./);
+  assert.match(body.text, /You’ve been scheduled to help with Gate & Welcome in Bozeman Local Project\./);
+  assert.match(body.text, /Review the details below and let the project team know if you can make it\./);
   assert.match(body.text, /Review assignment & respond:/);
   assert.match(body.text, /Date: Tuesday, August 18, 2026/);
   assert.match(body.text, /Time: 8:00 AM – 12:00 PM/);
@@ -258,6 +264,7 @@ async function main() {
   assert.match(body.html, /Gate &amp; Welcome/);
   assert.match(body.html, /Please review your assignment/);
   assert.match(body.html, /Review assignment &amp; respond/);
+  assert.match(body.html, /You’ve been scheduled to help with <strong>Gate &amp; Welcome<\/strong> in <strong>Bozeman Local Project<\/strong>\./);
   assert.match(body.html, /Tuesday, August 18, 2026/);
   assert.match(body.html, /8:00 AM – 12:00 PM/);
   assert(!body.text.includes("Date: 2026-08-18"));

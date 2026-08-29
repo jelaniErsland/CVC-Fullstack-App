@@ -27,6 +27,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const writeNamedReview = writeBetaReviewScreenshots || writeIterationReviewScreenshots;
+const iterationReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44d1-mobile-overlays",
+);
 const secrets = new Set();
 const authUserIds = [];
 const authCookieSets = new Map();
@@ -36,7 +46,7 @@ const fixture = {
   namespace: `qa-12-15-browser-${randomUUID()}`,
   validFrom: "2026-07-01T00:00:00.000Z",
 };
-const reviewValues = writeBetaReviewScreenshots
+const reviewValues = writeNamedReview
   ? {
       workspaceName: "Bozeman Local Project",
       createdVolunteerName: "Alex Rivera (new)",
@@ -230,6 +240,40 @@ async function openVolunteersPage(context) {
   return { page, failures };
 }
 
+async function assertVolunteerEditorContract(page, dialog) {
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      body: getComputedStyle(document.body).overflow,
+      root: getComputedStyle(document.documentElement).overflow,
+    })),
+    { body: "hidden", root: "hidden" },
+    "Volunteer editor must lock background scrolling.",
+  );
+  const scroll = dialog.locator('[data-overlay-scroll="volunteer editor"]');
+  assert.equal(await scroll.count(), 1);
+  assert.equal(
+    await scroll.evaluate((element) => element.scrollHeight > element.clientHeight),
+    true,
+    "Volunteer editor fixture must exercise internal scrolling.",
+  );
+  await scroll.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  assert.equal(
+    await dialog.getByRole("button", { name: "Close volunteer editor" }).evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    }),
+    true,
+    "Volunteer editor close control must remain reachable.",
+  );
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
+    false,
+    "Volunteer editor has horizontal overflow.",
+  );
+}
+
 async function run() {
   assert(supabaseUrl && anonKey, "Local Supabase env values are required.");
   assert(isLoopbackUrl(supabaseUrl), "Volunteer browser QA accepts only local Supabase.");
@@ -283,7 +327,7 @@ async function run() {
     await applyAuthCookies(context, "full");
     const { page, failures } = await openVolunteersPage(context);
     await page.getByText("No volunteers yet").waitFor();
-    await page.getByText("Add volunteer").click();
+    await page.locator("summary").filter({ hasText: "Add volunteer" }).click();
     await page.getByLabel("Full name").first().fill(reviewValues.createdVolunteerName);
     await page.getByLabel("Email").first().fill(reviewValues.volunteerEmail);
     await page.getByLabel("Phone").first().fill("406-555-9090");
@@ -296,7 +340,7 @@ async function run() {
     await page.getByText(reviewValues.createdVolunteerName).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByText(reviewValues.createdVolunteerName).waitFor();
-    await page.getByText("Edit volunteer").click();
+    await page.locator("summary").filter({ hasText: "Edit volunteer" }).first().click();
     const editDetails = page.locator("details").filter({ hasText: "Edit volunteer" }).first();
     await editDetails.getByLabel("Full name").fill(reviewValues.volunteerName);
     await Promise.all([
@@ -306,7 +350,7 @@ async function run() {
     await page.getByText(reviewValues.volunteerName).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByText(reviewValues.volunteerName).waitFor();
-    if (!writeBetaReviewScreenshots) {
+    if (!writeNamedReview) {
       assert.equal(await page.getByText("Alex Rivera").count(), 0, "mock volunteer leaked");
     }
     assert.deepEqual(failures, []);
@@ -318,6 +362,54 @@ async function run() {
       });
     }
     await context.close();
+
+    const mobileEditorContext = await browser.newContext({
+      viewport: { width: 360, height: 640 },
+    });
+    await applyAuthCookies(mobileEditorContext, "full");
+    const { page: mobileEditorPage, failures: mobileEditorFailures } =
+      await openVolunteersPage(mobileEditorContext);
+    const addTrigger = mobileEditorPage.getByRole("button", {
+      name: /Add volunteer/,
+    });
+    await addTrigger.click();
+    const editorDialog = mobileEditorPage.getByRole("dialog", {
+      name: "volunteer editor",
+      exact: true,
+    });
+    await editorDialog.waitFor();
+    await assertVolunteerEditorContract(mobileEditorPage, editorDialog);
+    await editorDialog.getByRole("button", { name: "Close volunteer editor" }).click();
+    await editorDialog.waitFor({ state: "hidden" });
+    await mobileEditorPage.waitForFunction(
+      () => document.activeElement?.textContent?.includes("Add volunteer") === true,
+    );
+    assert.notEqual(
+      await mobileEditorPage.evaluate(() => getComputedStyle(document.body).overflow),
+      "hidden",
+    );
+
+    const editTrigger = mobileEditorPage.getByRole("button", {
+      name: "Edit volunteer",
+      exact: true,
+    }).first();
+    await editTrigger.click();
+    await editorDialog.waitFor();
+    await assertVolunteerEditorContract(mobileEditorPage, editorDialog);
+    if (writeIterationReviewScreenshots) {
+      await mobileEditorPage.setViewportSize({ width: 390, height: 844 });
+      await mkdir(iterationReviewDir, { recursive: true });
+      await mobileEditorPage.screenshot({
+        path: path.join(iterationReviewDir, "volunteers-edit-sheet.png"),
+        fullPage: false,
+      });
+    }
+    await mobileEditorPage.getByRole("button", {
+      name: "Close volunteer editor backdrop",
+    }).click({ position: { x: 8, y: 8 } });
+    await editorDialog.waitFor({ state: "hidden" });
+    assert.deepEqual(mobileEditorFailures, []);
+    await mobileEditorContext.close();
 
     const viewContext = await browser.newContext({ viewport: { width: 390, height: 900 } });
     await applyAuthCookies(viewContext, "view-only");

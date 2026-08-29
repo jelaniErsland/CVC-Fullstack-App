@@ -16,8 +16,10 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type Ref, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useFocusContainment } from "@/hooks/useFocusContainment";
 import type {
   TaskManagementNotice,
   TaskManagementPreset,
@@ -125,13 +127,26 @@ function CreateTaskDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+
+  useBodyScrollLock(open);
+  useFocusContainment(open, dialogRef);
+
   useEffect(() => {
     if (!open) return;
+    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [onClose, open]);
 
   if (!open) return null;
@@ -149,10 +164,12 @@ function CreateTaskDialog({
       <section
         aria-labelledby="new-task-title"
         aria-modal="true"
-        className="relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl border border-[var(--pl-border)] bg-white p-5 shadow-[var(--pl-shadow-raised)] sm:max-w-xl sm:rounded-2xl sm:p-6"
+        className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)] sm:max-h-[92dvh] sm:max-w-xl sm:rounded-2xl"
+        ref={dialogRef}
         role="dialog"
+        tabIndex={-1}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--pl-border)] px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))] sm:p-6">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
               Reusable task
@@ -171,13 +188,19 @@ function CreateTaskDialog({
             aria-label="Close new task"
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]"
             onClick={onClose}
+            ref={closeButtonRef}
             type="button"
           >
             <X aria-hidden="true" className="size-5" />
           </button>
         </div>
 
-        <form action={action} className="mt-5 grid gap-4">
+        <form
+          action={action}
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pb-6"
+          data-overlay-scroll="new-task"
+        >
+          <div className="grid gap-4">
           <label className="grid gap-1.5 text-sm font-semibold text-[var(--pl-ink)]">
             Task name
             <input
@@ -248,6 +271,7 @@ function CreateTaskDialog({
             </button>
             <SubmitButton>Save task</SubmitButton>
           </div>
+          </div>
         </form>
       </section>
     </div>
@@ -257,11 +281,13 @@ function CreateTaskDialog({
 function TaskInspector({
   archiveAction,
   canEdit,
+  closeButtonRef,
   onClose,
   preset,
 }: {
   archiveAction: TaskPresetManagementProps["archiveAction"];
   canEdit: boolean;
+  closeButtonRef?: Ref<HTMLButtonElement>;
   onClose?: () => void;
   preset: TaskManagementPreset | undefined;
 }) {
@@ -280,8 +306,8 @@ function TaskInspector({
   const canArchive = canEdit && preset.lifecycle === "active" && !preset.isSystemPreset;
 
   return (
-    <div className="flex min-h-0 flex-col">
-      <div className="border-b border-[var(--pl-border)] p-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 border-b border-[var(--pl-border)] p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${category.className}`}>
@@ -313,6 +339,7 @@ function TaskInspector({
               aria-label="Close task details"
               className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)]"
               onClick={onClose}
+              ref={closeButtonRef}
               type="button"
             >
               <X aria-hidden="true" className="size-5" />
@@ -324,7 +351,10 @@ function TaskInspector({
         </p>
       </div>
 
-      <div className="grid gap-5 p-5">
+      <div
+        className="grid min-h-0 flex-1 gap-5 overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+        data-overlay-scroll="task-details"
+      >
         <section>
           <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
             Defaults
@@ -446,6 +476,44 @@ export function TaskPresetManagement({
   const [lifecycle, setLifecycle] = useState<TaskManagementPreset["lifecycle"] | "all">("active");
   const [createOpen, setCreateOpen] = useState(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const createTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const mobileDetailCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileDetailDialogRef = useRef<HTMLElement>(null);
+
+  useBodyScrollLock(mobileDetailOpen, "(max-width: 1023px)");
+  useFocusContainment(mobileDetailOpen, mobileDetailDialogRef);
+
+  const closeCreate = useCallback(() => {
+    setCreateOpen(false);
+    window.requestAnimationFrame(() => createTriggerRef.current?.focus());
+  }, []);
+  const closeMobileDetail = useCallback(() => {
+    setMobileDetailOpen(false);
+    window.requestAnimationFrame(() => detailTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (!mobileDetailOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() =>
+      mobileDetailCloseButtonRef.current?.focus(),
+    );
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileDetail();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMobileDetail, mobileDetailOpen]);
 
   const filteredPresets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -493,7 +561,10 @@ export function TaskPresetManagement({
           {canEdit ? (
             <button
               className="inline-flex min-h-[var(--pl-control-height)] items-center gap-2 rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.2)] transition hover:bg-[var(--pl-blue-deep)]"
-              onClick={() => setCreateOpen(true)}
+              onClick={(event) => {
+                createTriggerRef.current = event.currentTarget;
+                setCreateOpen(true);
+              }}
               type="button"
             >
               <Plus aria-hidden="true" className="size-4" />
@@ -597,7 +668,8 @@ export function TaskPresetManagement({
                     aria-current={selected ? "true" : undefined}
                     className={`grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-left transition md:grid-cols-[auto_minmax(0,1fr)_120px_100px_24px] ${selected ? "bg-[var(--pl-blue-soft)]/65" : "hover:bg-[var(--pl-surface-subtle)]"}`}
                     key={preset.id}
-                    onClick={() => {
+                    onClick={(event) => {
+                      detailTriggerRef.current = event.currentTarget;
                       setSelectedId(preset.id);
                       setMobileDetailOpen(true);
                     }}
@@ -663,7 +735,10 @@ export function TaskPresetManagement({
               {presets.length === 0 && canEdit ? (
                 <button
                   className="mt-4 inline-flex min-h-[var(--pl-control-height)] items-center gap-2 rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white"
-                  onClick={() => setCreateOpen(true)}
+                  onClick={(event) => {
+                    createTriggerRef.current = event.currentTarget;
+                    setCreateOpen(true);
+                  }}
                   type="button"
                 >
                   <Plus aria-hidden="true" className="size-4" />
@@ -689,22 +764,24 @@ export function TaskPresetManagement({
       {mobileDetailOpen && selectedPreset ? (
         <div className="fixed inset-0 z-[65] flex items-end lg:hidden">
           <button
-            aria-label="Close task details"
+            aria-label="Close task details backdrop"
             className="absolute inset-0 bg-slate-950/28 backdrop-blur-[2px]"
-            onClick={() => setMobileDetailOpen(false)}
+            onClick={closeMobileDetail}
             type="button"
           />
           <section
             aria-label="Task details"
             aria-modal="true"
-            className="relative max-h-[88dvh] w-full overflow-y-auto rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)]"
+            className="relative flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-raised)]"
+            ref={mobileDetailDialogRef}
             role="dialog"
           >
             <TaskInspector
               archiveAction={archiveAction}
               canEdit={canEdit}
               key={`mobile-${selectedPreset.id}`}
-              onClose={() => setMobileDetailOpen(false)}
+              closeButtonRef={mobileDetailCloseButtonRef}
+              onClose={closeMobileDetail}
               preset={selectedPreset}
             />
           </section>
@@ -713,7 +790,7 @@ export function TaskPresetManagement({
 
       <CreateTaskDialog
         action={createAction}
-        onClose={() => setCreateOpen(false)}
+        onClose={closeCreate}
         open={createOpen}
       />
     </>

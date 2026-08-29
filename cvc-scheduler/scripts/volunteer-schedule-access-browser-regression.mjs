@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -21,6 +21,15 @@ const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const iterationReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44d1-mobile-overlays",
+);
 const secrets = new Set();
 const authUserIds = [];
 let cleanupCompleted = false;
@@ -330,6 +339,11 @@ async function runBrowserProof(token, emptyToken) {
     assert.equal(earlyScheduleCookie?.value === token, true, "schedule cookie did not preserve bearer value");
     await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
     await page.getByText(`${fixture.namespace} Browser Volunteer`).waitFor();
+    assert.equal(
+      await page.getByRole("link", { name: "Special access for project contacts" }).count(),
+      0,
+      "Volunteer schedule must not expose the project-contact shortcut.",
+    );
     await page.getByText("QA 12.20 Browser Workspace", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
     await page.getByText(`${fixture.namespace} Confirmed`).waitFor();
@@ -370,12 +384,27 @@ async function runBrowserProof(token, emptyToken) {
     await page.getByRole("dialog").waitFor({ state: "detached" });
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (writeIterationReviewScreenshots) {
+      await mkdir(iterationReviewDir, { recursive: true });
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "volunteer-schedule-header.png"),
+        fullPage: false,
+      });
+    }
 
     await Promise.all([
-      page.waitForURL(/\/v\/schedule$/),
+      page.waitForURL(/\/v\/schedule\?left=1$/),
       page.getByRole("button", { name: /Not you\? Leave this schedule/ }).first().click(),
     ]);
-    await page.getByRole("heading", { name: "This schedule link is unavailable" }).waitFor();
+    await page.getByRole("heading", { name: "You’ve left this schedule" }).waitFor();
+    await page.getByText(/use the Project Local assignment email sent to that volunteer/).waitFor();
+    if (writeIterationReviewScreenshots) {
+      await page.screenshot({
+        path: path.join(iterationReviewDir, "volunteer-not-you-signed-out.png"),
+        fullPage: false,
+      });
+    }
     assert.equal(
       (await context.cookies(createPreviewUrl(baseUrl, "/v/schedule"))).some(
         (cookie) => cookie.name === "pl-volunteer-schedule" && cookie.value,
@@ -403,6 +432,11 @@ async function runBrowserProof(token, emptyToken) {
       waitUntil: "domcontentloaded",
     });
     await emptyPage.getByRole("heading", { name: "No published assignments yet" }).waitFor();
+    assert.equal(
+      await emptyPage.getByText(`${fixture.namespace} Browser Volunteer`).count(),
+      0,
+      "Opening another volunteer link retained the previous volunteer identity.",
+    );
     const overflow = await emptyPage.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
     );

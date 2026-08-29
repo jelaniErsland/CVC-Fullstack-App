@@ -23,11 +23,21 @@ const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const writeReviewScreenshots = process.env.WRITE_TASKS_REVIEW_SCREENSHOTS === "1";
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const writeNamedReview = writeReviewScreenshots || writeIterationReviewScreenshots;
 const reviewScreenshotDirectory = path.join(
   root,
   "docs",
   "previews",
   "iteration-12-37-tasks-review",
+);
+const iterationReviewDirectory = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44d1-mobile-overlays",
 );
 const secrets = new Set();
 const authUserIds = [];
@@ -41,7 +51,7 @@ const fixture = {
   initialPresetId: randomUUID(),
 };
 
-const values = writeReviewScreenshots
+const values = writeNamedReview
   ? {
       workspaceName: "Bozeman Local Project",
       initialTask: "Gate Attendant",
@@ -55,7 +65,7 @@ const values = writeReviewScreenshots
       mobileTask: `${fixture.namespace} Site Cleanup`,
     };
 
-const seedPresets = writeReviewScreenshots
+const seedPresets = writeNamedReview
   ? [
       {
         id: fixture.initialPresetId,
@@ -351,6 +361,48 @@ async function captureReviewScreenshot(page, filename) {
   });
 }
 
+async function assertMobileOverlayContract(
+  page,
+  dialog,
+  scrollName,
+  label,
+  requireOverflow = true,
+) {
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      body: getComputedStyle(document.body).overflow,
+      root: getComputedStyle(document.documentElement).overflow,
+    })),
+    { body: "hidden", root: "hidden" },
+    `${label} must lock background scrolling.`,
+  );
+  const scroll = dialog.locator(`[data-overlay-scroll="${scrollName}"]`);
+  assert.equal(await scroll.count(), 1, `${label} must expose one internal scroll region.`);
+  if (requireOverflow) {
+    assert.equal(
+      await scroll.evaluate((element) => element.scrollHeight > element.clientHeight),
+      true,
+      `${label} fixture must exceed one mobile viewport.`,
+    );
+  }
+  await scroll.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  assert.equal(
+    await dialog.locator('button[aria-label^="Close "]').first().evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    }),
+    true,
+    `${label} close control must remain reachable.`,
+  );
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
+    false,
+    `${label} has horizontal overflow.`,
+  );
+}
+
 async function openTasksPage(context) {
   const page = await context.newPage();
   const failures = [];
@@ -436,7 +488,7 @@ async function verifyDesktop(browser) {
   await page.locator("aside").getByRole("heading", { name: values.initialTask }).waitFor();
   await captureReviewScreenshot(page, "tasks-desktop-library-1440x1000.png");
 
-  if (writeReviewScreenshots) {
+  if (writeNamedReview) {
     await page.getByRole("button", { name: "New task", exact: true }).first().click();
     const newTaskDialog = page.getByRole("dialog", { name: "New task" });
     await newTaskDialog.waitFor();
@@ -471,7 +523,7 @@ async function verifyDesktop(browser) {
 
 async function verifyMobile(browser) {
   const context = await browser.newContext({
-    viewport: writeReviewScreenshots ? { width: 390, height: 844 } : { width: 390, height: 900 },
+    viewport: writeNamedReview ? { width: 390, height: 844 } : { width: 390, height: 900 },
   });
   await applyAuthCookies(context, "editor");
   const { page, failures } = await openTasksPage(context);
@@ -482,7 +534,41 @@ async function verifyMobile(browser) {
   );
   await captureReviewScreenshot(page, "tasks-mobile-library-390x844.png");
 
-  if (writeReviewScreenshots) {
+  await page.setViewportSize({ width: 360, height: 640 });
+  const createTrigger = page.getByRole("button", { name: "New task", exact: true }).first();
+  await createTrigger.click();
+  const contractCreateDialog = page.getByRole("dialog", { name: "New task" });
+  await contractCreateDialog.waitFor();
+  await assertMobileOverlayContract(
+    page,
+    contractCreateDialog,
+    "new-task",
+    "Mobile new-task dialog",
+  );
+  await contractCreateDialog.getByRole("button", { name: "Close new task" }).click();
+  await contractCreateDialog.waitFor({ state: "hidden" });
+  assert.notEqual(await page.evaluate(() => getComputedStyle(document.body).overflow), "hidden");
+  await page.waitForFunction(
+    () => document.activeElement?.textContent?.trim().includes("New task") === true,
+  );
+
+  await page.getByText(values.initialTask, { exact: true }).first().click();
+  const contractDetailDialog = page.getByRole("dialog", { name: "Task details" });
+  await contractDetailDialog.waitFor();
+  await assertMobileOverlayContract(
+    page,
+    contractDetailDialog,
+    "task-details",
+    "Mobile task-details dialog",
+    false,
+  );
+  await page.getByRole("button", { name: "Close task details backdrop" }).click({
+    position: { x: 8, y: 8 },
+  });
+  await contractDetailDialog.waitFor({ state: "hidden" });
+  await page.setViewportSize(writeNamedReview ? { width: 390, height: 844 } : { width: 390, height: 932 });
+
+  if (writeNamedReview) {
     await page.getByText(values.initialTask, { exact: true }).first().click();
     const reviewDetail = page.getByRole("dialog", { name: "Task details" });
     await reviewDetail.waitFor();
@@ -495,6 +581,13 @@ async function verifyMobile(browser) {
     const reviewNewTask = page.getByRole("dialog", { name: "New task" });
     await reviewNewTask.waitFor();
     await captureReviewScreenshot(page, "tasks-mobile-new-task-390x844.png");
+    if (writeIterationReviewScreenshots) {
+      await mkdir(iterationReviewDirectory, { recursive: true });
+      await page.screenshot({
+        path: path.join(iterationReviewDirectory, "tasks-create-sheet.png"),
+        fullPage: false,
+      });
+    }
     await reviewNewTask.getByRole("button", { name: "Close new task", exact: true }).click();
   }
 

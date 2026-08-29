@@ -277,8 +277,8 @@ function buildResendMessage(input: InitialAssignmentEmailInput) {
     "",
     `Hi ${input.volunteerDisplayName.trim()},`,
     "",
-    `An assignment needs your review for ${input.workspaceDisplayName.trim()}.`,
-    "Please let the project know whether you can make it.",
+    `You’ve been scheduled to help with ${input.taskTitle.trim()} in ${input.workspaceDisplayName.trim()}.`,
+    "Review the details below and let the project team know if you can make it.",
     "",
     input.taskTitle.trim(),
     `Date: ${dateLabel}`,
@@ -307,7 +307,7 @@ function buildResendMessage(input: InitialAssignmentEmailInput) {
         </div>
         <div style="padding:24px 28px;">
           <p style="margin:0 0 18px;line-height:1.6;">Hi ${escapeHtml(input.volunteerDisplayName.trim())},</p>
-          <p style="margin:0 0 20px;line-height:1.6;">You have an assignment for <strong>${escapeHtml(input.workspaceDisplayName.trim())}</strong>. Please let the project know whether you can make it.</p>
+          <p style="margin:0 0 20px;line-height:1.6;">You’ve been scheduled to help with <strong>${escapeHtml(input.taskTitle.trim())}</strong> in <strong>${escapeHtml(input.workspaceDisplayName.trim())}</strong>. Review the details below and let the project team know if you can make it.</p>
           <div style="margin:0 0 22px;padding:18px;border-radius:12px;background:#f5f8fc;">
             <div style="margin-bottom:12px;font-size:18px;font-weight:700;">${escapeHtml(input.taskTitle.trim())}</div>
             ${detailRows.map(([label, value]) => `<div style="margin-top:7px;line-height:1.5;"><span style="color:#60728a;">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`).join("")}

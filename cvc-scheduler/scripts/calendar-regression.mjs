@@ -30,6 +30,15 @@ const betaReviewDir = path.join(
     : "beta-review",
 );
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
+const writeIterationReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const iterationReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44d1-mobile-overlays",
+);
 const writeNamedReviewScreenshots =
   writeBetaReviewScreenshots || writeAssignmentDetailReviewScreenshots;
 const reviewWorkspaceName = writeNamedReviewScreenshots
@@ -674,6 +683,49 @@ async function assertNoHorizontalOverflow(page, label) {
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   assert(!hasOverflow, `${label} has document horizontal overflow`);
+}
+
+async function assertMobileOverlayContract(
+  page,
+  dialog,
+  scrollName,
+  label,
+  requireOverflow = true,
+) {
+  await page.waitForTimeout(250);
+  const scrollLock = await page.evaluate(() => ({
+      body: getComputedStyle(document.body).overflow,
+      root: getComputedStyle(document.documentElement).overflow,
+    }));
+  assert(
+    scrollLock.body === "hidden" && scrollLock.root === "hidden",
+    `${label} does not lock background scrolling`,
+  );
+  const scroll = dialog.locator(`[data-overlay-scroll="${scrollName}"]`);
+  assert((await scroll.count()) === 1, `${label} has no dedicated overlay scroll region`);
+  if (requireOverflow) {
+    assert(
+      await scroll.evaluate((element) => element.scrollHeight > element.clientHeight),
+      `${label} fixture does not exercise overflow content`,
+    );
+  }
+  await scroll.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const closeAudit = await dialog.locator('button[aria-label^="Close "]:visible').first().evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        innerHeight: window.innerHeight,
+        reachable: rect.top >= 0 && rect.bottom <= window.innerHeight,
+        top: rect.top,
+      };
+    });
+  assert(
+    closeAudit.reachable,
+    `${label} close control is not reachable after internal scrolling (${JSON.stringify(closeAudit)})`,
+  );
+  await assertNoHorizontalOverflow(page, label);
 }
 
 async function assertClosedSurfaceInert(page, closeLabel) {
@@ -1814,6 +1866,7 @@ async function runMobile(browser) {
       });
       await more.waitFor();
       await waitForFocusLabel(page, "Close more admin navigation");
+      await assertMobileOverlayContract(page, more, "mobile-more", "Mobile More");
       const moreDescription = await assertDialogFocusContainment(
         page,
         more,
@@ -1842,6 +1895,10 @@ async function runMobile(browser) {
         (await visibleCalendarSurfaceCount(page)) === 0,
         "Mobile More Escape should leave a clean Calendar surface",
       );
+      assert(
+        (await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden",
+        "Mobile More did not restore page scrolling",
+      );
     });
 
     await step("mobile filters open as the only sheet", async () => {
@@ -1857,21 +1914,40 @@ async function runMobile(browser) {
       await dialog.waitFor();
       await waitForFocusLabel(page, "Close calendar filters");
       await assertDialogFocusContainment(page, dialog, "Mobile filters");
+      await assertMobileOverlayContract(
+        page,
+        dialog,
+        "calendar-filters",
+        "Mobile calendar filters",
+        false,
+      );
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile filters should not stack with More or another dialog",
       );
       await closeWithEscape(page, "Calendar filters", "Open calendar filters");
       await assertClosedSurfaceInert(page, "Close calendar filters");
+      assert(
+        (await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden",
+        "Mobile filters did not restore page scrolling",
+      );
     });
 
     await step("mobile item opens the inspector sheet alone", async () => {
       const trigger = page.getByRole("button", { name: weekItemLabel, exact: true });
       await activateWithKeyboard(trigger, "Mobile Week event button");
-      await page
-        .getByRole("dialog", { name: "Calendar item inspector", exact: true })
-        .waitFor();
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      await inspector.waitFor();
       await waitForFocusLabel(page, "Close calendar item inspector");
+      await assertMobileOverlayContract(
+        page,
+        inspector,
+        "calendar-inspector",
+        "Mobile Calendar inspector",
+      );
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile inspector should be the only active surface",
@@ -1892,6 +1968,25 @@ async function runMobile(browser) {
       });
       await planner.waitFor();
       await waitForFocusLabel(page, "Close project work planner");
+      if (writeIterationReviewScreenshots) {
+        await mkdir(iterationReviewDir, { recursive: true });
+        await page.screenshot({
+          path: path.join(iterationReviewDir, "calendar-create-top.png"),
+          fullPage: false,
+        });
+      }
+      await assertMobileOverlayContract(
+        page,
+        planner,
+        "calendar-create",
+        "Mobile Calendar create",
+      );
+      if (writeIterationReviewScreenshots) {
+        await page.screenshot({
+          path: path.join(iterationReviewDir, "calendar-create-scrolled.png"),
+          fullPage: false,
+        });
+      }
       assert(
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile creation should be the only active surface",

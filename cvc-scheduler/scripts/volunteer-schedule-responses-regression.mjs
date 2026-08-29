@@ -509,6 +509,8 @@ async function runStaticGuards() {
     "utf8",
   );
   const client = await readFile(path.join(root, "components", "VolunteerScheduleClient.tsx"), "utf8");
+  const bodyScrollLock = await readFile(path.join(root, "hooks", "useBodyScrollLock.ts"), "utf8");
+  const focusContainment = await readFile(path.join(root, "hooks", "useFocusContainment.ts"), "utf8");
   const server = await readFile(path.join(root, "lib", "volunteerScheduleAccess", "server.ts"), "utf8");
   const pkg = await readFile(path.join(root, "package.json"), "utf8");
   assert(migration.includes("submit_volunteer_schedule_assignment_response"), "schedule response RPC missing");
@@ -525,11 +527,14 @@ async function runStaticGuards() {
   assert(client.includes("Review &amp; respond"), "pending rows lack an explicit response action");
   assert(client.includes('data-testid="volunteer-assignment-detail-panel"'), "assignment detail panel seam missing");
   assert(client.includes('data-testid="volunteer-assignment-detail-scroll"'), "assignment detail scroll seam missing");
-  assert(client.includes("max-h-[100dvh]"), "mobile assignment detail does not use the dynamic viewport");
+  assert(client.includes("max-h-[calc(100dvh-env(safe-area-inset-top)-1rem)]"), "mobile assignment detail does not use the safe dynamic viewport");
   assert(client.includes("safe-area-inset-top"), "mobile assignment detail close header lacks safe-area protection");
-  assert(client.includes('document.body.style.overflow = "hidden"'), "assignment detail does not lock background scroll intentionally");
-  assert(client.includes("previousBodyOverflow"), "assignment detail does not restore background scroll");
-  assert(client.includes("element.getClientRects().length > 0"), "assignment detail focus containment includes hidden controls");
+  assert(client.includes("useBodyScrollLock(Boolean(selected))"), "assignment detail does not use the shared background scroll lock");
+  assert(bodyScrollLock.includes('document.body.style.overflow = "hidden"'), "shared overlay lock does not lock body scroll intentionally");
+  assert(bodyScrollLock.includes('document.documentElement.style.overflow = "hidden"'), "shared overlay lock does not lock root scroll intentionally");
+  assert(bodyScrollLock.includes("previousBodyOverflow"), "shared overlay lock does not restore background scroll");
+  assert(client.includes("useFocusContainment(Boolean(selected), dialogRef)"), "assignment detail does not use shared focus containment");
+  assert(focusContainment.includes("element.getClientRects().length > 0"), "assignment detail focus containment includes hidden controls");
   assert(!client.includes("Coverage"), "volunteer detail still exposes admin aggregate coverage");
   assert(!client.includes("selected.activeAssignedCount"), "volunteer detail still exposes active assignment aggregate");
   assert(!client.includes("Responses are saved to the project schedule"), "always-visible response warning remains");

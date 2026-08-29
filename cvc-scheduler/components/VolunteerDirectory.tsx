@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
+import { MobileOverlaySheet } from "./MobileOverlaySheet";
 import { VolunteerCard, VolunteerFields } from "./VolunteerCard";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 
@@ -31,6 +32,9 @@ export function VolunteerDirectory({
   const [query, setQuery] = useState("");
   const [congregation, setCongregation] = useState("all");
   const [lifecycle, setLifecycle] = useState<VolunteerProfile["lifecycle"] | "all">("all");
+  const [mobileEditor, setMobileEditor] = useState<
+    { kind: "add" } | { kind: "edit"; volunteer: VolunteerProfile } | null
+  >(null);
 
   const filteredVolunteers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -58,22 +62,31 @@ export function VolunteerDirectory({
   }, [congregation, lifecycle, query, volunteers]);
 
   const addForm = canEdit && createAction ? (
-    <details className="group border-b border-[var(--pl-border)] bg-white">
-      <summary className="m-3 inline-flex min-h-[42px] cursor-pointer list-none items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] marker:hidden hover:bg-[var(--pl-blue-deep)] sm:m-4">
+    <>
+      <button
+        className="m-3 inline-flex min-h-[42px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)] sm:hidden"
+        onClick={() => setMobileEditor({ kind: "add" })}
+        type="button"
+      >
         + Add volunteer
-      </summary>
-      <div className="border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 sm:p-5">
-        <p className="max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
-          Add a name and at least one contact method. Saving does not send a message.
-        </p>
-        <form action={createAction} className="mt-4 grid gap-4">
-          <VolunteerFields />
-          <Button className="mt-1 w-full sm:w-auto" type="submit">
-            Save volunteer
-          </Button>
-        </form>
-      </div>
-    </details>
+      </button>
+      <details className="group hidden border-b border-[var(--pl-border)] bg-white sm:block">
+        <summary className="m-4 inline-flex min-h-[42px] cursor-pointer list-none items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] marker:hidden hover:bg-[var(--pl-blue-deep)]">
+          + Add volunteer
+        </summary>
+        <div className="border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5">
+          <p className="max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
+            Add a name and at least one contact method. Saving does not send a message.
+          </p>
+          <form action={createAction} className="mt-4 grid gap-4">
+            <VolunteerFields />
+            <Button className="mt-1 w-full sm:w-auto" type="submit">
+              Save volunteer
+            </Button>
+          </form>
+        </div>
+      </details>
+    </>
   ) : (
     <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-900">
       Volunteer profile editing is unavailable for this signed-in contact.
@@ -156,6 +169,7 @@ export function VolunteerDirectory({
             <VolunteerCard
               canEdit={canEdit}
               key={volunteer.id}
+              onMobileEdit={() => setMobileEditor({ kind: "edit", volunteer })}
               updateAction={updateAction}
               volunteer={volunteer}
             />
@@ -173,6 +187,35 @@ export function VolunteerDirectory({
           />
         </div>
       )}
+
+      <MobileOverlaySheet
+        description="Add a name and at least one contact method. Saving does not send a message."
+        label="volunteer editor"
+        onClose={() => setMobileEditor(null)}
+        open={mobileEditor !== null}
+        title={mobileEditor?.kind === "edit" ? "Edit volunteer" : "Add volunteer"}
+      >
+        {mobileEditor?.kind === "edit" && updateAction ? (
+          <form action={updateAction} className="grid gap-4">
+            <input
+              name="profileId"
+              type="hidden"
+              value={mobileEditor.volunteer.id}
+            />
+            <VolunteerFields volunteer={mobileEditor.volunteer} />
+            <Button className="mt-1 w-full" type="submit">
+              Save changes
+            </Button>
+          </form>
+        ) : mobileEditor?.kind === "add" && createAction ? (
+          <form action={createAction} className="grid gap-4">
+            <VolunteerFields />
+            <Button className="mt-1 w-full" type="submit">
+              Save volunteer
+            </Button>
+          </form>
+        ) : null}
+      </MobileOverlaySheet>
     </div>
   );
 }

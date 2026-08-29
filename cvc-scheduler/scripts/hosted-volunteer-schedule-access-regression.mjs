@@ -996,10 +996,10 @@ async function verifyHostedRoutes(anonKey) {
     await page.getByText(`${fixture.namespace} Published One-Off`).waitFor();
 
     await Promise.all([
-      page.waitForURL(/\/v\/schedule$/),
+      page.waitForURL(/\/v\/schedule\?left=1$/),
       page.getByRole("button", { name: /Not you\? Leave this schedule/ }).first().click(),
     ]);
-    await page.getByRole("heading", { name: "This schedule link is unavailable" }).waitFor();
+    await page.getByRole("heading", { name: "You’ve left this schedule" }).waitFor();
     assert(
       !(await context.cookies(createPreviewUrl(previewBaseUrl, "/v/schedule"))).some(
         (cookie) => cookie.name === "pl-volunteer-schedule" && cookie.value,

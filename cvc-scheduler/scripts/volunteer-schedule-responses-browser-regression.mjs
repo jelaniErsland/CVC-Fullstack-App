@@ -344,7 +344,7 @@ async function runBrowserProof(token) {
         path: path.join(iterationReviewDir, "assignment-detail-desktop.png"),
         fullPage: true,
       });
-      await page.getByRole("button", { name: "Close assignment details" }).click();
+      await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
@@ -368,7 +368,7 @@ async function runBrowserProof(token) {
       await reviewDetailScroll.evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });
-      const closeButton = page.getByRole("button", { name: "Close assignment details" });
+      const closeButton = page.getByRole("button", { name: "Close assignment details", exact: true });
       await closeButton.focus();
       await page.waitForTimeout(100);
       await page.screenshot({
@@ -411,12 +411,12 @@ async function runBrowserProof(token) {
       await lockedDialog.getByTestId("volunteer-assignment-detail-scroll").evaluate((element) => {
         element.scrollTop = element.scrollHeight;
       });
-      await page.getByRole("button", { name: "Close assignment details" }).focus();
+      await page.getByRole("button", { name: "Close assignment details", exact: true }).focus();
       await page.waitForTimeout(100);
       await page.screenshot({
         path: path.join(iterationReviewDir, "assignment-detail-mobile-locked.png"),
       });
-      await page.getByRole("button", { name: "Close assignment details" }).click();
+      await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
       await page.setViewportSize({ width: 1280, height: 900 });
       await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
@@ -430,7 +430,7 @@ async function runBrowserProof(token) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByText("Confirmed").first().waitFor();
-    await page.getByRole("button", { name: "Close assignment details" }).click();
+    await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByPlaceholder("Add a brief note if you can’t make it").fill("Browser note");
@@ -439,14 +439,14 @@ async function runBrowserProof(token) {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByText("Browser note", { exact: true }).waitFor();
-    await page.getByRole("button", { name: "Close assignment details" }).click();
+    await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: "Confirm all pending" }).click();
     await page.getByText(/Confirmed 3 assignments\./).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: reviewValues.titles.allA, exact: false }).click();
     await page.getByText("Confirmed").first().waitFor();
-    await page.getByRole("button", { name: "Close assignment details" }).click();
+    await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
     await page.getByText(/Changes are closed this close to the assignment/).waitFor();
@@ -465,7 +465,7 @@ async function runBrowserProof(token) {
     );
     assert(noTokenLeak, "bearer leaked into HTML, storage, or readable cookies");
     if (writeBetaReviewScreenshots) {
-      await page.getByRole("button", { name: "Close assignment details" }).click();
+      await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
       await mkdir(betaReviewDir, { recursive: true });
       await page.screenshot({
         path: path.join(betaReviewDir, "volunteer-schedule-desktop.png"),
@@ -483,7 +483,7 @@ async function runBrowserProof(token) {
       element.scrollTop = element.scrollHeight;
     });
     const mobileCloseReachable = await page
-      .getByRole("button", { name: "Close assignment details" })
+      .getByRole("button", { name: "Close assignment details", exact: true })
       .evaluate((element) => {
         const rectangle = element.getBoundingClientRect();
         return rectangle.top >= 0 && rectangle.bottom <= window.innerHeight;
@@ -516,6 +516,15 @@ async function runBrowserProof(token) {
         fullPage: true,
       });
     }
+    await page.getByRole("button", {
+      name: "Close assignment details backdrop",
+    }).click({ position: { x: 8, y: 8 } });
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+    assert.notEqual(
+      await page.evaluate(() => getComputedStyle(document.body).overflow),
+      "hidden",
+      "Closing volunteer assignment detail did not restore page scrolling",
+    );
   } finally {
     await browser.close();
   }

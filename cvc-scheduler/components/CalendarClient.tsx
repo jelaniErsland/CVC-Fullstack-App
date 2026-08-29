@@ -34,6 +34,7 @@ import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import {
   deriveCalendarWeekRange,
@@ -891,6 +892,7 @@ function CalendarFilterPanel({
   const descriptionId = useId();
 
   useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -973,13 +975,13 @@ function CalendarFilterPanel({
         </GlassCard>
       </aside>
 
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
         <section
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar filters"
           aria-modal="true"
           className={[
-            "relative max-h-[82vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
+            "relative flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.75rem)] flex-col overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
           role="dialog"
@@ -1053,7 +1055,10 @@ function FilterPanelContent({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+        data-overlay-scroll="calendar-filters"
+      >
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Task name</span>
           <span className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/72 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
@@ -1971,6 +1976,7 @@ function CalendarCreatePanel({
   const descriptionId = useId();
 
   useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -2074,13 +2080,13 @@ function CalendarCreatePanel({
         </GlassCard>
       </aside>
 
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 lg:hidden">
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
         <section
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Plan project work"
           aria-modal="true"
           className={[
-            "relative max-h-[84vh] overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
+            "relative flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.75rem)] flex-col overflow-hidden rounded-t-3xl border border-white/72 bg-white/94 shadow-[0_-20px_80px_rgba(15,23,42,0.24)] backdrop-blur-2xl transition-transform duration-200 ease-out",
             isOpen ? "translate-y-0" : "translate-y-[calc(100%+48px)]",
           ].join(" ")}
           role="dialog"
@@ -2234,7 +2240,10 @@ function CreatePanelContent({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+        data-overlay-scroll="calendar-create"
+      >
         <section className="rounded-xl border border-slate-200/70 bg-white/72 px-4 py-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Clock aria-hidden="true" className="h-3.5 w-3.5" />
@@ -2698,6 +2707,7 @@ function CalendarInspector({
   const descriptionId = useId();
 
   useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
+  useBodyScrollLock(isOpen, "(max-width: 1023px)");
 
   useEffect(() => {
     if (!isOpen) {
@@ -2771,7 +2781,7 @@ function CalendarInspector({
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar item inspector"
           aria-modal="true"
-          className={`absolute inset-x-0 bottom-0 max-h-[88vh] overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].replace("border-l", "border-t")}`}
+          className={`absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].replace("border-l", "border-t")}`}
           role="dialog"
           ref={mobileDialogRef}
           tabIndex={-1}
@@ -2936,7 +2946,10 @@ function InspectorContent({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3.5">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3.5"
+        data-overlay-scroll="calendar-inspector"
+      >
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex min-h-7 items-center rounded-full border border-[var(--pl-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--pl-text)]">
             {getCalendarFilledLabel(item)} filled

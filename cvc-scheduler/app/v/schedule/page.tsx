@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Info, KeyRound, ShieldCheck } from "lucide-react";
+import { CalendarDays, Info, ShieldCheck } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
@@ -36,34 +36,32 @@ function firstName(value: string) {
 async function leaveScheduleAction() {
   "use server";
   const cookieStore = await cookies();
+  const requestHeaders = await headers();
+  const forwardedProtocol = requestHeaders
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    .toLowerCase();
   cookieStore.delete(volunteerScheduleAccessCookie.name);
   cookieStore.set(volunteerScheduleAccessCookie.name, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
+    secure: forwardedProtocol === "https",
     path: volunteerScheduleAccessCookie.path,
     maxAge: 0,
   });
-  redirect("/v/schedule");
+  redirect("/v/schedule?left=1");
 }
 
 function PublicHeader() {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-[var(--pl-border)] pb-3">
+    <header className="flex items-center border-b border-[var(--pl-border)] pb-3">
       <Link
         href="/"
         aria-label="Project Local home"
         className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-4"
       >
         <ProjectLocalBrand />
-      </Link>
-      <Link
-        href="/admin/login"
-        aria-label="Special access for project contacts"
-        className="inline-flex size-10 items-center justify-center rounded-xl border border-[var(--pl-border)] bg-white text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:w-auto sm:px-3"
-      >
-        <KeyRound aria-hidden="true" className="size-4" strokeWidth={1.8} />
-        <span className="hidden text-xs sm:inline">Project contact</span>
       </Link>
     </header>
   );
@@ -115,11 +113,16 @@ export default async function VolunteerSchedulePage({
   const token = cookieStore.get(volunteerScheduleAccessCookie.name)?.value;
 
   if (!token) {
+    const leftSchedule = resolvedSearchParams.left === "1";
     return (
       <StateCard
         eyebrow="Volunteer schedule"
-        title="This schedule link is unavailable"
-        message="Open your latest secure schedule link from the project team. If you need help, contact the project team for a current link."
+        title={leftSchedule ? "You’ve left this schedule" : "This schedule link is unavailable"}
+        message={
+          leftSchedule
+            ? "To open another volunteer schedule, use the Project Local assignment email sent to that volunteer. Public name or email lookup isn’t available."
+            : "Open your latest secure schedule link from the project team. If you need help, contact the project team for a current link."
+        }
       />
     );
   }
@@ -170,7 +173,7 @@ export default async function VolunteerSchedulePage({
                   .map((part) => part[0]?.toUpperCase())
                   .join("")}
               </span>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">
                   {schedule.workspaceDisplayName}
                 </p>
@@ -179,8 +182,8 @@ export default async function VolunteerSchedulePage({
                 </p>
               </div>
             </div>
-            <form action={leaveScheduleAction}>
-              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-9 shrink-0 items-center rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+            <form action={leaveScheduleAction} className="shrink-0">
+              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
                 Not you?
               </button>
             </form>

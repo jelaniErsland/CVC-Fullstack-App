@@ -6,6 +6,7 @@ import type { VolunteerProfile } from "@/lib/volunteers/profile";
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
+  onMobileEdit?: () => void;
   updateAction?: (formData: FormData) => void | Promise<void>;
 };
 
@@ -30,7 +31,12 @@ function readinessLabel(readiness: VolunteerProfile["readinessStatus"]) {
   return readiness === "ready" ? "Schedule-ready" : "On hold";
 }
 
-export function VolunteerCard({ volunteer, canEdit, updateAction }: VolunteerCardProps) {
+export function VolunteerCard({
+  volunteer,
+  canEdit,
+  onMobileEdit,
+  updateAction,
+}: VolunteerCardProps) {
   const sourceLabel =
     volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
   const initials = volunteer.fullName
@@ -90,18 +96,27 @@ export function VolunteerCard({ volunteer, canEdit, updateAction }: VolunteerCar
       </div>
 
       {canEdit && updateAction ? (
-        <details className="group border-t border-[var(--pl-border)] bg-white">
-          <summary className="cursor-pointer list-none px-4 py-2.5 text-xs font-semibold text-[var(--pl-blue)] marker:hidden hover:bg-[var(--pl-blue-soft)] lg:px-5">
+        <>
+          <button
+            className="w-full border-t border-[var(--pl-border)] px-4 py-3 text-left text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] sm:hidden"
+            onClick={onMobileEdit}
+            type="button"
+          >
             Edit volunteer
-          </summary>
-          <form action={updateAction} className="grid gap-3 border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 lg:p-5">
-            <input name="profileId" type="hidden" value={volunteer.id} />
-            <VolunteerFields volunteer={volunteer} />
-            <Button className="mt-1 w-full sm:w-auto" type="submit">
-              Save changes
-            </Button>
-          </form>
-        </details>
+          </button>
+          <details className="group hidden border-t border-[var(--pl-border)] bg-white sm:block">
+            <summary className="cursor-pointer list-none px-4 py-2.5 text-xs font-semibold text-[var(--pl-blue)] marker:hidden hover:bg-[var(--pl-blue-soft)] lg:px-5">
+              Edit volunteer
+            </summary>
+            <form action={updateAction} className="grid gap-3 border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 lg:p-5">
+              <input name="profileId" type="hidden" value={volunteer.id} />
+              <VolunteerFields volunteer={volunteer} />
+              <Button className="mt-1 w-full sm:w-auto" type="submit">
+                Save changes
+              </Button>
+            </form>
+          </details>
+        </>
       ) : (
         <p className="border-t border-[var(--pl-border)] px-4 py-2.5 text-xs font-medium text-[var(--pl-muted)] lg:px-5">
           Editing is unavailable for this signed-in contact.
