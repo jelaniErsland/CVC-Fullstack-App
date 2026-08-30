@@ -72,6 +72,12 @@ assert.match(calendarClientSource, /buildCalendarRouteHref/);
 assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
 assert.match(calendarClientSource, /shiftCalendarAnchor\(calendarAnchor, amount, activeView\)/);
 assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\("day", date\)\)/);
+assert.match(calendarClientSource, /aria-label="Go to today"/);
+assert.match(calendarClientSource, /aria-label="Go to project date"/);
+assert.match(calendarClientSource, /buildCalendarInspectorHref/);
+assert.match(calendarRouteSource, /createdCalendarItemId = result\.calendarItemId/);
+assert.match(calendarRouteSource, /initialInspectorItemId=\{requestedItem\}/);
+assert.doesNotMatch(calendarRouteSource, /key=\{`\$\{state\.view\}/);
 assert.doesNotMatch(calendarClientSource, /setCalendarAnchor\(\(current\)/);
 assert.doesNotMatch(calendarClientSource, /getCalendarItemsByWeek|demoProjectId/);
 assert.doesNotMatch(
@@ -87,11 +93,14 @@ assert.equal(summary.serverBackedNavigationAvailable, true);
 assert.equal(summary.falseEmptyForUnqueriedRangeAllowed, false);
 assert.equal(summary.ambiguousWorkspaceSelectionAllowed, false);
 
-assert.deepEqual(normalizeCalendarRouteSearchParams(undefined), {
+assert.deepEqual(
+  normalizeCalendarRouteSearchParams(undefined, new Date("2026-08-29T05:30:00.000Z")),
+  {
   ok: true,
-  view: "week",
-  anchorDate: "2026-01-13",
-});
+  view: "month",
+  anchorDate: "2026-08-28",
+  },
+);
 assert.deepEqual(normalizeCalendarRouteSearchParams({ view: "month", date: "2026-02-20" }), {
   ok: true,
   view: "month",

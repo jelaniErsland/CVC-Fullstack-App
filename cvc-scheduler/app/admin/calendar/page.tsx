@@ -59,7 +59,19 @@ const supportedNoticeValues = new Set([
   "error",
 ]);
 
-function safeCalendarRedirect(formData: FormData, notice: string) {
+const calendarItemIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const supportedInspectorSections = new Set([
+  "details",
+  "volunteers",
+  "visibility",
+  "notification",
+]);
+
+function safeCalendarRedirect(
+  formData: FormData,
+  notice: string,
+  createdCalendarItemId?: string,
+) {
   const view = formData.get("redirectView");
   const date = formData.get("redirectDate");
   const params = new URLSearchParams();
@@ -71,6 +83,19 @@ function safeCalendarRedirect(formData: FormData, notice: string) {
   ) {
     params.set("view", view);
     params.set("date", date);
+  }
+  const requestedItem = createdCalendarItemId ?? formData.get("redirectItem");
+  const requestedSection = createdCalendarItemId
+    ? "volunteers"
+    : formData.get("redirectSection");
+  if (typeof requestedItem === "string" && calendarItemIdPattern.test(requestedItem)) {
+    params.set("item", requestedItem);
+    if (
+      typeof requestedSection === "string" &&
+      supportedInspectorSections.has(requestedSection)
+    ) {
+      params.set("section", requestedSection);
+    }
   }
   params.set("notice", supportedNoticeValues.has(notice) ? notice : "error");
   return `/admin/calendar?${params.toString()}`;
@@ -109,6 +134,7 @@ async function createCalendarItemAction(formData: FormData) {
   "use server";
 
   let notice: "unavailable" | "validation" | "error" | "created" = "error";
+  let createdCalendarItemId: string | undefined;
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
@@ -122,7 +148,8 @@ async function createCalendarItemAction(formData: FormData) {
               formData,
               context.workspace.id,
             );
-      await createCalendarItemWithClient(context.supabase, input);
+      const result = await createCalendarItemWithClient(context.supabase, input);
+      createdCalendarItemId = result.calendarItemId;
       notice = "created";
     }
   } catch (error) {
@@ -136,7 +163,7 @@ async function createCalendarItemAction(formData: FormData) {
   }
 
   revalidatePath("/admin/calendar");
-  redirect(safeCalendarRedirect(formData, notice));
+  redirect(safeCalendarRedirect(formData, notice, createdCalendarItemId));
 }
 
 async function updateCalendarItemAction(formData: FormData) {
@@ -346,13 +373,29 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
   const state = await readCalendarRouteState(resolvedSearchParams);
   const noticeValue = resolvedSearchParams?.notice;
   const notice = typeof noticeValue === "string" ? noticeValue : undefined;
+  const requestedItemValue = resolvedSearchParams?.item;
+  const requestedItem =
+    typeof requestedItemValue === "string" &&
+    calendarItemIdPattern.test(requestedItemValue) &&
+    (state.kind === "ready_with_items" || state.kind === "ready_empty") &&
+    state.items.some((item) => item.id === requestedItemValue)
+      ? requestedItemValue
+      : undefined;
+  const requestedSectionValue = resolvedSearchParams?.section;
+  const requestedSection =
+    requestedItem &&
+    typeof requestedSectionValue === "string" &&
+    supportedInspectorSections.has(requestedSectionValue)
+      ? (requestedSectionValue as "details" | "volunteers" | "visibility" | "notification")
+      : undefined;
 
   return (
     <CalendarClient
       assignAction={createCalendarAssignmentsAction}
       cancelAssignmentAction={cancelCalendarAssignmentAction}
       createAction={createCalendarItemAction}
-      key={`${state.view}:${state.anchorDate}:${state.kind}:${notice ?? ""}`}
+      initialInspectorItemId={requestedItem}
+      initialInspectorSection={requestedSection}
       notice={notice}
       publishAction={publishCalendarItemAction}
       sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}

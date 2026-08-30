@@ -214,24 +214,40 @@ export const CALENDAR_ROUTE_SERVER_BACKED_NAVIGATION_AVAILABLE = true;
 export const CALENDAR_ROUTE_FALSE_EMPTY_FOR_UNQUERIED_RANGE_ALLOWED = false;
 export const CALENDAR_ROUTE_AMBIGUOUS_WORKSPACE_SELECTION_ALLOWED = false;
 
-export const CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE = "2026-01-13";
-export const CALENDAR_ROUTE_DEFAULT_VIEW: CalendarRouteView = "week";
+const calendarDefaultTimezone = "America/Denver";
+
+export function getCalendarCurrentLocalDate(now: Date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: calendarDefaultTimezone,
+    year: "numeric",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+export const CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE = getCalendarCurrentLocalDate();
+export const CALENDAR_ROUTE_DEFAULT_VIEW: CalendarRouteView = "month";
 export const CALENDAR_ROUTE_MAXIMUM_RANGE_DAYS = 93;
 export const CALENDAR_ROUTE_PERSISTED_READ_RANGE = {
-  rangeStart: "2026-01-12",
-  rangeEnd: "2026-01-19",
-  periodKind: "week",
+  rangeStart: firstDayOfMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+  rangeEnd: firstDayOfNextMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+  periodKind: "month",
   anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
-  boundedRangeDays: 7,
+  boundedRangeDays: rangeLengthDays(
+    firstDayOfMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+    firstDayOfNextMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+  ),
   rangeSemantics: "server_derived_start_inclusive_end_exclusive",
 } as const;
 
 const supportedRouteViews = ["day", "week", "month", "list"] as const;
 const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 const fallbackRange: CalendarRouteQueriedRange = {
-  rangeStart: "2026-01-12",
-  rangeEnd: "2026-01-19",
-  periodKind: "week",
+  rangeStart: firstDayOfMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+  rangeEnd: firstDayOfNextMonth(CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE),
+  periodKind: "month",
   anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
   bounded: true,
   rangeSemantics: "server_derived_start_inclusive_end_exclusive",
@@ -311,21 +327,23 @@ function isTrustedTimezone(value: unknown) {
 
 export function normalizeCalendarRouteSearchParams(
   searchParams: CalendarRouteSearchParams,
+  now: Date = new Date(),
 ):
   | Readonly<{ ok: true; view: CalendarRouteView; anchorDate: string }>
   | Readonly<{ ok: false; view: CalendarRouteView; anchorDate: string }> {
   const rawView = firstSearchParam(searchParams?.view);
   const rawDate = firstSearchParam(searchParams?.date);
+  const defaultAnchorDate = getCalendarCurrentLocalDate(now);
 
   const view = rawView === undefined ? CALENDAR_ROUTE_DEFAULT_VIEW : rawView;
   const anchorDate =
-    rawDate === undefined ? CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE : normalizeDate(rawDate);
+    rawDate === undefined ? defaultAnchorDate : normalizeDate(rawDate);
 
   if (!isSupportedRouteView(view) || !anchorDate) {
     return {
       ok: false,
       view: CALENDAR_ROUTE_DEFAULT_VIEW,
-      anchorDate: CALENDAR_ROUTE_DEFAULT_ANCHOR_DATE,
+      anchorDate: defaultAnchorDate,
     };
   }
 

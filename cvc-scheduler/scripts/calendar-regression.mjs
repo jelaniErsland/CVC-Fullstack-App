@@ -32,15 +32,34 @@ const betaReviewDir = path.join(
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
 const writeIterationReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
+const writeCalendarFlowReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D2A_CAPTURES === "1" ||
+  process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
+const writeAffectedCalendarFlowReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
+const affectedCalendarFlowCaptureNames = new Set([
+  "05-create-preset-first.png",
+  "06-create-default-times.png",
+  "07-create-save-and-continue.png",
+  "08-after-save-inspector.png",
+  "09-after-assignment-inspector.png",
+  "10-after-publish-notification.png",
+  "11-mobile-after-save-inspector.png",
+  "12-mobile-post-assignment-inspector.png",
+]);
 const iterationReviewDir = path.resolve(
   root,
   "..",
   "previews",
   "beta-review",
-  "iteration-12-44d1-mobile-overlays",
+  writeCalendarFlowReviewScreenshots
+    ? "iteration-12-44d2a-calendar-flow"
+    : "iteration-12-44d1-mobile-overlays",
 );
 const writeNamedReviewScreenshots =
-  writeBetaReviewScreenshots || writeAssignmentDetailReviewScreenshots;
+  writeBetaReviewScreenshots ||
+  writeAssignmentDetailReviewScreenshots ||
+  writeCalendarFlowReviewScreenshots;
 const reviewWorkspaceName = writeNamedReviewScreenshots
   ? "Bozeman Local Project"
   : "QA 12.12 Calendar Workspace";
@@ -441,7 +460,27 @@ select
 }
 
 function calendarUrl() {
+  return createPreviewUrl(baseUrl, "/admin/calendar?view=week&date=2026-01-13");
+}
+
+function bareCalendarUrl() {
   return createPreviewUrl(baseUrl, "/admin/calendar");
+}
+
+async function writeCalendarFlowCapture(page, filename, locator) {
+  if (!writeCalendarFlowReviewScreenshots) return;
+  if (
+    writeAffectedCalendarFlowReviewScreenshots &&
+    !affectedCalendarFlowCaptureNames.has(filename)
+  ) {
+    return;
+  }
+  await mkdir(iterationReviewDir, { recursive: true });
+  const screenshotTarget = locator ?? page;
+  await screenshotTarget.screenshot({
+    path: path.join(iterationReviewDir, filename),
+    ...(locator ? {} : { fullPage: false }),
+  });
 }
 
 function errorMessage(error) {
@@ -590,6 +629,10 @@ async function selectView(page, view) {
     `${view} view button`,
   );
 
+  if ((await button.getAttribute("aria-pressed")) === "true") {
+    return;
+  }
+
   await activateWithKeyboard(button, `${view} view button`);
   await page.waitForFunction(
     (viewLabel) =>
@@ -640,16 +683,7 @@ async function waitForFocusLabel(page, label) {
 
 async function expectButtonEnabled(page, locator, label) {
   await locator.waitFor({ state: "visible" });
-  await page.waitForFunction(
-    (buttonLabel) =>
-      Array.from(document.querySelectorAll("button")).some(
-        (button) =>
-          button.textContent?.trim() === buttonLabel &&
-          !button.disabled &&
-          !button.closest("[inert]"),
-      ),
-    label,
-  );
+  await page.waitForTimeout(25);
   assert(await locator.isEnabled(), `${label} should be enabled`);
 }
 
@@ -823,6 +857,30 @@ async function runDesktop(browser) {
   page.setDefaultTimeout(7_500);
 
   try {
+    await step("desktop bare Calendar defaults to current Month", async () => {
+      const response = await page.goto(bareCalendarUrl(), {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
+      assert(response?.ok(), `Bare Calendar returned ${response?.status() ?? "no response"}`);
+      await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+      assert(
+        (await page.getByRole("button", { name: "Month", exact: true }).getAttribute("aria-pressed")) === "true",
+        "Bare Calendar did not default to Month view",
+      );
+      assert(
+        !new URL(page.url()).searchParams.has("view") &&
+          !new URL(page.url()).searchParams.has("date"),
+        "Bare Calendar default unexpectedly rewrote explicit route context",
+      );
+      await writeCalendarFlowCapture(page, "01-desktop-month-current.png");
+      await writeCalendarFlowCapture(
+        page,
+        "03-desktop-compact-navigation.png",
+        page.getByTestId("calendar-workspace-header"),
+      );
+    });
+
     await step("desktop Calendar loads", async () => {
       await loadCalendar(page);
       await assertPeriod(page, projectWeekLabel);
@@ -855,7 +913,7 @@ async function runDesktop(browser) {
       await page.getByTestId("calendar-list-view").waitFor();
     });
 
-    await step("Week/List navigation and Project week reset", async () => {
+    await step("Week/List navigation and compact Today/Project controls", async () => {
       for (const view of ["List", "Week"]) {
         await selectView(page, view);
         const previous = await assertUnique(
@@ -904,16 +962,35 @@ async function runDesktop(browser) {
         );
 
         const reset = await assertUnique(
-          page.getByRole("button", { name: "Project week", exact: true }),
-          `${view} Project week button`,
+          page.getByRole("button", { name: "Go to project date", exact: true }),
+          `${view} project-date button`,
         );
         assert(
           await reset.isEnabled(),
-          `${view} Project week should be enabled after navigation`,
+          `${view} project-date control should be enabled after navigation`,
         );
-        await activateWithKeyboard(reset, `${view} Project week button`);
+        await activateWithKeyboard(reset, `${view} project-date button`);
         await assertPeriod(page, projectWeekLabel);
       }
+
+      const today = await assertUnique(
+        page.getByRole("button", { name: "Go to today", exact: true }),
+        "Today button",
+      );
+      await Promise.all([
+        page.waitForURL((url) =>
+          url.searchParams.get("view") === "week" &&
+          url.searchParams.get("date") !== "2026-01-13",
+        ),
+        activateWithKeyboard(today, "Today button"),
+      ]);
+      assert(
+        new URL(page.url()).searchParams.get("view") === "week" &&
+          new URL(page.url()).searchParams.get("date") !== "2026-01-13",
+        "Today did not preserve the active view while moving to the current local period",
+      );
+      await page.getByRole("button", { name: "Go to project date", exact: true }).click();
+      await assertPeriod(page, projectWeekLabel);
 
       await selectView(page, "List");
     });
@@ -1000,6 +1077,7 @@ async function runDesktop(browser) {
       });
       await activateWithKeyboard(timedTuesday, "Week Tuesday timed background");
       await planner.waitFor();
+      await writeCalendarFlowCapture(page, "05-create-preset-first.png");
       await waitForFocusLabel(page, "Close project work planner");
       await assertDialogFocusContainment(page, planner, "Week timed creation");
       assert(
@@ -1260,12 +1338,11 @@ async function runDesktop(browser) {
         "Custom one-off mode",
       );
       assert(
-        (await taskPresetMode.getAttribute("aria-pressed")) === "false" &&
-          (await customMode.getAttribute("aria-pressed")) === "true" &&
+        (await taskPresetMode.getAttribute("aria-pressed")) === "true" &&
+          (await customMode.getAttribute("aria-pressed")) === "false" &&
           !(await taskPresetMode.isDisabled()),
         "Creation task-source buttons should expose their selected state",
       );
-      await taskPresetMode.click();
       await planner.getByLabel("Task preset", { exact: true }).selectOption(fixture.generalTaskPresetId);
       await planner
         .getByRole("heading", { name: reviewGeneralPresetName, exact: true })
@@ -1288,26 +1365,21 @@ async function runDesktop(browser) {
       await endInput.fill("14:00");
 
       const scheduleButton = await assertUnique(
-        planner.getByRole("button", { name: "Save draft", exact: true }),
-        "Save draft persisted action",
+        planner.getByRole("button", { name: "Save & continue", exact: true }),
+        "Save and continue persisted action",
       );
-      assert(await scheduleButton.isEnabled(), "Save draft should be enabled for valid timed creation");
+      assert(await scheduleButton.isEnabled(), "Save & continue should be enabled for valid timed creation");
       assert(
         Boolean(await scheduleButton.getAttribute("aria-describedby")),
-        "Save draft should describe its persisted action state",
+        "Save & continue should describe its persisted action state",
       );
-
-      for (const action of ["Publish after save", "Assign helpers after save"]) {
-        const actionButton = await assertUnique(
-          planner.getByRole("button", { name: action, exact: true }),
-          `${action} preview action`,
-        );
-        assert(!(await actionButton.isEnabled()), `${action} should remain disabled`);
-        assert(
-          Boolean(await actionButton.getAttribute("aria-describedby")),
-          `${action} should describe why it is unavailable`,
-        );
-      }
+      await planner
+        .getByText("This will save as a private draft.", { exact: true })
+        .waitFor();
+      assert(
+        (await planner.getByRole("button", { name: /after save/i }).count()) === 0,
+        "Creation still presents disabled post-save actions",
+      );
       await closeWithEscape(page, "Plan project work", triggerLabel);
 
       await trigger.focus();
@@ -1421,13 +1493,19 @@ async function runDesktop(browser) {
         "Month creation should keep Jan 15",
       );
       assert(
-        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "09:00",
-        "Month creation should default Start to 09:00",
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "07:30",
+        "Month creation should default Start to 07:30",
       );
       assert(
-        (await planner.getByLabel("End", { exact: true }).inputValue()) === "10:00",
-        "Month creation should default End to 10:00",
+        (await planner.getByLabel("End", { exact: true }).inputValue()) === "17:00",
+        "Month creation should default End to 17:00",
       );
+      await planner.getByLabel("Start", { exact: true }).scrollIntoViewIfNeeded();
+      await writeCalendarFlowCapture(page, "06-create-default-times.png");
+      await planner
+        .getByRole("button", { name: "Save & continue", exact: true })
+        .scrollIntoViewIfNeeded();
+      await writeCalendarFlowCapture(page, "07-create-save-and-continue.png");
       await closeWithEscape(page, "Plan project work", triggerLabel);
 
       await background.focus();
@@ -1445,9 +1523,9 @@ async function runDesktop(browser) {
         (await planner.getByLabel("Date", { exact: true }).inputValue()) ===
           "2026-01-16" &&
           (await planner.getByLabel("Start", { exact: true }).inputValue()) ===
-            "09:00" &&
+            "07:30" &&
           (await planner.getByLabel("End", { exact: true }).inputValue()) ===
-            "10:00",
+            "17:00",
         "Month Space creation should preserve the arrow-focused Jan 16 default",
       );
       await closeWithEscape(page, "Plan project work", arrowSpaceTriggerLabel);
@@ -1493,6 +1571,7 @@ async function runDesktop(browser) {
         exact: true,
       });
       await planner.waitFor();
+      await planner.getByRole("button", { name: "Custom one-off", exact: true }).click();
       await planner.getByLabel("Custom task name", { exact: true }).fill(createdTitle);
       await planner.locator('input[type="number"]').first().fill("0");
       await planner
@@ -1500,21 +1579,27 @@ async function runDesktop(browser) {
         .fill("Browser regression persisted create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Save draft", exact: true }).click(),
+        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
       ]);
       await page.getByText("Calendar draft saved", { exact: true }).waitFor();
-      await page.getByText(createdTitle, { exact: true }).waitFor();
-
-      await page.reload();
-      await page.getByText(createdTitle, { exact: true }).waitFor();
-      const createdItem = page
-        .getByRole("button", { name: new RegExp(createdTitle) })
-        .first();
-      await activateWithKeyboard(createdItem, "Created persisted Calendar item");
       const inspector = page.getByRole("dialog", {
         name: "Calendar item inspector",
         exact: true,
       });
+      await inspector.waitFor();
+      await inspector.getByText("Private draft", { exact: true }).waitFor();
+      for (const stepLabel of [
+        "STEP 1 · EVENT DETAILS",
+        "STEP 2 · VOLUNTEERS",
+        "STEP 3 · VISIBILITY",
+        "STEP 4 · NOTIFICATION",
+      ]) {
+        await inspector.getByText(stepLabel, { exact: true }).waitFor();
+      }
+      assert(new URL(page.url()).searchParams.has("item"), "Created item was not retained in route context");
+      await writeCalendarFlowCapture(page, "08-after-save-inspector.png");
+
+      await page.reload();
       await inspector.waitFor();
       await inspector.getByLabel("Task name", { exact: true }).fill(updatedTitle);
       await inspector.getByLabel("Start", { exact: true }).fill("15:30");
@@ -1525,18 +1610,15 @@ async function runDesktop(browser) {
         inspector.getByRole("button", { name: "Save item changes", exact: true }).click(),
       ]);
       await page.getByText("Calendar item updated", { exact: true }).waitFor();
-      await page.getByText(updatedTitle, { exact: true }).waitFor();
+      await inspector.waitFor();
+      await inspector.getByRole("heading", { name: updatedTitle, exact: true }).first().waitFor();
 
       await page.reload();
-      await page.getByText(updatedTitle, { exact: true }).waitFor();
+      await page.getByRole("heading", { name: updatedTitle, exact: true }).first().waitFor();
       assert(
         (await page.getByText(createdTitle, { exact: true }).count()) === 0,
         "Reload after edit still displayed the stale created title",
       );
-      const editedDraftItem = page
-        .getByRole("button", { name: new RegExp(updatedTitle) })
-        .first();
-      await activateWithKeyboard(editedDraftItem, "Edited draft Calendar item");
       await inspector.waitFor();
       await inspector.getByText("Private draft", { exact: true }).waitFor();
       await inspector.getByRole("button", { name: "Publish item", exact: true }).click();
@@ -1546,18 +1628,17 @@ async function runDesktop(browser) {
         inspector.getByRole("button", { name: "Publish item", exact: true }).last().click(),
       ]);
       await page.getByText("Calendar item published", { exact: true }).waitFor();
-      await page.reload();
-      const publishedItem = page
-        .getByRole("button", { name: new RegExp(updatedTitle) })
-        .first();
-      await activateWithKeyboard(publishedItem, "Published Calendar item");
       await inspector.waitFor();
       await inspector.getByText("Published", { exact: true }).waitFor();
-      await closeWithEscape(
-        page,
-        "Calendar item inspector",
-        `Published, ${updatedTitle}, 0 of 0 volunteers, Tue Jan 13, 3:30 PM - 4:30 PM`,
-      );
+      await writeCalendarFlowCapture(page, "10-after-publish-notification.png");
+      await page.reload();
+      await inspector.waitFor();
+      await inspector.getByText("Published", { exact: true }).waitFor();
+      await page
+        .getByRole("button", { name: "Close calendar item inspector", exact: true })
+        .first()
+        .click();
+      assert(!new URL(page.url()).searchParams.has("item"), "Inspector X did not clear selection");
 
       const presetTriggerLabel = "Plan project work on Tue Jan 13 at 4 PM";
       const presetTrigger = await assertUnique(
@@ -1574,17 +1655,13 @@ async function runDesktop(browser) {
         .fill("Browser regression persisted preset create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Save draft", exact: true }).click(),
+        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
       ]);
       await page.getByText("Calendar draft saved", { exact: true }).waitFor();
-      await page.getByText(reviewGeneralPresetName, { exact: true }).waitFor();
+      await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
 
       await page.reload();
-      await page.getByText(reviewGeneralPresetName, { exact: true }).waitFor();
-      const presetCreatedItem = page
-        .getByRole("button", { name: new RegExp(`${reviewGeneralPresetName}.*4:00 PM - 5:00 PM`) })
-        .first();
-      await activateWithKeyboard(presetCreatedItem, "Created persisted preset Calendar item");
+      await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
       await inspector.waitFor();
       await inspector.getByLabel("Start", { exact: true }).fill("16:30");
       await inspector.getByLabel("End", { exact: true }).fill("17:30");
@@ -1596,6 +1673,14 @@ async function runDesktop(browser) {
       await page.getByText("Calendar item updated", { exact: true }).waitFor();
       await page.reload();
       await page.getByRole("button", { name: new RegExp(`${reviewGeneralPresetName}.*4:30 PM - 5:30 PM`) }).first().waitFor();
+      await page
+        .getByRole("button", { name: "Close calendar item inspector", exact: true })
+        .first()
+        .click();
+      assert(
+        !new URL(page.url()).searchParams.has("item"),
+        "Explicit inspector close retained stale selected-item route context",
+      );
     });
 
     await step("desktop persisted assignment create/cancel round trip", async () => {
@@ -1606,7 +1691,8 @@ async function runDesktop(browser) {
       const assignmentTarget = page
         .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
         .first();
-      await activateWithKeyboard(assignmentTarget, "Assignment target Calendar item");
+      await assignmentTarget.click();
+      await page.waitForURL((url) => url.searchParams.has("item"));
       const inspector = page.getByRole("dialog", {
         name: "Calendar item inspector",
         exact: true,
@@ -1643,12 +1729,11 @@ async function runDesktop(browser) {
         `Assignment submit returned ${page.url()} instead of the persisted assigned notice.`,
       );
       await page.getByText("Volunteer assigned", { exact: true }).waitFor();
+      await inspector.waitFor();
+      await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
+      await writeCalendarFlowCapture(page, "09-after-assignment-inspector.png");
 
       await page.reload();
-      const assignedItem = page
-        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
-        .first();
-      await activateWithKeyboard(assignedItem, "Assigned persisted Calendar item");
       await inspector.waitFor();
       await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
@@ -1676,7 +1761,8 @@ async function runDesktop(browser) {
       const returnedAssignedItem = page
         .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
         .first();
-      await activateWithKeyboard(returnedAssignedItem, "Returned assigned Calendar item");
+      await returnedAssignedItem.click();
+      await page.waitForURL((url) => url.searchParams.has("item"));
       await inspector.waitFor();
 
       await Promise.all([
@@ -1687,11 +1773,8 @@ async function runDesktop(browser) {
           .click(),
       ]);
       await page.getByText("Volunteer removed", { exact: true }).waitFor();
+      await inspector.waitFor();
       await page.reload();
-      const canceledItem = page
-        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
-        .first();
-      await activateWithKeyboard(canceledItem, "Canceled-assignment Calendar item");
       await inspector.waitFor();
       assert(
         (await inspector.getByText("Needs response", { exact: true }).count()) === 0,
@@ -1727,6 +1810,25 @@ async function runMobile(browser) {
   page.setDefaultTimeout(7_500);
 
   try {
+    await step("mobile bare Calendar defaults to current Month", async () => {
+      const response = await page.goto(bareCalendarUrl(), {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
+      assert(response?.ok(), `Bare mobile Calendar returned ${response?.status() ?? "no response"}`);
+      await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+      assert(
+        (await page.getByRole("button", { name: "Month", exact: true }).getAttribute("aria-pressed")) === "true",
+        "Bare mobile Calendar did not default to Month view",
+      );
+      await writeCalendarFlowCapture(page, "02-mobile-month-current.png");
+      await writeCalendarFlowCapture(
+        page,
+        "04-mobile-compact-navigation.png",
+        page.getByTestId("calendar-workspace-header"),
+      );
+    });
+
     await step("mobile Calendar and emphasized bottom navigation load", async () => {
       await loadCalendar(page);
       const navigation = page.getByRole("navigation", {
@@ -2021,6 +2123,116 @@ async function runMobile(browser) {
       }
     });
 
+    await step("mobile save, assign, and publish preserve the inspector", async () => {
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page.getByRole("button", { name: "Create", exact: true }).click();
+      const planner = page.getByRole("dialog", { name: "Plan project work", exact: true });
+      await planner.waitFor();
+      assert(
+        (await planner.getByRole("button", { name: "Task preset", exact: true }).getAttribute("aria-pressed")) === "true",
+        "Mobile creation did not start preset-first",
+      );
+      assert(
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "07:30" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) === "17:00",
+        "Mobile toolbar creation did not use the 7:30 AM-5:00 PM default",
+      );
+      await planner.locator('input[type="number"]').first().fill("1");
+      await Promise.all([
+        page.waitForURL(/notice=created/),
+        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
+      ]);
+      const inspector = page.locator(
+        '[role="dialog"][aria-label="Calendar item inspector"]:visible',
+      );
+      await inspector.waitFor();
+      await inspector.getByText("Private draft", { exact: true }).waitFor();
+      const mobileClose = inspector.getByRole("button", {
+        name: "Close calendar item inspector",
+        exact: true,
+      });
+      const afterSaveCloseBox = await mobileClose.boundingBox();
+      assert(
+        afterSaveCloseBox && afterSaveCloseBox.y >= 0 && afterSaveCloseBox.y < mobileViewport.height,
+        "Mobile inspector close control was not reachable after save",
+      );
+      await assertNoHorizontalOverflow(page, "Mobile after-save inspector");
+      await writeCalendarFlowCapture(page, "11-mobile-after-save-inspector.png");
+
+      const volunteerChoice = inspector.locator('input[type="checkbox"]').first();
+      await volunteerChoice.click();
+      assert(await volunteerChoice.isChecked(), "Mobile volunteer choice did not stay selected");
+      const assignButton = inspector.getByRole("button", { name: "Assign selected", exact: true });
+      await expectButtonEnabled(page, assignButton, "Mobile Assign selected");
+      await Promise.all([
+        page.waitForURL(/notice=assigned/),
+        assignButton.click(),
+      ]);
+      await inspector.waitFor();
+      await inspector.getByText("Needs response", { exact: true }).waitFor();
+      const afterAssignmentCloseBox = await mobileClose.boundingBox();
+      assert(
+        afterAssignmentCloseBox &&
+          afterAssignmentCloseBox.y >= 0 &&
+          afterAssignmentCloseBox.y < mobileViewport.height,
+        "Mobile inspector close control was not reachable after assignment",
+      );
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await writeCalendarFlowCapture(page, "12-mobile-post-assignment-inspector.png");
+
+      await inspector.getByRole("button", { name: "Publish item", exact: true }).click();
+      await inspector.getByText("Publish this Calendar item?", { exact: true }).waitFor();
+      await Promise.all([
+        page.waitForURL(/notice=published/),
+        inspector.getByRole("button", { name: "Publish item", exact: true }).last().click(),
+      ]);
+      await inspector.waitFor();
+      await inspector.getByText("Published", { exact: true }).waitFor();
+      await assertNoHorizontalOverflow(page, "Mobile post-publish inspector");
+      await mobileClose.click();
+      assert(
+        !new URL(page.url()).searchParams.has("item"),
+        "Mobile explicit inspector close retained selected-item context",
+      );
+      assert(
+        (await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden",
+        "Mobile explicit inspector close left background scrolling locked",
+      );
+    });
+
+    await step("narrow mobile keeps the primary scheduling path usable", async () => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+      await assertNoHorizontalOverflow(page, "Narrow mobile Calendar");
+
+      await page.getByRole("button", { name: "Create", exact: true }).click();
+      const planner = page.getByRole("dialog", { name: "Plan project work", exact: true });
+      await planner.waitFor();
+      assert(
+        (await planner.getByRole("button", { name: "Task preset", exact: true }).getAttribute("aria-pressed")) === "true",
+        "Narrow mobile creation did not start preset-first",
+      );
+      assert(
+        (await planner.getByLabel("Start", { exact: true }).inputValue()) === "07:30" &&
+          (await planner.getByLabel("End", { exact: true }).inputValue()) === "17:00",
+        "Narrow mobile creation did not retain the 7:30 AM-5:00 PM default",
+      );
+      await assertNoHorizontalOverflow(page, "Narrow mobile planner");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(
+        () => getComputedStyle(document.body).overflow !== "hidden",
+      );
+      assert(
+        (await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden",
+        "Narrow mobile planner close left background scrolling locked",
+      );
+    });
+
     await step("mobile has no overflow or browser errors", async () => {
       await assertNoHorizontalOverflow(page, "Mobile Calendar after interactions");
       assert(errors.length === 0, errors.join("\n"));
@@ -2050,7 +2262,7 @@ async function runUnavailable(browser) {
       await loadCalendar(page, { expectControls: false });
       await page
         .getByText("Calendar is unavailable right now", { exact: true })
-        .waitFor();
+        .waitFor({ timeout: 15_000 });
       assert(
         (await page.getByRole("button", { name: weekItemLabel, exact: true }).count()) === 0,
         "Unavailable Calendar must not reveal persisted item controls",

@@ -71,6 +71,7 @@ import type {
 
 type CalendarViewMode = "day" | "week" | "month" | "list";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
+type CalendarInspectorSection = "details" | "volunteers" | "visibility" | "notification";
 type CreationMode = "preset" | "oneOff";
 type CalendarMutationAction = (formData: FormData) => void | Promise<void>;
 type CalendarPublicationState = "draft" | "published";
@@ -224,11 +225,7 @@ const coverageOptions: CalendarCoverageFilterState[] = [
   "someDenied",
 ];
 
-const suggestedSlots = {
-  morning: { start: "09:00", end: "10:00" },
-  afternoon: { start: "13:00", end: "14:00" },
-  evening: { start: "18:00", end: "19:00" },
-};
+const defaultTimedDay = { start: "07:30", end: "17:00" };
 
 const projectCalendarAnchor = "2026-01-13";
 
@@ -737,10 +734,11 @@ function CalendarWorkspaceHeader({
   onCreate,
   onNavigateNext,
   onNavigatePrevious,
-  onNavigateReset,
+  onNavigateProject,
+  onNavigateToday,
   onViewChange,
   periodLabel,
-  resetDisabled,
+  projectDisabled,
   canCreate,
 }: {
   activeFilterCount: number;
@@ -751,10 +749,11 @@ function CalendarWorkspaceHeader({
   onCreate: () => void;
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
-  onNavigateReset: () => void;
+  onNavigateProject: () => void;
+  onNavigateToday: () => void;
   onViewChange: (view: CalendarViewMode) => void;
   periodLabel: string;
-  resetDisabled: boolean;
+  projectDisabled: boolean;
   canCreate: boolean;
 }) {
   const navigationUnit =
@@ -788,6 +787,16 @@ function CalendarWorkspaceHeader({
               <ChevronLeft aria-hidden="true" className="h-4 w-4" />
             </button>
             <button
+              aria-label="Go to today"
+              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              onClick={onNavigateToday}
+              title="Go to today"
+              type="button"
+            >
+              <CalendarDays aria-hidden="true" className="h-4 w-4" />
+              <span>Today</span>
+            </button>
+            <button
               aria-label={`Next ${navigationUnit}`}
               className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
               onClick={onNavigateNext}
@@ -801,13 +810,15 @@ function CalendarWorkspaceHeader({
 
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap">
           <button
+            aria-label="Go to project date"
             className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] disabled:cursor-default disabled:opacity-45 ${calmFocusRing}`}
-            disabled={resetDisabled}
-            onClick={onNavigateReset}
+            disabled={projectDisabled}
+            onClick={onNavigateProject}
+            title="Go to project date"
             type="button"
           >
             <CalendarRange aria-hidden="true" className="h-4 w-4" />
-            Project week
+            <span>Project</span>
           </button>
           <div className="order-last col-span-3 sm:order-none sm:contents">
             <ViewToggle activeView={activeView} onChange={onViewChange} />
@@ -1665,8 +1676,6 @@ function MonthView({
                     date,
                     label: getCalendarCompactDayLabel(date),
                     contextLabel: "Suggested from calendar day",
-                    suggestedStartTime: suggestedSlots.morning.start,
-                    suggestedEndTime: suggestedSlots.morning.end,
                   })
                 }
                 onKeyDown={(event) =>
@@ -1936,8 +1945,6 @@ function MobileDayGroups({
                   date: group.date,
                   label: getCalendarCompactDayLabel(group.date),
                   contextLabel: "Suggested from calendar day",
-                  suggestedStartTime: suggestedSlots.afternoon.start,
-                  suggestedEndTime: suggestedSlots.afternoon.end,
                 })
               }
             />
@@ -2189,9 +2196,7 @@ function CreatePanelContent({
     (presetMissing && "Choose an available task preset, or use a custom item.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
-    (isOneOff
-      ? "Ready to save this custom one-off timed item as a private Calendar draft."
-      : "Ready to save this task-preset timed item as a private Calendar draft.");
+    "This will save as a private draft.";
   const canSubmitPersisted =
     canEdit &&
     Boolean(createAction) &&
@@ -2397,14 +2402,14 @@ function CreatePanelContent({
                         startTime: "",
                       }
                     : {
-                        allDay: false,
-                        endDate: creationDraft.date,
-                        endTime:
+                      allDay: false,
+                      endDate: creationDraft.date,
+                      endTime:
                           creationDraft.slot.suggestedEndTime ??
-                          suggestedSlots.morning.end,
-                        startTime:
+                          defaultTimedDay.end,
+                      startTime:
                           creationDraft.slot.suggestedStartTime ??
-                          suggestedSlots.morning.start,
+                          defaultTimedDay.start,
                       },
                 )
               }
@@ -2599,13 +2604,9 @@ function CreatePanelContent({
             />
           </label>
 
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-            <p className="text-sm leading-6 text-slate-600">
-              This creates a private admin draft first. You can assign helpers before
-              publishing, and publishing will not send notifications in this slice.
-              The Follow-up Contact defaults safely to the signed-in scheduler.
-            </p>
-          </div>
+          <p className="mt-3 text-sm font-medium leading-5 text-slate-500">
+            Saves as a private draft. Nothing publishes or sends automatically.
+          </p>
         </section>
 
       </div>
@@ -2637,7 +2638,7 @@ function CreatePanelContent({
           >
             {actionStatus}
           </p>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             <button
               aria-describedby={actionStatusId}
               className={[
@@ -2649,19 +2650,15 @@ function CreatePanelContent({
               disabled={!canSubmitPersisted}
               type="submit"
             >
-              Save draft
+              Save &amp; continue
             </button>
-            {["Publish after save", "Assign helpers after save"].map((label) => (
-              <button
-                aria-describedby={actionStatusId}
-                className="min-h-11 cursor-not-allowed rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-500 opacity-75"
-                disabled
-                key={label}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
+            <button
+              className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
+              onClick={onClose}
+              type="button"
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </div>
@@ -2684,6 +2681,8 @@ function CalendarInspector({
   updateAction,
   currentDate,
   currentView,
+  focusSection,
+  focusSignal,
 }: {
   assignAction?: CalendarMutationAction;
   assignmentPicker: CalendarAssignmentPickerState;
@@ -2699,6 +2698,8 @@ function CalendarInspector({
   updateAction?: CalendarMutationAction;
   currentDate: string;
   currentView: CalendarViewMode;
+  focusSection: CalendarInspectorSection;
+  focusSignal?: string;
 }) {
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
   const desktopDialogRef = useRef<HTMLElement>(null);
@@ -2755,6 +2756,8 @@ function CalendarInspector({
             currentDate={currentDate}
             currentView={currentView}
             descriptionId={`${descriptionId}-desktop`}
+            focusSection={focusSection}
+            focusSignal={focusSignal}
             item={item}
             key={item.id}
             onClose={onClose}
@@ -2796,6 +2799,8 @@ function CalendarInspector({
             currentDate={currentDate}
             currentView={currentView}
             descriptionId={`${descriptionId}-mobile`}
+            focusSection={focusSection}
+            focusSignal={focusSignal}
             item={item}
             key={item.id}
             onClose={onClose}
@@ -2823,6 +2828,8 @@ function InspectorContent({
   currentDate,
   currentView,
   descriptionId,
+  focusSection,
+  focusSignal,
   item,
   tone,
   onClose,
@@ -2840,6 +2847,8 @@ function InspectorContent({
   currentDate: string;
   currentView: CalendarViewMode;
   descriptionId: string;
+  focusSection: CalendarInspectorSection;
+  focusSignal?: string;
   item: CalendarClientDisplayItem;
   tone: CalendarStatusTone;
   onClose: () => void;
@@ -2862,6 +2871,7 @@ function InspectorContent({
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
   const contactNameInputRef = useRef<HTMLInputElement>(null);
+  const inspectorScrollRef = useRef<HTMLDivElement>(null);
   const canPublishSelectedItem =
     canEdit &&
     Boolean(publishAction) &&
@@ -2872,6 +2882,9 @@ function InspectorContent({
   );
   const [assignmentSearch, setAssignmentSearch] = useState("");
   const [selectedVolunteerIds, setSelectedVolunteerIds] = useState<string[]>([]);
+  const unassignedSelectedVolunteerIds = selectedVolunteerIds.filter(
+    (volunteerId) => !assignedVolunteerIds.has(volunteerId),
+  );
   const pickerReady = assignmentPicker.kind === "ready";
   const eligibleVolunteers = pickerReady
     ? assignmentPicker.volunteers.filter(
@@ -2903,12 +2916,20 @@ function InspectorContent({
     initialNotification.eligibleToSendCount > 0;
   const assignmentCapacityWarning =
     item.neededCount > 0 &&
-    currentAssignments.length + selectedVolunteerIds.length > item.neededCount;
+    currentAssignments.length + unassignedSelectedVolunteerIds.length > item.neededCount;
   useEffect(() => {
     if (!editingContactDetails) return;
     const frame = window.requestAnimationFrame(() => contactNameInputRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [editingContactDetails]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      inspectorScrollRef.current
+        ?.querySelector<HTMLElement>(`[data-inspector-section="${focusSection}"]`)
+        ?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusSection, focusSignal, item.id]);
   const toggleSelectedVolunteer = (volunteerId: string) => {
     setSelectedVolunteerIds((current) =>
       current.includes(volunteerId)
@@ -2947,10 +2968,11 @@ function InspectorContent({
       </div>
 
       <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3.5"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 py-3.5"
         data-overlay-scroll="calendar-inspector"
+        ref={inspectorScrollRef}
       >
-        <div className="flex flex-wrap gap-1.5">
+        <div className="order-0 flex flex-wrap gap-1.5">
           <span className="inline-flex min-h-7 items-center rounded-full border border-[var(--pl-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--pl-text)]">
             {getCalendarFilledLabel(item)} filled
           </span>
@@ -2976,9 +2998,9 @@ function InspectorContent({
           </span>
         </div>
 
-        <div className="mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5">
+        <div className="order-5 mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5" data-inspector-section="visibility">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Visibility
+            STEP 3 · VISIBILITY
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {item.publicationState === "draft"
@@ -2997,6 +3019,8 @@ function InspectorContent({
                   <input name="calendarItemId" type="hidden" value={item.id} />
                   <input name="redirectView" type="hidden" value={currentView} />
                   <input name="redirectDate" type="hidden" value={currentDate} />
+                  <input name="redirectItem" type="hidden" value={item.id} />
+                  <input name="redirectSection" type="hidden" value="visibility" />
                   <p className="text-sm font-semibold text-amber-950">
                     Publish this Calendar item?
                   </p>
@@ -3034,7 +3058,11 @@ function InspectorContent({
           ) : null}
         </div>
 
-        <div className="mt-3 flex items-start justify-between gap-3 border-b border-[var(--pl-border)] px-1 pb-3">
+        <div className="order-1 mt-3 border-b border-[var(--pl-border)] px-1 pb-3" data-inspector-section="details">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
+            STEP 1 · EVENT DETAILS
+          </p>
+          <div className="flex items-start justify-between gap-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Clock aria-hidden="true" className="h-3.5 w-3.5" />
             {scheduleDisplay.heading}
@@ -3042,12 +3070,13 @@ function InspectorContent({
           <p className="text-right text-sm font-semibold leading-5 text-[var(--pl-ink)]">
             {scheduleDisplay.label}
           </p>
+          </div>
         </div>
 
-        <div className="mt-3 border-b border-[var(--pl-border)] pb-3">
+        <div className="order-4 mt-3 border-b border-[var(--pl-border)] pb-3" data-inspector-section="volunteers">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
-            Helpers
+            STEP 2 · VOLUNTEERS
           </p>
           <div className="mt-2 divide-y divide-[var(--pl-border)] overflow-hidden rounded-lg border border-[var(--pl-border)]">
             {currentAssignments.length > 0 ? (
@@ -3087,6 +3116,8 @@ function InspectorContent({
                       <input name="assignmentId" type="hidden" value={assignment.assignmentId} />
                       <input name="redirectView" type="hidden" value={currentView} />
                       <input name="redirectDate" type="hidden" value={currentDate} />
+                      <input name="redirectItem" type="hidden" value={item.id} />
+                      <input name="redirectSection" type="hidden" value="volunteers" />
                       <button
                         className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
                         formAction={cancelAssignmentAction}
@@ -3130,7 +3161,9 @@ function InspectorContent({
                 <input name="calendarItemId" type="hidden" value={item.id} />
                 <input name="redirectView" type="hidden" value={currentView} />
                 <input name="redirectDate" type="hidden" value={currentDate} />
-                {selectedVolunteerIds.map((volunteerId) => (
+                <input name="redirectItem" type="hidden" value={item.id} />
+                <input name="redirectSection" type="hidden" value="volunteers" />
+                {unassignedSelectedVolunteerIds.map((volunteerId) => (
                   <input
                     key={volunteerId}
                     name="volunteerProfileIds"
@@ -3207,11 +3240,11 @@ function InspectorContent({
                 <button
                   className={[
                     "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
-                    canAssignHelpers && selectedVolunteerIds.length > 0
+                    canAssignHelpers && unassignedSelectedVolunteerIds.length > 0
                       ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
                       : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
                   ].join(" ")}
-                  disabled={!canAssignHelpers || selectedVolunteerIds.length === 0}
+                  disabled={!canAssignHelpers || unassignedSelectedVolunteerIds.length === 0}
                   formAction={assignAction}
                   type="submit"
                 >
@@ -3227,10 +3260,10 @@ function InspectorContent({
           </div>
         </div>
 
-        <div className="mt-3 border-b border-[var(--pl-border)] bg-sky-50/45 px-3 py-3">
+        <div className="order-6 mt-3 border-b border-[var(--pl-border)] bg-sky-50/45 px-3 py-3" data-inspector-section="notification">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
-            Initial email
+            STEP 4 · NOTIFICATION
           </p>
           {initialNotification?.kind === "ready" ? (
             <div className="mt-3 space-y-3">
@@ -3287,6 +3320,8 @@ function InspectorContent({
                     >
                       <input name="redirectView" type="hidden" value={currentView} />
                       <input name="redirectDate" type="hidden" value={currentDate} />
+                      <input name="redirectItem" type="hidden" value={item.id} />
+                      <input name="redirectSection" type="hidden" value="notification" />
                       <label className="block text-xs font-semibold text-slate-700">
                         Name
                         <input
@@ -3360,6 +3395,8 @@ function InspectorContent({
                   <input name="calendarItemId" type="hidden" value={item.id} />
                   <input name="redirectView" type="hidden" value={currentView} />
                   <input name="redirectDate" type="hidden" value={currentDate} />
+                  <input name="redirectItem" type="hidden" value={item.id} />
+                  <input name="redirectSection" type="hidden" value="notification" />
                   <button
                     className={[
                       "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
@@ -3393,7 +3430,7 @@ function InspectorContent({
           )}
         </div>
 
-        <div className="mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
+        <div className="order-2 mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Schedule notes
           </p>
@@ -3403,7 +3440,7 @@ function InspectorContent({
         </div>
 
         {isLunchCalendarItem(item) ? (
-          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
+          <div className="order-2 mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
             <div className="flex items-center gap-2 font-semibold">
               <Soup aria-hidden="true" className="h-4 w-4" />
               Lunch menu
@@ -3412,7 +3449,7 @@ function InspectorContent({
           </div>
         ) : null}
 
-        <div className="mt-4 grid gap-2 text-xs font-semibold text-slate-500">
+        <div className="order-2 mt-4 grid gap-2 text-xs font-semibold text-slate-500">
           <span>
             Source:{" "}
             {isOneOffCalendarItem(item)
@@ -3424,10 +3461,12 @@ function InspectorContent({
         </div>
 
         {canEditSelectedItem ? (
-          <form action={updateAction} className="mt-4 border-t border-[var(--pl-border)] pt-4">
+          <form action={updateAction} className="order-3 mt-4 border-t border-[var(--pl-border)] pt-4">
             <input name="calendarItemId" type="hidden" value={item.id} />
             <input name="redirectView" type="hidden" value={currentView} />
             <input name="redirectDate" type="hidden" value={currentDate} />
+            <input name="redirectItem" type="hidden" value={item.id} />
+            <input name="redirectSection" type="hidden" value="details" />
             <input name="sourceMode" type="hidden" value={isPresetBackedItem ? "preset" : "oneOff"} />
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               {isPresetBackedItem ? "Edit scheduled preset" : "Edit scheduled item"}
@@ -3539,7 +3578,7 @@ function InspectorContent({
             </div>
           </form>
         ) : (
-          <div className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
+          <div className="order-3 mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
             This item can’t be edited from this Calendar view.
           </div>
         )}
@@ -3673,10 +3712,37 @@ function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
   return `/admin/calendar?${params.toString()}`;
 }
 
+function getCalendarToday() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Denver",
+    year: "numeric",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function buildCalendarInspectorHref(
+  view: CalendarViewMode,
+  date: string,
+  itemId: string,
+  section: CalendarInspectorSection,
+) {
+  const params = new URLSearchParams();
+  params.set("view", view);
+  params.set("date", date);
+  params.set("item", itemId);
+  params.set("section", section);
+  return `/admin/calendar?${params.toString()}`;
+}
+
 export default function CalendarClient({
   assignAction,
   cancelAssignmentAction,
   createAction,
+  initialInspectorItemId,
+  initialInspectorSection = "details",
   notice,
   publishAction,
   sendInitialAssignmentNotificationsAction,
@@ -3687,6 +3753,8 @@ export default function CalendarClient({
   assignAction?: CalendarMutationAction;
   cancelAssignmentAction?: CalendarMutationAction;
   createAction?: CalendarMutationAction;
+  initialInspectorItemId?: string;
+  initialInspectorSection?: CalendarInspectorSection;
   notice?: string;
   publishAction?: CalendarMutationAction;
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
@@ -3715,13 +3783,31 @@ export default function CalendarClient({
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
-  const [activeSurface, setActiveSurface] = useState<CalendarSurface>("none");
-  const [selectedId, setSelectedId] = useState<string | undefined>();
+  const [activeSurface, setActiveSurface] = useState<CalendarSurface>(
+    initialInspectorItemId ? "inspect" : "none",
+  );
+  const [selectedId, setSelectedId] = useState<string | undefined>(initialInspectorItemId);
+  const [inspectorSection, setInspectorSection] = useState<CalendarInspectorSection>(
+    initialInspectorSection,
+  );
+  const routeInspectorSelection = initialInspectorItemId
+    ? `${initialInspectorItemId}:${initialInspectorSection}`
+    : "";
+  const [appliedRouteInspectorSelection, setAppliedRouteInspectorSelection] =
+    useState(routeInspectorSelection);
   const [creationDraft, setCreationDraft] = useState<
     CalendarCreationDraft | undefined
   >();
   const surfaceTriggerRef = useRef<HTMLElement | null>(null);
   const calendarViewRef = useRef<HTMLDivElement>(null);
+
+  if (routeInspectorSelection !== appliedRouteInspectorSelection) {
+    setAppliedRouteInspectorSelection(routeInspectorSelection);
+    setSelectedId(initialInspectorItemId);
+    setInspectorSection(initialInspectorSection);
+    setCreationDraft(undefined);
+    setActiveSurface(initialInspectorItemId ? "inspect" : "none");
+  }
 
   const filteredItems = useMemo(
     () => filterCalendarItems(allItems, filters),
@@ -3777,6 +3863,15 @@ export default function CalendarClient({
     }
   };
 
+  const closeSelectedInspector = () => {
+    closeCalendarSurface();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      buildCalendarRouteHref(activeView, calendarAnchor),
+    );
+  };
+
   const closeMobileNavigation = () => {
     window.dispatchEvent(new Event(closeMobileNavigationEvent));
   };
@@ -3793,6 +3888,11 @@ export default function CalendarClient({
         setActiveSurface("none");
         setSelectedId(undefined);
         setCreationDraft(undefined);
+        window.history.replaceState(
+          window.history.state,
+          "",
+          buildCalendarRouteHref(activeView, calendarAnchor),
+        );
         surfaceTriggerRef.current = null;
         window.requestAnimationFrame(() => {
           if (trigger?.isConnected) {
@@ -3807,7 +3907,7 @@ export default function CalendarClient({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeSurface]);
+  }, [activeSurface, activeView, calendarAnchor]);
 
   useEffect(() => {
     if (!calendarViewRef.current) return;
@@ -3819,7 +3919,13 @@ export default function CalendarClient({
     closeMobileNavigation();
     setCreationDraft(undefined);
     setSelectedId(item.id);
+    setInspectorSection("details");
     setActiveSurface("inspect");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      buildCalendarInspectorHref(activeView, calendarAnchor, item.id, "details"),
+    );
   };
 
   const handleOpenFilters = () => {
@@ -3846,11 +3952,11 @@ export default function CalendarClient({
       allDay: slot.allDay ?? false,
       startTime: slot.allDay
         ? ""
-        : slot.suggestedStartTime ?? suggestedSlots.morning.start,
+        : slot.suggestedStartTime ?? defaultTimedDay.start,
       endTime: slot.allDay
         ? ""
-        : slot.suggestedEndTime ?? suggestedSlots.morning.end,
-      mode: "oneOff",
+        : slot.suggestedEndTime ?? defaultTimedDay.end,
+      mode: defaultPreset ? "preset" : "oneOff",
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,
       notes: "",
@@ -3882,6 +3988,11 @@ export default function CalendarClient({
   const handleResetCalendar = () => {
     closeCalendarSurface();
     router.push(buildCalendarRouteHref(activeView, projectCalendarAnchor));
+  };
+
+  const handleTodayCalendar = () => {
+    closeCalendarSurface();
+    router.push(buildCalendarRouteHref(activeView, getCalendarToday()));
   };
 
   const handleFocusCalendarDate = (date: string) => {
@@ -3930,16 +4041,15 @@ export default function CalendarClient({
                 date: calendarAnchor,
                 label: getCalendarCompactDayLabel(calendarAnchor),
                 contextLabel: "Started from Calendar toolbar",
-                suggestedStartTime: suggestedSlots.morning.start,
-                suggestedEndTime: suggestedSlots.morning.end,
               })}
               onFilterOpen={handleOpenFilters}
               onNavigateNext={() => handleNavigateCalendar(1)}
               onNavigatePrevious={() => handleNavigateCalendar(-1)}
-              onNavigateReset={handleResetCalendar}
+              onNavigateProject={handleResetCalendar}
+              onNavigateToday={handleTodayCalendar}
               onViewChange={handleViewChange}
               periodLabel={getCalendarPeriodLabel(calendarAnchor, activeView)}
-              resetDisabled={calendarAnchor === projectCalendarAnchor}
+              projectDisabled={calendarAnchor === projectCalendarAnchor}
             />
 
             <CalendarNotice notice={notice} />
@@ -4015,9 +4125,11 @@ export default function CalendarClient({
               cancelAssignmentAction={cancelAssignmentAction}
               currentDate={calendarAnchor}
               currentView={activeView}
+              focusSection={inspectorSection}
+              focusSignal={notice}
               isOpen={activeSurface === "inspect"}
               item={selectedItem}
-              onClose={closeCalendarSurface}
+              onClose={closeSelectedInspector}
               publishAction={publishAction}
               sendInitialAssignmentNotificationsAction={sendInitialAssignmentNotificationsAction}
               updateCurrentVolunteerFacingContactDetailsAction={
