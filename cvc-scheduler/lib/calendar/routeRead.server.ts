@@ -117,6 +117,12 @@ type CalendarClientAssignment = {
   volunteerProfileId: string;
   volunteerDisplayName: string;
   volunteerCongregation: string | null;
+  volunteerLifecycle: string;
+  volunteerReadinessStatus: string;
+  volunteerEmailAvailable: boolean;
+  volunteerPhoneAvailable: boolean;
+  volunteerPreferredContactMethod: string | null;
+  volunteerProfileNotes: string | null;
   responseStatus: "needs_response" | "confirmed" | "declined";
 };
 type CalendarClientInitialAssignmentNotification =
@@ -597,6 +603,12 @@ function mapAssignmentToClientAssignment(
     volunteerProfileId: assignment.volunteerProfileId,
     volunteerDisplayName: assignment.volunteerDisplayName,
     volunteerCongregation: assignment.volunteerCongregation,
+    volunteerLifecycle: assignment.volunteerLifecycle,
+    volunteerReadinessStatus: assignment.volunteerReadinessStatus,
+    volunteerEmailAvailable: assignment.volunteerEmailAvailable,
+    volunteerPhoneAvailable: assignment.volunteerPhoneAvailable,
+    volunteerPreferredContactMethod: assignment.volunteerPreferredContactMethod,
+    volunteerProfileNotes: assignment.volunteerProfileNotes,
     responseStatus: assignment.responseStatus,
   };
 }

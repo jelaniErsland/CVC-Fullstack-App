@@ -340,7 +340,7 @@ async function verifyAssignments(containerName, users) {
 
   const volunteerProbe = await users.full.client
     .from("volunteer_profiles")
-    .select("id,full_name,congregation,lifecycle,readiness_status")
+    .select("id,full_name,email,phone,congregation,preferred_contact_method,profile_notes,lifecycle,readiness_status")
     .eq("workspace_id", fixture.workspaceId);
   assert(!volunteerProbe.error, "Authorized volunteer picker projection should be readable.");
   assert.equal(volunteerProbe.data?.length, 5, "Authorized volunteer picker projection should include same-workspace volunteers.");
@@ -359,6 +359,11 @@ async function verifyAssignments(containerName, users) {
   );
   assert(!("email" in picker.volunteers[0]), "Picker projection must not expose email.");
   assert(!("phone" in picker.volunteers[0]), "Picker projection must not expose phone.");
+  assert.equal(picker.volunteers[0].emailAvailable, true, "Picker should derive safe email presence.");
+  assert.equal(picker.volunteers[0].phoneAvailable, false, "Picker should derive safe phone absence.");
+  assert.equal(picker.volunteers[0].lifecycle, "active", "Picker should preserve safe lifecycle context.");
+  assert.equal(picker.volunteers[0].readinessStatus, "ready", "Picker should preserve safe readiness context.");
+  assert.equal(picker.volunteers[0].profileNotes, null, "Blank profile notes should normalize to null.");
 
   const noVolunteerPicker = await readCalendarAssignmentPickerWithClient({
     client: users.noVolunteers.client,

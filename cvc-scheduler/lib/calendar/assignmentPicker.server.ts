@@ -11,6 +11,12 @@ export type CalendarAssignmentPickerVolunteer = Readonly<{
   id: string;
   displayName: string;
   congregation: string | null;
+  lifecycle: string;
+  readinessStatus: string;
+  emailAvailable: boolean;
+  phoneAvailable: boolean;
+  preferredContactMethod: string | null;
+  profileNotes: string | null;
 }>;
 
 export type CalendarAssignmentPickerAssignment = Readonly<{
@@ -19,6 +25,12 @@ export type CalendarAssignmentPickerAssignment = Readonly<{
   volunteerProfileId: string;
   volunteerDisplayName: string;
   volunteerCongregation: string | null;
+  volunteerLifecycle: string;
+  volunteerReadinessStatus: string;
+  volunteerEmailAvailable: boolean;
+  volunteerPhoneAvailable: boolean;
+  volunteerPreferredContactMethod: string | null;
+  volunteerProfileNotes: string | null;
   responseStatus: AssignmentResponseStatus;
 }>;
 
@@ -83,7 +95,9 @@ export async function readCalendarAssignmentPickerWithClient(input: {
   try {
     const volunteersQuery = input.client
       .from("volunteer_profiles")
-      .select("id,full_name,congregation,lifecycle,readiness_status")
+      .select(
+        "id,full_name,email,phone,congregation,preferred_contact_method,profile_notes,lifecycle,readiness_status",
+      )
       .eq("workspace_id", workspaceId)
       .order("full_name", { ascending: true })
       .order("id", { ascending: true });
@@ -116,6 +130,10 @@ export async function readCalendarAssignmentPickerWithClient(input: {
         id,
         displayName,
         congregation: safeText(row.congregation),
+        emailAvailable: Boolean(safeText(row.email)),
+        phoneAvailable: Boolean(safeText(row.phone)),
+        preferredContactMethod: safeText(row.preferred_contact_method),
+        profileNotes: safeText(row.profile_notes),
         lifecycle: row.lifecycle,
         readinessStatus: row.readiness_status,
       };
@@ -125,7 +143,29 @@ export async function readCalendarAssignmentPickerWithClient(input: {
         (volunteer) =>
           volunteer.lifecycle === "active" && volunteer.readinessStatus === "ready",
       )
-      .map(({ congregation, displayName, id }) => ({ congregation, displayName, id }));
+      .map(
+        ({
+          congregation,
+          displayName,
+          emailAvailable,
+          id,
+          lifecycle,
+          phoneAvailable,
+          preferredContactMethod,
+          profileNotes,
+          readinessStatus,
+        }) => ({
+          congregation,
+          displayName,
+          emailAvailable,
+          id,
+          lifecycle,
+          phoneAvailable,
+          preferredContactMethod,
+          profileNotes,
+          readinessStatus,
+        }),
+      );
 
     const assignmentRows = assignmentsResult.data ?? [];
     const assignmentIds = assignmentRows
@@ -173,6 +213,12 @@ export async function readCalendarAssignmentPickerWithClient(input: {
           volunteerProfileId,
           volunteerDisplayName: volunteer.displayName,
           volunteerCongregation: volunteer.congregation,
+          volunteerLifecycle: String(volunteer.lifecycle),
+          volunteerReadinessStatus: String(volunteer.readinessStatus),
+          volunteerEmailAvailable: volunteer.emailAvailable,
+          volunteerPhoneAvailable: volunteer.phoneAvailable,
+          volunteerPreferredContactMethod: volunteer.preferredContactMethod,
+          volunteerProfileNotes: volunteer.profileNotes,
           responseStatus: responseByAssignmentId.get(assignmentId) ?? "needs_response",
         } satisfies CalendarAssignmentPickerAssignment;
       })

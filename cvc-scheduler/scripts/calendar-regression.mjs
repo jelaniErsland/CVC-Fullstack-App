@@ -35,6 +35,8 @@ const writeIterationReviewScreenshots =
 const writeCalendarFlowReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2A_CAPTURES === "1" ||
   process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
+const writeAssignmentPickerReviewScreenshots =
+  process.env.WRITE_ITERATION_12_44D2B_CAPTURES === "1";
 const writeAffectedCalendarFlowReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
 const affectedCalendarFlowCaptureNames = new Set([
@@ -52,23 +54,33 @@ const iterationReviewDir = path.resolve(
   "..",
   "previews",
   "beta-review",
-  writeCalendarFlowReviewScreenshots
+  writeAssignmentPickerReviewScreenshots
+    ? "iteration-12-44d2b-assignment-picker"
+    : writeCalendarFlowReviewScreenshots
     ? "iteration-12-44d2a-calendar-flow"
     : "iteration-12-44d1-mobile-overlays",
 );
 const writeNamedReviewScreenshots =
   writeBetaReviewScreenshots ||
   writeAssignmentDetailReviewScreenshots ||
-  writeCalendarFlowReviewScreenshots;
+  writeCalendarFlowReviewScreenshots ||
+  writeAssignmentPickerReviewScreenshots;
 const reviewWorkspaceName = writeNamedReviewScreenshots
   ? "Bozeman Local Project"
   : "QA 12.12 Calendar Workspace";
+const fixtureVolunteerCount = 56;
+const reviewFirstNames = ["Alex", "Maya", "Noah", "Elena", "Marcus", "Priya", "Jonah", "Avery", "Camila", "Darius", "Nina", "Owen", "Sofia", "Theo"];
+const reviewLastNames = ["Rivera", "Chen", "Bennett", "Ruiz", "Lee", "Shah", "Price", "Morgan", "Patel", "Brooks", "Kim", "Foster", "Diaz", "Walker"];
 const reviewVolunteerNames = writeNamedReviewScreenshots
-  ? ["Alex Rivera", "Maya Chen", "Noah Bennett", "Elena Ruiz", "Marcus Lee", "Priya Shah", "Jonah Price"]
-  : Array.from({ length: 7 }, (_, index) => `QA 12.12 Volunteer ${index + 1}`);
-const reviewCongregation = writeNamedReviewScreenshots
-  ? "Bozeman Congregation"
-  : "QA Congregation";
+  ? Array.from({ length: fixtureVolunteerCount }, (_, index) =>
+      index < 7
+        ? ["Alex Rivera", "Maya Chen", "Noah Bennett", "Elena Ruiz", "Marcus Lee", "Priya Shah", "Jonah Price"][index]
+        : `${reviewFirstNames[index % reviewFirstNames.length]} ${reviewLastNames[(Math.floor(index / reviewFirstNames.length) + 7) % reviewLastNames.length]}`,
+    )
+  : Array.from({ length: fixtureVolunteerCount }, (_, index) => `QA 12.12 Volunteer ${String(index + 1).padStart(2, "0")}`);
+const reviewCongregations = writeNamedReviewScreenshots
+  ? ["Bozeman Congregation", "Belgrade Congregation", "Helena Congregation", "Livingston Congregation", "Manhattan Congregation"]
+  : ["QA Bozeman", "QA Belgrade", "QA Helena", "QA Livingston", "QA Manhattan"];
 const reviewGeneralPresetName = writeNamedReviewScreenshots
   ? "Drywall Crew"
   : "QA 12.12 General";
@@ -99,8 +111,8 @@ const fixture = {
   fullGrantId: randomUUID(),
   generalTaskPresetId: randomUUID(),
   foodTaskPresetId: randomUUID(),
-  volunteerIds: Array.from({ length: 8 }, () => randomUUID()),
-  questionnaireIds: Array.from({ length: 8 }, () => randomUUID()),
+  volunteerIds: Array.from({ length: fixtureVolunteerCount }, () => randomUUID()),
+  questionnaireIds: Array.from({ length: fixtureVolunteerCount }, () => randomUUID()),
   calendarItemIds: {
     gate: randomUUID(),
     siteWindow: randomUUID(),
@@ -314,7 +326,7 @@ function questionnaireRows() {
           name: reviewVolunteerNames[index],
           email: `qa-12-12-volunteer-${index + 1}@example.invalid`,
           phone: "+1 555 120 1100",
-          congregation: reviewCongregation,
+          congregation: reviewCongregations[index % reviewCongregations.length],
         },
         availability: { weekdays: ["Tuesday"] },
         skillsExperience: { categories: ["General"] },
@@ -331,10 +343,14 @@ function questionnaireRows() {
 
 function volunteerRows() {
   return fixture.volunteerIds
-    .map(
-      (id, index) =>
-        `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, 'active', 'ready', ${sqlText(reviewVolunteerNames[index])}, 'qa-12-12-volunteer-${index + 1}@example.invalid', null, ${sqlText(reviewCongregation)}, 'Email', '{}'::jsonb, '{}'::jsonb, 'QA safe profile note')`,
-    )
+    .map((id, index) => {
+      const lifecycle = index === 53 ? "inactive" : index === 54 ? "archived" : index === 55 ? "inactive" : "active";
+      const readiness = index === 52 || index === 55 ? "on_hold" : "ready";
+      const email = index < 7 || index % 3 !== 0 ? `'qa-12-12-volunteer-${index + 1}@example.invalid'` : "null";
+      const phone = index % 4 === 0 || index % 3 === 0 ? "'+1 555 120 1100'" : "null";
+      const preferredContact = index % 3 === 0 ? "'Phone'" : "'Email'";
+      return `('${id}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.questionnaireIds[index]}'::uuid, '${lifecycle}', '${readiness}', ${sqlText(reviewVolunteerNames[index])}, ${email}, ${phone}, ${sqlText(reviewCongregations[index % reviewCongregations.length])}, ${preferredContact}, '{}'::jsonb, '{}'::jsonb, ${sqlText(`Safe scheduling context ${index + 1}`)})`;
+    })
     .join(",\n");
 }
 
@@ -480,6 +496,15 @@ async function writeCalendarFlowCapture(page, filename, locator) {
   await screenshotTarget.screenshot({
     path: path.join(iterationReviewDir, filename),
     ...(locator ? {} : { fullPage: false }),
+  });
+}
+
+async function writeAssignmentPickerCapture(page, filename) {
+  if (!writeAssignmentPickerReviewScreenshots) return;
+  await mkdir(iterationReviewDir, { recursive: true });
+  await page.screenshot({
+    path: path.join(iterationReviewDir, filename),
+    fullPage: false,
   });
 }
 
@@ -1240,10 +1265,7 @@ async function runDesktop(browser) {
         .getByRole("dialog", { name: "Calendar item inspector", exact: true })
         .waitFor();
       await waitForFocusLabel(page, "Close calendar item inspector");
-      const inspector = page.getByRole("dialog", {
-        name: "Calendar item inspector",
-        exact: true,
-      });
+      const inspector = page.locator('aside[aria-label="Calendar item inspector"]').first();
       const inspectorDescription = await assertDialogFocusContainment(
         page,
         inspector,
@@ -1683,6 +1705,116 @@ async function runDesktop(browser) {
       );
     });
 
+    await step("desktop assignment picker scales, preserves selection, and refreshes in place", async () => {
+      await page.setViewportSize(desktopViewport);
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first()
+        .click();
+      const inspector = page.getByRole("dialog", {
+        name: "Calendar item inspector",
+        exact: true,
+      });
+      await inspector.waitFor();
+      const candidateList = inspector.locator('[data-picker-scroll="volunteer-candidates"]');
+      const candidateCheckboxes = candidateList.locator('input[type="checkbox"]');
+      assert((await candidateCheckboxes.count()) === 51, "Picker should expose 51 ready, active, unassigned candidates.");
+      assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[0]}`, { exact: true }).count()) === 0, "Already-assigned volunteer appeared as a candidate.");
+      for (const index of [52, 53, 54, 55]) {
+        assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count()) === 0, "Ineligible volunteer appeared as assignable.");
+      }
+      const listDimensions = await candidateList.evaluate((element) => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+      }));
+      assert(listDimensions.scrollHeight > listDimensions.clientHeight, "Large candidate list did not use intentional internal scrolling.");
+      await inspector.getByLabel("Search ready volunteers", { exact: true }).focus();
+      await writeAssignmentPickerCapture(page, "01-desktop-picker-default.png");
+
+      const selectedIndexes = [20, 21, 22];
+      for (const index of selectedIndexes) {
+        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).click();
+      }
+      await inspector.getByText("3 selected", { exact: true }).waitFor();
+      await inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true }).scrollIntoViewIfNeeded();
+      await writeAssignmentPickerCapture(page, "02-desktop-picker-three-selected.png");
+
+      const search = inspector.getByLabel("Search ready volunteers", { exact: true });
+      await search.fill(reviewVolunteerNames[20]);
+      assert((await candidateCheckboxes.count()) === 1, "Name search did not narrow to the intended volunteer.");
+      assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[20]}`, { exact: true }).count()) === 1, "Name search returned the wrong volunteer.");
+      await search.fill(reviewCongregations[2]);
+      assert((await candidateCheckboxes.count()) > 0, "Congregation search returned no candidates.");
+      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Search silently cleared hidden selections.");
+      await writeAssignmentPickerCapture(page, "03-desktop-search-result.png");
+      await search.fill("no volunteer can match this value");
+      await inspector.getByText("No ready volunteers match the current search and filters.", { exact: true }).waitFor();
+      await inspector.getByRole("button", { name: "Clear search and filters", exact: true }).click();
+
+      await inspector.getByRole("button", { name: "Filters", exact: true }).click();
+      await inspector.getByText("All congregations", { exact: true }).waitFor();
+      await inspector.getByText("Congregation", { exact: true }).scrollIntoViewIfNeeded();
+      await writeAssignmentPickerCapture(page, "04-desktop-filters-open.png");
+      await inspector.getByRole("radio", { name: reviewCongregations[2], exact: true }).click();
+      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Filter silently cleared hidden selections.");
+      await inspector.getByRole("button", { name: /Filters · 1/, exact: true }).click();
+      await inspector.getByRole("button", { name: "Reset", exact: true }).click();
+
+      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
+      await inspector.getByText("Name A–Z", { exact: true }).waitFor();
+      await writeAssignmentPickerCapture(page, "05-desktop-sort-open.png");
+      await inspector.getByRole("radio", { name: "Name Z–A", exact: true }).click();
+      const expectedDescendingName = reviewVolunteerNames
+        .slice(0, 52)
+        .filter((_, index) => index !== 0)
+        .sort((first, second) => second.localeCompare(first))[0];
+      assert(
+        (await candidateCheckboxes.first().getAttribute("aria-label")) === `Select ${expectedDescendingName}`,
+        "Name Z–A did not produce deterministic descending order.",
+      );
+      await inspector.getByRole("radio", { name: "Congregation A–Z", exact: true }).click();
+      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Sort silently cleared selections.");
+      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
+
+      await inspector
+        .getByRole("button", { name: `View volunteer context for ${reviewVolunteerNames[20]}`, exact: true })
+        .click();
+      const context = inspector.locator("[data-volunteer-context]");
+      await context.getByText(reviewVolunteerNames[20], { exact: true }).waitFor();
+      assert((await context.getByText(reviewVolunteerNames[21], { exact: true }).count()) === 0, "Volunteer context showed the wrong person.");
+      await writeAssignmentPickerCapture(page, "06-desktop-volunteer-context.png");
+      await inspector.getByRole("button", { name: "Back to volunteers", exact: true }).click();
+      assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Volunteer context lost the selected Calendar item.");
+
+      await Promise.all([
+        page.waitForURL(/notice=assigned/),
+        inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true }).click(),
+      ]);
+      await inspector.waitFor();
+      await inspector.getByText("0 selected", { exact: true }).waitFor();
+      for (const index of selectedIndexes) {
+        await inspector.getByText(reviewVolunteerNames[index], { exact: true }).first().waitFor();
+        assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count()) === 0, "New assignment remained in candidates.");
+      }
+      await inspector.getByText("4/1 filled", { exact: true }).waitFor();
+      await writeAssignmentPickerCapture(page, "07-desktop-post-assignment.png");
+
+      for (const index of selectedIndexes) {
+        await Promise.all([
+          page.waitForURL(/notice=assignment_canceled/),
+          inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
+        ]);
+        await inspector.waitFor();
+        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).waitFor();
+        assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Removing an assignment closed the inspector.");
+      }
+      await inspector.getByRole("button", { name: "Close calendar item inspector", exact: true }).click();
+      await page.waitForURL(/\/admin\/calendar\?view=day&date=2026-01-13$/);
+    });
+
     await step("desktop persisted assignment create/cancel round trip", async () => {
       await selectView(page, "Day");
       await page.waitForURL(/\/admin\/calendar\?view=day&date=2026-01-13$/, {
@@ -1693,15 +1825,10 @@ async function runDesktop(browser) {
         .first();
       await assignmentTarget.click();
       await page.waitForURL((url) => url.searchParams.has("item"));
-      const inspector = page.getByRole("dialog", {
-        name: "Calendar item inspector",
-        exact: true,
-      });
+      const inspector = page.locator('aside[aria-label="Calendar item inspector"]').first();
       await inspector.waitFor();
       await inspector
-        .locator("label")
-        .filter({ hasText: reviewVolunteerNames[1] })
-        .locator('input[type="checkbox"]')
+        .getByLabel(`Select ${reviewVolunteerNames[1]}`, { exact: true })
         .click({ force: true });
       await inspector.locator('input[name="volunteerProfileIds"]').waitFor({
         state: "attached",
@@ -1716,10 +1843,10 @@ async function runDesktop(browser) {
         "Selecting the volunteer did not update the assignment form submitted state.",
       );
       const assignSelectedButton = inspector.getByRole("button", {
-        name: "Assign selected",
+        name: "Assign 1 volunteer",
         exact: true,
       });
-      await expectButtonEnabled(page, assignSelectedButton, "Assign selected");
+      await expectButtonEnabled(page, assignSelectedButton, "Assign 1 volunteer");
       await Promise.all([
         page.waitForURL(/notice=(assigned|validation|error|unavailable)/),
         assignSelectedButton.click(),
@@ -1768,8 +1895,7 @@ async function runDesktop(browser) {
       await Promise.all([
         page.waitForURL(/notice=assignment_canceled/),
         inspector
-          .getByRole("button", { name: "Remove assignment", exact: true })
-          .nth(1)
+          .getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[1]}`, exact: true })
           .click(),
       ]);
       await page.getByText("Volunteer removed", { exact: true }).waitFor();
@@ -2097,6 +2223,91 @@ async function runMobile(browser) {
       await closeWithEscape(page, "Plan project work", triggerLabel);
     });
 
+    await step("mobile assignment picker remains usable at scale without overlay traps", async () => {
+      await page.setViewportSize(mobileViewport);
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
+        waitUntil: "domcontentloaded",
+      });
+      await page
+        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
+        .first()
+        .click();
+      const inspector = page.locator('[role="dialog"][aria-label="Calendar item inspector"]:visible');
+      await inspector.waitFor();
+      const volunteerSection = inspector.locator('[data-inspector-section="volunteers"]');
+      await volunteerSection.scrollIntoViewIfNeeded();
+      const candidateList = inspector.locator('[data-picker-scroll="volunteer-candidates"]');
+      assert((await candidateList.locator('input[type="checkbox"]').count()) === 51, "Mobile picker candidate truth differed from desktop.");
+      await assertNoHorizontalOverflow(page, "Mobile picker default");
+      await writeAssignmentPickerCapture(page, "08-mobile-picker-default.png");
+
+      await candidateList.evaluate((element) => {
+        element.scrollTop = Math.floor(element.scrollHeight * 0.55);
+      });
+      assert((await candidateList.evaluate((element) => element.scrollTop)) > 0, "Mobile long list did not scroll internally.");
+      await writeAssignmentPickerCapture(page, "09-mobile-long-list-scrolled.png");
+
+      await inspector.getByRole("button", { name: "Filters", exact: true }).click();
+      const filters = page.getByRole("dialog", { name: "Volunteer filters", exact: true });
+      await filters.waitFor();
+      await writeAssignmentPickerCapture(page, "10-mobile-filters.png");
+      await filters.getByRole("radio", { name: reviewCongregations[2], exact: true }).click();
+      await filters.getByRole("button", { name: "Close Volunteer filters", exact: true }).click();
+      await inspector.getByRole("button", { name: /Filters · 1/, exact: true }).waitFor();
+
+      await inspector
+        .getByRole("button", { name: `View volunteer context for ${reviewVolunteerNames[2]}`, exact: true })
+        .click();
+      const profile = page.getByRole("dialog", {
+        name: `Volunteer context for ${reviewVolunteerNames[2]}`,
+        exact: true,
+      });
+      await profile.waitFor();
+      await profile.getByText(reviewVolunteerNames[2], { exact: true }).waitFor();
+      assert((await profile.getByText(reviewVolunteerNames[3], { exact: true }).count()) === 0, "Mobile context showed the wrong volunteer.");
+      await writeAssignmentPickerCapture(page, "11-mobile-volunteer-context.png");
+      await profile.getByRole("button", { name: `Close Volunteer context for ${reviewVolunteerNames[2]}`, exact: true }).click();
+      assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Closing mobile context lost the Calendar item.");
+      await inspector.getByRole("button", { name: "Reset", exact: true }).click();
+
+      const selectedIndexes = [23, 24, 25];
+      for (const index of selectedIndexes) {
+        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).click();
+      }
+      await inspector.getByText("3 selected", { exact: true }).waitFor();
+      const assignButton = inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true });
+      await assignButton.scrollIntoViewIfNeeded();
+      await assertNoHorizontalOverflow(page, "Mobile picker multi-select");
+      await writeAssignmentPickerCapture(page, "12-mobile-multi-select.png");
+      await Promise.all([page.waitForURL(/notice=assigned/), assignButton.click()]);
+      await inspector.waitFor();
+      await inspector.getByText("0 selected", { exact: true }).waitFor();
+      await inspector.locator('[data-inspector-section="volunteers"]').scrollIntoViewIfNeeded();
+      await inspector.getByText("4/1 filled", { exact: true }).waitFor();
+      await writeAssignmentPickerCapture(page, "13-mobile-post-assignment.png");
+
+      await page.setViewportSize({ width: 360, height: 800 });
+      await assertNoHorizontalOverflow(page, "Narrow mobile picker");
+      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
+      const sortSheet = page.getByRole("dialog", { name: "Volunteer sort", exact: true });
+      await sortSheet.waitFor();
+      await sortSheet.getByRole("radio", { name: "Name Z–A", exact: true }).click();
+      await sortSheet.getByRole("button", { name: "Close Volunteer sort", exact: true }).click();
+      assert(await inspector.isVisible(), "Closing the nested mobile sort sheet closed the Calendar inspector.");
+
+      for (const index of selectedIndexes) {
+        await Promise.all([
+          page.waitForURL(/notice=assignment_canceled/),
+          inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
+        ]);
+        await inspector.waitFor();
+        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).waitFor();
+      }
+      await inspector.getByRole("button", { name: "Close calendar item inspector", exact: true }).click();
+      assert((await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden", "Mobile picker close left the background locked.");
+      await page.setViewportSize(mobileViewport);
+    });
+
     await step("mobile assignment drill-down affordance is usable", async () => {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
         waitUntil: "domcontentloaded",
@@ -2144,9 +2355,7 @@ async function runMobile(browser) {
         page.waitForURL(/notice=created/),
         planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
       ]);
-      const inspector = page.locator(
-        '[role="dialog"][aria-label="Calendar item inspector"]:visible',
-      );
+      const inspector = page.locator('section[aria-label="Calendar item inspector"]');
       await inspector.waitFor();
       await inspector.getByText("Private draft", { exact: true }).waitFor();
       const mobileClose = inspector.getByRole("button", {
@@ -2164,8 +2373,8 @@ async function runMobile(browser) {
       const volunteerChoice = inspector.locator('input[type="checkbox"]').first();
       await volunteerChoice.click();
       assert(await volunteerChoice.isChecked(), "Mobile volunteer choice did not stay selected");
-      const assignButton = inspector.getByRole("button", { name: "Assign selected", exact: true });
-      await expectButtonEnabled(page, assignButton, "Mobile Assign selected");
+      const assignButton = inspector.getByRole("button", { name: "Assign 1 volunteer", exact: true });
+      await expectButtonEnabled(page, assignButton, "Mobile Assign 1 volunteer");
       await Promise.all([
         page.waitForURL(/notice=assigned/),
         assignButton.click(),
@@ -2177,7 +2386,7 @@ async function runMobile(browser) {
         afterAssignmentCloseBox &&
           afterAssignmentCloseBox.y >= 0 &&
           afterAssignmentCloseBox.y < mobileViewport.height,
-        "Mobile inspector close control was not reachable after assignment",
+        `Mobile inspector close control was not reachable after assignment: ${JSON.stringify(afterAssignmentCloseBox)}`,
       );
       await page.evaluate(() => window.scrollTo(0, 0));
       await writeCalendarFlowCapture(page, "12-mobile-post-assignment-inspector.png");

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   CalendarDays,
   CalendarRange,
@@ -12,11 +11,8 @@ import {
   Plus,
   Search,
   Send,
-  SquareArrowOutUpRight,
   SlidersHorizontal,
   Soup,
-  UserPlus,
-  UserMinus,
   Users,
   X,
 } from "lucide-react";
@@ -32,6 +28,11 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
+import {
+  CalendarAssignmentPicker,
+  type CalendarPickerAssignment,
+  type CalendarPickerState,
+} from "@/components/CalendarAssignmentPicker";
 import { EmptyState } from "@/components/EmptyState";
 import { GlassCard } from "@/components/GlassCard";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
@@ -133,16 +134,7 @@ type CalendarTaskPresetSelectorState =
   | Readonly<{ kind: "unavailable"; reason: "missing_tasks_view" }>
   | Readonly<{ kind: "error"; reason: "query_unavailable" | "invalid_projection" }>;
 
-type CalendarAssignmentResponseStatus = "needs_response" | "confirmed" | "declined";
-
-type CalendarAssignmentSummary = {
-  assignmentId: string;
-  calendarItemId: string;
-  volunteerProfileId: string;
-  volunteerDisplayName: string;
-  volunteerCongregation: string | null;
-  responseStatus: CalendarAssignmentResponseStatus;
-};
+type CalendarAssignmentSummary = CalendarPickerAssignment;
 
 type CalendarInitialAssignmentNotificationSummary =
   | Readonly<{
@@ -171,20 +163,7 @@ type CalendarFollowUpContactSelfEdit =
   | Readonly<{ kind: "not_current_contact" }>
   | Readonly<{ kind: "unavailable" }>;
 
-type CalendarAssignmentPickerVolunteer = {
-  id: string;
-  displayName: string;
-  congregation: string | null;
-};
-
-type CalendarAssignmentPickerState =
-  | Readonly<{
-      kind: "ready";
-      volunteers: readonly CalendarAssignmentPickerVolunteer[];
-      assignments: readonly CalendarAssignmentSummary[];
-    }>
-  | Readonly<{ kind: "unavailable"; reason: "missing_volunteers_view" }>
-  | Readonly<{ kind: "error"; reason: "query_unavailable" | "invalid_projection" }>;
+type CalendarAssignmentPickerState = CalendarPickerState;
 
 type CalendarClientDisplayItem = CalendarItemWithPreset & {
   assignments?: readonly CalendarAssignmentSummary[];
@@ -368,22 +347,6 @@ function getCalendarItemScheduleDisplay(item: CalendarItem) {
         heading: "Schedule",
         label: `No specific time · ${startLabel}`,
       };
-}
-
-function getAssignmentResponseLabel(status: CalendarAssignmentResponseStatus) {
-  if (status === "confirmed") return "Confirmed";
-  if (status === "declined") return "Denied";
-  return "Needs response";
-}
-
-function getAssignmentResponseTone(status: CalendarAssignmentResponseStatus) {
-  if (status === "confirmed") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-  if (status === "declined") {
-    return "border-rose-200 bg-rose-50 text-rose-700";
-  }
-  return "border-amber-200 bg-amber-50 text-amber-700";
 }
 
 function isWeekBandCalendarItem(item: CalendarItem) {
@@ -2877,34 +2840,6 @@ function InspectorContent({
     Boolean(publishAction) &&
     Boolean(item.canPublish) &&
     item.publicationState === "draft";
-  const assignedVolunteerIds = new Set(
-    currentAssignments.map((assignment) => assignment.volunteerProfileId),
-  );
-  const [assignmentSearch, setAssignmentSearch] = useState("");
-  const [selectedVolunteerIds, setSelectedVolunteerIds] = useState<string[]>([]);
-  const unassignedSelectedVolunteerIds = selectedVolunteerIds.filter(
-    (volunteerId) => !assignedVolunteerIds.has(volunteerId),
-  );
-  const pickerReady = assignmentPicker.kind === "ready";
-  const eligibleVolunteers = pickerReady
-    ? assignmentPicker.volunteers.filter(
-        (volunteer) => !assignedVolunteerIds.has(volunteer.id),
-      )
-    : [];
-  const normalizedAssignmentSearch = assignmentSearch.trim().toLowerCase();
-  const visiblePickerVolunteers = eligibleVolunteers.filter((volunteer) => {
-    if (!normalizedAssignmentSearch) return true;
-    return [volunteer.displayName, volunteer.congregation]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-      .includes(normalizedAssignmentSearch);
-  });
-  const canAssignHelpers =
-    Boolean(assignAction) &&
-    canEditAssignments &&
-    pickerReady &&
-    eligibleVolunteers.length > 0;
   const initialNotification = item.initialAssignmentNotification;
   const followUpContactSelfEdit = item.followUpContactSelfEdit;
   const canSubmitInitialEmails =
@@ -2914,9 +2849,6 @@ function InspectorContent({
     initialNotification?.kind === "ready" &&
     initialNotification.emailConfigured &&
     initialNotification.eligibleToSendCount > 0;
-  const assignmentCapacityWarning =
-    item.neededCount > 0 &&
-    currentAssignments.length + unassignedSelectedVolunteerIds.length > item.neededCount;
   useEffect(() => {
     if (!editingContactDetails) return;
     const frame = window.requestAnimationFrame(() => contactNameInputRef.current?.focus());
@@ -2924,20 +2856,18 @@ function InspectorContent({
   }, [editingContactDetails]);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      inspectorScrollRef.current
-        ?.querySelector<HTMLElement>(`[data-inspector-section="${focusSection}"]`)
-        ?.scrollIntoView({ block: "start" });
+      const scroller = inspectorScrollRef.current;
+      const target = scroller?.querySelector<HTMLElement>(
+        `[data-inspector-section="${focusSection}"]`,
+      );
+      if (scroller && target) {
+        const scrollerTop = scroller.getBoundingClientRect().top;
+        const targetTop = target.getBoundingClientRect().top;
+        scroller.scrollTo({ top: scroller.scrollTop + targetTop - scrollerTop });
+      }
     });
     return () => window.cancelAnimationFrame(frame);
   }, [focusSection, focusSignal, item.id]);
-  const toggleSelectedVolunteer = (volunteerId: string) => {
-    setSelectedVolunteerIds((current) =>
-      current.includes(volunteerId)
-        ? current.filter((id) => id !== volunteerId)
-        : [...current, volunteerId],
-    );
-  };
-
   return (
     <>
       <p className="sr-only" id={descriptionId}>
@@ -3078,185 +3008,19 @@ function InspectorContent({
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
             STEP 2 · VOLUNTEERS
           </p>
-          <div className="mt-2 divide-y divide-[var(--pl-border)] overflow-hidden rounded-lg border border-[var(--pl-border)]">
-            {currentAssignments.length > 0 ? (
-              currentAssignments.map((assignment) => (
-                <div
-                  className="bg-white px-3 py-2.5"
-                  key={assignment.assignmentId}
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {assignment.volunteerDisplayName}
-                      </p>
-                      {assignment.volunteerCongregation ? (
-                        <p className="mt-1 text-xs font-medium text-slate-500">
-                          {assignment.volunteerCongregation}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span
-                      className={`inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold ${getAssignmentResponseTone(assignment.responseStatus)}`}
-                    >
-                      {getAssignmentResponseLabel(assignment.responseStatus)}
-                    </span>
-                  </div>
-                  {canEditAssignments && cancelAssignmentAction ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <Link
-                        aria-label={`View assignment for ${assignment.volunteerDisplayName}`}
-                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`}
-                        href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}
-                      >
-                        <SquareArrowOutUpRight aria-hidden="true" className="h-3.5 w-3.5" />
-                        View assignment
-                      </Link>
-                      <form action={cancelAssignmentAction}>
-                      <input name="assignmentId" type="hidden" value={assignment.assignmentId} />
-                      <input name="redirectView" type="hidden" value={currentView} />
-                      <input name="redirectDate" type="hidden" value={currentDate} />
-                      <input name="redirectItem" type="hidden" value={item.id} />
-                      <input name="redirectSection" type="hidden" value="volunteers" />
-                      <button
-                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
-                        formAction={cancelAssignmentAction}
-                        type="submit"
-                      >
-                        <UserMinus aria-hidden="true" className="h-3.5 w-3.5" />
-                        Remove assignment
-                      </button>
-                      </form>
-                    </div>
-                  ) : (
-                    <Link
-                      aria-label={`View assignment for ${assignment.volunteerDisplayName}`}
-                      className={`mt-3 inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`}
-                      href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}
-                    >
-                      <SquareArrowOutUpRight aria-hidden="true" className="h-3.5 w-3.5" />
-                      View assignment
-                    </Link>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm font-medium leading-6 text-slate-500">
-                No volunteers are assigned yet.
-              </p>
-            )}
-          </div>
-
-          <div className="mt-3 rounded-lg bg-[var(--pl-surface-subtle)] px-3 py-3">
-            {assignmentPicker.kind === "unavailable" ? (
-              <p className="text-sm leading-6 text-slate-600">
-                Volunteer choices are unavailable for this signed-in contact.
-              </p>
-            ) : assignmentPicker.kind === "error" ? (
-              <p className="text-sm leading-6 text-slate-600">
-                Volunteer choices could not be loaded safely right now.
-              </p>
-            ) : canEditAssignments && assignAction ? (
-              <form action={assignAction} className="space-y-3">
-                <input name="calendarItemId" type="hidden" value={item.id} />
-                <input name="redirectView" type="hidden" value={currentView} />
-                <input name="redirectDate" type="hidden" value={currentDate} />
-                <input name="redirectItem" type="hidden" value={item.id} />
-                <input name="redirectSection" type="hidden" value="volunteers" />
-                {unassignedSelectedVolunteerIds.map((volunteerId) => (
-                  <input
-                    key={volunteerId}
-                    name="volunteerProfileIds"
-                    type="hidden"
-                    value={volunteerId}
-                  />
-                ))}
-                <label className="block">
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                    <UserPlus aria-hidden="true" className="h-4 w-4" />
-                    Assign ready volunteers
-                  </span>
-                  <span className="mt-2 flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
-                    <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
-                    <input
-                      className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
-                      onChange={(event) => setAssignmentSearch(event.target.value)}
-                      placeholder="Search ready volunteers"
-                      type="search"
-                      value={assignmentSearch}
-                    />
-                  </span>
-                </label>
-                <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
-                  {visiblePickerVolunteers.length > 0 ? (
-                    visiblePickerVolunteers.map((volunteer) => (
-                      <label
-                        className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white/78 px-3 py-2.5 text-sm transition hover:bg-white"
-                        key={volunteer.id}
-                      >
-                        <input
-                          checked={selectedVolunteerIds.includes(volunteer.id)}
-                          className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-950"
-                          onChange={() => toggleSelectedVolunteer(volunteer.id)}
-                          type="checkbox"
-                        />
-                        <span className="min-w-0">
-                          <span className="block font-semibold text-slate-800">
-                            {volunteer.displayName}
-                          </span>
-                          {volunteer.congregation ? (
-                            <span className="mt-0.5 block text-xs font-medium text-slate-500">
-                              {volunteer.congregation}
-                            </span>
-                          ) : null}
-                        </span>
-                      </label>
-                    ))
-                  ) : (
-                    <p className="text-sm leading-6 text-slate-500">
-                      {eligibleVolunteers.length === 0
-                        ? "No ready unassigned volunteers are available for this workspace."
-                        : "No ready volunteers match that search."}
-                    </p>
-                  )}
-                </div>
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">
-                    Assignment note
-                  </span>
-                  <textarea
-                    className="mt-2 min-h-20 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                    maxLength={2000}
-                    name="assignmentNote"
-                    placeholder="Optional internal note for this assignment"
-                  />
-                </label>
-                {assignmentCapacityWarning ? (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
-                    This will assign more volunteers than the current needed count.
-                    That is allowed for now, but coverage will show over target.
-                  </p>
-                ) : null}
-                <button
-                  className={[
-                    "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
-                    canAssignHelpers && unassignedSelectedVolunteerIds.length > 0
-                      ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
-                      : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
-                  ].join(" ")}
-                  disabled={!canAssignHelpers || unassignedSelectedVolunteerIds.length === 0}
-                  formAction={assignAction}
-                  type="submit"
-                >
-                  <Check aria-hidden="true" className="h-4 w-4" />
-                  Assign selected
-                </button>
-              </form>
-            ) : (
-              <p className="text-sm leading-6 text-slate-600">
-                This contact can view Calendar assignments but cannot change them.
-              </p>
-            )}
+          <div className="mt-2">
+            <CalendarAssignmentPicker
+              assignAction={assignAction}
+              assignmentPicker={assignmentPicker}
+              canEditAssignments={canEditAssignments}
+              cancelAssignmentAction={cancelAssignmentAction}
+              currentAssignments={currentAssignments}
+              currentDate={currentDate}
+              currentView={currentView}
+              itemId={item.id}
+              key={`${item.id}:${currentAssignments.map((assignment) => assignment.assignmentId).join(",")}`}
+              neededCount={item.neededCount}
+            />
           </div>
         </div>
 

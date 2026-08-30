@@ -23,9 +23,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const source = async (relativePath) =>
   readFile(path.join(repositoryRoot, relativePath), "utf8");
 
-const [calendarSource, needsAttentionSource, detailSource, routeReadSource] =
+const [calendarSource, assignmentPickerSource, needsAttentionSource, detailSource, routeReadSource] =
   await Promise.all([
     source("components/CalendarClient.tsx"),
+    source("components/CalendarAssignmentPicker.tsx"),
     source("app/admin/needs-attention/page.tsx"),
     source("app/admin/assignments/[assignmentId]/page.tsx"),
     source("lib/needsAttention/routeRead.server.ts"),
@@ -38,11 +39,11 @@ assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, true);
 assert.equal(ASSIGNMENT_DETAIL_VOLUNTEERS_ENTRY_LINKAGE_AVAILABLE, false);
 
 assert.match(
-  calendarSource,
+  assignmentPickerSource,
   /href={`\/admin\/assignments\/\$\{encodeURIComponent\(assignment\.assignmentId\)\}`}/,
 );
-assert.match(calendarSource, /View assignment for \$\{assignment\.volunteerDisplayName\}/);
-assert.doesNotMatch(calendarSource, /admin\/assignments\/[^`]*\?(?:workspace|contact|role|capabilit|token)/i);
+assert.match(assignmentPickerSource, /View assignment for \$\{assignment\.volunteerDisplayName\}/);
+assert.doesNotMatch(`${calendarSource}\n${assignmentPickerSource}`, /admin\/assignments\/[^`]*\?(?:workspace|contact|role|capabilit|token)/i);
 assert.match(
   needsAttentionSource,
   /href={`\/admin\/assignments\/\$\{encodeURIComponent\(assignmentLinks\[0\]\.assignmentId\)\}`}/,

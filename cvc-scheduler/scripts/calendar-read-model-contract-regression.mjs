@@ -361,7 +361,7 @@ assert.deepEqual(
 );
 assert.deepEqual(assignmentDetailLinks, [
   "app/admin/needs-attention/page.tsx",
-  "components/CalendarClient.tsx",
+  "components/CalendarAssignmentPicker.tsx",
 ]);
 assert.deepEqual(serviceRoleMarkers, []);
 
