@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       assignment_notification_deliveries: {
@@ -501,6 +496,61 @@ export type Database = {
           volunteer_facing_phone?: string | null
         }
         Relationships: []
+      }
+      project_days: {
+        Row: {
+          created_at: string
+          created_by_project_contact_id: string
+          expected_on_site_count: number | null
+          id: string
+          project_date: string
+          updated_at: string
+          updated_by_project_contact_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_project_contact_id: string
+          expected_on_site_count?: number | null
+          id?: string
+          project_date: string
+          updated_at?: string
+          updated_by_project_contact_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_project_contact_id?: string
+          expected_on_site_count?: number | null
+          id?: string
+          project_date?: string
+          updated_at?: string
+          updated_by_project_contact_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_days_created_by_project_contact_id_fkey"
+            columns: ["created_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_days_updated_by_project_contact_id_fkey"
+            columns: ["updated_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_days_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       questionnaire_submissions: {
         Row: {
@@ -1160,6 +1210,15 @@ export type Database = {
       revoke_volunteer_schedule_access: {
         Args: { p_token_id: string }
         Returns: string
+      }
+      set_current_project_day_expected_on_site: {
+        Args: { p_expected_on_site_count: number; p_project_date: string }
+        Returns: {
+          created_at: string
+          expected_on_site_count: number
+          project_date: string
+          updated_at: string
+        }[]
       }
       submit_assignment_response_by_token: {
         Args: {

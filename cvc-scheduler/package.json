@@ -93,7 +93,9 @@
     "test:overview": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-persisted-regression.mjs",
     "test:overview:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-browser-regression.mjs",
     "test:needs-attention": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/needs-attention-regression.mjs",
-    "test:needs-attention:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/needs-attention-browser-regression.mjs"
+    "test:needs-attention:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/needs-attention-browser-regression.mjs",
+    "test:operational-data-foundation": "node --no-warnings --experimental-strip-types scripts/operational-data-foundation-regression.mjs",
+    "test:project-day-persistence": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-day-persistence-regression.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
