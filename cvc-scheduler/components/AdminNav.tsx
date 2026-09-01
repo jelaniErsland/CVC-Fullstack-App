@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronDown,
   ClipboardList,
+  Eye,
   FolderKanban,
   Home,
   MessageSquare,
@@ -20,6 +21,7 @@ export type AdminNavActive =
   | "projects"
   | "overview"
   | "calendar"
+  | "quick-view"
   | "tasks"
   | "volunteers"
   | "questionnaires"
@@ -59,6 +61,7 @@ const navItems: Array<{
     label: "Needs Attention",
     href: "/admin/needs-attention",
   },
+  { id: "quick-view", icon: Eye, label: "Quick View", href: "/admin/quick-view" },
   { id: "volunteers", icon: Users, label: "Volunteers", href: "/admin/volunteers" },
   {
     id: "announcements",

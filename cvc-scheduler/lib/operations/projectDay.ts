@@ -15,6 +15,13 @@ export type SetProjectDayExpectedOnSiteInput = Readonly<{
   expectedOnSiteCount: number | null;
 }>;
 
+export type ProjectDayMutationState = Readonly<{
+  status: "idle" | "success" | "validation" | "unavailable" | "error";
+  date: string;
+  expectedOnSiteCount: number | null;
+  message: string;
+}>;
+
 export class ProjectDayValidationError extends Error {
   readonly issues: readonly string[];
 
@@ -84,6 +91,24 @@ export function validateSetProjectDayExpectedOnSiteInput(
   return { date, expectedOnSiteCount: count as number | null };
 }
 
+export function parseProjectDayExpectedOnSiteFormValue(value: unknown) {
+  if (typeof value !== "string") {
+    throw new ProjectDayValidationError(["Enter a whole number or leave it blank."]);
+  }
+  const normalized = value.trim();
+  if (normalized.length === 0) return null;
+  if (!/^(0|[1-9]\d*)$/.test(normalized)) {
+    throw new ProjectDayValidationError(["Enter a whole number of zero or more."]);
+  }
+  const count = Number(normalized);
+  if (!Number.isSafeInteger(count) || count > PROJECT_DAY_EXPECTED_ON_SITE_MAX) {
+    throw new ProjectDayValidationError([
+      `Enter a whole number from 0 to ${PROJECT_DAY_EXPECTED_ON_SITE_MAX}.`,
+    ]);
+  }
+  return count;
+}
+
 export function parseProjectDay(value: unknown): ProjectDay {
   if (!isRecord(value)) {
     throw new ProjectDayValidationError(["Project Day row must be an object."]);
@@ -148,4 +173,59 @@ export function selectOperationalWorkspace(input: {
   const workspace = activeWorkspaces.get(workspaceId);
   if (!workspace) return { ok: false, reason: "workspace_unavailable" };
   return { ok: true, workspace, capabilities: [...capabilities].sort() };
+}
+
+export type AuthorizedOperationalWorkspace = Readonly<{
+  workspace: WorkspaceIdentity;
+  capabilities: readonly string[];
+}>;
+
+export function listAuthorizedOperationalWorkspaces(input: {
+  projectContactId: string;
+  ownGrants: readonly ProjectContactGrant[];
+  workspaces: readonly WorkspaceIdentity[];
+  requiredCapability: "calendar.view" | "calendar.edit" | "volunteers.view";
+  at?: Date;
+}): readonly AuthorizedOperationalWorkspace[] {
+  const activeWorkspaces = new Map(
+    input.workspaces
+      .filter((workspace) => workspace.lifecycle === "active")
+      .map((workspace) => [workspace.id, workspace]),
+  );
+  const candidates = new Map<string, Set<string>>();
+  for (const grant of input.ownGrants) {
+    if (grant.projectContactId !== input.projectContactId) continue;
+    if (!isEffectiveWorkspaceReadGrant(grant, input.at)) continue;
+    if (!activeWorkspaces.has(grant.workspaceId)) continue;
+    const capabilities = candidates.get(grant.workspaceId) ?? new Set<string>();
+    for (const capability of grant.capabilities) capabilities.add(capability);
+    candidates.set(grant.workspaceId, capabilities);
+  }
+  return [...candidates.entries()]
+    .filter(([, capabilities]) => capabilities.has(input.requiredCapability))
+    .map(([workspaceId, capabilities]) => ({
+      workspace: activeWorkspaces.get(workspaceId)!,
+      capabilities: [...capabilities].sort(),
+    }))
+    .sort((left, right) =>
+      left.workspace.displayName.localeCompare(right.workspace.displayName),
+    );
+}
+
+export function selectAuthorizedOperationalWorkspace(input: {
+  projectContactId: string;
+  ownGrants: readonly ProjectContactGrant[];
+  workspaces: readonly WorkspaceIdentity[];
+  requiredCapability: "calendar.view" | "calendar.edit" | "volunteers.view";
+  workspaceKey: unknown;
+  at?: Date;
+}) {
+  if (typeof input.workspaceKey !== "string") return null;
+  const workspaceKey = input.workspaceKey.trim();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workspaceKey)) return null;
+  return (
+    listAuthorizedOperationalWorkspaces(input).find(
+      ({ workspace }) => workspace.key === workspaceKey,
+    ) ?? null
+  );
 }

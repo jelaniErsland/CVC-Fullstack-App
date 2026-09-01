@@ -34,6 +34,7 @@ import type {
 } from "./readModel.server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
+import { readAuthorizedQuickViewSafeProjection } from "../operations/projectQuickView.server.ts";
 
 type CalendarClientCategory =
   | "general"
@@ -154,6 +155,11 @@ type CalendarClientStateBase = Readonly<{
   anchorDate: string;
   queriedRange: CalendarRouteQueriedRange;
 }>;
+type CalendarClientProjectDayDetails = Readonly<{
+  date: string;
+  expectedOnSiteCount: number | null;
+  publishedScheduleCount: number;
+}>;
 type CalendarTaskPresetSelectorClientState =
   | Readonly<{ kind: "ready_with_presets"; presets: readonly CalendarClientTaskPreset[] }>
   | Readonly<{ kind: "ready_empty"; presets: readonly [] }>
@@ -177,6 +183,7 @@ type CalendarClientState =
         canEditAssignments: boolean;
         canViewVolunteers: boolean;
         canViewTaskPresets: boolean;
+        projectDayDetails: CalendarClientProjectDayDetails | null;
         taskPresetSelector: CalendarTaskPresetSelectorClientState;
         assignmentPicker: CalendarAssignmentPickerClientState;
       }>)
@@ -809,6 +816,13 @@ export async function readCalendarRouteState(
 ): Promise<CalendarClientState> {
   const routeRequest = normalizeCalendarRouteSearchParams(searchParams);
   if (!routeRequest.ok) return unavailableState("invalid_period_or_range");
+  const rawProjectDayDate = firstSearchParam(searchParams?.day);
+  const projectDayDate = rawProjectDayDate === undefined
+    ? null
+    : normalizeDate(rawProjectDayDate);
+  if (rawProjectDayDate !== undefined && !projectDayDate) {
+    return unavailableState("invalid_period_or_range");
+  }
 
   try {
     const { resolveVerifiedAdminContext } = await import(
@@ -851,6 +865,14 @@ export async function readCalendarRouteState(
         canViewTaskPresets: workspaceSelection.canViewTaskPresets,
       }),
     ]);
+
+    const projectDayProjection = projectDayDate
+      ? await readAuthorizedQuickViewSafeProjection(
+          verified,
+          projectDayDate,
+          workspaceSelection.workspace.key,
+        )
+      : null;
 
     if (!query.ok) {
       return isUnavailableQueryFailure(query.reason)
@@ -896,6 +918,13 @@ export async function readCalendarRouteState(
         workspaceSelection.projectContactId,
       ),
     );
+    const projectDayDetails = projectDayProjection
+      ? {
+          date: projectDayProjection.date,
+          expectedOnSiteCount: projectDayProjection.expectedOnSiteCount,
+          publishedScheduleCount: projectDayProjection.publishedSchedule.length,
+        }
+      : null;
     return items.length > 0
       ? {
           kind: "ready_with_items",
@@ -905,6 +934,7 @@ export async function readCalendarRouteState(
           canEditAssignments: workspaceSelection.canEditAssignments,
           canViewVolunteers: workspaceSelection.canViewVolunteers,
           canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+          projectDayDetails,
           taskPresetSelector,
           assignmentPicker,
           view: range.periodKind,
@@ -919,6 +949,7 @@ export async function readCalendarRouteState(
           canEditAssignments: workspaceSelection.canEditAssignments,
           canViewVolunteers: workspaceSelection.canViewVolunteers,
           canViewTaskPresets: workspaceSelection.canViewTaskPresets,
+          projectDayDetails,
           taskPresetSelector,
           assignmentPicker,
           view: range.periodKind,

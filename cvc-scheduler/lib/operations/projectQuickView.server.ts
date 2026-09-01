@@ -2,6 +2,7 @@ import "server-only";
 
 import type { VerifiedAdminContext } from "../auth/verified-admin-context.server.ts";
 import {
+  selectAuthorizedOperationalWorkspace,
   normalizeProjectDate,
   parseProjectDay,
   selectOperationalWorkspace,
@@ -94,15 +95,26 @@ async function readSafeOperationalSources(
 export async function readAuthorizedQuickViewSafeProjection(
   context: VerifiedAdminContext,
   dateInput: unknown,
+  workspaceKeyInput?: unknown,
 ) {
   const date = normalizeProjectDate(dateInput);
-  const selection = selectOperationalWorkspace({
-    projectContactId: context.projectContactId,
-    ownGrants: context.ownGrants,
-    workspaces: context.workspaces,
-    requiredCapability: "calendar.view",
-  });
-  if (!selection.ok) throw new Error("Quick View is unavailable.");
+  const selection = workspaceKeyInput === undefined
+    ? selectOperationalWorkspace({
+        projectContactId: context.projectContactId,
+        ownGrants: context.ownGrants,
+        workspaces: context.workspaces,
+        requiredCapability: "calendar.view",
+      })
+    : selectAuthorizedOperationalWorkspace({
+        projectContactId: context.projectContactId,
+        ownGrants: context.ownGrants,
+        workspaces: context.workspaces,
+        requiredCapability: "calendar.view",
+        workspaceKey: workspaceKeyInput,
+      });
+  if (!selection || !("workspace" in selection) || ("ok" in selection && !selection.ok)) {
+    throw new Error("Quick View is unavailable.");
+  }
   const source = await readSafeOperationalSources(
     context,
     selection.workspace.id,

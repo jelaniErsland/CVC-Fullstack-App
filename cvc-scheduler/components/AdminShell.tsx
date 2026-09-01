@@ -5,6 +5,7 @@ import {
   Bell,
   CalendarDays,
   ClipboardList,
+  Eye,
   FileQuestion,
   Home,
   LayoutGrid,
@@ -105,6 +106,7 @@ const moreGroups: Array<{
   {
     title: "Workspace",
     links: [
+      { label: "Project Quick View", href: "/admin/quick-view", icon: Eye },
       { label: "Settings", href: "/admin/settings", icon: Settings },
       { label: "Project Workspaces", href: "/admin/projects", icon: LayoutGrid, note: "Preview" },
     ],
@@ -297,6 +299,7 @@ function MobileMoreSheet({
 
                     return (
                       <Link
+                        aria-current={isActive ? "page" : undefined}
                         className={[
                           "flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2 text-sm font-semibold transition",
                           isActive
@@ -338,6 +341,7 @@ function getActiveIdForMoreHref(href: string): AdminNavActive | undefined {
     "/admin/announcements/templates": "announcements",
     "/admin/settings": "settings",
     "/admin/projects": "projects",
+    "/admin/quick-view": "quick-view",
     "/admin/questionnaires": "questionnaires",
     "/admin/needs-attention": "needs-attention",
     "/admin/volunteers": "volunteers",

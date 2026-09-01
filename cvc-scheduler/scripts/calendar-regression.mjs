@@ -37,6 +37,10 @@ const writeCalendarFlowReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
 const writeAssignmentPickerReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2B_CAPTURES === "1";
+const projectDayQuickViewOnly =
+  process.env.PROJECT_DAY_QUICK_VIEW_ONLY === "1";
+const writeProjectDayQuickViewCaptures =
+  process.env.WRITE_ITERATION_12_44E2_CAPTURES === "1";
 const writeAffectedCalendarFlowReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2A_AFFECTED_CAPTURES === "1";
 const affectedCalendarFlowCaptureNames = new Set([
@@ -54,7 +58,9 @@ const iterationReviewDir = path.resolve(
   "..",
   "previews",
   "beta-review",
-  writeAssignmentPickerReviewScreenshots
+  writeProjectDayQuickViewCaptures
+    ? "iteration-12-44e2-project-day-quick-view"
+    : writeAssignmentPickerReviewScreenshots
     ? "iteration-12-44d2b-assignment-picker"
     : writeCalendarFlowReviewScreenshots
     ? "iteration-12-44d2a-calendar-flow"
@@ -64,7 +70,8 @@ const writeNamedReviewScreenshots =
   writeBetaReviewScreenshots ||
   writeAssignmentDetailReviewScreenshots ||
   writeCalendarFlowReviewScreenshots ||
-  writeAssignmentPickerReviewScreenshots;
+  writeAssignmentPickerReviewScreenshots ||
+  writeProjectDayQuickViewCaptures;
 const reviewWorkspaceName = writeNamedReviewScreenshots
   ? "Bozeman Local Project"
   : "QA 12.12 Calendar Workspace";
@@ -122,6 +129,8 @@ const fixture = {
     doorCheck: randomUUID(),
     supplyRun: randomUUID(),
     nextWeekSupplies: randomUUID(),
+    quickViewSecurity: randomUUID(),
+    quickViewDraft: randomUUID(),
   },
   assignmentIds: {
     gate: randomUUID(),
@@ -448,6 +457,23 @@ insert into public.calendar_assignments (
 insert into public.assignment_responses (
   id, workspace_id, assignment_id, response_status, response_source, responded_at, updated_by_auth_user_id
 ) values ${responseRows(fullUserId)};
+${projectDayQuickViewOnly ? `
+insert into public.project_days (
+  workspace_id, project_date, expected_on_site_count,
+  created_by_project_contact_id, updated_by_project_contact_id
+)
+values
+  ('${fixture.workspaceId}'::uuid, '2026-01-13', 47, '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid),
+  ('${fixture.workspaceId}'::uuid, '2026-01-20', 0, '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid);
+insert into public.calendar_items (
+  id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
+  schedule_kind, start_date, end_date, start_time, end_time, timezone,
+  needed_count, schedule_notes, custom_values, lifecycle,
+  follow_up_project_contact_id, created_by_project_contact_id, publication_state,
+  published_at, published_by_project_contact_id
+) values
+  ('${fixture.calendarItemIds.quickViewSecurity}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Restricted security post alpha', 'security', 'timed', '2026-01-13', null, '11:00:00', '12:00:00', 'America/Denver', 2, 'Restricted security instructions', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.quickViewDraft}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Private draft operations', 'general', 'timed', '2026-01-13', null, '12:00:00', '13:00:00', 'America/Denver', 9, 'Private draft note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'draft', null, null);` : ""}
 commit;`);
 }
 
@@ -458,6 +484,7 @@ async function cleanupFixtures(containerName) {
   const residue = runPsql(containerName, `begin;
 delete from public.assignment_responses where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.calendar_assignments where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
+delete from public.project_days where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.calendar_items where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.task_presets where workspace_id = '${fixture.workspaceId}'::uuid;
 delete from public.volunteer_profiles where workspace_id = '${fixture.workspaceId}'::uuid;
@@ -501,6 +528,15 @@ async function writeCalendarFlowCapture(page, filename, locator) {
 
 async function writeAssignmentPickerCapture(page, filename) {
   if (!writeAssignmentPickerReviewScreenshots) return;
+  await mkdir(iterationReviewDir, { recursive: true });
+  await page.screenshot({
+    path: path.join(iterationReviewDir, filename),
+    fullPage: false,
+  });
+}
+
+async function writeProjectDayQuickViewCapture(page, filename) {
+  if (!writeProjectDayQuickViewCaptures) return;
   await mkdir(iterationReviewDir, { recursive: true });
   await page.screenshot({
     path: path.join(iterationReviewDir, filename),
@@ -2458,6 +2494,229 @@ async function runMobile(browser) {
   }
 }
 
+function projectDayCalendarUrl(date) {
+  return createPreviewUrl(
+    baseUrl,
+    `/admin/calendar?view=month&date=2026-01-13&day=${date}`,
+  );
+}
+
+function quickViewUrl(date = "2026-01-13", project = `${fixture.namespace}-target`) {
+  return createPreviewUrl(
+    baseUrl,
+    `/admin/quick-view?project=${encodeURIComponent(project)}&date=${date}`,
+  );
+}
+
+async function waitForProjectDaySave(page) {
+  await page.getByRole("button", { name: "Save expected count", exact: true }).waitFor();
+  assert(
+    !(await page.getByRole("button", { name: "Save expected count", exact: true }).isDisabled()),
+    "Project Day save did not settle.",
+  );
+}
+
+async function runProjectDayQuickViewDesktop(browser, containerName) {
+  const context = await browser.newContext({ viewport: desktopViewport });
+  await applyAuthCookies(context, "full");
+  const page = await context.newPage();
+  const errors = watchPageErrors(page);
+  const step = createStepRunner("project-day-quick-view desktop", page);
+  page.setDefaultTimeout(10_000);
+
+  try {
+    await step("Calendar date affordance opens unknown Project Day", async () => {
+      await page.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByRole("button", { name: "Month", exact: true }).click();
+      await page.getByRole("button", { name: "Open day details for Fri Jan 16", exact: true }).click();
+      await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
+      await page.waitForURL((url) => url.searchParams.get("day") === "2026-01-16");
+      assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Calendar did not preserve the selected Project Day in route context.");
+      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "", "Unknown Project Day should render a blank input.");
+      await writeProjectDayQuickViewCapture(page, "01-desktop-calendar-project-day-entry.png");
+    });
+
+    await step("Project Day set, update, zero, and clear persist without event changes", async () => {
+      const input = page.getByLabel("Expected on site", { exact: true });
+      const save = page.getByRole("button", { name: "Save expected count", exact: true });
+      for (const [value, expectedSql] of [["31", "31"], ["52", "52"], ["0", "0"]]) {
+        await input.fill(value);
+        await save.click();
+        await waitForProjectDaySave(page);
+        assert(
+          runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === expectedSql,
+          `Project Day value ${value} did not persist.`,
+        );
+      }
+      await input.fill("");
+      await save.click();
+      await waitForProjectDaySave(page);
+      assert(
+        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
+        "Clearing Project Day did not persist null.",
+      );
+      assert(
+        runPsql(containerName, `select count(*) from public.calendar_items where workspace_id = '${fixture.workspaceId}'::uuid and id in ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.calendarItemIds.siteWindow}'::uuid);`) === "2",
+        "Project Day edits changed Calendar event truth.",
+      );
+      assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Project Day save lost Calendar day context.");
+    });
+
+    await step("Project Day validation remains local and humane", async () => {
+      const input = page.getByLabel("Expected on site", { exact: true });
+      for (const value of ["-1", "1.5", "four"]) {
+        await input.fill(value);
+        await page.getByRole("button", { name: "Save expected count", exact: true }).click();
+        await page.getByText("Enter a whole number of zero or more.", { exact: true }).waitFor();
+      }
+      assert(
+        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
+        "Invalid Project Day input mutated persistence.",
+      );
+    });
+
+    await step("existing Project Day count renders in Calendar", async () => {
+      await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
+      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Existing Project Day value did not render.");
+      await writeProjectDayQuickViewCapture(page, "03-desktop-calendar-existing-headcount.png");
+    });
+
+    await step("Quick View selected project uses only safe published projection", async () => {
+      await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
+      const body = await page.locator("body").innerText();
+      for (const forbidden of [
+        "Restricted security post alpha",
+        "Restricted security instructions",
+        "Private draft operations",
+        "Private draft note",
+        "QA 12.12 Other Workspace",
+        "qa-12-12-volunteer",
+        fixture.workspaceId,
+        fixture.calendarItemIds.gate,
+      ]) assert(!body.includes(forbidden), `Quick View leaked ${forbidden}.`);
+      assert(body.includes("47 people"), "Quick View did not show expected-on-site count.");
+      assert(body.includes("Gate attendant"), "Quick View did not show safe published schedule.");
+      assert(body.includes("Site support week"), "Quick View did not show safe published multi-day work.");
+      await writeProjectDayQuickViewCapture(page, "05-desktop-quick-view-selected-project.png");
+    });
+
+    await step("Quick View project search exposes only authorized projects", async () => {
+      const search = page.getByLabel("Find a project", { exact: true });
+      await search.fill("QA 12.12 Other Workspace");
+      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
+      assert((await page.getByRole("link", { name: "QA 12.12 Other Workspace", exact: true }).count()) === 0, "Unauthorized project appeared in search.");
+      await writeProjectDayQuickViewCapture(page, "06-desktop-quick-view-project-search.png");
+      await search.fill("");
+    });
+
+    await step("Quick View day navigation preserves zero and null distinctly", async () => {
+      await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByText("0 people", { exact: true }).waitFor();
+      await writeProjectDayQuickViewCapture(page, "07-desktop-quick-view-another-date.png");
+      await page.goto(quickViewUrl("2026-01-16"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByText("Not set", { exact: true }).waitFor();
+      await writeProjectDayQuickViewCapture(page, "08-desktop-quick-view-unknown-headcount.png");
+      const previous = page.getByRole("link", { name: "Previous day", exact: true });
+      const next = page.getByRole("link", { name: "Next day", exact: true });
+      assert(new URL(await previous.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-15", "Previous day target is wrong.");
+      assert(new URL(await next.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-17", "Next day target is wrong.");
+      await page.getByLabel("Project date", { exact: true }).fill("2026-01-13");
+      await page.getByRole("button", { name: "Go", exact: true }).click();
+      await page.getByText("47 people", { exact: true }).waitFor();
+    });
+
+    await step("project key guessing and anonymous access fail closed", async () => {
+      await page.goto(quickViewUrl("2026-01-13", `${fixture.namespace}-other`), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByText("Quick View unavailable", { exact: true }).waitFor();
+      const anonymousContext = await browser.newContext({ viewport: desktopViewport });
+      try {
+        const anonymousPage = await anonymousContext.newPage();
+        await anonymousPage.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+        await anonymousPage.getByText("Quick View unavailable", { exact: true }).waitFor();
+      } finally {
+        await anonymousContext.close();
+      }
+    });
+
+    await step("desktop Quick View has no browser errors", async () => {
+      assert(errors.length === 0, errors.join("\n"));
+    });
+  } finally {
+    await context.close();
+  }
+}
+
+async function runProjectDayQuickViewMobile(browser) {
+  const context = await browser.newContext({ viewport: mobileViewport });
+  await applyAuthCookies(context, "full");
+  const page = await context.newPage();
+  const errors = watchPageErrors(page);
+  const step = createStepRunner("project-day-quick-view mobile", page);
+  page.setDefaultTimeout(10_000);
+
+  try {
+    await step("mobile Calendar Project Day uses shared overlay", async () => {
+      await page.goto(projectDayCalendarUrl("2026-01-16"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      const dialog = page.getByRole("dialog", { name: "project day details", exact: true });
+      await dialog.waitFor();
+      await assertNoHorizontalOverflow(page, "Mobile Project Day");
+      await writeProjectDayQuickViewCapture(page, "02-mobile-calendar-project-day-entry.png");
+      await page.getByRole("button", { name: "Close project day details", exact: true }).click();
+      await dialog.waitFor({ state: "hidden" });
+
+      await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByRole("dialog", { name: "project day details", exact: true }).waitFor();
+      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Mobile existing Project Day count is wrong.");
+      await writeProjectDayQuickViewCapture(page, "04-mobile-calendar-existing-headcount.png");
+    });
+
+    await step("mobile Quick View is compact and navigable", async () => {
+      await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
+      await assertNoHorizontalOverflow(page, "Mobile Quick View");
+      await writeProjectDayQuickViewCapture(page, "09-mobile-quick-view.png");
+      const search = page.getByLabel("Find a project", { exact: true });
+      await search.fill("Other Workspace");
+      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
+      await search.blur();
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await writeProjectDayQuickViewCapture(page, "10-mobile-quick-view-project-search.png");
+    });
+
+    await step("mobile another date and populated schedule remain readable", async () => {
+      await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByText("0 people", { exact: true }).waitFor();
+      await writeProjectDayQuickViewCapture(page, "11-mobile-quick-view-another-date.png");
+      await page.goto(quickViewUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.getByText("Gate attendant", { exact: true }).waitFor();
+      await writeProjectDayQuickViewCapture(page, "12-mobile-quick-view-populated-schedule.png");
+    });
+
+    await step("mobile More includes Quick View without another nav paradigm", async () => {
+      await page.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
+      const link = page.getByRole("link", { name: "Project Quick View", exact: true });
+      await link.waitFor();
+      assert((await link.getAttribute("aria-current")) === "page", "Mobile More does not mark Quick View active.");
+      await page.getByRole("button", { name: "Close more admin navigation", exact: true }).click();
+    });
+
+    await step("360px Quick View has no overflow", async () => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await assertNoHorizontalOverflow(page, "360px Quick View");
+      await writeProjectDayQuickViewCapture(page, "13-narrow-360-quick-view.png");
+    });
+
+    await step("mobile Quick View has no browser errors", async () => {
+      assert(errors.length === 0, errors.join("\n"));
+    });
+  } finally {
+    await context.close();
+  }
+}
+
 async function runUnavailable(browser) {
   const context = await browser.newContext({ viewport: desktopViewport });
   await applyAuthCookies(context, "calendar-only");
@@ -2562,16 +2821,25 @@ async function main() {
     await createFixtures(containerName);
     await assertPreviewAvailable();
     browser = await launchBrowser();
-    await runUnavailable(browser);
-    await runDesktop(browser);
-    await runMobile(browser);
+    if (projectDayQuickViewOnly) {
+      await runProjectDayQuickViewDesktop(browser, containerName);
+      await runProjectDayQuickViewMobile(browser);
+    } else {
+      await runUnavailable(browser);
+      await runDesktop(browser);
+      await runMobile(browser);
+    }
   } finally {
     await browser?.close();
     await cleanupFixtures(containerName);
   }
   assert(cleanupCompleted, "Calendar route browser fixture cleanup did not complete.");
 
-  console.log("Calendar interaction regression passed.");
+  console.log(
+    projectDayQuickViewOnly
+      ? "Project Day and Quick View browser regression passed."
+      : "Calendar interaction regression passed.",
+  );
 }
 
 main().catch((error) => {

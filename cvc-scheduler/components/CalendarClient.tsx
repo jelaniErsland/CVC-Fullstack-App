@@ -20,6 +20,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type Ref,
+  useActionState,
   useEffect,
   useId,
   useMemo,
@@ -28,6 +29,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/AdminShell";
+import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
 import {
   CalendarAssignmentPicker,
   type CalendarPickerAssignment,
@@ -69,12 +71,17 @@ import type {
   CalendarStatusTone,
   TaskPresetCategory,
 } from "@/lib/mockData";
+import type { ProjectDayMutationState } from "@/lib/operations/projectDay";
 
 type CalendarViewMode = "day" | "week" | "month" | "list";
-type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect";
+type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect" | "projectDay";
 type CalendarInspectorSection = "details" | "volunteers" | "visibility" | "notification";
 type CreationMode = "preset" | "oneOff";
 type CalendarMutationAction = (formData: FormData) => void | Promise<void>;
+type ProjectDayMutationAction = (
+  previousState: ProjectDayMutationState,
+  formData: FormData,
+) => Promise<ProjectDayMutationState>;
 type CalendarPublicationState = "draft" | "published";
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 const calmFocusRing =
@@ -694,6 +701,7 @@ function CalendarWorkspaceHeader({
   activeView,
   filteredItemCount,
   onFilterOpen,
+  onOpenProjectDay,
   onCreate,
   onNavigateNext,
   onNavigatePrevious,
@@ -709,6 +717,7 @@ function CalendarWorkspaceHeader({
   activeView: CalendarViewMode;
   filteredItemCount: number;
   onFilterOpen: () => void;
+  onOpenProjectDay: () => void;
   onCreate: () => void;
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
@@ -730,9 +739,20 @@ function CalendarWorkspaceHeader({
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 items-center justify-between gap-2">
           <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
-            {periodLabel}
-          </h2>
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="truncate text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
+              {periodLabel}
+            </h2>
+            <button
+              aria-label="Open day details for the selected date"
+              className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/65 px-2.5 text-[11px] font-semibold text-[var(--pl-blue)] transition hover:bg-blue-50 ${calmFocusRing}`}
+              onClick={onOpenProjectDay}
+              type="button"
+            >
+              <Users aria-hidden="true" className="h-3.5 w-3.5" />
+              Day details
+            </button>
+          </div>
           <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
             {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
             {activeFilterSummary}
@@ -1431,12 +1451,14 @@ function DayView({
   date,
   items,
   onCreateFromSlot,
+  onOpenDayDetails,
   selectedId,
   onSelect,
 }: {
   date: string;
   items: CalendarItem[];
   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
+  onOpenDayDetails: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
@@ -1457,6 +1479,20 @@ function DayView({
 
   return (
     <section className="overflow-hidden bg-white">
+      <div className="flex items-center justify-between border-b border-slate-200/80 bg-blue-50/35 px-3 py-2 sm:px-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Project day</p>
+          <p className="mt-0.5 text-sm font-semibold text-[var(--pl-ink)]">{getCalendarCompactDayLabel(date)}</p>
+        </div>
+        <button
+          className={`inline-flex min-h-9 items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 text-xs font-semibold text-[var(--pl-blue)] transition hover:bg-blue-50 ${calmFocusRing}`}
+          onClick={() => onOpenDayDetails(date)}
+          type="button"
+        >
+          <Users aria-hidden="true" className="h-4 w-4" />
+          Expected on site
+        </button>
+      </div>
       {visibleContextItem ? (
         <div
           aria-label={`Project context for ${getCalendarCompactDayLabel(date)}`}
@@ -1582,6 +1618,7 @@ function MonthView({
   items,
   onCreateFromSlot,
   onFocusDate,
+  onOpenDayDetails,
   selectedId,
   onSelect,
   referenceDate,
@@ -1589,6 +1626,7 @@ function MonthView({
   items: CalendarItem[];
   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   onFocusDate: (date: string) => void;
+  onOpenDayDetails: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
@@ -1647,9 +1685,15 @@ function MonthView({
                 type="button"
               />
               <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
-                <span className="text-[10px] font-semibold leading-3 text-slate-500 sm:text-xs sm:leading-4">
+                <button
+                  aria-label={`Open day details for ${getCalendarCompactDayLabel(date)}`}
+                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] sm:text-xs sm:leading-4 ${calmFocusRing}`}
+                  onClick={() => onOpenDayDetails(date)}
+                  title="Open day details"
+                  type="button"
+                >
                   {Number(date.slice(-2))}
-                </span>
+                </button>
                 <div className="mt-1 space-y-0.5">
                   {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item, index) => (
                     <button
@@ -3373,6 +3417,11 @@ export type CalendarClientState =
       canViewTaskPresets: boolean;
       taskPresetSelector: CalendarTaskPresetSelectorState;
       assignmentPicker: CalendarAssignmentPickerState;
+      projectDayDetails: Readonly<{
+        date: string;
+        expectedOnSiteCount: number | null;
+        publishedScheduleCount: number;
+      }> | null;
       view: CalendarViewMode;
       anchorDate: string;
       queriedRange: CalendarClientQueriedRange;
@@ -3394,6 +3443,200 @@ type CalendarClientQueriedRange = Readonly<{
   bounded: true;
   rangeSemantics: "server_derived_start_inclusive_end_exclusive";
 }>;
+
+const initialProjectDayMutationState: ProjectDayMutationState = {
+  status: "idle",
+  date: "",
+  expectedOnSiteCount: null,
+  message: "",
+};
+
+function getProjectDayLongLabel(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+    weekday: "long",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function ProjectDayEditor({
+  action,
+  canEdit,
+  details,
+}: {
+  action: ProjectDayMutationAction;
+  canEdit: boolean;
+  details: Readonly<{
+    date: string;
+    expectedOnSiteCount: number | null;
+    publishedScheduleCount: number;
+  }>;
+}) {
+  const [actionState, formAction, isPending] = useActionState(
+    action,
+    initialProjectDayMutationState,
+  );
+  const inputId = useId();
+  const inputMessageId = useId();
+  const hasMessage = actionState.status !== "idle";
+  const hasError =
+    actionState.status === "validation" ||
+    actionState.status === "unavailable" ||
+    actionState.status === "error";
+  const visibleCount =
+    actionState.status === "success" && actionState.date === details.date
+      ? actionState.expectedOnSiteCount
+      : details.expectedOnSiteCount;
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
+          Project day
+        </p>
+        <p className="mt-1 text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">
+          {getProjectDayLongLabel(details.date)}
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+          Published schedule
+        </p>
+        <p className="mt-1 text-sm font-semibold text-[var(--pl-ink)]">
+          {details.publishedScheduleCount} published item{details.publishedScheduleCount === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      {canEdit ? (
+        <form action={formAction} className="space-y-4">
+          <input name="projectDate" type="hidden" value={details.date} />
+          <label className="block" htmlFor={inputId}>
+            <span className="text-sm font-semibold text-[var(--pl-ink)]">
+              Expected on site
+            </span>
+            <input
+              aria-describedby={`${inputId}-help${hasMessage ? ` ${inputMessageId}` : ""}`}
+              aria-invalid={hasError || undefined}
+              className="mt-2 min-h-11 w-full rounded-xl border border-[var(--pl-border)] bg-white px-3 text-base font-semibold text-[var(--pl-ink)] outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20"
+              defaultValue={visibleCount ?? ""}
+              id={inputId}
+              inputMode="numeric"
+              name="expectedOnSiteCount"
+              placeholder="Not set"
+              type="text"
+            />
+          </label>
+          <p className="-mt-2 text-xs leading-5 text-[var(--pl-muted)]" id={`${inputId}-help`}>
+            Manual project total for this day. Leave blank to clear it.
+          </p>
+          {hasMessage ? (
+            <p
+              aria-live="polite"
+              className={hasError ? "text-sm font-semibold text-red-700" : "text-sm font-semibold text-emerald-700"}
+              id={inputMessageId}
+            >
+              {actionState.message}
+            </p>
+          ) : null}
+          <button
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] disabled:cursor-wait disabled:opacity-60"
+            disabled={isPending}
+            type="submit"
+          >
+            {isPending ? "Saving…" : "Save expected count"}
+          </button>
+        </form>
+      ) : (
+        <div className="rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+            Expected on site
+          </p>
+          <p className="mt-1 text-2xl font-bold text-[var(--pl-ink)]">
+            {visibleCount === null ? "Not set" : visibleCount}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-[var(--pl-muted)]">
+            Calendar editing permission is required to change this total.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectDayDetailsSurface({
+  action,
+  canEdit,
+  details,
+  isOpen,
+  onClose,
+}: {
+  action: ProjectDayMutationAction;
+  canEdit: boolean;
+  details: Readonly<{
+    date: string;
+    expectedOnSiteCount: number | null;
+    publishedScheduleCount: number;
+  }> | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  if (!details) return null;
+
+  const editor = (
+    <ProjectDayEditor
+      action={action}
+      canEdit={canEdit}
+      details={details}
+      key={`${details.date}:${details.expectedOnSiteCount ?? "unset"}`}
+    />
+  );
+
+  return (
+    <>
+      <aside
+        aria-label="Project day details"
+        className={isOpen ? "hidden border-l border-[var(--pl-border)] bg-white p-5 sm:block" : "hidden"}
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
+            Day details
+          </h2>
+          <button
+            aria-label="Close project day details"
+            className={`inline-flex size-9 items-center justify-center rounded-lg text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] ${calmFocusRing}`}
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" className="h-4 w-4" />
+          </button>
+        </div>
+        {isMobile ? null : editor}
+      </aside>
+      <MobileOverlaySheet
+        description={getProjectDayLongLabel(details.date)}
+        label="project day details"
+        onClose={onClose}
+        open={isOpen && isMobile}
+        title="Day details"
+      >
+        {isMobile ? editor : null}
+      </MobileOverlaySheet>
+    </>
+  );
+}
 
 function CalendarNotice({ notice }: { notice?: string }) {
   if (!notice) return null;
@@ -3476,6 +3719,18 @@ function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
   return `/admin/calendar?${params.toString()}`;
 }
 
+function buildCalendarProjectDayHref(
+  view: CalendarViewMode,
+  anchorDate: string,
+  projectDayDate: string,
+) {
+  const params = new URLSearchParams();
+  params.set("view", view);
+  params.set("date", anchorDate);
+  params.set("day", projectDayDate);
+  return `/admin/calendar?${params.toString()}`;
+}
+
 function getCalendarToday() {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -3512,6 +3767,7 @@ export default function CalendarClient({
   sendInitialAssignmentNotificationsAction,
   updateCurrentVolunteerFacingContactDetailsAction,
   state,
+  updateProjectDayAction,
   updateAction,
 }: Readonly<{
   assignAction?: CalendarMutationAction;
@@ -3524,6 +3780,7 @@ export default function CalendarClient({
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
   updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   state: CalendarClientState;
+  updateProjectDayAction: ProjectDayMutationAction;
   updateAction?: CalendarMutationAction;
 }>) {
   const router = useRouter();
@@ -3547,8 +3804,9 @@ export default function CalendarClient({
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
+  const initialProjectDayDate = isReady ? state.projectDayDetails?.date : undefined;
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>(
-    initialInspectorItemId ? "inspect" : "none",
+    initialInspectorItemId ? "inspect" : initialProjectDayDate ? "projectDay" : "none",
   );
   const [selectedId, setSelectedId] = useState<string | undefined>(initialInspectorItemId);
   const [inspectorSection, setInspectorSection] = useState<CalendarInspectorSection>(
@@ -3559,6 +3817,10 @@ export default function CalendarClient({
     : "";
   const [appliedRouteInspectorSelection, setAppliedRouteInspectorSelection] =
     useState(routeInspectorSelection);
+  const routeProjectDaySelection = initialProjectDayDate ?? "";
+  const [appliedRouteProjectDaySelection, setAppliedRouteProjectDaySelection] =
+    useState(routeProjectDaySelection);
+  const [projectDayDate, setProjectDayDate] = useState(initialProjectDayDate);
   const [creationDraft, setCreationDraft] = useState<
     CalendarCreationDraft | undefined
   >();
@@ -3571,6 +3833,14 @@ export default function CalendarClient({
     setInspectorSection(initialInspectorSection);
     setCreationDraft(undefined);
     setActiveSurface(initialInspectorItemId ? "inspect" : "none");
+  }
+
+  if (routeProjectDaySelection !== appliedRouteProjectDaySelection) {
+    setAppliedRouteProjectDaySelection(routeProjectDaySelection);
+    setProjectDayDate(initialProjectDayDate);
+    setSelectedId(undefined);
+    setCreationDraft(undefined);
+    setActiveSurface(initialProjectDayDate ? "projectDay" : "none");
   }
 
   const filteredItems = useMemo(
@@ -3616,6 +3886,7 @@ export default function CalendarClient({
     setActiveSurface("none");
     setSelectedId(undefined);
     setCreationDraft(undefined);
+    setProjectDayDate(undefined);
 
     if (shouldRestoreFocus) {
       surfaceTriggerRef.current = null;
@@ -3628,6 +3899,15 @@ export default function CalendarClient({
   };
 
   const closeSelectedInspector = () => {
+    closeCalendarSurface();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      buildCalendarRouteHref(activeView, calendarAnchor),
+    );
+  };
+
+  const closeProjectDayDetails = () => {
     closeCalendarSurface();
     window.history.replaceState(
       window.history.state,
@@ -3652,6 +3932,7 @@ export default function CalendarClient({
         setActiveSurface("none");
         setSelectedId(undefined);
         setCreationDraft(undefined);
+        setProjectDayDate(undefined);
         window.history.replaceState(
           window.history.state,
           "",
@@ -3698,6 +3979,16 @@ export default function CalendarClient({
     setSelectedId(undefined);
     setCreationDraft(undefined);
     setActiveSurface("filter");
+  };
+
+  const handleOpenProjectDay = (date: string) => {
+    rememberSurfaceTrigger();
+    closeMobileNavigation();
+    setSelectedId(undefined);
+    setCreationDraft(undefined);
+    setProjectDayDate(date);
+    setActiveSurface("projectDay");
+    router.push(buildCalendarProjectDayHref(activeView, calendarAnchor, date));
   };
 
   const handleCreateFromSlot = (slot: CalendarCreationSlot) => {
@@ -3807,6 +4098,7 @@ export default function CalendarClient({
                 contextLabel: "Started from Calendar toolbar",
               })}
               onFilterOpen={handleOpenFilters}
+              onOpenProjectDay={() => handleOpenProjectDay(calendarAnchor)}
               onNavigateNext={() => handleNavigateCalendar(1)}
               onNavigatePrevious={() => handleNavigateCalendar(-1)}
               onNavigateProject={handleResetCalendar}
@@ -3820,7 +4112,13 @@ export default function CalendarClient({
 
             <ActiveFilterBar filters={filters} onClear={clearFilters} />
 
-            <div className={selectedItem && activeSurface === "inspect" ? "grid lg:grid-cols-[minmax(0,1fr)_360px]" : "grid grid-cols-1"}>
+            <div className={
+              selectedItem && activeSurface === "inspect"
+                ? "grid lg:grid-cols-[minmax(0,1fr)_360px]"
+                : activeSurface === "projectDay"
+                  ? "grid sm:grid-cols-[minmax(0,1fr)_340px]"
+                  : "grid grid-cols-1"
+            }>
             <div className="min-w-0 lg:max-h-[calc(100vh-176px)] lg:overflow-auto" id="calendar-view-content" ref={calendarViewRef}>
               {isReadyEmpty && filteredItems.length === 0 ? (
               <div className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3">
@@ -3839,6 +4137,7 @@ export default function CalendarClient({
                   date={calendarAnchor}
                   items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
+                  onOpenDayDetails={handleOpenProjectDay}
                   onSelect={handleSelectCalendarItem}
                   selectedId={selectedItem?.id}
                 />
@@ -3867,6 +4166,7 @@ export default function CalendarClient({
                   items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
                   onFocusDate={handleFocusCalendarDate}
+                  onOpenDayDetails={handleOpenProjectDay}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={calendarAnchor}
                   selectedId={selectedItem?.id}
@@ -3900,6 +4200,23 @@ export default function CalendarClient({
                 updateCurrentVolunteerFacingContactDetailsAction
               }
               updateAction={updateAction}
+            />
+            <ProjectDayDetailsSurface
+              action={updateProjectDayAction}
+              canEdit={state.canEdit}
+              details={
+                state.projectDayDetails?.date === projectDayDate
+                  ? state.projectDayDetails
+                  : projectDayDate
+                    ? {
+                        date: projectDayDate,
+                        expectedOnSiteCount: null,
+                        publishedScheduleCount: 0,
+                      }
+                    : null
+              }
+              isOpen={activeSurface === "projectDay"}
+              onClose={closeProjectDayDetails}
             />
             </div>
             </div>

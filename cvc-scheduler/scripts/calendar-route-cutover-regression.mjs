@@ -10,11 +10,13 @@ import { describeResponseLinkProductActionActivationCheckpoint } from "../lib/re
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const calendarRoutePath = path.join(root, "app", "admin", "calendar", "page.tsx");
 const calendarClientPath = path.join(root, "components", "CalendarClient.tsx");
+const calendarAssignmentPickerPath = path.join(root, "components", "CalendarAssignmentPicker.tsx");
 const routeReadPath = path.join(root, "lib", "calendar", "routeRead.server.ts");
 const queryHelperPath = path.join(root, "lib", "calendar", "readModelQuery.server.ts");
 
 const calendarRouteSource = await readFile(calendarRoutePath, "utf8");
 const calendarClientSource = await readFile(calendarClientPath, "utf8");
+const calendarAssignmentPickerSource = await readFile(calendarAssignmentPickerPath, "utf8");
 const routeReadSource = await readFile(routeReadPath, "utf8");
 const queryHelperSource = await readFile(queryHelperPath, "utf8");
 const packageSource = await readFile(path.join(root, "package.json"), "utf8");
@@ -140,7 +142,7 @@ assert.doesNotMatch(
   /local mock UI|mock item|This mock|sendEmail|enqueueReminder|navigator\.clipboard/i,
 );
 assert.match(
-  calendarClientSource,
+  calendarAssignmentPickerSource,
   /href=\{`\/admin\/assignments\/\$\{encodeURIComponent\(assignment\.assignmentId\)\}`\}/,
 );
 
@@ -189,7 +191,7 @@ assert.deepEqual(finalPreflightImporters, []);
 assert.deepEqual(directCalendarTableMarkers, []);
 assert.deepEqual(assignmentDetailLinks, [
   "app/admin/needs-attention/page.tsx",
-  "components/CalendarClient.tsx",
+  "components/CalendarAssignmentPicker.tsx",
 ]);
 
 const activationCheckpoint = describeResponseLinkProductActionActivationCheckpoint();
