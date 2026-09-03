@@ -2675,6 +2675,7 @@ function CreatePanelContent({
 
 function CalendarInspector({
   assignAction,
+  archiveAction,
   assignmentPicker,
   canEditAssignments,
   canEdit,
@@ -2692,6 +2693,7 @@ function CalendarInspector({
   focusSignal,
 }: {
   assignAction?: CalendarMutationAction;
+  archiveAction?: CalendarMutationAction;
   assignmentPicker: CalendarAssignmentPickerState;
   canEditAssignments: boolean;
   canEdit: boolean;
@@ -2755,6 +2757,7 @@ function CalendarInspector({
         >
           <InspectorContent
             assignAction={assignAction}
+            archiveAction={archiveAction}
             assignmentPicker={assignmentPicker}
             canEditAssignments={canEditAssignments}
             canEdit={canEdit}
@@ -2798,6 +2801,7 @@ function CalendarInspector({
         >
           <InspectorContent
             assignAction={assignAction}
+            archiveAction={archiveAction}
             assignmentPicker={assignmentPicker}
             canEditAssignments={canEditAssignments}
             canEdit={canEdit}
@@ -2827,6 +2831,7 @@ function CalendarInspector({
 
 function InspectorContent({
   assignAction,
+  archiveAction,
   assignmentPicker,
   canEditAssignments,
   canEdit,
@@ -2846,6 +2851,7 @@ function InspectorContent({
   updateAction,
 }: {
   assignAction?: CalendarMutationAction;
+  archiveAction?: CalendarMutationAction;
   assignmentPicker: CalendarAssignmentPickerState;
   canEditAssignments: boolean;
   canEdit: boolean;
@@ -2876,6 +2882,7 @@ function InspectorContent({
     Boolean(item.endTimeValue);
   const currentAssignments = item.assignments ?? [];
   const [confirmingPublish, setConfirmingPublish] = useState(false);
+  const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
   const contactNameInputRef = useRef<HTMLInputElement>(null);
   const inspectorScrollRef = useRef<HTMLDivElement>(null);
@@ -2884,6 +2891,9 @@ function InspectorContent({
     Boolean(publishAction) &&
     Boolean(item.canPublish) &&
     item.publicationState === "draft";
+  const canArchiveSelectedItem = canEdit && Boolean(archiveAction);
+  const archiveNeedsVolunteerWarning =
+    currentAssignments.length > 0 || item.publicationState === "published";
   const initialNotification = item.initialAssignmentNotification;
   const followUpContactSelfEdit = item.followUpContactSelfEdit;
   const canSubmitInitialEmails =
@@ -3237,6 +3247,47 @@ function InspectorContent({
             </p>
           )}
         </div>
+
+        {canArchiveSelectedItem ? (
+          <div className="order-7 mt-5 border-t border-[var(--pl-border)] pt-4" data-inspector-section="lifecycle">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Lifecycle
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Archive removes this item from active project views while preserving its records.
+            </p>
+            {confirmingArchive ? (
+              <form action={archiveAction} className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3">
+                <input name="calendarItemId" type="hidden" value={item.id} />
+                <input name="redirectView" type="hidden" value={currentView} />
+                <input name="redirectDate" type="hidden" value={currentDate} />
+                <p className="text-sm font-semibold text-amber-950">Archive this calendar item?</p>
+                <p className="mt-1 text-sm leading-6 text-amber-800">
+                  {archiveNeedsVolunteerWarning
+                    ? "It will be removed from active project and volunteer views. Existing assignment and response records will be preserved."
+                    : "It will be removed from active project views."}
+                </p>
+                {archiveNeedsVolunteerWarning ? (
+                  <p className="mt-2 text-sm font-semibold leading-6 text-amber-900">
+                    This does not notify assigned volunteers.
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button className={`inline-flex min-h-10 items-center rounded-lg border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-950 transition hover:bg-amber-100 ${calmFocusRing}`} type="submit">
+                    Archive item
+                  </button>
+                  <button className={`inline-flex min-h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 ${calmFocusRing}`} onClick={() => setConfirmingArchive(false)} type="button">
+                    Keep item
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button className={`mt-3 inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 ${calmFocusRing}`} onClick={() => setConfirmingArchive(true)} type="button">
+                Archive item
+              </button>
+            )}
+          </div>
+        ) : null}
 
         <div className="order-2 mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -3657,6 +3708,10 @@ function CalendarNotice({ notice }: { notice?: string }) {
       title: "Volunteer removed",
       message: "The assignment was canceled without changing Calendar item or response-link behavior.",
     },
+    archived: {
+      title: "Calendar item archived",
+      message: "It was removed from active project views. Existing records were preserved.",
+    },
     published: {
       title: "Calendar item published",
       message: "Authorized project contacts can now see it. No email was sent until the explicit Initial email action is used.",
@@ -3758,6 +3813,7 @@ function buildCalendarInspectorHref(
 
 export default function CalendarClient({
   assignAction,
+  archiveAction,
   cancelAssignmentAction,
   createAction,
   initialInspectorItemId,
@@ -3771,6 +3827,7 @@ export default function CalendarClient({
   updateAction,
 }: Readonly<{
   assignAction?: CalendarMutationAction;
+  archiveAction?: CalendarMutationAction;
   cancelAssignmentAction?: CalendarMutationAction;
   createAction?: CalendarMutationAction;
   initialInspectorItemId?: string;
@@ -4183,6 +4240,7 @@ export default function CalendarClient({
             </div>
             <CalendarInspector
               assignAction={assignAction}
+              archiveAction={archiveAction}
               assignmentPicker={state.assignmentPicker}
               canEditAssignments={state.canEditAssignments}
               canEdit={state.canEdit}

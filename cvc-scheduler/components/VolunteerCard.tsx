@@ -23,7 +23,7 @@ function summarizeSnapshot(snapshot: Readonly<Record<string, unknown>>) {
 
 function lifecycleLabel(lifecycle: VolunteerProfile["lifecycle"]) {
   if (lifecycle === "archived") return "archived";
-  if (lifecycle === "inactive") return "Draft";
+  if (lifecycle === "inactive") return "inactive";
   return "active";
 }
 

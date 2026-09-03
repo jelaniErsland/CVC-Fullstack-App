@@ -7,6 +7,23 @@ import {
 import { getSafeAdminRedirect } from "@/lib/auth/redirects";
 import { refreshProjectContactSession } from "@/lib/supabase/proxy";
 
+function isContainedBetaRoute(pathname: string) {
+  return [
+    "/admin/announcements",
+    "/admin/food",
+    "/admin/onboarding",
+    "/admin/projects",
+    "/admin/questionnaires",
+    "/admin/schedule",
+    "/admin/security",
+    "/admin/settings",
+  ].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function betaUnavailableResponse(request: NextRequest) {
+  return NextResponse.rewrite(new URL("/admin/beta-unavailable", request.url));
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -31,7 +48,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (getAdminAuthMode() === "review") {
-    return NextResponse.next();
+    return isContainedBetaRoute(pathname)
+      ? betaUnavailableResponse(request)
+      : NextResponse.next();
   }
 
   const loginUrl = new URL("/admin/login", request.url);
@@ -49,7 +68,9 @@ export async function proxy(request: NextRequest) {
     const { response, user } = await refreshProjectContactSession(request);
 
     if (user) {
-      return response;
+      return isContainedBetaRoute(pathname)
+        ? betaUnavailableResponse(request)
+        : response;
     }
   } catch {
     loginUrl.searchParams.set("error", "session");

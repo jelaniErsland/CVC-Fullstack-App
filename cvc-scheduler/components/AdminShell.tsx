@@ -6,14 +6,8 @@ import {
   CalendarDays,
   ClipboardList,
   Eye,
-  FileQuestion,
   Home,
-  LayoutGrid,
-  MessageSquare,
   MoreHorizontal,
-  Settings,
-  Shield,
-  Soup,
   Users,
   X,
 } from "lucide-react";
@@ -28,7 +22,6 @@ import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
-import { demoProjectId, getProjectById } from "@/lib/mockData";
 
 type AdminShellProps = {
   active: AdminNavActive;
@@ -86,37 +79,10 @@ const moreGroups: Array<{
   links: MoreLink[];
 }> = [
   {
-    title: "Communications",
-    links: [
-      { label: "Communications", href: "/admin/announcements", icon: MessageSquare },
-      {
-        label: "Reminder templates",
-        href: "/admin/announcements/templates",
-        icon: Bell,
-      },
-    ],
-  },
-  {
-    title: "People & follow-up",
-    links: [
-      { label: "Volunteers", href: "/admin/volunteers", icon: Users },
-      { label: "Questionnaires", href: "/admin/questionnaires", icon: FileQuestion },
-    ],
-  },
-  {
-    title: "Workspace",
+    title: "Project tools",
     links: [
       { label: "Project Quick View", href: "/admin/quick-view", icon: Eye },
-      { label: "Settings", href: "/admin/settings", icon: Settings },
-      { label: "Project Workspaces", href: "/admin/projects", icon: LayoutGrid, note: "Preview" },
-    ],
-  },
-  {
-    title: "Prototype / legacy",
-    links: [
-      { label: "Legacy Schedule", href: "/admin/schedule", icon: CalendarDays, note: "Legacy" },
-      { label: "Food prototype", href: "/admin/food", icon: Soup, note: "Prototype" },
-      { label: "Security prototype", href: "/admin/security", icon: Shield, note: "Prototype" },
+      { label: "Volunteers", href: "/admin/volunteers", icon: Users },
     ],
   },
 ];
@@ -253,8 +219,7 @@ function MobileMoreSheet({
       >
         <GlassCard className="mx-auto flex max-h-[70dvh] max-w-md flex-col overflow-hidden rounded-2xl p-0 shadow-[0_-20px_80px_rgba(15,23,42,0.24)]">
           <p className="sr-only" id="mobile-more-navigation-description">
-            Additional admin destinations for communications, follow-up, workspace,
-            and prototype tools.
+            Additional beta admin destinations.
           </p>
           <div className="shrink-0 px-4 pb-3 pt-3">
             <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-slate-200" />
@@ -337,17 +302,8 @@ function MobileMoreSheet({
 
 function getActiveIdForMoreHref(href: string): AdminNavActive | undefined {
   const hrefToActive: Record<string, AdminNavActive> = {
-    "/admin/announcements": "announcements",
-    "/admin/announcements/templates": "announcements",
-    "/admin/settings": "settings",
-    "/admin/projects": "projects",
     "/admin/quick-view": "quick-view",
-    "/admin/questionnaires": "questionnaires",
-    "/admin/needs-attention": "needs-attention",
     "/admin/volunteers": "volunteers",
-    "/admin/schedule": "schedule",
-    "/admin/food": "food",
-    "/admin/security": "security",
   };
 
   return hrefToActive[href];
@@ -358,15 +314,13 @@ export function AdminShell({
   children,
   onMobileMoreClose,
   onMobileMoreOpen,
-  projectId = demoProjectId,
   workspaceName,
 }: AdminShellProps) {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreDialogRef = useRef<HTMLElement>(null);
-  const project = getProjectById(projectId);
-  const visibleWorkspaceName = workspaceName ?? project?.name ?? "Admin workspace";
+  const visibleWorkspaceName = workspaceName ?? "Project workspace";
 
   useFocusContainment(isMoreOpen, mobileMoreDialogRef);
   useBodyScrollLock(isMoreOpen, "(max-width: 1023px)");
@@ -447,7 +401,7 @@ export function AdminShell({
           <aside className="hidden border-r border-[var(--pl-border)] bg-white lg:block">
             <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-5 py-6">
               <AdminBrand />
-              <AdminNav active={active} projectId={projectId} workspaceName={visibleWorkspaceName} />
+              <AdminNav active={active} workspaceName={visibleWorkspaceName} />
             </div>
           </aside>
 

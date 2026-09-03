@@ -39,6 +39,21 @@ const writeAssignmentPickerReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2B_CAPTURES === "1";
 const projectDayQuickViewOnly =
   process.env.PROJECT_DAY_QUICK_VIEW_ONLY === "1";
+const archiveUiBrowserOnly =
+  process.env.ARCHIVE_UI_BROWSER_ONLY === "1";
+const archiveUiCaptureNames = new Set(
+  (process.env.ARCHIVE_UI_CAPTURE_NAMES ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
+const archiveUiReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "beta-review",
+  "iteration-12-44f2-beta-containment-lifecycle",
+);
 const writeProjectDayQuickViewCaptures =
   process.env.WRITE_ITERATION_12_44E2_CAPTURES === "1";
 const writeAffectedCalendarFlowReviewScreenshots =
@@ -131,6 +146,9 @@ const fixture = {
     nextWeekSupplies: randomUUID(),
     quickViewSecurity: randomUUID(),
     quickViewDraft: randomUUID(),
+    archiveDraft: randomUUID(),
+    archiveAssigned: randomUUID(),
+    archiveMobile: randomUUID(),
   },
   assignmentIds: {
     gate: randomUUID(),
@@ -140,6 +158,8 @@ const fixture = {
     doorCheck: randomUUID(),
     supplyRun: randomUUID(),
     nextWeekSupplies: randomUUID(),
+    archiveAssigned: randomUUID(),
+    archiveMobile: randomUUID(),
   },
   otherWorkspaceId: randomUUID(),
   otherCalendarItemId: randomUUID(),
@@ -377,6 +397,12 @@ function assignmentRows(fullUserId) {
       fixture.volunteerIds[6],
       "active",
     ],
+    ...(archiveUiBrowserOnly
+      ? [
+          [fixture.assignmentIds.archiveAssigned, fixture.calendarItemIds.archiveAssigned, fixture.volunteerIds[0], "active"],
+          [fixture.assignmentIds.archiveMobile, fixture.calendarItemIds.archiveMobile, fixture.volunteerIds[1], "active"],
+        ]
+      : []),
   ];
   return rows
     .map(
@@ -395,6 +421,12 @@ function responseRows(fullUserId) {
     [fixture.assignmentIds.doorCheck, "confirmed"],
     [fixture.assignmentIds.supplyRun, "confirmed"],
     [fixture.assignmentIds.nextWeekSupplies, "confirmed"],
+    ...(archiveUiBrowserOnly
+      ? [
+          [fixture.assignmentIds.archiveAssigned, "confirmed"],
+          [fixture.assignmentIds.archiveMobile, "confirmed"],
+        ]
+      : []),
   ];
   return rows
     .map(([assignmentId, status]) => {
@@ -450,7 +482,10 @@ insert into public.calendar_items (
   ('${fixture.calendarItemIds.doorCheck}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Door check', 'general', 'timed', '2026-01-14', null, '09:00:00', '10:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
   ('${fixture.calendarItemIds.supplyRun}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Supply run', 'general', 'timed', '2026-01-14', null, '13:00:00', '14:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
   ('${fixture.calendarItemIds.nextWeekSupplies}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Follow-up supplies', 'general', 'timed', '2026-01-20', null, '09:00:00', '10:00:00', 'America/Denver', 1, 'Safe follow-up note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
-  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.12 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid);
+  ('${fixture.otherCalendarItemId}'::uuid, '${fixture.otherWorkspaceId}'::uuid, null, 'QA 12.12 Wrong Workspace Hidden', 'general', 'timed', '2026-01-13', null, '07:30:00', '10:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid)${archiveUiBrowserOnly ? `,
+  ('${fixture.calendarItemIds.archiveDraft}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Archive review draft', 'general', 'timed', '2026-01-13', null, '14:30:00', '15:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'draft', null, null),
+  ('${fixture.calendarItemIds.archiveAssigned}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Archive review assigned', 'general', 'timed', '2026-01-13', null, '15:30:00', '16:30:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
+  ('${fixture.calendarItemIds.archiveMobile}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.generalTaskPresetId}'::uuid, 'Archive review mobile', 'general', 'timed', '2026-01-13', null, '16:30:00', '17:00:00', 'America/Denver', 1, null, '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid)` : ""};
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
 ) values ${assignmentRows(fullUserId)};
@@ -2130,14 +2165,14 @@ async function runMobile(browser) {
       });
       await more.waitFor();
       await waitForFocusLabel(page, "Close more admin navigation");
-      await assertMobileOverlayContract(page, more, "mobile-more", "Mobile More");
+      await assertMobileOverlayContract(page, more, "mobile-more", "Mobile More", false);
       const moreDescription = await assertDialogFocusContainment(
         page,
         more,
         "Mobile More",
       );
       assert(
-        moreDescription.includes("Additional admin destinations"),
+        moreDescription.includes("Additional beta admin destinations"),
         "Mobile More description lacks destination context",
       );
       assert(
@@ -2717,6 +2752,151 @@ async function runProjectDayQuickViewMobile(browser) {
   }
 }
 
+async function writeArchiveUiCapture(page, filename) {
+  if (archiveUiCaptureNames.size > 0 && !archiveUiCaptureNames.has(filename)) {
+    return;
+  }
+  await mkdir(archiveUiReviewDir, { recursive: true });
+  await page.screenshot({
+    path: path.join(archiveUiReviewDir, filename),
+    fullPage: false,
+  });
+}
+
+async function scrollArchiveLifecycleIntoView(page) {
+  const lifecycle = page.locator('[data-inspector-section="lifecycle"]:visible');
+  const scroller = page.locator('[data-overlay-scroll="calendar-inspector"]:visible');
+  await lifecycle.waitFor();
+  const offset = await lifecycle.evaluate((element) => element.offsetTop);
+  await scroller.evaluate((element, targetOffset) => {
+    element.scrollTop = Math.max(0, targetOffset - 40);
+  }, offset);
+  await lifecycle.waitFor();
+}
+
+async function selectArchiveFixture(page, title) {
+  const item = page.getByRole("button", { name: new RegExp(title, "i") });
+  await item.waitFor();
+  await item.click();
+  await page.getByRole("dialog", { name: "Calendar item inspector", exact: true }).waitFor();
+}
+
+async function openArchiveConfirmation(page) {
+  await page.getByRole("button", { name: "Archive item", exact: true }).click();
+  await page.getByText("Archive this calendar item?", { exact: true }).waitFor();
+}
+
+async function confirmArchive(page, title) {
+  await page.getByRole("button", { name: "Archive item", exact: true }).last().click();
+  await page.waitForURL((url) => url.searchParams.get("notice") === "archived");
+  await page.getByText("Calendar item archived", { exact: true }).waitFor();
+  assert(
+    !new URL(page.url()).searchParams.has("item"),
+    `${title} archive retained a stale selected item route parameter.`,
+  );
+  assert(
+    (await page.getByRole("button", { name: new RegExp(title, "i") }).count()) === 0,
+    `${title} remained in the active Calendar after archive.`,
+  );
+}
+
+async function runArchiveUiBrowser(browser, containerName) {
+  const desktopContext = await browser.newContext({ viewport: desktopViewport });
+  const mobileContext = await browser.newContext({ viewport: mobileViewport });
+  await applyAuthCookies(desktopContext, "full");
+  await applyAuthCookies(mobileContext, "full");
+  const desktop = await desktopContext.newPage();
+  const mobile = await mobileContext.newPage();
+  const errors = [...watchPageErrors(desktop), ...watchPageErrors(mobile)];
+  desktop.setDefaultTimeout(10_000);
+  mobile.setDefaultTimeout(10_000);
+
+  try {
+    await desktop.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await desktop.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    await writeArchiveUiCapture(desktop, "01-desktop-beta-sidebar.png");
+    await writeArchiveUiCapture(desktop, "03-desktop-current-project-card.png");
+
+    await desktop.goto(createPreviewUrl(baseUrl, "/admin/projects"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await desktop.getByText("This area isn't available in the beta yet.", { exact: true }).waitFor();
+    await writeArchiveUiCapture(desktop, "04-contained-prototype-route.png");
+
+    await desktop.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await selectView(desktop, "Week");
+    await selectArchiveFixture(desktop, "Archive review draft");
+    await scrollArchiveLifecycleIntoView(desktop);
+    await writeArchiveUiCapture(desktop, "05-desktop-calendar-archive-action.png");
+    await openArchiveConfirmation(desktop);
+    await scrollArchiveLifecycleIntoView(desktop);
+    await writeArchiveUiCapture(desktop, "06-desktop-archive-confirmation-draft.png");
+    await desktop.getByRole("button", { name: "Keep item", exact: true }).click();
+    await desktop.getByText("Archive this calendar item?", { exact: true }).waitFor({ state: "hidden" });
+    assert((await desktop.getByRole("button", { name: /Archive review draft/i }).count()) === 1, "Draft Cancel did not preserve the active Calendar item.");
+    await openArchiveConfirmation(desktop);
+    await confirmArchive(desktop, "Archive review draft");
+    await writeArchiveUiCapture(desktop, "08-desktop-calendar-after-archive.png");
+
+    await selectArchiveFixture(desktop, "Archive review assigned");
+    await openArchiveConfirmation(desktop);
+    await desktop.getByText("This does not notify assigned volunteers.", { exact: true }).waitFor();
+    await scrollArchiveLifecycleIntoView(desktop);
+    await writeArchiveUiCapture(desktop, "07-desktop-archive-confirmation-assigned.png");
+    await confirmArchive(desktop, "Archive review assigned");
+
+    const archiveTruth = runPsql(containerName, `select
+      (select lifecycle from public.calendar_items where id = '${fixture.calendarItemIds.archiveDraft}'::uuid),
+      (select lifecycle from public.calendar_items where id = '${fixture.calendarItemIds.archiveAssigned}'::uuid),
+      (select count(*) from public.calendar_assignments where id = '${fixture.assignmentIds.archiveAssigned}'::uuid),
+      (select count(*) from public.assignment_responses where assignment_id = '${fixture.assignmentIds.archiveAssigned}'::uuid);`);
+    assert(archiveTruth === "archived|archived|1|1", `Archive did not preserve lifecycle history: ${archiveTruth}`);
+
+    await desktop.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const quickViewText = await desktop.locator("body").innerText();
+    assert(!quickViewText.includes("Archive review assigned"), "Archived assigned item appeared in admin Quick View.");
+    assert(!quickViewText.includes("Archive review draft"), "Archived draft item appeared in admin Quick View.");
+
+    await desktop.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const desktopInactiveVolunteer = desktop.getByText("QA 12.12 Volunteer 54", { exact: true });
+    await desktopInactiveVolunteer.scrollIntoViewIfNeeded();
+    await desktopInactiveVolunteer.waitFor();
+    await writeArchiveUiCapture(desktop, "12-desktop-volunteer-inactive.png");
+
+    await mobile.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await mobile.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
+    await writeArchiveUiCapture(mobile, "02-mobile-more.png");
+    await mobile.getByRole("button", { name: "Close more admin navigation", exact: true }).click();
+    await selectView(mobile, "Week");
+    await selectArchiveFixture(mobile, "Archive review mobile");
+    await scrollArchiveLifecycleIntoView(mobile);
+    await writeArchiveUiCapture(mobile, "09-mobile-archive-action.png");
+    await openArchiveConfirmation(mobile);
+    await mobile.getByText("This does not notify assigned volunteers.", { exact: true }).waitFor();
+    await scrollArchiveLifecycleIntoView(mobile);
+    await writeArchiveUiCapture(mobile, "10-mobile-archive-confirmation.png");
+    await mobile.setViewportSize({ width: 360, height: 800 });
+    await assertNoHorizontalOverflow(mobile, "360px Archive confirmation");
+    await mobile.setViewportSize(mobileViewport);
+    await confirmArchive(mobile, "Archive review mobile");
+    await writeArchiveUiCapture(mobile, "11-mobile-calendar-after-archive.png");
+    await assertNoHorizontalOverflow(mobile, "390px Archive Calendar");
+
+    await mobile.setViewportSize({ width: 360, height: 800 });
+    await mobile.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const mobileInactiveVolunteer = mobile.getByText("QA 12.12 Volunteer 54", { exact: true });
+    await mobileInactiveVolunteer.scrollIntoViewIfNeeded();
+    await mobileInactiveVolunteer.waitFor();
+    await assertNoHorizontalOverflow(mobile, "360px inactive Volunteer view");
+    await writeArchiveUiCapture(mobile, "13-mobile-volunteer-inactive.png");
+    await mobile.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await assertNoHorizontalOverflow(mobile, "360px Archive Calendar");
+
+    assert(errors.length === 0, errors.join("\n"));
+  } finally {
+    await desktopContext.close();
+    await mobileContext.close();
+  }
+}
+
 async function runUnavailable(browser) {
   const context = await browser.newContext({ viewport: desktopViewport });
   await applyAuthCookies(context, "calendar-only");
@@ -2821,7 +3001,9 @@ async function main() {
     await createFixtures(containerName);
     await assertPreviewAvailable();
     browser = await launchBrowser();
-    if (projectDayQuickViewOnly) {
+    if (archiveUiBrowserOnly) {
+      await runArchiveUiBrowser(browser, containerName);
+    } else if (projectDayQuickViewOnly) {
       await runProjectDayQuickViewDesktop(browser, containerName);
       await runProjectDayQuickViewMobile(browser);
     } else {
@@ -2836,7 +3018,9 @@ async function main() {
   assert(cleanupCompleted, "Calendar route browser fixture cleanup did not complete.");
 
   console.log(
-    projectDayQuickViewOnly
+    archiveUiBrowserOnly
+      ? "Dedicated Calendar Archive UI browser regression passed."
+      : projectDayQuickViewOnly
       ? "Project Day and Quick View browser regression passed."
       : "Calendar interaction regression passed.",
   );

@@ -19,6 +19,7 @@ import {
   calendarOneOffTimedUpdateInputFromFormData,
   calendarPresetTimedCreateInputFromFormData,
   calendarPresetTimedUpdateInputFromFormData,
+  archiveCalendarItemWithClient,
   createCalendarItemWithClient,
   publishCalendarItemWithClient,
   updateCalendarOneOffTimedItemWithClient,
@@ -54,6 +55,7 @@ const supportedNoticeValues = new Set([
   "updated",
   "assigned",
   "assignment_canceled",
+  "archived",
   "assignment_email_sent",
   "assignment_email_already_sent",
   "assignment_email_partial",
@@ -79,6 +81,7 @@ function safeCalendarRedirect(
   formData: FormData,
   notice: string,
   createdCalendarItemId?: string,
+  preserveRequestedItem = true,
 ) {
   const view = formData.get("redirectView");
   const date = formData.get("redirectDate");
@@ -92,7 +95,9 @@ function safeCalendarRedirect(
     params.set("view", view);
     params.set("date", date);
   }
-  const requestedItem = createdCalendarItemId ?? formData.get("redirectItem");
+  const requestedItem = preserveRequestedItem
+    ? createdCalendarItemId ?? formData.get("redirectItem")
+    : undefined;
   const requestedSection = createdCalendarItemId
     ? "volunteers"
     : formData.get("redirectSection");
@@ -302,6 +307,34 @@ async function publishCalendarItemAction(formData: FormData) {
   redirect(safeCalendarRedirect(formData, notice));
 }
 
+async function archiveCalendarItemAction(formData: FormData) {
+  "use server";
+
+  let notice: "unavailable" | "validation" | "error" | "archived" = "error";
+  try {
+    const context = await readCalendarMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+    } else {
+      await archiveCalendarItemWithClient(
+        context.supabase,
+        String(formData.get("calendarItemId") ?? ""),
+      );
+      notice = "archived";
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
+      ? "validation"
+      : "error";
+  }
+
+  revalidatePath("/admin/calendar");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/needs-attention");
+  revalidatePath("/admin/quick-view");
+  redirect(safeCalendarRedirect(formData, notice, undefined, false));
+}
+
 async function sendInitialAssignmentNotificationsAction(formData: FormData) {
   "use server";
 
@@ -454,6 +487,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
   return (
     <CalendarClient
       assignAction={createCalendarAssignmentsAction}
+      archiveAction={archiveCalendarItemAction}
       cancelAssignmentAction={cancelCalendarAssignmentAction}
       createAction={createCalendarItemAction}
       initialInspectorItemId={requestedItem}

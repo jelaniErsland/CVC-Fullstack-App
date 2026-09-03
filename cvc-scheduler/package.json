@@ -66,6 +66,8 @@
     "test:calendar-route-cutover-stabilization": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-route-cutover-stabilization-regression.mjs",
     "test:calendar-item-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-item-management-regression.mjs",
     "test:calendar-archive-lifecycle": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-archive-lifecycle-contract-regression.mjs",
+    "test:beta-containment-calendar-archive-ui": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/beta-containment-calendar-archive-ui-regression.mjs",
+    "test:beta-containment-calendar-archive-ui:browser": "node scripts/beta-containment-calendar-archive-browser-regression.mjs",
     "test:calendar-item-management:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-calendar-item-management-regression.mjs",
     "test:calendar-source-selection": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-source-selection-regression.mjs",
     "test:calendar-source-selection:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-calendar-source-selection-regression.mjs",
