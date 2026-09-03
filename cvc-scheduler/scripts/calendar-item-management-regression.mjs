@@ -257,6 +257,14 @@ async function updateCalendarOneOffTimedItemWithClient(client, input) {
   return { calendarItemId: data };
 }
 
+async function archiveCalendarItemWithClient(client, calendarItemId) {
+  const { data, error } = await client.rpc("archive_calendar_item", {
+    p_calendar_item_id: calendarItemId,
+  });
+  if (error || typeof data !== "string") throw new Error("Calendar item archive failed.");
+  return data;
+}
+
 async function verifyCalendarManagement(containerName, users) {
   const created = await createCalendarItemWithClient(users.full.client, {
     workspaceId: fixture.workspaceId,
@@ -331,6 +339,12 @@ async function verifyCalendarManagement(containerName, users) {
       customValues: {},
     }),
   );
+  await expectFailure("view-only archive", () =>
+    archiveCalendarItemWithClient(users.viewOnly.client, created.calendarItemId),
+  );
+  await expectFailure("wrong-workspace archive", () =>
+    archiveCalendarItemWithClient(users.other.client, created.calendarItemId),
+  );
   await expectFailure("role-only create", () =>
     createCalendarItemWithClient(users.roleOnly.client, {
       workspaceId: fixture.workspaceId,
@@ -380,6 +394,39 @@ async function verifyCalendarManagement(containerName, users) {
       notes: null,
       customValues: {},
     }),
+  );
+
+  const archivedCalendarItemId = await archiveCalendarItemWithClient(
+    users.full.client,
+    created.calendarItemId,
+  );
+  assert.equal(archivedCalendarItemId, created.calendarItemId);
+  rows = queryJson(
+    containerName,
+    `select lifecycle, title_snapshot, workspace_id
+     from public.calendar_items where id = ${sqlUuid(created.calendarItemId)}`,
+  );
+  assert.deepEqual(rows, [{
+    lifecycle: "archived",
+    title_snapshot: "QA 12.16 Edited Scheduled Item",
+    workspace_id: fixture.workspaceId,
+  }], "Archive must preserve the Calendar item record and its workspace history.");
+  const archivedReadModel = await readCalendarReadModelWithClient({
+    client: users.full.client,
+    workspaceId: fixture.workspaceId,
+    actorContactId: fixture.contacts.full,
+    workspaceTimezone: "America/Denver",
+    rangeStart: "2026-08-10",
+    rangeEnd: "2026-08-17",
+    periodKind: "week",
+    capabilities: ["calendar.view", "assignments.view"],
+  });
+  assert(
+    archivedReadModel.ok && !archivedReadModel.items.some((item) => item.calendarItemId === created.calendarItemId),
+    "Archived Calendar items must leave the active Calendar read model.",
+  );
+  await expectFailure("duplicate archive", () =>
+    archiveCalendarItemWithClient(users.full.client, created.calendarItemId),
   );
 
   const directInsert = await users.full.client.from("calendar_items").insert({
@@ -452,7 +499,7 @@ async function main() {
   }
   assert(cleanupCompleted, "Calendar item management cleanup did not complete.");
   console.log("Calendar item management local validation passed.");
-  console.log("Confirmed create/edit persistence, Follow-up Contact, authorization isolation, direct table-write denial, and zero residue.");
+  console.log("Confirmed create/edit/archive persistence, active-read removal, authorization isolation, direct table-write denial, and zero residue.");
 }
 
 main().catch((error) => {

@@ -442,7 +442,7 @@ assert.deepEqual(
 );
 assert.deepEqual(assignmentDetailLinks.sort(), [
   "app/admin/needs-attention/page.tsx",
-  "components/CalendarClient.tsx",
+  "components/CalendarAssignmentPicker.tsx",
 ]);
 assert.deepEqual(serviceRoleMarkers, []);
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);

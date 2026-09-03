@@ -238,6 +238,25 @@ function createFakeSupabaseClient({ errorTable } = {}) {
         created_by_project_contact_id: actorContactId,
         published_at: null,
       },
+      {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+        workspace_id: workspaceId,
+        task_preset_id: null,
+        title_snapshot: "Archived operational work",
+        task_type_snapshot: "general",
+        schedule_kind: "timed",
+        start_date: "2031-02-08",
+        end_date: null,
+        start_time: "09:00:00",
+        end_time: "10:00:00",
+        timezone: "America/Denver",
+        needed_count: 1,
+        schedule_notes: null,
+        lifecycle: "archived",
+        publication_state: "published",
+        created_by_project_contact_id: actorContactId,
+        published_at: "2031-02-01T12:00:00.000Z",
+      },
     ],
     task_presets: [
       {
@@ -452,6 +471,11 @@ for (const call of fakeClient.calls) {
 const itemCall = fakeClient.calls.find((call) => call.table === "calendar_items");
 assert(itemCall, "calendar_items query should be recorded");
 assert.equal(itemCall.selector, CALENDAR_READ_MODEL_QUERY_SELECTORS.calendarItems);
+assert.equal(
+  itemCall.eq.some(([column, value]) => column === "lifecycle" && value === "active"),
+  true,
+  "active Calendar reads must exclude archived and canceled work at the query boundary",
+);
 assert.equal(itemCall.lte.some(([column, value]) => column === "start_date" && value === "2031-02-28"), true);
 assert.equal(itemCall.or.some((expression) => expression.includes("end_date.gte.2031-02-01")), true);
 

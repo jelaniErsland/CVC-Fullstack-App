@@ -365,6 +365,7 @@ export async function readCalendarReadModelWithClient(
       .from("calendar_items")
       .select(CALENDAR_READ_MODEL_QUERY_SELECTORS.calendarItems)
       .eq("workspace_id", scope.workspaceId)
+      .eq("lifecycle", "active")
       .lte("start_date", scope.rangeEnd)
       .or(`end_date.is.null,end_date.gte.${scope.rangeStart}`)
       .order("start_date", { ascending: true })

@@ -282,7 +282,10 @@ async function verifyStaticBoundaries() {
     ["app/admin/calendar/page.tsx"],
     "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
   );
-  assert.deepEqual(assignmentDetailLinks, []);
+  assert.deepEqual(assignmentDetailLinks.sort(), [
+    "app/admin/needs-attention/page.tsx",
+    "components/CalendarAssignmentPicker.tsx",
+  ]);
   assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
   assert.doesNotMatch(
     calendarRouteSource,
@@ -818,11 +821,14 @@ async function verifyLiveRows(containerName, clientsForFixture) {
   for (const item of mappedItems) {
     assert.deepEqual(Object.keys(item).sort(), [
       "assignedFractionLabel",
+      "assignments",
       "calendarItemId",
       "coverage",
       "displayType",
       "endDate",
       "endTime",
+      "followUpContactDetails",
+      "followUpProjectContactId",
       "isOwnDraft",
       "lifecycle",
       "neededCount",
