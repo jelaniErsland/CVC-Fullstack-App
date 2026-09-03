@@ -3,7 +3,9 @@ import { Eye } from "lucide-react";
 import { AdminShell } from "@/components/AdminShell";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectQuickView } from "@/components/ProjectQuickView";
+import { ProjectQuickViewShareControl } from "@/components/ProjectQuickViewShareControl";
 import { readProjectQuickViewRouteState } from "@/lib/operations/projectQuickViewRoute.server";
+import { readProjectQuickViewShareState } from "@/lib/projectQuickViewAccess/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +16,9 @@ type QuickViewPageProps = Readonly<{
 
 export default async function AdminQuickViewPage({ searchParams }: QuickViewPageProps) {
   const state = await readProjectQuickViewRouteState(await searchParams);
+  const shareState = state.kind === "ready"
+    ? await readProjectQuickViewShareState(state.selectedProjectKey).catch(() => null)
+    : null;
   const workspaceName = state.kind === "ready"
     ? state.projection.projectDisplayName
     : "Project workspace";
@@ -52,6 +57,21 @@ export default async function AdminQuickViewPage({ searchParams }: QuickViewPage
             />
           </div>
         )}
+        {state.kind === "ready" && shareState ? (
+          <div className="mx-auto max-w-3xl">
+            <ProjectQuickViewShareControl
+              initialState={{
+                status: "idle",
+                enabled: shareState.enabled,
+                activeLinkCount: shareState.activeLinkCount,
+                expiresAt: shareState.expiresAt,
+                accessPath: null,
+                message: "",
+              }}
+              projectKey={state.selectedProjectKey}
+            />
+          </div>
+        ) : null}
       </div>
     </AdminShell>
   );

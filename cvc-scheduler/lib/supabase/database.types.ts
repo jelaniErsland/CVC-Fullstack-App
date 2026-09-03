@@ -552,6 +552,63 @@ export type Database = {
           },
         ]
       }
+      project_quick_view_access_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          issued_by_project_contact_id: string | null
+          last_used_at: string | null
+          purpose: string
+          revoked_at: string | null
+          token_verifier_hash: string
+          token_version: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          issued_by_project_contact_id?: string | null
+          last_used_at?: string | null
+          purpose?: string
+          revoked_at?: string | null
+          token_verifier_hash: string
+          token_version?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          issued_by_project_contact_id?: string | null
+          last_used_at?: string | null
+          purpose?: string
+          revoked_at?: string | null
+          token_verifier_hash?: string
+          token_version?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_quick_view_access_tok_issued_by_project_contact_id_fkey"
+            columns: ["issued_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_quick_view_access_tokens_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questionnaire_submissions: {
         Row: {
           answers: Json
@@ -1046,6 +1103,14 @@ export type Database = {
           token_id: string
         }[]
       }
+      issue_project_quick_view_access: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          bearer_token: string
+          token_expires_at: string
+          token_id: string
+        }[]
+      }
       issue_volunteer_schedule_access: {
         Args: { p_ttl_hours: number; p_volunteer_profile_id: string }
         Returns: {
@@ -1120,6 +1185,28 @@ export type Database = {
           missing_email_count: number
           missing_follow_up_contact_count: number
           sending_count: number
+        }[]
+      }
+      read_project_quick_view_by_token: {
+        Args: { p_bearer_token: string; p_project_date?: string }
+        Returns: {
+          access_state: string
+          expected_on_site_count: number
+          project_date: string
+          project_ends_on: string
+          project_starts_on: string
+          schedule_sources: Json
+          token_expires_at: string
+          workspace_display_name: string
+          workspace_timezone: string
+        }[]
+      }
+      read_project_quick_view_share_state: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          active_link_count: number
+          latest_expires_at: string
+          shared_access_enabled: boolean
         }[]
       }
       read_volunteer_schedule: {
@@ -1206,6 +1293,10 @@ export type Database = {
       revoke_assignment_response_token: {
         Args: { p_token_id: string }
         Returns: string
+      }
+      revoke_project_quick_view_access: {
+        Args: { p_workspace_id: string }
+        Returns: number
       }
       revoke_volunteer_schedule_access: {
         Args: { p_token_id: string }
