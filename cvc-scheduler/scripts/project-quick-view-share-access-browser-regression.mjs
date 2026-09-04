@@ -242,6 +242,7 @@ async function main() {
     const cookies = await recipient.cookies();
     const quickViewCookie = cookies.find((cookie) => cookie.name === "pl-project-quick-view");
     assert(quickViewCookie?.httpOnly && quickViewCookie.sameSite === "Lax" && quickViewCookie.path === "/qv");
+    await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "domcontentloaded" });
     await recipientPage.getByRole("heading", { name: "Gallatin Valley Build", exact: true }).waitFor();
     const recipientText = await recipientPage.locator("body").innerText();
     for (const forbidden of ["Admin", "Overview", "Volunteers", "Restricted security", "private note", workspaceId, contactId, bearer]) {

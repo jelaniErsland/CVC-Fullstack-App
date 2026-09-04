@@ -317,16 +317,24 @@ async function verifyStaticBoundaries() {
   }
   const unsafe = [];
   const expectedRoute = "app/admin/assignments/[assignmentId]/page.tsx";
+  const approvedNonResponseClipboardFiles = new Set([
+    "components/ProjectQuickViewShareControl.tsx",
+  ]);
   for (const file of routeFiles) {
     const source = await readFile(file, "utf8");
     const relative = path.relative(root, file).replaceAll("\\", "/");
     const usesApprovedContext =
       /assignments\/detailContext|readAssignmentDetailContext/.test(source);
-    const usesForbiddenBehavior =
-      /auditedReveal|reveal_assignment_response_link|navigator\.clipboard|clipboard\.writeText|Copy response link/i.test(
+    const usesForbiddenRevealBehavior =
+      /auditedReveal|reveal_assignment_response_link|Copy response link/i.test(
         source,
       );
-    if ((usesApprovedContext && relative !== expectedRoute) || usesForbiddenBehavior) {
+    const usesClipboard = /navigator\.clipboard|clipboard\.writeText/i.test(source);
+    if (
+      (usesApprovedContext && relative !== expectedRoute) ||
+      usesForbiddenRevealBehavior ||
+      (usesClipboard && !approvedNonResponseClipboardFiles.has(relative))
+    ) {
       unsafe.push(relative);
     }
   }

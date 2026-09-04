@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -322,8 +322,13 @@ function Assert-MigrationPreflightProcessResult {
       throw "migration_preflight_partial_terminal"
     }
     if (
-      $ExpectedMigrationVersion -ceq $FollowUpContactProductionMigration -and
-      $result.terminal_migration -ceq $ProjectQuickViewProductionMigration
+      (
+        $ExpectedMigrationVersion -ceq $FollowUpContactProductionMigration -and
+        $result.terminal_migration -ceq $ProjectQuickViewProductionMigration
+      ) -or (
+        $ExpectedMigrationVersion -ceq $ProjectQuickViewProductionMigration -and
+        $result.terminal_migration -ceq $ProjectQuickViewPrivilegeHardeningProductionMigration
+      )
     ) {
       throw "migration_lock_transition_pending"
     }
@@ -962,6 +967,14 @@ function Invoke-FixtureScenario {
         "fixture_migration_preflight_future_expected_ok"
         return
       }
+      "MigrationPreflightPrivilegeHardeningExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260903120000"}' `
+          -ExpectedMigrationVersion "20260903120000"
+        "fixture_migration_preflight_privilege_hardening_expected_ok"
+        return
+      }
       "MigrationPreflightTransitionPending" {
         try {
           Assert-MigrationPreflightProcessResult `
@@ -973,6 +986,19 @@ function Invoke-FixtureScenario {
           if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
         }
         "fixture_migration_preflight_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightPrivilegeHardeningTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260903120000"}' `
+            -ExpectedMigrationVersion "20260902120000"
+          throw "fixture_privilege_hardening_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_privilege_hardening_transition_pending_rejected"
         return
       }
       "MigrationPreflightPartialProjectDay" {

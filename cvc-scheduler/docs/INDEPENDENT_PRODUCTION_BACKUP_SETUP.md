@@ -264,21 +264,23 @@ A later always-on design using a private runner or private object storage may re
 - The task registration script's exact `20260714122230` to `20260812123430` action is historical completed evidence only; it must not be rerun.
 - A future migration requires a newly reviewed gate and exact task-lock transition; do not manually start the task.
 
-## Iteration 12.44F.3 reviewed transition contract
+## Iteration 12.44F.3 reviewed transition contract and 12.44F.3C security transition
 
-Production and the enabled/Ready permanent task currently rest at `20260824123500`. The source recognizes `20260902120000` as the only approved next final terminal, but source readiness does not mean production has migrated and the live task lock remains `20260824123500` until the separate controlled F.3 operation.
+12.44F.3 completed the exact historical task-lock transition from `20260824123500` to `20260902120000`, advancing production and the enabled/Ready permanent task lock to `20260902120000`, then stopped before deployment when the post-migration security gate found unintended anonymous EXECUTE on admin Quick View share-management functions. Recovery/preflight is GREEN at the current terminal, no manual backup ran, and application email remains disabled.
 
-Before that operation, validate the exact transition without mutation:
+12.44F.3C prepares the only approved next transition, from `20260902120000` to the forward privilege-hardening migration `20260903120000`. Source readiness does not authorize that production migration. The next production window remains CLOSED until the normal autonomous 03:15 task produces a new successful GREEN/CURRENT backup corresponding to production terminal `20260902120000`; do not manually run a backup merely to open the window.
+
+After that autonomous-backup gate passes, validate the exact transition without mutation:
 
 ```powershell
 .\scripts\production-backup\Register-ProjectLocalBackupTask.ps1 `
   -Action ValidateExpectedMigrationTransition `
-  -CurrentExpectedMigration '20260824123500' `
-  -ExpectedMigration '20260902120000'
+  -CurrentExpectedMigration '20260902120000' `
+  -ExpectedMigration '20260903120000'
 ```
 
 The validation must identify the permanent production task, its current lock, the reviewed runtime contract, the approved target, and `MutationPerformed = false`. It requires the task to be enabled, Ready, and not running. It does not require `-ConfirmTaskAction` because it is read-only.
 
-After the dry-run and production-baseline verification pass, disable the non-running permanent task immediately before applying the three reviewed migrations. Only after the database reports terminal `20260902120000` may that still-disabled task use the existing explicit update action with `-ConfirmTaskAction` to move exactly from `20260824123500` to `20260902120000`. Re-enable the task without starting it, then require the runtime's read-only production preflight to pass at the new terminal.
+After the dry-run and production-baseline verification pass, disable the non-running permanent task immediately before applying only `20260903120000`. Only after the database reports exactly that terminal may the still-disabled task use the explicit update action with `-ConfirmTaskAction` to move exactly from `20260902120000` to `20260903120000`. Require the old-lock/new-database state to classify as `migration_lock_transition_pending`, prove recovery GREEN after the lock transition, and re-enable the task without starting it. Then verify anonymous/PUBLIC execution is denied for the three admin Quick View functions before resuming the previously stopped application deployment and smoke test.
 
-The intermediate terminals `20260829130000` and `20260901120000` are intentionally unsupported as final backup terminals. Either means the migration window is partial: STOP, preserve the exact state, do not advance the task lock, and do not continue deployment. Wrong current values, wrong targets, arbitrary future terminals, downgrades, unexpected task identity, running-task state, or an unsupported runtime contract are denied. Do not use a force flag or manually execute a backup merely to satisfy the migration gate.
+The historical intermediate terminals `20260829130000` and `20260901120000` remain intentionally unsupported as final backup terminals. Wrong current values, wrong targets, arbitrary future terminals, downgrades, unexpected task identity, running-task state, or an unsupported runtime contract are denied. The live task lock remains `20260902120000` until the separately authorized production hotfix window.

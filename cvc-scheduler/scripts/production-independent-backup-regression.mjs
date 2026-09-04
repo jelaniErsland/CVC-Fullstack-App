@@ -16,6 +16,7 @@ const reviewedBackupTerminalMigrations = Object.freeze([
   "20260812123430",
   "20260824123500",
   "20260902120000",
+  "20260903120000",
 ]);
 const partialMigrationTerminals = Object.freeze(["20260829130000", "20260901120000"]);
 const fixtureCredentials = [
@@ -447,9 +448,10 @@ async function main() {
   assertIncludes(migrationContract, '"20260714122230"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260812123430"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260902120000"', "production migration contract");
-  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260902120000-transition-v1"', "production migration contract version");
+  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260903120000-transition-v1"', "production migration contract version");
   assertIncludes(migrationContract, '$FollowUpContactProductionMigration = "20260824123500"', "production migration contract current terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewProductionMigration = "20260902120000"', "production migration contract future terminal");
+  assertIncludes(migrationContract, '$ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"', "production migration contract security terminal");
   assertIncludes(migrationContract, '"20260829130000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, '"20260901120000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, "Test-ProjectLocalReviewedLockTransition", "production migration contract");
@@ -659,6 +661,7 @@ async function main() {
   assertIncludes(runbook, "Database backups do not automatically prove recovery for Supabase Storage objects", "backup/recovery runbook");
   assertIncludes(runbook, "Reviewed 12.44F.3 migration transition", "backup/recovery runbook");
   assertIncludes(runbook, "20260824123500` to `20260902120000", "backup/recovery runbook");
+  assertIncludes(runbook, "20260902120000` to `20260903120000", "backup/recovery runbook");
   assertIncludes(runbook, "MutationPerformed = false", "backup/recovery runbook");
   assertIncludes(runbook, "partial migration", "backup/recovery runbook");
 
@@ -683,7 +686,8 @@ async function main() {
   assertIncludes(setupDoc, "does not back up Supabase Storage object contents", "independent backup setup doc");
   assertIncludes(setupDoc, "Iteration 12.44F.3 reviewed transition contract", "independent backup setup doc");
   assertIncludes(setupDoc, "-Action ValidateExpectedMigrationTransition", "independent backup setup doc");
-  assertIncludes(setupDoc, "live task lock remains `20260824123500`", "independent backup setup doc");
+  assertIncludes(setupDoc, "live task lock remains `20260902120000`", "independent backup setup doc");
+  assertIncludes(setupDoc, "20260902120000` to `20260903120000", "independent backup setup doc");
   assertIncludes(setupDoc, "intermediate terminals `20260829130000` and `20260901120000`", "independent backup setup doc");
 
   assertIncludes(recoveryContract, "independent_backup_automation_foundation", "recovery contract");
@@ -784,6 +788,7 @@ async function main() {
     ["20260714122230", "20260812123430"],
     ["20260812123430", "20260824123500"],
     ["20260824123500", "20260902120000"],
+    ["20260902120000", "20260903120000"],
   ]) {
     assertIncludes(
       runPowerShell([
@@ -810,6 +815,18 @@ async function main() {
     "fixture_backup_migration_lock_transition_dry_run_ok mutation_performed=false",
     "reviewed task migration-lock transition dry-run",
   );
+  assertIncludes(
+    runPowerShell([
+      "-File", taskRegistrationScript,
+      "-FixtureMode",
+      "-Action", "ValidateExpectedMigrationTransition",
+      "-FixtureScenario", "Success",
+      "-CurrentExpectedMigration", "20260902120000",
+      "-ExpectedMigration", "20260903120000",
+    ], { expectSuccess: true }),
+    "fixture_backup_migration_lock_transition_dry_run_ok mutation_performed=false",
+    "Quick View privilege-hardening task migration-lock transition dry-run",
+  );
   for (const scenario of ["WrongCurrent", "WrongTarget", "Running", "UnexpectedTaskIdentity", "UnsupportedRuntime"]) {
     runPowerShell([
       "-File", taskRegistrationScript,
@@ -819,12 +836,23 @@ async function main() {
       "-CurrentExpectedMigration", "20260824123500",
       "-ExpectedMigration", "20260902120000",
     ], { expectSuccess: false });
+    runPowerShell([
+      "-File", taskRegistrationScript,
+      "-FixtureMode",
+      "-Action", "ValidateExpectedMigrationTransition",
+      "-FixtureScenario", scenario,
+      "-CurrentExpectedMigration", "20260902120000",
+      "-ExpectedMigration", "20260903120000",
+    ], { expectSuccess: false });
   }
   for (const [currentMigration, targetMigration] of [
     ["20260824123500", "20260824123500"],
     ["20260824123500", "20260901120000"],
     ["20260824123500", "20991231235959"],
     ["20260902120000", "20260824123500"],
+    ["20260902120000", "20260902120000"],
+    ["20260902120000", "20991231235959"],
+    ["20260903120000", "20260902120000"],
     ["20260829130000", "20260902120000"],
     ["20260901120000", "20260902120000"],
   ]) {
@@ -899,7 +927,9 @@ async function main() {
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "StatusRedaction"], { expectSuccess: true }), "fixture_status_ok", "status fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightExpected"], { expectSuccess: true }), "fixture_migration_preflight_expected_ok", "migration preflight expected fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightFutureExpected"], { expectSuccess: true }), "fixture_migration_preflight_future_expected_ok", "future migration preflight expected fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPrivilegeHardeningExpected"], { expectSuccess: true }), "fixture_migration_preflight_privilege_hardening_expected_ok", "privilege-hardening migration preflight expected fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_transition_pending_rejected", "pre-lock-transition migration mismatch fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPrivilegeHardeningTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_privilege_hardening_transition_pending_rejected", "privilege-hardening pre-lock-transition mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPartialProjectDay"], { expectSuccess: true }), "fixture_migration_preflight_partial_project_day_rejected", "partial Project Day migration preflight fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPartialAnonRevoke"], { expectSuccess: true }), "fixture_migration_preflight_partial_anon_revoke_rejected", "partial anon-revoke migration preflight fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightWrong"], { expectSuccess: true }), "fixture_migration_preflight_wrong_rejected", "migration preflight wrong fixture");

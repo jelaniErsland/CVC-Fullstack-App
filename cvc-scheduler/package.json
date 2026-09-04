@@ -102,6 +102,7 @@
     "test:project-day-quick-view": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-day-quick-view-regression.mjs",
     "test:project-day-quick-view:browser": "node scripts/project-day-quick-view-browser-regression.mjs",
     "test:project-quick-view-share-access": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-regression.mjs",
+    "test:project-quick-view-privileges": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-privilege-regression.mjs",
     "test:project-quick-view-share-access:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-browser-regression.mjs"
   },
   "dependencies": {

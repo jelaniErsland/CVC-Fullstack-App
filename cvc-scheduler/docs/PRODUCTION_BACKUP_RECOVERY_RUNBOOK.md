@@ -212,22 +212,23 @@ Database backups do not automatically prove recovery for Supabase Storage object
 
 Real Bozeman data remains unprovisioned. Overall launch remains `NO-GO` for the separate production migrations/first Notification Health execution, application-driven Initial email, real Bozeman provisioning, controlled pilot, and explicit launch-approval gates; backup/recovery is no longer among the blockers.
 
-## Reviewed 12.44F.3 migration transition
+## Reviewed 12.44F.3 migration transition and 12.44F.3C security transition
 
-Production currently rests at terminal migration `20260824123500`, and the enabled permanent `Project Local Production Backup` task remains locked to that same terminal. Source support for the reviewed next terminal `20260902120000` does not mean production has migrated and does not change the live task lock.
+12.44F.3 completed the exact historical task-lock transition from `20260824123500` to `20260902120000`, advancing production and the enabled permanent `Project Local Production Backup` task lock to `20260902120000` with recovery/preflight GREEN and no manual backup. Its historical intermediate terminals `20260829130000` and `20260901120000` remain classified as partial migration states rather than healthy finals. Deployment and production UI smoke testing did not occur because the post-migration gate found unintended anonymous EXECUTE on admin Quick View share-management functions. Application email remains disabled and active Quick View credentials remain zero.
 
-The only newly approved lock transition is exactly `20260824123500` to `20260902120000`. The runtime accepts both the current terminal and that final reviewed terminal. It deliberately rejects the intermediate terminals `20260829130000` and `20260901120000`: the three migrations form one controlled window, so either intermediate means a partial migration and must never be reported as a healthy final backup state. All other unreviewed, malformed, skipped, or downgrade transitions remain fail-closed.
+The forward security migration `20260903120000` is prepared in source but is not applied. The only newly approved lock transition is exactly `20260902120000` to `20260903120000`. All other unreviewed, malformed, skipped, arbitrary-future, wrong-source, wrong-target, or downgrade transitions remain fail-closed. Current DB terminal and task lock `20260902120000` remain valid for tonight's normal autonomous backup.
 
-For the later controlled production window:
+The next production migration window is CLOSED until a new normal autonomous backup at terminal `20260902120000` succeeds and verifies. Do not manually run a backup merely to satisfy this gate. After that separate authorization:
 
-1. Confirm the latest normal autonomous backup is GREEN/CURRENT; do not manually run a backup merely to open the window.
-2. Confirm the permanent task is enabled, Ready, not running, and locked to `20260824123500`.
-3. Run the read-only `ValidateExpectedMigrationTransition` action for exactly `20260824123500` to `20260902120000`; require `MutationPerformed = false`.
-4. Verify production itself is still at `20260824123500`.
-5. Disable the non-running permanent task for the reviewed migration window.
-6. Apply only `20260829130000`, `20260901120000`, and `20260902120000`, in order.
-7. Verify production reached exactly `20260902120000`. If it stops at either intermediate terminal, STOP and preserve/report the partial state; do not move the task lock.
-8. While the task remains disabled and not running, execute the exact lock transition, verify the lock is `20260902120000`, and re-enable it without starting it.
-9. Run the backup runtime's read-only migration preflight at `20260902120000`. Continue deployment or smoke testing only while the recovery contract remains GREEN.
+1. Verify the new autonomous backup is GREEN/CURRENT for `20260902120000`.
+2. Confirm the permanent task is enabled, Ready, not running, and locked to `20260902120000`.
+3. Run read-only `ValidateExpectedMigrationTransition` for exactly `20260902120000` to `20260903120000`; require `MutationPerformed = false`.
+4. Confirm production is still exactly `20260902120000`, then disable the non-running task.
+5. Apply only `20260903120000_revoke_anon_project_quick_view_admin_execute.sql`.
+6. Verify terminal `20260903120000` and require the old-lock/new-database state to classify as `migration_lock_transition_pending`.
+7. Execute only the exact `20260902120000` to `20260903120000` task-lock transition while the task remains disabled.
+8. Prove recovery GREEN at the new terminal, then re-enable the task without starting it.
+9. Verify the three admin Quick View functions deny anonymous/PUBLIC execution while the reviewed recipient bearer exchange still works.
+10. Resume deployment and production smoke testing of the already-approved application source only after every security and recovery check passes.
 
-If the backup, task identity, current lock, runtime contract, production terminal, migration ledger, or exact target differs, STOP. Do not use a force flag, substitute a broader comparison, move the lock to an intermediate terminal, manually run a backup as a workaround, or move the lock backward.
+If any backup, task identity, current lock, runtime contract, production terminal, migration ledger, privilege check, or exact target differs, STOP. Do not use a force flag, substitute a broader comparison, manually run a backup as a workaround, or move the lock backward.

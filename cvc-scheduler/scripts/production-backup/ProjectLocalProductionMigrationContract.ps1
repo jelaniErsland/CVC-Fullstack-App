@@ -1,10 +1,11 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260902120000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260903120000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
 $ProjectQuickViewProductionMigration = "20260902120000"
+$ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -13,7 +14,8 @@ $AllowedTerminalMigrations = @(
   $ProductionBaselineMigration,
   $EstablishedProductionMigration,
   $FollowUpContactProductionMigration,
-  $ProjectQuickViewProductionMigration
+  $ProjectQuickViewProductionMigration,
+  $ProjectQuickViewPrivilegeHardeningProductionMigration
 )
 
 function Test-ProjectLocalApprovedTerminalMigration {
@@ -34,7 +36,8 @@ function Test-ProjectLocalReviewedLockTransition {
   return (
     ($CurrentMigration -ceq $ProductionBaselineMigration -and $TargetMigration -ceq $EstablishedProductionMigration) -or
     ($CurrentMigration -ceq $EstablishedProductionMigration -and $TargetMigration -ceq $FollowUpContactProductionMigration) -or
-    ($CurrentMigration -ceq $FollowUpContactProductionMigration -and $TargetMigration -ceq $ProjectQuickViewProductionMigration)
+    ($CurrentMigration -ceq $FollowUpContactProductionMigration -and $TargetMigration -ceq $ProjectQuickViewProductionMigration) -or
+    ($CurrentMigration -ceq $ProjectQuickViewProductionMigration -and $TargetMigration -ceq $ProjectQuickViewPrivilegeHardeningProductionMigration)
   )
 }
 

@@ -1,5 +1,11 @@
 # Project History
 
+## Iteration 12.44F.3C - Quick View Issuance Privilege Hardening
+
+- Recorded the safe F.3 production stop after the database and permanent backup-task lock reached `20260902120000` with recovery GREEN but before application deployment or UI smoke testing. The security gate found explicit anonymous EXECUTE on the three admin Quick View share-management functions; active Quick View credentials remained zero and application email remained disabled.
+- Traced the cause to Supabase's `postgres` public-schema default function ACL, which directly grants EXECUTE to `anon`, `authenticated`, and `service_role`; the already-applied migration revoked only PUBLIC, so its direct `anon` grant remained. Added forward migration `20260903120000_revoke_anon_project_quick_view_admin_execute.sql` to revoke anonymous/PUBLIC execution from issue, admin state-read, and revoke while preserving authenticated execution and the intentional anonymous recipient bearer reader.
+- Extended the fail-closed source recovery contract for only `20260902120000 -> 20260903120000`. The live task is unchanged at `20260902120000`, no backup was run, and the next production migration window remains closed until a new normal autonomous backup succeeds at the current production terminal. The migration is prepared but not applied; deployment remains not performed.
+
 ## Iteration 12.43B.4B - Reconciled Confirm and Final Production Loop Verification
 
 - Completed exactly one application-driven production Initial Assignment Email through the real Calendar action. The delivery finalized successfully, exactly one external email was produced, one active hash-only volunteer schedule credential was issued, stale/failed/sending delivery counts remained zero, and assignment-response tokens remained zero. No credential, bearer, verifier, provider id, recipient detail, or personal volunteer data is recorded here.

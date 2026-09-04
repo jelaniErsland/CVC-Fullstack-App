@@ -864,7 +864,7 @@ async function verifyStaticMigrationRiskMap() {
   assert(backupExecution.includes("ProjectLocalProductionMigrationContract.ps1"), "Backup execution must load the reviewed terminal-migration contract.");
   assert(migrationContract.includes("AllowedTerminalMigrations"), "Backup execution must retain an explicit reviewed terminal-migration allowlist.");
   assert(migrationContract.includes("20260714122230") && migrationContract.includes("20260812123430"), "The historical backup transition endpoints must remain supported.");
-  assert(migrationContract.includes("20260824123500") && migrationContract.includes("20260902120000"), "The later reviewed backup transition endpoints must remain explicit.");
+  assert(migrationContract.includes("20260824123500") && migrationContract.includes("20260902120000") && migrationContract.includes("20260903120000"), "The later reviewed backup transition endpoints must remain explicit.");
   runTaskMigrationLockFixture("Success", true);
   runTaskMigrationLockFixture("WrongCurrent", false);
   runTaskMigrationLockFixture("WrongTarget", false);
