@@ -211,3 +211,23 @@ PITR is unavailable and intentionally not required for the initial Bozeman beta 
 Database backups do not automatically prove recovery for Supabase Storage objects. Add a separate backup plan before enabling Storage-backed features such as volunteer photos.
 
 Real Bozeman data remains unprovisioned. Overall launch remains `NO-GO` for the separate production migrations/first Notification Health execution, application-driven Initial email, real Bozeman provisioning, controlled pilot, and explicit launch-approval gates; backup/recovery is no longer among the blockers.
+
+## Reviewed 12.44F.3 migration transition
+
+Production currently rests at terminal migration `20260824123500`, and the enabled permanent `Project Local Production Backup` task remains locked to that same terminal. Source support for the reviewed next terminal `20260902120000` does not mean production has migrated and does not change the live task lock.
+
+The only newly approved lock transition is exactly `20260824123500` to `20260902120000`. The runtime accepts both the current terminal and that final reviewed terminal. It deliberately rejects the intermediate terminals `20260829130000` and `20260901120000`: the three migrations form one controlled window, so either intermediate means a partial migration and must never be reported as a healthy final backup state. All other unreviewed, malformed, skipped, or downgrade transitions remain fail-closed.
+
+For the later controlled production window:
+
+1. Confirm the latest normal autonomous backup is GREEN/CURRENT; do not manually run a backup merely to open the window.
+2. Confirm the permanent task is enabled, Ready, not running, and locked to `20260824123500`.
+3. Run the read-only `ValidateExpectedMigrationTransition` action for exactly `20260824123500` to `20260902120000`; require `MutationPerformed = false`.
+4. Verify production itself is still at `20260824123500`.
+5. Disable the non-running permanent task for the reviewed migration window.
+6. Apply only `20260829130000`, `20260901120000`, and `20260902120000`, in order.
+7. Verify production reached exactly `20260902120000`. If it stops at either intermediate terminal, STOP and preserve/report the partial state; do not move the task lock.
+8. While the task remains disabled and not running, execute the exact lock transition, verify the lock is `20260902120000`, and re-enable it without starting it.
+9. Run the backup runtime's read-only migration preflight at `20260902120000`. Continue deployment or smoke testing only while the recovery contract remains GREEN.
+
+If the backup, task identity, current lock, runtime contract, production terminal, migration ledger, or exact target differs, STOP. Do not use a force flag, substitute a broader comparison, move the lock to an intermediate terminal, manually run a backup as a workaround, or move the lock backward.

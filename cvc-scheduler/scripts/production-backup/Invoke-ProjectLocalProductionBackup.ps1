@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -32,8 +32,8 @@ $RepositoryRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
-$AllowedTerminalMigrations = @("20260714122230", "20260812123430", "20260824123500")
 $BackupFormatVersion = "project-local.logical-backup.v1"
+. (Join-Path $ScriptRoot "ProjectLocalProductionMigrationContract.ps1")
 . (Join-Path $ScriptRoot "ProjectLocalProductionConnection.ps1")
 
 function Test-IsSubPath {
@@ -61,7 +61,7 @@ function Assert-SafeTarget {
     throw "Refusing staging project ref."
   }
   if ($ExecuteProductionBackup -or $ExecuteProductionPreflight) {
-    if ($ProjectName -ne $ExpectedProjectName -or $ProjectRef -ne $ExpectedProjectRef -or $ExpectedMigration -notin $AllowedTerminalMigrations) {
+    if ($ProjectName -ne $ExpectedProjectName -or $ProjectRef -ne $ExpectedProjectRef -or -not (Test-ProjectLocalApprovedTerminalMigration -Migration $ExpectedMigration)) {
       throw "Refusing production backup because exact project locks do not match."
     }
   }
@@ -318,6 +318,15 @@ function Assert-MigrationPreflightProcessResult {
   if (
     $result.terminal_migration -cne $ExpectedMigrationVersion
   ) {
+    if (Test-ProjectLocalPartialMigrationTerminal -Migration $result.terminal_migration) {
+      throw "migration_preflight_partial_terminal"
+    }
+    if (
+      $ExpectedMigrationVersion -ceq $FollowUpContactProductionMigration -and
+      $result.terminal_migration -ceq $ProjectQuickViewProductionMigration
+    ) {
+      throw "migration_lock_transition_pending"
+    }
     throw "migration_preflight_mismatch"
   }
 }
@@ -940,9 +949,56 @@ function Invoke-FixtureScenario {
       "MigrationPreflightExpected" {
         Assert-MigrationPreflightProcessResult `
           -ExitCode 0 `
-          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260714122230"}' `
-          -ExpectedMigrationVersion "20260714122230"
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260824123500"}' `
+          -ExpectedMigrationVersion "20260824123500"
         "fixture_migration_preflight_expected_ok"
+        return
+      }
+      "MigrationPreflightFutureExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260902120000"}' `
+          -ExpectedMigrationVersion "20260902120000"
+        "fixture_migration_preflight_future_expected_ok"
+        return
+      }
+      "MigrationPreflightTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260902120000"}' `
+            -ExpectedMigrationVersion "20260824123500"
+          throw "fixture_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightPartialProjectDay" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260829130000"}' `
+            -ExpectedMigrationVersion "20260824123500"
+          throw "fixture_partial_project_day_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_partial_terminal") { throw }
+        }
+        "fixture_migration_preflight_partial_project_day_rejected"
+        return
+      }
+      "MigrationPreflightPartialAnonRevoke" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260901120000"}' `
+            -ExpectedMigrationVersion "20260824123500"
+          throw "fixture_partial_anon_revoke_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_partial_terminal") { throw }
+        }
+        "fixture_migration_preflight_partial_anon_revoke_rejected"
         return
       }
       "MigrationPreflightWrong" {

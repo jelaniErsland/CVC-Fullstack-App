@@ -54,7 +54,7 @@ const expectedMigrationFiles = Object.freeze([
   "20260811123300_stale_assignment_notification_delivery_health.sql",
   "20260812123430_project_local_table_privilege_hardening.sql",
 ]);
-const currentGeneratedTypeMigration = "20260824123500";
+const currentGeneratedTypeMigration = "20260902120000";
 const fixtureEnvironmentNames = Object.freeze([
   "RUN_PRODUCTION_FIXTURES",
   "SEED_PRODUCTION_DATA",
@@ -838,13 +838,14 @@ function runTaskMigrationLockFixture(scenario, shouldPass) {
 }
 
 async function verifyStaticMigrationRiskMap() {
-  const [healthMigration, privilegeMigration, bootstrapGate, packageJson, taskRegistration, backupExecution] = await Promise.all([
+  const [healthMigration, privilegeMigration, bootstrapGate, packageJson, taskRegistration, backupExecution, migrationContract] = await Promise.all([
     readFile(path.join(root, "supabase", "migrations", expectedMigrationFiles[0]), "utf8"),
     readFile(path.join(root, "supabase", "migrations", expectedMigrationFiles[1]), "utf8"),
     readFile(path.join(root, "scripts", "production-supabase-schema-regression.mjs"), "utf8"),
     readFile(path.join(root, "package.json"), "utf8"),
     readFile(path.join(root, "scripts", "production-backup", "Register-ProjectLocalBackupTask.ps1"), "utf8"),
     readFile(path.join(root, "scripts", "production-backup", "Invoke-ProjectLocalProductionBackup.ps1"), "utf8"),
+    readFile(path.join(root, "scripts", "production-backup", "ProjectLocalProductionMigrationContract.ps1"), "utf8"),
   ]);
   assert.match(healthMigration, /create function public\.read_assignment_notification_delivery_health\(\)/i);
   assert.match(healthMigration, /language plpgsql\s+stable\s+security definer\s+set search_path = ''/i);
@@ -859,10 +860,11 @@ async function verifyStaticMigrationRiskMap() {
   assert(bootstrapGate.includes("production Auth users exist"), "Historical bootstrap gate must retain its zero-Auth contract.");
   assert(packageJson.includes("test:production-supabase-schema"), "Historical bootstrap command must remain present.");
   assert(packageJson.includes("test:production-established-schema"), "Established-production regression command is missing.");
-  assert(taskRegistration.includes("20260714122230"), "Current backup task migration lock must remain recorded.");
   assert(taskRegistration.includes("UpdateExpectedMigration"), "Reviewed backup task migration-lock update action is missing.");
-  assert(backupExecution.includes("AllowedTerminalMigrations"), "Backup execution must retain an explicit reviewed terminal-migration allowlist.");
-  assert(backupExecution.includes("20260714122230") && backupExecution.includes("20260812123430"), "Backup execution must support only the reviewed migration-lock transition endpoints.");
+  assert(backupExecution.includes("ProjectLocalProductionMigrationContract.ps1"), "Backup execution must load the reviewed terminal-migration contract.");
+  assert(migrationContract.includes("AllowedTerminalMigrations"), "Backup execution must retain an explicit reviewed terminal-migration allowlist.");
+  assert(migrationContract.includes("20260714122230") && migrationContract.includes("20260812123430"), "The historical backup transition endpoints must remain supported.");
+  assert(migrationContract.includes("20260824123500") && migrationContract.includes("20260902120000"), "The later reviewed backup transition endpoints must remain explicit.");
   runTaskMigrationLockFixture("Success", true);
   runTaskMigrationLockFixture("WrongCurrent", false);
   runTaskMigrationLockFixture("WrongTarget", false);
@@ -1000,10 +1002,13 @@ async function runLocalRegression() {
       ["db", "push", "--local", "--include-all", "--skip-vault", "--dry-run", "--yes"],
       { sensitiveOutput: true, includeStderr: true, stage: "Disposable current-type migration dry-run", workdir: currentTypeWorkdir },
     );
+    const reviewedLaterMigrations = inventory.repositoryVersions.filter(
+      (version) => version > establishedProductionTarget.afterMigration && version <= currentGeneratedTypeMigration,
+    );
     assert.deepEqual(
       parseDryRunVersions(currentTypeDryRun),
-      [currentGeneratedTypeMigration],
-      "Current generated-type compatibility must apply only the separately reviewed later migration.",
+      reviewedLaterMigrations,
+      "Current generated-type compatibility must apply only the separately reviewed later migrations.",
     );
     runSupabaseCli(
       ["migration", "up", "--local", "--include-all", "--yes"],

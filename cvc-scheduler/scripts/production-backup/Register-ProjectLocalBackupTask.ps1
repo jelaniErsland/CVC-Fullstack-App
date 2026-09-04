@@ -1,9 +1,9 @@
 param(
-  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "UpdateExpectedMigration")]
+  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "ValidateExpectedMigrationTransition", "UpdateExpectedMigration")]
   [string]$Action = "Inspect",
   [switch]$ConfirmTaskAction,
   [switch]$FixtureMode,
-  [ValidateSet("Success", "WrongCurrent", "WrongTarget", "Duplicate", "Enabled", "Running")]
+  [ValidateSet("Success", "WrongCurrent", "WrongTarget", "Duplicate", "Enabled", "Running", "UnexpectedTaskIdentity", "UnsupportedRuntime")]
   [string]$FixtureScenario = "Success",
   [string]$TaskName = "Project Local Production Backup",
   [string]$ProjectName = "project-local-production",
@@ -25,10 +25,8 @@ $RepositoryRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 $BackupScript = Join-Path $ScriptRoot "Invoke-ProjectLocalProductionBackup.ps1"
 $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
-$ProductionBaselineMigration = "20260714122230"
-$EstablishedProductionMigration = "20260812123430"
-$FollowUpContactProductionMigration = "20260824123500"
-$AllowedTerminalMigrations = @($ProductionBaselineMigration, $EstablishedProductionMigration, $FollowUpContactProductionMigration)
+$ExpectedTaskName = "Project Local Production Backup"
+. (Join-Path $ScriptRoot "ProjectLocalProductionMigrationContract.ps1")
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
 $PrivateAgeIdentityMarker = ("AGE" + "-SECRET-KEY")
 
@@ -153,13 +151,7 @@ function Get-UpdatedExpectedMigrationArguments {
     [Parameter(Mandatory = $true)][string]$CurrentMigration,
     [Parameter(Mandatory = $true)][string]$TargetMigration
   )
-  $reviewedTransition = (
-    ($CurrentMigration -ceq $ProductionBaselineMigration -and $TargetMigration -ceq $EstablishedProductionMigration) -or
-    ($CurrentMigration -ceq $EstablishedProductionMigration -and $TargetMigration -ceq $FollowUpContactProductionMigration)
-  )
-  if (-not $reviewedTransition) {
-    throw "Only the reviewed production backup-lock transitions are supported."
-  }
+  Assert-ProjectLocalReviewedLockTransition -CurrentMigration $CurrentMigration -TargetMigration $TargetMigration
   $argumentValues = @(Get-ExpectedMigrationArgumentValues -Arguments $Arguments)
   if ($argumentValues.Count -ne 1 -or $argumentValues[0] -cne $CurrentMigration) {
     throw "The managed task must contain exactly one current expected-migration argument."
@@ -180,6 +172,35 @@ function Get-UpdatedExpectedMigrationArguments {
     throw "The managed task migration-lock transition did not produce exactly one reviewed target."
   }
   return $updatedArguments
+}
+
+function Assert-TransitionTaskIdentity {
+  param([Parameter(Mandatory = $true)][string]$CandidateTaskName)
+  if ($CandidateTaskName -cne $ExpectedTaskName) {
+    throw "Migration-lock transition validation is restricted to the permanent production backup task."
+  }
+}
+
+function Assert-BackupRuntimeTransitionContract {
+  param(
+    [Parameter(Mandatory = $true)][string]$CurrentMigration,
+    [Parameter(Mandatory = $true)][string]$TargetMigration,
+    [string]$ContractVersion = $ProjectLocalProductionMigrationContractVersion
+  )
+  if (-not (Test-Path -LiteralPath $BackupScript -PathType Leaf)) {
+    throw "The production backup runtime is not installed at the reviewed path."
+  }
+  $runtimeSource = [System.IO.File]::ReadAllText($BackupScript)
+  if (
+    -not $runtimeSource.Contains('ProjectLocalProductionMigrationContract.ps1') -or
+    -not $runtimeSource.Contains('Test-ProjectLocalApprovedTerminalMigration')
+  ) {
+    throw "The production backup runtime does not use the reviewed migration contract."
+  }
+  Assert-ProjectLocalReviewedLockTransition `
+    -CurrentMigration $CurrentMigration `
+    -TargetMigration $TargetMigration `
+    -ContractVersion $ContractVersion
 }
 
 function Assert-MigrationLockUpdateWindow {
@@ -230,16 +251,31 @@ if ($env:OS -ne 'Windows_NT') {
 }
 
 if ($FixtureMode) {
-  if ($Action -cne "UpdateExpectedMigration") {
-    throw "Fixture mode is available only for the expected-migration argument transition."
+  if ($Action -notin @("ValidateExpectedMigrationTransition", "UpdateExpectedMigration")) {
+    throw "Fixture mode is available only for expected-migration transition validation or execution."
   }
-  $fixtureCurrent = if ($FixtureScenario -ceq "WrongCurrent") { "20260714122220" } else { $CurrentExpectedMigration }
-  $fixtureTarget = if ($FixtureScenario -ceq "WrongTarget") { "20260811123300" } else { $ExpectedMigration }
-  Assert-MigrationLockUpdateWindow -Enabled ($FixtureScenario -ceq "Enabled") -State $(if ($FixtureScenario -ceq "Running") { "Running" } else { "Disabled" })
+  $fixtureCurrent = if ($FixtureScenario -ceq "WrongCurrent") { "20260824123501" } else { $CurrentExpectedMigration }
+  $fixtureTarget = if ($FixtureScenario -ceq "WrongTarget") { "20260902120001" } else { $ExpectedMigration }
+  $fixtureTaskName = if ($FixtureScenario -ceq "UnexpectedTaskIdentity") { "Unexpected Production Backup Task" } else { $TaskName }
+  $fixtureContractVersion = if ($FixtureScenario -ceq "UnsupportedRuntime") { "unsupported-runtime-contract" } else { $ProjectLocalProductionMigrationContractVersion }
+  Assert-TransitionTaskIdentity -CandidateTaskName $fixtureTaskName
+  Assert-BackupRuntimeTransitionContract -CurrentMigration $fixtureCurrent -TargetMigration $fixtureTarget -ContractVersion $fixtureContractVersion
+  if ($FixtureScenario -ceq "Running") {
+    throw "The production backup task must not be running during transition validation or execution."
+  }
   $fixtureArguments = "-NoProfile -File `"Synthetic-Invoke-ProjectLocalProductionBackup.ps1`" -ExpectedMigration `"$CurrentExpectedMigration`""
   if ($FixtureScenario -ceq "Duplicate") {
     $fixtureArguments += " -ExpectedMigration `"$CurrentExpectedMigration`""
   }
+  if ($Action -ceq "ValidateExpectedMigrationTransition") {
+    $fixtureValues = @(Get-ExpectedMigrationArgumentValues -Arguments $fixtureArguments)
+    if ($fixtureValues.Count -ne 1 -or $fixtureValues[0] -cne $CurrentExpectedMigration) {
+      throw "The dry-run fixture does not contain exactly the reviewed current lock."
+    }
+    Write-Host "fixture_backup_migration_lock_transition_dry_run_ok mutation_performed=false"
+    return
+  }
+  Assert-MigrationLockUpdateWindow -Enabled ($FixtureScenario -ceq "Enabled") -State "Disabled"
   $updatedFixtureArguments = Get-UpdatedExpectedMigrationArguments -Arguments $fixtureArguments -CurrentMigration $fixtureCurrent -TargetMigration $fixtureTarget
   if (
     $updatedFixtureArguments -notlike "*-ExpectedMigration*$fixtureTarget*" -or
@@ -255,6 +291,30 @@ if ($Action -eq "Inspect") {
   $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
   if ($task) {
     Get-SafeTaskMetadata -Task $task
+  }
+  return
+}
+
+if ($Action -eq "ValidateExpectedMigrationTransition") {
+  Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+  Assert-BackupRuntimeTransitionContract -CurrentMigration $CurrentExpectedMigration -TargetMigration $ExpectedMigration
+  $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  if ([string]$task.State -eq "Running") {
+    throw "The production backup task must not be running during transition validation."
+  }
+  if (-not [bool]$task.Settings.Enabled -or [string]$task.State -ne "Ready") {
+    throw "The read-only transition validation requires the permanent production backup task to be enabled and Ready."
+  }
+  if (-not (Test-ManagedTaskContract -Task $task -ExpectedMigrationLock $CurrentExpectedMigration)) {
+    throw "Refusing to validate an unexpected scheduled task."
+  }
+  [pscustomobject]@{
+    TaskIdentity = "permanent_production_backup"
+    CurrentLock = $CurrentExpectedMigration
+    ApprovedTarget = $ExpectedMigration
+    RuntimeContract = $ProjectLocalProductionMigrationContractVersion
+    TransitionAuthorized = $true
+    MutationPerformed = $false
   }
   return
 }
@@ -291,13 +351,8 @@ switch ($Action) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
   }
   "UpdateExpectedMigration" {
-    $reviewedTransition = (
-      ($CurrentExpectedMigration -ceq $ProductionBaselineMigration -and $ExpectedMigration -ceq $EstablishedProductionMigration) -or
-      ($CurrentExpectedMigration -ceq $EstablishedProductionMigration -and $ExpectedMigration -ceq $FollowUpContactProductionMigration)
-    )
-    if (-not $reviewedTransition) {
-      throw "Only the reviewed production backup migration-lock transition is allowed."
-    }
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+    Assert-BackupRuntimeTransitionContract -CurrentMigration $CurrentExpectedMigration -TargetMigration $ExpectedMigration
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
     Assert-MigrationLockUpdateWindow -Enabled ([bool]$task.Settings.Enabled) -State ([string]$task.State)
     if (-not (Test-ManagedTaskContract -Task $task -ExpectedMigrationLock $CurrentExpectedMigration)) {

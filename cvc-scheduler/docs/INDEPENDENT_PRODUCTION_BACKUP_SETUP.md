@@ -263,3 +263,22 @@ A later always-on design using a private runner or private object storage may re
 - 12.36.5 completed the task transition: the live permanent task is enabled/Ready and expects `20260812123430`.
 - The task registration script's exact `20260714122230` to `20260812123430` action is historical completed evidence only; it must not be rerun.
 - A future migration requires a newly reviewed gate and exact task-lock transition; do not manually start the task.
+
+## Iteration 12.44F.3 reviewed transition contract
+
+Production and the enabled/Ready permanent task currently rest at `20260824123500`. The source recognizes `20260902120000` as the only approved next final terminal, but source readiness does not mean production has migrated and the live task lock remains `20260824123500` until the separate controlled F.3 operation.
+
+Before that operation, validate the exact transition without mutation:
+
+```powershell
+.\scripts\production-backup\Register-ProjectLocalBackupTask.ps1 `
+  -Action ValidateExpectedMigrationTransition `
+  -CurrentExpectedMigration '20260824123500' `
+  -ExpectedMigration '20260902120000'
+```
+
+The validation must identify the permanent production task, its current lock, the reviewed runtime contract, the approved target, and `MutationPerformed = false`. It requires the task to be enabled, Ready, and not running. It does not require `-ConfirmTaskAction` because it is read-only.
+
+After the dry-run and production-baseline verification pass, disable the non-running permanent task immediately before applying the three reviewed migrations. Only after the database reports terminal `20260902120000` may that still-disabled task use the existing explicit update action with `-ConfirmTaskAction` to move exactly from `20260824123500` to `20260902120000`. Re-enable the task without starting it, then require the runtime's read-only production preflight to pass at the new terminal.
+
+The intermediate terminals `20260829130000` and `20260901120000` are intentionally unsupported as final backup terminals. Either means the migration window is partial: STOP, preserve the exact state, do not advance the task lock, and do not continue deployment. Wrong current values, wrong targets, arbitrary future terminals, downgrades, unexpected task identity, running-task state, or an unsupported runtime contract are denied. Do not use a force flag or manually execute a backup merely to satisfy the migration gate.
