@@ -93,6 +93,7 @@
     "test:response-reveal-audit:hosted": "node scripts/hosted-response-reveal-audit-regression.mjs",
     "test:response-reveal:hosted": "node scripts/hosted-response-reveal-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs",
+    "test:calendar-edit-validation": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-edit-validation-regression.mjs",
     "test:overview": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-persisted-regression.mjs",
     "test:overview:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-browser-regression.mjs",
     "test:needs-attention": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/needs-attention-regression.mjs",

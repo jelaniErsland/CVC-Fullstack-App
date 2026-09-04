@@ -310,14 +310,107 @@ async function verifyCalendarManagement(containerName, users) {
 
   rows = queryJson(
     containerName,
-    `select title_snapshot, task_type_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id
+    `select title_snapshot, task_type_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id, publication_state
      from public.calendar_items where id = ${sqlUuid(created.calendarItemId)}`,
   );
   assert.equal(rows[0].title_snapshot, "QA 12.16 Edited Scheduled Item");
   assert.equal(rows[0].task_type_snapshot, "security");
   assert.equal(rows[0].start_date, "2026-08-13");
+  assert.equal(rows[0].start_time, "11:00:00");
+  assert.equal(rows[0].end_time, "12:15:00");
   assert.equal(rows[0].needed_count, 2);
+  assert.equal(rows[0].schedule_notes, "Edited by the 12.16 local validation.");
   assert.equal(rows[0].follow_up_project_contact_id, fixture.contacts.full);
+  assert.equal(rows[0].publication_state, "draft");
+
+  await updateCalendarOneOffTimedItemWithClient(users.full.client, {
+    calendarItemId: created.calendarItemId,
+    source: { title: "QA 12.16 Edited Scheduled Item", taskType: "security" },
+    schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
+    neededCount: 0,
+    notes: null,
+    customValues: {},
+  });
+  rows = queryJson(
+    containerName,
+    `select start_date, start_time::text, end_time::text, needed_count, schedule_notes, publication_state
+     from public.calendar_items where id = ${sqlUuid(created.calendarItemId)}`,
+  );
+  assert.deepEqual(rows, [{
+    start_date: "2026-08-14",
+    start_time: "13:15:00",
+    end_time: "14:45:00",
+    needed_count: 0,
+    schedule_notes: null,
+    publication_state: "draft",
+  }], "Calendar edit did not preserve valid zero/null semantics or draft state.");
+
+  await expectFailure("malformed edit identifier", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: "not-a-uuid",
+      source: { title: "Invalid identifier", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
+  );
+  await expectFailure("invalid edit date", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Invalid date", taskType: "general" },
+      schedule: { kind: "timed", date: "not-a-date", startTime: "13:15", endTime: "14:45" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
+  );
+  await expectFailure("invalid edit time", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Invalid time", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15:00", endTime: "14:45:00" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
+  );
+  await expectFailure("invalid edit time ordering", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Invalid order", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "15:00", endTime: "14:45" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
+  );
+  await expectFailure("invalid edit needed count", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Invalid count", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
+      neededCount: 100,
+      notes: null,
+      customValues: {},
+    }),
+  );
+  await expectFailure("wrong-workspace edit", () =>
+    updateCalendarOneOffTimedItemWithClient(users.other.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Wrong workspace", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
+  );
+
+  const deliveryCount = Number(runPsql(
+    containerName,
+    `select count(*) from public.assignment_notification_deliveries where calendar_item_id = ${sqlUuid(created.calendarItemId)};`,
+  ));
+  assert.equal(deliveryCount, 0, "Calendar edit created an assignment notification delivery.");
 
   await expectFailure("view-only create", () =>
     createCalendarItemWithClient(users.viewOnly.client, {
@@ -427,6 +520,16 @@ async function verifyCalendarManagement(containerName, users) {
   );
   await expectFailure("duplicate archive", () =>
     archiveCalendarItemWithClient(users.full.client, created.calendarItemId),
+  );
+  await expectFailure("archived item edit", () =>
+    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+      calendarItemId: created.calendarItemId,
+      source: { title: "Archived item cannot change", taskType: "general" },
+      schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
+      neededCount: 1,
+      notes: null,
+      customValues: {},
+    }),
   );
 
   const directInsert = await users.full.client.from("calendar_items").insert({

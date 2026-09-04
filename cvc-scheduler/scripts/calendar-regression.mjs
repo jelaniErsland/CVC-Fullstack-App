@@ -1694,13 +1694,23 @@ async function runDesktop(browser) {
 
       await page.reload();
       await inspector.waitFor();
-      await inspector.getByLabel("Task name", { exact: true }).fill(updatedTitle);
-      await inspector.getByLabel("Start", { exact: true }).fill("15:30");
-      await inspector.getByLabel("End", { exact: true }).fill("16:30");
-      await inspector.locator("textarea").first().fill("Browser regression persisted edit note.");
+      const oneOffEditForm = page
+        .locator('form:visible')
+        .filter({ hasText: "Edit scheduled item" })
+        .first();
+      assert(
+        (await oneOffEditForm.getByLabel("Start", { exact: true }).inputValue()) === "15:00",
+        "Persisted start time was not normalized for an unchanged edit submission",
+      );
+      assert(
+        (await oneOffEditForm.getByLabel("End", { exact: true }).inputValue()) === "16:00",
+        "Persisted end time was not normalized for an unchanged edit submission",
+      );
+      await oneOffEditForm.getByLabel("Task name", { exact: true }).fill(updatedTitle);
+      await oneOffEditForm.locator("textarea").fill("Browser regression persisted edit note.");
       await Promise.all([
         page.waitForURL(/notice=updated/),
-        inspector.getByRole("button", { name: "Save item changes", exact: true }).click(),
+        oneOffEditForm.getByRole("button", { name: "Save item changes", exact: true }).click(),
       ]);
       await page.getByText("Calendar item updated", { exact: true }).waitFor();
       await inspector.waitFor();

@@ -646,6 +646,15 @@ function formatTime(value: string | null) {
   }).format(date);
 }
 
+const calendarEditTimeValuePattern =
+  /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d(?:\.\d{1,6})?)?$/;
+
+export function normalizeCalendarEditTimeValue(value: string | null) {
+  if (!value) return undefined;
+  const match = calendarEditTimeValuePattern.exec(value);
+  return match ? `${match[1]}:${match[2]}` : undefined;
+}
+
 function mapPersistedItemToCalendarItem(
   item: CalendarReadModelItem,
   assignments: readonly CalendarClientAssignment[] = [],
@@ -684,8 +693,8 @@ function mapPersistedItemToCalendarItem(
     allDay: item.scheduleKind !== "timed",
     startTime,
     endTime,
-    startTimeValue: item.startTime ?? undefined,
-    endTimeValue: item.endTime ?? undefined,
+    startTimeValue: normalizeCalendarEditTimeValue(item.startTime),
+    endTimeValue: normalizeCalendarEditTimeValue(item.endTime),
     timeWindow: startTime && endTime ? `${startTime} - ${endTime}` : undefined,
     category,
     assignedVolunteerIds: assignments.map((assignment) => assignment.volunteerProfileId),
