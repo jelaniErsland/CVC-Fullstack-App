@@ -41,6 +41,8 @@ const projectDayQuickViewOnly =
   process.env.PROJECT_DAY_QUICK_VIEW_ONLY === "1";
 const archiveUiBrowserOnly =
   process.env.ARCHIVE_UI_BROWSER_ONLY === "1";
+const operationalUsabilityBrowserOnly =
+  process.env.OPERATIONAL_USABILITY_BROWSER_ONLY === "1";
 const archiveUiCaptureNames = new Set(
   (process.env.ARCHIVE_UI_CAPTURE_NAMES ?? "")
     .split(",")
@@ -53,6 +55,12 @@ const archiveUiReviewDir = path.resolve(
   "previews",
   "beta-review",
   "iteration-12-44f2-beta-containment-lifecycle",
+);
+const operationalUsabilityReviewDir = path.resolve(
+  root,
+  "..",
+  "previews",
+  "iteration-12-44f4a-operational-usability",
 );
 const writeProjectDayQuickViewCaptures =
   process.env.WRITE_ITERATION_12_44E2_CAPTURES === "1";
@@ -452,7 +460,7 @@ values
   ('${fixture.calendarOnlyContactId}'::uuid, '${calendarOnlyUserId}'::uuid, 'active');
 insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status)
 values
-  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view', 'assignments.edit', 'volunteers.view', 'calendar.edit', 'tasks.view']::text[], 'active'),
+  ('${fixture.fullGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.fullContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view', 'assignments.view', 'assignments.edit', 'volunteers.view', 'volunteers.edit', 'calendar.edit', 'tasks.view']::text[], 'active'),
   ('${fixture.calendarOnlyGrantId}'::uuid, '${fixture.workspaceId}'::uuid, '${fixture.calendarOnlyContactId}'::uuid, 'main_contact', array['workspace.read', 'calendar.view']::text[], 'active');
 insert into public.questionnaire_submissions (id, workspace_id, status, source, questionnaire_version, answers)
 values ${questionnaireRows()};
@@ -1467,7 +1475,7 @@ async function runDesktop(browser) {
         "Save & continue should describe its persisted action state",
       );
       await planner
-        .getByText("This will save as a private draft.", { exact: true })
+        .getByText("Private draft", { exact: true })
         .waitFor();
       assert(
         (await planner.getByRole("button", { name: /after save/i }).count()) === 0,
@@ -2300,7 +2308,7 @@ async function runMobile(browser) {
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile creation should be the only active surface",
       );
-      await planner.getByText("Suggested from calendar day", { exact: true }).waitFor();
+      await planner.getByText("Schedule", { exact: true }).waitFor();
       await closeWithEscape(page, "Plan project work", triggerLabel);
     });
 
@@ -2907,6 +2915,130 @@ async function runArchiveUiBrowser(browser, containerName) {
   }
 }
 
+async function writeOperationalUsabilityCapture(page, filename, locator) {
+  await mkdir(operationalUsabilityReviewDir, { recursive: true });
+  await (locator ?? page).screenshot({
+    path: path.join(operationalUsabilityReviewDir, filename),
+    ...(locator ? {} : { fullPage: false }),
+  });
+}
+
+async function runOperationalUsabilityBrowser(browser, containerName) {
+  const desktopContext = await browser.newContext({ viewport: desktopViewport });
+  const mobileContext = await browser.newContext({ viewport: mobileViewport });
+  await applyAuthCookies(desktopContext, "full");
+  await applyAuthCookies(mobileContext, "full");
+  const desktop = await desktopContext.newPage();
+  const mobile = await mobileContext.newPage();
+  const errors = [...watchPageErrors(desktop), ...watchPageErrors(mobile)];
+  desktop.setDefaultTimeout(10_000);
+  mobile.setDefaultTimeout(10_000);
+
+  try {
+    await desktop.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await desktop.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    const projectDatesEditor = desktop.getByRole("heading", { name: "Project dates", exact: true }).locator("xpath=ancestor::section[1]");
+    if ((await projectDatesEditor.count()) !== 1) {
+      throw new Error(`Project date editor was unavailable in the authorized Calendar: ${(await desktop.locator("body").innerText()).slice(0, 800)}`);
+    }
+    await projectDatesEditor.getByText("Jan 1, 2026 – Apr 4, 2026", { exact: true }).waitFor();
+    await writeOperationalUsabilityCapture(desktop, "01-project-dates-compact.png");
+    await projectDatesEditor.getByRole("button", { name: "Edit", exact: true }).click();
+    await desktop.getByLabel("Start date", { exact: true }).fill("2026-01-01");
+    await desktop.getByLabel("End date", { exact: true }).fill("2026-04-05");
+    await desktop.evaluate(() => window.scrollTo(0, 0));
+    await writeOperationalUsabilityCapture(desktop, "02-project-dates-edit.png", projectDatesEditor);
+    await desktop.getByRole("button", { name: "Save dates", exact: true }).click();
+    await projectDatesEditor.getByRole("button", { name: "Edit", exact: true }).waitFor();
+    await projectDatesEditor.getByText("Jan 1, 2026 – Apr 5, 2026", { exact: true }).waitFor();
+    assert(
+      runPsql(containerName, `select starts_on || '|' || ends_on from public.workspaces where id = '${fixture.workspaceId}'::uuid;`) === "2026-01-01|2026-04-05",
+      "Project date editor did not persist the authoritative workspace dates.",
+    );
+
+    await desktop.getByRole("button", { name: /Create item/, exact: true }).click();
+    const planner = desktop.getByRole("dialog", { name: "Plan project work", exact: true });
+    await planner.waitFor();
+    await planner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await desktop.waitForTimeout(200);
+    const inactiveOneDate = planner.getByRole("button", { name: "One date", exact: true });
+    assert((await inactiveOneDate.getAttribute("aria-pressed")) === "false", "Repeat mode left One date selected.");
+    const inactiveOneDateColor = await inactiveOneDate.evaluate((element) => getComputedStyle(element).backgroundColor);
+    assert(inactiveOneDateColor === "rgb(255, 255, 255)", `Inactive One date control is not neutral: ${inactiveOneDateColor}.`);
+    assert((await planner.getByLabel("Start date", { exact: true }).count()) === 1, "Repeat mode did not expose one start date beside the range controls.");
+    assert((await planner.getByLabel("Date", { exact: true }).count()) === 0, "Repeat mode retained a duplicate lower Date input.");
+    await planner.getByLabel("End date", { exact: true }).fill("2026-01-20");
+    await planner.getByRole("button", { name: "Tue", exact: true }).click();
+    await planner.getByRole("button", { name: "Thu", exact: true }).click();
+    await planner.getByText("3 items", { exact: true }).waitFor();
+    await writeOperationalUsabilityCapture(desktop, "03-repeat-calendar-planner.png");
+    await planner.getByRole("button", { name: "One date", exact: true }).click();
+    assert((await planner.getByLabel("Date", { exact: true }).count()) === 1, "One-date mode lost its ordinary Date input.");
+    await planner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await planner.getByRole("button", { name: "Close project work planner", exact: true }).click();
+
+    await desktop.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const freeVolunteer = desktop.locator("article").filter({ hasText: "QA 12.12 Volunteer 08" });
+    await freeVolunteer.scrollIntoViewIfNeeded();
+    await freeVolunteer.locator("summary").click();
+    await freeVolunteer.getByRole("button", { name: "Delete volunteer", exact: true }).scrollIntoViewIfNeeded();
+    await writeOperationalUsabilityCapture(desktop, "06-history-free-volunteer-delete.png");
+    await freeVolunteer.getByRole("button", { name: "Delete volunteer", exact: true }).click();
+    const deleteConfirmation = desktop.getByRole("dialog", { name: "Delete QA 12.12 Volunteer 08", exact: true });
+    await deleteConfirmation.waitFor();
+    await deleteConfirmation.getByText("Delete QA 12.12 Volunteer 08?", { exact: true }).waitFor();
+    await writeOperationalUsabilityCapture(desktop, "07-volunteer-delete-confirmation.png");
+    await deleteConfirmation.getByRole("button", { name: "Cancel", exact: true }).click();
+
+    const historicalVolunteer = desktop.locator("article").filter({ hasText: "QA 12.12 Volunteer 01" });
+    await historicalVolunteer.scrollIntoViewIfNeeded();
+    await historicalVolunteer.locator("summary").click();
+    await historicalVolunteer.getByRole("button", { name: "Delete volunteer", exact: true }).click();
+    const blockedConfirmation = desktop.getByRole("dialog", { name: "Delete QA 12.12 Volunteer 01", exact: true });
+    await blockedConfirmation.getByRole("button", { name: "Delete permanently", exact: true }).click();
+    await desktop.waitForURL(/notice=has_history/);
+    await desktop.getByText("This volunteer has scheduling history and can't be permanently deleted. Mark them inactive instead.", { exact: true }).waitFor();
+    await writeOperationalUsabilityCapture(desktop, "08-volunteer-delete-history-blocked.png");
+    assert(runPsql(containerName, `select count(*) from public.volunteer_profiles where id = '${fixture.volunteerIds[0]}'::uuid;`) === "1", "History-blocked volunteer was deleted.");
+
+    await mobile.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await mobile.getByRole("button", { name: /Create/, exact: true }).click();
+    const mobilePlanner = mobile.getByRole("dialog", { name: "Plan project work", exact: true });
+    await mobilePlanner.waitFor();
+    await mobilePlanner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await mobile.waitForTimeout(200);
+    const mobileInactiveOneDate = mobilePlanner.getByRole("button", { name: "One date", exact: true });
+    assert((await mobileInactiveOneDate.getAttribute("aria-pressed")) === "false", "Mobile repeat mode left One date selected.");
+    const mobileInactiveOneDateColor = await mobileInactiveOneDate.evaluate((element) => getComputedStyle(element).backgroundColor);
+    assert(mobileInactiveOneDateColor === "rgb(255, 255, 255)", `Mobile inactive One date control is not neutral: ${mobileInactiveOneDateColor}.`);
+    assert((await mobilePlanner.getByLabel("Start date", { exact: true }).count()) === 1, "Mobile repeat mode did not expose its start date.");
+    assert((await mobilePlanner.getByLabel("Date", { exact: true }).count()) === 0, "Mobile repeat mode retained a duplicate Date input.");
+    await mobilePlanner.getByLabel("End date", { exact: true }).fill("2026-01-20");
+    await mobilePlanner.getByRole("button", { name: "Tue", exact: true }).click();
+    await mobilePlanner.getByRole("button", { name: "Thu", exact: true }).click();
+    await mobilePlanner.getByText("3 items", { exact: true }).waitFor();
+    await assertNoHorizontalOverflow(mobile, "390px repeat planner");
+    await writeOperationalUsabilityCapture(mobile, "04-mobile-repeat-calendar-planner-390.png");
+
+    await mobile.setViewportSize({ width: 360, height: 800 });
+    await assertNoHorizontalOverflow(mobile, "360px repeat planner");
+    await writeOperationalUsabilityCapture(mobile, "05-mobile-repeat-calendar-planner-360.png");
+    await mobilePlanner.getByRole("button", { name: "Close project work planner", exact: true }).click();
+    await mobile.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+    const mobileFreeVolunteer = mobile.locator("article").filter({ hasText: "QA 12.12 Volunteer 08" });
+    await mobileFreeVolunteer.scrollIntoViewIfNeeded();
+    await mobileFreeVolunteer.getByRole("button", { name: "Edit volunteer", exact: true }).click();
+    await mobile.getByRole("button", { name: "Delete volunteer", exact: true }).scrollIntoViewIfNeeded();
+    await assertNoHorizontalOverflow(mobile, "360px volunteer delete editor");
+    await writeOperationalUsabilityCapture(mobile, "09-mobile-history-free-volunteer-delete.png");
+
+    assert(errors.length === 0, errors.join("\n"));
+  } finally {
+    await desktopContext.close();
+    await mobileContext.close();
+  }
+}
+
 async function runUnavailable(browser) {
   const context = await browser.newContext({ viewport: desktopViewport });
   await applyAuthCookies(context, "calendar-only");
@@ -3011,7 +3143,9 @@ async function main() {
     await createFixtures(containerName);
     await assertPreviewAvailable();
     browser = await launchBrowser();
-    if (archiveUiBrowserOnly) {
+    if (operationalUsabilityBrowserOnly) {
+      await runOperationalUsabilityBrowser(browser, containerName);
+    } else if (archiveUiBrowserOnly) {
       await runArchiveUiBrowser(browser, containerName);
     } else if (projectDayQuickViewOnly) {
       await runProjectDayQuickViewDesktop(browser, containerName);
@@ -3028,7 +3162,9 @@ async function main() {
   assert(cleanupCompleted, "Calendar route browser fixture cleanup did not complete.");
 
   console.log(
-    archiveUiBrowserOnly
+    operationalUsabilityBrowserOnly
+      ? "Operational usability browser regression passed."
+      : archiveUiBrowserOnly
       ? "Dedicated Calendar Archive UI browser regression passed."
       : projectDayQuickViewOnly
       ? "Project Day and Quick View browser regression passed."

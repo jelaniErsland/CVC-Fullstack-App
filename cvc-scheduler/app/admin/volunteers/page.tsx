@@ -9,6 +9,7 @@ import {
 } from "@/lib/observability/server";
 import {
   createManualVolunteerProfileWithClient,
+  deleteHistoryFreeVolunteerProfileWithClient,
   manualVolunteerInputFromFormData,
   updateVolunteerProfileManualFieldsWithClient,
 } from "@/lib/volunteers/server";
@@ -44,6 +45,30 @@ function observeVolunteerMutationFailure(
           ? "validation_failed"
           : "persistence_failed",
   });
+}
+
+async function deleteVolunteerProfileAction(formData: FormData) {
+  "use server";
+
+  let notice: "deleted" | "has_history" | "unavailable" | "error" = "error";
+  try {
+    const routeContext = await readVolunteerManagementRouteContext();
+    const profileId = formData.get("profileId");
+    if (!routeContext || !routeContext.canEdit || typeof profileId !== "string") {
+      notice = "unavailable";
+    } else {
+      const result = await deleteHistoryFreeVolunteerProfileWithClient(
+        routeContext.supabase,
+        profileId,
+      );
+      notice = result;
+    }
+  } catch {
+    notice = "error";
+  }
+
+  revalidatePath("/admin/volunteers");
+  redirect(`/admin/volunteers?notice=${notice}`);
 }
 
 async function createManualVolunteerAction(formData: FormData) {
@@ -119,6 +144,14 @@ function Notice({ notice }: { notice: string | null }) {
       title: "Volunteer updated",
       message: "Your changes are saved.",
     },
+    deleted: {
+      title: "Volunteer deleted",
+      message: "This history-free volunteer was removed from the project.",
+    },
+    has_history: {
+      title: "Volunteer kept",
+      message: "This volunteer has scheduling history and can't be permanently deleted. Mark them inactive instead.",
+    },
     validation: {
       title: "Check the volunteer details",
       message: "Name and at least one contact method are required, and fields must stay within the supported format.",
@@ -174,6 +207,7 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
         ),
       ].sort((a, b) => a.localeCompare(b))}
       createAction={createManualVolunteerAction}
+      deleteAction={deleteVolunteerProfileAction}
       updateAction={updateVolunteerProfileAction}
       volunteers={state.profiles}
     />
@@ -216,9 +250,6 @@ export default async function AdminVolunteersPage({
           <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
             Volunteers
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
-            Search contact details and keep the scheduling directory current.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--pl-muted)]">
           {stats.map((stat) => (

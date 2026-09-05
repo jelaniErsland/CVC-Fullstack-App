@@ -8,7 +8,11 @@ import {
   ChevronRight,
   Clock,
   Mail,
+  Layers3,
+  LockKeyhole,
+  Pencil,
   Plus,
+  Repeat2,
   Search,
   Send,
   SlidersHorizontal,
@@ -72,6 +76,8 @@ import type {
   TaskPresetCategory,
 } from "@/lib/mockData";
 import type { ProjectDayMutationState } from "@/lib/operations/projectDay";
+import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
+import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
 
 type CalendarViewMode = "day" | "week" | "month" | "list";
 type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect" | "projectDay";
@@ -82,6 +88,10 @@ type ProjectDayMutationAction = (
   previousState: ProjectDayMutationState,
   formData: FormData,
 ) => Promise<ProjectDayMutationState>;
+type ProjectDatesMutationAction = (
+  previousState: ProjectDatesMutationState,
+  formData: FormData,
+) => Promise<ProjectDatesMutationState>;
 type CalendarPublicationState = "draft" | "published";
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 const calmFocusRing =
@@ -111,6 +121,10 @@ type CalendarCreationDraft = {
   notes: string;
   customName: string;
   customTaskType: CalendarHighLevelTaskType;
+  scheduleMode: "oneDate" | "repeat";
+  repeatEndDate: string;
+  repeatWeekdays: number[];
+  repeatRequestKey: string;
 };
 
 type CalendarTaskPresetCustomField = {
@@ -413,20 +427,6 @@ function getCalendarAccessibleDayLabel(date: string) {
     timeZone: "UTC",
     weekday: "long",
   }).format(new Date(`${date}T00:00:00Z`));
-}
-
-function getCreationTimeLabel(value: string) {
-  const [hourText, minute = "00"] = value.split(":");
-  const hour = Number(hourText);
-
-  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
-    return "a time";
-  }
-
-  const meridiem = hour >= 12 ? "PM" : "AM";
-  const displayHour = hour % 12 || 12;
-
-  return `${displayHour}${minute === "00" ? "" : `:${minute}`} ${meridiem}`;
 }
 
 function shiftCalendarAnchor(
@@ -1965,6 +1965,7 @@ function MobileDayGroups({
 function CalendarCreatePanel({
   canEdit,
   createAction,
+  createRepeatedAction,
   creationDraft,
   currentDate,
   currentView,
@@ -1975,6 +1976,7 @@ function CalendarCreatePanel({
 }: {
   canEdit: boolean;
   createAction?: CalendarMutationAction;
+  createRepeatedAction?: CalendarMutationAction;
   creationDraft?: CalendarCreationDraft;
   currentDate: string;
   currentView: CalendarViewMode;
@@ -2080,6 +2082,7 @@ function CalendarCreatePanel({
             canEdit={canEdit}
             closeButtonRef={desktopCloseButtonRef}
             createAction={createAction}
+            createRepeatedAction={createRepeatedAction}
             creationDraft={creationDraft}
             currentDate={currentDate}
             currentView={currentView}
@@ -2111,6 +2114,7 @@ function CalendarCreatePanel({
             canEdit={canEdit}
             closeButtonRef={mobileCloseButtonRef}
             createAction={createAction}
+            createRepeatedAction={createRepeatedAction}
             creationDraft={creationDraft}
             currentDate={currentDate}
             currentView={currentView}
@@ -2132,6 +2136,7 @@ function CreatePanelContent({
   canEdit,
   closeButtonRef,
   createAction,
+  createRepeatedAction,
   creationDraft,
   currentDate,
   currentView,
@@ -2146,6 +2151,7 @@ function CreatePanelContent({
   canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
   createAction?: CalendarMutationAction;
+  createRepeatedAction?: CalendarMutationAction;
   creationDraft: CalendarCreationDraft;
   currentDate: string;
   currentView: CalendarViewMode;
@@ -2159,6 +2165,7 @@ function CreatePanelContent({
 }) {
   const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
+  const isRepeat = creationDraft.scheduleMode === "repeat";
   const hasPresetChoices = presets.length > 0;
   const presetMissing = !isOneOff && (!hasPresetChoices || !selectedPreset);
   const customNameInvalid = isOneOff && creationDraft.customName.trim().length === 0;
@@ -2179,6 +2186,14 @@ function CreatePanelContent({
   const neededCountInvalid =
     creationDraft.neededCount < 0 || creationDraft.neededCount > 99;
   const unsupportedAllDay = creationDraft.allDay;
+  const repeatEndMissing = isRepeat && creationDraft.repeatEndDate.length === 0;
+  const repeatRangeInvalid =
+    isRepeat && !dateMissing && !repeatEndMissing && creationDraft.repeatEndDate < creationDraft.date;
+  const repeatDates =
+    isRepeat && !dateMissing && !repeatEndMissing && !repeatRangeInvalid
+      ? expandRepeatDates(creationDraft.date, creationDraft.repeatEndDate, creationDraft.repeatWeekdays)
+      : [];
+  const repeatInvalid = isRepeat && (repeatEndMissing || repeatRangeInvalid || repeatDates.length === 0 || repeatDates.length > CALENDAR_REPEAT_MAX_ITEMS);
   const customNameErrorId = `${validationId}-custom-task-name-error`;
   const dateErrorId = `${validationId}-creation-date-error`;
   const timeErrorId = `${validationId}-creation-time-error`;
@@ -2187,9 +2202,18 @@ function CreatePanelContent({
     ? "Choose a date."
     : allDayEndMissing
       ? "Choose an end date."
-      : allDayRangeInvalid
+    : allDayRangeInvalid
         ? "End date must be on or after Date."
         : undefined;
+  const repeatValidationMessage = repeatEndMissing
+    ? "Choose an end date."
+    : repeatRangeInvalid
+      ? "End date must be on or after the start date."
+      : isRepeat && creationDraft.repeatWeekdays.length === 0
+        ? "Choose at least one weekday."
+        : repeatDates.length > CALENDAR_REPEAT_MAX_ITEMS
+          ? `Choose no more than ${CALENDAR_REPEAT_MAX_ITEMS} dates at once.`
+          : undefined;
   const timeValidationMessage = timedTimeMissing
     ? "Choose both a start and end time."
     : timedRangeInvalid
@@ -2203,26 +2227,17 @@ function CreatePanelContent({
     (presetMissing && "Choose an available task preset, or use a custom item.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
-    "This will save as a private draft.";
+    "Private draft";
   const canSubmitPersisted =
     canEdit &&
-    Boolean(createAction) &&
+    Boolean(isRepeat ? createRepeatedAction : createAction) &&
     !presetMissing &&
     !unsupportedAllDay &&
     !customNameInvalid &&
     !dateValidationMessage &&
     !timeValidationMessage &&
+    !repeatInvalid &&
     !neededCountInvalid;
-  const creationContextCopy = dateMissing
-    ? "Choose a date below."
-    : creationDraft.allDay
-      ? creationDraft.endDate && creationDraft.endDate !== creationDraft.date
-        ? `Suggested project window from ${getCalendarAccessibleDayLabel(creationDraft.date)} through ${getCalendarAccessibleDayLabel(creationDraft.endDate)}. Adjust below.`
-        : `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}, with no specific time. Adjust below.`
-      : creationDraft.startTime && creationDraft.endTime
-        ? `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}, ${getCreationTimeLabel(creationDraft.startTime)} to ${getCreationTimeLabel(creationDraft.endTime)}. Adjust below.`
-        : `Suggested ${getCalendarAccessibleDayLabel(creationDraft.date)}. Add a start and end time below.`;
-
   return (
     <>
       <p className="sr-only" id={descriptionId}>
@@ -2256,17 +2271,78 @@ function CreatePanelContent({
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
         data-overlay-scroll="calendar-create"
       >
-        <section className="rounded-xl border border-slate-200/70 bg-white/72 px-4 py-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-            Calendar context
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Schedule
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-800">
-            {creationDraft.slot.contextLabel ?? "Suggested from calendar"}
-          </p>
-          <p className="mt-1 text-sm font-medium leading-5 text-slate-500">
-            {creationContextCopy}
-          </p>
+          <div aria-label="Schedule pattern" className="mt-2 grid grid-cols-2 gap-2" role="group">
+            <button
+              aria-pressed={!isRepeat}
+              className={`min-h-11 rounded-full border px-3 text-sm font-semibold transition ${!isRepeat ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white" : "!border-slate-300 !bg-white !text-slate-700 hover:bg-slate-50"}`}
+              onClick={() => onUpdate({ scheduleMode: "oneDate" })}
+              style={isRepeat ? { backgroundColor: "#ffffff", borderColor: "#cbd5e1", color: "#334155" } : undefined}
+              type="button"
+            >
+              One date
+            </button>
+            <button
+              aria-pressed={isRepeat}
+              className={`min-h-11 rounded-full border px-3 text-sm font-semibold transition ${isRepeat ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white" : "!border-slate-300 !bg-white !text-slate-700 hover:bg-slate-50"}`}
+              onClick={() => onUpdate({ scheduleMode: "repeat", allDay: false, repeatEndDate: creationDraft.repeatEndDate || creationDraft.date })}
+              type="button"
+            >
+              <span className="inline-flex items-center justify-center gap-1.5">
+                <Repeat2 aria-hidden="true" className="h-4 w-4" />
+                Repeat across dates
+              </span>
+            </button>
+          </div>
+          {isRepeat ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Start date</span>
+                <input
+                  aria-describedby={dateValidationMessage ? dateErrorId : undefined}
+                  aria-invalid={Boolean(dateValidationMessage)}
+                  className={`mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1 ${dateValidationMessage ? "border-rose-300" : "border-slate-200"}`}
+                  onChange={(event) => {
+                    const date = event.target.value;
+                    onUpdate({
+                      date,
+                      ...(creationDraft.repeatEndDate < date ? { repeatEndDate: date } : {}),
+                    });
+                  }}
+                  type="date"
+                  value={creationDraft.date}
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">End date</span>
+                <input
+                  className={`mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1 ${repeatValidationMessage ? "border-rose-300" : "border-slate-200"}`}
+                  min={creationDraft.date}
+                  onChange={(event) => onUpdate({ repeatEndDate: event.target.value })}
+                  type="date"
+                  value={creationDraft.repeatEndDate}
+                />
+              </label>
+              <div className="sm:col-span-2">
+                <span className="text-sm font-semibold text-slate-700">Weekdays</span>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label, day) => {
+                    const selected = creationDraft.repeatWeekdays.includes(day);
+                    return <button key={label} aria-pressed={selected} className={`min-h-10 rounded-full border px-2.5 text-xs font-semibold ${selected ? "border-[var(--pl-blue)] bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]" : "border-slate-200 bg-white text-slate-600"}`} onClick={() => onUpdate({ repeatWeekdays: selected ? creationDraft.repeatWeekdays.filter((item) => item !== day) : [...creationDraft.repeatWeekdays, day].sort((a,b) => a-b) })} type="button">{label}</button>;
+                  })}
+                </div>
+              </div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 sm:col-span-2">
+                <Layers3 aria-hidden="true" className="h-4 w-4" />
+                {repeatDates.length > 0 ? `${repeatDates.length} ${repeatDates.length === 1 ? "item" : "items"}` : "Choose weekdays"}
+              </p>
+              {dateValidationMessage ? <p className="text-xs font-semibold text-rose-600 sm:col-span-2" id={dateErrorId}>{dateValidationMessage}</p> : null}
+              {repeatValidationMessage ? <p className="text-xs font-semibold text-rose-600 sm:col-span-2">{repeatValidationMessage}</p> : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="mt-4">
@@ -2392,7 +2468,7 @@ function CreatePanelContent({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Timing
           </p>
-          <label className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white/72 px-3 text-sm font-semibold text-slate-700">
+          {!isRepeat ? <label className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700">
             <input
               checked={creationDraft.allDay}
               className="h-4 w-4 accent-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2"
@@ -2423,9 +2499,9 @@ function CreatePanelContent({
               type="checkbox"
             />
             No specific time
-          </label>
+          </label> : null}
           <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            <label
+            {!isRepeat ? <label
               className={[
                 "block min-w-0",
                 creationDraft.allDay ? "" : "sm:col-span-2",
@@ -2444,6 +2520,7 @@ function CreatePanelContent({
 
                   onUpdate({
                     date,
+                    ...(isRepeat && creationDraft.repeatEndDate < date ? { repeatEndDate: date } : {}),
                     ...(creationDraft.allDay && creationDraft.endDate < date
                       ? { endDate: date }
                       : {}),
@@ -2452,7 +2529,7 @@ function CreatePanelContent({
                 type="date"
                 value={creationDraft.date}
               />
-            </label>
+            </label> : null}
             {creationDraft.allDay ? (
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">End date</span>
@@ -2508,7 +2585,7 @@ function CreatePanelContent({
                 </label>
               </>
             )}
-            {dateValidationMessage ? (
+            {!isRepeat && dateValidationMessage ? (
               <p
                 className="text-xs font-semibold text-rose-600 sm:col-span-2"
                 id={dateErrorId}
@@ -2611,15 +2688,12 @@ function CreatePanelContent({
             />
           </label>
 
-          <p className="mt-3 text-sm font-medium leading-5 text-slate-500">
-            Saves as a private draft. Nothing publishes or sends automatically.
-          </p>
         </section>
 
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
-        <form action={createAction} className="grid gap-2">
+        <form action={isRepeat ? createRepeatedAction : createAction} className="grid gap-2">
           <input name="redirectView" type="hidden" value={currentView} />
           <input name="redirectDate" type="hidden" value={currentDate} />
           <input name="sourceMode" type="hidden" value={creationDraft.mode === "preset" ? "preset" : "oneOff"} />
@@ -2631,6 +2705,10 @@ function CreatePanelContent({
             value={mapHighLevelTaskTypeToCalendarTaskType(creationDraft.customTaskType)}
           />
           <input name="date" type="hidden" value={creationDraft.date} />
+          <input name="repeatRequestKey" type="hidden" value={creationDraft.repeatRequestKey} />
+          <input name="repeatStartDate" type="hidden" value={creationDraft.date} />
+          <input name="repeatEndDate" type="hidden" value={creationDraft.repeatEndDate} />
+          {creationDraft.repeatWeekdays.map((weekday) => <input key={weekday} name="repeatWeekdays" type="hidden" value={String(weekday)} />)}
           <input name="startTime" type="hidden" value={creationDraft.startTime} />
           <input name="endTime" type="hidden" value={creationDraft.endTime} />
           <input name="neededCount" type="hidden" value={String(creationDraft.neededCount)} />
@@ -2643,6 +2721,7 @@ function CreatePanelContent({
             ].join(" ")}
             id={actionStatusId}
           >
+            {canSubmitPersisted ? <LockKeyhole aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> : null}
             {actionStatus}
           </p>
           <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -2657,7 +2736,7 @@ function CreatePanelContent({
               disabled={!canSubmitPersisted}
               type="submit"
             >
-              Save &amp; continue
+              {isRepeat ? `Create ${repeatDates.length || ""} separate items`.trim() : "Save & continue"}
             </button>
             <button
               className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
@@ -3451,6 +3530,8 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       workspaceName: string;
+      projectStartsOn: string | null;
+      projectEndsOn: string | null;
       items: Array<
         CalendarItem & {
           assignments: CalendarAssignmentSummary[];
@@ -3501,6 +3582,86 @@ const initialProjectDayMutationState: ProjectDayMutationState = {
   expectedOnSiteCount: null,
   message: "",
 };
+
+const initialProjectDatesMutationState: ProjectDatesMutationState = {
+  status: "idle",
+  startsOn: "",
+  endsOn: "",
+  message: "",
+};
+
+function ProjectDatesEditor({
+  action,
+  canEdit,
+  startsOn,
+  endsOn,
+}: {
+  action: ProjectDatesMutationAction;
+  canEdit: boolean;
+  startsOn: string | null;
+  endsOn: string | null;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [state, formAction, isPending] = useActionState(
+    async (previousState: ProjectDatesMutationState, formData: FormData) => {
+      const nextState = await action(previousState, formData);
+      if (nextState.status === "success") setEditing(false);
+      return nextState;
+    },
+    initialProjectDatesMutationState,
+  );
+  const error = state.status === "validation" || state.status === "unavailable" || state.status === "error";
+  const currentStartsOn = state.status === "success" ? state.startsOn : startsOn ?? "";
+  const currentEndsOn = state.status === "success" ? state.endsOn : endsOn ?? "";
+  const friendlyDate = (value: string) => value
+    ? new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "UTC", year: "numeric" }).format(new Date(`${value}T00:00:00Z`))
+    : "Not set";
+
+  const expanded = editing || error;
+
+  return (
+    <section className="mb-4 overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
+      <div className="flex min-h-14 items-center gap-3 px-4 py-2.5 sm:px-5">
+        <CalendarRange aria-hidden="true" className="h-4 w-4 shrink-0 text-[var(--pl-blue)]" />
+        <div className="min-w-0 flex-1 sm:flex sm:items-baseline sm:gap-3">
+          <h2 className="text-sm font-semibold text-[var(--pl-ink)]">Project dates</h2>
+          <p className="truncate text-xs font-medium text-[var(--pl-muted)]">
+            {friendlyDate(currentStartsOn)} – {friendlyDate(currentEndsOn)}
+          </p>
+        </div>
+        {canEdit && !expanded ? (
+          <button
+            className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`}
+            onClick={() => setEditing(true)}
+            type="button"
+          >
+            <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+            Edit
+          </button>
+        ) : null}
+      </div>
+      {expanded ? (
+        <form action={formAction} className="grid gap-3 border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end sm:px-5">
+          <label className="block text-sm font-semibold text-[var(--pl-text)]">
+            Start date
+            <input className="mt-1.5 min-h-11 w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm" defaultValue={currentStartsOn} disabled={isPending} name="projectStartsOn" required type="date" />
+          </label>
+          <label className="block text-sm font-semibold text-[var(--pl-text)]">
+            End date
+            <input className="mt-1.5 min-h-11 w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm" defaultValue={currentEndsOn} disabled={isPending} name="projectEndsOn" required type="date" />
+          </label>
+          <button className="min-h-11 rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={isPending} type="submit">
+            {isPending ? "Saving…" : "Save dates"}
+          </button>
+          <button className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)]" onClick={() => setEditing(false)} type="button">
+            Cancel
+          </button>
+          {state.status !== "idle" ? <p aria-live="polite" className={`text-xs font-medium sm:col-span-4 ${error ? "text-rose-700" : "text-emerald-700"}`}>{state.message}</p> : null}
+        </form>
+      ) : null}
+    </section>
+  );
+}
 
 function getProjectDayLongLabel(date: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -3696,6 +3857,10 @@ function CalendarNotice({ notice }: { notice?: string }) {
       title: "Calendar draft saved",
       message: "The scheduled item was saved as a private draft.",
     },
+    repeat_created: {
+      title: "Calendar drafts saved",
+      message: "Each scheduled item was saved as a separate private draft.",
+    },
     updated: {
       title: "Calendar item updated",
       message: "The edited item was saved and will remain after reload.",
@@ -3816,6 +3981,7 @@ export default function CalendarClient({
   archiveAction,
   cancelAssignmentAction,
   createAction,
+  createRepeatedAction,
   initialInspectorItemId,
   initialInspectorSection = "details",
   notice,
@@ -3824,12 +3990,14 @@ export default function CalendarClient({
   updateCurrentVolunteerFacingContactDetailsAction,
   state,
   updateProjectDayAction,
+  updateProjectDatesAction,
   updateAction,
 }: Readonly<{
   assignAction?: CalendarMutationAction;
   archiveAction?: CalendarMutationAction;
   cancelAssignmentAction?: CalendarMutationAction;
   createAction?: CalendarMutationAction;
+  createRepeatedAction?: CalendarMutationAction;
   initialInspectorItemId?: string;
   initialInspectorSection?: CalendarInspectorSection;
   notice?: string;
@@ -3838,6 +4006,7 @@ export default function CalendarClient({
   updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   state: CalendarClientState;
   updateProjectDayAction: ProjectDayMutationAction;
+  updateProjectDatesAction: ProjectDatesMutationAction;
   updateAction?: CalendarMutationAction;
 }>) {
   const router = useRouter();
@@ -4074,6 +4243,10 @@ export default function CalendarClient({
       notes: "",
       customName: "Custom one-off task",
       customTaskType: "generalVolunteers",
+      scheduleMode: "oneDate",
+      repeatEndDate: slot.date,
+      repeatWeekdays: [],
+      repeatRequestKey: crypto.randomUUID(),
     });
     setActiveSurface("create");
   };
@@ -4134,14 +4307,17 @@ export default function CalendarClient({
           Calendar
         </h1>
         </div>
-        <p className="hidden max-w-sm text-right text-xs leading-5 text-[var(--pl-muted)] sm:block">
-          Plan work, assign volunteers, publish, and send the initial notice.
-        </p>
       </header>
 
       <section className="mt-4">
         {isReady ? (
           <>
+            <ProjectDatesEditor
+              action={updateProjectDatesAction}
+              canEdit={state.canEdit}
+              endsOn={state.projectEndsOn}
+              startsOn={state.projectStartsOn}
+            />
             <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
             <CalendarWorkspaceHeader
               activeFilterCount={activeFilterCount}
@@ -4288,6 +4464,7 @@ export default function CalendarClient({
             <CalendarCreatePanel
               canEdit={state.canEdit}
               createAction={createAction}
+              createRepeatedAction={createRepeatedAction}
               creationDraft={creationDraft}
               currentDate={calendarAnchor}
               currentView={activeView}

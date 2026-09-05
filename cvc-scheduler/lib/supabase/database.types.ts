@@ -464,6 +464,48 @@ export type Database = {
           },
         ]
       }
+      calendar_repeat_creation_requests: {
+        Row: {
+          created_at: string
+          created_by_project_contact_id: string
+          created_item_ids: string[]
+          id: string
+          request_key: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_project_contact_id: string
+          created_item_ids: string[]
+          id?: string
+          request_key: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_project_contact_id?: string
+          created_item_ids?: string[]
+          id?: string
+          request_key?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_repeat_creation_requ_created_by_project_contact_i_fkey"
+            columns: ["created_by_project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_repeat_creation_requests_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_contacts: {
         Row: {
           auth_user_id: string
@@ -1053,6 +1095,23 @@ export type Database = {
         }
         Returns: string
       }
+      create_current_workspace_repeated_calendar_items: {
+        Args: {
+          p_custom_values: Json
+          p_end_date: string
+          p_end_time: string
+          p_needed_count: number
+          p_one_off_task_type: string
+          p_one_off_title: string
+          p_request_key: string
+          p_schedule_notes: string
+          p_start_date: string
+          p_start_time: string
+          p_task_preset_id: string
+          p_weekdays: number[]
+        }
+        Returns: string[]
+      }
       create_manual_volunteer_profile: {
         Args: {
           p_congregation?: string
@@ -1076,6 +1135,10 @@ export type Database = {
           p_volunteer_visible: boolean
           p_workspace_id: string
         }
+        Returns: string
+      }
+      delete_history_free_volunteer_profile: {
+        Args: { p_profile_id: string }
         Returns: string
       }
       finalize_initial_assignment_notification_delivery: {
@@ -1391,6 +1454,13 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: boolean
+      }
+      update_current_workspace_project_dates: {
+        Args: { p_ends_on: string; p_starts_on: string }
+        Returns: {
+          ends_on: string
+          starts_on: string
+        }[]
       }
       update_volunteer_profile_manual_fields: {
         Args: {

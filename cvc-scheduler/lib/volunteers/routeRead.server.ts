@@ -31,6 +31,8 @@ export type VolunteerManagementRouteState =
 export type VolunteerManagementNotice =
   | "created"
   | "updated"
+  | "deleted"
+  | "has_history"
   | "validation"
   | "unavailable"
   | "error";
@@ -150,6 +152,8 @@ export function normalizeVolunteerManagementNotice(
   if (
     notice === "created" ||
     notice === "updated" ||
+    notice === "deleted" ||
+    notice === "has_history" ||
     notice === "validation" ||
     notice === "unavailable" ||
     notice === "error"

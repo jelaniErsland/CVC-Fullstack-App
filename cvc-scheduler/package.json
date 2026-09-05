@@ -94,6 +94,8 @@
     "test:response-reveal:hosted": "node scripts/hosted-response-reveal-regression.mjs",
     "test:calendar": "node scripts/calendar-regression.mjs",
     "test:calendar-edit-validation": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/calendar-edit-validation-regression.mjs",
+    "test:operational-usability": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/operational-usability-regression.mjs",
+    "test:operational-usability:browser": "set OPERATIONAL_USABILITY_BROWSER_ONLY=1&& node scripts/calendar-regression.mjs",
     "test:overview": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-persisted-regression.mjs",
     "test:overview:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/overview-browser-regression.mjs",
     "test:needs-attention": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/needs-attention-regression.mjs",

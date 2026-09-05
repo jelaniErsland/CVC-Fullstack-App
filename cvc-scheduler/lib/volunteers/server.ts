@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { AppSupabaseClient } from "../supabase/types.ts";
+import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 import { parseVolunteerProfile, type VolunteerProfile } from "./profile.ts";
 import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
 
@@ -234,6 +234,22 @@ export async function updateVolunteerProfileManualFieldsWithClient(
   }
 
   return normalizeWorkspaceReference({ id: data }).value;
+}
+
+export type VolunteerDeletionResult = "deleted" | "has_history";
+
+export async function deleteHistoryFreeVolunteerProfileWithClient(
+  supabase: AppSupabaseClient,
+  profileId: string,
+): Promise<VolunteerDeletionResult> {
+  const normalizedProfileId = normalizeWorkspaceReference({ id: profileId }).value;
+  const { data, error } = await supabase.rpc("delete_history_free_volunteer_profile", {
+    p_profile_id: normalizedProfileId,
+  } as PublicRpcArgs<"delete_history_free_volunteer_profile">);
+  if (error || (data !== "deleted" && data !== "has_history")) {
+    throw new Error("Volunteer profile could not be deleted.", { cause: error });
+  }
+  return data;
 }
 
 export async function convertQuestionnaireSubmissionToVolunteerProfile(

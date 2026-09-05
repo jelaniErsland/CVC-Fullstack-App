@@ -25,6 +25,8 @@ import {
   updateCalendarOneOffTimedItemWithClient,
   updateCalendarPresetTimedItemWithClient,
 } from "@/lib/calendar/server";
+import { repeatedCalendarItemsInputFromFormData } from "@/lib/calendar/repeat";
+import { createRepeatedCalendarItemsWithClient } from "@/lib/calendar/repeat.server";
 import {
   emitOperationalEvent,
   type OperationalEventName,
@@ -37,6 +39,12 @@ import {
   type ProjectDayMutationState,
 } from "@/lib/operations/projectDay";
 import { setProjectDayExpectedOnSiteWithVerifiedContext } from "@/lib/operations/projectDay.server";
+import {
+  projectDatesFromFormData,
+  ProjectDatesValidationError,
+  type ProjectDatesMutationState,
+} from "@/lib/operations/projectDates";
+import { updateCurrentWorkspaceProjectDatesWithVerifiedContext } from "@/lib/operations/projectDates.server";
 import {
   updateCurrentVolunteerFacingContactDetails,
   VolunteerFacingContactDetailsValidationError,
@@ -52,6 +60,7 @@ type CalendarPageProps = Readonly<{
 
 const supportedNoticeValues = new Set([
   "created",
+  "repeat_created",
   "updated",
   "assigned",
   "assignment_canceled",
@@ -177,6 +186,31 @@ async function createCalendarItemAction(formData: FormData) {
 
   revalidatePath("/admin/calendar");
   redirect(safeCalendarRedirect(formData, notice, createdCalendarItemId));
+}
+
+async function createRepeatedCalendarItemsAction(formData: FormData) {
+  "use server";
+
+  let notice: "unavailable" | "validation" | "error" | "repeat_created" = "error";
+  try {
+    const context = await readCalendarMutationRouteContext();
+    if (!context) {
+      notice = "unavailable";
+      observeMutationFailure("calendar.create_failure", "unavailable");
+    } else {
+      const input = repeatedCalendarItemsInputFromFormData(formData, context.workspace.id);
+      await createRepeatedCalendarItemsWithClient(context.supabase, input);
+      notice = "repeat_created";
+    }
+  } catch (error) {
+    notice = error instanceof Error && error.name === "CalendarItemValidationError"
+      ? "validation"
+      : "error";
+    observeMutationFailure("calendar.create_failure", notice === "validation" ? "validation" : "error");
+  }
+
+  revalidatePath("/admin/calendar");
+  redirect(safeCalendarRedirect(formData, notice, undefined, false));
 }
 
 async function updateCalendarItemAction(formData: FormData) {
@@ -463,6 +497,32 @@ async function updateProjectDayExpectedOnSiteAction(
   }
 }
 
+async function updateProjectDatesAction(
+  _previousState: ProjectDatesMutationState,
+  formData: FormData,
+): Promise<ProjectDatesMutationState> {
+  "use server";
+  let startsOn = typeof formData.get("projectStartsOn") === "string" ? String(formData.get("projectStartsOn")) : "";
+  let endsOn = typeof formData.get("projectEndsOn") === "string" ? String(formData.get("projectEndsOn")) : "";
+  try {
+    const input = projectDatesFromFormData(formData);
+    startsOn = input.startsOn;
+    endsOn = input.endsOn;
+    const context = await readVerifiedAdminContext();
+    if (!context) return { status: "unavailable", startsOn, endsOn, message: "Project date editing is unavailable for this contact." };
+    const updated = await updateCurrentWorkspaceProjectDatesWithVerifiedContext(context, input);
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/quick-view");
+    return { status: "success", startsOn: updated.startsOn, endsOn: updated.endsOn, message: "Project dates saved." };
+  } catch (error) {
+    if (error instanceof ProjectDatesValidationError) {
+      return { status: "validation", startsOn, endsOn, message: error.issues[0] ?? "Enter valid project dates." };
+    }
+    return { status: "error", startsOn, endsOn, message: "Project dates could not be saved. Try again." };
+  }
+}
+
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
   const state = await readCalendarRouteState(resolvedSearchParams);
@@ -490,6 +550,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       archiveAction={archiveCalendarItemAction}
       cancelAssignmentAction={cancelCalendarAssignmentAction}
       createAction={createCalendarItemAction}
+      createRepeatedAction={createRepeatedCalendarItemsAction}
       initialInspectorItemId={requestedItem}
       initialInspectorSection={requestedSection}
       notice={notice}
@@ -500,6 +561,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       }
       state={state}
       updateProjectDayAction={updateProjectDayExpectedOnSiteAction}
+      updateProjectDatesAction={updateProjectDatesAction}
       updateAction={updateCalendarItemAction}
     />
   );

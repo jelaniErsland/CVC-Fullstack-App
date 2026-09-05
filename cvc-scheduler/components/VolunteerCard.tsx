@@ -1,11 +1,12 @@
 import { Button } from "./Button";
 import { StatusPill } from "./StatusPill";
-import { Mail, Phone } from "lucide-react";
+import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Phone, Trash2 } from "lucide-react";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
+  onDeleteRequest?: () => void;
   onMobileEdit?: () => void;
   updateAction?: (formData: FormData) => void | Promise<void>;
 };
@@ -31,9 +32,15 @@ function readinessLabel(readiness: VolunteerProfile["readinessStatus"]) {
   return readiness === "ready" ? "Schedule-ready" : "On hold";
 }
 
+function preferredContactLabel(method: VolunteerProfile["preferredContactMethod"]) {
+  if (!method) return "No preference";
+  return `${method[0]?.toUpperCase()}${method.slice(1)} preferred`;
+}
+
 export function VolunteerCard({
   volunteer,
   canEdit,
+  onDeleteRequest,
   onMobileEdit,
   updateAction,
 }: VolunteerCardProps) {
@@ -77,9 +84,15 @@ export function VolunteerCard({
           ) : <p>No phone listed</p>}
         </div>
 
-        <div className="min-w-0 text-xs leading-5 text-[var(--pl-muted)]">
-          <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Contact:</span> {volunteer.preferredContactMethod ?? "Not set"}</p>
-          <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Source:</span> {sourceLabel}</p>
+        <div className="min-w-0 space-y-1 text-xs leading-5 text-[var(--pl-muted)]">
+          <p className="flex items-center gap-1.5 truncate">
+            <MessageCircle aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-blue)]" />
+            <span className="sr-only">Preferred contact: </span>{preferredContactLabel(volunteer.preferredContactMethod)}
+          </p>
+          <p className="flex items-center gap-1.5 truncate">
+            <ClipboardList aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
+            <span className="sr-only">Source: </span>{sourceLabel.replace(/^From /, "")}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -91,8 +104,14 @@ export function VolunteerCard({
       </div>
 
       <div className="grid gap-2 border-t border-[var(--pl-border)]/70 bg-[var(--pl-surface-subtle)]/55 px-4 py-2.5 text-xs leading-5 text-[var(--pl-muted)] sm:grid-cols-2 lg:px-5">
-        <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Notes:</span> {volunteer.profileNotes || "No notes yet"}</p>
-        <p className="truncate"><span className="font-semibold text-[var(--pl-text)]">Availability:</span> {summarizeSnapshot(volunteer.availabilitySnapshot)}</p>
+        <p className="flex min-w-0 items-center gap-1.5 truncate">
+          <NotebookPen aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
+          <span className="sr-only">Notes: </span><span className="truncate">{volunteer.profileNotes || "No notes yet"}</span>
+        </p>
+        <p className="flex min-w-0 items-center gap-1.5 truncate">
+          <CalendarDays aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
+          <span className="sr-only">Availability: </span><span className="truncate">{summarizeSnapshot(volunteer.availabilitySnapshot)}</span>
+        </p>
       </div>
 
       {canEdit && updateAction ? (
@@ -115,6 +134,20 @@ export function VolunteerCard({
                 Save changes
               </Button>
             </form>
+            {onDeleteRequest ? (
+              <div
+                className="border-t border-[var(--pl-border)] bg-white px-4 py-3 lg:px-5"
+              >
+                <button
+                  className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-[var(--pl-radius-control)] border border-rose-200 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                  onClick={onDeleteRequest}
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+                  Delete volunteer
+                </button>
+              </div>
+            ) : null}
           </details>
         </>
       ) : (
