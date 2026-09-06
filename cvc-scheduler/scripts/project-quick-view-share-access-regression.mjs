@@ -1,3 +1,4 @@
+import { sharedCalendarState } from "../lib/calendar/quickView.server.ts";
 import nextEnv from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 import assert from "node:assert/strict";
@@ -87,7 +88,8 @@ async function expectError(label, operation) {
 async function rpcRead(client, token, date = "2026-09-02") {
   const result = await client.rpc("read_project_quick_view_by_token", { p_bearer_token: token, p_project_date: date });
   assert(!result.error, `Quick View read failed: ${result.error?.message}`);
-  return parseSharedProjectQuickView(result.data);
+  const access = parseSharedProjectQuickView(result.data);
+  return access.kind === "ready" ? { ...access, calendar: sharedCalendarState(result.data, { date, view: "day" }) } : access;
 }
 async function cleanup() {
   await Promise.allSettled(clients.map((client) => client.auth.signOut()));
@@ -132,7 +134,7 @@ try {
   assert.match(shareControl, /"Create new link"/);
   assert.match(shareControl, /"Copy link"/);
   assert.match(shareControl, /active \$\{state\.activeLinkCount === 1 \? "link" : "links"\}/);
-  assert.match(shareControl, /daily schedule and expected attendance/);
+  assert.match(shareControl, /trusted on-site personnel/);
   assert.doesNotMatch(shareControl, /safe daily view/);
   assert.throws(() => validateQuickViewBearer("short"), ProjectQuickViewAccessValidationError);
 
@@ -180,11 +182,11 @@ try {
 
   const ready = await rpcRead(anon, issued.token);
   assert.equal(ready.kind, "ready");
-  assert.equal(ready.projection.projectDisplayName, "Shared Quick View One");
-  assert.equal(ready.projection.expectedOnSiteCount, 47);
-  assert.deepEqual(ready.projection.publishedSchedule.map((item) => item.title), ["General setup", "Lunch"]);
+  assert.equal(ready.workspaceDisplayName, "Shared Quick View One");
+  assert(!JSON.stringify(ready).includes("expectedOnSiteCount"));
+  assert.deepEqual(ready.calendar.items.map((item) => item.displayName).sort(), ["General setup", "Lunch", "Restricted security post"].sort());
   const serialized = JSON.stringify(ready);
-  for (const forbidden of ["Restricted security", "restricted location", "Private draft", "draft secret", "private setup note", workspaceIds[0], contactIds[0], issued.token, "assignment", "volunteer", "response"]) {
+  for (const forbidden of ["Private draft", "draft secret", contactIds[0], issued.token]) {
     assert(!serialized.includes(forbidden), `Shared projection leaked ${forbidden}.`);
   }
   assert.equal((await rpcRead(anon, "A".repeat(43))).kind, "unavailable");
@@ -196,7 +198,7 @@ try {
   const otherIssued = parseIssuedProjectQuickViewAccess(otherIssuedResult.data); secrets.add(otherIssued.token);
   const otherView = await rpcRead(anon, otherIssued.token);
   assert.equal(otherView.kind, "ready");
-  assert.equal(otherView.projection.projectDisplayName, "Shared Quick View Two");
+  assert.equal(otherView.workspaceDisplayName, "Shared Quick View Two");
   assert(!JSON.stringify(otherView).includes("Shared Quick View One"), "One project token crossed workspace scope.");
 
   const expiredBearer = randomBytes(32).toString("base64url"); secrets.add(expiredBearer);

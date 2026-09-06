@@ -148,6 +148,19 @@ export function VolunteerScheduleClient({
   return (
     <>
       <div className="mt-3 space-y-3">
+        {assignments.filter((assignment, index) => assignment.meals?.length && assignments.findIndex(other => other.startDate === assignment.startDate) === index).map(assignment => (
+          <section key={assignment.startDate} aria-label={`Meals for ${assignment.startDate}`} className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+            <h2 className="text-sm font-bold">Meals · {formatDate(assignment.startDate)}</h2>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              {assignment.meals?.map(meal => <div key={meal.kind} className="min-w-0 text-sm break-words">
+                <h3 className="font-semibold">{meal.kind === "breakfast" ? "Breakfast" : "Lunch"}</h3>
+                {meal.startTime ? <p>{formatScheduleClockRange(meal.startTime, meal.endTime)}</p> : null}
+                {meal.provider ? <p>{meal.provider}</p> : null}
+                {meal.menu ? <p className="mt-1 whitespace-pre-wrap">{meal.menu}</p> : null}
+              </div>)}
+            </div>
+          </section>
+        ))}
         {confirmAllCount > 1 ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-2.5">
             <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">

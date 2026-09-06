@@ -159,8 +159,8 @@ assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(calendarRouteSource, /MOCK_CALENDAR_ITEMS|getCalendarItemsByWeek|demoProjectId/i);
 assert.equal(packageSource.includes('"test:calendar-read-model-query-helper"'), true);
 
+assert.match(currentStateSource, /PROJECT_HISTORY\.md/);
 for (const docsSource of [
-  currentStateSource,
   roadmapSource,
   calendarReadinessSource,
   authReadinessSource,

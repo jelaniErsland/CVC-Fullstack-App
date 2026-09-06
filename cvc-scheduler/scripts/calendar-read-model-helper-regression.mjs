@@ -474,7 +474,7 @@ assert.equal(activationCheckpoint.activeRevealAvailable, false);
 assert.equal(activationCheckpoint.activeCopyAvailable, false);
 
 assert.match(packageSource, /"test:calendar-read-model-helper": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/calendar-read-model-helper-regression\.mjs"/);
-assert.match(currentStateSource, /Iteration 12\.3/);
+assert.match(currentStateSource, /PROJECT_HISTORY\.md/);
 assert.match(roadmapSource, /12\.3 Route-Unused Calendar Read Model Helper or Query-Shape Review/);
 assert.match(calendarReadinessSource, /12\.3 Route-Unused Calendar Read Model Helper/);
 assert.match(authReadinessSource, /12\.3 route-unused Calendar read model helper/i);

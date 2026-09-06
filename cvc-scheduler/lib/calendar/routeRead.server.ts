@@ -1,4 +1,5 @@
 import "server-only";
+import type { CalendarMeal } from "./meals.ts";
 
 import {
   isEffectiveWorkspaceReadGrant,
@@ -34,7 +35,7 @@ import type {
 } from "./readModel.server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
-import { readAuthorizedQuickViewSafeProjection } from "../operations/projectQuickView.server.ts";
+
 
 type CalendarClientCategory =
   | "general"
@@ -70,6 +71,9 @@ type CalendarClientTaskPreset = {
   sourcePresetId?: string;
 };
 type CalendarClientItem = {
+  meal?: CalendarMeal | null;
+  taskDescription?: string | null;
+  customValues?: Readonly<Record<string, string | number | boolean | null>>;
   id: string;
   projectId: string;
   taskPresetId?: string;
@@ -157,7 +161,6 @@ type CalendarClientStateBase = Readonly<{
 }>;
 type CalendarClientProjectDayDetails = Readonly<{
   date: string;
-  expectedOnSiteCount: number | null;
   publishedScheduleCount: number;
 }>;
 type CalendarTaskPresetSelectorClientState =
@@ -173,7 +176,7 @@ type CalendarAssignmentPickerClientState =
     }>
   | Readonly<{ kind: "unavailable"; reason: "missing_volunteers_view" }>
   | Readonly<{ kind: "error"; reason: "query_unavailable" | "invalid_projection" }>;
-type CalendarClientState =
+export type CalendarClientState =
   | (CalendarClientStateBase &
       Readonly<{
         kind: "ready_with_items" | "ready_empty";
@@ -657,7 +660,7 @@ export function normalizeCalendarEditTimeValue(value: string | null) {
   return match ? `${match[1]}:${match[2]}` : undefined;
 }
 
-function mapPersistedItemToCalendarItem(
+export function mapPersistedItemToCalendarItem(
   item: CalendarReadModelItem,
   assignments: readonly CalendarClientAssignment[] = [],
   canEdit = false,
@@ -708,6 +711,9 @@ function mapPersistedItemToCalendarItem(
     canPublish: canEdit && item.publicationState === "draft" && item.isOwnDraft,
     publishedAt: item.publishedAt ?? undefined,
     scheduleNotes: item.scheduleNotes ?? undefined,
+    meal: item.meal ?? null,
+    taskDescription: item.taskDescription ?? null,
+    customValues: item.customValues ?? {},
     taskPreset: item.taskPresetId
       ? {
           id: item.taskPresetId,
@@ -824,6 +830,7 @@ export function selectCalendarRouteWorkspaceContext(input: {
 
 export async function readCalendarRouteState(
   searchParams?: CalendarRouteSearchParams,
+  options: { trustedReadOnly?: boolean; workspaceKey?: string } = {},
 ): Promise<CalendarClientState> {
   const routeRequest = normalizeCalendarRouteSearchParams(searchParams);
   if (!routeRequest.ok) return unavailableState("invalid_period_or_range");
@@ -847,10 +854,11 @@ export async function readCalendarRouteState(
     const workspaceSelection = selectCalendarRouteWorkspaceContext({
       projectContactId: verified.projectContactId,
       ownGrants: verified.ownGrants,
-      workspaces: verified.workspaces,
+      workspaces: options.workspaceKey ? verified.workspaces.filter(workspace => workspace.key === options.workspaceKey) : verified.workspaces,
     });
 
     if (!workspaceSelection.ok) return unavailableState(workspaceSelection.reason);
+    if (options.trustedReadOnly && (!workspaceSelection.canViewVolunteers || !workspaceSelection.canViewTaskPresets)) return unavailableState("prerequisite_unavailable");
 
     const range = deriveCalendarRouteReadRange({
       view: routeRequest.view,
@@ -877,14 +885,6 @@ export async function readCalendarRouteState(
       }),
     ]);
 
-    const projectDayProjection = projectDayDate
-      ? await readAuthorizedQuickViewSafeProjection(
-          verified,
-          projectDayDate,
-          workspaceSelection.workspace.key,
-        )
-      : null;
-
     if (!query.ok) {
       return isUnavailableQueryFailure(query.reason)
         ? unavailableState("prerequisite_unavailable", range)
@@ -892,7 +892,7 @@ export async function readCalendarRouteState(
     }
 
     const readModelItems = query.items.filter((item) =>
-      readModelItemOverlapsRouteRange(item, range),
+      readModelItemOverlapsRouteRange(item, range) && (!options.trustedReadOnly || item.publicationState === "published"),
     );
     const calendarItemIds = readModelItems.map((item) => item.calendarItemId);
     const [assignmentPicker, notificationState] = await Promise.all([
@@ -929,12 +929,8 @@ export async function readCalendarRouteState(
         workspaceSelection.projectContactId,
       ),
     );
-    const projectDayDetails = projectDayProjection
-      ? {
-          date: projectDayProjection.date,
-          expectedOnSiteCount: projectDayProjection.expectedOnSiteCount,
-          publishedScheduleCount: projectDayProjection.publishedSchedule.length,
-        }
+    const projectDayDetails = projectDayDate
+      ? { date: projectDayDate, publishedScheduleCount: items.filter(item => item.date === projectDayDate && item.publicationState === "published").length }
       : null;
     return items.length > 0
       ? {

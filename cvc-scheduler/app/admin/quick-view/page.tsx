@@ -1,75 +1,33 @@
-import { Eye } from "lucide-react";
-
-import { AdminShell } from "@/components/AdminShell";
-import { EmptyState } from "@/components/EmptyState";
-import { ProjectQuickView } from "@/components/ProjectQuickView";
+import CalendarClient from "@/components/CalendarClient";
 import { ProjectQuickViewShareControl } from "@/components/ProjectQuickViewShareControl";
-import { readProjectQuickViewRouteState } from "@/lib/operations/projectQuickViewRoute.server";
+import { readVerifiedAdminContext } from "@/lib/auth/verified-admin-context.server";
+import { readCalendarRouteState, selectCalendarRouteWorkspaceContext } from "@/lib/calendar/routeRead.server";
+import { asReadOnlyCalendar } from "@/lib/calendar/quickView.server";
 import { readProjectQuickViewShareState } from "@/lib/projectQuickViewAccess/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type QuickViewPageProps = Readonly<{
+export default async function AdminQuickViewPage({ searchParams }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}>;
-
-export default async function AdminQuickViewPage({ searchParams }: QuickViewPageProps) {
-  const state = await readProjectQuickViewRouteState(await searchParams);
-  const shareState = state.kind === "ready"
-    ? await readProjectQuickViewShareState(state.selectedProjectKey).catch(() => null)
-    : null;
-  const workspaceName = state.kind === "ready"
-    ? state.projection.projectDisplayName
-    : "Project workspace";
-
-  return (
-    <AdminShell active="quick-view" workspaceName={workspaceName}>
-      <header className="mx-auto flex w-full max-w-3xl items-end justify-between gap-4 border-b border-[var(--pl-border)] pb-4">
-        <div>
-          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-            <Eye aria-hidden="true" className="size-3.5" />
-            Authorized project view
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
-            Project Quick View
-          </h1>
-        </div>
-      </header>
-
-      <div className="mt-4">
-        {state.kind === "ready" ? (
-          <ProjectQuickView
-            date={state.date}
-            projects={state.projects}
-            projection={state.projection}
-            selectedProjectKey={state.selectedProjectKey}
-            today={state.today}
-          />
-        ) : (
-          <div className="mx-auto max-w-3xl">
-            <EmptyState
-              message="This project view is not available for the current signed-in contact and date."
-              title="Quick View unavailable"
-            />
-          </div>
-        )}
-        {state.kind === "ready" && shareState ? (
-          <div className="mx-auto max-w-3xl">
-            <ProjectQuickViewShareControl
-              initialState={{
-                status: "idle",
-                enabled: shareState.enabled,
-                activeLinkCount: shareState.activeLinkCount,
-                expiresAt: shareState.expiresAt,
-                accessPath: null,
-                message: "",
-              }}
-              projectKey={state.selectedProjectKey}
-            />
-          </div>
-        ) : null}
-      </div>
-    </AdminShell>
-  );
+}) {
+  const params = await searchParams;
+  const context = await readVerifiedAdminContext();
+  const projects = context ? context.workspaces.filter(workspace => {
+    const selected = selectCalendarRouteWorkspaceContext({ projectContactId: context.projectContactId, ownGrants: context.ownGrants, workspaces: [workspace] });
+    return selected.ok && selected.canViewVolunteers && selected.canViewTaskPresets;
+  }) : [];
+  const key = typeof params?.project === "string" ? params.project : projects[0]?.key;
+  const selected = projects.find(project => project.key === key);
+  if (!selected) return <main className="mx-auto max-w-2xl p-6"><h1 className="text-2xl font-bold">Quick View unavailable</h1><p className="mt-3">An active project grant with Calendar, task, assignment and volunteer viewing is required.</p></main>;
+  const state = asReadOnlyCalendar(await readCalendarRouteState(params, { trustedReadOnly: true, workspaceKey: selected.key }));
+  const share = await readProjectQuickViewShareState(selected.key).catch(() => null);
+  return <>
+    {projects.length > 1 ? <form className="mx-auto max-w-[1600px] px-3 pt-4 sm:px-6" action="/admin/quick-view">
+      <label className="text-sm font-semibold">Project<select className="mx-3 min-h-11 rounded-lg border px-3" name="project" defaultValue={selected.key}>{projects.map(project => <option key={project.key} value={project.key}>{project.displayName}</option>)}</select></label>
+      <button className="min-h-11 rounded-lg border px-3" type="submit">Open project</button>
+    </form> : null}
+    <CalendarClient readOnly routeBase="/admin/quick-view" projectKey={selected.key} state={state} initialInspectorItemId={typeof params?.item === "string" ? params.item : undefined} />
+    {share ? <div className="mx-auto max-w-3xl px-3 pb-6"><ProjectQuickViewShareControl projectKey={selected.key} initialState={{ status: "idle", enabled: share.enabled, activeLinkCount: share.activeLinkCount, expiresAt: share.expiresAt, accessPath: null, message: "" }} /></div> : null}
+  </>;
 }

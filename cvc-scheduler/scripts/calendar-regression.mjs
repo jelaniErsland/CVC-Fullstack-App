@@ -1077,6 +1077,8 @@ async function runDesktop(browser) {
           `${view} project-date control should be enabled after navigation`,
         );
         await activateWithKeyboard(reset, `${view} project-date button`);
+        await page.waitForURL(url => url.searchParams.get("date") === "2026-01-01");
+        await page.goto(createPreviewUrl(baseUrl, `/admin/calendar?view=${view.toLowerCase()}&date=2026-01-13`));
         await assertPeriod(page, projectWeekLabel);
       }
 
@@ -1097,6 +1099,8 @@ async function runDesktop(browser) {
         "Today did not preserve the active view while moving to the current local period",
       );
       await page.getByRole("button", { name: "Go to project date", exact: true }).click();
+      await page.waitForURL(url => url.searchParams.get("date") === "2026-01-01");
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=week&date=2026-01-13"));
       await assertPeriod(page, projectWeekLabel);
 
       await selectView(page, "List");
@@ -1776,8 +1780,8 @@ async function runDesktop(browser) {
       await page.reload();
       await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
       await inspector.waitFor();
-      await inspector.getByLabel("Start", { exact: true }).fill("16:30");
-      await inspector.getByLabel("End", { exact: true }).fill("17:30");
+      await inspector.getByLabel("Start", { exact: true }).filter({ visible: true }).fill("16:30");
+      await inspector.getByLabel("End", { exact: true }).filter({ visible: true }).fill("17:30");
       await inspector.locator("textarea").first().fill("Browser regression persisted preset edit note.");
       await Promise.all([
         page.waitForURL(/notice=updated/),

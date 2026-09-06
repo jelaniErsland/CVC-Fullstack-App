@@ -20,6 +20,17 @@ The lookup migration `20260905120000_volunteer_schedule_lookup.sql` and function
 - All 42 reviewed SECURITY DEFINER functions retain the `postgres` owner and pinned empty `search_path`. The privilege review found no demonstrated authorization bypass or breach.
 - Direct anonymous reads of volunteer-directory, lookup-rate-limit, and schedule-credential tables are denied. Lookup returns generic failures for invalid input, uses opaque project-choice handles, keeps schedule credentials hash-only server-side, and sets the browser credential only as an HttpOnly session cookie.
 
+## Local 12.45 implementation (UNDEPLOYED)
+
+The current uncommitted workspace implements the approved on-site/Food slice. Migration 20260906120000_on_site_food_calendar_operations.sql is tested locally and **UNAPPLIED to production**. Production remains at 20260905130000; this iteration does not access production, mutate its backup task, or send email. See [12.45 implementation and review](./ON_SITE_FOOD_OPERATIONS_12_45.md).
+
+- Breakfast and Lunch are ordinary Food Calendar occurrences with independent nullable totals, provider/group, contact and menu fields. Meal detail lives in the shared Calendar inspector; Quick View has no separate meal dashboard/cards.
+- Historical project_days.expected_on_site_count values remain intact in schema/data. 12.45 retires their editing/display surfaces from active operations. They are never migrated into either meal total. There is no combined operational total or old Quick View Planned staffing summary.
+- Both authenticated and bearer Quick View entry points reuse the same read-only Calendar and published operational content model, including assigned names. Bearer expiry/revocation/project scope remain enforced. Existing pre-12.45 links will be revoked by the unapplied migration because their original audience projection was narrower; trusted links require explicit reissuance.
+- Duplicate creates an independent saved definition with zero assignments, responses or deliveries. Ordinary work starts as a private draft; meal copies follow immediate-visible meal creation semantics. No series is created.
+- Project navigation derives only from persisted workspace start dates; unavailable starts disable Project navigation. General uses cyan, Food amber/yellow, Security lavender and Custom neutral slate, with text labels and focus states.
+- Volunteer meal data is projected only for that volunteer's assignment dates: kind, provider, menu and time. Trusted meal contacts and operational notes are excluded from this meal projection.
+
 ## Current product architecture
 
 Project Local is a Calendar-first volunteer coordination product. Reusable Tasks define work; Calendar items place that work in time; assignments and their current responses are the source of assigned/coverage truth. Draft items remain private; published items are available to the permitted project context and assigned volunteers.
@@ -28,7 +39,7 @@ Project contacts authenticate through Supabase Auth and receive access from acti
 
 Volunteer schedule access is account-light. A personalized `/v/access/[token]` link exchanges a server-verified bearer for the clean `/v/schedule` route; the schedule is limited to that volunteer's published assignments. The public lookup flow uses the same schedule-session boundary without exposing workspace or volunteer UUIDs to the browser.
 
-## Current real routes
+## Current source routes (12.45 local; not deployed)
 
 | Route | Present behavior |
 | --- | --- |
@@ -59,9 +70,7 @@ Legacy demo, questionnaire, Communications, Food, onboarding, and administrative
 
 - Application email transport is disabled. Automated reminders, broader Communications authoring, and schedule-change delivery remain deferred.
 - A successful production lookup smoke using a real volunteer is deferred to the first authorized real use. Invalid-input and boundary proofs are complete; do not manufacture or enumerate volunteers for this check.
-- Breakfast and Lunch operational workflows are not implemented.
-- Trusted on-site personnel do not yet have a full read-only reuse of the Calendar with assignment names and detail.
-- Calendar duplicate/copy-to-date workflow and consistent accessible color coding are not implemented.
+- The local 12.45 changes have not been committed, pushed or deployed. Production still lacks this slice until a separately authorized rollout.
 - Advanced Calendar interactions, including drag/resize, richer collision handling, and broader recurrence editing, remain deferred.
 - The Windows scheduled-backup missed-run/catch-up behavior remains an operational reliability concern to monitor; do not claim a catch-up run occurred without fresh evidence.
 
@@ -69,19 +78,13 @@ Legacy demo, questionnaire, Communications, Food, onboarding, and administrative
 
 The product remains calm and Calendar-first: low text density, clear typography, progressive disclosure, and focused inspectors rather than overloaded forms. Preserve one unified scheduled-item model across volunteer work, security, food, and custom Calendar items. Do not fork public and private Quick View variants or create a second Calendar model for on-site work.
 
-Breakfast and Lunch are distinct operational totals. There is no general daily expected-on-site total, and Quick View does not need the old per-trade planned-staffing summary.
+Breakfast and Lunch are distinct operational totals. The historical general Project Day total remains in storage but is retired from the local 12.45 operational UI. Quick View has no combined total or old Planned staffing summary.
 
-## Next recommended slice: 12.45 — Bozeman On-Site / Food Calendar Operations
+## Next step
 
-Planned scope only; do not implement it without a separate approved iteration.
+Complete product review of local 12.45, then obtain a separately authorized commit/rollout instruction. Preserve the exact recovery transition 20260905130000 -> 20260906120000; do not skip intermediate terminals or update the live backup lock during product review.
 
-- Add built-in Breakfast and Lunch Calendar task types and workflows with separate totals, provider, contact, and menu.
-- Make the trusted Quick View the on-site operational page.
-- Reuse the full Admin Calendar in read-only mode, including Day, Week, Month, List, expandable item detail, and assigned volunteer names for trusted on-site viewers.
-- Remove mutation controls in the read-only view and enforce view-only access server-side.
-- Add Calendar duplicate/copy-to-date and consistent accessible Calendar color coding.
-
-The product decisions are fixed for this slice: one trusted Quick View context, separate Breakfast and Lunch totals, no general expected-on-site total, no old per-trade Quick View summary, and reuse of the real Calendar component/model rather than a fork.
+Local verification is complete, including the isolated privilege regression and inspected desktop/mobile captures. The implementation is ready for product review, with results and cleanup recorded in [12.45 implementation and review](./ON_SITE_FOOD_OPERATIONS_12_45.md). This is not rollout authorization; migration 20260906120000 remains UNAPPLIED to production.
 
 ## Canonical references
 

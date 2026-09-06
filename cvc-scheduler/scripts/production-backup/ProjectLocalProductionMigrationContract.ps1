@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260905130000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260906120000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -10,6 +10,7 @@ $OperationalUsabilityProductionMigration = "20260904120000"
 $OperationalUsabilityPrivilegeHardeningProductionMigration = "20260904130000"
 $VolunteerLookupProductionMigration = "20260905120000"
 $SystemicFunctionPrivilegeProductionMigration = "20260905130000"
+$OnSiteFoodProductionMigration = "20260906120000"
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -23,7 +24,8 @@ $AllowedTerminalMigrations = @(
   $OperationalUsabilityProductionMigration,
   $OperationalUsabilityPrivilegeHardeningProductionMigration,
   $VolunteerLookupProductionMigration,
-  $SystemicFunctionPrivilegeProductionMigration
+  $SystemicFunctionPrivilegeProductionMigration,
+  $OnSiteFoodProductionMigration
 )
 
 function Test-ProjectLocalApprovedTerminalMigration {
@@ -49,7 +51,8 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $ProjectQuickViewPrivilegeHardeningProductionMigration -and $TargetMigration -ceq $OperationalUsabilityProductionMigration) -or
     ($CurrentMigration -ceq $OperationalUsabilityProductionMigration -and $TargetMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration) -or
     ($CurrentMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration -and $TargetMigration -ceq $VolunteerLookupProductionMigration) -or
-    ($CurrentMigration -ceq $VolunteerLookupProductionMigration -and $TargetMigration -ceq $SystemicFunctionPrivilegeProductionMigration)
+    ($CurrentMigration -ceq $VolunteerLookupProductionMigration -and $TargetMigration -ceq $SystemicFunctionPrivilegeProductionMigration) -or
+    ($CurrentMigration -ceq $SystemicFunctionPrivilegeProductionMigration -and $TargetMigration -ceq $OnSiteFoodProductionMigration)
   )
 }
 

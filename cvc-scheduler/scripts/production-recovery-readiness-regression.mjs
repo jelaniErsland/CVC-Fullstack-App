@@ -250,10 +250,14 @@ async function main() {
   assertIncludes(runbook, "human-visible Windows notification", "backup/recovery runbook");
   assertIncludes(runbook, "Project Local product/operator owner", "backup/recovery runbook");
 
-  for (const source of [deploymentRunbook, goNoGo, roadmap, currentState, history, jelaniChecklist, readinessDoc]) {
+  for (const source of [deploymentRunbook, goNoGo, roadmap, history, jelaniChecklist, readinessDoc]) {
     assertIncludes(source, "PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md", "canonical production docs");
     assertIncludes(source, "NO-GO", "canonical production docs");
   }
+  assertIncludes(currentState, "PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md", "current recovery reference");
+  assertIncludes(currentState, "Production Supabase terminal: `20260905130000`", "current production terminal");
+  assertIncludes(currentState, "Recovery validation is GREEN", "current recovery status");
+  assertIncludes(currentState, "UNAPPLIED to production", "local migration deployment boundary");
 
   const routeFiles = [
     "app/admin/calendar/page.tsx",

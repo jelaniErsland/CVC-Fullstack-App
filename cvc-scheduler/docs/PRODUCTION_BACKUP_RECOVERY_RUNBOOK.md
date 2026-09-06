@@ -232,3 +232,8 @@ The next production migration window is CLOSED until a new normal autonomous bac
 10. Resume deployment and production smoke testing of the already-approved application source only after every security and recovery check passes.
 
 If any backup, task identity, current lock, runtime contract, production terminal, migration ledger, privilege check, or exact target differs, STOP. Do not use a force flag, substitute a broader comparison, manually run a backup as a workaround, or move the lock backward.
+
+
+## Local 12.45 transition preparation — not executed in production
+
+The reviewed source contract adds only 20260905130000 -> 20260906120000 and preserves every prior adjacent transition. Contract version: 20260906120000-transition-v1. Wrong source/target, downgrade, skipped, arbitrary future and malformed transitions remain denied. The matching source terminal and pending-lock fixtures are tested locally; no live backup/task operation is performed in 12.45. Production remains at 20260905130000. The new migration is UNAPPLIED to production.

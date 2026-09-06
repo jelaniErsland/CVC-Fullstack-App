@@ -386,7 +386,7 @@ assert.equal(activationCheckpoint.activeRevealAvailable, false);
 assert.equal(activationCheckpoint.activeCopyAvailable, false);
 
 assert.match(packageSource, /"test:calendar-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/calendar-read-model-contract-regression\.mjs"/);
-assert.match(currentStateSource, /Iteration 12\.2/);
+assert.match(currentStateSource, /PROJECT_HISTORY\.md/);
 assert.match(roadmapSource, /12\.2 Persisted Calendar Read Model Contract/);
 assert.match(calendarReadinessSource, /12\.2 Persisted Calendar Read Model Contract/);
 assert.match(authReadinessSource, /12\.2 persisted Calendar read model contract/i);

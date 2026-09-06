@@ -1,9 +1,4 @@
 import { normalizeProjectDate } from "../operations/projectDay.ts";
-import {
-  buildQuickViewSafeProjection,
-  type OperationalScheduleSource,
-  type QuickViewSafeProjection,
-} from "../operations/projections.ts";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -39,7 +34,8 @@ export type SharedProjectQuickView =
       projectStartsOn: string | null;
       projectEndsOn: string;
       expiresAt: string;
-      projection: QuickViewSafeProjection;
+      workspaceDisplayName: string;
+      date: string;
     }>;
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -119,40 +115,6 @@ export function parseProjectQuickViewShareState(value: unknown): ProjectQuickVie
   };
 }
 
-function parseScheduleSources(value: unknown): readonly OperationalScheduleSource[] {
-  if (!Array.isArray(value)) throw new Error("Shared Quick View schedule is invalid.");
-  return value.map((entry) => {
-    const row = record(entry);
-    if (
-      !row ||
-      typeof row.title !== "string" ||
-      !["general", "food", "security", "custom"].includes(String(row.taskType)) ||
-      !["timed", "date_based", "multi_day_window", "milestone"].includes(String(row.scheduleKind)) ||
-      typeof row.startDate !== "string" ||
-      (row.endDate !== null && typeof row.endDate !== "string") ||
-      (row.startTime !== null && typeof row.startTime !== "string") ||
-      (row.endTime !== null && typeof row.endTime !== "string") ||
-      !Number.isInteger(row.neededCount) ||
-      !["active", "archived", "canceled"].includes(String(row.lifecycle)) ||
-      !["draft", "published"].includes(String(row.publicationState))
-    ) {
-      throw new Error("Shared Quick View schedule is invalid.");
-    }
-    return {
-      title: row.title,
-      taskType: row.taskType,
-      scheduleKind: row.scheduleKind,
-      startDate: row.startDate,
-      endDate: row.endDate,
-      startTime: row.startTime,
-      endTime: row.endTime,
-      neededCount: row.neededCount,
-      lifecycle: row.lifecycle,
-      publicationState: row.publicationState,
-    } as OperationalScheduleSource;
-  });
-}
-
 export function parseSharedProjectQuickView(value: unknown): SharedProjectQuickView {
   if (!Array.isArray(value) || value.length !== 1) return { kind: "unavailable" };
   const row = record(value[0]);
@@ -168,26 +130,13 @@ export function parseSharedProjectQuickView(value: unknown): SharedProjectQuickV
   ) {
     return { kind: "unavailable" };
   }
-  const schedule = parseScheduleSources(row.schedule_sources);
-  const projection = buildQuickViewSafeProjection({
-    projectDisplayName: row.workspace_display_name,
-    date: row.project_date,
-    projectDay: row.expected_on_site_count === null
-      ? null
-      : {
-          date: row.project_date,
-          expectedOnSiteCount: row.expected_on_site_count as number,
-          createdAt: "shared-safe-projection",
-          updatedAt: "shared-safe-projection",
-        },
-    schedule,
-  });
   return {
     kind: "ready",
     workspaceTimezone: row.workspace_timezone,
     projectStartsOn: row.project_starts_on as string | null,
     projectEndsOn: row.project_ends_on,
     expiresAt: new Date(row.token_expires_at as string).toISOString(),
-    projection,
+    workspaceDisplayName: row.workspace_display_name,
+    date: row.project_date,
   };
 }

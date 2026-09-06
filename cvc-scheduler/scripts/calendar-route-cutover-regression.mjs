@@ -132,7 +132,7 @@ assert.match(calendarClientSource, /canEdit: boolean/);
 assert.match(calendarClientSource, /useRouter/);
 assert.match(calendarClientSource, /buildCalendarRouteHref/);
 assert.match(calendarClientSource, /No scheduled items in this range/);
-assert.match(calendarClientSource, /This Calendar view is ready/);
+assert.match(calendarClientSource, /Choose another date/);
 assert.doesNotMatch(
   calendarClientSource,
   /getCalendarItemsByWeek|demoProjectId|readCalendarReadModelWithClient|readModelQuery|routeRead\.server|createServerSupabaseClient|(?:^|\n)\s*\.from\(|(?:^|\n)\s*\.rpc\(|SUPABASE_SERVICE_ROLE_KEY|serviceRole/i,

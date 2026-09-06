@@ -22,7 +22,7 @@ export const projectQuickViewAccessCookie = {
   path: "/qv",
 } as const;
 
-function createQuickViewReadClient(): AppSupabaseClient {
+export function createQuickViewReadClient(): AppSupabaseClient {
   const config = readSupabasePublicConfig({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL,
     anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

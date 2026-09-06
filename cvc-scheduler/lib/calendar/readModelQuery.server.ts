@@ -1,4 +1,5 @@
 import "server-only";
+import { parseCalendarMeal } from "./meals.ts";
 
 import {
   CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE as HELPER_CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE,
@@ -50,8 +51,8 @@ export const CALENDAR_READ_MODEL_QUERY_ALLOWED_TABLES = [
 
 export const CALENDAR_READ_MODEL_QUERY_SELECTORS = {
   calendarItems:
-    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,lifecycle,publication_state,created_by_project_contact_id,follow_up_project_contact_id,published_at,follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone)",
-  taskPresets: "id,workspace_id,name,task_type",
+    "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,custom_values,meal_kind,meal_provider,meal_contact,meal_menu,meal_total,lifecycle,publication_state,created_by_project_contact_id,follow_up_project_contact_id,published_at,follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone)",
+  taskPresets: "id,workspace_id,name,task_type,description",
   calendarAssignments: "id,workspace_id,calendar_item_id,lifecycle",
   assignmentResponses: "assignment_id,workspace_id,response_status",
 } as const;
@@ -231,7 +232,7 @@ async function runSafeQuery(
   }
 }
 
-function toItemRow(
+export function toItemRow(
   row: AnyRow,
   taskPresetById: ReadonlyMap<string, AnyRow>,
 ): CalendarReadModelItemRow | null {
@@ -293,6 +294,9 @@ function toItemRow(
       : null,
     publishedAt: asOptionalString(row.published_at),
     scheduleNotes: asOptionalString(row.schedule_notes),
+    meal: parseCalendarMeal(row),
+    taskDescription: taskPreset ? asOptionalString(taskPreset.description) : null,
+    customValues: isRecord(row.custom_values) ? Object.fromEntries(Object.entries(row.custom_values).filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))) as Record<string, string | number | boolean | null> : {},
     taskPresetId,
     oneOffTaskLabel: hasPreset ? null : titleSnapshot,
     oneOffTaskType: hasPreset ? null : taskTypeSnapshot,

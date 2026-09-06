@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import CalendarClient from "@/components/CalendarClient";
+import { saveCalendarMealAction, duplicateCalendarItemAction } from "@/lib/calendar/operations.actions";
 import {
   cancelAssignmentWithClient,
   createAssignmentsBatchWithClient,
@@ -32,13 +33,6 @@ import {
   type OperationalEventName,
 } from "@/lib/observability/server";
 import { readVerifiedAdminContext } from "@/lib/auth/verified-admin-context.server";
-import {
-  normalizeProjectDate,
-  parseProjectDayExpectedOnSiteFormValue,
-  ProjectDayValidationError,
-  type ProjectDayMutationState,
-} from "@/lib/operations/projectDay";
-import { setProjectDayExpectedOnSiteWithVerifiedContext } from "@/lib/operations/projectDay.server";
 import {
   projectDatesFromFormData,
   ProjectDatesValidationError,
@@ -443,60 +437,6 @@ async function updateCurrentVolunteerFacingContactDetailsAction(formData: FormDa
   redirect(safeCalendarRedirect(formData, notice));
 }
 
-async function updateProjectDayExpectedOnSiteAction(
-  _previousState: ProjectDayMutationState,
-  formData: FormData,
-): Promise<ProjectDayMutationState> {
-  "use server";
-
-  const rawDate = formData.get("projectDate");
-  let date = typeof rawDate === "string" ? rawDate : "";
-  try {
-    date = normalizeProjectDate(rawDate);
-    const expectedOnSiteCount = parseProjectDayExpectedOnSiteFormValue(
-      formData.get("expectedOnSiteCount"),
-    );
-    const context = await readVerifiedAdminContext();
-    if (!context) {
-      return {
-        status: "unavailable",
-        date,
-        expectedOnSiteCount,
-        message: "Expected-on-site editing is unavailable for this contact.",
-      };
-    }
-    const updated = await setProjectDayExpectedOnSiteWithVerifiedContext(context, {
-      date,
-      expectedOnSiteCount,
-    });
-    revalidatePath("/admin/calendar");
-    revalidatePath("/admin/quick-view");
-    return {
-      status: "success",
-      date: updated.date,
-      expectedOnSiteCount: updated.expectedOnSiteCount,
-      message: updated.expectedOnSiteCount === null
-        ? "Expected on site cleared."
-        : "Expected on site saved.",
-    };
-  } catch (error) {
-    if (error instanceof ProjectDayValidationError) {
-      return {
-        status: "validation",
-        date,
-        expectedOnSiteCount: null,
-        message: error.issues[0] ?? "Enter a valid whole number.",
-      };
-    }
-    return {
-      status: "error",
-      date,
-      expectedOnSiteCount: null,
-      message: "Expected on site could not be saved. Try again.",
-    };
-  }
-}
-
 async function updateProjectDatesAction(
   _previousState: ProjectDatesMutationState,
   formData: FormData,
@@ -546,6 +486,8 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
 
   return (
     <CalendarClient
+      saveMealAction={saveCalendarMealAction}
+      duplicateAction={duplicateCalendarItemAction}
       assignAction={createCalendarAssignmentsAction}
       archiveAction={archiveCalendarItemAction}
       cancelAssignmentAction={cancelCalendarAssignmentAction}
@@ -560,7 +502,6 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
         updateCurrentVolunteerFacingContactDetailsAction
       }
       state={state}
-      updateProjectDayAction={updateProjectDayExpectedOnSiteAction}
       updateProjectDatesAction={updateProjectDatesAction}
       updateAction={updateCalendarItemAction}
     />

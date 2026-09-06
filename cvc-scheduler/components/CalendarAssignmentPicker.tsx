@@ -1,4 +1,5 @@
 "use client";
+import { useCalendarOperations } from "./CalendarMeals";
 
 import Link from "next/link";
 import {
@@ -231,6 +232,7 @@ export function CalendarAssignmentPicker({
   itemId: string;
   neededCount: number;
 }) {
+  const { readOnly } = useCalendarOperations();
   const [search, setSearch] = useState("");
   const [congregation, setCongregation] = useState("");
   const [sort, setSort] = useState<PickerSort>("name-asc");
@@ -328,15 +330,15 @@ export function CalendarAssignmentPicker({
                     <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${responseTone(assignment.responseStatus)}`}>
                       {responseLabel(assignment.responseStatus)}
                     </span>
-                    <button aria-label={`View volunteer context for ${assignment.volunteerDisplayName}`} className={`inline-flex size-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 ${calmFocusRing}`} onClick={() => openContext(context)} type="button">
+                    {!readOnly ? <button aria-label={`View volunteer context for ${assignment.volunteerDisplayName}`} className={`inline-flex size-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 ${calmFocusRing}`} onClick={() => openContext(context)} type="button">
                       <Ellipsis aria-hidden="true" className="h-4 w-4" />
-                    </button>
+                    </button> : null}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Link aria-label={`View assignment for ${assignment.volunteerDisplayName}`} className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`} href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}>
+                  {!readOnly ? <Link aria-label={`View assignment for ${assignment.volunteerDisplayName}`} className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[var(--pl-border)] bg-white px-2.5 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] ${calmFocusRing}`} href={`/admin/assignments/${encodeURIComponent(assignment.assignmentId)}`}>
                     <SquareArrowOutUpRight aria-hidden="true" className="h-3.5 w-3.5" /> View assignment
-                  </Link>
+                  </Link> : null}
                   {canEditAssignments && cancelAssignmentAction ? (
                     <form action={cancelAssignmentAction}>
                       <input name="assignmentId" type="hidden" value={assignment.assignmentId} />
@@ -358,6 +360,7 @@ export function CalendarAssignmentPicker({
         )}
       </div>
 
+      {!readOnly ? <>
       <div className="rounded-lg bg-[var(--pl-surface-subtle)] px-3 py-3">
         {assignmentPicker.kind === "unavailable" ? (
           <p className="text-sm leading-6 text-slate-600">Volunteer choices are unavailable for this signed-in contact.</p>
@@ -441,6 +444,7 @@ export function CalendarAssignmentPicker({
           <p className="text-sm leading-6 text-slate-600">This contact can view Calendar assignments but cannot change them.</p>
         )}
       </div>
+      </> : null}
 
       {isMobile && (surface === "filters" || surface === "sort") ? (
         <MobileOverlaySheet description={surface === "filters" ? "Narrow the ready volunteer list." : "Choose a neutral list order."} label={`Volunteer ${surface}`} onClose={closeSurface} open title={surface === "filters" ? "Filter volunteers" : "Sort volunteers"}>

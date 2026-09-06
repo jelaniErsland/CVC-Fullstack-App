@@ -191,6 +191,9 @@ export type CalendarItemPreviewTimingKind =
  * are denormalized preview fields, not a proposed production storage contract.
  */
 export type CalendarItem = {
+  meal?: import("./calendar/meals").CalendarMeal | null;
+  taskDescription?: string | null;
+  customValues?: Readonly<Record<string, string | number | boolean | null>>;
   id: string;
   projectId: string;
   taskPresetId?: string;
@@ -4134,7 +4137,7 @@ export function getRecommendedReminderTemplateAction(
 
 export const taskPresetCategoryLabels: Record<TaskPresetCategory, string> = {
   general: "General",
-  lunch: "Lunch",
+  lunch: "Food",
   security: "Security",
   cleanup: "Cleanup",
   construction: "Construction",

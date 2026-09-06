@@ -388,6 +388,11 @@ export type Database = {
           follow_up_project_contact_id: string | null
           id: string
           lifecycle: string
+          meal_contact: string | null
+          meal_kind: string | null
+          meal_menu: string | null
+          meal_provider: string | null
+          meal_total: number | null
           needed_count: number
           publication_state: string
           published_at: string | null
@@ -412,6 +417,11 @@ export type Database = {
           follow_up_project_contact_id?: string | null
           id?: string
           lifecycle?: string
+          meal_contact?: string | null
+          meal_kind?: string | null
+          meal_menu?: string | null
+          meal_provider?: string | null
+          meal_total?: number | null
           needed_count: number
           publication_state?: string
           published_at?: string | null
@@ -436,6 +446,11 @@ export type Database = {
           follow_up_project_contact_id?: string | null
           id?: string
           lifecycle?: string
+          meal_contact?: string | null
+          meal_kind?: string | null
+          meal_menu?: string | null
+          meal_provider?: string | null
+          meal_total?: number | null
           needed_count?: number
           publication_state?: string
           published_at?: string | null
@@ -1187,6 +1202,15 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: string
       }
+      duplicate_calendar_item: {
+        Args: {
+          p_calendar_item_id: string
+          p_end_time?: string
+          p_start_time?: string
+          p_target_date: string
+        }
+        Returns: string
+      }
       finalize_initial_assignment_notification_delivery: {
         Args: {
           p_delivery_id: string
@@ -1333,6 +1357,7 @@ export type Database = {
           follow_up_contact_display_name: string
           follow_up_contact_email: string
           follow_up_contact_phone: string
+          meal_details: Json
           needed_count: number
           response_lock_reason: string
           response_locked: boolean
@@ -1409,6 +1434,22 @@ export type Database = {
       }
       revoke_volunteer_schedule_access: {
         Args: { p_token_id: string }
+        Returns: string
+      }
+      save_calendar_meal: {
+        Args: {
+          p_calendar_item_id: string
+          p_contact: string
+          p_date: string
+          p_end_time: string
+          p_meal_kind: string
+          p_menu: string
+          p_notes: string
+          p_provider: string
+          p_start_time: string
+          p_total: number
+          p_workspace_id: string
+        }
         Returns: string
       }
       set_current_project_day_expected_on_site: {

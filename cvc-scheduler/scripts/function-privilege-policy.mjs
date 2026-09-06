@@ -11,6 +11,8 @@ export const anonymousFunctions = Object.freeze([
   "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text)",
+  "duplicate_calendar_item(uuid,date,time without time zone,time without time zone)",
   "archive_calendar_item(uuid)",
   "archive_task_preset(uuid)",
   "cancel_calendar_assignment(uuid)",

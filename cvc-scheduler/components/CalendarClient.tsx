@@ -16,7 +16,6 @@ import {
   Search,
   Send,
   SlidersHorizontal,
-  Soup,
   Users,
   X,
 } from "lucide-react";
@@ -63,7 +62,6 @@ import {
   getCalendarStatusLabel,
   getCalendarStatusTone,
   groupCalendarItemsByDay,
-  isLunchCalendarItem,
   isOneOffCalendarItem,
 } from "@/lib/mockData";
 import type {
@@ -75,7 +73,7 @@ import type {
   CalendarStatusTone,
   TaskPresetCategory,
 } from "@/lib/mockData";
-import type { ProjectDayMutationState } from "@/lib/operations/projectDay";
+import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } from "./CalendarMeals";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
 
@@ -84,10 +82,6 @@ type CalendarSurface = "none" | "filter" | "more" | "create" | "inspect" | "proj
 type CalendarInspectorSection = "details" | "volunteers" | "visibility" | "notification";
 type CreationMode = "preset" | "oneOff";
 type CalendarMutationAction = (formData: FormData) => void | Promise<void>;
-type ProjectDayMutationAction = (
-  previousState: ProjectDayMutationState,
-  formData: FormData,
-) => Promise<ProjectDayMutationState>;
 type ProjectDatesMutationAction = (
   previousState: ProjectDatesMutationState,
   formData: FormData,
@@ -227,27 +221,15 @@ const coverageOptions: CalendarCoverageFilterState[] = [
 
 const defaultTimedDay = { start: "07:30", end: "17:00" };
 
-const projectCalendarAnchor = "2026-01-13";
 
 const categoryStyles: Record<TaskPresetCategory, string> = {
-  general: "border-slate-200 bg-slate-50 text-slate-700",
-  lunch: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  security: "border-sky-200 bg-sky-50 text-sky-700",
+  general: "border-cyan-200 bg-cyan-50 text-cyan-900",
+  lunch: "border-amber-200 bg-amber-50 text-amber-900",
+  security: "border-violet-200 bg-violet-50 text-violet-900",
   cleanup: "border-amber-200 bg-amber-50 text-amber-700",
   construction: "border-violet-200 bg-violet-50 text-violet-700",
-  custom: "border-rose-200 bg-rose-50 text-rose-700",
+  custom: "border-slate-200 bg-slate-50 text-slate-700",
 };
-
-const calendarEventPalette = [
-  "bg-sky-200/85 text-sky-950 hover:bg-sky-200",
-  "bg-emerald-200/85 text-emerald-950 hover:bg-emerald-200",
-  "bg-violet-200/85 text-violet-950 hover:bg-violet-200",
-  "bg-amber-200/85 text-amber-950 hover:bg-amber-200",
-  "bg-rose-200/85 text-rose-950 hover:bg-rose-200",
-  "bg-cyan-200/85 text-cyan-950 hover:bg-cyan-200",
-  "bg-indigo-200/85 text-indigo-950 hover:bg-indigo-200",
-  "bg-orange-200/85 text-orange-950 hover:bg-orange-200",
-] as const;
 
 const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
   hour,
@@ -261,18 +243,17 @@ const weekEventMinHeight = 44;
 const weekBandVisibleLaneCount = 2;
 const weekTimeLabels = dayTimelineSlots.filter(({ hour }) => hour % 2 === 0);
 
+function getCalendarOperationalCount(item: CalendarItem) {
+  return item.meal ? (item.meal.total === null ? "Total unset" : "Total " + item.meal.total) : getCalendarFilledLabel(item);
+}
+
 function getCalendarEventStyle(item: CalendarItem) {
-  const stableKey = item.taskPresetId ?? item.oneOffTask?.name ?? item.id;
-  let hash = 0;
-
-  for (let index = 0; index < stableKey.length; index += 1) {
-    hash = (hash * 31 + stableKey.charCodeAt(index)) >>> 0;
-  }
-
-  return (
-    calendarEventPalette[hash % calendarEventPalette.length] ??
-    calendarEventPalette[0]
-  );
+  if (item.category === "custom") return "bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-300";
+  if (item.category === "security") return "bg-violet-100 text-violet-950 hover:bg-violet-200 border-violet-300";
+  if (item.category === "lunch") return item.meal?.kind === "breakfast"
+    ? "bg-yellow-100 text-amber-950 hover:bg-yellow-200 border-amber-300"
+    : "bg-amber-200 text-amber-950 hover:bg-amber-300 border-amber-400";
+  return "bg-cyan-100 text-cyan-950 hover:bg-cyan-200 border-cyan-300";
 }
 
 function enrichCalendarClientItem(item: CalendarItem): CalendarClientDisplayItem {
@@ -644,13 +625,13 @@ function handleCalendarGridArrowKey(
   nextTarget.focus();
 }
 
-const detailAccentStyles: Record<TaskPresetCategory, string> = {
-  general: "border-l-slate-400",
-  lunch: "border-l-emerald-500",
-  security: "border-l-sky-500",
-  cleanup: "border-l-amber-500",
-  construction: "border-l-violet-500",
-  custom: "border-l-rose-500",
+const detailAccentStyles: Record<TaskPresetCategory, { desktop: string; mobile: string }> = {
+  general: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
+  lunch: { desktop: "border-l-amber-400", mobile: "border-t-amber-400" },
+  security: { desktop: "border-l-violet-400", mobile: "border-t-violet-400" },
+  cleanup: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
+  construction: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
+  custom: { desktop: "border-l-slate-400", mobile: "border-t-slate-400" },
 };
 
 const toneStyles: Record<CalendarStatusTone, string> = {
@@ -926,8 +907,8 @@ function CalendarFilterPanel({
     <div
       aria-hidden={!isOpen}
       className={[
-        "fixed inset-0 z-[60] transition",
-        isOpen ? "pointer-events-auto" : "pointer-events-none",
+        "fixed inset-0 z-[60] overflow-hidden transition",
+        isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       ].join(" ")}
       inert={!isOpen}
     >
@@ -1183,7 +1164,7 @@ function CalendarBlock({
         </p>
         <div className="mt-0.5 flex min-w-0 items-center justify-between gap-1 text-[10px] font-medium leading-3 opacity-75">
           <span className="truncate">{getCalendarItemTimeWindow(item)}</span>
-          <span className="shrink-0">{getCalendarFilledLabel(item)}</span>
+          <span className="shrink-0">{getCalendarOperationalCount(item)}</span>
         </div>
       </div>
     </button>
@@ -1205,6 +1186,7 @@ function WeekGrid({
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
+  const { readOnly } = useCalendarOperations();
   const groups = groupCalendarItemsByDay(items, referenceDate);
   const timedGroups = groups.map((group) => ({
     ...group,
@@ -1264,7 +1246,7 @@ function WeekGrid({
             data-calendar-arrow-group="week-context"
           >
             {groups.map((group, dayIndex) => (
-              <button
+              !readOnly ? <button
                 aria-label={`Plan project work with no specific time on ${getCalendarAccessibleDayLabel(group.date)}`}
                 className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
                 data-calendar-arrow-target="week-context-day"
@@ -1281,7 +1263,7 @@ function WeekGrid({
                   handleCalendarGridArrowKey(event, dayIndex, 7)
                 }
                 type="button"
-              />
+              /> : null
             ))}
           </div>
           <div
@@ -1307,7 +1289,7 @@ function WeekGrid({
                 type="button"
               >
                 <span className="shrink-0 opacity-70">
-                  {getCalendarFilledLabel(item)}
+                  {getCalendarOperationalCount(item)}
                 </span>
                 <span className="min-w-0 truncate">
                   {getCalendarItemDisplayName(item)}
@@ -1361,7 +1343,7 @@ function WeekGrid({
             key={group.date}
             style={{ backgroundSize: "100% 30px" }}
           >
-            <button
+            {!readOnly ? <button
               aria-label={`Plan project work on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
               className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
               data-calendar-arrow-target="week-timed-day"
@@ -1383,7 +1365,7 @@ function WeekGrid({
                 handleCalendarGridArrowKey(event, dayIndex, 7)
               }
               type="button"
-            />
+            /> : null}
             {layoutWeekItems(group.items).map(
               ({ height, item, lane, laneCount, top }) => {
                 const laneWidth = 100 / laneCount;
@@ -1427,6 +1409,8 @@ function EmptySlotAffordance({
   label: string;
   onSelect: () => void;
 }) {
+  const { readOnly } = useCalendarOperations();
+  if (readOnly) return <div className={compact ? "min-h-9" : "min-h-[72px]"} />;
   return (
     <button
       aria-label={label}
@@ -1461,18 +1445,20 @@ function DayView({
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
+  const { readOnly } = useCalendarOperations();
   const timelineRef = useRef<HTMLDivElement>(null);
   const dayItems = items
     .filter((item) => doesCalendarItemOccurOnDate(item, date))
     .map(enrichCalendarClientItem);
   const contextItems = dayItems.filter(isWeekBandCalendarItem);
   const timedItems = dayItems.filter((item) => !isWeekBandCalendarItem(item));
-  const visibleContextItem = contextItems[0];
-  const contextOverflowCount = Math.max(contextItems.length - 1, 0);
 
   useEffect(() => {
-    if (timelineRef.current) {
-      timelineRef.current.scrollTop = 7 * 52;
+    const timeline = timelineRef.current;
+    const morningSlot = timeline?.children[7] as HTMLElement | undefined;
+    const firstSlot = timeline?.firstElementChild as HTMLElement | undefined;
+    if (timeline && morningSlot && firstSlot) {
+      timeline.scrollTop = morningSlot.offsetTop - firstSlot.offsetTop;
     }
   }, [date]);
 
@@ -1489,50 +1475,16 @@ function DayView({
           type="button"
         >
           <Users aria-hidden="true" className="h-4 w-4" />
-          Expected on site
+          Day details
         </button>
       </div>
-      {visibleContextItem ? (
-        <div
-          aria-label={`Project context for ${getCalendarCompactDayLabel(date)}`}
-          className="grid min-h-8 grid-cols-[58px_1fr] border-b border-slate-200/80 bg-white/32 sm:grid-cols-[80px_1fr]"
-          role="region"
-        >
-          <div className="flex items-center justify-end border-r border-slate-200/80 px-2 text-right text-[9px] font-semibold text-slate-400 sm:px-3 sm:text-[10px]">
-            Project context
-          </div>
-          <div className="flex min-w-0 items-center gap-1.5 px-1.5 py-1 sm:px-2">
-            <button
-              aria-label={getProjectContextItemAccessibleLabel(visibleContextItem)}
-              className={[
-                `flex h-6 min-w-0 max-w-full items-center gap-1 overflow-hidden rounded px-1.5 text-left text-[10px] font-semibold leading-3 transition sm:max-w-[min(28rem,75%)] ${calmFocusRing}`,
-                getCalendarEventStyle(visibleContextItem),
-                selectedId === visibleContextItem.id
-                  ? "ring-2 ring-slate-900/30 ring-offset-1"
-                  : "",
-              ].join(" ")}
-              onClick={() => onSelect(visibleContextItem)}
-              type="button"
-            >
-              <span className="hidden shrink-0 opacity-70 sm:inline">
-                {getCalendarFilledLabel(visibleContextItem)}
-              </span>
-              <span className="min-w-0 truncate">
-                {getCalendarItemDisplayName(visibleContextItem)}
-              </span>
-            </button>
-            {contextOverflowCount > 0 ? (
-              <span
-                aria-label={`${contextOverflowCount} more project context item${contextOverflowCount === 1 ? "" : "s"} available in Week and Month views`}
-                className="shrink-0 text-[10px] font-semibold text-slate-400"
-                title="Additional project context is available in Week and Month views"
-              >
-                +{contextOverflowCount}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      {contextItems.length ? <div className="grid grid-cols-[58px_1fr] border-b border-slate-200 sm:grid-cols-[80px_1fr]" aria-label="No-specific-time Calendar items">
+        <span className="p-2 text-[10px] font-semibold text-slate-500">No specific time</span>
+        <div className="flex flex-wrap gap-2 p-2">{contextItems.map(item => <button key={item.id} type="button" aria-label={getProjectContextItemAccessibleLabel(item)} onClick={() => onSelect(item)} className={getCalendarEventStyle(item) + " min-h-9 rounded-lg px-3 py-2 text-sm font-semibold " + calmFocusRing}>
+          {getCalendarItemDisplayName(item)} · {getCalendarOperationalCount(item)}
+        </button>)}</div>
+      </div> : null}
+
       <div className="max-h-[620px] overflow-y-auto" data-calendar-arrow-group="day-hours" ref={timelineRef}>
         {dayTimelineSlots.map((slot) => {
           const slotItems = timedItems.filter(
@@ -1548,7 +1500,7 @@ function DayView({
                 {slot.label}
               </div>
               <div className="relative min-w-0">
-                <button
+                {!readOnly ? <button
                   aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)} at ${slot.label}`}
                   className={`absolute inset-0 cursor-pointer transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
                   data-calendar-arrow-target="day-hour"
@@ -1565,7 +1517,7 @@ function DayView({
                     handleCalendarGridArrowKey(event, slot.hour, 1)
                   }
                   type="button"
-                />
+                /> : null}
                 {slotItems.length > 0 ? (
                   <div className="pointer-events-none relative z-10 grid gap-1.5 p-1.5 sm:p-2 xl:grid-cols-2">
                     {slotItems.map((item) => (
@@ -1630,6 +1582,7 @@ function MonthView({
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
 }) {
+  const { readOnly } = useCalendarOperations();
   const dates = deriveCalendarMonthDates(referenceDate);
   const reference = new Date(`${referenceDate}T00:00:00Z`);
 
@@ -1667,7 +1620,7 @@ function MonthView({
               data-calendar-month-cell={date}
               key={date}
             >
-              <button
+              {!readOnly ? <button
                 aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)}`}
                 className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
                 data-calendar-arrow-target="month-date"
@@ -1682,7 +1635,7 @@ function MonthView({
                   handleCalendarGridArrowKey(event, dateIndex, 7)
                 }
                 type="button"
-              />
+              /> : null}
               <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
                 <button
                   aria-label={`Open day details for ${getCalendarCompactDayLabel(date)}`}
@@ -1711,7 +1664,7 @@ function MonthView({
                     >
                       <span className="flex min-w-0 items-center gap-1">
                         <span className="hidden shrink-0 opacity-70 sm:inline">
-                          {getCalendarFilledLabel(item)}
+                          {getCalendarOperationalCount(item)}
                         </span>
                         <span className="min-w-0 truncate">
                           {getCalendarItemDisplayName(item)}
@@ -1884,7 +1837,7 @@ function CalendarListView({
                         {scheduleLabel}
                       </p>
                       <span className="mt-0.5 inline-flex min-h-7 shrink-0 self-start items-center justify-center whitespace-nowrap rounded-full border border-slate-200/80 bg-white/58 px-2.5 text-[11px] font-semibold text-slate-700 sm:mt-0 sm:self-center">
-                        {getCalendarFilledLabel(item)} helpers
+                        {getCalendarOperationalCount(item)}{item.meal ? "" : " helpers"}
                       </span>
                       <p className="col-span-2 mt-0.5 text-[11px] font-medium leading-4 text-slate-500 sm:hidden">
                         {scheduleLabel}
@@ -2048,8 +2001,8 @@ function CalendarCreatePanel({
     <div
       aria-hidden={!isOpen}
       className={[
-        "fixed inset-0 z-[55] transition",
-        isOpen ? "pointer-events-auto" : "pointer-events-none",
+        "fixed inset-0 z-[55] overflow-hidden transition",
+        isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       ].join(" ")}
       inert={!isOpen}
     >
@@ -2162,6 +2115,8 @@ function CreatePanelContent({
   selectedPreset?: CalendarTaskPresetOption;
   selectedTaskType: CalendarHighLevelTaskType;
 }) {
+  const [foodWorkflow, setFoodWorkflow] = useState(false);
+  const operations = useCalendarOperations();
   const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
   const isRepeat = creationDraft.scheduleMode === "repeat";
@@ -2265,6 +2220,11 @@ function CreatePanelContent({
         </div>
       </div>
 
+      {operations.saveMealAction ? <div className="flex gap-2 border-b border-slate-200 px-4 py-3">
+        <button type="button" aria-pressed={!foodWorkflow} className="min-h-11 rounded-lg border px-3 text-sm font-semibold" onClick={() => setFoodWorkflow(false)}>Task</button>
+        <button type="button" aria-pressed={foodWorkflow} className="min-h-11 rounded-lg border px-3 text-sm font-semibold" onClick={() => setFoodWorkflow(true)}>Breakfast / Lunch</button>
+      </div> : null}
+      {foodWorkflow ? <div className="min-h-0 flex-1 overflow-y-auto p-4"><MealForm date={currentDate} view={currentView} /></div> : <>
       <div
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
         data-overlay-scroll="calendar-create"
@@ -2742,6 +2702,7 @@ function CreatePanelContent({
           </div>
         </form>
       </div>
+      </>}
     </>
   );
 }
@@ -2826,7 +2787,7 @@ function CalendarInspector({
         tabIndex={-1}
       >
         <div
-          className={`flex h-full flex-col overflow-hidden border-l-4 bg-white ${detailAccentStyles[item.category]}`}
+          className={`flex h-full flex-col overflow-hidden border-l-4 bg-white ${detailAccentStyles[item.category].desktop}`}
         >
           <InspectorContent
             assignAction={assignAction}
@@ -2867,7 +2828,7 @@ function CalendarInspector({
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar item inspector"
           aria-modal="true"
-          className={`absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].replace("border-l", "border-t")}`}
+          className={`absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].mobile}`}
           role="dialog"
           ref={mobileDialogRef}
           tabIndex={-1}
@@ -2943,6 +2904,7 @@ function InspectorContent({
   updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
 }) {
+  const { readOnly } = useCalendarOperations();
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
   const isOneOffItem = isOneOffCalendarItem(item);
   const isPresetBackedItem = Boolean(item.taskPresetId) && !isOneOffItem;
@@ -3031,7 +2993,7 @@ function InspectorContent({
       >
         <div className="order-0 flex flex-wrap gap-1.5">
           <span className="inline-flex min-h-7 items-center rounded-full border border-[var(--pl-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--pl-text)]">
-            {getCalendarFilledLabel(item)} filled
+            {getCalendarOperationalCount(item)}{item.meal ? "" : " filled"}
           </span>
           <span
             className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold ${categoryStyles[item.category]}`}
@@ -3055,6 +3017,7 @@ function InspectorContent({
           </span>
         </div>
 
+        {!readOnly ? <>
         <div className="order-5 mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5" data-inspector-section="visibility">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             STEP 3 · VISIBILITY
@@ -3112,6 +3075,7 @@ function InspectorContent({
             </div>
           ) : null}
         </div>
+        </> : null}
 
         <div className="order-1 mt-3 border-b border-[var(--pl-border)] px-1 pb-3" data-inspector-section="details">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
@@ -3149,6 +3113,7 @@ function InspectorContent({
           </div>
         </div>
 
+        {!readOnly ? <>
         <div className="order-6 mt-3 border-b border-[var(--pl-border)] bg-sky-50/45 px-3 py-3" data-inspector-section="notification">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
@@ -3316,6 +3281,7 @@ function InspectorContent({
             </p>
           )}
         </div>
+        </> : null}
 
         {canArchiveSelectedItem ? (
           <div className="order-7 mt-5 border-t border-[var(--pl-border)] pt-4" data-inspector-section="lifecycle">
@@ -3367,15 +3333,21 @@ function InspectorContent({
           </p>
         </div>
 
-        {isLunchCalendarItem(item) ? (
-          <div className="order-2 mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">
-            <div className="flex items-center gap-2 font-semibold">
-              <Soup aria-hidden="true" className="h-4 w-4" />
-              Lunch menu
-            </div>
-            <p className="mt-1">{item.menuSummary ?? "Menu not added yet."}</p>
-          </div>
-        ) : null}
+        {item.taskDescription ? <p className="order-2 mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.taskDescription}</p> : null}
+        {item.customValues && Object.keys(item.customValues).length ? <dl className="order-2 mt-3 space-y-2 text-sm">
+          {Object.entries(item.customValues).map(([name, value]) => <div key={name}><dt className="font-semibold text-slate-700">{name.replaceAll("_", " ")}</dt><dd className="break-words whitespace-pre-wrap text-slate-600">{value === null ? "Not set" : String(value)}</dd></div>)}
+        </dl> : null}
+        {item.meal ? <section aria-label="Meal details" className="order-2 mt-4 border-t border-amber-200 pt-4">
+          <h3 className="font-bold text-amber-950">{item.meal.kind === "breakfast" ? "Breakfast" : "Lunch"}</h3>
+          <dl className="mt-2 space-y-3 text-sm">
+            {[
+              ["Meal total", item.meal.total === null ? "Not set" : String(item.meal.total)],
+              ["Provider / congregation / group", item.meal.provider],
+              ["Contact person", item.meal.contact],
+              ["Menu", item.meal.menu],
+            ].map(([label, value]) => <div key={label}><dt className="font-semibold text-slate-700">{label}</dt><dd className="mt-0.5 break-words whitespace-pre-wrap text-slate-600">{value ?? "Not set"}</dd></div>)}
+          </dl>
+        </section> : null}
 
         <div className="order-2 mt-4 grid gap-2 text-xs font-semibold text-slate-500">
           <span>
@@ -3388,7 +3360,9 @@ function InspectorContent({
           {item.copyLabel ? <span>Copy: {item.copyLabel}</span> : null}
         </div>
 
-        {canEditSelectedItem ? (
+        {item.meal && canEdit ? <div className="order-3 mt-4 border-t border-slate-200 pt-4"><MealForm item={item} date={currentDate} view={currentView} /></div> : null}
+        {canEdit ? <DuplicateItem item={item} date={currentDate} view={currentView} /> : null}
+        {canEditSelectedItem && !item.meal ? (
           <form action={updateAction} className="order-3 mt-4 border-t border-[var(--pl-border)] pt-4">
             <input name="calendarItemId" type="hidden" value={item.id} />
             <input name="redirectView" type="hidden" value={currentView} />
@@ -3500,11 +3474,11 @@ function InspectorContent({
               </button>
             </div>
           </form>
-        ) : (
+        ) : canEdit && !item.meal ? (
           <div className="order-3 mt-5 rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-500">
             This item can’t be edited from this Calendar view.
           </div>
-        )}
+        ) : null}
 
       </div>
     </>
@@ -3536,7 +3510,6 @@ export type CalendarClientState =
       assignmentPicker: CalendarAssignmentPickerState;
       projectDayDetails: Readonly<{
         date: string;
-        expectedOnSiteCount: number | null;
         publishedScheduleCount: number;
       }> | null;
       view: CalendarViewMode;
@@ -3560,13 +3533,6 @@ type CalendarClientQueriedRange = Readonly<{
   bounded: true;
   rangeSemantics: "server_derived_start_inclusive_end_exclusive";
 }>;
-
-const initialProjectDayMutationState: ProjectDayMutationState = {
-  status: "idle",
-  date: "",
-  expectedOnSiteCount: null,
-  message: "",
-};
 
 const initialProjectDatesMutationState: ProjectDatesMutationState = {
   status: "idle",
@@ -3658,123 +3624,17 @@ function getProjectDayLongLabel(date: string) {
   }).format(new Date(`${date}T00:00:00Z`));
 }
 
-function ProjectDayEditor({
-  action,
-  canEdit,
-  details,
-}: {
-  action: ProjectDayMutationAction;
-  canEdit: boolean;
-  details: Readonly<{
-    date: string;
-    expectedOnSiteCount: number | null;
-    publishedScheduleCount: number;
-  }>;
-}) {
-  const [actionState, formAction, isPending] = useActionState(
-    action,
-    initialProjectDayMutationState,
-  );
-  const inputId = useId();
-  const inputMessageId = useId();
-  const hasMessage = actionState.status !== "idle";
-  const hasError =
-    actionState.status === "validation" ||
-    actionState.status === "unavailable" ||
-    actionState.status === "error";
-  const visibleCount =
-    actionState.status === "success" && actionState.date === details.date
-      ? actionState.expectedOnSiteCount
-      : details.expectedOnSiteCount;
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-          Project day
-        </p>
-        <p className="mt-1 text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">
-          {getProjectDayLongLabel(details.date)}
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
-          Published schedule
-        </p>
-        <p className="mt-1 text-sm font-semibold text-[var(--pl-ink)]">
-          {details.publishedScheduleCount} published item{details.publishedScheduleCount === 1 ? "" : "s"}
-        </p>
-      </div>
-
-      {canEdit ? (
-        <form action={formAction} className="space-y-4">
-          <input name="projectDate" type="hidden" value={details.date} />
-          <label className="block" htmlFor={inputId}>
-            <span className="text-sm font-semibold text-[var(--pl-ink)]">
-              Expected on site
-            </span>
-            <input
-              aria-describedby={`${inputId}-help${hasMessage ? ` ${inputMessageId}` : ""}`}
-              aria-invalid={hasError || undefined}
-              className="mt-2 min-h-11 w-full rounded-xl border border-[var(--pl-border)] bg-white px-3 text-base font-semibold text-[var(--pl-ink)] outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-500/20"
-              defaultValue={visibleCount ?? ""}
-              id={inputId}
-              inputMode="numeric"
-              name="expectedOnSiteCount"
-              placeholder="Not set"
-              type="text"
-            />
-          </label>
-          <p className="-mt-2 text-xs leading-5 text-[var(--pl-muted)]" id={`${inputId}-help`}>
-            Daily total. Leave blank to clear.
-          </p>
-          {hasMessage ? (
-            <p
-              aria-live="polite"
-              className={hasError ? "text-sm font-semibold text-red-700" : "text-sm font-semibold text-emerald-700"}
-              id={inputMessageId}
-            >
-              {actionState.message}
-            </p>
-          ) : null}
-          <button
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] disabled:cursor-wait disabled:opacity-60"
-            disabled={isPending}
-            type="submit"
-          >
-            {isPending ? "Saving…" : "Save expected count"}
-          </button>
-        </form>
-      ) : (
-        <div className="rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
-            Expected on site
-          </p>
-          <p className="mt-1 text-2xl font-bold text-[var(--pl-ink)]">
-            {visibleCount === null ? "Not set" : visibleCount}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[var(--pl-muted)]">
-            Calendar editing permission is required to change this total.
-          </p>
-        </div>
-      )}
-    </div>
-  );
+function ProjectDayEditor({ details }: { details: { date: string; publishedScheduleCount: number } }) {
+  return <div className="space-y-4"><p className="font-semibold">{getProjectDayLongLabel(details.date)}</p><p className="text-sm text-slate-600">{details.publishedScheduleCount} published Calendar items</p></div>;
 }
 
 function ProjectDayDetailsSurface({
-  action,
-  canEdit,
   details,
   isOpen,
   onClose,
 }: {
-  action: ProjectDayMutationAction;
-  canEdit: boolean;
   details: Readonly<{
     date: string;
-    expectedOnSiteCount: number | null;
     publishedScheduleCount: number;
   }> | null;
   isOpen: boolean;
@@ -3794,10 +3654,8 @@ function ProjectDayDetailsSurface({
 
   const editor = (
     <ProjectDayEditor
-      action={action}
-      canEdit={canEdit}
       details={details}
-      key={`${details.date}:${details.expectedOnSiteCount ?? "unset"}`}
+      key={details.date}
     />
   );
 
@@ -3838,6 +3696,9 @@ function ProjectDayDetailsSurface({
 function CalendarNotice({ notice }: { notice?: string }) {
   if (!notice) return null;
   const copy: Record<string, { title: string; message: string }> = {
+    meal_saved: { title: "Meal saved", message: "The meal is available in project views." },
+    duplicated: { title: "Item duplicated", message: "The independent copy has no assigned volunteers." },
+    operation_unavailable: { title: "Item was not saved", message: "Check the date, paired times and meal total. Only one active Breakfast and Lunch may be scheduled per day." },
     created: {
       title: "Calendar draft saved",
       message: "The scheduled item was saved as a private draft.",
@@ -3962,6 +3823,11 @@ function buildCalendarInspectorHref(
 }
 
 export default function CalendarClient({
+  readOnly = false,
+  routeBase = "/admin/calendar",
+  projectKey,
+  saveMealAction,
+  duplicateAction,
   assignAction,
   archiveAction,
   cancelAssignmentAction,
@@ -3974,10 +3840,14 @@ export default function CalendarClient({
   sendInitialAssignmentNotificationsAction,
   updateCurrentVolunteerFacingContactDetailsAction,
   state,
-  updateProjectDayAction,
   updateProjectDatesAction,
   updateAction,
 }: Readonly<{
+  readOnly?: boolean;
+  routeBase?: string;
+  projectKey?: string;
+  saveMealAction?: CalendarMutationAction;
+  duplicateAction?: CalendarMutationAction;
   assignAction?: CalendarMutationAction;
   archiveAction?: CalendarMutationAction;
   cancelAssignmentAction?: CalendarMutationAction;
@@ -3990,13 +3860,18 @@ export default function CalendarClient({
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
   updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   state: CalendarClientState;
-  updateProjectDayAction: ProjectDayMutationAction;
-  updateProjectDatesAction: ProjectDatesMutationAction;
+  updateProjectDatesAction?: ProjectDatesMutationAction;
   updateAction?: CalendarMutationAction;
 }>) {
   const router = useRouter();
+  function navigate(href: string) {
+    const params = new URLSearchParams(href.split("?")[1]);
+    if (projectKey) params.set("project", projectKey);
+    router.push(routeBase + "?" + params.toString());
+  }
   const isReady = state.kind === "ready_with_items" || state.kind === "ready_empty";
   const isReadyEmpty = state.kind === "ready_empty";
+  const projectCalendarAnchor = isReady ? state.projectStartsOn : null;
   const allItems = useMemo(() => (isReady ? state.items : []), [isReady, state]);
   const creationPresets = useMemo(() => {
     if (
@@ -4199,7 +4074,7 @@ export default function CalendarClient({
     setCreationDraft(undefined);
     setProjectDayDate(date);
     setActiveSurface("projectDay");
-    router.push(buildCalendarProjectDayHref(activeView, calendarAnchor, date));
+    navigate(buildCalendarProjectDayHref(activeView, date, date));
   };
 
   const handleCreateFromSlot = (slot: CalendarCreationSlot) => {
@@ -4242,12 +4117,12 @@ export default function CalendarClient({
 
   const handleViewChange = (view: CalendarViewMode) => {
     closeCalendarSurface();
-    router.push(buildCalendarRouteHref(view, calendarAnchor));
+    navigate(buildCalendarRouteHref(view, calendarAnchor));
   };
 
   const handleNavigateCalendar = (amount: number) => {
     closeCalendarSurface();
-    router.push(
+    navigate(
       buildCalendarRouteHref(
         activeView,
         shiftCalendarAnchor(calendarAnchor, amount, activeView),
@@ -4257,21 +4132,22 @@ export default function CalendarClient({
 
   const handleResetCalendar = () => {
     closeCalendarSurface();
-    router.push(buildCalendarRouteHref(activeView, projectCalendarAnchor));
+    if (projectCalendarAnchor) navigate(buildCalendarRouteHref(activeView, projectCalendarAnchor));
   };
 
   const handleTodayCalendar = () => {
     closeCalendarSurface();
-    router.push(buildCalendarRouteHref(activeView, getCalendarToday()));
+    navigate(buildCalendarRouteHref(activeView, getCalendarToday()));
   };
 
   const handleFocusCalendarDate = (date: string) => {
     closeCalendarSurface();
-    router.push(buildCalendarRouteHref("day", date));
+    navigate(buildCalendarRouteHref("day", date));
   };
 
   return (
-    <AdminShell
+    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined }}>
+    <CalendarFrame readOnly={readOnly}
       active="calendar"
       workspaceName={isReady ? state.workspaceName : undefined}
       onMobileMoreClose={closeCalendarSurface}
@@ -4289,7 +4165,7 @@ export default function CalendarClient({
           {isReady ? state.workspaceName : "Project Calendar"}
         </p>
         <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
-          Calendar
+          {readOnly ? "Project Quick View" : "Calendar"}
         </h1>
         </div>
       </header>
@@ -4297,12 +4173,12 @@ export default function CalendarClient({
       <section className="mt-4">
         {isReady ? (
           <>
-            <ProjectDatesEditor
+            {updateProjectDatesAction && !readOnly ? <ProjectDatesEditor
               action={updateProjectDatesAction}
               canEdit={state.canEdit}
               endsOn={state.projectEndsOn}
               startsOn={state.projectStartsOn}
-            />
+            /> : null}
             <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
             <CalendarWorkspaceHeader
               activeFilterCount={activeFilterCount}
@@ -4323,7 +4199,7 @@ export default function CalendarClient({
               onNavigateToday={handleTodayCalendar}
               onViewChange={handleViewChange}
               periodLabel={getCalendarPeriodLabel(calendarAnchor, activeView)}
-              projectDisabled={calendarAnchor === projectCalendarAnchor}
+              projectDisabled={!projectCalendarAnchor || calendarAnchor === projectCalendarAnchor}
             />
 
             <CalendarNotice notice={notice} />
@@ -4344,7 +4220,7 @@ export default function CalendarClient({
                   No scheduled items in this range
                 </p>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Choose another date or add an item.
+                  {readOnly ? "Choose another date." : "Choose another date or add an item."}
                 </p>
               </div>
             ) : null}
@@ -4420,15 +4296,12 @@ export default function CalendarClient({
               updateAction={updateAction}
             />
             <ProjectDayDetailsSurface
-              action={updateProjectDayAction}
-              canEdit={state.canEdit}
               details={
                 state.projectDayDetails?.date === projectDayDate
                   ? state.projectDayDetails
                   : projectDayDate
                     ? {
                         date: projectDayDate,
-                        expectedOnSiteCount: null,
                         publishedScheduleCount: 0,
                       }
                     : null
@@ -4465,6 +4338,12 @@ export default function CalendarClient({
           />
         ) : null}
       </section>
-    </AdminShell>
+    </CalendarFrame>
+    </CalendarOperations.Provider>
   );
+}
+
+
+function CalendarFrame({ readOnly, children, ...props }: React.ComponentProps<typeof AdminShell> & { readOnly: boolean }) {
+  return readOnly ? <main className="mx-auto w-full max-w-[1600px] p-3 sm:p-6">{children}</main> : <AdminShell {...props}>{children}</AdminShell>;
 }

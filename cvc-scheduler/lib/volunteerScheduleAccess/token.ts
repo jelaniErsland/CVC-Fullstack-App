@@ -1,3 +1,14 @@
+export type VolunteerMeal = Readonly<{ kind: "breakfast" | "lunch"; provider: string | null; menu: string | null; startTime: string | null; endTime: string | null }>;
+export function parseVolunteerMeals(value: unknown): readonly VolunteerMeal[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 2) throw new Error("Invalid meal projection");
+  return value.map(row => {
+    if (!row || (row.kind !== "breakfast" && row.kind !== "lunch") ||
+      ["provider", "menu", "startTime", "endTime"].some(key => row[key] !== null && typeof row[key] !== "string")) throw new Error("Invalid meal projection");
+    return { kind: row.kind, provider: row.provider, menu: row.menu, startTime: row.startTime, endTime: row.endTime };
+  });
+}
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const bearerPattern = /^[A-Za-z0-9_-]{43}$/;
@@ -65,6 +76,7 @@ export type VolunteerScheduleAssignment = Readonly<{
   endTime: string | null;
   neededCount: number;
   scheduleNotes: string | null;
+  meals?: readonly VolunteerMeal[];
   currentResponseStatus: VolunteerScheduleAssignmentResponseStatus;
   responseNote: string | null;
   canConfirm: boolean;
@@ -377,6 +389,7 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
       endTime: nullableText(rowValue, "end_time", issues),
       neededCount: numberValue(rowValue, "needed_count", issues),
       scheduleNotes: nullableText(rowValue, "schedule_notes", issues),
+      meals: parseVolunteerMeals(rowValue.meal_details),
       currentResponseStatus: responseStatus as VolunteerScheduleAssignmentResponseStatus,
       responseNote: nullableText(rowValue, "response_note", issues),
       canConfirm: booleanValue(rowValue, "can_confirm", issues),

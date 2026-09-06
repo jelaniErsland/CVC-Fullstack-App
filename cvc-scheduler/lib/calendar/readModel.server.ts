@@ -1,4 +1,5 @@
 import "server-only";
+import type { CalendarMeal } from "./meals.ts";
 
 import {
   CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE as CONTRACT_CALENDAR_ASSIGNMENT_DETAIL_LINKING_AVAILABLE,
@@ -108,6 +109,9 @@ export type CalendarCoverageSummary = Readonly<{
 }>;
 
 export type CalendarReadModelItemRow = Readonly<{
+  meal?: CalendarMeal | null;
+  taskDescription?: string | null;
+  customValues?: Readonly<Record<string, string | number | boolean | null>>;
   id: string;
   workspaceId: string;
   titleSnapshot: string;
@@ -138,6 +142,9 @@ export type CalendarReadModelItemRow = Readonly<{
 }>;
 
 export type CalendarReadModelItem = Readonly<{
+  meal?: CalendarMeal | null;
+  taskDescription?: string | null;
+  customValues?: Readonly<Record<string, string | number | boolean | null>>;
   calendarItemId: string;
   stableDisplayReference: string;
   taskSourceLabel: string;
@@ -566,6 +573,9 @@ export function mapCalendarReadModelItem(
     followUpContactDetails: row.followUpContactDetails ?? null,
     publishedAt: row.publishedAt ?? null,
     scheduleNotes: row.scheduleNotes ?? null,
+    meal: row.meal ?? null,
+    taskDescription: row.taskDescription ?? null,
+    customValues: row.customValues ?? {},
     taskPresetId: row.taskPresetId ?? null,
     oneOffTaskLabel,
     oneOffTaskType: row.oneOffTaskType ?? null,
