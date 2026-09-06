@@ -85,9 +85,7 @@ function StateCard({
           {title}
         </h1>
         <p className="mt-4 text-base leading-7 text-slate-600">{message}</p>
-        <p className="mt-6 text-sm leading-6 text-slate-500">
-          No account or password is needed when you have a current schedule link.
-        </p>
+        <Link href="/" className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500">Find your schedule</Link>
       </article>
     </PageShell>
   );
@@ -120,8 +118,8 @@ export default async function VolunteerSchedulePage({
         title={leftSchedule ? "You’ve left this schedule" : "This schedule link is unavailable"}
         message={
           leftSchedule
-            ? "To open another volunteer schedule, use the Project Local assignment email sent to that volunteer. Public name or email lookup isn’t available."
-            : "Open your latest secure schedule link from the project team. If you need help, contact the project team for a current link."
+            ? "Find your schedule using your name and registered email or phone."
+            : "Find your schedule below, or open your latest schedule link."
         }
       />
     );
@@ -143,7 +141,7 @@ export default async function VolunteerSchedulePage({
       <StateCard
         eyebrow="Volunteer schedule"
         title="This schedule link is unavailable"
-        message="Open your latest secure schedule link from the project team. If you need help, contact the project team for a current link."
+        message="Find your schedule below, or open your latest schedule link."
       />
     );
   }
@@ -158,7 +156,7 @@ export default async function VolunteerSchedulePage({
       <div className="mx-auto w-full max-w-6xl">
         <PublicHeader />
 
-        <main className="pb-10 pt-4 sm:pt-6">
+        <div className="pb-10 pt-4 sm:pt-6">
           <section className="relative overflow-hidden rounded-[var(--pl-radius-panel)] border border-blue-100 bg-white p-4 shadow-[var(--pl-shadow-panel)] sm:p-5">
             <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-violet-500" />
             <div className="flex items-start justify-between gap-3">
@@ -183,7 +181,7 @@ export default async function VolunteerSchedulePage({
               </div>
             </div>
             <form action={leaveScheduleAction} className="shrink-0">
-              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-9 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
                 Not you?
               </button>
             </form>
@@ -196,23 +194,19 @@ export default async function VolunteerSchedulePage({
               <h1 className="mt-1 text-2xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
                 Here’s your schedule
               </h1>
-              <p className="mt-1.5 text-sm leading-6 text-[var(--pl-text)]">
-                Review your project work and let the team know what you can make.
-              </p>
             </div>
           </section>
 
           {schedule.kind === "ready_empty" ? (
-            <section className="rounded-[1.5rem] border border-white/80 bg-white/72 p-7 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+            <section className="mt-5 border-t border-[var(--pl-border)] px-1 py-6">
               <div className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sky-800">
                 <CalendarDays aria-hidden="true" className="size-5" />
               </div>
               <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-950">
-                No published assignments yet
+                No assignments yet
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                Your secure link is active, but there are no published assignments for you
-                in this workspace right now.
+                Your assignments will appear here when they’re ready.
               </p>
               <form action={leaveScheduleAction} className="mt-6">
                 <button className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-white/70 px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2">
@@ -251,8 +245,7 @@ export default async function VolunteerSchedulePage({
                   Need help?
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-[var(--pl-text)]">
-                  Open any assignment to see notes and your Follow-up Contact. They can
-                  help with arrival details or a last-minute change.
+                  Your contact is listed in each assignment.
                 </p>
                 <p className="mt-3 text-xs leading-5 text-[var(--pl-muted)]">
                   Times shown in {schedule.workspaceTimezone}
@@ -260,7 +253,7 @@ export default async function VolunteerSchedulePage({
               </aside>
             </div>
           )}
-        </main>
+        </div>
       </div>
     </PageShell>
   );

@@ -1772,7 +1772,7 @@ for (const file of appAndComponentFiles) {
 assert.deepEqual(contextImporters, [routeRelativePath]);
 assert.deepEqual(inboundLinks.sort(), [
   "app/admin/needs-attention/page.tsx",
-  "components/CalendarClient.tsx",
+  "components/CalendarAssignmentPicker.tsx",
 ]);
 assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
@@ -1789,7 +1789,8 @@ assert.deepEqual(
     (relative) =>
       relative !== routeRelativePath &&
       relative !== "app/admin/needs-attention/page.tsx" &&
-      relative !== "components/CalendarClient.tsx" &&
+      relative !== "components/CalendarAssignmentPicker.tsx" &&
+      relative !== "components/ProjectQuickViewShareControl.tsx" &&
       !relative.startsWith("app/v/schedule/") &&
       relative !== "components/VolunteerScheduleClient.tsx",
   ),

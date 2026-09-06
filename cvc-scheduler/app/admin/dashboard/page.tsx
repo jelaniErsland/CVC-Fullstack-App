@@ -77,9 +77,6 @@ function OverviewHeader({ state }: { state: OverviewReadyRouteState }) {
         <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
           Overview
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--pl-text)]">
-          Your next work, schedule follow-ups, and practical project actions in one place.
-        </p>
       </div>
       {dateRange ? (
         <p className="w-fit rounded-lg border border-[var(--pl-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--pl-muted)] shadow-sm">
@@ -91,7 +88,7 @@ function OverviewHeader({ state }: { state: OverviewReadyRouteState }) {
 }
 
 function SectionHeader({ eyebrow, title, href, action }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   href?: string;
   action?: string;
@@ -99,8 +96,8 @@ function SectionHeader({ eyebrow, title, href, action }: {
   return (
     <div className="flex items-end justify-between gap-4 border-b border-[var(--pl-border)] px-4 py-4 sm:px-5">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">{eyebrow}</p>
-        <h2 className="mt-1 text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">{title}</h2>
+        {eyebrow ? <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">{eyebrow}</p> : null}
+        <h2 className={eyebrow ? "mt-1 text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]"}>{title}</h2>
       </div>
       {href && action ? (
         <Link className="inline-flex min-h-9 items-center gap-1.5 text-xs font-bold text-[var(--pl-blue)] hover:text-blue-700" href={href}>
@@ -139,7 +136,7 @@ function NextUp({ state }: { state: OverviewReadyRouteState }) {
   if (state.calendar.kind === "unavailable") {
     return (
       <section className="overflow-hidden rounded-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-card)]">
-        <SectionHeader eyebrow="Next seven days" title="Next up" />
+        <SectionHeader title="Next up" />
         <p className="px-5 py-5 text-sm text-[var(--pl-text)]">Calendar details are temporarily unavailable.</p>
       </section>
     );
@@ -147,13 +144,12 @@ function NextUp({ state }: { state: OverviewReadyRouteState }) {
   const items = state.calendar.value.upcomingItems;
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-card)]">
-      <SectionHeader action="Open Calendar" eyebrow="Next seven days" href={`/admin/calendar?view=week&date=${state.today}`} title="Next up" />
+      <SectionHeader action="Open Calendar" href={`/admin/calendar?view=week&date=${state.today}`} title="Next up" />
       {items.length > 0 ? (
         <div className="divide-y divide-[var(--pl-border)]">{items.map((item) => <UpcomingRow item={item} key={item.id} />)}</div>
       ) : (
         <div className="px-5 py-7">
           <p className="text-sm font-semibold text-[var(--pl-ink)]">The next seven days are clear.</p>
-          <p className="mt-1 text-sm text-[var(--pl-muted)]">Open Calendar whenever you’re ready to schedule work.</p>
         </div>
       )}
     </section>
@@ -219,9 +215,9 @@ function QuickActions({ actions }: { actions: readonly OverviewQuickAction[] }) 
         {actions.map((action) => {
           const Icon = actionIcons[action.kind];
           return (
-            <Link className="group flex min-h-[70px] items-center gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-3.5 py-3 shadow-sm transition hover:border-blue-200 hover:bg-[var(--pl-blue-soft)]" href={action.href} key={action.kind}>
+            <Link className="group flex min-h-[56px] items-center gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-3.5 py-3 shadow-sm transition hover:border-blue-200 hover:bg-[var(--pl-blue-soft)]" href={action.href} key={action.kind}>
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)] group-hover:bg-white"><Icon aria-hidden="true" className="size-[18px]" /></span>
-              <span className="min-w-0"><span className="block text-sm font-bold text-[var(--pl-ink)]">{action.label}</span><span className="mt-0.5 block text-xs text-[var(--pl-muted)]">{action.note}</span></span>
+              <span className="min-w-0"><span className="block text-sm font-bold text-[var(--pl-ink)]">{action.label}</span></span>
             </Link>
           );
         })}
@@ -237,7 +233,6 @@ function EmptyProject({ state }: { state: OverviewReadyRouteState }) {
       <div className="relative max-w-xl">
         <span className="flex size-11 items-center justify-center rounded-xl bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"><CheckCircle2 aria-hidden="true" className="size-5" /></span>
         <h2 className="mt-5 text-2xl font-bold tracking-[-0.03em] text-[var(--pl-ink)]">Your project is ready</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--pl-text)]">Start with reusable tasks and volunteers, then bring the work together on Calendar. Only tools available to you are shown here.</p>
         {state.actions.length > 0 ? (
           <div className="mt-6 flex flex-wrap gap-2">
             {state.actions.map((action, index) => (

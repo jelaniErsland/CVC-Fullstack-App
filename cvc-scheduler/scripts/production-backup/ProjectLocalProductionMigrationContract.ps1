@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260904130000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260905130000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -8,6 +8,8 @@ $ProjectQuickViewProductionMigration = "20260902120000"
 $ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"
 $OperationalUsabilityProductionMigration = "20260904120000"
 $OperationalUsabilityPrivilegeHardeningProductionMigration = "20260904130000"
+$VolunteerLookupProductionMigration = "20260905120000"
+$SystemicFunctionPrivilegeProductionMigration = "20260905130000"
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -19,7 +21,9 @@ $AllowedTerminalMigrations = @(
   $ProjectQuickViewProductionMigration,
   $ProjectQuickViewPrivilegeHardeningProductionMigration,
   $OperationalUsabilityProductionMigration,
-  $OperationalUsabilityPrivilegeHardeningProductionMigration
+  $OperationalUsabilityPrivilegeHardeningProductionMigration,
+  $VolunteerLookupProductionMigration,
+  $SystemicFunctionPrivilegeProductionMigration
 )
 
 function Test-ProjectLocalApprovedTerminalMigration {
@@ -43,7 +47,9 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $FollowUpContactProductionMigration -and $TargetMigration -ceq $ProjectQuickViewProductionMigration) -or
     ($CurrentMigration -ceq $ProjectQuickViewProductionMigration -and $TargetMigration -ceq $ProjectQuickViewPrivilegeHardeningProductionMigration) -or
     ($CurrentMigration -ceq $ProjectQuickViewPrivilegeHardeningProductionMigration -and $TargetMigration -ceq $OperationalUsabilityProductionMigration) -or
-    ($CurrentMigration -ceq $OperationalUsabilityProductionMigration -and $TargetMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration)
+    ($CurrentMigration -ceq $OperationalUsabilityProductionMigration -and $TargetMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration) -or
+    ($CurrentMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration -and $TargetMigration -ceq $VolunteerLookupProductionMigration) -or
+    ($CurrentMigration -ceq $VolunteerLookupProductionMigration -and $TargetMigration -ceq $SystemicFunctionPrivilegeProductionMigration)
   )
 }
 

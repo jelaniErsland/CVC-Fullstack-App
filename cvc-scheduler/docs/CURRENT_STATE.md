@@ -1,5 +1,13 @@
 # Current State
 
+## Function EXECUTE security contract — pending local hardening
+
+The 12.44G security review establishes deny-by-default execution for Project Local functions. `PUBLIC` receives no implicit application-function EXECUTE; `anon` is granted EXECUTE only on the eight exact reviewed public intake/verification/bearer RPC signatures in [`FUNCTION_PRIVILEGE_POLICY.md`](./FUNCTION_PRIVILEGE_POLICY.md) and `scripts/function-privilege-policy.mjs`. Authenticated application RPCs require explicit grants. Internal trigger/validation helpers receive no direct application-role grant; owner/trigger execution paths preserve database behavior.
+
+Future Project Local functions created by the reviewed migration creator, `postgres`, require explicit execution grants. PostgreSQL requires a creator-global default revoke to remove built-in `PUBLIC EXECUTE`, combined with removal of the schema-specific `anon`/`authenticated` defaults. This does not change existing functions outside `public` or Supabase-managed creators' defaults; a different migration creator requires separate security review.
+
+These changes are local and **UNAPPLIED to production**. The verified production terminal remains `20260904130000`; the pending migrations must run in order: `20260905120000_volunteer_schedule_lookup.sql`, then `20260905130000_harden_public_function_execute_privileges.sql`. The read-only audit confirmed excessive existing execution grants, including 26 sensitive SECURITY DEFINER RPCs; no auth bypass or breach was demonstrated. Local hardening and preservation tests pass, but this must not be described as deployed. Application email transport remains disabled. No production mutation, backup execution, task mutation, commit, push, or deployment occurred during this security review.
+
 ## Bozeman Scheduling Beta Roadmap Re-baseline
 
 After Iteration 12.13, near-term planning is re-baselined around a narrow production-safe Bozeman scheduling beta, ideally ready by mid-August 2026. The governing principle is **Cut features, not integrity**: reduce scope before weakening workspace isolation, authenticated project-contact identity, capability checks, server-owned data boundaries, token secrecy, safe errors, validation, or rollback planning.

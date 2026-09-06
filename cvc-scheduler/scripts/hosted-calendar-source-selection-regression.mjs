@@ -279,7 +279,7 @@ async function verifyStaticBoundaries() {
   assert(routeRead.includes("readCalendarTaskPresetSelectorWithClient"), "Calendar route read state does not use the persisted task preset selector.");
   assert(route.includes("calendarPresetTimedCreateInputFromFormData"), "Calendar route does not expose the reviewed preset create form adapter.");
   assert(route.includes("updateCalendarPresetTimedItem"), "Calendar route does not expose the reviewed preset timed update boundary.");
-  assert(calendarClient.includes("Task preset") && calendarClient.includes("Custom one-off"), "Calendar UI source-selection controls are missing.");
+  assert(calendarClient.includes("Task preset") && calendarClient.includes("Custom") && calendarClient.includes('>Repeat<'), "Calendar UI source-selection controls are missing.");
   assert(packageJson.includes("test:calendar-source-selection:hosted"), "Hosted source-selection package script is missing.");
   assert(!/SUPABASE_SERVICE_ROLE_KEY|createServiceRole|auth\.admin/i.test(`${selector}\n${server}\n${routeRead}\n${route}\n${calendarClient}`), "Calendar source-selection product path references a service-role shortcut.");
 

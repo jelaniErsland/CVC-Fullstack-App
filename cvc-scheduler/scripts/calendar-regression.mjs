@@ -89,7 +89,9 @@ const iterationReviewDir = path.resolve(
     ? "iteration-12-44d2a-calendar-flow"
     : "iteration-12-44d1-mobile-overlays",
 );
+const finalProductReview = process.env.FINAL_PRODUCT_READINESS_REVIEW === "1";
 const writeNamedReviewScreenshots =
+  finalProductReview ||
   writeBetaReviewScreenshots ||
   writeAssignmentDetailReviewScreenshots ||
   writeCalendarFlowReviewScreenshots ||
@@ -525,6 +527,7 @@ async function cleanupFixtures(containerName) {
     .map((id) => `delete from auth.users where id = '${id}'::uuid;`)
     .join("\n");
   const residue = runPsql(containerName, `begin;
+delete from public.volunteer_schedule_access_tokens where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.assignment_responses where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.calendar_assignments where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.project_days where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
@@ -1288,7 +1291,7 @@ async function runDesktop(browser) {
         "Desktop filters",
       );
       assert(
-        filterDescription.includes("task name, coverage, or task type"),
+        filterDescription.includes("Filter by task, coverage, or category."),
         "Desktop filters description lacks filter context",
       );
       assert(
@@ -1413,14 +1416,13 @@ async function runDesktop(browser) {
         "Desktop creation",
       );
       assert(
-        creationDescription.includes("Schedule a task preset or create a one-time item"),
+        creationDescription.includes("Schedule a task or one-time item as a private draft."),
         "Creation description lacks the source-selection context",
       );
-      await planner
-        .getByText("Suggested Tuesday, Jan 13, 1 PM to 2 PM. Adjust below.", {
-          exact: true,
-        })
-        .waitFor();
+      assert(
+        (await planner.getByLabel("Date", { exact: true }).inputValue()) === "2026-01-13",
+        "Day creation should preserve the selected date",
+      );
       assert(
         (await planner.getByLabel("Start", { exact: true }).inputValue()) === "13:00",
         "Day creation should default Start to 13:00",
@@ -1435,8 +1437,8 @@ async function runDesktop(browser) {
         "Task preset mode",
       );
       const customMode = await assertUnique(
-        planner.getByRole("button", { name: "Custom one-off", exact: true }),
-        "Custom one-off mode",
+        planner.getByRole("button", { name: "Custom", exact: true }),
+        "Custom mode",
       );
       assert(
         (await taskPresetMode.getAttribute("aria-pressed")) === "true" &&
@@ -1672,7 +1674,7 @@ async function runDesktop(browser) {
         exact: true,
       });
       await planner.waitFor();
-      await planner.getByRole("button", { name: "Custom one-off", exact: true }).click();
+      await planner.getByRole("button", { name: "Custom", exact: true }).click();
       await planner.getByLabel("Custom task name", { exact: true }).fill(createdTitle);
       await planner.locator('input[type="number"]').first().fill("0");
       await planner
@@ -2959,7 +2961,7 @@ async function runOperationalUsabilityBrowser(browser, containerName) {
     await desktop.getByRole("button", { name: /Create item/, exact: true }).click();
     const planner = desktop.getByRole("dialog", { name: "Plan project work", exact: true });
     await planner.waitFor();
-    await planner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await planner.getByRole("button", { name: "Repeat", exact: true }).click();
     await desktop.waitForTimeout(200);
     const inactiveOneDate = planner.getByRole("button", { name: "One date", exact: true });
     assert((await inactiveOneDate.getAttribute("aria-pressed")) === "false", "Repeat mode left One date selected.");
@@ -2974,7 +2976,7 @@ async function runOperationalUsabilityBrowser(browser, containerName) {
     await writeOperationalUsabilityCapture(desktop, "03-repeat-calendar-planner.png");
     await planner.getByRole("button", { name: "One date", exact: true }).click();
     assert((await planner.getByLabel("Date", { exact: true }).count()) === 1, "One-date mode lost its ordinary Date input.");
-    await planner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await planner.getByRole("button", { name: "Repeat", exact: true }).click();
     await planner.getByRole("button", { name: "Close project work planner", exact: true }).click();
 
     await desktop.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -3005,7 +3007,7 @@ async function runOperationalUsabilityBrowser(browser, containerName) {
     await mobile.getByRole("button", { name: /Create/, exact: true }).click();
     const mobilePlanner = mobile.getByRole("dialog", { name: "Plan project work", exact: true });
     await mobilePlanner.waitFor();
-    await mobilePlanner.getByRole("button", { name: "Repeat across dates", exact: true }).click();
+    await mobilePlanner.getByRole("button", { name: "Repeat", exact: true }).click();
     await mobile.waitForTimeout(200);
     const mobileInactiveOneDate = mobilePlanner.getByRole("button", { name: "One date", exact: true });
     assert((await mobileInactiveOneDate.getAttribute("aria-pressed")) === "false", "Mobile repeat mode left One date selected.");
@@ -3143,7 +3145,10 @@ async function main() {
     await createFixtures(containerName);
     await assertPreviewAvailable();
     browser = await launchBrowser();
-    if (operationalUsabilityBrowserOnly) {
+    if (finalProductReview) {
+      const { runFinalProductReview } = await import("./final-product-readiness-browser.mjs");
+      await runFinalProductReview({ browser, fixture, applyAuthCookies, sql: (query) => runPsql(containerName, query), baseUrl });
+    } else if (operationalUsabilityBrowserOnly) {
       await runOperationalUsabilityBrowser(browser, containerName);
     } else if (archiveUiBrowserOnly) {
       await runArchiveUiBrowser(browser, containerName);

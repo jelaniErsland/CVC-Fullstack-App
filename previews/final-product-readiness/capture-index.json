@@ -1,0 +1,43 @@
+{
+  "captures": [
+    "01-landing-desktop.png",
+    "02-landing-mobile-390.png",
+    "02-landing-mobile-360.png",
+    "03-contact-verification-mobile.png",
+    "04-verification-failure-mobile.png",
+    "05-rate-limited-state-mobile.png",
+    "06-project-choice-mobile.png",
+    "06-volunteer-schedule-mobile-360.png",
+    "07-volunteer-schedule-mobile-390.png",
+    "08-volunteer-schedule-desktop.png",
+    "09-volunteer-assignment-desktop.png",
+    "10-volunteer-assignment-mobile.png",
+    "11-overview-desktop.png",
+    "12-calendar-desktop.png",
+    "14-tasks-desktop.png",
+    "15-needs-attention-desktop.png",
+    "16-volunteers-desktop.png",
+    "18-quick-view-desktop.png",
+    "17-volunteer-edit-desktop.png",
+    "19-volunteer-edit-mobile.png",
+    "13-calendar-repeat-desktop.png",
+    "20-calendar-repeat-mobile-390.png",
+    "20-calendar-repeat-mobile-360.png",
+    "11-overview-mobile.png",
+    "12-calendar-mobile.png",
+    "12-calendar-mobile-360.png",
+    "14-tasks-mobile.png",
+    "15-needs-attention-mobile.png",
+    "16-volunteers-mobile.png",
+    "18-quick-view-mobile.png",
+    "21-assignment-detail-mobile.png",
+    "22-contained-settings-mobile.png"
+  ],
+  "widths": [
+    1440,
+    390,
+    360
+  ],
+  "productionAccess": 0,
+  "browserErrors": []
+}

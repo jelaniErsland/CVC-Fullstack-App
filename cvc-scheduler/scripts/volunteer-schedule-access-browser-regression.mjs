@@ -398,7 +398,7 @@ async function runBrowserProof(token, emptyToken) {
       page.getByRole("button", { name: /Not you\? Leave this schedule/ }).first().click(),
     ]);
     await page.getByRole("heading", { name: "You’ve left this schedule" }).waitFor();
-    await page.getByText(/use the Project Local assignment email sent to that volunteer/).waitFor();
+    await page.getByRole("link", { name: "Find your schedule", exact: true }).waitFor();
     if (writeIterationReviewScreenshots) {
       await page.screenshot({
         path: path.join(iterationReviewDir, "volunteer-not-you-signed-out.png"),
@@ -431,7 +431,7 @@ async function runBrowserProof(token, emptyToken) {
     await emptyPage.goto(createPreviewUrl(baseUrl, `/v/access/${emptyToken}`), {
       waitUntil: "domcontentloaded",
     });
-    await emptyPage.getByRole("heading", { name: "No published assignments yet" }).waitFor();
+    await emptyPage.getByRole("heading", { name: "No assignments yet", exact: true }).waitFor();
     assert.equal(
       await emptyPage.getByText(`${fixture.namespace} Browser Volunteer`).count(),
       0,

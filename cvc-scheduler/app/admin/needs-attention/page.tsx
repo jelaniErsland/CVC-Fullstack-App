@@ -140,8 +140,7 @@ function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
               </div>
             </dl>
             <p className="mt-3 max-w-xl text-xs leading-5 text-[var(--pl-muted)]">
-              This follow-up reflects the current published schedule and assignment responses.
-              It clears automatically when the underlying schedule changes.
+              Clears when the schedule or responses change.
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -243,9 +242,6 @@ function InboxHeader({ state }: { state: NeedsAttentionReadyRouteState }) {
         <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
           Needs Attention
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--pl-text)]">
-          Upcoming staffing and response follow-ups.
-        </p>
       </div>
       {count > 0 ? (
         <div className="flex w-fit items-center gap-2 rounded-xl border border-[var(--pl-border)] bg-white px-3 py-2 shadow-sm">

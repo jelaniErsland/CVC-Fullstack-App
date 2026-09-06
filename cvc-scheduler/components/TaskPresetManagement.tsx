@@ -346,9 +346,11 @@ function TaskInspector({
             </button>
           ) : null}
         </div>
-        <p className="mt-4 text-sm leading-6 text-[var(--pl-text)]">
-          {preset.description || "No description has been added."}
-        </p>
+        {preset.description ? (
+          <p className="mt-4 text-sm leading-6 text-[var(--pl-text)]">
+            {preset.description}
+          </p>
+        ) : null}
       </div>
 
       <div
@@ -385,11 +387,11 @@ function TaskInspector({
           </dl>
         </section>
 
-        <section>
-          <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
-            Additional fields
-          </h3>
-          {preset.customFields.length > 0 ? (
+        {preset.customFields.length > 0 ? (
+          <section>
+            <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
+              Additional fields
+            </h3>
             <div className="mt-3 grid gap-2">
               {preset.customFields.map((field) => (
                 <div
@@ -411,12 +413,8 @@ function TaskInspector({
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-[var(--pl-muted)]">
-              No additional fields.
-            </p>
-          )}
-        </section>
+          </section>
+        ) : null}
 
         {canArchive ? (
           <section className="border-t border-[var(--pl-border)] pt-4">
@@ -549,9 +547,6 @@ export function TaskPresetManagement({
           <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
             Tasks
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
-            Reusable work definitions ready to place on Calendar.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <p className="text-xs font-medium text-[var(--pl-muted)]">
@@ -694,9 +689,11 @@ export function TaskPresetManagement({
                           </span>
                         ) : null}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-[var(--pl-muted)]">
-                        {preset.description || "No description"}
-                      </span>
+                      {preset.description ? (
+                        <span className="mt-0.5 block truncate text-xs text-[var(--pl-muted)]">
+                          {preset.description}
+                        </span>
+                      ) : null}
                       <span className="mt-1 flex gap-2 text-[10px] font-semibold text-[var(--pl-muted)] md:hidden">
                         <span>{details.label}</span>
                         <span>·</span>
@@ -729,7 +726,7 @@ export function TaskPresetManagement({
               </h2>
               <p className="mt-2 max-w-sm text-sm leading-6 text-[var(--pl-text)]">
                 {presets.length === 0
-                  ? "Create a reusable task here, then place it onto Calendar when the work has a date and time."
+                  ? "Create a task, then schedule it on Calendar."
                   : "Try another name, category, or status."}
               </p>
               {presets.length === 0 && canEdit ? (

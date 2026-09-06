@@ -163,7 +163,7 @@ assert.match(calendarPage, /revalidatePath\("\/admin\/calendar"\)/);
 assert.match(calendarPage, /revalidatePath\("\/admin\/quick-view"\)/);
 assert.doesNotMatch(calendarPage, /formData\.get\(["']workspace/i);
 assert.match(calendarClient, /Expected on site/);
-assert.match(calendarClient, /Leave blank to clear it/);
+assert.match(calendarClient, /Daily total\. Leave blank to clear\./);
 assert.match(calendarClient, /MobileOverlaySheet/);
 assert.match(calendarClient, /buildCalendarProjectDayHref/);
 assert.match(quickViewPage, /readProjectQuickViewRouteState/);

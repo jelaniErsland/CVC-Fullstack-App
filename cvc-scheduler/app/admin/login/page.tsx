@@ -72,7 +72,7 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
               <p className="mt-3 leading-6">{grantState?.reason}</p>
             </div>
             <Button className="w-full" href={nextPath}>
-              Continue to prototype
+              Continue to workspace
             </Button>
             <form action="/admin/auth/sign-out" method="post">
               <Button className="w-full" type="submit" variant="secondary">
@@ -90,7 +90,7 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
             </p>
             {mode === "review" ? (
               <Button className="w-full" href={nextPath}>
-                Continue to prototype review
+                Continue to workspace
               </Button>
             ) : null}
           </div>
@@ -98,7 +98,7 @@ export default async function AdminLoginPage({ searchParams }: LoginPageProps) {
 
         {configured && mode === "review" && session.status !== "authenticated" ? (
           <Button className="mt-2 w-full" href={nextPath} variant="secondary">
-            Continue to prototype review
+            Continue to workspace
           </Button>
         ) : null}
 

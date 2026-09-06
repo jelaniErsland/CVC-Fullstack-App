@@ -1,0 +1,107 @@
+{
+  "scope": "Catalog-only before-state audit; no credentials, user rows, or function bodies.",
+  "project": "project-local-production",
+  "terminal": "20260904130000",
+  "productionReadOnly": true,
+  "productionMutations": 0,
+  "taskMutations": 0,
+  "backupRuns": 0,
+  "emails": 0,
+  "localCounts": {
+    "functions": 54,
+    "unexpectedAnon": 38,
+    "unexpectedAnonDefiner": 26,
+    "public": 8
+  },
+  "productionCounts": {
+    "functions": 53,
+    "unexpectedAnon": 38,
+    "unexpectedAnonDefiner": 26,
+    "public": 8
+  },
+  "commonFunctionOwner": "postgres",
+  "commonSearchPath": "\"\"",
+  "effectiveColumns": [
+    "PUBLIC",
+    "anon",
+    "authenticated",
+    "service_role"
+  ],
+  "functions": [
+    {"signature":"archive_calendar_item(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"archive_task_preset(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"calendar_assignment_response_start_at(text,date,time without time zone,text)","class":"C","securityDefiner":false,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"calendar_custom_values_are_valid(jsonb)","class":"C","securityDefiner":false,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"cancel_calendar_assignment(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"claim_initial_assignment_notification_deliveries(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"confirm_all_volunteer_schedule_assignments(text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"convert_questionnaire_submission_to_volunteer_profile(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"create_calendar_assignment(uuid,uuid,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"create_calendar_assignments_batch(uuid,uuid[],text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"create_calendar_item(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"create_manual_volunteer_profile(uuid,text,text,text,text,text,text,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"create_task_preset(uuid,text,text,text,integer,boolean,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"delete_history_free_volunteer_profile(uuid)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"enforce_calendar_item_workspace_timezone()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"finalize_initial_assignment_notification_delivery(uuid,text,text,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"issue_assignment_response_token(uuid,integer,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"issue_project_quick_view_access(uuid)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"issue_volunteer_schedule_access(uuid,integer)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"publish_calendar_item(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"read_assignment_detail_context(uuid)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"read_assignment_notification_delivery_health()","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"read_assignment_response_by_token(text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"read_initial_assignment_notification_summaries(uuid[])","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"read_project_quick_view_by_token(text,date)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"read_project_quick_view_share_state(uuid)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"read_volunteer_schedule(text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"record_assignment_response_link_reveal_event(uuid,uuid,text,text,timestamp with time zone,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"replace_assignment_response_token(uuid,integer)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"response_link_reveal_metadata_is_valid(jsonb)","class":"C","securityDefiner":false,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"reveal_assignment_response_link(uuid,integer,text,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"revoke_assignment_response_token(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"revoke_project_quick_view_access(uuid)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"revoke_volunteer_schedule_access(uuid)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"set_assignment_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_calendar_item_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_current_project_day_expected_on_site(date,integer)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"set_project_authorization_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_project_day_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_task_preset_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_volunteer_profile_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"set_workspace_updated_at()","class":"C","securityDefiner":false,"local":[true,true,true,true],"production":[true,true,true,true]},
+    {"signature":"submit_assignment_response_by_token(text,text,text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"submit_questionnaire_submission(text,jsonb,integer)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"submit_volunteer_schedule_assignment_response(text,uuid,text,text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"task_custom_field_definitions_are_valid(jsonb)","class":"C","securityDefiner":false,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"update_assignment_response(uuid,text,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"update_calendar_item_one_off_timed(uuid,text,text,date,time without time zone,time without time zone,integer,text,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"update_current_project_contact_volunteer_facing_details(uuid,text,text,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"update_current_workspace_project_dates(date,date)","class":"B","securityDefiner":true,"local":[false,false,true,true],"production":[false,false,true,true]},
+    {"signature":"update_volunteer_profile_manual_fields(uuid,text,text,text,text,text,text,text,text)","class":"B","securityDefiner":true,"local":[false,true,true,true],"production":[false,true,true,true]},
+    {"signature":"verify_volunteer_schedule_lookup(text,text,text)","class":"A","securityDefiner":true,"local":[false,true,true,true],"production":null}
+  ],
+  "defaultsBefore": {
+    "postgres": {
+      "global": "Built-in owner and PUBLIC EXECUTE",
+      "public": [
+        "postgres",
+        "anon",
+        "authenticated",
+        "service_role"
+      ]
+    },
+    "supabase_admin": {
+      "public": [
+        "postgres",
+        "anon",
+        "authenticated",
+        "service_role"
+      ],
+      "note": "Platform superuser; owns no Project Local function; not a delegated Project Local migration creator."
+    }
+  },
+  "interpretation": "38 excess anon privileges in both environments; 26 are SECURITY DEFINER. Catalog evidence does not establish an auth bypass or breach."
+}

@@ -150,8 +150,8 @@ async function cleanup() {
 try {
   containerName = await resolveLocalDatabaseContainer();
   const generatedTypes = command(
-    "npx",
-    ["supabase", "gen", "types", "typescript", "--local", "--schema", "public"],
+    "supabase",
+    ["gen", "types", "typescript", "--local"],
     { shell: process.platform === "win32" },
   );
   assert.equal(generatedTypes.status, 0, "Local generated database types could not be reproduced.");

@@ -737,10 +737,10 @@ function CalendarWorkspaceHeader({
       data-testid="calendar-workspace-header"
     >
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <h2 className="truncate text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h2 className="text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
               {periodLabel}
             </h2>
             <button
@@ -1023,8 +1023,7 @@ function FilterPanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Filter visible Calendar items by task name, coverage, or task type. Changes
-        remain local to this preview.
+        Filter by task, coverage, or category.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2241,8 +2240,7 @@ function CreatePanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Schedule a task preset or create a one-time item. New items start as private
-        drafts; publishing and volunteer assignment are handled separately.
+        Schedule a task or one-time item as a private draft.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2293,7 +2291,7 @@ function CreatePanelContent({
             >
               <span className="inline-flex items-center justify-center gap-1.5">
                 <Repeat2 aria-hidden="true" className="h-4 w-4" />
-                Repeat across dates
+                Repeat
               </span>
             </button>
           </div>
@@ -2389,7 +2387,7 @@ function CreatePanelContent({
                 onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
               type="button"
             >
-              Custom one-off
+              Custom
             </button>
           </div>
 
@@ -2456,10 +2454,6 @@ function CreatePanelContent({
                   ))}
                 </select>
               </label>
-              <p className="text-sm leading-6 text-slate-500">
-                One-off work stays with this calendar item and does not create a reusable task
-                preset.
-              </p>
             </div>
           )}
         </section>
@@ -2611,7 +2605,7 @@ function CreatePanelContent({
             </p>
             <h3 className="mt-2 text-lg font-semibold text-slate-950">
               {isOneOff
-                ? creationDraft.customName || "Custom one-off task"
+                ? creationDraft.customName || "Custom task"
                 : selectedPreset?.name ?? "Task preset"}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -2639,7 +2633,7 @@ function CreatePanelContent({
             ) : null}
             {isOneOff ? (
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                This schedules a one-time item without adding a reusable task preset.
+                One-time item
               </p>
             ) : null}
           </div>
@@ -2736,7 +2730,7 @@ function CreatePanelContent({
               disabled={!canSubmitPersisted}
               type="submit"
             >
-              {isRepeat ? `Create ${repeatDates.length || ""} separate items`.trim() : "Save & continue"}
+              {isRepeat ? `Create ${repeatDates.length || ""} items`.trim() : "Save & continue"}
             </button>
             <button
               className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
@@ -3088,9 +3082,7 @@ function InspectorContent({
                     Publish this Calendar item?
                   </p>
                   <p className="mt-1 text-sm leading-6 text-amber-800">
-                    Authorized project contacts will be able to see it. No email
-                    will be sent unless a scheduler later uses the explicit
-                    Initial email action.
+                    Project contacts and assigned volunteers will be able to see it. No email is sent.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -3271,14 +3263,12 @@ function InspectorContent({
                 </div>
               ) : initialNotification.missingFollowUpContactCount > 0 ? (
                 <p className="rounded-xl border border-slate-200 bg-white/75 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
-                  The assigned Follow-up Contact must add their own volunteer-facing
-                  details before email is ready.
+                  The Follow-up Contact needs to add their contact details.
                 </p>
               ) : null}
               {!initialNotification.emailConfigured ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
-                  Email transport is not configured for this environment, so no
-                  schedule access links can be sent here yet.
+                  Email sending is off.
                 </p>
               ) : null}
               {item.publicationState !== "published" ? (
@@ -3430,8 +3420,7 @@ function InspectorContent({
                     {item.taskPreset?.name ?? getCalendarItemDisplayName(item)}
                   </p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    This edit changes only this scheduled occurrence. Preset selection
-                    and reusable task editing remain separate.
+                    Changes apply to this occurrence only.
                   </p>
                 </div>
               )}
@@ -3503,10 +3492,6 @@ function InspectorContent({
                   name="notes"
                 />
               </label>
-              <p className="text-xs font-semibold leading-5 text-slate-500">
-                Follow-up Contact stays with the original scheduled item. Assignment,
-                publication state, copy, and delivery changes stay controlled separately.
-              </p>
               <button
                 className="min-h-11 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)]"
                 type="submit"
@@ -3742,7 +3727,7 @@ function ProjectDayEditor({
             />
           </label>
           <p className="-mt-2 text-xs leading-5 text-[var(--pl-muted)]" id={`${inputId}-help`}>
-            Manual project total for this day. Leave blank to clear it.
+            Daily total. Leave blank to clear.
           </p>
           {hasMessage ? (
             <p
@@ -4241,7 +4226,7 @@ export default function CalendarClient({
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,
       notes: "",
-      customName: "Custom one-off task",
+      customName: "Custom task",
       customTaskType: "generalVolunteers",
       scheduleMode: "oneDate",
       repeatEndDate: slot.date,
@@ -4359,8 +4344,7 @@ export default function CalendarClient({
                   No scheduled items in this range
                 </p>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  This Calendar view is ready, but there is no project work scheduled
-                  for the selected range yet.
+                  Choose another date or add an item.
                 </p>
               </div>
             ) : null}

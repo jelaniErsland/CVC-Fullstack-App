@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { parseSharedProjectQuickView } from "../lib/projectQuickViewAccess/token.ts";
+import { assertEffectiveFunctionPolicy, effectiveFunctionQuery } from "./function-privilege-policy.mjs";
 
 const { loadEnvConfig } = nextEnv;
 loadEnvConfig(process.cwd());
@@ -99,15 +100,8 @@ for (const row of privilegeRows) {
   }
 }
 
-const defaultAcl = runPsql(containerName, `
-  select defaclacl::text
-  from pg_default_acl d
-  join pg_namespace n on n.oid = d.defaclnamespace
-  where pg_get_userbyid(d.defaclrole) = 'postgres'
-    and n.nspname = 'public'
-    and d.defaclobjtype = 'f';
-`);
-assert(defaultAcl.includes("anon=X/postgres"), "Root-cause fixture must retain Supabase's direct anon function default grant.");
+assertEffectiveFunctionPolicy(assert,
+  runPsql(containerName, effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
 
 const status = localStatus();
 const supabaseUrl = status.API_URL;

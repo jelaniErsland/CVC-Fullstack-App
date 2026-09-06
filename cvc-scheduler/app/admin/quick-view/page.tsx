@@ -35,9 +35,6 @@ export default async function AdminQuickViewPage({ searchParams }: QuickViewPage
             Project Quick View
           </h1>
         </div>
-        <p className="hidden max-w-xs text-right text-xs leading-5 text-[var(--pl-muted)] sm:block">
-          A focused daily view of expected attendance and published work.
-        </p>
       </header>
 
       <div className="mt-4">

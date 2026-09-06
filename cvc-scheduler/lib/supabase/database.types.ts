@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       assignment_notification_deliveries: {
@@ -748,6 +773,27 @@ export type Database = {
           },
         ]
       }
+      volunteer_lookup_attempts: {
+        Row: {
+          attempts: number
+          bucket: string
+          secret: string | null
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          bucket: string
+          secret?: string | null
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          bucket?: string
+          secret?: string | null
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       volunteer_profiles: {
         Row: {
           availability_snapshot: Json
@@ -1476,6 +1522,14 @@ export type Database = {
         }
         Returns: string
       }
+      verify_volunteer_schedule_lookup: {
+        Args: {
+          p_contact: string
+          p_full_name: string
+          p_project_choice?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -1604,6 +1658,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

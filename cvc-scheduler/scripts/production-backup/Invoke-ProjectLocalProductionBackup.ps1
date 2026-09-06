@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -334,6 +334,12 @@ function Assert-MigrationPreflightProcessResult {
       ) -or (
         $ExpectedMigrationVersion -ceq $OperationalUsabilityProductionMigration -and
         $result.terminal_migration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration
+      ) -or (
+        $ExpectedMigrationVersion -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration -and
+        $result.terminal_migration -ceq $VolunteerLookupProductionMigration
+      ) -or (
+        $ExpectedMigrationVersion -ceq $VolunteerLookupProductionMigration -and
+        $result.terminal_migration -ceq $SystemicFunctionPrivilegeProductionMigration
       )
     ) {
       throw "migration_lock_transition_pending"
@@ -997,6 +1003,22 @@ function Invoke-FixtureScenario {
         "fixture_migration_preflight_operational_usability_privilege_hardening_expected_ok"
         return
       }
+      "MigrationPreflightVolunteerLookupExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260905120000"}' `
+          -ExpectedMigrationVersion "20260905120000"
+        "fixture_migration_preflight_volunteer_lookup_expected_ok"
+        return
+      }
+      "MigrationPreflightSystemicFunctionPrivilegeExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260905130000"}' `
+          -ExpectedMigrationVersion "20260905130000"
+        "fixture_migration_preflight_systemic_function_privilege_expected_ok"
+        return
+      }
       "MigrationPreflightTransitionPending" {
         try {
           Assert-MigrationPreflightProcessResult `
@@ -1047,6 +1069,32 @@ function Invoke-FixtureScenario {
           if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
         }
         "fixture_migration_preflight_operational_usability_privilege_hardening_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightVolunteerLookupTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260905120000"}' `
+            -ExpectedMigrationVersion "20260904130000"
+          throw "fixture_volunteer_lookup_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_volunteer_lookup_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightSystemicFunctionPrivilegeTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260905130000"}' `
+            -ExpectedMigrationVersion "20260905120000"
+          throw "fixture_systemic_function_privilege_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_systemic_function_privilege_transition_pending_rejected"
         return
       }
       "MigrationPreflightPartialProjectDay" {

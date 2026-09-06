@@ -820,7 +820,7 @@ assert.match(
 );
 assert.match(
   assignmentDetailRoutePolicySource,
-  /ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION = false/,
+  /ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION = true/,
 );
 assert.match(
   assignmentDetailRoutePolicySource,
@@ -966,7 +966,7 @@ assert.equal(RESPONSE_LINK_PRODUCT_ACTION_IMPLEMENTATION_AVAILABLE, false);
 assert.equal(RESPONSE_LINK_PRODUCT_ACTION_UI_AVAILABLE, false);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_CONTRACT_AVAILABLE, true);
 assert.equal(ASSIGNMENT_DETAIL_ROUTE_IMPLEMENTATION_AVAILABLE, true);
-assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, false);
+assert.equal(ASSIGNMENT_DETAIL_ROUTE_LINKED_FROM_PRODUCT_NAVIGATION, true);
 assert.equal(
   describeAssignmentDetailRouteContract().contract.routePathPattern,
   "/admin/assignments/[assignmentId]",
@@ -1462,9 +1462,22 @@ for (const file of routeFiles) {
       path.relative(root, file).replaceAll("\\", "/"),
     );
   }
+  let credentialOutputSource = source;
+  if (path.relative(root, file).replaceAll("\\", "/") === "app/v/lookup/route.ts") {
+    // The approved lookup exchanges its bearer into the existing HttpOnly
+    // cookie. Exempt only that exact sink; every other credential use is scanned.
+    assert.match(source, /if \(result.status !== "verified"\) return reply\(result\);/);
+    assert.match(source, /const response = reply\(\{ status: "verified" \}\);/);
+    assert.match(source, /httpOnly: true, sameSite: "lax", path: volunteerScheduleAccessCookie.path/);
+    assert.doesNotMatch(source, /reply\(data\)|\.json\(result\)|console\./);
+    credentialOutputSource = source.replace(
+      "response.cookies.set(volunteerScheduleAccessCookie.name, result.bearer_token, {",
+      "response.cookies.set(volunteerScheduleAccessCookie.name, HTTP_ONLY_COOKIE_VALUE, {",
+    );
+  }
   if (
     /issueReplacementAssignmentResponseLink|createAuditedAssignmentResponseLinkReveal|reveal_assignment_response_link|responseUrl|tokenVerifierHash|token_verifier_hash|bearer_token/.test(
-      source,
+      credentialOutputSource,
     )
   ) {
     unsafeCredentialRouteOutputs.push(path.relative(root, file).replaceAll("\\", "/"));
@@ -1555,7 +1568,8 @@ for (const directory of ["app", "components"]) {
     }
   }
 }
-assert.deepEqual(unsafeClipboardSources, [], "No copy-link UI may exist in current routes");
+assert.deepEqual(unsafeClipboardSources, ["components/ProjectQuickViewShareControl.tsx"],
+  "Only the reviewed read-only Quick View share control may offer copying; assignment response links remain unavailable");
 assert.deepEqual(
   unsafeProductRevealSources,
   [],
