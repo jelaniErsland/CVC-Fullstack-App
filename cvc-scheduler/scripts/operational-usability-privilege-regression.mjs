@@ -52,7 +52,7 @@ function psql(sql) {
 const signatures = Object.freeze([
   "public.update_current_workspace_project_dates(date,date)",
   "public.delete_history_free_volunteer_profile(uuid)",
-  "public.create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb)",
+  "public.create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
 ]);
 
 function assertPrivileges() {
@@ -127,6 +127,11 @@ async function main() {
       p_needed_count: 1,
       p_schedule_notes: null,
       p_custom_values: {},
+      p_meal_kind: null,
+      p_meal_provider: null,
+      p_meal_contact: null,
+      p_meal_menu: null,
+      p_meal_total: null,
     },
   ));
 

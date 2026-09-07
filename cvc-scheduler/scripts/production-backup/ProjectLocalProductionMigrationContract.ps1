@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260906120000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260906130000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -11,6 +11,7 @@ $OperationalUsabilityPrivilegeHardeningProductionMigration = "20260904130000"
 $VolunteerLookupProductionMigration = "20260905120000"
 $SystemicFunctionPrivilegeProductionMigration = "20260905130000"
 $OnSiteFoodProductionMigration = "20260906120000"
+$MealSystemPresetProductionMigration = "20260906130000"
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -25,7 +26,8 @@ $AllowedTerminalMigrations = @(
   $OperationalUsabilityPrivilegeHardeningProductionMigration,
   $VolunteerLookupProductionMigration,
   $SystemicFunctionPrivilegeProductionMigration,
-  $OnSiteFoodProductionMigration
+  $OnSiteFoodProductionMigration,
+  $MealSystemPresetProductionMigration
 )
 
 function Test-ProjectLocalApprovedTerminalMigration {
@@ -52,7 +54,8 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $OperationalUsabilityProductionMigration -and $TargetMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration) -or
     ($CurrentMigration -ceq $OperationalUsabilityPrivilegeHardeningProductionMigration -and $TargetMigration -ceq $VolunteerLookupProductionMigration) -or
     ($CurrentMigration -ceq $VolunteerLookupProductionMigration -and $TargetMigration -ceq $SystemicFunctionPrivilegeProductionMigration) -or
-    ($CurrentMigration -ceq $SystemicFunctionPrivilegeProductionMigration -and $TargetMigration -ceq $OnSiteFoodProductionMigration)
+    ($CurrentMigration -ceq $SystemicFunctionPrivilegeProductionMigration -and $TargetMigration -ceq $OnSiteFoodProductionMigration) -or
+    ($CurrentMigration -ceq $OnSiteFoodProductionMigration -and $TargetMigration -ceq $MealSystemPresetProductionMigration)
   )
 }
 

@@ -143,6 +143,7 @@ export type TaskPreset = {
   id: string;
   projectId: string;
   name: string;
+  colorKey?: import("./tasks/colors").TaskPresetColorKey;
   category: TaskPresetCategory;
   neededCount: number;
   visibility: TaskPresetVisibility;
@@ -197,6 +198,7 @@ export type CalendarItem = {
   id: string;
   projectId: string;
   taskPresetId?: string;
+  colorKey?: import("./tasks/colors").TaskPresetColorKey;
   /** Safe persisted occurrence display label when the route owns Calendar item truth. */
   displayName?: string;
   date: string;

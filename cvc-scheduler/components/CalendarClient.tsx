@@ -73,6 +73,7 @@ import type {
   CalendarStatusTone,
   TaskPresetCategory,
 } from "@/lib/mockData";
+import { customCalendarColorKey, taskPresetColor } from "@/lib/tasks/colors";
 import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } from "./CalendarMeals";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
@@ -113,6 +114,10 @@ type CalendarCreationDraft = {
   presetId: string;
   neededCount: number;
   notes: string;
+  mealProvider: string;
+  mealContact: string;
+  mealMenu: string;
+  mealTotal: string;
   customName: string;
   customTaskType: CalendarHighLevelTaskType;
   scheduleMode: "oneDate" | "repeat";
@@ -141,6 +146,7 @@ type CalendarTaskPresetOption = {
   customFields: CalendarTaskPresetCustomField[];
   isSystemPreset?: boolean;
   sourcePresetId?: string;
+  colorKey: import("@/lib/tasks/colors").TaskPresetColorKey;
 };
 
 type CalendarTaskPresetSelectorState =
@@ -222,15 +228,6 @@ const coverageOptions: CalendarCoverageFilterState[] = [
 const defaultTimedDay = { start: "07:30", end: "17:00" };
 
 
-const categoryStyles: Record<TaskPresetCategory, string> = {
-  general: "border-cyan-200 bg-cyan-50 text-cyan-900",
-  lunch: "border-amber-200 bg-amber-50 text-amber-900",
-  security: "border-violet-200 bg-violet-50 text-violet-900",
-  cleanup: "border-amber-200 bg-amber-50 text-amber-700",
-  construction: "border-violet-200 bg-violet-50 text-violet-700",
-  custom: "border-slate-200 bg-slate-50 text-slate-700",
-};
-
 const dayTimelineSlots = Array.from({ length: 24 }, (_, hour) => ({
   hour,
   label: formatHourLabel(hour),
@@ -247,13 +244,13 @@ function getCalendarOperationalCount(item: CalendarItem) {
   return item.meal ? (item.meal.total === null ? "Total unset" : "Total " + item.meal.total) : getCalendarFilledLabel(item);
 }
 
-function getCalendarEventStyle(item: CalendarItem) {
-  if (item.category === "custom") return "bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-300";
-  if (item.category === "security") return "bg-violet-100 text-violet-950 hover:bg-violet-200 border-violet-300";
-  if (item.category === "lunch") return item.meal?.kind === "breakfast"
-    ? "bg-yellow-100 text-amber-950 hover:bg-yellow-200 border-amber-300"
-    : "bg-amber-200 text-amber-950 hover:bg-amber-300 border-amber-400";
-  return "bg-cyan-100 text-cyan-950 hover:bg-cyan-200 border-cyan-300";
+function getCalendarEventStyle() {
+  return "border transition hover:brightness-[0.98]";
+}
+
+function getCalendarEventColorStyle(item: CalendarItem) {
+  const color = taskPresetColor(item.colorKey ?? customCalendarColorKey);
+  return { backgroundColor: color.background, borderColor: color.border, color: color.text, outlineColor: color.focus };
 }
 
 function enrichCalendarClientItem(item: CalendarItem): CalendarClientDisplayItem {
@@ -272,7 +269,7 @@ function isDraftCalendarItem(item: CalendarItem | CalendarClientDisplayItem) {
 
 function getCalendarEventClasses(item: CalendarItemWithPreset) {
   return [
-    getCalendarEventStyle(item),
+    getCalendarEventStyle(),
     isDraftCalendarItem(item)
       ? "border border-dashed border-slate-500/60 opacity-75"
       : "",
@@ -624,15 +621,6 @@ function handleCalendarGridArrowKey(
   event.preventDefault();
   nextTarget.focus();
 }
-
-const detailAccentStyles: Record<TaskPresetCategory, { desktop: string; mobile: string }> = {
-  general: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
-  lunch: { desktop: "border-l-amber-400", mobile: "border-t-amber-400" },
-  security: { desktop: "border-l-violet-400", mobile: "border-t-violet-400" },
-  cleanup: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
-  construction: { desktop: "border-l-cyan-500", mobile: "border-t-cyan-500" },
-  custom: { desktop: "border-l-slate-400", mobile: "border-t-slate-400" },
-};
 
 const toneStyles: Record<CalendarStatusTone, string> = {
   neutral: "border-slate-200 bg-slate-50 text-slate-700",
@@ -1156,6 +1144,7 @@ function CalendarBlock({
         isSelected ? "ring-2 ring-blue-500 ring-offset-1" : "",
       ].join(" ")}
       onClick={onSelect}
+      style={getCalendarEventColorStyle(item)}
       type="button"
     >
       <div className="min-w-0">
@@ -1285,6 +1274,7 @@ function WeekGrid({
                 style={{
                   gridColumn: `${startIndex + 1} / ${endIndex + 2}`,
                   gridRow: lane + 1,
+                  ...getCalendarEventColorStyle(item),
                 }}
                 type="button"
               >
@@ -1480,7 +1470,7 @@ function DayView({
       </div>
       {contextItems.length ? <div className="grid grid-cols-[58px_1fr] border-b border-slate-200 sm:grid-cols-[80px_1fr]" aria-label="No-specific-time Calendar items">
         <span className="p-2 text-[10px] font-semibold text-slate-500">No specific time</span>
-        <div className="flex flex-wrap gap-2 p-2">{contextItems.map(item => <button key={item.id} type="button" aria-label={getProjectContextItemAccessibleLabel(item)} onClick={() => onSelect(item)} className={getCalendarEventStyle(item) + " min-h-9 rounded-lg px-3 py-2 text-sm font-semibold " + calmFocusRing}>
+        <div className="flex flex-wrap gap-2 p-2">{contextItems.map(item => <button key={item.id} type="button" aria-label={getProjectContextItemAccessibleLabel(item)} onClick={() => onSelect(item)} className={getCalendarEventStyle() + " min-h-9 rounded-lg px-3 py-2 text-sm font-semibold " + calmFocusRing} style={getCalendarEventColorStyle(item)}>
           {getCalendarItemDisplayName(item)} · {getCalendarOperationalCount(item)}
         </button>)}</div>
       </div> : null}
@@ -1660,6 +1650,7 @@ function MonthView({
                       ].join(" ")}
                       key={item.id}
                       onClick={() => onSelect(item)}
+                      style={getCalendarEventColorStyle(item)}
                       type="button"
                     >
                       <span className="flex min-w-0 items-center gap-1">
@@ -2115,18 +2106,23 @@ function CreatePanelContent({
   selectedPreset?: CalendarTaskPresetOption;
   selectedTaskType: CalendarHighLevelTaskType;
 }) {
-  const [foodWorkflow, setFoodWorkflow] = useState(false);
   const operations = useCalendarOperations();
   const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
+  const mealKind = !isOneOff &&
+    (selectedPreset?.sourcePresetId === "breakfast" || selectedPreset?.sourcePresetId === "lunch")
+      ? selectedPreset.sourcePresetId
+      : undefined;
+  const isMealPreset = Boolean(mealKind);
   const isRepeat = creationDraft.scheduleMode === "repeat";
   const hasPresetChoices = presets.length > 0;
   const presetMissing = !isOneOff && (!hasPresetChoices || !selectedPreset);
   const customNameInvalid = isOneOff && creationDraft.customName.trim().length === 0;
   const dateMissing = creationDraft.date.length === 0;
-  const allDayEndMissing = creationDraft.allDay && creationDraft.endDate.length === 0;
+  const allDayEndMissing = creationDraft.allDay && !isMealPreset && creationDraft.endDate.length === 0;
   const allDayRangeInvalid =
     creationDraft.allDay &&
+    !isMealPreset &&
     !dateMissing &&
     !allDayEndMissing &&
     creationDraft.endDate < creationDraft.date;
@@ -2139,7 +2135,7 @@ function CreatePanelContent({
     creationDraft.endTime <= creationDraft.startTime;
   const neededCountInvalid =
     creationDraft.neededCount < 0 || creationDraft.neededCount > 99;
-  const unsupportedAllDay = creationDraft.allDay;
+  const unsupportedAllDay = creationDraft.allDay && !isMealPreset;
   const repeatEndMissing = isRepeat && creationDraft.repeatEndDate.length === 0;
   const repeatRangeInvalid =
     isRepeat && !dateMissing && !repeatEndMissing && creationDraft.repeatEndDate < creationDraft.date;
@@ -2181,10 +2177,15 @@ function CreatePanelContent({
     (presetMissing && "Choose an available task preset, or use a custom item.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
-    "Private draft";
+    (isMealPreset ? (isRepeat ? "Each meal is visible when saved" : "Visible when saved") : "Private draft");
+  const selectedCreateAction = isRepeat
+    ? createRepeatedAction
+    : isMealPreset
+      ? operations.saveMealAction
+      : createAction;
   const canSubmitPersisted =
     canEdit &&
-    Boolean(isRepeat ? createRepeatedAction : createAction) &&
+    Boolean(selectedCreateAction) &&
     !presetMissing &&
     !unsupportedAllDay &&
     !customNameInvalid &&
@@ -2220,11 +2221,6 @@ function CreatePanelContent({
         </div>
       </div>
 
-      {operations.saveMealAction ? <div className="flex gap-2 border-b border-slate-200 px-4 py-3">
-        <button type="button" aria-pressed={!foodWorkflow} className="min-h-11 rounded-lg border px-3 text-sm font-semibold" onClick={() => setFoodWorkflow(false)}>Task</button>
-        <button type="button" aria-pressed={foodWorkflow} className="min-h-11 rounded-lg border px-3 text-sm font-semibold" onClick={() => setFoodWorkflow(true)}>Breakfast / Lunch</button>
-      </div> : null}
-      {foodWorkflow ? <div className="min-h-0 flex-1 overflow-y-auto p-4"><MealForm date={currentDate} view={currentView} /></div> : <>
       <div
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
         data-overlay-scroll="calendar-create"
@@ -2344,7 +2340,15 @@ function CreatePanelContent({
                   ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white"
                   : "border-slate-200 bg-white/72 text-slate-600 hover:bg-white",
               ].join(" ")}
-                onClick={() => onUpdate({ mode: "oneOff", neededCount: creationDraft.neededCount })}
+                onClick={() => onUpdate({
+                  mode: "oneOff",
+                  neededCount: creationDraft.neededCount,
+                  ...(creationDraft.allDay ? {
+                    allDay: false,
+                    startTime: defaultTimedDay.start,
+                    endTime: defaultTimedDay.end,
+                  } : {}),
+                })}
               type="button"
             >
               Custom
@@ -2484,7 +2488,7 @@ function CreatePanelContent({
                 value={creationDraft.date}
               />
             </label> : null}
-            {creationDraft.allDay ? (
+            {creationDraft.allDay && !isMealPreset ? (
               <label className="block">
                 <span className="text-sm font-semibold text-slate-700">End date</span>
                 <input
@@ -2507,7 +2511,7 @@ function CreatePanelContent({
                   value={creationDraft.endDate}
                 />
               </label>
-            ) : (
+            ) : !creationDraft.allDay ? (
               <>
                 <label className="block">
                   <span className="text-sm font-semibold text-slate-700">Start</span>
@@ -2538,7 +2542,7 @@ function CreatePanelContent({
                   />
                 </label>
               </>
-            )}
+            ) : null}
             {!isRepeat && dateValidationMessage ? (
               <p
                 className="text-xs font-semibold text-rose-600 sm:col-span-2"
@@ -2558,7 +2562,56 @@ function CreatePanelContent({
           </div>
         </section>
 
-        <section className="mt-4 grid gap-3 sm:grid-cols-[1fr_132px]">
+        {isMealPreset ? (
+          <section className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Meal details
+            </p>
+            <div className="mt-2 grid gap-3">
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Meal total</span>
+                <input
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  max={100000}
+                  min={0}
+                  onChange={(event) => onUpdate({ mealTotal: event.target.value })}
+                  step={1}
+                  type="number"
+                  value={creationDraft.mealTotal}
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Provider / congregation / group</span>
+                <input
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  maxLength={300}
+                  onChange={(event) => onUpdate({ mealProvider: event.target.value })}
+                  value={creationDraft.mealProvider}
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Contact person</span>
+                <input
+                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  maxLength={500}
+                  onChange={(event) => onUpdate({ mealContact: event.target.value })}
+                  value={creationDraft.mealContact}
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-slate-700">Menu</span>
+                <textarea
+                  className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
+                  maxLength={2000}
+                  onChange={(event) => onUpdate({ mealMenu: event.target.value })}
+                  value={creationDraft.mealMenu}
+                />
+              </label>
+            </div>
+          </section>
+        ) : null}
+
+        {!isMealPreset ? <section className="mt-4 grid gap-3 sm:grid-cols-[1fr_132px]">
           <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Preset defaults
@@ -2625,7 +2678,7 @@ function CreatePanelContent({
               </span>
             )}
           </label>
-        </section>
+        </section> : null}
 
         <section className="mt-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -2647,7 +2700,7 @@ function CreatePanelContent({
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
-        <form action={isRepeat ? createRepeatedAction : createAction} className="grid gap-2">
+        <form action={selectedCreateAction} className="grid gap-2">
           <input name="redirectView" type="hidden" value={currentView} />
           <input name="redirectDate" type="hidden" value={currentDate} />
           <input name="sourceMode" type="hidden" value={creationDraft.mode === "preset" ? "preset" : "oneOff"} />
@@ -2667,6 +2720,11 @@ function CreatePanelContent({
           <input name="endTime" type="hidden" value={creationDraft.endTime} />
           <input name="neededCount" type="hidden" value={String(creationDraft.neededCount)} />
           <input name="notes" type="hidden" value={creationDraft.notes} />
+          <input name="mealKind" type="hidden" value={mealKind ?? ""} />
+          <input name="provider" type="hidden" value={creationDraft.mealProvider} />
+          <input name="contact" type="hidden" value={creationDraft.mealContact} />
+          <input name="menu" type="hidden" value={creationDraft.mealMenu} />
+          <input name="total" type="hidden" value={creationDraft.mealTotal} />
           <p
             aria-live="polite"
             className={[
@@ -2702,7 +2760,6 @@ function CreatePanelContent({
           </div>
         </form>
       </div>
-      </>}
     </>
   );
 }
@@ -2787,7 +2844,8 @@ function CalendarInspector({
         tabIndex={-1}
       >
         <div
-          className={`flex h-full flex-col overflow-hidden border-l-4 bg-white ${detailAccentStyles[item.category].desktop}`}
+          className="flex h-full flex-col overflow-hidden border-l-4 bg-white"
+          style={{ borderLeftColor: taskPresetColor(item.colorKey ?? item.taskPreset?.colorKey ?? customCalendarColorKey).focus }}
         >
           <InspectorContent
             assignAction={assignAction}
@@ -2828,7 +2886,8 @@ function CalendarInspector({
           aria-describedby={`${descriptionId}-mobile`}
           aria-label="Calendar item inspector"
           aria-modal="true"
-          className={`absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)] ${detailAccentStyles[item.category].mobile}`}
+          className="absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)]"
+          style={{ borderTopColor: taskPresetColor(item.colorKey ?? item.taskPreset?.colorKey ?? customCalendarColorKey).focus }}
           role="dialog"
           ref={mobileDialogRef}
           tabIndex={-1}
@@ -2996,7 +3055,8 @@ function InspectorContent({
             {getCalendarOperationalCount(item)}{item.meal ? "" : " filled"}
           </span>
           <span
-            className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold ${categoryStyles[item.category]}`}
+            className="inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold"
+            style={getCalendarEventColorStyle(item)}
           >
             {getCalendarCategoryLabel(item.category)}
           </span>
@@ -3707,6 +3767,10 @@ function CalendarNotice({ notice }: { notice?: string }) {
       title: "Calendar drafts saved",
       message: "Each scheduled item was saved as a separate private draft.",
     },
+    meal_repeat_created: {
+      title: "Meals saved",
+      message: "Each meal was saved as an independent Calendar item.",
+    },
     updated: {
       title: "Calendar item updated",
       message: "The edited item was saved and will remain after reload.",
@@ -4081,7 +4145,9 @@ export default function CalendarClient({
     if (!isReady || !state.canEdit) {
       return;
     }
-    const defaultPreset = creationPresets[0];
+    const defaultPreset = creationPresets.find(
+      (preset) => preset.sourcePresetId !== "breakfast" && preset.sourcePresetId !== "lunch",
+    ) ?? creationPresets[0];
 
     rememberSurfaceTrigger();
     closeMobileNavigation();
@@ -4101,6 +4167,10 @@ export default function CalendarClient({
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,
       notes: "",
+      mealProvider: "",
+      mealContact: "",
+      mealMenu: "",
+      mealTotal: "",
       customName: "Custom task",
       customTaskType: "generalVolunteers",
       scheduleMode: "oneDate",

@@ -17,7 +17,7 @@ function sql(query, expectSuccess = true) {
 }
 const output = query => sql(query).stdout.trim();
 const rows = output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse);
-assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260906120000");
+assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260906130000");
 assertEffectiveFunctionPolicy(assert, rows);
 // Prove that the invariant catches current privilege drift and missing grants.
 for (const [signature, key, value] of [
@@ -85,7 +85,8 @@ try {
     ["create_calendar_item", `${literal},null,'ACL','general','timed',current_date+30,null,'08:00','10:00',1,null,'{}'`],
     ["update_calendar_item_one_off_timed", `${literal},'ACL','general',current_date+30,'08:00','10:00',1,null,'{}'`],
     ["archive_calendar_item", literal],
-    ["create_task_preset", `${literal},'ACL',null,'general',1,true,'[]'`],
+    ["create_task_preset", `${literal},'ACL',null,'general',1,true,'[]','blue'`],
+    ["update_task_preset_color", `${literal},'blue'`],
     ["archive_task_preset", literal],
     ["create_calendar_assignment", `${literal},${literal},null`],
     ["cancel_calendar_assignment", literal],
@@ -109,4 +110,4 @@ try {
 }
 assert.equal(snapshot(), beforeFixture, "Zero disposable fixture residue.");
 assertEffectiveFunctionPolicy(assert, output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
-console.log("PASS systemic ACL: 56 exact functions; 8 anonymous, 36 authenticated, 12 internal; PUBLIC 0; defaults denied; future postgres function denied; 13 direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.");
+console.log("PASS systemic ACL: 57 exact functions; 8 anonymous, 37 authenticated, 12 internal; PUBLIC 0; defaults denied; future postgres function denied; 13 direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.");

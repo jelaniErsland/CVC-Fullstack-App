@@ -55,6 +55,7 @@ type CalendarPageProps = Readonly<{
 const supportedNoticeValues = new Set([
   "created",
   "repeat_created",
+  "meal_repeat_created",
   "updated",
   "assigned",
   "assignment_canceled",
@@ -185,7 +186,9 @@ async function createCalendarItemAction(formData: FormData) {
 async function createRepeatedCalendarItemsAction(formData: FormData) {
   "use server";
 
-  let notice: "unavailable" | "validation" | "error" | "repeat_created" = "error";
+  let notice: "unavailable" | "validation" | "error" | "repeat_created" | "meal_repeat_created" = "error";
+  let persisted = false;
+  let isMealRepeat = false;
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
@@ -194,7 +197,9 @@ async function createRepeatedCalendarItemsAction(formData: FormData) {
     } else {
       const input = repeatedCalendarItemsInputFromFormData(formData, context.workspace.id);
       await createRepeatedCalendarItemsWithClient(context.supabase, input);
-      notice = "repeat_created";
+      isMealRepeat = Boolean(input.meal);
+      notice = isMealRepeat ? "meal_repeat_created" : "repeat_created";
+      persisted = true;
     }
   } catch (error) {
     notice = error instanceof Error && error.name === "CalendarItemValidationError"
@@ -203,7 +208,21 @@ async function createRepeatedCalendarItemsAction(formData: FormData) {
     observeMutationFailure("calendar.create_failure", notice === "validation" ? "validation" : "error");
   }
 
-  revalidatePath("/admin/calendar");
+  if (persisted) {
+    const paths = isMealRepeat
+      ? ["/admin/calendar", "/admin/quick-view", "/qv", "/v/schedule"]
+      : ["/admin/calendar"];
+    for (const path of paths) {
+      try {
+        revalidatePath(path);
+      } catch (error) {
+        console.error("Repeated Calendar item cache revalidation failed.", {
+          path,
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      }
+    }
+  }
   redirect(safeCalendarRedirect(formData, notice, undefined, false));
 }
 

@@ -14,6 +14,8 @@ import {
   createTaskPresetWithClient,
   readTaskPresetsWithClient,
   taskPresetCreateInputFromFormData,
+  taskPresetColorUpdateInputFromFormData,
+  updateTaskPresetColorWithClient,
 } from "@/lib/tasks/server";
 import { TaskPresetValidationError } from "@/lib/tasks/preset";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
@@ -102,6 +104,30 @@ async function archiveTaskPresetAction(formData: FormData) {
   redirect(safeTasksRedirect(notice, selectedPresetId));
 }
 
+async function updateTaskPresetColorAction(formData: FormData) {
+  "use server";
+  let notice: "color_updated" | "validation" | "unavailable" | "error" = "error";
+  let selectedPresetId: string | undefined;
+  try {
+    const context = await readTaskManagementRouteContext();
+    if (!context || !context.canEdit) notice = "unavailable";
+    else {
+      const input = taskPresetColorUpdateInputFromFormData(formData);
+      const presets = await readTaskPresetsWithClient(context.supabase, context.workspace.id);
+      if (!presets.some((preset) => preset.id === input.presetId && preset.lifecycle === "active")) notice = "unavailable";
+      else {
+        const result = await updateTaskPresetColorWithClient(context.supabase, input);
+        selectedPresetId = result.presetId;
+        notice = "color_updated";
+      }
+    }
+  } catch (error) { notice = error instanceof TaskPresetValidationError ? "validation" : "error"; }
+  revalidatePath("/admin/tasks");
+  revalidatePath("/admin/calendar");
+  revalidatePath("/admin/quick-view");
+  redirect(safeTasksRedirect(notice, selectedPresetId));
+}
+
 function isReadyState(
   state: TaskManagementRouteState,
 ): state is TaskManagementReadyRouteState {
@@ -139,6 +165,7 @@ export default async function AdminTasksPage({ searchParams }: AdminTasksPagePro
         archiveAction={archiveTaskPresetAction}
         canEdit={state.canEdit}
         createAction={createTaskPresetAction}
+        updateColorAction={updateTaskPresetColorAction}
         initialSelectedId={firstSearchParam(resolvedSearchParams?.preset)}
         notice={state.notice}
         presets={state.presets}

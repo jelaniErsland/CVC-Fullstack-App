@@ -27,6 +27,11 @@ export async function createRepeatedCalendarItemsWithClient(
       p_needed_count: value.neededCount,
       p_schedule_notes: value.notes,
       p_custom_values: value.customValues,
+      p_meal_kind: value.meal?.kind ?? null,
+      p_meal_provider: value.meal?.provider ?? null,
+      p_meal_contact: value.meal?.contact ?? null,
+      p_meal_menu: value.meal?.menu ?? null,
+      p_meal_total: value.meal?.total ?? null,
     } as PublicRpcArgs<"create_current_workspace_repeated_calendar_items">,
   );
   if (error || !Array.isArray(data) || data.length === 0) {

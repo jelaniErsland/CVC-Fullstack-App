@@ -7,6 +7,7 @@ import {
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
 import type { TaskPresetCustomField, TaskPresetType } from "./preset.ts";
+import type { TaskPresetColorKey } from "./colors.ts";
 import { readTaskPresetsWithClient } from "./server.ts";
 
 export type TaskManagementPreset = Readonly<{
@@ -17,6 +18,7 @@ export type TaskManagementPreset = Readonly<{
   defaultNeededCount: number;
   volunteerVisible: boolean;
   isSystemPreset: boolean;
+  colorKey: TaskPresetColorKey;
   customFields: readonly TaskPresetCustomField[];
   lifecycle: "active" | "archived";
 }>;
@@ -24,6 +26,7 @@ export type TaskManagementPreset = Readonly<{
 export type TaskManagementNotice =
   | "created"
   | "archived"
+  | "color_updated"
   | "validation"
   | "unavailable"
   | "error";
@@ -131,6 +134,7 @@ export function normalizeTaskManagementNotice(
   const notice = firstSearchParam(value);
   return notice === "created" ||
     notice === "archived" ||
+    notice === "color_updated" ||
     notice === "validation" ||
     notice === "unavailable" ||
     notice === "error"
@@ -188,6 +192,7 @@ function toRoutePreset(preset: Awaited<ReturnType<typeof readTaskPresetsWithClie
     defaultNeededCount: preset.defaultNeededCount,
     volunteerVisible: preset.volunteerVisible,
     isSystemPreset: preset.isSystemPreset,
+    colorKey: preset.colorKey,
     customFields: preset.customFields,
     lifecycle: preset.lifecycle,
   } satisfies TaskManagementPreset;
@@ -238,6 +243,7 @@ export function describeTaskManagementCutover() {
       "defaultNeededCount",
       "volunteerVisible",
       "isSystemPreset",
+      "colorKey",
       "customFields",
       "lifecycle",
     ],

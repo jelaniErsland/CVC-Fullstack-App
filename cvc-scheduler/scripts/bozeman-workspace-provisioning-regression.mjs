@@ -435,6 +435,11 @@ async function run() {
   assert.equal(secondOutput.workspaceId, firstOutput.workspaceId, "repeat provisioning must be idempotent");
   assert.equal(secondOutput.projectContactId, firstOutput.projectContactId);
   assert.equal(secondOutput.grantId, firstOutput.grantId);
+  assert.equal(
+    runPsql(containerName, `select count(*) from public.task_presets where workspace_id = ${sqlText(firstOutput.workspaceId)}::uuid and is_system_preset and system_key in ('breakfast', 'lunch') and task_type = 'food' and lifecycle = 'active';`),
+    "2",
+    "workspace provisioning must create the two persisted meal system presets idempotently",
+  );
 
   const underSql = buildWorkspaceAccessProvisioningSql(
     provisioningInput({
@@ -617,6 +622,10 @@ or project_contact_id in (
   select id from public.project_contacts where auth_user_id = any(array[${authIdArray}])
 );
 delete from public.project_contacts where auth_user_id = any(array[${authIdArray}]);
+delete from public.task_presets
+where workspace_id in (
+  select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)}
+);
 delete from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)};
 ${authDeletes}
 commit;

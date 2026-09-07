@@ -139,6 +139,7 @@ export type CalendarReadModelItemRow = Readonly<{
   oneOffTaskType?: CalendarReadModelDisplayType | null;
   taskPresetLabel?: string | null;
   taskPresetType?: CalendarReadModelDisplayType | null;
+  taskPresetColorKey?: string | null;
 }>;
 
 export type CalendarReadModelItem = Readonly<{
@@ -172,6 +173,7 @@ export type CalendarReadModelItem = Readonly<{
   oneOffTaskType: CalendarReadModelDisplayType | null;
   taskPresetLabel: string | null;
   taskPresetType: CalendarReadModelDisplayType | null;
+  taskPresetColorKey: string | null;
   coverage: CalendarCoverageSummary;
   assignments: readonly CalendarAssignmentCoverageRow[];
   assignedFractionLabel: string;
@@ -581,6 +583,7 @@ export function mapCalendarReadModelItem(
     oneOffTaskType: row.oneOffTaskType ?? null,
     taskPresetLabel,
     taskPresetType: row.taskPresetType ?? null,
+    taskPresetColorKey: row.taskPresetColorKey ?? null,
     coverage,
     assignments: scopedAssignments,
     assignedFractionLabel: coverage.assignedFractionLabel,

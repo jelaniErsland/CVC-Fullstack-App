@@ -48,6 +48,11 @@ const anon = createClient(config.API_URL, config.ANON_KEY, { auth: { persistSess
 try {
   const owner = await user('owner'), viewer = await user('viewer'), other = await user('other');
   sql("insert into public.workspaces(id,workspace_key,display_name,lifecycle,timezone,starts_on,ends_on) values (" + literal(workspace) + "," + literal('qa-1245-' + scope) + ",'Bozeman Operations Review','active','America/Denver','2026-09-01','2099-12-31'),(" + literal(otherWorkspace) + "," + literal('qa-1245-other-' + scope) + ",'Other project','active','America/Denver','2026-09-01','2099-12-31');");
+  sql("insert into public.task_presets(workspace_id,name,task_type,default_needed_count,volunteer_visible,is_system_preset,system_key,custom_field_definitions,lifecycle,color_key) values " +
+    [workspace, otherWorkspace].flatMap(ws => [
+      `(${literal(ws)},'Breakfast','food',1,true,true,'breakfast','[]','active','orange')`,
+      `(${literal(ws)},'Lunch','food',1,true,true,'lunch','[]','active','gold')`,
+    ]).join(',') + `; insert into public.task_presets(workspace_id,name,task_type,default_needed_count,volunteer_visible,is_system_preset,custom_field_definitions,lifecycle,color_key) values (${literal(workspace)},'Site preparation','general',2,true,false,'[]','active','blue');`);
   for (const [name, actor] of Object.entries({ owner, viewer, other })) {
     const ws = name === 'other' ? otherWorkspace : workspace;
     const caps = name === 'viewer' ? ['workspace.read','calendar.view','assignments.view','volunteers.view','tasks.view'] : ['workspace.read','calendar.view','calendar.edit','assignments.view','assignments.edit','volunteers.view','volunteers.edit','tasks.view'];
@@ -59,16 +64,82 @@ try {
   const mealArgs = { p_workspace_id: workspace, p_calendar_item_id: null, p_meal_kind: 'breakfast', p_date: '2026-10-06', p_start_time: '07:00', p_end_time: '08:00', p_provider: 'Bozeman West congregation', p_contact: 'Meal coordinator · 555-0100', p_menu: 'Eggs, oatmeal and fruit', p_total: 60, p_notes: 'Serve in the fellowship area.' };
   const breakfast = await rpc(owner.client, 'save_calendar_meal', mealArgs);
   const lunch = await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_meal_kind: 'lunch', p_start_time: null, p_end_time: null, p_provider: 'Livingston congregation', p_menu: 'Sandwiches, salad and fruit', p_total: 85 });
+  assert.equal(sql('select preset.system_key from public.calendar_items item join public.task_presets preset on preset.id=item.task_preset_id where item.id=' + literal(breakfast)), 'breakfast');
+  assert.equal(sql('select preset.system_key from public.calendar_items item join public.task_presets preset on preset.id=item.task_preset_id where item.id=' + literal(lunch)), 'lunch');
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(breakfast)), '60');
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(lunch)), '85');
   for (const client of [viewer.client, other.client, anon]) await rpc(client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 999 }, true);
   for (const changes of [{ p_total: -1 }, { p_meal_kind: 'dinner' }, { p_end_time: null }, { p_start_time: '09:00' }, { p_provider: 'x'.repeat(301) }]) await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, ...changes }, true);
+  const breakfastCountBeforeFailure = sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-06' and lifecycle='active'");
   await rpc(owner.client, 'save_calendar_meal', mealArgs, true); // unique day/kind
+  assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-06' and lifecycle='active'"), breakfastCountBeforeFailure, 'Failed meal save rolls back without leaving a row');
   await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 0 });
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(breakfast)), '0');
   await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: null });
   assert.equal(sql('select meal_total is null from public.calendar_items where id=' + literal(breakfast)), 't');
   await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast });
+  const breakfastPreset = sql("select id from public.task_presets where workspace_id=" + literal(workspace) + " and system_key='breakfast'");
+  const ordinaryPreset = sql("select id from public.task_presets where workspace_id=" + literal(workspace) + " and name='Site preparation'");
+  const repeatBase = {
+    p_task_preset_id: breakfastPreset,
+    p_one_off_title: null,
+    p_one_off_task_type: null,
+    p_start_date: '2026-10-12',
+    p_end_date: '2026-10-14',
+    p_weekdays: [1, 2, 3],
+    p_start_time: '07:00',
+    p_end_time: '08:00',
+    p_needed_count: 1,
+    p_schedule_notes: 'Repeated meal operations note.',
+    p_custom_values: {},
+    p_meal_kind: 'breakfast',
+    p_meal_provider: 'Repeat meal provider',
+    p_meal_contact: 'Repeat trusted contact',
+    p_meal_menu: 'Oatmeal and fruit',
+    p_meal_total: 42,
+  };
+  const repeatedMealCountBeforeDeniedCalls = sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast'");
+  for (const client of [viewer.client, other.client, anon]) {
+    await rpc(client, 'create_current_workspace_repeated_calendar_items', {
+      ...repeatBase,
+      p_request_key: randomUUID(),
+    }, true);
+  }
+  assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast'"), repeatedMealCountBeforeDeniedCalls, 'Denied repeated meal calls create no rows');
+  const repeatedMeals = await rpc(owner.client, 'create_current_workspace_repeated_calendar_items', {
+    ...repeatBase,
+    p_request_key: randomUUID(),
+  });
+  assert.equal(repeatedMeals.length, 3, 'Breakfast Repeat creates each selected date');
+  const repeatedMealIds = repeatedMeals.map(literal).join(',');
+  assert.equal(sql(`select count(*) from public.calendar_items where id in (${repeatedMealIds}) and meal_kind='breakfast' and meal_provider='Repeat meal provider' and meal_contact='Repeat trusted contact' and meal_menu='Oatmeal and fruit' and meal_total=42 and needed_count=0 and publication_state='published'`), '3', 'Meal metadata is copied to every independent occurrence');
+  assert.equal(sql(`select count(*) from public.calendar_assignments where calendar_item_id in (${repeatedMealIds})`), '0', 'Repeated meals copy zero assignments');
+  assert.equal(sql(`select count(*) from public.assignment_responses response join public.calendar_assignments assignment on assignment.id=response.assignment_id where assignment.calendar_item_id in (${repeatedMealIds})`), '0', 'Repeated meals copy zero responses');
+  assert.equal(sql(`select count(*) from public.assignment_notification_deliveries where calendar_item_id in (${repeatedMealIds})`), '0', 'Repeated meals copy zero deliveries');
+  const conflictUnaffectedBefore = sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date in ('2026-10-05','2026-10-07') and lifecycle='active'");
+  await rpc(owner.client, 'create_current_workspace_repeated_calendar_items', {
+    ...repeatBase,
+    p_request_key: randomUUID(),
+    p_start_date: '2026-10-05',
+    p_end_date: '2026-10-07',
+  }, true);
+  assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date in ('2026-10-05','2026-10-07') and lifecycle='active'"), conflictUnaffectedBefore, 'A meal conflict rolls back every requested date atomically');
+  const ordinaryRepeat = await rpc(owner.client, 'create_current_workspace_repeated_calendar_items', {
+    ...repeatBase,
+    p_request_key: randomUUID(),
+    p_task_preset_id: ordinaryPreset,
+    p_start_date: '2026-10-19',
+    p_end_date: '2026-10-20',
+    p_weekdays: [1, 2],
+    p_needed_count: 2,
+    p_meal_kind: null,
+    p_meal_provider: null,
+    p_meal_contact: null,
+    p_meal_menu: null,
+    p_meal_total: null,
+  });
+  assert.equal(ordinaryRepeat.length, 2, 'Ordinary task Repeat keeps its existing item expansion');
+  assert.equal(sql(`select count(*) from public.calendar_items where id in (${ordinaryRepeat.map(literal).join(',')}) and publication_state='draft' and meal_kind is null and needed_count=2`), '2', 'Ordinary task Repeat remains private-draft work');
   async function item(title, type, start, end, published = true) {
     const id = await rpc(owner.client, 'create_calendar_item', { p_workspace_id: workspace, p_task_preset_id: null, p_one_off_title: title, p_one_off_task_type: type, p_schedule_kind: 'timed', p_start_date: '2026-10-06', p_end_date: null, p_start_time: start, p_end_time: end, p_needed_count: 2, p_schedule_notes: 'Check in at the north entrance.', p_custom_values: { zone: 'North' } });
     if (published) await rpc(owner.client, 'publish_calendar_item', { p_calendar_item_id: id });
@@ -79,15 +150,17 @@ try {
   const privateItem = await item('PRIVATE_DRAFT', 'general','15:00','16:00',false);
   const assignment = await rpc(owner.client, 'create_calendar_assignment', { p_calendar_item_id: general, p_volunteer_profile_id: ids.volunteer, p_assignment_note: null });
   await rpc(owner.client, 'create_calendar_assignment', { p_calendar_item_id: security, p_volunteer_profile_id: ids.secondVolunteer, p_assignment_note: null });
+  const repeatReceiptCountBeforeDuplicate = sql('select count(*) from public.calendar_repeat_creation_requests where workspace_id=' + literal(workspace));
   const duplicate = await rpc(owner.client, 'duplicate_calendar_item', { p_calendar_item_id: general, p_target_date: '2026-10-07', p_start_time: '10:00', p_end_time: '13:00' });
   assert.equal(sql('select count(*) from public.calendar_assignments where calendar_item_id=' + literal(duplicate)), '0');
   assert.equal(sql('select publication_state from public.calendar_items where id=' + literal(duplicate)), 'draft');
   assert.equal(sql('select count(*) from public.assignment_responses r join public.calendar_assignments a on a.id=r.assignment_id where a.calendar_item_id=' + literal(duplicate)), '0');
   assert.equal(sql('select count(*) from public.assignment_notification_deliveries where calendar_item_id=' + literal(duplicate)), '0');
-  assert.equal(sql('select count(*) from public.calendar_repeat_creation_requests where workspace_id=' + literal(workspace)), '0');
+  assert.equal(sql('select count(*) from public.calendar_repeat_creation_requests where workspace_id=' + literal(workspace)), repeatReceiptCountBeforeDuplicate, 'Duplicate creates no repeat receipt or series relationship');
   for (const col of ['title_snapshot','task_type_snapshot','needed_count','schedule_notes','custom_values']) assert.equal(sql('select ' + col + '::text from public.calendar_items where id=' + literal(duplicate)), sql('select ' + col + '::text from public.calendar_items where id=' + literal(general)));
   const mealCopy = await rpc(owner.client, 'duplicate_calendar_item', { p_calendar_item_id: breakfast, p_target_date: '2026-10-07' });
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(mealCopy)), '60');
+  assert.equal(sql('select task_preset_id from public.calendar_items where id=' + literal(mealCopy)), sql('select task_preset_id from public.calendar_items where id=' + literal(breakfast)), 'Meal duplicate preserves the system preset reference');
   assert.equal(sql('select publication_state from public.calendar_items where id=' + literal(mealCopy)), 'published', 'Meals follow immediate-visible meal creation semantics');
   assert.equal(sql('select count(*) from public.calendar_assignments where calendar_item_id=' + literal(mealCopy)), '0');
   for (const client of [viewer.client, other.client, anon]) await rpc(client, 'duplicate_calendar_item', { p_calendar_item_id: general, p_target_date: '2026-10-08' }, true);
@@ -117,7 +190,7 @@ try {
   console.log('PASS meals, separate totals, historical preservation, duplicate isolation, trusted/volunteer projections and exact function ACLs');
 
   if (process.argv.includes('--browser')) {
-    const base = 'http://127.0.0.1:3000';
+    const base = 'http://localhost:3000';
     browser = await chromium.launch({ executablePath: resolvePreviewBrowserExecutable(), headless: true });
     const dir = '../previews/12.45-product-review';
     await mkdir(dir, { recursive: true });
@@ -132,11 +205,60 @@ try {
       return { context, page };
     }
     async function capture(page, name) {
-      if (!process.argv.includes('--capture-inspectors-only') || /inspector|duplicate/.test(name)) await page.screenshot({ path: dir + '/' + name + '.png', fullPage: true });
+      const creationOnly = process.argv.includes('--creation-captures-only');
+      const colorOnly = process.argv.includes('--color-captures-only');
+      if ((colorOnly && /calendar-preset-colors/.test(name)) || (!colorOnly && (!process.argv.includes('--capture-inspectors-only') || /inspector|duplicate/.test(name)) && (!creationOnly || /calendar-create/.test(name)))) await page.screenshot({ path: dir + '/' + name + '.png', fullPage: true });
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), name + ': horizontal overflow');
     }
     for (const width of [1440,390]) {
       const size = width === 390 ? 'mobile' : 'desktop';
+      if (process.argv.includes('--color-captures-only')) {
+        const admin = await contextFor(owner, width);
+        await admin.page.setViewportSize({ width, height: width === 390 ? 1200 : 1000 });
+        await admin.page.goto(base + '/admin/calendar?date=2026-10-06&view=week');
+        await admin.page.getByRole('heading', { name: 'Calendar', exact: true }).waitFor();
+        await capture(admin.page, 'calendar-preset-colors-' + size);
+        await admin.context.close();
+        continue;
+      }
+      if (process.argv.includes('--creation-captures-only')) {
+        const admin = await contextFor(owner, width);
+        await admin.page.setViewportSize({ width, height: width === 390 ? 1400 : 1200 });
+        await admin.page.goto(base + '/admin/calendar?date=2026-10-06&view=week');
+        await admin.page.waitForTimeout(750);
+        await admin.page.getByRole('button', { name: width === 390 ? 'Create' : 'Create item', exact: true }).evaluate(button => button.click());
+        await admin.page.getByRole('heading', { name: 'Plan project work', exact: true }).filter({ visible: true }).waitFor();
+        assert.equal(await admin.page.getByRole('button', { name: 'Breakfast / Lunch', exact: true }).count(), 0, 'No separate meal creation mode');
+        await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: width === 390 ? 'Lunch' : 'Breakfast' });
+        await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).waitFor();
+        await admin.page.getByLabel('Provider / congregation / group', { exact: true }).filter({ visible: true }).waitFor();
+        await admin.page.getByLabel('Contact person', { exact: true }).filter({ visible: true }).waitFor();
+        await admin.page.getByLabel('Menu', { exact: true }).filter({ visible: true }).waitFor();
+        assert.equal(await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).count(), 1, 'Meal presets retain the ordinary Repeat choice');
+        await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).click();
+        await admin.page.getByLabel('End date', { exact: true }).filter({ visible: true }).fill('2026-10-20');
+        await admin.page.getByRole('button', { name: 'Tue', exact: true }).filter({ visible: true }).click();
+        await admin.page.getByText('3 items', { exact: true }).filter({ visible: true }).waitFor();
+        await capture(admin.page, 'calendar-create-meal-preset-' + size);
+        await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: 'Site preparation' });
+        assert.equal(await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).count(), 0, 'Meal fields only appear for meal presets');
+        assert.equal(await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).count(), 1, 'Ordinary task Repeat remains available');
+        await admin.page.getByRole('button', { name: 'Custom', exact: true }).filter({ visible: true }).click();
+        assert.equal(await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).count(), 0, 'Custom creation has no meal fields');
+        if (width === 1440) {
+          await admin.page.getByRole('button', { name: 'Task preset', exact: true }).filter({ visible: true }).click();
+          await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: 'Breakfast' });
+          await admin.page.getByLabel('Start date', { exact: true }).filter({ visible: true }).fill('2026-11-03');
+          await admin.page.getByLabel('End date', { exact: true }).filter({ visible: true }).fill('2026-11-17');
+          await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).fill('51');
+          await admin.page.getByLabel('Provider / congregation / group', { exact: true }).filter({ visible: true }).fill('Browser repeat provider');
+          await admin.page.getByRole('button', { name: 'Create 3 items', exact: true }).filter({ visible: true }).click();
+          await admin.page.getByText('Meals saved', { exact: true }).waitFor();
+          assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date in ('2026-11-03','2026-11-10','2026-11-17') and meal_total=51 and meal_provider='Browser repeat provider' and publication_state='published'"), '3', 'Repeated meal server action saves every independent occurrence');
+        }
+        await admin.context.close();
+        continue;
+      }
       const { context, page } = await contextFor(null, width);
       await context.addCookies([{ name: 'pl-project-quick-view', value: issued.bearer_token, url: base + '/qv', sameSite: 'Lax', httpOnly: true }]);
       await page.goto(base + '/qv?date=2026-10-06&view=week');
@@ -173,6 +295,26 @@ try {
       await capture(page, 'meal-inspector-' + size);
       await context.close();
       const admin = await contextFor(owner, width);
+      await admin.page.setViewportSize({ width, height: width === 390 ? 1400 : 1200 });
+      await admin.page.goto(base + '/admin/calendar?date=2026-10-06&view=week');
+      await admin.page.getByRole('button', { name: /^Create(?: item)?$/, exact: false }).click();
+      assert.equal(await admin.page.getByRole('button', { name: 'Breakfast / Lunch', exact: true }).count(), 0, 'No separate meal creation mode');
+      await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: width === 390 ? 'Lunch' : 'Breakfast' });
+      await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).waitFor();
+      await admin.page.getByLabel('Provider / congregation / group', { exact: true }).filter({ visible: true }).waitFor();
+      await admin.page.getByLabel('Contact person', { exact: true }).filter({ visible: true }).waitFor();
+      await admin.page.getByLabel('Menu', { exact: true }).filter({ visible: true }).waitFor();
+      assert.equal(await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).count(), 1, 'Meal presets retain the ordinary Repeat choice');
+      await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).click();
+      await admin.page.getByLabel('End date', { exact: true }).filter({ visible: true }).waitFor();
+      await admin.page.getByRole('button', { name: 'Tue', exact: true }).filter({ visible: true }).click();
+      await capture(admin.page, 'calendar-create-meal-preset-' + size);
+      await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: 'Site preparation' });
+      assert.equal(await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).count(), 0, 'Meal fields only appear for meal presets');
+      assert.equal(await admin.page.getByRole('button', { name: 'Repeat', exact: true }).filter({ visible: true }).count(), 1, 'Ordinary task Repeat remains available');
+      await admin.page.getByRole('button', { name: 'Custom', exact: true }).filter({ visible: true }).click();
+      assert.equal(await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).count(), 0, 'Custom creation has no meal fields');
+      await admin.page.getByRole('button', { name: 'Close project work planner', exact: true }).filter({ visible: true }).click();
       for (const start of ['2026-09-29','2026-11-03']) {
         sql('update public.workspaces set starts_on=' + literal(start) + ' where id=' + literal(workspace));
         for (const view of ['day','week','month','list']) {
@@ -197,11 +339,18 @@ try {
         await admin.page.goto(base + '/admin/calendar?date=2026-10-06&view=week');
         await capture(admin.page, 'mixed-category-colors-desktop');
         await admin.page.getByRole('button', { name: 'Create item', exact: true }).click();
-        await admin.page.getByRole('button', { name: 'Breakfast / Lunch', exact: true }).click();
+        await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: 'Breakfast' });
         await admin.page.getByLabel('Date', { exact: true }).filter({ visible: true }).fill('2026-10-09');
         await admin.page.getByLabel('Meal total', { exact: true }).filter({ visible: true }).fill('45');
-        await admin.page.getByRole('button', { name: 'Save meal', exact: true }).click();
+        await admin.page.getByRole('button', { name: 'Save & continue', exact: true }).click();
         await admin.page.getByText('Meal saved', { exact: true }).waitFor();
+        assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-09' and lifecycle='active'"), '1', 'Successful server action persists exactly one meal');
+        await admin.page.getByRole('button', { name: 'Create item', exact: true }).click();
+        await admin.page.getByLabel('Task preset', { exact: true }).filter({ visible: true }).selectOption({ label: 'Breakfast' });
+        await admin.page.getByLabel('Date', { exact: true }).filter({ visible: true }).fill('2026-10-09');
+        await admin.page.getByRole('button', { name: 'Save & continue', exact: true }).click();
+        await admin.page.getByText('Item was not saved', { exact: true }).waitFor();
+        assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-09' and lifecycle='active'"), '1', 'Failed server action leaves no successful row behind');
       }
       await admin.context.close();
     }
@@ -236,7 +385,7 @@ try {
 } finally {
   if (browser) await browser.close();
   const scopeIds = [workspace, otherWorkspace].map(literal).join(',');
-  for (const table of ['project_quick_view_access_tokens','volunteer_schedule_access_tokens','assignment_responses','calendar_assignments','calendar_items','project_days','volunteer_profiles','workspace_contact_grants']) sql('delete from public.' + table + ' where workspace_id in (' + scopeIds + ');');
+  for (const table of ['project_quick_view_access_tokens','volunteer_schedule_access_tokens','assignment_responses','calendar_assignments','assignment_notification_deliveries','calendar_repeat_creation_requests','calendar_items','project_days','volunteer_profiles','workspace_contact_grants','task_presets']) sql('delete from public.' + table + ' where workspace_id in (' + scopeIds + ');');
   sql('delete from public.project_contacts where id in (' + [ids.owner,ids.viewer,ids.other].map(literal).join(',') + '); delete from public.workspaces where id in (' + scopeIds + ');');
   for (const actor of users) { await actor.client.auth.signOut(); sql('delete from auth.users where id=' + literal(actor.id)); }
   console.log('Local fixture cleanup complete');

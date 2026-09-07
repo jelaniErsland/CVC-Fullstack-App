@@ -1,3 +1,5 @@
+import { defaultTaskPresetColorKey, isTaskPresetColorKey, type TaskPresetColorKey } from "./colors.ts";
+
 export const taskPresetTypes = ["general", "food", "security", "custom"] as const;
 export const taskPresetCustomFieldTypes = [
   "short_text",
@@ -25,6 +27,7 @@ export type CreateTaskPresetInput = Readonly<{
   taskType: TaskPresetType;
   defaultNeededCount: number;
   volunteerVisible: boolean;
+  colorKey: TaskPresetColorKey;
   customFields: readonly TaskPresetCustomField[];
 }>;
 
@@ -38,6 +41,7 @@ export type TaskPreset = Readonly<{
   volunteerVisible: boolean;
   isSystemPreset: boolean;
   systemKey: string | null;
+  colorKey: TaskPresetColorKey;
   customFields: readonly TaskPresetCustomField[];
   lifecycle: "active" | "archived";
   createdAt: string;
@@ -65,6 +69,7 @@ const createInputKeys = new Set([
   "defaultNeededCount",
   "volunteerVisible",
   "customFields",
+  "colorKey",
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -198,6 +203,9 @@ export function validateCreateTaskPresetInput(input: unknown): CreateTaskPresetI
   if (typeof input.volunteerVisible !== "boolean") {
     issues.push("volunteerVisible must be true or false.");
   }
+  if (!isTaskPresetColorKey(input.colorKey)) {
+    issues.push("colorKey is unsupported.");
+  }
 
   const customFields = parseCustomFields(input.customFields, issues);
   const normalized: CreateTaskPresetInput = {
@@ -210,6 +218,7 @@ export function validateCreateTaskPresetInput(input: unknown): CreateTaskPresetI
     defaultNeededCount:
       typeof input.defaultNeededCount === "number" ? input.defaultNeededCount : 1,
     volunteerVisible: input.volunteerVisible === true,
+    colorKey: isTaskPresetColorKey(input.colorKey) ? input.colorKey : defaultTaskPresetColorKey,
     customFields,
   };
 
@@ -263,6 +272,9 @@ export function parseTaskPreset(value: unknown): TaskPreset {
     return fieldValue;
   };
   const systemKey = nullable("system_key");
+  if (!isTaskPresetColorKey(value.color_key)) {
+    issues.push("task preset color is invalid.");
+  }
   if (value.is_system_preset !== (systemKey !== null)) {
     issues.push("system preset identity is inconsistent.");
   }
@@ -280,6 +292,7 @@ export function parseTaskPreset(value: unknown): TaskPreset {
     volunteerVisible: value.volunteer_visible,
     isSystemPreset: value.is_system_preset,
     systemKey,
+    colorKey: value.color_key as TaskPresetColorKey,
     customFields,
     lifecycle,
     createdAt: required("created_at"),

@@ -23,15 +23,13 @@ const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const writeReviewScreenshots = process.env.WRITE_TASKS_REVIEW_SCREENSHOTS === "1";
+const writeColorReviewScreenshots = process.env.WRITE_12_45_COLOR_CAPTURES === "1";
 const writeIterationReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
-const writeNamedReview = writeReviewScreenshots || writeIterationReviewScreenshots;
-const reviewScreenshotDirectory = path.join(
-  root,
-  "docs",
-  "previews",
-  "iteration-12-37-tasks-review",
-);
+const writeNamedReview = writeReviewScreenshots || writeIterationReviewScreenshots || writeColorReviewScreenshots;
+const reviewScreenshotDirectory = writeColorReviewScreenshots
+  ? path.resolve(root, "..", "previews", "12.45-product-review")
+  : path.join(root, "docs", "previews", "iteration-12-37-tasks-review");
 const iterationReviewDirectory = path.resolve(
   root,
   "..",
@@ -352,7 +350,7 @@ ${seedPresets
 }
 
 async function captureReviewScreenshot(page, filename) {
-  if (!writeReviewScreenshots) return;
+  if (!writeReviewScreenshots && !writeColorReviewScreenshots) return;
   await mkdir(reviewScreenshotDirectory, { recursive: true });
   await page.screenshot({
     animations: "disabled",
@@ -482,18 +480,30 @@ async function verifyDesktop(browser) {
   });
   await applyAuthCookies(context, "editor");
   const { page, failures } = await openTasksPage(context);
+  if (writeColorReviewScreenshots) {
+    await page.getByRole("button", { name: "New task", exact: true }).first().waitFor();
+    await page.getByRole("button", { name: "New task", exact: true }).first().click();
+    await page.getByRole("dialog", { name: "New task" }).waitFor();
+    await captureReviewScreenshot(page, "tasks-color-picker-desktop.png");
+    await context.close();
+    return;
+  }
   await page.getByText(values.initialTask, { exact: true }).first().waitFor();
   assert.equal(await page.getByText("Site Preparation", { exact: true }).count(), 0);
   await page.getByText(values.initialTask, { exact: true }).first().click();
-  await page.locator("aside").getByRole("heading", { name: values.initialTask }).waitFor();
-  await captureReviewScreenshot(page, "tasks-desktop-library-1440x1000.png");
+  await page.getByRole("heading", { name: values.initialTask, exact: true }).waitFor();
+  if (!writeColorReviewScreenshots) await captureReviewScreenshot(page, "tasks-desktop-library-1440x1000.png");
 
   if (writeNamedReview) {
     await page.getByRole("button", { name: "New task", exact: true }).first().click();
     const newTaskDialog = page.getByRole("dialog", { name: "New task" });
     await newTaskDialog.waitFor();
-    await captureReviewScreenshot(page, "tasks-desktop-new-task-1440x1000.png");
+    await captureReviewScreenshot(page, writeColorReviewScreenshots ? "tasks-color-picker-desktop.png" : "tasks-desktop-new-task-1440x1000.png");
     await newTaskDialog.getByRole("button", { name: "Close new task", exact: true }).click();
+    if (writeColorReviewScreenshots) {
+      await context.close();
+      return;
+    }
   }
 
   await createTaskThroughUi(page, values.desktopTask);
@@ -527,6 +537,16 @@ async function verifyMobile(browser) {
   });
   await applyAuthCookies(context, "editor");
   const { page, failures } = await openTasksPage(context);
+  if (writeColorReviewScreenshots) {
+    const createButton = page.getByRole("button", { name: "New task", exact: true }).first();
+    await createButton.waitFor();
+    await page.waitForTimeout(1500);
+    await createButton.click();
+    await page.locator('[role="dialog"]').waitFor({ state: "visible", timeout: 10_000 });
+    await captureReviewScreenshot(page, "tasks-color-picker-mobile.png");
+    await context.close();
+    return;
+  }
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
     false,
@@ -580,7 +600,7 @@ async function verifyMobile(browser) {
     await page.getByRole("button", { name: "New task", exact: true }).first().click();
     const reviewNewTask = page.getByRole("dialog", { name: "New task" });
     await reviewNewTask.waitFor();
-    await captureReviewScreenshot(page, "tasks-mobile-new-task-390x844.png");
+    await captureReviewScreenshot(page, writeColorReviewScreenshots ? "tasks-color-picker-mobile.png" : "tasks-mobile-new-task-390x844.png");
     if (writeIterationReviewScreenshots) {
       await mkdir(iterationReviewDirectory, { recursive: true });
       await page.screenshot({
@@ -589,6 +609,10 @@ async function verifyMobile(browser) {
       });
     }
     await reviewNewTask.getByRole("button", { name: "Close new task", exact: true }).click();
+    if (writeColorReviewScreenshots) {
+      await context.close();
+      return;
+    }
   }
 
   await createTaskThroughUi(page, values.mobileTask, "2");
@@ -705,9 +729,9 @@ try {
 
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    await verifyDesktop(browser);
+    if (process.env.TASK_COLOR_MOBILE_ONLY !== "1") await verifyDesktop(browser);
     await verifyMobile(browser);
-    await verifyReadyEmpty(browser, containerName);
+    if (process.env.TASK_COLOR_MOBILE_ONLY !== "1") await verifyReadyEmpty(browser, containerName);
   } finally {
     await browser.close();
   }

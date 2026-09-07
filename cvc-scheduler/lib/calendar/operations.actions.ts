@@ -15,6 +15,7 @@ async function mutate(form: FormData, kind: "meal" | "duplicate") {
   const params = new URLSearchParams();
   const view = field(form, "redirectView");
   params.set("view", ["day", "week", "month", "list"].includes(view) ? view : "day");
+  let persistedItemId: string | undefined;
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) throw new Error("Unauthorized");
@@ -37,12 +38,30 @@ async function mutate(form: FormData, kind: "meal" | "duplicate") {
       : await context.supabase.rpc("duplicate_calendar_item", {
           p_calendar_item_id: itemId, p_target_date: date, p_start_time: start, p_end_time: end,
         } as PublicRpcArgs<"duplicate_calendar_item">);
-    if (result.error || typeof result.data !== "string") throw new Error("Unavailable");
-    params.set("item", result.data);
-    params.set("notice", kind === "meal" ? "meal_saved" : "duplicated");
-    for (const path of ["/admin/calendar", "/admin/quick-view", "/qv", "/schedule"]) revalidatePath(path);
-  } catch {
+    if (result.error || typeof result.data !== "string") throw new Error("Unavailable", { cause: result.error });
+    persistedItemId = result.data;
+  } catch (error) {
+    console.error("Calendar operation persistence failed.", {
+      operation: kind,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     params.set("notice", "operation_unavailable");
+  }
+
+  if (persistedItemId) {
+    params.set("item", persistedItemId);
+    params.set("notice", kind === "meal" ? "meal_saved" : "duplicated");
+    for (const path of ["/admin/calendar", "/admin/quick-view", "/qv", "/v/schedule"]) {
+      try {
+        revalidatePath(path);
+      } catch (error) {
+        console.error("Calendar operation cache revalidation failed.", {
+          operation: kind,
+          path,
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      }
+    }
   }
   redirect("/admin/calendar?" + params.toString());
 }

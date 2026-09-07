@@ -18,10 +18,12 @@ const migrationPath = path.join(
   "20260701040000_task_presets.sql",
 );
 const serverBoundaryPath = path.join(root, "lib", "tasks", "server.ts");
+const colorMigrationPath = path.join(root, "supabase", "migrations", "20260906130000_breakfast_lunch_system_presets.sql");
 const environmentExamplePath = path.join(root, ".env.example");
 
-const [migration, serverBoundary, environmentExample] = await Promise.all([
+const [migration, colorMigration, serverBoundary, environmentExample] = await Promise.all([
   readFile(migrationPath, "utf8"),
+  readFile(colorMigrationPath, "utf8"),
   readFile(serverBoundaryPath, "utf8"),
   readFile(environmentExamplePath, "utf8"),
 ]);
@@ -101,12 +103,15 @@ assert.match(
   /grant execute on function public\.create_task_preset[\s\S]*to authenticated/i,
 );
 assert.doesNotMatch(migration, /to anon|service_role/i);
+assert.match(colorMigration, /color_key text not null default 'blue'/i);
+assert.match(colorMigration, /task_presets_color_key_valid/i);
+assert.match(colorMigration, /update_task_preset_color/i);
 
 assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_task_preset", "archive_task_preset"],
+  ["create_task_preset", "update_task_preset_color", "archive_task_preset"],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
@@ -123,6 +128,7 @@ const validInput = {
   taskType: "food",
   defaultNeededCount: 3,
   volunteerVisible: true,
+  colorKey: "gold",
   customFields: [
     {
       key: "menu",
@@ -134,11 +140,13 @@ const validInput = {
 };
 const validated = validateCreateTaskPresetInput(validInput);
 assert.equal(validated.taskType, "food");
+assert.equal(validated.colorKey, "gold");
 assert.equal(validated.customFields[0]?.key, "menu");
 assert.throws(
   () => validateCreateTaskPresetInput({ ...validInput, date: "2026-01-12" }),
   TaskPresetValidationError,
 );
+assert.throws(() => validateCreateTaskPresetInput({ ...validInput, colorKey: "#ffffff" }), TaskPresetValidationError);
 assert.throws(
   () => validateCreateTaskPresetInput({ ...validInput, defaultNeededCount: 0 }),
   TaskPresetValidationError,
@@ -162,6 +170,7 @@ const parsed = parseTaskPreset({
   volunteer_visible: true,
   is_system_preset: true,
   system_key: "lunch",
+  color_key: "gold",
   custom_field_definitions: validInput.customFields,
   lifecycle: "active",
   created_at: "2026-07-01T12:00:00.000Z",

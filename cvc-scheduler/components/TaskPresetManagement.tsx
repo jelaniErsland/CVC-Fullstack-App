@@ -24,6 +24,7 @@ import type {
   TaskManagementNotice,
   TaskManagementPreset,
 } from "@/lib/tasks/routeRead.server";
+import { taskPresetColorKeys, taskPresetColors, type TaskPresetColorKey } from "@/lib/tasks/colors";
 
 type TaskPresetManagementProps = Readonly<{
   presets: readonly TaskManagementPreset[];
@@ -33,6 +34,7 @@ type TaskPresetManagementProps = Readonly<{
   initialSelectedId?: string;
   createAction: (formData: FormData) => void | Promise<void>;
   archiveAction: (formData: FormData) => void | Promise<void>;
+  updateColorAction: (formData: FormData) => void | Promise<void>;
 }>;
 
 const categoryDetails: Record<
@@ -80,6 +82,10 @@ function Notice({ notice }: { notice: TaskManagementNotice | null }) {
       title: "Task archived",
       message: "Existing scheduled items were not changed.",
     },
+    color_updated: {
+      title: "Color saved",
+      message: "Scheduled Calendar items now use this task color.",
+    },
     validation: {
       title: "Check the task details",
       message: "Use a name, supported category, and 1–99 volunteers.",
@@ -116,6 +122,10 @@ function SubmitButton({ children }: { children: string }) {
       {pending ? "Saving…" : children}
     </button>
   );
+}
+
+function TaskColorPicker({ defaultValue }: { defaultValue: TaskPresetColorKey }) {
+  return <fieldset><legend className="text-xs font-semibold text-[var(--pl-text)]">Color</legend><div className="mt-2 grid grid-cols-11 gap-2" aria-label="Task color" role="radiogroup">{taskPresetColorKeys.map((key) => { const color = taskPresetColors[key]; return <label className="group relative flex size-7 cursor-pointer items-center justify-center rounded-full focus-within:outline focus-within:outline-2 focus-within:outline-offset-2" key={key} style={{ outlineColor: color.focus }} title={color.label}><input className="sr-only" defaultChecked={key === defaultValue} name="colorKey" type="radio" value={key} /><span aria-hidden="true" className="size-6 rounded-full border-2 border-white shadow-sm transition group-has-[:checked]:ring-2 group-has-[:checked]:ring-offset-2" style={{ backgroundColor: color.border, boxShadow: key === defaultValue ? `0 0 0 2px ${color.focus}` : undefined }} /><span className="sr-only">{color.label}</span></label>; })}</div></fieldset>;
 }
 
 function CreateTaskDialog({
@@ -244,6 +254,7 @@ function CreateTaskDialog({
               placeholder="What should volunteers know about this work?"
             />
           </label>
+          <TaskColorPicker defaultValue="blue" />
           <label className="flex items-start gap-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-3.5">
             <input
               className="mt-0.5 size-4 rounded border-slate-300 text-[var(--pl-blue)] focus:ring-blue-200"
@@ -284,12 +295,14 @@ function TaskInspector({
   closeButtonRef,
   onClose,
   preset,
+  updateColorAction,
 }: {
   archiveAction: TaskPresetManagementProps["archiveAction"];
   canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
   onClose?: () => void;
   preset: TaskManagementPreset | undefined;
+  updateColorAction: TaskPresetManagementProps["updateColorAction"];
 }) {
   const [confirmingArchive, setConfirmingArchive] = useState(false);
 
@@ -387,6 +400,8 @@ function TaskInspector({
           </dl>
         </section>
 
+        {canEdit && preset.lifecycle === "active" ? <section><form action={updateColorAction} className="grid gap-3"><input name="presetId" type="hidden" value={preset.id} /><TaskColorPicker defaultValue={preset.colorKey} /><div><SubmitButton>Save color</SubmitButton></div></form></section> : null}
+
         {preset.customFields.length > 0 ? (
           <section>
             <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
@@ -462,6 +477,7 @@ export function TaskPresetManagement({
   initialSelectedId,
   notice,
   presets,
+  updateColorAction,
   workspaceName,
 }: TaskPresetManagementProps) {
   const initialPreset =
@@ -753,6 +769,7 @@ export function TaskPresetManagement({
               canEdit={canEdit}
               key={`desktop-${selectedPreset?.id ?? "none"}`}
               preset={selectedPreset}
+              updateColorAction={updateColorAction}
             />
           </aside>
         ) : null}
@@ -780,6 +797,7 @@ export function TaskPresetManagement({
               closeButtonRef={mobileDetailCloseButtonRef}
               onClose={closeMobileDetail}
               preset={selectedPreset}
+              updateColorAction={updateColorAction}
             />
           </section>
         </div>

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
+import { isTaskPresetColorKey, type TaskPresetColorKey } from "../tasks/colors.ts";
 
 export const CALENDAR_TASK_PRESET_SELECTOR_AVAILABLE = true;
 export const CALENDAR_TASK_PRESET_SELECTOR_ROUTE_INTEGRATED = true;
@@ -22,6 +23,7 @@ const selectorColumns = [
   "system_key",
   "custom_field_definitions",
   "lifecycle",
+  "color_key",
 ].join(",");
 
 const allowedTaskTypes = ["general", "food", "security", "custom"] as const;
@@ -57,6 +59,7 @@ export type CalendarTaskPresetSelectorOption = Readonly<{
   systemKey: string | null;
   customFields: readonly CalendarTaskPresetSelectorCustomField[];
   lifecycle: "active";
+  colorKey: TaskPresetColorKey;
 }>;
 
 export type CalendarTaskPresetSelectorResult =
@@ -160,6 +163,7 @@ function normalizeRow(row: unknown): CalendarTaskPresetSelectorOption | null {
   const isSystemPreset = asBoolean(row.is_system_preset);
   const systemKey = asOptionalString(row.system_key);
   const customFields = normalizeCustomFields(row.custom_field_definitions);
+  const colorKey = row.color_key;
   if (
     !id ||
     !workspaceId ||
@@ -171,6 +175,7 @@ function normalizeRow(row: unknown): CalendarTaskPresetSelectorOption | null {
     volunteerVisible === null ||
     isSystemPreset === null ||
     row.lifecycle !== "active" ||
+    !isTaskPresetColorKey(colorKey) ||
     !customFields
   ) {
     return null;
@@ -187,6 +192,7 @@ function normalizeRow(row: unknown): CalendarTaskPresetSelectorOption | null {
     systemKey,
     customFields,
     lifecycle: "active",
+    colorKey,
   };
 }
 

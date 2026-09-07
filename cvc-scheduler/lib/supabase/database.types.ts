@@ -734,6 +734,7 @@ export type Database = {
       }
       task_presets: {
         Row: {
+          color_key: string
           created_at: string
           custom_field_definitions: Json
           default_needed_count: number
@@ -749,6 +750,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          color_key?: string
           created_at?: string
           custom_field_definitions?: Json
           default_needed_count?: number
@@ -764,6 +766,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          color_key?: string
           created_at?: string
           custom_field_definitions?: Json
           default_needed_count?: number
@@ -1161,6 +1164,11 @@ export type Database = {
           p_custom_values: Json
           p_end_date: string
           p_end_time: string
+          p_meal_contact: string
+          p_meal_kind: string
+          p_meal_menu: string
+          p_meal_provider: string
+          p_meal_total: number
           p_needed_count: number
           p_one_off_task_type: string
           p_one_off_title: string
@@ -1188,6 +1196,7 @@ export type Database = {
       }
       create_task_preset: {
         Args: {
+          p_color_key: string
           p_custom_field_definitions: Json
           p_default_needed_count: number
           p_description: string
@@ -1548,6 +1557,10 @@ export type Database = {
           ends_on: string
           starts_on: string
         }[]
+      }
+      update_task_preset_color: {
+        Args: { p_color_key: string; p_preset_id: string }
+        Returns: string
       }
       update_volunteer_profile_manual_fields: {
         Args: {

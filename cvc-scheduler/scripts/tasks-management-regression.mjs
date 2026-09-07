@@ -14,6 +14,7 @@ import {
   createTaskPresetWithClient,
   readTaskPresetsWithClient,
   taskPresetCreateInputFromFormData,
+  updateTaskPresetColorWithClient,
 } from "../lib/tasks/server.ts";
 import {
   TaskPresetValidationError,
@@ -336,9 +337,11 @@ async function verifyPersistedBoundary(containerName, users) {
   formData.set("taskType", "general");
   formData.set("defaultNeededCount", "3");
   formData.set("volunteerVisible", "true");
+  formData.set("colorKey", "cyan");
   const formInput = taskPresetCreateInputFromFormData(formData, fixture.workspaceId);
   assert.equal(formInput.workspaceId, fixture.workspaceId);
   assert.deepEqual(formInput.customFields, []);
+  assert.equal(formInput.colorKey, "cyan");
 
   const created = await createTaskPresetWithClient(users.editor.client, formInput);
   const reloaded = await readTaskPresetsWithClient(users.editor.client, fixture.workspaceId);
@@ -347,6 +350,12 @@ async function verifyPersistedBoundary(containerName, users) {
   assert.equal(createdPreset.name, `${fixture.namespace} Material Staging`);
   assert.equal(createdPreset.isSystemPreset, false);
   assert.equal(createdPreset.systemKey, null);
+  assert.equal(createdPreset.colorKey, "cyan");
+
+  const recolored = await updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "violet" });
+  assert.equal(recolored.presetId, created.presetId);
+  assert.equal((await readTaskPresetsWithClient(users.editor.client, fixture.workspaceId)).find((preset) => preset.id === created.presetId)?.colorKey, "violet");
+  await expectFailure("invalid task color", () => updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "invalid" }));
 
   await expectFailure("view-only create", () =>
     createTaskPresetWithClient(users.viewOnly.client, formInput),

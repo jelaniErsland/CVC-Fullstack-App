@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightMealSystemPresetExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightMealSystemPresetTransitionPending", "MigrationPreflightMealSystemPresetWrongOldLock", "MigrationPreflightMealSystemPresetLockAhead", "MigrationPreflightMealSystemPresetSkipped", "MigrationPreflightMealSystemPresetArbitraryFuture", "MigrationPreflightMealSystemPresetMalformed", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -343,6 +343,9 @@ function Assert-MigrationPreflightProcessResult {
       ) -or (
         $ExpectedMigrationVersion -ceq $SystemicFunctionPrivilegeProductionMigration -and
         $result.terminal_migration -ceq $OnSiteFoodProductionMigration
+      ) -or (
+        $ExpectedMigrationVersion -ceq $OnSiteFoodProductionMigration -and
+        $result.terminal_migration -ceq $MealSystemPresetProductionMigration
       )
     ) {
       throw "migration_lock_transition_pending"
@@ -1030,6 +1033,14 @@ function Invoke-FixtureScenario {
         "fixture_migration_preflight_on_site_food_expected_ok"
         return
       }
+      "MigrationPreflightMealSystemPresetExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260906130000"}' `
+          -ExpectedMigrationVersion "20260906130000"
+        "fixture_migration_preflight_meal_system_preset_expected_ok"
+        return
+      }
       "MigrationPreflightTransitionPending" {
         try {
           Assert-MigrationPreflightProcessResult `
@@ -1119,6 +1130,84 @@ function Invoke-FixtureScenario {
           if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
         }
         "fixture_migration_preflight_on_site_food_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260906130000"}' `
+            -ExpectedMigrationVersion "20260906120000"
+          throw "fixture_meal_system_preset_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetWrongOldLock" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260906130000"}' `
+            -ExpectedMigrationVersion "20260905130000"
+          throw "fixture_meal_system_preset_wrong_old_lock_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_mismatch") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_wrong_old_lock_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetLockAhead" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260906120000"}' `
+            -ExpectedMigrationVersion "20260906130000"
+          throw "fixture_meal_system_preset_lock_ahead_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_mismatch") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_lock_ahead_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetSkipped" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260906130000"}' `
+            -ExpectedMigrationVersion "20260905130000"
+          throw "fixture_meal_system_preset_skipped_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_mismatch") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_skipped_transition_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetArbitraryFuture" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20991231235959"}' `
+            -ExpectedMigrationVersion "20260906130000"
+          throw "fixture_meal_system_preset_arbitrary_future_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_mismatch") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_arbitrary_future_rejected"
+        return
+      }
+      "MigrationPreflightMealSystemPresetMalformed" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"not-a-migration"}' `
+            -ExpectedMigrationVersion "20260906130000"
+          throw "fixture_meal_system_preset_malformed_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_preflight_history_invalid") { throw }
+        }
+        "fixture_migration_preflight_meal_system_preset_malformed_rejected"
         return
       }
       "MigrationPreflightPartialProjectDay" {

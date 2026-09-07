@@ -35,6 +35,7 @@ import type {
 } from "./readModel.server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
+import { customCalendarColorKey, isTaskPresetColorKey, type TaskPresetColorKey } from "../tasks/colors.ts";
 
 
 type CalendarClientCategory =
@@ -69,6 +70,7 @@ type CalendarClientTaskPreset = {
   customFields: CalendarClientTaskPresetCustomField[];
   isSystemPreset?: boolean;
   sourcePresetId?: string;
+  colorKey: TaskPresetColorKey;
 };
 type CalendarClientItem = {
   meal?: CalendarMeal | null;
@@ -87,6 +89,7 @@ type CalendarClientItem = {
   endTimeValue?: string;
   timeWindow?: string;
   category: CalendarClientCategory;
+  colorKey: TaskPresetColorKey;
   assignedVolunteerIds: string[];
   assignments: CalendarClientAssignment[];
   filledCount: number;
@@ -496,6 +499,7 @@ function mapSelectorPresetToClientPreset(
     })),
     isSystemPreset: preset.isSystemPreset || undefined,
     sourcePresetId: preset.systemKey ?? undefined,
+    colorKey: preset.colorKey,
   };
 }
 
@@ -673,6 +677,7 @@ export function mapPersistedItemToCalendarItem(
   const startTime = formatTime(item.startTime);
   const endTime = formatTime(item.endTime);
   const category = mapDisplayTypeToCategory(item.displayType);
+  const colorKey = item.taskPresetId && isTaskPresetColorKey(item.taskPresetColorKey) ? item.taskPresetColorKey : customCalendarColorKey;
   const followUpContactSelfEdit: CalendarClientFollowUpContactSelfEdit =
     item.followUpProjectContactId !== currentProjectContactId
       ? { kind: "not_current_contact" }
@@ -702,6 +707,7 @@ export function mapPersistedItemToCalendarItem(
     endTimeValue: normalizeCalendarEditTimeValue(item.endTime),
     timeWindow: startTime && endTime ? `${startTime} - ${endTime}` : undefined,
     category,
+    colorKey,
     assignedVolunteerIds: assignments.map((assignment) => assignment.volunteerProfileId),
     assignments: [...assignments],
     filledCount: item.coverage.assignedCount,
@@ -724,6 +730,7 @@ export function mapPersistedItemToCalendarItem(
           neededCount: item.neededCount,
           visibility: "mainContacts",
           customFields: [],
+          colorKey,
         }
       : undefined,
     oneOffTask: item.taskPresetId

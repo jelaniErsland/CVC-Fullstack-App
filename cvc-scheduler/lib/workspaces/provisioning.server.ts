@@ -335,6 +335,24 @@ begin
     returning id into v_workspace_id;
   end if;
 
+  insert into public.task_presets (
+    workspace_id,
+    name,
+    description,
+    task_type,
+    default_needed_count,
+    volunteer_visible,
+    is_system_preset,
+    system_key,
+    custom_field_definitions,
+    lifecycle,
+    color_key
+  )
+  values
+    (v_workspace_id, 'Breakfast', null, 'food', 1, true, true, 'breakfast', '[]'::jsonb, 'active', 'orange'),
+    (v_workspace_id, 'Lunch', null, 'food', 1, true, true, 'lunch', '[]'::jsonb, 'active', 'gold')
+  on conflict (workspace_id, system_key) where system_key is not null do nothing;
+
   if not exists (select 1 from auth.users where id = ${sql(normalized.contact.authUserId)}::uuid) then
     raise exception 'approved_auth_user_missing';
   end if;

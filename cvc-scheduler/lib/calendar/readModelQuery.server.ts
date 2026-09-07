@@ -52,7 +52,7 @@ export const CALENDAR_READ_MODEL_QUERY_ALLOWED_TABLES = [
 export const CALENDAR_READ_MODEL_QUERY_SELECTORS = {
   calendarItems:
     "id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,custom_values,meal_kind,meal_provider,meal_contact,meal_menu,meal_total,lifecycle,publication_state,created_by_project_contact_id,follow_up_project_contact_id,published_at,follow_up_contact:project_contacts!calendar_items_follow_up_project_contact_id_fkey(volunteer_facing_display_name,volunteer_facing_email,volunteer_facing_phone)",
-  taskPresets: "id,workspace_id,name,task_type,description",
+  taskPresets: "id,workspace_id,name,task_type,description,color_key",
   calendarAssignments: "id,workspace_id,calendar_item_id,lifecycle",
   assignmentResponses: "assignment_id,workspace_id,response_status",
 } as const;
@@ -266,6 +266,7 @@ export function toItemRow(
   const taskPreset = taskPresetId ? taskPresetById.get(taskPresetId) : undefined;
   const taskPresetLabel = taskPreset ? asOptionalString(taskPreset.name) : null;
   const taskPresetType = taskPreset ? normalizeDisplayType(taskPreset.task_type) : null;
+  const taskPresetColorKey = taskPreset ? asOptionalString(taskPreset.color_key) : null;
   const hasPreset = Boolean(taskPresetId);
   const followUpContact = isRecord(row.follow_up_contact) ? row.follow_up_contact : null;
 
@@ -302,6 +303,7 @@ export function toItemRow(
     oneOffTaskType: hasPreset ? null : taskTypeSnapshot,
     taskPresetLabel,
     taskPresetType,
+    taskPresetColorKey,
   };
 }
 

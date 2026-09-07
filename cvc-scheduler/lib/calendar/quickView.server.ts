@@ -36,7 +36,7 @@ export function sharedCalendarState(value: unknown, params?: Record<string, stri
   try {
     const items = row.schedule_sources.map((source: Record<string, unknown>) => {
       const presets = new Map<string, Record<string, unknown>>();
-      if (typeof source.task_preset_id === "string") presets.set(source.task_preset_id, { name: source.task_preset_label, task_type: source.task_type_snapshot, description: source.task_description });
+      if (typeof source.task_preset_id === "string") presets.set(source.task_preset_id, { name: source.task_preset_label, task_type: source.task_type_snapshot, description: source.task_description, color_key: source.task_preset_color_key });
       const item = toItemRow(source, presets);
       if (!item || item.publicationState !== "published" || item.lifecycle !== "active" || !Array.isArray(source.assignments)) throw new Error("Invalid Calendar projection");
       const assignments = source.assignments.map((assignment: Record<string, unknown>) => {

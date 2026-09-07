@@ -9,6 +9,7 @@ import {
   type TaskPreset,
 } from "./preset.ts";
 import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
+import { isTaskPresetColorKey, type TaskPresetColorKey } from "./colors.ts";
 
 export type TaskPresetMutationResult = Readonly<{ presetId: string }>;
 
@@ -18,6 +19,7 @@ const taskPresetCreateFormFields = new Set([
   "taskType",
   "defaultNeededCount",
   "volunteerVisible",
+  "colorKey",
 ]);
 
 const taskPresetColumns = [
@@ -30,6 +32,7 @@ const taskPresetColumns = [
   "volunteer_visible",
   "is_system_preset",
   "system_key",
+  "color_key",
   "custom_field_definitions",
   "lifecycle",
   "created_at",
@@ -114,6 +117,7 @@ export function taskPresetCreateInputFromFormData(
     defaultNeededCount:
       typeof neededCount === "string" ? Number(neededCount) : Number.NaN,
     volunteerVisible: volunteerVisible === "true",
+    colorKey: formData.get("colorKey"),
     customFields: [],
   });
 }
@@ -134,11 +138,37 @@ export async function createTaskPresetWithClient(
       p_default_needed_count: preset.defaultNeededCount,
       p_volunteer_visible: preset.volunteerVisible,
       p_custom_field_definitions: preset.customFields,
+      p_color_key: preset.colorKey,
     } as unknown as PublicRpcArgs<"create_task_preset">,
   );
   if (error || typeof data !== "string") {
     throw new Error("Task preset could not be created.", { cause: error });
   }
+  return { presetId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export function taskPresetColorUpdateInputFromFormData(formData: FormData) {
+  const fields = [...new Set(formData.keys())].filter((key) => !key.startsWith("$ACTION_"));
+  if (fields.some((key) => key !== "presetId" && key !== "colorKey") || fields.some((key) => formData.getAll(key).length !== 1)) {
+    throw new TaskPresetValidationError(["The submitted task color is invalid."]);
+  }
+  const presetId = formData.get("presetId");
+  const colorKey = formData.get("colorKey");
+  if (typeof presetId !== "string") throw new TaskPresetValidationError(["The submitted task color is invalid."]);
+  if (!isTaskPresetColorKey(colorKey)) throw new TaskPresetValidationError(["The submitted task color is invalid."]);
+  return { presetId: normalizeWorkspaceReference({ id: presetId }).value, colorKey };
+}
+
+export async function updateTaskPresetColorWithClient(
+  supabase: AppSupabaseClient,
+  input: Readonly<{ presetId: string; colorKey: TaskPresetColorKey }>,
+): Promise<TaskPresetMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const { data, error } = await supabase.rpc("update_task_preset_color", {
+    p_preset_id: normalizeWorkspaceReference({ id: input.presetId }).value,
+    p_color_key: input.colorKey,
+  } as unknown as PublicRpcArgs<"update_task_preset_color">);
+  if (error || typeof data !== "string") throw new Error("Task preset color could not be updated.", { cause: error });
   return { presetId: normalizeWorkspaceReference({ id: data }).value };
 }
 

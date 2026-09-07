@@ -7,6 +7,14 @@ import {
 
 export const CALENDAR_REPEAT_MAX_ITEMS = 100;
 
+export type CalendarRepeatMeal = Readonly<{
+  kind: "breakfast" | "lunch";
+  provider: string | null;
+  contact: string | null;
+  menu: string | null;
+  total: number | null;
+}>;
+
 export type CreateRepeatedCalendarItemsInput = Readonly<{
   requestKey: string;
   workspaceId: string;
@@ -19,6 +27,7 @@ export type CreateRepeatedCalendarItemsInput = Readonly<{
   neededCount: number;
   notes: string | null;
   customValues: Readonly<Record<string, CalendarCustomValue>>;
+  meal: CalendarRepeatMeal | null;
 }>;
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -41,6 +50,44 @@ function normalizeWeekdays(value: unknown, issues: string[]) {
   return weekdays;
 }
 
+function normalizeOptionalText(value: unknown, maximum: number, field: string, issues: string[]) {
+  if (value === null || value === undefined || value === "") return null;
+  if (typeof value !== "string") {
+    issues.push(`${field} is invalid.`);
+    return null;
+  }
+  const normalized = value.trim();
+  if (normalized.length === 0) return null;
+  if (normalized.length > maximum) issues.push(`${field} is too long.`);
+  return normalized;
+}
+
+function normalizeMeal(value: unknown, source: CalendarTaskSource | undefined, issues: string[]) {
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value)) {
+    issues.push("meal details are invalid.");
+    return null;
+  }
+  const allowed = new Set(["kind", "provider", "contact", "menu", "total"]);
+  if (Object.keys(value).some((key) => !allowed.has(key))) issues.push("meal details contain unsupported fields.");
+  if (value.kind !== "breakfast" && value.kind !== "lunch") issues.push("meal kind is invalid.");
+  if (source?.kind !== "preset") issues.push("meal repeats require a system task preset.");
+  const provider = normalizeOptionalText(value.provider, 300, "meal provider", issues);
+  const contact = normalizeOptionalText(value.contact, 500, "meal contact", issues);
+  const menu = normalizeOptionalText(value.menu, 2000, "meal menu", issues);
+  const total = value.total === null || value.total === undefined || value.total === "" ? null : value.total;
+  if (total !== null && (!Number.isInteger(total) || Number(total) < 0 || Number(total) > 100000)) {
+    issues.push("meal total is invalid.");
+  }
+  return {
+    kind: value.kind as "breakfast" | "lunch",
+    provider,
+    contact,
+    menu,
+    total: total as number | null,
+  };
+}
+
 export function expandRepeatDates(startDate: string, endDate: string, weekdays: readonly number[]) {
   const dates: string[] = [];
   const cursor = new Date(`${startDate}T00:00:00Z`);
@@ -59,7 +106,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
   const issues: string[] = [];
   const allowed = new Set([
     "requestKey", "workspaceId", "source", "startDate", "endDate", "weekdays",
-    "startTime", "endTime", "neededCount", "notes", "customValues",
+    "startTime", "endTime", "neededCount", "notes", "customValues", "meal",
   ]);
   const unknown = Object.keys(input).filter((key) => !allowed.has(key));
   if (unknown.length) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
@@ -107,6 +154,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
   if (dates.length > CALENDAR_REPEAT_MAX_ITEMS) {
     issues.push(`Repeat scheduling is limited to ${CALENDAR_REPEAT_MAX_ITEMS} items at a time.`);
   }
+  const meal = normalizeMeal(input.meal, normalizedBase?.source, issues);
   if (issues.length) throw new CalendarItemValidationError(issues);
   return {
     requestKey: input.requestKey as string,
@@ -120,6 +168,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
     neededCount: normalizedBase!.neededCount,
     notes: normalizedBase!.notes ?? null,
     customValues: normalizedBase!.customValues,
+    meal,
   };
 }
 
@@ -136,6 +185,8 @@ export function repeatedCalendarItemsInputFromFormData(formData: FormData, works
         title: formText(formData, "title"),
         taskType: formText(formData, "taskType"),
       };
+  const mealKind = formText(formData, "mealKind");
+  const totalText = formText(formData, "total");
   return validateCreateRepeatedCalendarItemsInput({
     requestKey: formText(formData, "repeatRequestKey"),
     workspaceId,
@@ -148,5 +199,14 @@ export function repeatedCalendarItemsInputFromFormData(formData: FormData, works
     neededCount: Number(formText(formData, "neededCount")),
     notes: formText(formData, "notes").trim() || null,
     customValues: {},
+    meal: mealKind === "breakfast" || mealKind === "lunch"
+      ? {
+          kind: mealKind,
+          provider: formText(formData, "provider") || null,
+          contact: formText(formData, "contact") || null,
+          menu: formText(formData, "menu") || null,
+          total: totalText === "" ? null : Number(totalText),
+        }
+      : null,
   });
 }
