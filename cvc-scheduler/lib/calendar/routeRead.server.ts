@@ -77,6 +77,7 @@ type CalendarClientItem = {
   taskDescription?: string | null;
   customValues?: Readonly<Record<string, string | number | boolean | null>>;
   id: string;
+  updatedAt?: string;
   projectId: string;
   taskPresetId?: string;
   displayName?: string;
@@ -695,6 +696,7 @@ export function mapPersistedItemToCalendarItem(
 
   return {
     id: item.calendarItemId,
+    updatedAt: item.updatedAt,
     projectId: item.stableDisplayReference,
     taskPresetId: item.taskPresetId ?? undefined,
     displayName: item.taskSourceLabel,

@@ -19,6 +19,7 @@ export type TaskManagementPreset = Readonly<{
   volunteerVisible: boolean;
   isSystemPreset: boolean;
   colorKey: TaskPresetColorKey;
+  updatedAt: string;
   customFields: readonly TaskPresetCustomField[];
   lifecycle: "active" | "archived";
 }>;
@@ -27,6 +28,7 @@ export type TaskManagementNotice =
   | "created"
   | "archived"
   | "color_updated"
+  | "conflict"
   | "validation"
   | "unavailable"
   | "error";
@@ -135,6 +137,7 @@ export function normalizeTaskManagementNotice(
   return notice === "created" ||
     notice === "archived" ||
     notice === "color_updated" ||
+    notice === "conflict" ||
     notice === "validation" ||
     notice === "unavailable" ||
     notice === "error"
@@ -193,6 +196,7 @@ function toRoutePreset(preset: Awaited<ReturnType<typeof readTaskPresetsWithClie
     volunteerVisible: preset.volunteerVisible,
     isSystemPreset: preset.isSystemPreset,
     colorKey: preset.colorKey,
+    updatedAt: preset.updatedAt,
     customFields: preset.customFields,
     lifecycle: preset.lifecycle,
   } satisfies TaskManagementPreset;
@@ -244,6 +248,7 @@ export function describeTaskManagementCutover() {
       "volunteerVisible",
       "isSystemPreset",
       "colorKey",
+      "updatedAt",
       "customFields",
       "lifecycle",
     ],

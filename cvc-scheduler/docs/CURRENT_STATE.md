@@ -4,15 +4,15 @@ This is the authoritative present-state context for Project Local. Historical im
 
 ## Production snapshot
 
-- Production Supabase terminal: `20260906130000`.
-- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260906130000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
-- Recovery validation is GREEN. The correction rollout created one fresh controlled encrypted checkpoint at terminal `20260906120000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; the permanent task did not run during the rollout.
-- Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-09-29` through `2026-12-04`.
-- Application email transport is DISABLED. This rollout sent no email.
+- Production Supabase terminal: `20260907120000`.
+- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260907120000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
+- Recovery validation is GREEN. The 12.46A rollout created one fresh controlled encrypted checkpoint at terminal `20260906130000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; the permanent task did not run during the rollout.
+- Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-10-01` through `2026-12-04`.
+- Existing application email transport configuration remains enabled and unchanged. The 12.46A rollout sent no email.
 
 ## Security invariants
 
-The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, on-site Food migration `20260906120000_on_site_food_calendar_operations.sql`, and meal-system-preset correction `20260906130000_breakfast_lunch_system_presets.sql` are live.
+The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, on-site Food migration `20260906120000_on_site_food_calendar_operations.sql`, meal-system-preset correction `20260906130000_breakfast_lunch_system_presets.sql`, and concurrent-admin edit guards `20260907120000_concurrent_admin_edit_guards.sql` are live.
 
 - Function EXECUTE is deny-by-default for Project Local functions created by `postgres`. `PUBLIC` has no application-function EXECUTE, and the `postgres` global and `public` default ACL contexts deny implicit PUBLIC, `anon`, and `authenticated` function execution.
 - Exactly eight reviewed anonymous RPCs are executable: the explicit list and caller evidence are maintained in [FUNCTION_PRIVILEGE_POLICY.md](./FUNCTION_PRIVILEGE_POLICY.md). Unexpected anonymous EXECUTE is `0`; unexpected PUBLIC EXECUTE is `0`; PostgreSQL default EXECUTE grants remain `0`.
@@ -20,6 +20,12 @@ The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-pr
 - Authenticated application RPCs retain their explicit grants. Internal trigger and validation helpers have no direct application-role grant.
 - All 45 reviewed SECURITY DEFINER functions retain the `postgres` owner and pinned empty `search_path`. The privilege review found no demonstrated authorization bypass or breach.
 - Direct anonymous reads of volunteer-directory, lookup-rate-limit, and schedule-credential tables are denied. Lookup returns generic failures for invalid input, uses opaque project-choice handles, keeps schedule credentials hash-only server-side, and sets the browser credential only as an HttpOnly session cookie.
+
+## 12.46A concurrent admin safety (LIVE)
+
+Calendar item edits, Breakfast/Lunch edits, and Task preset color edits submit the exact persisted `updated_at` version read by the editor. Their authenticated RPCs lock the active row and reject stale versions before mutation, so simultaneous edits cannot silently overwrite an earlier save. The shared conflict message asks the admin to review the latest version before submitting again.
+
+Concurrent assignment creation remains protected by the existing active volunteer/item uniqueness constraint. Archive/edit interleavings remain lifecycle-safe: an archived item cannot be edited back into active use. Migration `20260907120000` replaces only the four affected RPC signatures; the exact public function inventory remains 57 with the existing 8 anonymous, 37 authenticated, and 12 internal classifications.
 
 ## 12.45 on-site Food operations (LIVE)
 
@@ -71,7 +77,7 @@ Legacy demo, questionnaire, Communications, Food, onboarding, and administrative
 
 ## Current limitations and intentionally deferred work
 
-- Application email transport is disabled. Automated reminders, broader Communications authoring, and schedule-change delivery remain deferred.
+- Automated reminders, broader Communications authoring, and schedule-change delivery remain deferred beyond the enabled initial-assignment transport.
 - A successful production lookup smoke using a real volunteer is deferred to the first authorized real use. Invalid-input and boundary proofs are complete; do not manufacture or enumerate volunteers for this check.
 - Pre-12.45 Quick View links are revoked. Issue replacement trusted links only through the existing authorized Quick View sharing workflow when requested.
 - Advanced Calendar interactions, including drag/resize, richer collision handling, and broader recurrence editing, remain deferred.
@@ -85,7 +91,7 @@ Breakfast and Lunch are distinct operational totals. The historical general Proj
 
 ## Next step
 
-Production and the backup-task lock are aligned at `20260906130000` with recovery GREEN. The approved correction source is ready for its normal production deployment. Replacement trusted Quick View links need deliberate issuance when requested; do not restore or reuse credentials revoked by the earlier 12.45 migration. Application email remains disabled.
+Production and the backup-task lock are aligned at `20260907120000` with recovery GREEN. The 12.46A source is the current production release. Replacement trusted Quick View links need deliberate issuance when requested; do not restore or reuse credentials revoked by the earlier 12.45 migration.
 
 ## Canonical references
 

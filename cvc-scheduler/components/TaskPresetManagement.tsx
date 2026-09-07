@@ -86,6 +86,10 @@ function Notice({ notice }: { notice: TaskManagementNotice | null }) {
       title: "Color saved",
       message: "Scheduled Calendar items now use this task color.",
     },
+    conflict: {
+      title: "Review the latest item",
+      message: "This item changed while you were editing it. Review the latest version.",
+    },
     validation: {
       title: "Check the task details",
       message: "Use a name, supported category, and 1–99 volunteers.",
@@ -400,7 +404,7 @@ function TaskInspector({
           </dl>
         </section>
 
-        {canEdit && preset.lifecycle === "active" ? <section><form action={updateColorAction} className="grid gap-3"><input name="presetId" type="hidden" value={preset.id} /><TaskColorPicker defaultValue={preset.colorKey} /><div><SubmitButton>Save color</SubmitButton></div></form></section> : null}
+        {canEdit && preset.lifecycle === "active" ? <section><form action={updateColorAction} className="grid gap-3"><input name="presetId" type="hidden" value={preset.id} /><input name="expectedUpdatedAt" type="hidden" value={preset.updatedAt} /><TaskColorPicker defaultValue={preset.colorKey} /><div><SubmitButton>Save color</SubmitButton></div></form></section> : null}
 
         {preset.customFields.length > 0 ? (
           <section>

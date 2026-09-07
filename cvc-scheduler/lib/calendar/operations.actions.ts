@@ -11,6 +11,12 @@ function field(form: FormData, name: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function isCalendarItemEditConflict(error: unknown) {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "40001" &&
+    "details" in error && error.details === "calendar_item_edit_conflict";
+}
+
 async function mutate(form: FormData, kind: "meal" | "duplicate") {
   const params = new URLSearchParams();
   const view = field(form, "redirectView");
@@ -34,12 +40,19 @@ async function mutate(form: FormData, kind: "meal" | "duplicate") {
           p_start_time: start, p_end_time: end, p_provider: field(form, "provider") || null,
           p_contact: field(form, "contact") || null, p_menu: field(form, "menu") || null,
           p_total: totalText === "" ? null : Number(totalText), p_notes: field(form, "notes") || null,
+          p_expected_updated_at: field(form, "expectedUpdatedAt") || null,
         } as PublicRpcArgs<"save_calendar_meal">)
       : await context.supabase.rpc("duplicate_calendar_item", {
           p_calendar_item_id: itemId, p_target_date: date, p_start_time: start, p_end_time: end,
         } as PublicRpcArgs<"duplicate_calendar_item">);
-    if (result.error || typeof result.data !== "string") throw new Error("Unavailable", { cause: result.error });
-    persistedItemId = result.data;
+    if (isCalendarItemEditConflict(result.error)) {
+      params.set("item", itemId);
+      params.set("section", "details");
+      params.set("notice", "conflict");
+    } else {
+      if (result.error || typeof result.data !== "string") throw new Error("Unavailable", { cause: result.error });
+      persistedItemId = result.data;
+    }
   } catch (error) {
     console.error("Calendar operation persistence failed.", {
       operation: kind,

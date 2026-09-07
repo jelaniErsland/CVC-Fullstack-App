@@ -420,6 +420,10 @@ function calendarUpdateArgs(calendarItemId, overrides = {}) {
     p_needed_count: 2,
     p_schedule_notes: "Hosted Calendar item edit persisted.",
     p_custom_values: {},
+    p_expected_updated_at: runHostedSql(
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)};`,
+      "Hosted Calendar item version check",
+    )[0]?.updated_at,
     ...overrides,
   };
 }

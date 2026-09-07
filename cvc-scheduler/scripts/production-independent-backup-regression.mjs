@@ -23,6 +23,7 @@ const reviewedBackupTerminalMigrations = Object.freeze([
   "20260905130000",
   "20260906120000",
   "20260906130000",
+  "20260907120000",
 ]);
 const partialMigrationTerminals = Object.freeze(["20260829130000", "20260901120000"]);
 const fixtureCredentials = [
@@ -454,13 +455,14 @@ async function main() {
   assertIncludes(migrationContract, '"20260714122230"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260812123430"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260902120000"', "production migration contract");
-  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260906130000-transition-v1"', "production migration contract version");
+  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260907120000-transition-v1"', "production migration contract version");
   assertIncludes(migrationContract, '$FollowUpContactProductionMigration = "20260824123500"', "production migration contract current terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewProductionMigration = "20260902120000"', "production migration contract future terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"', "production migration contract security terminal");
   assertIncludes(migrationContract, '$OperationalUsabilityProductionMigration = "20260904120000"', "production migration contract operational-usability terminal");
   assertIncludes(migrationContract, '$OperationalUsabilityPrivilegeHardeningProductionMigration = "20260904130000"', "production migration contract operational-usability privilege-hardening terminal");
   assertIncludes(migrationContract, '$VolunteerLookupProductionMigration = "20260905120000"', "production migration contract volunteer-lookup terminal");
+  assertIncludes(migrationContract, '$ConcurrentAdminSafetyProductionMigration = "20260907120000"', "production migration contract concurrent-admin-safety terminal");
   assertIncludes(migrationContract, '"20260829130000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, '"20260901120000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, "Test-ProjectLocalReviewedLockTransition", "production migration contract");
@@ -804,6 +806,7 @@ async function main() {
     ["20260905120000", "20260905130000"],
     ["20260905130000", "20260906120000"],
     ["20260906120000", "20260906130000"],
+    ["20260906130000", "20260907120000"],
   ]) {
     assertIncludes(
       runPowerShell([
@@ -902,6 +905,14 @@ async function main() {
     ], { expectSuccess: scenario === "Success" });
     if (scenario === "Success") assertIncludes(result, "mutation_performed=false", "meal system-preset transition is mutation-free");
   }
+  for (const scenario of ["Success", "WrongCurrent", "WrongTarget", "Running", "UnexpectedTaskIdentity", "UnsupportedRuntime"]) {
+    const result = runPowerShell([
+      "-File", taskRegistrationScript, "-FixtureMode",
+      "-Action", "ValidateExpectedMigrationTransition", "-FixtureScenario", scenario,
+      "-CurrentExpectedMigration", "20260906130000", "-ExpectedMigration", "20260907120000",
+    ], { expectSuccess: scenario === "Success" });
+    if (scenario === "Success") assertIncludes(result, "mutation_performed=false", "concurrent-admin-safety transition is mutation-free");
+  }
   for (const scenario of ["WrongCurrent", "WrongTarget", "Running", "UnexpectedTaskIdentity", "UnsupportedRuntime"]) {
     runPowerShell([
       "-File", taskRegistrationScript,
@@ -974,6 +985,9 @@ async function main() {
     ["20260905130000", "20260906130000"],
     ["20260906130000", "20260906120000"],
     ["20260906130000", "20991231235959"],
+    ["20260906130000", "20260906130000"],
+    ["20260907120000", "20260906130000"],
+    ["20260907120000", "20991231235959"],
     ["20260905120000", "not-a-migration"],
     ["20260829130000", "20260902120000"],
     ["20260901120000", "20260902120000"],
@@ -1054,6 +1068,7 @@ async function main() {
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected"], { expectSuccess: true }), "fixture_migration_preflight_operational_usability_privilege_hardening_expected_ok", "operational-usability privilege-hardening migration preflight expected fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightVolunteerLookupExpected"], { expectSuccess: true }), "fixture_migration_preflight_volunteer_lookup_expected_ok", "volunteer-lookup migration preflight expected fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMealSystemPresetExpected"], { expectSuccess: true }), "fixture_migration_preflight_meal_system_preset_expected_ok", "meal system-preset migration current-state fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightConcurrentAdminSafetyExpected"], { expectSuccess: true }), "fixture_migration_preflight_concurrent_admin_safety_expected_ok", "concurrent-admin-safety migration current-state fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_transition_pending_rejected", "pre-lock-transition migration mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPrivilegeHardeningTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_privilege_hardening_transition_pending_rejected", "privilege-hardening pre-lock-transition mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightOperationalUsabilityTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_operational_usability_transition_pending_rejected", "operational-usability pre-lock-transition mismatch fixture");
@@ -1062,6 +1077,7 @@ async function main() {
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_systemic_function_privilege_transition_pending_rejected", "systemic-function-privilege pre-lock-transition mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightOnSiteFoodTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_on_site_food_transition_pending_rejected", "on-site-food pre-lock-transition mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMealSystemPresetTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_meal_system_preset_transition_pending_rejected", "meal system-preset pre-lock-transition classification fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightConcurrentAdminSafetyTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_concurrent_admin_safety_transition_pending_rejected", "concurrent-admin-safety pre-lock-transition classification fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMealSystemPresetWrongOldLock"], { expectSuccess: true }), "fixture_migration_preflight_meal_system_preset_wrong_old_lock_rejected", "meal system-preset wrong old lock fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMealSystemPresetLockAhead"], { expectSuccess: true }), "fixture_migration_preflight_meal_system_preset_lock_ahead_rejected", "meal system-preset lock-ahead fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightMealSystemPresetSkipped"], { expectSuccess: true }), "fixture_migration_preflight_meal_system_preset_skipped_transition_rejected", "meal system-preset skipped-transition fixture");

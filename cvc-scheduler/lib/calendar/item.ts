@@ -31,6 +31,7 @@ export type CreateCalendarItemInput = Readonly<{
 
 export type UpdateCalendarOneOffTimedItemInput = Readonly<{
   calendarItemId: string;
+  expectedUpdatedAt: string;
   source: Readonly<{ title: string; taskType: CalendarTaskType }>;
   schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
   neededCount: number;
@@ -40,6 +41,7 @@ export type UpdateCalendarOneOffTimedItemInput = Readonly<{
 
 export type UpdateCalendarPresetTimedItemInput = Readonly<{
   calendarItemId: string;
+  expectedUpdatedAt: string;
   schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
   neededCount: number;
   notes?: string | null;
@@ -95,6 +97,7 @@ const rootKeys = new Set([
 ]);
 const updateOneOffTimedRootKeys = new Set([
   "calendarItemId",
+  "expectedUpdatedAt",
   "source",
   "schedule",
   "neededCount",
@@ -103,6 +106,7 @@ const updateOneOffTimedRootKeys = new Set([
 ]);
 const updatePresetTimedRootKeys = new Set([
   "calendarItemId",
+  "expectedUpdatedAt",
   "schedule",
   "neededCount",
   "notes",
@@ -130,6 +134,19 @@ function normalizeUuid(value: unknown, label: string, issues: string[]) {
     return "";
   }
   return value.trim().toLowerCase();
+}
+
+function normalizeTimestamp(value: unknown, label: string, issues: string[]) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    issues.push(`${label} must be a timestamp.`);
+    return "";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) {
+    issues.push(`${label} must be a timestamp.`);
+    return "";
+  }
+  return value.trim();
 }
 
 function boundedText(
@@ -394,6 +411,7 @@ export function validateUpdateCalendarOneOffTimedItemInput(
   const shared = normalizeUpdateTimedSharedFields(input, issues);
   const normalized: UpdateCalendarOneOffTimedItemInput = {
     calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
+    expectedUpdatedAt: normalizeTimestamp(input.expectedUpdatedAt, "expectedUpdatedAt", issues),
     source,
     ...shared,
   };
@@ -413,6 +431,7 @@ export function validateUpdateCalendarPresetTimedItemInput(
   const shared = normalizeUpdateTimedSharedFields(input, issues);
   const normalized: UpdateCalendarPresetTimedItemInput = {
     calendarItemId: normalizeUuid(input.calendarItemId, "calendarItemId", issues),
+    expectedUpdatedAt: normalizeTimestamp(input.expectedUpdatedAt, "expectedUpdatedAt", issues),
     ...shared,
   };
   if (issues.length > 0) throw new CalendarItemValidationError(issues);

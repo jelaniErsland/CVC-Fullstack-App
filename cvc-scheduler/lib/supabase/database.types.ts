@@ -1451,6 +1451,7 @@ export type Database = {
           p_contact: string
           p_date: string
           p_end_time: string
+          p_expected_updated_at: string | null
           p_meal_kind: string
           p_menu: string
           p_notes: string
@@ -1521,6 +1522,7 @@ export type Database = {
           p_calendar_item_id: string
           p_custom_values: Json
           p_end_time: string
+          p_expected_updated_at: string
           p_needed_count: number
           p_one_off_task_type: string
           p_one_off_title: string
@@ -1535,6 +1537,7 @@ export type Database = {
           p_calendar_item_id: string
           p_custom_values: Json
           p_end_time: string
+          p_expected_updated_at: string
           p_needed_count: number
           p_schedule_notes: string
           p_start_date: string
@@ -1559,7 +1562,11 @@ export type Database = {
         }[]
       }
       update_task_preset_color: {
-        Args: { p_color_key: string; p_preset_id: string }
+        Args: {
+          p_color_key: string
+          p_expected_updated_at: string
+          p_preset_id: string
+        }
         Returns: string
       }
       update_volunteer_profile_manual_fields: {

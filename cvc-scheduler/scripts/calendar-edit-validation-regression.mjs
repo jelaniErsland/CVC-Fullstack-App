@@ -7,10 +7,12 @@ import {
 import { normalizeCalendarEditTimeValue } from "../lib/calendar/routeRead.server.ts";
 
 const calendarItemId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const expectedUpdatedAt = "2026-09-07T12:00:00.000Z";
 
 function validEdit(overrides = {}) {
   return {
     calendarItemId,
+    expectedUpdatedAt,
     source: { title: "Calendar edit regression", taskType: "general" },
     schedule: {
       kind: "timed",
@@ -87,6 +89,7 @@ expectInvalid(
 );
 expectInvalid(validEdit({ neededCount: 100 }), /neededCount must be an integer from 0 to 99/);
 expectInvalid(validEdit({ calendarItemId: "not-an-id" }), /calendarItemId must be a UUID/);
+expectInvalid(validEdit({ expectedUpdatedAt: "not-a-timestamp" }), /expectedUpdatedAt must be a timestamp/);
 
 assert.equal(validateUpdateCalendarOneOffTimedItemInput(validEdit({ neededCount: 0 })).neededCount, 0);
 assert.equal(validateUpdateCalendarOneOffTimedItemInput(validEdit({ notes: null })).notes, null);

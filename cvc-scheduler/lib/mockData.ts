@@ -196,6 +196,7 @@ export type CalendarItem = {
   taskDescription?: string | null;
   customValues?: Readonly<Record<string, string | number | boolean | null>>;
   id: string;
+  updatedAt?: string;
   projectId: string;
   taskPresetId?: string;
   colorKey?: import("./tasks/colors").TaskPresetColorKey;

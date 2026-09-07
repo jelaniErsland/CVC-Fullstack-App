@@ -125,6 +125,7 @@ export type CalendarReadModelItemRow = Readonly<{
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
   publicationState: CalendarReadModelPublicationState;
+  updatedAt?: string;
   createdByProjectContactId: string | null;
   followUpProjectContactId?: string | null;
   followUpContactDetails?: Readonly<{
@@ -159,6 +160,7 @@ export type CalendarReadModelItem = Readonly<{
   neededCount: number;
   lifecycle: CalendarReadModelLifecycleFilter;
   publicationState: CalendarReadModelPublicationState;
+  updatedAt?: string;
   isOwnDraft: boolean;
   followUpProjectContactId: string | null;
   followUpContactDetails: Readonly<{
@@ -570,6 +572,7 @@ export function mapCalendarReadModelItem(
     neededCount: assignable ? row.neededCount : 0,
     lifecycle: row.lifecycle,
     publicationState: row.publicationState,
+    updatedAt: row.updatedAt,
     isOwnDraft: row.publicationState === "draft",
     followUpProjectContactId: row.followUpProjectContactId ?? null,
     followUpContactDetails: row.followUpContactDetails ?? null,

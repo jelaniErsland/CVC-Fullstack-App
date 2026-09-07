@@ -11,7 +11,7 @@ export const anonymousFunctions = Object.freeze([
   "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
-  "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text)",
+  "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone)",
   "duplicate_calendar_item(uuid,date,time without time zone,time without time zone)",
   "archive_calendar_item(uuid)",
   "archive_task_preset(uuid)",
@@ -42,9 +42,9 @@ export const authenticatedFunctions = Object.freeze([
   "revoke_volunteer_schedule_access(uuid)",
   "set_current_project_day_expected_on_site(date,integer)",
   "update_assignment_response(uuid,text,text)",
-  "update_calendar_item_one_off_timed(uuid,text,text,date,time without time zone,time without time zone,integer,text,jsonb)",
-  "update_task_preset_color(uuid,text)",
-  "update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb)",
+  "update_calendar_item_one_off_timed(uuid,text,text,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_task_preset_color(uuid,text,timestamp with time zone)",
+  "update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
   "update_current_project_contact_volunteer_facing_details(uuid,text,text,text)",
   "update_current_workspace_project_dates(date,date)",
   "update_volunteer_profile_manual_fields(uuid,text,text,text,text,text,text,text,text)"

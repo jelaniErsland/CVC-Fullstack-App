@@ -13,6 +13,19 @@ import { isTaskPresetColorKey, type TaskPresetColorKey } from "./colors.ts";
 
 export type TaskPresetMutationResult = Readonly<{ presetId: string }>;
 
+export class TaskPresetEditConflictError extends Error {
+  constructor() {
+    super("This item changed while you were editing it. Review the latest version.");
+    this.name = "TaskPresetEditConflictError";
+  }
+}
+
+function isTaskPresetEditConflict(error: unknown) {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "40001" &&
+    "details" in error && error.details === "task_preset_edit_conflict";
+}
+
 const taskPresetCreateFormFields = new Set([
   "name",
   "description",
@@ -149,25 +162,29 @@ export async function createTaskPresetWithClient(
 
 export function taskPresetColorUpdateInputFromFormData(formData: FormData) {
   const fields = [...new Set(formData.keys())].filter((key) => !key.startsWith("$ACTION_"));
-  if (fields.some((key) => key !== "presetId" && key !== "colorKey") || fields.some((key) => formData.getAll(key).length !== 1)) {
+  if (fields.some((key) => key !== "presetId" && key !== "colorKey" && key !== "expectedUpdatedAt") || fields.some((key) => formData.getAll(key).length !== 1)) {
     throw new TaskPresetValidationError(["The submitted task color is invalid."]);
   }
   const presetId = formData.get("presetId");
   const colorKey = formData.get("colorKey");
+  const expectedUpdatedAt = formData.get("expectedUpdatedAt");
   if (typeof presetId !== "string") throw new TaskPresetValidationError(["The submitted task color is invalid."]);
   if (!isTaskPresetColorKey(colorKey)) throw new TaskPresetValidationError(["The submitted task color is invalid."]);
-  return { presetId: normalizeWorkspaceReference({ id: presetId }).value, colorKey };
+  if (typeof expectedUpdatedAt !== "string" || expectedUpdatedAt.trim().length === 0 || Number.isNaN(new Date(expectedUpdatedAt).valueOf())) throw new TaskPresetValidationError(["The submitted task color is invalid."]);
+  return { presetId: normalizeWorkspaceReference({ id: presetId }).value, colorKey, expectedUpdatedAt: expectedUpdatedAt.trim() };
 }
 
 export async function updateTaskPresetColorWithClient(
   supabase: AppSupabaseClient,
-  input: Readonly<{ presetId: string; colorKey: TaskPresetColorKey }>,
+  input: Readonly<{ presetId: string; colorKey: TaskPresetColorKey; expectedUpdatedAt: string }>,
 ): Promise<TaskPresetMutationResult> {
   await requireAuthenticatedContact(supabase);
   const { data, error } = await supabase.rpc("update_task_preset_color", {
     p_preset_id: normalizeWorkspaceReference({ id: input.presetId }).value,
     p_color_key: input.colorKey,
+    p_expected_updated_at: input.expectedUpdatedAt,
   } as unknown as PublicRpcArgs<"update_task_preset_color">);
+  if (isTaskPresetEditConflict(error)) throw new TaskPresetEditConflictError();
   if (error || typeof data !== "string") throw new Error("Task preset color could not be updated.", { cause: error });
   return { presetId: normalizeWorkspaceReference({ id: data }).value };
 }

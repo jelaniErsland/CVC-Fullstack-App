@@ -20,6 +20,7 @@ import {
   calendarOneOffTimedUpdateInputFromFormData,
   calendarPresetTimedCreateInputFromFormData,
   calendarPresetTimedUpdateInputFromFormData,
+  CalendarItemEditConflictError,
   archiveCalendarItemWithClient,
   createCalendarItemWithClient,
   publishCalendarItemWithClient,
@@ -57,6 +58,7 @@ const supportedNoticeValues = new Set([
   "repeat_created",
   "meal_repeat_created",
   "updated",
+  "conflict",
   "assigned",
   "assignment_canceled",
   "archived",
@@ -229,7 +231,7 @@ async function createRepeatedCalendarItemsAction(formData: FormData) {
 async function updateCalendarItemAction(formData: FormData) {
   "use server";
 
-  let notice: "unavailable" | "validation" | "error" | "updated" = "error";
+  let notice: "unavailable" | "validation" | "error" | "updated" | "conflict" = "error";
   try {
     const context = await readCalendarMutationRouteContext();
     if (!context) {
@@ -246,9 +248,11 @@ async function updateCalendarItemAction(formData: FormData) {
       notice = "updated";
     }
   } catch (error) {
-    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
-      ? "validation"
-      : "error";
+    notice = error instanceof CalendarItemEditConflictError
+      ? "conflict"
+      : error instanceof Error && error.message.toLowerCase().includes("invalid")
+        ? "validation"
+        : "error";
     observeMutationFailure(
       "calendar.update_failure",
       notice === "validation" ? "validation" : "error",

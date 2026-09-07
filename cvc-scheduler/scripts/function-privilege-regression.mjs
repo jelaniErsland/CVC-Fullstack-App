@@ -17,7 +17,7 @@ function sql(query, expectSuccess = true) {
 }
 const output = query => sql(query).stdout.trim();
 const rows = output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse);
-assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260906130000");
+assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260907120000");
 assertEffectiveFunctionPolicy(assert, rows);
 // Prove that the invariant catches current privilege drift and missing grants.
 for (const [signature, key, value] of [
@@ -83,10 +83,10 @@ try {
   const beforeCalls = snapshot();
   const calls = [
     ["create_calendar_item", `${literal},null,'ACL','general','timed',current_date+30,null,'08:00','10:00',1,null,'{}'`],
-    ["update_calendar_item_one_off_timed", `${literal},'ACL','general',current_date+30,'08:00','10:00',1,null,'{}'`],
+    ["update_calendar_item_one_off_timed", `${literal},'ACL','general',current_date+30,'08:00','10:00',1,null,'{}',clock_timestamp()`],
     ["archive_calendar_item", literal],
     ["create_task_preset", `${literal},'ACL',null,'general',1,true,'[]','blue'`],
-    ["update_task_preset_color", `${literal},'blue'`],
+    ["update_task_preset_color", `${literal},'blue',clock_timestamp()`],
     ["archive_task_preset", literal],
     ["create_calendar_assignment", `${literal},${literal},null`],
     ["cancel_calendar_assignment", literal],

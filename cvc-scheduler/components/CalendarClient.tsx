@@ -3425,6 +3425,7 @@ function InspectorContent({
         {canEditSelectedItem && !item.meal ? (
           <form action={updateAction} className="order-3 mt-4 border-t border-[var(--pl-border)] pt-4">
             <input name="calendarItemId" type="hidden" value={item.id} />
+            <input name="expectedUpdatedAt" type="hidden" value={item.updatedAt ?? ""} />
             <input name="redirectView" type="hidden" value={currentView} />
             <input name="redirectDate" type="hidden" value={currentDate} />
             <input name="redirectItem" type="hidden" value={item.id} />
@@ -3774,6 +3775,10 @@ function CalendarNotice({ notice }: { notice?: string }) {
     updated: {
       title: "Calendar item updated",
       message: "The edited item was saved and will remain after reload.",
+    },
+    conflict: {
+      title: "Review the latest item",
+      message: "This item changed while you were editing it. Review the latest version.",
     },
     assigned: {
       title: "Volunteer assigned",

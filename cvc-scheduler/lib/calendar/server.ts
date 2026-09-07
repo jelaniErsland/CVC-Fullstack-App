@@ -18,6 +18,19 @@ import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 
 export type CalendarItemMutationResult = Readonly<{ calendarItemId: string }>;
 
+export class CalendarItemEditConflictError extends Error {
+  constructor() {
+    super("This item changed while you were editing it. Review the latest version.");
+    this.name = "CalendarItemEditConflictError";
+  }
+}
+
+function isCalendarItemEditConflict(error: unknown) {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "40001" &&
+    "details" in error && error.details === "calendar_item_edit_conflict";
+}
+
 const calendarItemColumns = [
   "id",
   "workspace_id",
@@ -126,8 +139,10 @@ export async function updateCalendarOneOffTimedItemWithClient(
       p_needed_count: item.neededCount,
       p_schedule_notes: item.notes ?? null,
       p_custom_values: item.customValues,
+      p_expected_updated_at: item.expectedUpdatedAt,
     } as PublicRpcArgs<"update_calendar_item_one_off_timed">,
   );
+  if (isCalendarItemEditConflict(error)) throw new CalendarItemEditConflictError();
   if (error || typeof data !== "string") {
     throw new Error("Calendar item could not be updated.", { cause: error });
   }
@@ -157,8 +172,10 @@ export async function updateCalendarPresetTimedItemWithClient(
       p_needed_count: item.neededCount,
       p_schedule_notes: item.notes ?? null,
       p_custom_values: item.customValues,
+      p_expected_updated_at: item.expectedUpdatedAt,
     } as PublicRpcArgs<"update_calendar_item_preset_timed">,
   );
+  if (isCalendarItemEditConflict(error)) throw new CalendarItemEditConflictError();
   if (error || typeof data !== "string") {
     throw new Error("Calendar item could not be updated.", { cause: error });
   }
@@ -283,6 +300,7 @@ export function calendarOneOffTimedUpdateInputFromFormData(
 ): UpdateCalendarOneOffTimedItemInput {
   return validateUpdateCalendarOneOffTimedItemInput({
     calendarItemId: textFromFormData(formData, "calendarItemId"),
+    expectedUpdatedAt: textFromFormData(formData, "expectedUpdatedAt"),
     source: {
       title: textFromFormData(formData, "title"),
       taskType: taskTypeFromFormData(formData),
@@ -304,6 +322,7 @@ export function calendarPresetTimedUpdateInputFromFormData(
 ): UpdateCalendarPresetTimedItemInput {
   return validateUpdateCalendarPresetTimedItemInput({
     calendarItemId: textFromFormData(formData, "calendarItemId"),
+    expectedUpdatedAt: textFromFormData(formData, "expectedUpdatedAt"),
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),

@@ -216,6 +216,7 @@ function createFakeSupabaseClient({ errorTable } = {}) {
         publication_state: "published",
         created_by_project_contact_id: actorContactId,
         published_at: "2031-02-01T12:00:00.000Z",
+        updated_at: "2031-02-01T12:00:00.000Z",
         filledCount: 999,
         assignedVolunteerIds: ["should-not-project"],
       },
@@ -237,6 +238,7 @@ function createFakeSupabaseClient({ errorTable } = {}) {
         publication_state: "draft",
         created_by_project_contact_id: actorContactId,
         published_at: null,
+        updated_at: "2031-02-01T12:00:00.000Z",
       },
       {
         id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
@@ -256,6 +258,7 @@ function createFakeSupabaseClient({ errorTable } = {}) {
         publication_state: "published",
         created_by_project_contact_id: actorContactId,
         published_at: "2031-02-01T12:00:00.000Z",
+        updated_at: "2031-02-01T12:00:00.000Z",
       },
     ],
     task_presets: [

@@ -61,23 +61,24 @@ try {
   for (const [id, name] of [[ids.volunteer, 'James Sample'], [ids.secondVolunteer, 'Daniel Sample']]) sql('insert into public.volunteer_profiles(id,workspace_id,profile_source,lifecycle,readiness_status,full_name,email,availability_snapshot,skills_help_snapshot,profile_notes,manual_created_at,manual_created_by_project_contact_id) values (' + literal(id) + ',' + literal(workspace) + ",'manual','active','ready'," + literal(name) + ",'private-contact@example.invalid','{}','{}','PRIVATE_PROFILE_NOTE',now()," + literal(ids.owner) + ');');
   await rpc(owner.client, 'set_current_project_day_expected_on_site', { p_project_date: '2026-10-06', p_expected_on_site_count: 321 });
   const history = sql('select row_to_json(d) from public.project_days d where workspace_id=' + literal(workspace));
-  const mealArgs = { p_workspace_id: workspace, p_calendar_item_id: null, p_meal_kind: 'breakfast', p_date: '2026-10-06', p_start_time: '07:00', p_end_time: '08:00', p_provider: 'Bozeman West congregation', p_contact: 'Meal coordinator · 555-0100', p_menu: 'Eggs, oatmeal and fruit', p_total: 60, p_notes: 'Serve in the fellowship area.' };
+  const mealArgs = { p_workspace_id: workspace, p_calendar_item_id: null, p_meal_kind: 'breakfast', p_date: '2026-10-06', p_start_time: '07:00', p_end_time: '08:00', p_provider: 'Bozeman West congregation', p_contact: 'Meal coordinator · 555-0100', p_menu: 'Eggs, oatmeal and fruit', p_total: 60, p_notes: 'Serve in the fellowship area.', p_expected_updated_at: null };
+  const mealVersion = id => sql('select updated_at::text from public.calendar_items where id=' + literal(id));
   const breakfast = await rpc(owner.client, 'save_calendar_meal', mealArgs);
   const lunch = await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_meal_kind: 'lunch', p_start_time: null, p_end_time: null, p_provider: 'Livingston congregation', p_menu: 'Sandwiches, salad and fruit', p_total: 85 });
   assert.equal(sql('select preset.system_key from public.calendar_items item join public.task_presets preset on preset.id=item.task_preset_id where item.id=' + literal(breakfast)), 'breakfast');
   assert.equal(sql('select preset.system_key from public.calendar_items item join public.task_presets preset on preset.id=item.task_preset_id where item.id=' + literal(lunch)), 'lunch');
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(breakfast)), '60');
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(lunch)), '85');
-  for (const client of [viewer.client, other.client, anon]) await rpc(client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 999 }, true);
+  for (const client of [viewer.client, other.client, anon]) await rpc(client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 999, p_expected_updated_at: mealVersion(breakfast) }, true);
   for (const changes of [{ p_total: -1 }, { p_meal_kind: 'dinner' }, { p_end_time: null }, { p_start_time: '09:00' }, { p_provider: 'x'.repeat(301) }]) await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, ...changes }, true);
   const breakfastCountBeforeFailure = sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-06' and lifecycle='active'");
   await rpc(owner.client, 'save_calendar_meal', mealArgs, true); // unique day/kind
   assert.equal(sql("select count(*) from public.calendar_items where workspace_id=" + literal(workspace) + " and meal_kind='breakfast' and start_date='2026-10-06' and lifecycle='active'"), breakfastCountBeforeFailure, 'Failed meal save rolls back without leaving a row');
-  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 0 });
+  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: 0, p_expected_updated_at: mealVersion(breakfast) });
   assert.equal(sql('select meal_total from public.calendar_items where id=' + literal(breakfast)), '0');
-  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: null });
+  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_total: null, p_expected_updated_at: mealVersion(breakfast) });
   assert.equal(sql('select meal_total is null from public.calendar_items where id=' + literal(breakfast)), 't');
-  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast });
+  await rpc(owner.client, 'save_calendar_meal', { ...mealArgs, p_calendar_item_id: breakfast, p_expected_updated_at: mealVersion(breakfast) });
   const breakfastPreset = sql("select id from public.task_presets where workspace_id=" + literal(workspace) + " and system_key='breakfast'");
   const ordinaryPreset = sql("select id from public.task_presets where workspace_id=" + literal(workspace) + " and name='Site preparation'");
   const repeatBase = {

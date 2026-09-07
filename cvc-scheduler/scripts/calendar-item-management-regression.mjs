@@ -252,8 +252,9 @@ async function updateCalendarOneOffTimedItemWithClient(client, input) {
     p_needed_count: item.neededCount,
     p_schedule_notes: item.notes ?? null,
     p_custom_values: item.customValues,
+    p_expected_updated_at: item.expectedUpdatedAt,
   });
-  if (error || typeof data !== "string") throw new Error("Calendar item update failed.");
+  if (error || typeof data !== "string") throw new Error(`Calendar item update failed for ${item.source.title} on ${item.schedule.date} (${error?.code ?? "invalid_result"}: ${error?.message ?? "missing result"}).`);
   return { calendarItemId: data };
 }
 
@@ -278,13 +279,14 @@ async function verifyCalendarManagement(containerName, users) {
 
   let rows = queryJson(
     containerName,
-    `select id, workspace_id, title_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id
+    `select id, workspace_id, title_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id, updated_at
      from public.calendar_items where id = ${sqlUuid(created.calendarItemId)}`,
   );
   assert.equal(rows.length, 1, "Created Calendar item row was not persisted.");
   assert.equal(rows[0].workspace_id, fixture.workspaceId);
   assert.equal(rows[0].needed_count, 0);
   assert.equal(rows[0].follow_up_project_contact_id, fixture.contacts.full);
+  let expectedUpdatedAt = rows[0].updated_at;
 
   const readModel = await readCalendarReadModelWithClient({
     client: users.full.client,
@@ -301,6 +303,7 @@ async function verifyCalendarManagement(containerName, users) {
 
   await updateCalendarOneOffTimedItemWithClient(users.full.client, {
     calendarItemId: created.calendarItemId,
+    expectedUpdatedAt,
     source: { title: "QA 12.16 Edited Scheduled Item", taskType: "security" },
     schedule: { kind: "timed", date: "2026-08-13", startTime: "11:00", endTime: "12:15" },
     neededCount: 2,
@@ -310,7 +313,7 @@ async function verifyCalendarManagement(containerName, users) {
 
   rows = queryJson(
     containerName,
-    `select title_snapshot, task_type_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id, publication_state
+    `select title_snapshot, task_type_snapshot, start_date, start_time::text, end_time::text, needed_count, schedule_notes, follow_up_project_contact_id, publication_state, updated_at
      from public.calendar_items where id = ${sqlUuid(created.calendarItemId)}`,
   );
   assert.equal(rows[0].title_snapshot, "QA 12.16 Edited Scheduled Item");
@@ -322,9 +325,11 @@ async function verifyCalendarManagement(containerName, users) {
   assert.equal(rows[0].schedule_notes, "Edited by the 12.16 local validation.");
   assert.equal(rows[0].follow_up_project_contact_id, fixture.contacts.full);
   assert.equal(rows[0].publication_state, "draft");
+  expectedUpdatedAt = rows[0].updated_at;
 
   await updateCalendarOneOffTimedItemWithClient(users.full.client, {
     calendarItemId: created.calendarItemId,
+    expectedUpdatedAt,
     source: { title: "QA 12.16 Edited Scheduled Item", taskType: "security" },
     schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
     neededCount: 0,
@@ -348,6 +353,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("malformed edit identifier", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: "not-a-uuid",
+      expectedUpdatedAt,
       source: { title: "Invalid identifier", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
       neededCount: 1,
@@ -358,6 +364,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("invalid edit date", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Invalid date", taskType: "general" },
       schedule: { kind: "timed", date: "not-a-date", startTime: "13:15", endTime: "14:45" },
       neededCount: 1,
@@ -368,6 +375,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("invalid edit time", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Invalid time", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15:00", endTime: "14:45:00" },
       neededCount: 1,
@@ -378,6 +386,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("invalid edit time ordering", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Invalid order", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "15:00", endTime: "14:45" },
       neededCount: 1,
@@ -388,6 +397,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("invalid edit needed count", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Invalid count", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
       neededCount: 100,
@@ -398,6 +408,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("wrong-workspace edit", () =>
     updateCalendarOneOffTimedItemWithClient(users.other.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Wrong workspace", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
       neededCount: 1,
@@ -425,6 +436,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("view-only edit", () =>
     updateCalendarOneOffTimedItemWithClient(users.viewOnly.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Should Not Edit", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-12", startTime: "09:00", endTime: "10:00" },
       neededCount: 1,
@@ -524,6 +536,7 @@ async function verifyCalendarManagement(containerName, users) {
   await expectFailure("archived item edit", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {
       calendarItemId: created.calendarItemId,
+      expectedUpdatedAt,
       source: { title: "Archived item cannot change", taskType: "general" },
       schedule: { kind: "timed", date: "2026-08-14", startTime: "13:15", endTime: "14:45" },
       neededCount: 1,

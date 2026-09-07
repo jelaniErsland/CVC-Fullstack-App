@@ -14,12 +14,13 @@ const inputClass = "mt-1 min-h-11 w-full min-w-0 rounded-lg border border-slate-
 
 export function MealForm({ date, view, item }: {
   date: string; view: string;
-  item?: { id: string; date: string; startTimeValue?: string; endTimeValue?: string; scheduleNotes?: string; meal?: CalendarMeal | null };
+  item?: { id: string; updatedAt?: string; date: string; startTimeValue?: string; endTimeValue?: string; scheduleNotes?: string; meal?: CalendarMeal | null };
 }) {
   const { saveMealAction, readOnly } = useCalendarOperations();
   if (readOnly || !saveMealAction) return null;
   return <form action={saveMealAction} className="space-y-3">
     <input type="hidden" name="calendarItemId" value={item?.id ?? ""} />
+    <input type="hidden" name="expectedUpdatedAt" value={item?.updatedAt ?? ""} />
     <input type="hidden" name="redirectView" value={view} />
     <input type="hidden" name="redirectDate" value={date} />
     <label className="block text-sm font-semibold">Meal<select className={inputClass} name="mealKind" defaultValue={item?.meal?.kind ?? "breakfast"}><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option></select></label>

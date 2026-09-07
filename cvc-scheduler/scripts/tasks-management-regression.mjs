@@ -352,10 +352,10 @@ async function verifyPersistedBoundary(containerName, users) {
   assert.equal(createdPreset.systemKey, null);
   assert.equal(createdPreset.colorKey, "cyan");
 
-  const recolored = await updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "violet" });
+  const recolored = await updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "violet", expectedUpdatedAt: createdPreset.updatedAt });
   assert.equal(recolored.presetId, created.presetId);
   assert.equal((await readTaskPresetsWithClient(users.editor.client, fixture.workspaceId)).find((preset) => preset.id === created.presetId)?.colorKey, "violet");
-  await expectFailure("invalid task color", () => updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "invalid" }));
+  await expectFailure("invalid task color", () => updateTaskPresetColorWithClient(users.editor.client, { presetId: created.presetId, colorKey: "invalid", expectedUpdatedAt: createdPreset.updatedAt }));
 
   await expectFailure("view-only create", () =>
     createTaskPresetWithClient(users.viewOnly.client, formInput),

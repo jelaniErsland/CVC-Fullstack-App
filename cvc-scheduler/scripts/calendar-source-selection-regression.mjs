@@ -263,8 +263,9 @@ async function createCalendarItemWithClient(client, input) {
   return { calendarItemId: data };
 }
 
-async function updateCalendarOneOffTimedItemWithClient(client, input) {
-  const item = validateUpdateCalendarOneOffTimedItemInput(input);
+async function updateCalendarOneOffTimedItemWithClient(containerName, client, input) {
+  const expectedUpdatedAt = queryJson(containerName, `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(input.calendarItemId)}`)[0]?.updated_at;
+  const item = validateUpdateCalendarOneOffTimedItemInput({ ...input, expectedUpdatedAt });
   const { data, error } = await client.rpc("update_calendar_item_one_off_timed", {
     p_calendar_item_id: item.calendarItemId,
     p_one_off_title: item.source.title,
@@ -275,13 +276,15 @@ async function updateCalendarOneOffTimedItemWithClient(client, input) {
     p_needed_count: item.neededCount,
     p_schedule_notes: item.notes ?? null,
     p_custom_values: item.customValues,
+    p_expected_updated_at: item.expectedUpdatedAt,
   });
   if (error || typeof data !== "string") throw new Error("Calendar one-off update failed.");
   return { calendarItemId: data };
 }
 
-async function updateCalendarPresetTimedItemWithClient(client, input) {
-  const item = validateUpdateCalendarPresetTimedItemInput(input);
+async function updateCalendarPresetTimedItemWithClient(containerName, client, input) {
+  const expectedUpdatedAt = queryJson(containerName, `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(input.calendarItemId)}`)[0]?.updated_at;
+  const item = validateUpdateCalendarPresetTimedItemInput({ ...input, expectedUpdatedAt });
   const { data, error } = await client.rpc("update_calendar_item_preset_timed", {
     p_calendar_item_id: item.calendarItemId,
     p_start_date: item.schedule.date,
@@ -290,6 +293,7 @@ async function updateCalendarPresetTimedItemWithClient(client, input) {
     p_needed_count: item.neededCount,
     p_schedule_notes: item.notes ?? null,
     p_custom_values: item.customValues,
+    p_expected_updated_at: item.expectedUpdatedAt,
   });
   if (error || typeof data !== "string") throw new Error("Calendar preset update failed.");
   return { calendarItemId: data };
@@ -360,7 +364,7 @@ async function verifySourceSelection(containerName, users) {
   assert.equal(readItem.taskSourceLabel, `${fixture.namespace} Setup Crew`);
   assert.equal(readItem.assignedFractionLabel, "0/3 assigned");
 
-  await updateCalendarPresetTimedItemWithClient(users.full.client, {
+  await updateCalendarPresetTimedItemWithClient(containerName, users.full.client, {
     calendarItemId: presetItemId,
     schedule: { kind: "timed", date: "2026-08-12", startTime: "13:00", endTime: "15:00" },
     neededCount: 0,
@@ -378,7 +382,7 @@ async function verifySourceSelection(containerName, users) {
   assert.equal(row.follow_up_project_contact_id, fixture.contacts.full);
 
   await expectFailure("preset item one-off edit", () =>
-    updateCalendarOneOffTimedItemWithClient(users.full.client, {
+    updateCalendarOneOffTimedItemWithClient(containerName, users.full.client, {
       calendarItemId: presetItemId,
       source: { title: "Forged One-Off", taskType: "custom" },
       schedule: { kind: "timed", date: "2026-08-12", startTime: "13:00", endTime: "15:00" },
@@ -442,7 +446,7 @@ async function verifySourceSelection(containerName, users) {
     }),
   );
   await expectFailure("view-only preset edit", () =>
-    updateCalendarPresetTimedItemWithClient(users.viewOnly.client, {
+    updateCalendarPresetTimedItemWithClient(containerName, users.viewOnly.client, {
       calendarItemId: presetItemId,
       schedule: { kind: "timed", date: "2026-08-12", startTime: "09:00", endTime: "10:00" },
       neededCount: 1,
@@ -461,7 +465,7 @@ async function verifySourceSelection(containerName, users) {
     }),
   );
   await expectFailure("wrong workspace edit", () =>
-    updateCalendarPresetTimedItemWithClient(users.other.client, {
+    updateCalendarPresetTimedItemWithClient(containerName, users.other.client, {
       calendarItemId: presetItemId,
       schedule: { kind: "timed", date: "2026-08-12", startTime: "09:00", endTime: "10:00" },
       neededCount: 1,

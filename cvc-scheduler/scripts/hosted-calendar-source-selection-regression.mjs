@@ -468,6 +468,10 @@ function presetUpdateArgs(calendarItemId, overrides = {}) {
     p_needed_count: 2,
     p_schedule_notes: "Hosted preset-backed edit persisted.",
     p_custom_values: {},
+    p_expected_updated_at: runHostedSql(
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)};`,
+      "Hosted preset Calendar item version check",
+    )[0]?.updated_at,
     ...overrides,
   };
 }
@@ -483,6 +487,10 @@ function oneOffUpdateArgs(calendarItemId, overrides = {}) {
     p_needed_count: 2,
     p_schedule_notes: "Hosted one-off continuity edit.",
     p_custom_values: {},
+    p_expected_updated_at: runHostedSql(
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)};`,
+      "Hosted one-off Calendar item version check",
+    )[0]?.updated_at,
     ...overrides,
   };
 }

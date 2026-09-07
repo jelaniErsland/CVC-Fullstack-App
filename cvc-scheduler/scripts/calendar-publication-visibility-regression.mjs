@@ -286,6 +286,7 @@ async function createTimedItem(client, title) {
 }
 
 async function updateTimedItem(
+  containerName,
   client,
   calendarItemId,
   title = `${fixture.namespace} Edited`,
@@ -301,6 +302,10 @@ async function updateTimedItem(
     p_needed_count: neededCount,
     p_schedule_notes: "edited note",
     p_custom_values: {},
+    p_expected_updated_at: queryJson(
+      containerName,
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)}`,
+    )[0]?.updated_at,
   });
   assert(!error && data === calendarItemId, "Authorized Calendar edit must succeed.");
 }
@@ -376,12 +381,12 @@ where id = ${sqlUuid(calendarItemId)}`,
   await assertReadModelOmits(users.editor.client, fixture.contacts.editor, calendarItemId);
   await assertReadModelOmits(users.readOnly.client, fixture.contacts.readOnly, calendarItemId);
 
-  await updateTimedItem(users.owner.client, calendarItemId);
+  await updateTimedItem(containerName, users.owner.client, calendarItemId);
   await expectFailure("same-workspace non-owner draft edit", () =>
-    updateTimedItem(users.editor.client, calendarItemId, `${fixture.namespace} Leaked Edit`),
+    updateTimedItem(containerName, users.editor.client, calendarItemId, `${fixture.namespace} Leaked Edit`),
   );
   await expectFailure("view-only draft edit", () =>
-    updateTimedItem(users.readOnly.client, calendarItemId, `${fixture.namespace} View Edit`),
+    updateTimedItem(containerName, users.readOnly.client, calendarItemId, `${fixture.namespace} View Edit`),
   );
 
   const assignmentId = await createAssignment(users.owner.client, calendarItemId);
@@ -460,7 +465,7 @@ where id = ${sqlUuid(calendarItemId)}`,
   const editorItem = await assertReadModelContains(users.editor.client, fixture.contacts.editor, calendarItemId, "published");
   assert.equal(editorItem.assignedFractionLabel, "1/1 assigned");
 
-  await updateTimedItem(users.editor.client, calendarItemId, `${fixture.namespace} Published Edit`);
+  await updateTimedItem(containerName, users.editor.client, calendarItemId, `${fixture.namespace} Published Edit`);
   const token = await users.editor.client.rpc("issue_assignment_response_token", {
     p_assignment_id: assignmentId,
     p_ttl_hours: 1,

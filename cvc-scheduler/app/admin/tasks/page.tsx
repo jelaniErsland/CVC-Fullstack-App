@@ -15,6 +15,7 @@ import {
   readTaskPresetsWithClient,
   taskPresetCreateInputFromFormData,
   taskPresetColorUpdateInputFromFormData,
+  TaskPresetEditConflictError,
   updateTaskPresetColorWithClient,
 } from "@/lib/tasks/server";
 import { TaskPresetValidationError } from "@/lib/tasks/preset";
@@ -106,7 +107,7 @@ async function archiveTaskPresetAction(formData: FormData) {
 
 async function updateTaskPresetColorAction(formData: FormData) {
   "use server";
-  let notice: "color_updated" | "validation" | "unavailable" | "error" = "error";
+  let notice: "color_updated" | "conflict" | "validation" | "unavailable" | "error" = "error";
   let selectedPresetId: string | undefined;
   try {
     const context = await readTaskManagementRouteContext();
@@ -121,7 +122,7 @@ async function updateTaskPresetColorAction(formData: FormData) {
         notice = "color_updated";
       }
     }
-  } catch (error) { notice = error instanceof TaskPresetValidationError ? "validation" : "error"; }
+  } catch (error) { notice = error instanceof TaskPresetEditConflictError ? "conflict" : error instanceof TaskPresetValidationError ? "validation" : "error"; }
   revalidatePath("/admin/tasks");
   revalidatePath("/admin/calendar");
   revalidatePath("/admin/quick-view");

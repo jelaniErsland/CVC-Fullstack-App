@@ -505,6 +505,10 @@ async function updateOneOffItem(client, calendarItemId, overrides = {}) {
     p_needed_count: 1,
     p_schedule_notes: "Hosted publication edited.",
     p_custom_values: {},
+    p_expected_updated_at: runHostedSql(
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)};`,
+      "Hosted Calendar one-off version check",
+    )[0]?.updated_at,
     ...overrides,
   });
   if (error || data !== calendarItemId) throw new Error("Hosted one-off item update failed.");
@@ -520,6 +524,10 @@ async function updatePresetItem(client, calendarItemId, overrides = {}) {
     p_needed_count: 1,
     p_schedule_notes: "Hosted preset publication edited.",
     p_custom_values: {},
+    p_expected_updated_at: runHostedSql(
+      `select updated_at::text as updated_at from public.calendar_items where id = ${sqlUuid(calendarItemId)};`,
+      "Hosted Calendar preset version check",
+    )[0]?.updated_at,
     ...overrides,
   });
   if (error || data !== calendarItemId) throw new Error("Hosted preset item update failed.");
