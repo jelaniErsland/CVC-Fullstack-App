@@ -13,8 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://projectlocal.app"),
   title: "Project Local",
   description: "Simple, secure volunteer scheduling for local projects.",
+  openGraph: {
+    title: "Project Local",
+    description: "Simple, secure volunteer scheduling for local projects.",
+    url: "https://projectlocal.app",
+    siteName: "Project Local",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Project Local",
+    description: "Simple, secure volunteer scheduling for local projects.",
+  },
 };
 
 export default function RootLayout({
