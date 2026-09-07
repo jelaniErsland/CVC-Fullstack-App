@@ -1,6 +1,6 @@
-# Project Local function EXECUTE policy — local 12.45
+# Project Local function EXECUTE policy — 12.45
 
-Status: the September 5 migrations are deployed according to the approved production record. The 12.45 migration 20260906120000 is local and UNAPPLIED to production. No production access occurs in this review.
+Status: migrations `20260906120000` and `20260906130000` are live. The meal-system-preset correction restates the existing meal RPC and extends the authenticated repeat RPC with nullable meal metadata arguments. Live catalog verification matches the exact reviewed 57-function policy.
 
 ## Evidence and severity
 
@@ -15,11 +15,11 @@ Token issuance, notification claims (which return contact details), audited resp
 - save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text) requires Auth, an active project/contact/live grant and workspace.read + calendar.edit. It creates or updates only one scoped active meal, validates fields, and uses the existing creation/publication commands atomically.
 - duplicate_calendar_item(uuid,date,time without time zone,time without time zone) requires the same live identity with workspace.read, calendar.view, and calendar.edit; private sources additionally require creator ownership. It locks the source and inserts one independent definition, never assignment/response/delivery rows.
 - Both new RPCs are owned by postgres, SECURITY DEFINER with empty search_path, with PUBLIC/anon denied and exact authenticated/service_role grants. No new anonymous RPC or internal helper is introduced. The existing volunteer schedule signature adds only explicit safe meal fields to its result; its credential/response checks remain unchanged.
-- Exact local inventory: 8 anonymous, 36 authenticated-only, 12 internal; 44 SECURITY DEFINER functions. Production inventory remains the prior 54 until rollout.
+- Exact live inventory: 8 anonymous, 37 authenticated-only, 12 internal; 45 SECURITY DEFINER functions.
 
 ## Current policy
 
-Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 56 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on the existing application RPCs is retained; internal helpers lose service_role as well as anon/authenticated. There is no service-role-only product RPC in the reviewed inventory, and the application introduces no service-role secret.
+Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 57 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on the existing application RPCs is retained; internal helpers lose service_role as well as anon/authenticated. There is no service-role-only product RPC in the reviewed inventory, and the application introduces no service-role secret.
 
 ### A — intentional anonymous RPCs (8)
 
@@ -42,7 +42,7 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 
 | Exact signature | Capability predicates | Definition / application caller |
 | --- | --- | --- |
-| `save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text)` | 'workspace.read', 'calendar.edit' | [20260906120000_on_site_food_calendar_operations.sql](../supabase/migrations/20260906120000_on_site_food_calendar_operations.sql); [lib/calendar/operations.actions.ts](../lib/calendar/operations.actions.ts) |
+| `save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text)` | 'workspace.read', 'calendar.edit' | [20260906120000_on_site_food_calendar_operations.sql](../supabase/migrations/20260906120000_on_site_food_calendar_operations.sql); [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/calendar/operations.actions.ts](../lib/calendar/operations.actions.ts) |
 | `duplicate_calendar_item(uuid,date,time without time zone,time without time zone)` | 'workspace.read', 'calendar.view', 'calendar.edit'; own draft or published source | [20260906120000_on_site_food_calendar_operations.sql](../supabase/migrations/20260906120000_on_site_food_calendar_operations.sql); [lib/calendar/operations.actions.ts](../lib/calendar/operations.actions.ts) |
 | `archive_calendar_item(uuid)` | 'calendar.edit' | [20260714121900_calendar_publication_visibility.sql:521](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/calendar/server.ts](../lib/calendar/server.ts) |
 | `archive_task_preset(uuid)` | 'tasks.edit' | [20260701040000_task_presets.sql:266](../supabase/migrations/20260701040000_task_presets.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
@@ -52,9 +52,10 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `create_calendar_assignment(uuid,uuid,text)` | 'assignments.edit' | [20260714121900_calendar_publication_visibility.sql:569](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/assignments/server.ts](../lib/assignments/server.ts) |
 | `create_calendar_assignments_batch(uuid,uuid[],text)` | 'assignments.edit' | [20260714121900_calendar_publication_visibility.sql:673](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/assignments/server.ts](../lib/assignments/server.ts) |
 | `create_calendar_item(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)` | 'calendar.edit' | [20260714121900_calendar_publication_visibility.sql:139](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/calendar/server.ts](../lib/calendar/server.ts) |
-| `create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb)` | 'workspace.read', 'calendar.edit' | [20260904120000_operational_usability.sql:160](../supabase/migrations/20260904120000_operational_usability.sql); [lib/calendar/repeat.server.ts](../lib/calendar/repeat.server.ts) |
+| `create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)` | 'workspace.read', 'calendar.edit' | [20260904120000_operational_usability.sql:160](../supabase/migrations/20260904120000_operational_usability.sql); [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/calendar/repeat.server.ts](../lib/calendar/repeat.server.ts) |
 | `create_manual_volunteer_profile(uuid,text,text,text,text,text,text,text)` | 'volunteers.edit' | [20260714121500_manual_volunteer_profiles.sql:55](../supabase/migrations/20260714121500_manual_volunteer_profiles.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
-| `create_task_preset(uuid,text,text,text,integer,boolean,jsonb)` | 'tasks.edit' | [20260701040000_task_presets.sql:185](../supabase/migrations/20260701040000_task_presets.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
+| `create_task_preset(uuid,text,text,text,integer,boolean,jsonb,text)` | 'tasks.edit' | [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
+| `update_task_preset_color(uuid,text)` | 'tasks.edit' | [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
 | `delete_history_free_volunteer_profile(uuid)` | 'volunteers.edit' | [20260904120000_operational_usability.sql:85](../supabase/migrations/20260904120000_operational_usability.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
 | `finalize_initial_assignment_notification_delivery(uuid,text,text,text)` | 'assignments.edit' | [20260714122200_initial_assignment_notifications.sql:709](../supabase/migrations/20260714122200_initial_assignment_notifications.sql); [lib/calendar/assignmentNotifications.server.ts](../lib/calendar/assignmentNotifications.server.ts) |
 | `issue_assignment_response_token(uuid,integer,text)` | 'assignments.edit' | [20260714121900_calendar_publication_visibility.sql:975](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/responseTokens/server.ts](../lib/responseTokens/server.ts) |

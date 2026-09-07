@@ -4,31 +4,34 @@ This is the authoritative present-state context for Project Local. Historical im
 
 ## Production snapshot
 
-- Production Supabase terminal: `20260906120000`.
-- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260906120000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
-- Recovery validation is GREEN. The 12.45 rollout created one fresh controlled encrypted checkpoint at terminal `20260905130000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; this does not claim a new autonomous backup.
+- Production Supabase terminal: `20260906130000`.
+- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260906130000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
+- Recovery validation is GREEN. The correction rollout created one fresh controlled encrypted checkpoint at terminal `20260906120000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; the permanent task did not run during the rollout.
 - Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-09-29` through `2026-12-04`.
 - Application email transport is DISABLED. This rollout sent no email.
 
 ## Security invariants
 
-The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, and on-site Food migration `20260906120000_on_site_food_calendar_operations.sql` are live.
+The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, on-site Food migration `20260906120000_on_site_food_calendar_operations.sql`, and meal-system-preset correction `20260906130000_breakfast_lunch_system_presets.sql` are live.
 
 - Function EXECUTE is deny-by-default for Project Local functions created by `postgres`. `PUBLIC` has no application-function EXECUTE, and the `postgres` global and `public` default ACL contexts deny implicit PUBLIC, `anon`, and `authenticated` function execution.
 - Exactly eight reviewed anonymous RPCs are executable: the explicit list and caller evidence are maintained in [FUNCTION_PRIVILEGE_POLICY.md](./FUNCTION_PRIVILEGE_POLICY.md). Unexpected anonymous EXECUTE is `0`; unexpected PUBLIC EXECUTE is `0`; PostgreSQL default EXECUTE grants remain `0`.
+- The exact live inventory is 57 Project Local public functions: eight anonymous, 37 authenticated, and 12 internal. Unexpected anonymous and PUBLIC EXECUTE are zero, and reviewed default EXECUTE grants are zero.
 - Authenticated application RPCs retain their explicit grants. Internal trigger and validation helpers have no direct application-role grant.
-- All 44 reviewed SECURITY DEFINER functions retain the `postgres` owner and pinned empty `search_path`. The privilege review found no demonstrated authorization bypass or breach.
+- All 45 reviewed SECURITY DEFINER functions retain the `postgres` owner and pinned empty `search_path`. The privilege review found no demonstrated authorization bypass or breach.
 - Direct anonymous reads of volunteer-directory, lookup-rate-limit, and schedule-credential tables are denied. Lookup returns generic failures for invalid input, uses opaque project-choice handles, keeps schedule credentials hash-only server-side, and sets the browser credential only as an HttpOnly session cookie.
 
 ## 12.45 on-site Food operations (LIVE)
 
-The approved 12.45 on-site/Food slice is live at production migration `20260906120000`. See [12.45 implementation and review](./ON_SITE_FOOD_OPERATIONS_12_45.md) for the reviewed architecture and verification evidence.
+The approved 12.45 on-site/Food slice and its meal-system-preset correction are live through production migration `20260906130000`. See [12.45 implementation and review](./ON_SITE_FOOD_OPERATIONS_12_45.md) for the reviewed architecture and verification evidence.
+
+Breakfast and Lunch are persistent system task presets in the ordinary `Task preset / Custom` Calendar creation workflow. They retain the shared `One date | Repeat` independent-item scheduling semantics, existing meal occurrences are associated with their presets without changing meal data, and successful persistence is reported independently from post-save cache invalidation.
 
 - Breakfast and Lunch are ordinary Food Calendar occurrences with independent nullable totals, provider/group, contact and menu fields. Meal detail lives in the shared Calendar inspector; Quick View has no separate meal dashboard/cards.
 - Historical project_days.expected_on_site_count values remain intact in schema/data. 12.45 retires their editing/display surfaces from active operations. They are never migrated into either meal total. There is no combined operational total or old Quick View Planned staffing summary.
 - Both authenticated and bearer Quick View entry points reuse the same read-only Calendar and published operational content model, including assigned names. Bearer expiry/revocation/project scope remain enforced. The migration revoked all pre-12.45 Quick View links because their original audience projection was narrower; trusted links now require explicit reissuance.
 - Duplicate creates an independent saved definition with zero assignments, responses or deliveries. Ordinary work starts as a private draft; meal copies follow immediate-visible meal creation semantics. No series is created.
-- Project navigation derives only from persisted workspace start dates; unavailable starts disable Project navigation. General uses cyan, Food amber/yellow, Security lavender and Custom neutral slate, with text labels and focus states.
+- Project navigation derives only from persisted workspace start dates; unavailable starts disable Project navigation. Reusable Task presets own one validated curated color key, which is shared by Calendar and trusted Quick View; custom one-offs use neutral slate, with text labels and focus states.
 - Volunteer meal data is projected only for that volunteer's assignment dates: kind, provider, menu and time. Trusted meal contacts and operational notes are excluded from this meal projection.
 
 ## Current product architecture
@@ -82,7 +85,7 @@ Breakfast and Lunch are distinct operational totals. The historical general Proj
 
 ## Next step
 
-Operate 12.45 at the matching production database and backup-task lock `20260906120000`. Replacement trusted Quick View links still need deliberate issuance when requested; do not restore or reuse credentials revoked by the migration. Application email remains disabled.
+Production and the backup-task lock are aligned at `20260906130000` with recovery GREEN. The approved correction source is ready for its normal production deployment. Replacement trusted Quick View links need deliberate issuance when requested; do not restore or reuse credentials revoked by the earlier 12.45 migration. Application email remains disabled.
 
 ## Canonical references
 

@@ -1,6 +1,6 @@
-# 12.45 — Local on-site / Food operations review
+# 12.45 — On-site / Food operations review
 
-This is uncommitted, undeployed source. Production remains at `20260905130000`. Migration `20260906120000` is UNAPPLIED to production. The product-owner corrections remove dedicated Quick View meal cards and require persisted Project navigation.
+The approved 12.45 migrations `20260906120000` and `20260906130000` are live. Production and the permanent backup-task lock are aligned at `20260906130000` with recovery GREEN. The correction source is approved for normal production deployment.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ Previously issued links were described as a narrower schedule view. The migratio
 
 ## Food and duplication
 
-Typed nullable columns on `calendar_items` own meal kind, provider, contact, menu and total. Breakfast and Lunch remain `food` items with normal Calendar placement. A partial unique index allows one active occurrence of each meal per workspace/date; archived occurrences remain in history. Meal saves are atomic and immediately published, following the approved Calendar-owned meal creation rule. Totals are independent: zero is explicit, null is unset, and no combined total exists. Historical Project Day rows are unchanged and their old operational UI/action is removed.
+Typed nullable columns on `calendar_items` own meal kind, provider, contact, menu and total. Breakfast and Lunch remain `food` items with normal Calendar placement. The pending correction makes them persisted system task presets in the ordinary `Task preset / Custom` workflow and removes the separate creation mode. They retain the ordinary `One date | Repeat` choice: Repeat uses the existing transactional range-and-weekday command, copies meal metadata into independent immediately published items, and creates no recurring series, assignments, responses or deliveries. A partial unique index allows one active occurrence of each meal per workspace/date and makes a conflicting repeat request fail atomically; archived occurrences remain in history. Totals are independent: zero is explicit, null is unset, and no combined total exists. Historical Project Day rows are unchanged and their old operational UI/action is removed.
 
 Duplication locks a visible, active source in the authorized workspace and copies its saved title/type/preset reference, schedule definition, duration for ranges, needed count, notes, validated custom values and meal metadata. Times can be adjusted for timed sources. The duplicate is independent: no assignments, response rows, credentials, notification/delivery rows, repeat request or series relationship is created. Ordinary work duplicates start as private drafts. Meal copies use the same immediately published rule as meal creation. Source/assignment/response history is untouched.
 
@@ -30,13 +30,13 @@ The migration is large because PostgreSQL function bodies must be restated: the 
 6. Existing bearer reader retains identity/expiry/project/date gates and supplies bounded, explicit trusted Calendar rows.
 7. Existing volunteer reader adds safe meal JSON for assignment dates, with its original anonymous/authenticated/service_role grants restored exactly.
 
-No unrelated schema, role, table privilege, response, lookup, migration-history or recovery behavior change is included. Exact function inventory is 56: eight reviewed anonymous, 36 authenticated-only and 12 internal. New anonymous functions: zero.
+No unrelated schema, role, table privilege, response, lookup, migration-history or recovery behavior change is included. Exact local correction inventory is 57: eight reviewed anonymous, 37 authenticated-only and 12 internal. New anonymous functions: zero.
 
-The adjacent recovery contract adds only `20260905130000 -> 20260906120000` and retains prior transitions. Invalid source/target, downgrade, arbitrary future, malformed and skipped transitions remain denied. Source/fixture changes do not alter the live backup task.
+The adjacent recovery contract adds `20260905130000 -> 20260906120000` and `20260906120000 -> 20260906130000` while retaining prior transitions. Invalid source/target, downgrade, arbitrary future, malformed and skipped transitions remain denied. The live backup task transitioned only to the exact new terminal after the migration succeeded.
 
 ## Visual behavior
 
-Quick View starts with its normal heading and the full Calendar. Breakfast/Lunch are ordinary events with separate totals and labels; detail is in the shared inspector. General uses cyan, Food amber/yellow, Security lavender and Custom neutral slate. Breakfast/Lunch names distinguish them without color. Selection and keyboard focus remain visible.
+Quick View starts with its normal heading and the full Calendar. Breakfast/Lunch are ordinary events with separate totals and labels; detail is in the shared inspector. Each reusable Task owns one validated curated palette key, shared by Calendar and Quick View. Custom one-offs use neutral slate. Breakfast/Lunch names distinguish them without color. Selection and keyboard focus remain visible.
 
 Project navigation uses the persisted workspace start date in the active view’s existing range semantics. Missing starts disable the control; no mock January or hard-coded Bozeman date is used. The browser regression tests two distinct persisted start dates in admin and authenticated Quick View, and bearer navigation in all four views.
 
@@ -50,12 +50,12 @@ Passing results from this review:
 - On-site Food database/browser regression: independent totals, zero/unset, metadata, duplicate isolation, capability/cross-project denial, trusted and volunteer projections (including a volunteer directly assigned to a meal), all four shared Calendar views, Project navigation from different persisted starts, focus restoration, desktop/390px overflow, and zero console/hydration errors.
 - Full admin Calendar browser regression: views/navigation/filters, keyboard interactions, inspector/create/edit, assignment create/cancel and selection preservation, mobile save/assign/publish, overlay exclusivity and focus restoration.
 - Quick View share access and privilege regressions; volunteer schedule access regression.
-- Final isolated function privilege regression passed with 56 exact functions, zero PUBLIC execution, exact eight anonymous functions, denied defaults/future grants, 13 direct anonymous mutations denied, zero target-row changes, preserved triggers and zero residue.
+- Final isolated function privilege regression passed with 57 exact functions, zero PUBLIC execution, exact eight anonymous functions, denied defaults/future grants, 13 direct anonymous mutations denied, zero target-row changes, preserved triggers and zero residue.
 - Production independent backup and recovery readiness fixture/source regressions; exact adjacent transition and invalid-transition denials. No live backup/task execution.
 - Calendar read-model contract/helper/query-helper, route cutover and edit-validation regressions. Historical documentation assertions now point to PROJECT_HISTORY after the approved CURRENT_STATE reconciliation; obsolete UI copy and Project mock-date assertions were updated without weakening authorization checks.
 - Latest source: TypeScript, project-source ESLint and production build passed. Git diff --check passed.
 
-The final color correction uses explicit desktop/mobile inspector classes so the generated production CSS includes both accents. The focused browser rerun passed and refreshed only the six affected inspector/duplicate captures; all six were reopened and visually inspected. General is cyan and Food amber on desktop and mobile, with readable text and clear selection/focus. Unchanged approved images are retained. No required verification remains outstanding.
+The pending color correction uses persisted preset keys and inline reviewed palette values so Calendar, inspector, and Quick View render the same Task-selected color without per-occurrence editing. The focused browser rerun refreshes only the affected Task and Calendar captures. Labels, readable text, and clear selection/focus remain required. Unchanged approved images are retained.
 
 Review captures belong in top-level `previews/12.45-product-review/`. Earlier card-based Quick View captures were removed. No unrelated approved captures are regenerated.
 
@@ -77,6 +77,13 @@ All twelve captures below were opened and inspected. They show ordinary meal eve
 | Persisted non-January Project navigation | previews/12.45-product-review/project-start-navigation-desktop.png |
 
 The resumed run used the existing local database and current source without restarting implementation. The function privilege test ran serially. Only the requested affected captures were regenerated. Production access/mutations, live backup/task actions, emails, staged files, commits, pushes and deployments remain zero.
+
+The local `20260906130000` correction adds these inspected creation captures:
+
+- `previews/12.45-product-review/calendar-create-meal-preset-desktop.png`
+- `previews/12.45-product-review/calendar-create-meal-preset-mobile.png`
+
+They show Breakfast/Lunch inside the ordinary preset selector, the shared `One date | Repeat` control, conditional meal fields, no separate meal tab and no horizontal overflow. Focused local validation proves successful one-date persistence returns `Meal saved`; repeated meals copy their metadata into independent items with zero assignments, responses and deliveries; a duplicate-date conflict rolls back every requested date; ordinary task Repeat is unchanged; provisioning creates both system presets idempotently; the read-only/duplication/volunteer projections remain intact; and function ACLs remain exact.
 
 Final cleanup: local preview and local Supabase stopped; .next, supabase/.temp and .env.local are absent from the project. Because automatic approval review previously rejected recursive deletion, generated build/runtime folders were moved reversibly outside the repository to C:/Users/mtfis/AppData/Local/Temp/project-local-12.45-generated-9a328a1c14714200a3ff56cab7b9b18a. They are outside source/commit scope. Docker Desktop remains under the product owner’s control; its preferences were not edited. Repository: master, 50 dirty files (38 source/docs/test files plus 12 review PNGs), staged 0, no commit/push/deploy. Production access/mutations, live backup/task actions and emails: 0.
 
