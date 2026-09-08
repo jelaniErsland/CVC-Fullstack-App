@@ -48,6 +48,7 @@
     "test:assignment-notification-health:hosted": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/hosted-assignment-notification-health-regression.mjs",
     "test:bozeman-workspace-provisioning": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/bozeman-workspace-provisioning-regression.mjs",
     "test:volunteer-profile-management": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-regression.mjs",
+    "test:volunteer-profile-expansion": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-expansion-regression.mjs",
     "test:volunteer-profile-management:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-profile-management-browser-regression.mjs",
     "test:volunteer-profile-management:hosted": "node scripts/hosted-volunteer-profile-management-regression.mjs",
     "test:tasks-read-model-contract": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/tasks-read-model-contract-regression.mjs",

@@ -814,61 +814,94 @@ export type Database = {
       }
       volunteer_profiles: {
         Row: {
+          after_hours_security_availability: string
           availability_snapshot: Json
+          available_two_plus_days: string
+          available_work_days: string[]
+          builder_assistant_communication: string
           congregation: string | null
           created_at: string
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           full_name: string
+          housing_option: string
           id: string
           lifecycle: string
+          date_of_birth: string | null
           manual_created_at: string | null
           manual_created_by_project_contact_id: string | null
           phone: string | null
           preferred_contact_method: string | null
           profile_notes: string
+          other_support: string | null
           profile_source: string
           readiness_status: string
           skills_help_snapshot: Json
+          skills_experience: string | null
           source_submission_id: string | null
           updated_at: string
           workspace_id: string
         }
         Insert: {
+          after_hours_security_availability?: string
           availability_snapshot: Json
+          available_two_plus_days?: string
+          available_work_days?: string[]
+          builder_assistant_communication?: string
           congregation?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           full_name: string
+          housing_option?: string
           id?: string
           lifecycle?: string
+          date_of_birth?: string | null
           manual_created_at?: string | null
           manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
           profile_notes?: string
+          other_support?: string | null
           profile_source?: string
           readiness_status?: string
           skills_help_snapshot: Json
+          skills_experience?: string | null
           source_submission_id?: string | null
           updated_at?: string
           workspace_id: string
         }
         Update: {
+          after_hours_security_availability?: string
           availability_snapshot?: Json
+          available_two_plus_days?: string
+          available_work_days?: string[]
+          builder_assistant_communication?: string
           congregation?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           full_name?: string
+          housing_option?: string
           id?: string
           lifecycle?: string
+          date_of_birth?: string | null
           manual_created_at?: string | null
           manual_created_by_project_contact_id?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
           profile_notes?: string
+          other_support?: string | null
           profile_source?: string
           readiness_status?: string
           skills_help_snapshot?: Json
+          skills_experience?: string | null
           source_submission_id?: string | null
           updated_at?: string
           workspace_id?: string
@@ -1183,13 +1216,7 @@ export type Database = {
       }
       create_manual_volunteer_profile: {
         Args: {
-          p_congregation?: string
-          p_email?: string
-          p_full_name: string
-          p_phone?: string
-          p_preferred_contact_method?: string
-          p_profile_notes?: string
-          p_readiness_status?: string
+          p_profile: Json
           p_workspace_id: string
         }
         Returns: string
@@ -1571,15 +1598,8 @@ export type Database = {
       }
       update_volunteer_profile_manual_fields: {
         Args: {
-          p_congregation?: string
-          p_email?: string
-          p_full_name: string
-          p_lifecycle?: string
-          p_phone?: string
-          p_preferred_contact_method?: string
           p_profile_id: string
-          p_profile_notes?: string
-          p_readiness_status?: string
+          p_profile: Json
         }
         Returns: string
       }

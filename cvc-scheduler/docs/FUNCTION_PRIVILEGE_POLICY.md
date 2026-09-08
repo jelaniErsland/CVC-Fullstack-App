@@ -1,6 +1,6 @@
-# Project Local function EXECUTE policy — 12.46A
+# Project Local function EXECUTE policy — 12.46B
 
-Status: migrations `20260906120000`, `20260906130000`, and `20260907120000` are live. The concurrent-admin migration replaces four authenticated RPC signatures with exact optimistic `updated_at` parameters. Live catalog verification matches the exact reviewed 57-function policy.
+Status: migrations through `20260908120000` are live. The volunteer-profile expansion replaces the two manual profile mutation signatures with exact JSONB payloads. Live catalog verification matches the exact reviewed 57-function policy.
 
 ## Evidence and severity
 
@@ -22,6 +22,12 @@ Token issuance, notification claims (which return contact details), audited resp
 - Calendar one-off and preset edits, Breakfast/Lunch edits, and Task preset color edits require the exact persisted `updated_at` value read by the editor.
 - Each affected RPC locks the authorized active row and rejects a stale version with SQLSTATE `40001` before mutation. Authorization, lifecycle, workspace scope, grants, ownership, and pinned `search_path` checks remain independently enforced.
 - The four superseded signatures are absent. Their four version-bearing replacements retain exact authenticated/service-role execution grants with PUBLIC and anon denied. The public function count and 8/37/12 classification remain unchanged.
+
+## 12.46B volunteer-profile addendum
+
+- `create_manual_volunteer_profile(uuid,jsonb)` and `update_volunteer_profile_manual_fields(uuid,jsonb)` replace their prior text-argument signatures so the expanded profile remains one validated mutation boundary.
+- Both functions retain live contact, workspace, and `volunteers.edit` authorization, `postgres` ownership, SECURITY DEFINER execution, and an empty pinned `search_path`. PUBLIC and anon remain denied; authenticated and service_role grants are exact.
+- The prior two signatures are absent. No anonymous function or internal helper was added, so the live function inventory remains 57: 8 anonymous, 37 authenticated, and 12 internal.
 
 ## Current policy
 
@@ -59,7 +65,7 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `create_calendar_assignments_batch(uuid,uuid[],text)` | 'assignments.edit' | [20260714121900_calendar_publication_visibility.sql:673](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/assignments/server.ts](../lib/assignments/server.ts) |
 | `create_calendar_item(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)` | 'calendar.edit' | [20260714121900_calendar_publication_visibility.sql:139](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/calendar/server.ts](../lib/calendar/server.ts) |
 | `create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)` | 'workspace.read', 'calendar.edit' | [20260904120000_operational_usability.sql:160](../supabase/migrations/20260904120000_operational_usability.sql); [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/calendar/repeat.server.ts](../lib/calendar/repeat.server.ts) |
-| `create_manual_volunteer_profile(uuid,text,text,text,text,text,text,text)` | 'volunteers.edit' | [20260714121500_manual_volunteer_profiles.sql:55](../supabase/migrations/20260714121500_manual_volunteer_profiles.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
+| `create_manual_volunteer_profile(uuid,jsonb)` | 'volunteers.edit' | [20260908120000_volunteer_profile_questionnaire_expansion.sql](../supabase/migrations/20260908120000_volunteer_profile_questionnaire_expansion.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
 | `create_task_preset(uuid,text,text,text,integer,boolean,jsonb,text)` | 'tasks.edit' | [20260906130000_breakfast_lunch_system_presets.sql](../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
 | `update_task_preset_color(uuid,text,timestamp with time zone)` | 'tasks.edit'; optimistic `updated_at` check | [20260907120000_concurrent_admin_edit_guards.sql](../supabase/migrations/20260907120000_concurrent_admin_edit_guards.sql); [lib/tasks/server.ts](../lib/tasks/server.ts) |
 | `delete_history_free_volunteer_profile(uuid)` | 'volunteers.edit' | [20260904120000_operational_usability.sql:85](../supabase/migrations/20260904120000_operational_usability.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
@@ -84,7 +90,7 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)` | 'calendar.edit'; optimistic `updated_at` check | [20260907120000_concurrent_admin_edit_guards.sql](../supabase/migrations/20260907120000_concurrent_admin_edit_guards.sql); [lib/calendar/server.ts](../lib/calendar/server.ts) |
 | `update_current_project_contact_volunteer_facing_details(uuid,text,text,text)` | 'workspace.read' | [20260824123500_follow_up_contact_self_edit.sql:6](../supabase/migrations/20260824123500_follow_up_contact_self_edit.sql); [lib/projectContacts/volunteerFacingDetails.server.ts](../lib/projectContacts/volunteerFacingDetails.server.ts) |
 | `update_current_workspace_project_dates(date,date)` | 'workspace.read', 'calendar.edit' | [20260904120000_operational_usability.sql:22](../supabase/migrations/20260904120000_operational_usability.sql); [lib/operations/projectDates.server.ts](../lib/operations/projectDates.server.ts) |
-| `update_volunteer_profile_manual_fields(uuid,text,text,text,text,text,text,text,text)` | 'volunteers.edit' | [20260714121500_manual_volunteer_profiles.sql:189](../supabase/migrations/20260714121500_manual_volunteer_profiles.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
+| `update_volunteer_profile_manual_fields(uuid,jsonb)` | 'volunteers.edit' | [20260908120000_volunteer_profile_questionnaire_expansion.sql](../supabase/migrations/20260908120000_volunteer_profile_questionnaire_expansion.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
 
 ### C — internal functions (12)
 

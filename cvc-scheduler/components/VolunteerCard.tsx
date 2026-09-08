@@ -1,7 +1,7 @@
 import { Button } from "./Button";
 import { StatusPill } from "./StatusPill";
 import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Phone, Trash2 } from "lucide-react";
-import type { VolunteerProfile } from "@/lib/volunteers/profile";
+import { volunteerAge, volunteerOperationalSummary, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
@@ -10,17 +10,6 @@ type VolunteerCardProps = {
   onMobileEdit?: () => void;
   updateAction?: (formData: FormData) => void | Promise<void>;
 };
-
-function summarizeSnapshot(snapshot: Readonly<Record<string, unknown>>) {
-  const textValues = Object.values(snapshot)
-    .flatMap((value) => {
-      if (Array.isArray(value)) return value.filter((item) => typeof item === "string");
-      if (typeof value === "string") return [value];
-      return [];
-    })
-    .slice(0, 3);
-  return textValues.join(", ") || "No schedule notes yet";
-}
 
 function lifecycleLabel(lifecycle: VolunteerProfile["lifecycle"]) {
   if (lifecycle === "archived") return "archived";
@@ -51,6 +40,7 @@ export function VolunteerCard({
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+  const operationalSummary = volunteerOperationalSummary(volunteer);
 
   return (
     <article className="bg-white transition hover:bg-blue-50/20">
@@ -108,10 +98,10 @@ export function VolunteerCard({
           <NotebookPen aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
           <span className="sr-only">Notes: </span><span className="truncate">{volunteer.profileNotes || "No notes yet"}</span>
         </p>
-        <p className="flex min-w-0 items-center gap-1.5 truncate">
+        {operationalSummary ? <p className="flex min-w-0 items-center gap-1.5 truncate">
           <CalendarDays aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
-          <span className="sr-only">Availability: </span><span className="truncate">{summarizeSnapshot(volunteer.availabilitySnapshot)}</span>
-        </p>
+          <span className="sr-only">Operational summary: </span><span className="truncate">{operationalSummary}</span>
+        </p> : null}
       </div>
 
       {canEdit && updateAction ? (
@@ -165,6 +155,8 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
 
   return (
     <>
+      <section className="grid gap-3" aria-labelledby="volunteer-contact-heading">
+      <h3 id="volunteer-contact-heading" className="text-sm font-semibold text-[var(--pl-ink)]">Contact</h3>
       <label className="block">
         <span className="text-sm font-medium text-slate-600">Full name</span>
         <input
@@ -197,6 +189,35 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
           />
         </label>
       </div>
+      </section>
+      <details className="rounded-lg border border-[var(--pl-border)] bg-white" open>
+        <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Availability</summary>
+        <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">
+          <fieldset><legend className="text-sm font-medium text-slate-600">Available work days</legend><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {volunteerWeekdays.map((day) => <label className="flex min-h-10 items-center gap-2 rounded border border-[var(--pl-border)] px-2 text-xs" key={day}><input defaultChecked={volunteer?.availableWorkDays.includes(day)} name="availableWorkDays" type="checkbox" value={day} />{day}</label>)}
+          </div></fieldset>
+          <TriStateSelect className={selectClassName} defaultValue={volunteer?.availableTwoPlusDays ?? "unknown"} label="Available 2+ days/week" name="availableTwoPlusDays" />
+          <TriStateSelect className={selectClassName} defaultValue={volunteer?.afterHoursSecurityAvailability ?? "unknown"} label="Available for after-hours security" name="afterHoursSecurityAvailability" />
+        </div>
+      </details>
+      <details className="rounded-lg border border-[var(--pl-border)] bg-white">
+        <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Skills &amp; support</summary>
+        <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">
+          <TriStateSelect className={selectClassName} defaultValue={volunteer?.housingOption ?? "unknown"} label="Housing possible" name="housingOption" />
+          <TriStateSelect className={selectClassName} defaultValue={volunteer?.builderAssistantCommunication ?? "unknown"} label="Builder Assistant communication" name="builderAssistantCommunication" />
+          <label className="block"><span className="text-sm font-medium text-slate-600">Skills / experience</span><textarea className={`${fieldClassName} min-h-24 py-3`} defaultValue={volunteer?.skillsExperience ?? ""} maxLength={4000} name="skillsExperience" /></label>
+          <label className="block"><span className="text-sm font-medium text-slate-600">Other support</span><textarea className={`${fieldClassName} min-h-24 py-3`} defaultValue={volunteer?.otherSupport ?? ""} maxLength={4000} name="otherSupport" /></label>
+        </div>
+      </details>
+      <details className="rounded-lg border border-[var(--pl-border)] bg-white">
+        <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Private info</summary>
+        <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5 sm:grid-cols-2">
+          <label className="block"><span className="text-sm font-medium text-slate-600">Date of birth{volunteerAge(volunteer?.dateOfBirth ?? null) !== null ? ` · Age ${volunteerAge(volunteer?.dateOfBirth ?? null)}` : ""}</span><input className={fieldClassName} defaultValue={volunteer?.dateOfBirth ?? ""} name="dateOfBirth" type="date" /></label>
+          <label className="block"><span className="text-sm font-medium text-slate-600">Emergency contact name</span><input className={fieldClassName} defaultValue={volunteer?.emergencyContactName ?? ""} maxLength={160} name="emergencyContactName" /></label>
+          <label className="block"><span className="text-sm font-medium text-slate-600">Emergency phone</span><input className={fieldClassName} defaultValue={volunteer?.emergencyContactPhone ?? ""} maxLength={40} name="emergencyContactPhone" type="tel" /></label>
+          <label className="block"><span className="text-sm font-medium text-slate-600">Relationship</span><input className={fieldClassName} defaultValue={volunteer?.emergencyContactRelationship ?? ""} maxLength={160} name="emergencyContactRelationship" /></label>
+        </div>
+      </details>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="text-sm font-medium text-slate-600">Congregation</span>
@@ -257,4 +278,8 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
       </label>
     </>
   );
+}
+
+function TriStateSelect({ className, defaultValue, label, name }: { className: string; defaultValue: string; label: string; name: string }) {
+  return <label className="block"><span className="text-sm font-medium text-slate-600">{label}</span><select className={className} defaultValue={defaultValue} name={name}><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></label>;
 }

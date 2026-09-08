@@ -25,6 +25,17 @@ const volunteerProfileColumns = [
   "availability_snapshot",
   "skills_help_snapshot",
   "profile_notes",
+  "date_of_birth",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+  "emergency_contact_relationship",
+  "housing_option",
+  "after_hours_security_availability",
+  "builder_assistant_communication",
+  "available_work_days",
+  "available_two_plus_days",
+  "skills_experience",
+  "other_support",
   "created_at",
   "updated_at",
 ].join(",");
@@ -38,6 +49,9 @@ const editableKeys = new Set([
   "lifecycle",
   "readinessStatus",
   "profileNotes",
+  "dateOfBirth", "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship",
+  "housingOption", "afterHoursSecurityAvailability", "builderAssistantCommunication",
+  "availableWorkDays", "availableTwoPlusDays", "skillsExperience", "otherSupport",
 ]);
 
 export type ManualVolunteerProfileInput = Readonly<{
@@ -49,6 +63,17 @@ export type ManualVolunteerProfileInput = Readonly<{
   lifecycle: "active" | "inactive" | "archived";
   readinessStatus: "ready" | "on_hold";
   profileNotes: string;
+  dateOfBirth: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContactRelationship: string | null;
+  housingOption: "yes" | "no" | "unknown";
+  afterHoursSecurityAvailability: "yes" | "no" | "unknown";
+  builderAssistantCommunication: "yes" | "no" | "unknown";
+  availableWorkDays: readonly string[];
+  availableTwoPlusDays: "yes" | "no" | "unknown";
+  skillsExperience: string | null;
+  otherSupport: string | null;
 }>;
 
 export async function convertQuestionnaireSubmissionWithClient(
@@ -97,6 +122,28 @@ function normalizeNotes(value: unknown) {
   return value.trim();
 }
 
+const weekdays = new Set(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+function normalizeTriState(value: unknown) {
+  if (value === undefined || value === null || value === "") return "unknown";
+  if (value === "yes" || value === "no" || value === "unknown") return value;
+  throw new Error("Volunteer availability choice is invalid.");
+}
+function normalizeDays(value: unknown) {
+  if (!Array.isArray(value) || value.some((day) => typeof day !== "string" || !weekdays.has(day))) {
+    throw new Error("Volunteer availability days are invalid.");
+  }
+  return [...new Set(value)];
+}
+function normalizeDateOfBirth(value: unknown) {
+  const date = normalizeNullableString(value);
+  if (date === null) return null;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date || parsed > new Date()) {
+    throw new Error("Volunteer date of birth is invalid.");
+  }
+  return date;
+}
+
 function assertOnlyEditableKeys(value: Record<string, unknown>) {
   for (const key of Object.keys(value)) {
     if (!editableKeys.has(key)) {
@@ -118,6 +165,17 @@ export function normalizeManualVolunteerProfileInput(
   const lifecycle = value.lifecycle ?? "active";
   const readinessStatus = value.readinessStatus ?? "ready";
   const profileNotes = normalizeNotes(value.profileNotes);
+  const dateOfBirth = normalizeDateOfBirth(value.dateOfBirth);
+  const emergencyContactName = normalizeNullableString(value.emergencyContactName);
+  const emergencyContactPhone = normalizeNullableString(value.emergencyContactPhone);
+  const emergencyContactRelationship = normalizeNullableString(value.emergencyContactRelationship);
+  const housingOption = normalizeTriState(value.housingOption);
+  const afterHoursSecurityAvailability = normalizeTriState(value.afterHoursSecurityAvailability);
+  const builderAssistantCommunication = normalizeTriState(value.builderAssistantCommunication);
+  const availableWorkDays = normalizeDays(value.availableWorkDays ?? []);
+  const availableTwoPlusDays = normalizeTriState(value.availableTwoPlusDays);
+  const skillsExperience = normalizeNullableString(value.skillsExperience);
+  const otherSupport = normalizeNullableString(value.otherSupport);
 
   if (fullName.length < 1 || fullName.length > 160) {
     throw new Error("Volunteer name is required.");
@@ -161,6 +219,9 @@ export function normalizeManualVolunteerProfileInput(
   if (profileNotes.length > 4000) {
     throw new Error("Volunteer notes are too long.");
   }
+  for (const field of [emergencyContactName, emergencyContactRelationship]) if (field !== null && field.length > 160) throw new Error("Volunteer private contact is invalid.");
+  if (emergencyContactPhone !== null && (emergencyContactPhone.length < 7 || emergencyContactPhone.length > 40 || !/^[0-9A-Za-z()+.\-\s]+$/.test(emergencyContactPhone))) throw new Error("Volunteer private phone is invalid.");
+  if ((skillsExperience?.length ?? 0) > 4000 || (otherSupport?.length ?? 0) > 4000) throw new Error("Volunteer support details are too long.");
 
   return {
     fullName,
@@ -171,6 +232,9 @@ export function normalizeManualVolunteerProfileInput(
     lifecycle,
     readinessStatus,
     profileNotes,
+    dateOfBirth, emergencyContactName, emergencyContactPhone, emergencyContactRelationship,
+    housingOption, afterHoursSecurityAvailability, builderAssistantCommunication,
+    availableWorkDays, availableTwoPlusDays, skillsExperience, otherSupport,
   };
 }
 
@@ -184,6 +248,17 @@ export function manualVolunteerInputFromFormData(formData: FormData) {
     lifecycle: formData.get("lifecycle") ?? "active",
     readinessStatus: formData.get("readinessStatus") ?? "ready",
     profileNotes: formData.get("profileNotes"),
+    dateOfBirth: formData.get("dateOfBirth"),
+    emergencyContactName: formData.get("emergencyContactName"),
+    emergencyContactPhone: formData.get("emergencyContactPhone"),
+    emergencyContactRelationship: formData.get("emergencyContactRelationship"),
+    housingOption: formData.get("housingOption"),
+    afterHoursSecurityAvailability: formData.get("afterHoursSecurityAvailability"),
+    builderAssistantCommunication: formData.get("builderAssistantCommunication"),
+    availableWorkDays: formData.getAll("availableWorkDays"),
+    availableTwoPlusDays: formData.get("availableTwoPlusDays"),
+    skillsExperience: formData.get("skillsExperience"),
+    otherSupport: formData.get("otherSupport"),
   });
 }
 
@@ -195,13 +270,7 @@ export async function createManualVolunteerProfileWithClient(
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
   const { data, error } = await supabase.rpc("create_manual_volunteer_profile", {
     p_workspace_id: normalizedWorkspaceId,
-    p_full_name: input.fullName,
-    p_email: input.email ?? undefined,
-    p_phone: input.phone ?? undefined,
-    p_congregation: input.congregation ?? undefined,
-    p_preferred_contact_method: input.preferredContactMethod ?? undefined,
-    p_readiness_status: input.readinessStatus,
-    p_profile_notes: input.profileNotes,
+    p_profile: { ...input, availableWorkDays: [...input.availableWorkDays] },
   });
 
   if (error || typeof data !== "string") {
@@ -219,14 +288,7 @@ export async function updateVolunteerProfileManualFieldsWithClient(
   const normalizedProfileId = normalizeWorkspaceReference({ id: profileId }).value;
   const { data, error } = await supabase.rpc("update_volunteer_profile_manual_fields", {
     p_profile_id: normalizedProfileId,
-    p_full_name: input.fullName,
-    p_email: input.email ?? undefined,
-    p_phone: input.phone ?? undefined,
-    p_congregation: input.congregation ?? undefined,
-    p_preferred_contact_method: input.preferredContactMethod ?? undefined,
-    p_lifecycle: input.lifecycle,
-    p_readiness_status: input.readinessStatus,
-    p_profile_notes: input.profileNotes,
+    p_profile: { ...input, availableWorkDays: [...input.availableWorkDays] },
   });
 
   if (error || typeof data !== "string") {

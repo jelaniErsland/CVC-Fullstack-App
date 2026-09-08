@@ -4,15 +4,15 @@ This is the authoritative present-state context for Project Local. Historical im
 
 ## Production snapshot
 
-- Production Supabase terminal: `20260907120000`.
-- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260907120000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
-- Recovery validation is GREEN. The 12.46A rollout created one fresh controlled encrypted checkpoint at terminal `20260906130000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; the permanent task did not run during the rollout.
+- Production Supabase terminal: `20260908120000`.
+- The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260908120000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
+- Recovery validation is GREEN. The 12.46B rollout created one fresh controlled encrypted checkpoint at terminal `20260907120000` before migration, with independently matching SHA-256 and zero plaintext, partial, or temporary residue; the permanent task did not run during the rollout.
 - Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-10-01` through `2026-12-04`.
-- Existing application email transport configuration remains enabled and unchanged. The 12.46A rollout sent no email.
+- Existing application email transport configuration remains enabled and unchanged. The 12.46B rollout sent no email.
 
 ## Security invariants
 
-The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, on-site Food migration `20260906120000_on_site_food_calendar_operations.sql`, meal-system-preset correction `20260906130000_breakfast_lunch_system_presets.sql`, and concurrent-admin edit guards `20260907120000_concurrent_admin_edit_guards.sql` are live.
+The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-privilege migration `20260905130000_harden_public_function_execute_privileges.sql`, on-site Food migration `20260906120000_on_site_food_calendar_operations.sql`, meal-system-preset correction `20260906130000_breakfast_lunch_system_presets.sql`, concurrent-admin edit guards `20260907120000_concurrent_admin_edit_guards.sql`, and volunteer-profile expansion `20260908120000_volunteer_profile_questionnaire_expansion.sql` are live.
 
 - Function EXECUTE is deny-by-default for Project Local functions created by `postgres`. `PUBLIC` has no application-function EXECUTE, and the `postgres` global and `public` default ACL contexts deny implicit PUBLIC, `anon`, and `authenticated` function execution.
 - Exactly eight reviewed anonymous RPCs are executable: the explicit list and caller evidence are maintained in [FUNCTION_PRIVILEGE_POLICY.md](./FUNCTION_PRIVILEGE_POLICY.md). Unexpected anonymous EXECUTE is `0`; unexpected PUBLIC EXECUTE is `0`; PostgreSQL default EXECUTE grants remain `0`.
@@ -26,6 +26,12 @@ The lookup migration `20260905120000_volunteer_schedule_lookup.sql`, function-pr
 Calendar item edits, Breakfast/Lunch edits, and Task preset color edits submit the exact persisted `updated_at` version read by the editor. Their authenticated RPCs lock the active row and reject stale versions before mutation, so simultaneous edits cannot silently overwrite an earlier save. The shared conflict message asks the admin to review the latest version before submitting again.
 
 Concurrent assignment creation remains protected by the existing active volunteer/item uniqueness constraint. Archive/edit interleavings remain lifecycle-safe: an archived item cannot be edited back into active use. Migration `20260907120000` replaces only the four affected RPC signatures; the exact public function inventory remains 57 with the existing 8 anonymous, 37 authenticated, and 12 internal classifications.
+
+## 12.46B volunteer profile and questionnaire expansion (LIVE)
+
+Volunteer profiles now persist explicit date-of-birth, emergency-contact, housing, after-hours security, Builder Assistant communication, weekday availability, two-plus-day availability, skills/experience, and other-support fields. Historical questionnaire JSON remains immutable. Questionnaire conversion maps compatible answers into the explicit fields and uses safe `unknown`, empty-array, or nullable values when an older submission has no matching answer.
+
+Authorized manual profile creation and editing use the two reviewed JSONB RPC signatures. Date of birth and emergency-contact details remain private to the authorized volunteer inspector/editor and are excluded from directory cards, Calendar, Quick View, volunteer schedules, public lookup, and assignment email projections. The migration preserved the complete production roster and its history: 42 active profiles including exactly one Jelani Ersland, five assignments, five responses, six schedule credentials, three notification-delivery rows, and all nine contact/grant identities were unchanged across migration.
 
 ## 12.45 on-site Food operations (LIVE)
 
@@ -60,7 +66,7 @@ Volunteer schedule access is account-light. A personalized `/v/access/[token]` l
 | `/admin/calendar` | Persisted Day/Week/Month/List Calendar with bounded server ranges, project dates, custom/preset items, repeat creation, drafting/publishing, assignment management, and inspector workflows subject to capabilities. |
 | `/admin/tasks` | Persisted reusable task definitions, including create/archive and custom-field support subject to capabilities. |
 | `/admin/needs-attention` | Persisted staffing and response follow-up signals, grouped for operational review. |
-| `/admin/volunteers` | Persisted volunteer profiles with authorized manual create/edit and safe lifecycle handling. |
+| `/admin/volunteers` | Persisted volunteer profiles with authorized manual create/edit, expanded operational fields, private inspector details, advanced filters, and safe lifecycle handling. |
 | `/admin/assignments/[assignmentId]` | Authorized, read-only persisted assignment detail. |
 | `/admin/quick-view` | Authenticated persisted project Quick View and its reviewed share-access boundary. |
 | `/admin/settings` | Intentionally contained beta-unavailable surface; it is not project settings truth. Project date editing is on Calendar. |
@@ -72,7 +78,7 @@ Legacy demo, questionnaire, Communications, Food, onboarding, and administrative
 - Contacts can create, edit, archive, repeat, publish, and inspect Calendar work within their granted scope; assignment counts derive from live assignment/response truth.
 - Authorized contacts can manage reusable Tasks and manual volunteer profiles, assign or cancel volunteers, and use Needs Attention to review staffing and response follow-ups.
 - Published assignments are accessible through secure volunteer schedule credentials. Confirm, Deny/Can't make it, and Confirm All persist through credential-scoped response boundaries.
-- A controlled initial-assignment email proof exists in history, but the application transport is presently disabled. Normal scheduling, publishing, lookup, and response workflows do not send email while it remains disabled.
+- Initial-assignment email transport remains enabled through its existing explicit delivery workflow. The 12.46B migration and deployment do not send email.
 - Bozeman project dates are maintained through the authenticated Calendar Project dates workflow.
 
 ## Current limitations and intentionally deferred work
@@ -91,7 +97,7 @@ Breakfast and Lunch are distinct operational totals. The historical general Proj
 
 ## Next step
 
-Production and the backup-task lock are aligned at `20260907120000` with recovery GREEN. The 12.46A source is the current production release. Replacement trusted Quick View links need deliberate issuance when requested; do not restore or reuse credentials revoked by the earlier 12.45 migration.
+Production and the backup-task lock are aligned at `20260908120000` with recovery GREEN. The 12.46B volunteer-profile expansion is live with the pre-migration roster and history preserved. Replacement trusted Quick View links need deliberate issuance when requested; do not restore or reuse credentials revoked by the earlier 12.45 migration.
 
 ## Canonical references
 

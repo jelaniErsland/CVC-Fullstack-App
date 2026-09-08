@@ -36,6 +36,10 @@ export function VolunteerDirectory({
   const [query, setQuery] = useState("");
   const [congregation, setCongregation] = useState("all");
   const [lifecycle, setLifecycle] = useState<VolunteerProfile["lifecycle"] | "all">("all");
+  const [availableDay, setAvailableDay] = useState("all");
+  const [security, setSecurity] = useState("all");
+  const [housing, setHousing] = useState("all");
+  const [twoPlusDays, setTwoPlusDays] = useState("all");
   const [mobileEditor, setMobileEditor] = useState<
     { kind: "add" } | { kind: "edit"; volunteer: VolunteerProfile } | null
   >(null);
@@ -72,15 +76,23 @@ export function VolunteerDirectory({
         volunteer.lifecycle,
         volunteer.readinessStatus,
         volunteer.profileNotes,
+        volunteer.skillsExperience,
+        volunteer.otherSupport,
       ]
         .join(" ")
         .toLowerCase();
       const matchesQuery =
         normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
 
-      return matchesCongregation && matchesLifecycle && matchesQuery;
+      const matchesAdvanced =
+        (availableDay === "all" || volunteer.availableWorkDays.includes(availableDay as never)) &&
+        (security === "all" || volunteer.afterHoursSecurityAvailability === security) &&
+        (housing === "all" || volunteer.housingOption === housing) &&
+        (twoPlusDays === "all" || volunteer.availableTwoPlusDays === twoPlusDays);
+
+      return matchesCongregation && matchesLifecycle && matchesQuery && matchesAdvanced;
     });
-  }, [congregation, lifecycle, query, volunteers]);
+  }, [availableDay, congregation, housing, lifecycle, query, security, twoPlusDays, volunteers]);
 
   const addForm = canEdit && createAction ? (
     <>
@@ -168,13 +180,14 @@ export function VolunteerDirectory({
         <p>
           {filteredVolunteers.length} of {volunteers.length} volunteers
         </p>
-        {(query || congregation !== "all" || lifecycle !== "all") && (
+        {(query || congregation !== "all" || lifecycle !== "all" || availableDay !== "all" || security !== "all" || housing !== "all" || twoPlusDays !== "all") && (
           <button
             className="rounded-lg px-2.5 py-1.5 font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)]"
             onClick={() => {
               setQuery("");
               setCongregation("all");
               setLifecycle("all");
+              setAvailableDay("all"); setSecurity("all"); setHousing("all"); setTwoPlusDays("all");
             }}
             type="button"
           >
@@ -182,6 +195,15 @@ export function VolunteerDirectory({
           </button>
         )}
       </div>
+      <details className="mt-2">
+        <summary className="cursor-pointer text-xs font-semibold text-[var(--pl-blue)]">Advanced filters</summary>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <FilterSelect label="Available weekday" onChange={setAvailableDay} value={availableDay} options={["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]} />
+          <FilterSelect label="After-hours security" onChange={setSecurity} value={security} options={["yes","no","unknown"]} />
+          <FilterSelect label="Housing" onChange={setHousing} value={housing} options={["yes","no","unknown"]} />
+          <FilterSelect label="2+ days/week" onChange={setTwoPlusDays} value={twoPlusDays} options={["yes","no","unknown"]} />
+        </div>
+      </details>
       </div>
 
       {filteredVolunteers.length > 0 ? (
@@ -286,4 +308,8 @@ export function VolunteerDirectory({
       ) : null}
     </div>
   );
+}
+
+function FilterSelect({ label, onChange, options, value }: { label: string; onChange: (value: string) => void; options: string[]; value: string }) {
+  return <label className="block"><span className="sr-only">{label}</span><select aria-label={label} className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-medium text-[var(--pl-text)] outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" onChange={(event) => onChange(event.target.value)} value={value}><option value="all">Any {label.toLowerCase()}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>;
 }

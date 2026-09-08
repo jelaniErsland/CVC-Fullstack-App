@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260907120000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260908120000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -13,6 +13,7 @@ $SystemicFunctionPrivilegeProductionMigration = "20260905130000"
 $OnSiteFoodProductionMigration = "20260906120000"
 $MealSystemPresetProductionMigration = "20260906130000"
 $ConcurrentAdminSafetyProductionMigration = "20260907120000"
+$VolunteerProfileExpansionProductionMigration = "20260908120000"
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -29,7 +30,8 @@ $AllowedTerminalMigrations = @(
   $SystemicFunctionPrivilegeProductionMigration,
   $OnSiteFoodProductionMigration,
   $MealSystemPresetProductionMigration,
-  $ConcurrentAdminSafetyProductionMigration
+  $ConcurrentAdminSafetyProductionMigration,
+  $VolunteerProfileExpansionProductionMigration
 )
 
 function Test-ProjectLocalApprovedTerminalMigration {
@@ -58,7 +60,8 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $VolunteerLookupProductionMigration -and $TargetMigration -ceq $SystemicFunctionPrivilegeProductionMigration) -or
     ($CurrentMigration -ceq $SystemicFunctionPrivilegeProductionMigration -and $TargetMigration -ceq $OnSiteFoodProductionMigration) -or
     ($CurrentMigration -ceq $OnSiteFoodProductionMigration -and $TargetMigration -ceq $MealSystemPresetProductionMigration) -or
-    ($CurrentMigration -ceq $MealSystemPresetProductionMigration -and $TargetMigration -ceq $ConcurrentAdminSafetyProductionMigration)
+    ($CurrentMigration -ceq $MealSystemPresetProductionMigration -and $TargetMigration -ceq $ConcurrentAdminSafetyProductionMigration) -or
+    ($CurrentMigration -ceq $ConcurrentAdminSafetyProductionMigration -and $TargetMigration -ceq $VolunteerProfileExpansionProductionMigration)
   )
 }
 

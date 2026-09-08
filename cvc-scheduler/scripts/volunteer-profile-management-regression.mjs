@@ -112,11 +112,21 @@ async function resolveLocalDatabaseContainer() {
 }
 
 async function applyManualVolunteerMigration(containerName) {
+  const expanded = runPsql(
+    containerName,
+    "select exists(select 1 from information_schema.columns where table_schema='public' and table_name='volunteer_profiles' and column_name='date_of_birth');",
+  );
+  if (expanded === "t") return;
   const migration = await readFile(
     path.join(root, "supabase", "migrations", "20260714121500_manual_volunteer_profiles.sql"),
     "utf8",
   );
   runPsql(containerName, migration);
+  const expansion = await readFile(
+    path.join(root, "supabase", "migrations", "20260908120000_volunteer_profile_questionnaire_expansion.sql"),
+    "utf8",
+  );
+  runPsql(containerName, expansion);
 }
 
 async function createAuthenticatedUser(label) {
@@ -312,10 +322,14 @@ function questionnaireAnswers(label) {
       phone: "406-555-1212",
       congregation: "Bozeman",
       preferredContactMethod: "Email",
+      dateOfBirth: "1994-06-10",
+      builderAssistantCommunication: "yes",
     },
     availability: {
       weekdays: ["Monday"],
       preferredTimes: ["Morning"],
+      availableTwoPlusDays: "yes",
+      afterHoursSecurityAvailability: "yes",
     },
     skillsExperience: {
       categories: ["General"],
@@ -325,7 +339,7 @@ function questionnaireAnswers(label) {
       name: "Emergency Contact",
       phone: "406-555-4545",
     },
-    otherWaysToHelp: {},
+    otherWaysToHelp: { housingOption: "yes" },
   };
 }
 
@@ -485,6 +499,17 @@ async function run() {
       readinessStatus: "ready",
       lifecycle: "active",
       profileNotes: "Manual beta scheduling profile.",
+      dateOfBirth: "1994-06-10",
+      emergencyContactName: "Emergency Contact",
+      emergencyContactPhone: "406-555-1199",
+      emergencyContactRelationship: "Friend",
+      housingOption: "yes",
+      afterHoursSecurityAvailability: "yes",
+      builderAssistantCommunication: "unknown",
+      availableWorkDays: ["Tuesday", "Wednesday", "Thursday"],
+      availableTwoPlusDays: "yes",
+      skillsExperience: "Painting",
+      otherSupport: "Housing possible",
     }),
   );
   const afterSubmissionCount = runPsql(
@@ -504,6 +529,10 @@ async function run() {
   assert.equal(createdProfile.sourceSubmissionId, null);
   assert.equal(createdProfile.fullName, `${fixture.namespace} Manual Volunteer`);
   assert.equal(createdProfile.email, `${fixture.namespace}-manual@example.invalid`);
+  assert.deepEqual(createdProfile.availableWorkDays, ["Tuesday", "Wednesday", "Thursday"]);
+  assert.equal(createdProfile.afterHoursSecurityAvailability, "yes");
+  assert.equal(createdProfile.housingOption, "yes");
+  assert.equal(createdProfile.dateOfBirth, "1994-06-10");
 
   await updateVolunteerProfileManualFieldsWithClient(
     full.client,
@@ -517,6 +546,17 @@ async function run() {
       lifecycle: "inactive",
       readinessStatus: "on_hold",
       profileNotes: "Edited and persisted.",
+      dateOfBirth: "1994-06-10",
+      emergencyContactName: "Updated emergency contact",
+      emergencyContactPhone: "406-555-1188",
+      emergencyContactRelationship: "Friend",
+      housingOption: "unknown",
+      afterHoursSecurityAvailability: "no",
+      builderAssistantCommunication: "yes",
+      availableWorkDays: ["Friday"],
+      availableTwoPlusDays: "no",
+      skillsExperience: "Updated painting",
+      otherSupport: "",
     }),
   );
   const profilesAfterEdit = await readVolunteerProfilesWithClient(
@@ -530,6 +570,8 @@ async function run() {
   assert.equal(editedProfile.readinessStatus, "on_hold");
   assert.equal(editedProfile.profileSource, "manual");
   assert.equal(editedProfile.sourceSubmissionId, null);
+  assert.deepEqual(editedProfile.availableWorkDays, ["Friday"]);
+  assert.equal(editedProfile.housingOption, "unknown");
 
   const viewOnlyProfiles = await readVolunteerProfilesWithClient(
     viewOnly.client,
@@ -618,6 +660,9 @@ async function run() {
   assert(convertedProfile);
   assert.equal(convertedProfile.profileSource, "questionnaire");
   assert.equal(convertedProfile.sourceSubmissionId, submissionId);
+  assert.equal(convertedProfile.housingOption, "yes");
+  assert.equal(convertedProfile.afterHoursSecurityAvailability, "yes");
+  assert.equal(convertedProfile.builderAssistantCommunication, "yes");
   await updateVolunteerProfileManualFieldsWithClient(
     full.client,
     converted.data,
@@ -670,6 +715,9 @@ where workspace_id in (
 );
 delete from public.questionnaire_submissions
 where workspace_id in (
+  select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)}
+);
+delete from public.task_presets where workspace_id in (
   select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)}
 );
 delete from public.workspace_contact_grants

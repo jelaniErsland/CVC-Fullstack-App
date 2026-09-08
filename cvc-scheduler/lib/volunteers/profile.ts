@@ -1,3 +1,7 @@
+export const volunteerWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+export type VolunteerWeekday = (typeof volunteerWeekdays)[number];
+export type VolunteerTriState = "yes" | "no" | "unknown";
+
 export type VolunteerProfile = Readonly<{
   id: string;
   workspaceId: string;
@@ -15,6 +19,17 @@ export type VolunteerProfile = Readonly<{
   availabilitySnapshot: Readonly<Record<string, unknown>>;
   skillsHelpSnapshot: Readonly<Record<string, unknown>>;
   profileNotes: string;
+  dateOfBirth: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContactRelationship: string | null;
+  housingOption: VolunteerTriState;
+  afterHoursSecurityAvailability: VolunteerTriState;
+  builderAssistantCommunication: VolunteerTriState;
+  availableWorkDays: readonly VolunteerWeekday[];
+  availableTwoPlusDays: VolunteerTriState;
+  skillsExperience: string | null;
+  otherSupport: string | null;
   createdAt: string;
   updatedAt: string;
 }>;
@@ -68,6 +83,22 @@ function nullableUuid(record: Record<string, unknown>, field: string) {
   return normalizedValue;
 }
 
+function triState(record: Record<string, unknown>, field: string): VolunteerTriState {
+  const value = record[field];
+  if (value !== "yes" && value !== "no" && value !== "unknown") {
+    throw new Error(`Volunteer profile has an invalid ${field}.`);
+  }
+  return value;
+}
+
+function weekdayList(record: Record<string, unknown>, field: string): readonly VolunteerWeekday[] {
+  const value = record[field];
+  if (!Array.isArray(value) || value.some((day) => !volunteerWeekdays.includes(day as VolunteerWeekday))) {
+    throw new Error(`Volunteer profile has an invalid ${field}.`);
+  }
+  return value as VolunteerWeekday[];
+}
+
 export function parseVolunteerProfile(value: unknown): VolunteerProfile {
   if (!isRecord(value)) {
     throw new Error("Volunteer profile read returned an invalid row.");
@@ -115,9 +146,39 @@ export function parseVolunteerProfile(value: unknown): VolunteerProfile {
     availabilitySnapshot: snapshot(value, "availability_snapshot"),
     skillsHelpSnapshot: snapshot(value, "skills_help_snapshot"),
     profileNotes: requiredStringOrEmpty(value, "profile_notes"),
+    dateOfBirth: nullableString(value, "date_of_birth"),
+    emergencyContactName: nullableString(value, "emergency_contact_name"),
+    emergencyContactPhone: nullableString(value, "emergency_contact_phone"),
+    emergencyContactRelationship: nullableString(value, "emergency_contact_relationship"),
+    housingOption: triState(value, "housing_option"),
+    afterHoursSecurityAvailability: triState(value, "after_hours_security_availability"),
+    builderAssistantCommunication: triState(value, "builder_assistant_communication"),
+    availableWorkDays: weekdayList(value, "available_work_days"),
+    availableTwoPlusDays: triState(value, "available_two_plus_days"),
+    skillsExperience: nullableString(value, "skills_experience"),
+    otherSupport: nullableString(value, "other_support"),
     createdAt: requiredString(value, "created_at"),
     updatedAt: requiredString(value, "updated_at"),
   };
+}
+
+export function volunteerAge(dateOfBirth: string | null, today = new Date()): number | null {
+  if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return null;
+  const [year, month, day] = dateOfBirth.split("-").map(Number);
+  const birthdayThisYear = new Date(today.getFullYear(), month - 1, day);
+  return today.getFullYear() - year - (today < birthdayThisYear ? 1 : 0);
+}
+
+export function volunteerOperationalSummary(volunteer: VolunteerProfile): string | null {
+  const parts: string[] = [];
+  if (volunteer.availableWorkDays.length) {
+    const labels = volunteer.availableWorkDays.map((day) => day.slice(0, 3));
+    parts.push(labels.length > 1 ? `${labels[0]}–${labels.at(-1)}` : labels[0]);
+  }
+  if (volunteer.availableTwoPlusDays === "yes") parts.push("2+ days/week");
+  if (volunteer.afterHoursSecurityAvailability === "yes") parts.push("Security");
+  if (volunteer.housingOption === "yes") parts.push("Housing possible");
+  return parts.length ? parts.join(" · ") : null;
 }
 
 function requiredStringOrEmpty(record: Record<string, unknown>, field: string) {

@@ -7,6 +7,7 @@ const weekdayOptions = [
   "Thursday",
   "Friday",
   "Saturday",
+  "Sunday",
 ] as const;
 const preferredTimeOptions = ["Morning", "Afternoon", "Evening"] as const;
 const skillOptions = [
@@ -22,6 +23,7 @@ const skillOptions = [
   "Security",
 ] as const;
 const contactMethodOptions = ["Text", "Phone", "Email"] as const;
+const triStateOptions = ["yes", "no", "unknown"] as const;
 const otherWayKeys = [
   "housing",
   "transportation",
@@ -39,11 +41,15 @@ export type QuestionnaireAnswersV1 = Readonly<{
     phone: string;
     congregation: string;
     preferredContactMethod: (typeof contactMethodOptions)[number];
+    dateOfBirth?: string;
+    builderAssistantCommunication?: (typeof triStateOptions)[number];
   }>;
   availability: Readonly<{
     weekdays: readonly (typeof weekdayOptions)[number][];
     preferredTimes: readonly (typeof preferredTimeOptions)[number][];
     notes: string;
+    availableTwoPlusDays?: (typeof triStateOptions)[number];
+    afterHoursSecurityAvailability?: (typeof triStateOptions)[number];
   }>;
   skillsExperience: Readonly<{
     categories: readonly (typeof skillOptions)[number][];
@@ -60,6 +66,7 @@ export type QuestionnaireAnswersV1 = Readonly<{
     selected: Readonly<Record<(typeof otherWayKeys)[number], boolean>>;
     other: string;
     notes: string;
+    housingOption?: (typeof triStateOptions)[number];
   }>;
 }>;
 
@@ -159,6 +166,18 @@ function booleanField(record: Record<string, unknown>, key: string, issues: stri
   return value;
 }
 
+function optionalOneOf<const T extends readonly string[]>(record: Record<string, unknown>, key: string, allowed: T, issues: string[]) {
+  if (record[key] === undefined) return undefined;
+  return oneOf(record, key, allowed, issues);
+}
+
+function optionalDate(record: Record<string, unknown>, key: string, issues: string[]) {
+  if (record[key] === undefined || record[key] === "") return undefined;
+  const value = textField(record, key, issues, { max: 10 });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).getTime())) issues.push(`${key} must be a valid date.`);
+  return value;
+}
+
 export function validateQuestionnaireSubmissionPayload(
   input: unknown,
 ): QuestionnaireAnswersV1 {
@@ -193,6 +212,8 @@ export function validateQuestionnaireSubmissionPayload(
         contactMethodOptions,
         issues,
       ),
+      dateOfBirth: optionalDate(aboutYou, "dateOfBirth", issues),
+      builderAssistantCommunication: optionalOneOf(aboutYou, "builderAssistantCommunication", triStateOptions, issues),
     },
     availability: {
       weekdays: stringChoices(availability, "weekdays", weekdayOptions, issues),
@@ -203,6 +224,8 @@ export function validateQuestionnaireSubmissionPayload(
         issues,
       ),
       notes: textField(availability, "notes", issues, { max: 2000 }),
+      availableTwoPlusDays: optionalOneOf(availability, "availableTwoPlusDays", triStateOptions, issues),
+      afterHoursSecurityAvailability: optionalOneOf(availability, "afterHoursSecurityAvailability", triStateOptions, issues),
     },
     skillsExperience: {
       categories: stringChoices(skillsExperience, "categories", skillOptions, issues),
@@ -234,6 +257,7 @@ export function validateQuestionnaireSubmissionPayload(
       ) as Record<(typeof otherWayKeys)[number], boolean>,
       other: textField(otherWaysToHelp, "other", issues, { max: 500 }),
       notes: textField(otherWaysToHelp, "notes", issues, { max: 3000 }),
+      housingOption: optionalOneOf(otherWaysToHelp, "housingOption", triStateOptions, issues),
     },
   };
 
