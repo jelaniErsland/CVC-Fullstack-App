@@ -7,7 +7,7 @@ This is the authoritative present-state context for Project Local. Historical im
 - Production Supabase terminal: `20260908130000`.
 - The permanent `Project Local Production Backup` task is Enabled, Ready, and not running. Its lock is `20260908130000`; its daily 03:15 schedule, action, destination, principal, and `StartWhenAvailable` setting remain in place.
 - Recovery validation is GREEN. The 12.46C rollout created one controlled encrypted checkpoint at terminal `20260908120000` before migration. The nonzero artifact `project-local-production-20260909T043202Z-298373ef.zip.age` passed an independent SHA-256 comparison with zero plaintext, partial, process-temp, status-temp, or temporary-task residue; the permanent task did not run during the rollout.
-- Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-10-01` through `2026-12-04`.
+- Bozeman is the active production project in `America/Denver`. Its persisted project window is `2026-09-29` through `2026-12-04`.
 - Existing application email transport configuration remains enabled and unchanged. The 12.46B rollout sent no email.
 
 ## Security invariants
