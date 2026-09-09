@@ -10,6 +10,7 @@ import { useFocusContainment } from "@/hooks/useFocusContainment";
 type MobileOverlaySheetProps = Readonly<{
   children: ReactNode;
   description?: string;
+  eyebrow?: string;
   label: string;
   onClose: () => void;
   open: boolean;
@@ -19,6 +20,7 @@ type MobileOverlaySheetProps = Readonly<{
 export function MobileOverlaySheet({
   children,
   description,
+  eyebrow,
   label,
   onClose,
   open,
@@ -83,6 +85,11 @@ export function MobileOverlaySheet({
       >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--pl-border)] bg-white px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="min-w-0">
+            {eyebrow ? (
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
+                {eyebrow}
+              </p>
+            ) : null}
             <h2 className="text-xl font-bold tracking-[-0.025em] text-[var(--pl-ink)]">
               {title}
             </h2>

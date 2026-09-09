@@ -20,6 +20,7 @@ import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPen
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
+import { NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 
@@ -130,7 +131,7 @@ function MobileBottomNav({
           aria-haspopup="dialog"
           aria-label="Open more admin navigation"
           className={[
-            "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+            "flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
             isMoreActive
               ? "text-[var(--pl-blue)]"
               : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
@@ -142,7 +143,7 @@ function MobileBottomNav({
           <span className={isMoreActive ? "flex size-7 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)]" : "flex size-7 items-center justify-center"}>
             <MoreHorizontal aria-hidden="true" className="h-[19px] w-[19px]" />
           </span>
-          <span>More</span>
+          <span className="text-[10px] font-semibold leading-none">More</span>
         </button>
       </div>
     </nav>
@@ -163,7 +164,7 @@ function MobileTabLink({
       aria-label={tab.ariaLabel ?? `Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
-        "relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+        "relative flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold leading-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         active
           ? "text-[var(--pl-blue)]"
           : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
@@ -173,7 +174,8 @@ function MobileTabLink({
       <span className={active ? "flex size-7 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)]" : "flex size-7 items-center justify-center"}>
         <Icon aria-hidden="true" className="h-[19px] w-[19px]" />
       </span>
-      <span>{tab.label}</span>
+      <span className="text-[10px] font-semibold leading-none">{tab.label}</span>
+      {tab.id === "needs-attention" ? <span className="absolute right-1.5 top-1"><NeedsAttentionUnseenBadge /></span> : null}
       <AdminNavigationPendingIndicator compact disabled={active} />
     </Link>
   );

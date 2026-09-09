@@ -1,6 +1,6 @@
-# Project Local function EXECUTE policy — 12.46B
+# Project Local function EXECUTE policy — 12.46C
 
-Status: migrations through `20260908120000` are live. The volunteer-profile expansion replaces the two manual profile mutation signatures with exact JSONB payloads. Live catalog verification matches the exact reviewed 57-function policy.
+Status: migrations through `20260908130000` are live. The live catalog policy is 58 functions, including the authorized per-contact Needs Attention review RPC.
 
 ## Evidence and severity
 
@@ -15,7 +15,7 @@ Token issuance, notification claims (which return contact details), audited resp
 - save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone) requires Auth, an active project/contact/live grant and workspace.read + calendar.edit. It creates or updates only one scoped active meal, validates fields, uses the existing creation/publication commands atomically, and rejects stale edits.
 - duplicate_calendar_item(uuid,date,time without time zone,time without time zone) requires the same live identity with workspace.read, calendar.view, and calendar.edit; private sources additionally require creator ownership. It locks the source and inserts one independent definition, never assignment/response/delivery rows.
 - Both new RPCs are owned by postgres, SECURITY DEFINER with empty search_path, with PUBLIC/anon denied and exact authenticated/service_role grants. No new anonymous RPC or internal helper is introduced. The existing volunteer schedule signature adds only explicit safe meal fields to its result; its credential/response checks remain unchanged.
-- Exact live inventory: 8 anonymous, 37 authenticated-only, 12 internal; 45 SECURITY DEFINER functions.
+- Current live inventory after 12.46C: 8 anonymous, 38 authenticated-only, 12 internal; 46 SECURITY DEFINER functions.
 
 ## 12.46A concurrency addendum
 
@@ -31,7 +31,7 @@ Token issuance, notification claims (which return contact details), audited resp
 
 ## Current policy
 
-Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 57 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on the existing application RPCs is retained; internal helpers lose service_role as well as anon/authenticated. There is no service-role-only product RPC in the reviewed inventory, and the application introduces no service-role secret.
+Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 58 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on the existing application RPCs is retained; internal helpers lose service_role as well as anon/authenticated. There is no service-role-only product RPC in the reviewed inventory, and the application introduces no service-role secret.
 
 ### A — intentional anonymous RPCs (8)
 
@@ -48,7 +48,7 @@ Each retains exact anon and authenticated grants; the existing service_role priv
 | `submit_volunteer_schedule_assignment_response(text,uuid,text,text)` | Verified schedule bearer and exact assignment/volunteer/workspace join; start/48-hour locks; narrow response result. | [20260714122100_volunteer_schedule_responses.sql:335](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql); [lib/volunteerScheduleAccess/server.ts](../lib/volunteerScheduleAccess/server.ts) |
 | `verify_volunteer_schedule_lookup(text,text,text)` | Exact normalized name/contact; active/ready gates; duplicate fail closed; opaque HMAC project choices; DB serialized limiter; hash-only stored bearer. Route exchanges bearer into existing HttpOnly cookie. | [20260905120000_volunteer_schedule_lookup.sql:14](../supabase/migrations/20260905120000_volunteer_schedule_lookup.sql); [app/v/lookup/route.ts](../app/v/lookup/route.ts) |
 
-### B — authenticated application RPCs (37)
+### B — authenticated application RPCs (38)
 
 Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing service_role ACL, and remains SECURITY DEFINER with search_path=''. Every row below has verified identity and live grant/capability/workspace checks. Capabilities listed are the source predicates (read_assignment_detail_context requires view and reports edit separately).
 
@@ -91,6 +91,7 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `update_current_project_contact_volunteer_facing_details(uuid,text,text,text)` | 'workspace.read' | [20260824123500_follow_up_contact_self_edit.sql:6](../supabase/migrations/20260824123500_follow_up_contact_self_edit.sql); [lib/projectContacts/volunteerFacingDetails.server.ts](../lib/projectContacts/volunteerFacingDetails.server.ts) |
 | `update_current_workspace_project_dates(date,date)` | 'workspace.read', 'calendar.edit' | [20260904120000_operational_usability.sql:22](../supabase/migrations/20260904120000_operational_usability.sql); [lib/operations/projectDates.server.ts](../lib/operations/projectDates.server.ts) |
 | `update_volunteer_profile_manual_fields(uuid,jsonb)` | 'volunteers.edit' | [20260908120000_volunteer_profile_questionnaire_expansion.sql](../supabase/migrations/20260908120000_volunteer_profile_questionnaire_expansion.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
+| `mark_needs_attention_signal_seen(uuid,text)` | 'workspace.read', 'calendar.view', 'assignments.view' | [20260908130000_volunteer_lookup_last_name_and_attention_seen.sql](../supabase/migrations/20260908130000_volunteer_lookup_last_name_and_attention_seen.sql); authorized contact's own review state only. |
 
 ### C — internal functions (12)
 

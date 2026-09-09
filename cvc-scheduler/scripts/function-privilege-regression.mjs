@@ -17,7 +17,7 @@ function sql(query, expectSuccess = true) {
 }
 const output = query => sql(query).stdout.trim();
 const rows = output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse);
-assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260907120000");
+assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260908130000");
 assertEffectiveFunctionPolicy(assert, rows);
 // Prove that the invariant catches current privilege drift and missing grants.
 for (const [signature, key, value] of [
@@ -91,7 +91,7 @@ try {
     ["create_calendar_assignment", `${literal},${literal},null`],
     ["cancel_calendar_assignment", literal],
     ["set_current_project_day_expected_on_site", "current_date+30,5"],
-    ["create_manual_volunteer_profile", `${literal},'ACL',null,'acl@example.invalid',null,null,null,'ready'`],
+    ["create_manual_volunteer_profile", `${literal},'{"fullName":"ACL","email":"acl@example.invalid"}'::jsonb`],
     ["issue_volunteer_schedule_access", `${literal},24`],
     ["revoke_volunteer_schedule_access", literal],
     ["update_current_workspace_project_dates", "current_date+1,current_date+60"],
@@ -110,4 +110,4 @@ try {
 }
 assert.equal(snapshot(), beforeFixture, "Zero disposable fixture residue.");
 assertEffectiveFunctionPolicy(assert, output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
-console.log("PASS systemic ACL: 57 exact functions; 8 anonymous, 37 authenticated, 12 internal; PUBLIC 0; defaults denied; future postgres function denied; 13 direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.");
+console.log("PASS systemic ACL: 58 exact functions; 8 anonymous, 38 authenticated, 12 internal; PUBLIC 0; defaults denied; future postgres function denied; 13 direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.");

@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 
 export async function runFinalProductReview({ browser, fixture: f, applyAuthCookies, sql, baseUrl }) {
   const output = path.resolve('..', 'previews', 'final-product-readiness');
+  const review1246C = path.resolve('..', 'previews', '12.46c-volunteer-polish');
   const requestedCaptures = new Set(
     (process.env.FINAL_PRODUCT_READINESS_CAPTURE_SCOPE ?? "")
       .split(",")
@@ -13,6 +14,7 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
   );
   const partialCaptureRun = requestedCaptures.size > 0;
   await mkdir(output, { recursive: true });
+  await mkdir(review1246C, { recursive: true });
   const captures = [];
   const contexts = [];
   const errors = [];
@@ -49,12 +51,12 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
     await page.screenshot({ path: path.join(output,name), fullPage, animations:'disabled' });
     captures.push(name);
   }
-  async function lookup(page, name, contact) {
+  async function lookup(page, lastName, contact) {
     await go(page,'/');
-    await page.getByLabel('Full name',{exact:true}).fill(name);
+    await page.getByLabel('Email or phone number',{exact:true}).fill(contact);
     await page.getByRole('button',{name:'Continue',exact:true}).click();
-    await page.getByLabel('Email or phone',{exact:true}).fill(contact);
-    await page.getByRole('button',{name:'View schedule',exact:true}).click();
+    await page.getByLabel('Last name',{exact:true}).fill(lastName);
+    await page.getByRole('button',{name:'Find schedule',exact:true}).click();
   }
   try {
     // Disposable review data only. Align upcoming work with the local review date.
@@ -73,35 +75,44 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
     desktop.page.on('request',r=>{if(r.url().endsWith('/v/lookup'))lookupRequests++;});
     await go(desktop.page,'/');
     await capture(desktop.page,'01-landing-desktop.png');
+    await desktop.page.screenshot({path:path.join(review1246C,'01-lookup-step-1-desktop.png'),fullPage:true});
     for(const width of [390,360]) {
       await desktop.page.setViewportSize({width,height:844});
       await capture(desktop.page,`02-landing-mobile-${width}.png`);
+      if(width===390) await desktop.page.screenshot({path:path.join(review1246C,'09-lookup-step-1-mobile-390.png'),fullPage:true});
     }
-    await desktop.page.getByLabel('Full name',{exact:true}).fill('Alex Rivera');
+    await desktop.page.setViewportSize({width:1440,height:1000});
+    await desktop.page.getByLabel('Email or phone number',{exact:true}).fill('alex@example.invalid');
     await desktop.page.getByRole('button',{name:'Continue',exact:true}).click();
-    assert.equal(lookupRequests,0,'Name step makes no request.');
-    assert.equal(await desktop.page.getByLabel('Email or phone').evaluate(e=>e===document.activeElement),true);
+    assert.equal(lookupRequests,0,'Contact step makes no request.');
+    assert.equal(await desktop.page.getByLabel('Last name').evaluate(e=>e===document.activeElement),true);
+    await desktop.page.screenshot({path:path.join(review1246C,'02-lookup-step-2-desktop.png'),fullPage:true});
+    await desktop.page.setViewportSize({width:390,height:844});
+    await desktop.page.screenshot({path:path.join(review1246C,'10-lookup-step-2-mobile-390.png'),fullPage:true});
     await capture(desktop.page,'03-contact-verification-mobile.png');
-    await desktop.page.getByLabel('Email or phone').fill('wrong@example.invalid');
-    await desktop.page.getByRole('button',{name:'View schedule',exact:true}).click();
+    await desktop.page.getByLabel('Last name').fill('Wrong');
+    await desktop.page.getByRole('button',{name:'Find schedule',exact:true}).click();
     await desktop.page.getByRole('alert').waitFor();
     await capture(desktop.page,'04-verification-failure-mobile.png');
     assert(!(await desktop.ctx.cookies()).some(c=>c.name==='pl-volunteer-schedule'));
-    const failKnown = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{name:'Alex Rivera',contact:'wrong@example.invalid'}});
-    const failUnknown = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{name:'Nobody Exists',contact:'wrong@example.invalid'}});
+    const failKnown = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{lastName:'Rivera',contact:'wrong@example.invalid'}});
+    const failUnknown = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{lastName:'Nobody',contact:'wrong@example.invalid'}});
     assert.equal(failKnown.status(),failUnknown.status()); assert.deepEqual(await failKnown.json(),await failUnknown.json());
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const throttled = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{name:'Alex Rivera',contact:'wrong@example.invalid'}});
+      const throttled = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin},data:{lastName:'Rivera',contact:'wrong@example.invalid'}});
       assert.deepEqual(await throttled.json(),{status:'unverified'});
     }
     await capture(desktop.page,'05-rate-limited-state-mobile.png');
-    const malformedOrigin = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:'not-an-origin'},data:{name:'Alex Rivera',contact:'alex@example.invalid'}});
+    const malformedOrigin = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:'not-an-origin'},data:{lastName:'Rivera',contact:'alex@example.invalid'}});
     assert.deepEqual(await malformedOrigin.json(),{status:'unverified'});
-    const crossSite = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:'https://example.invalid'},data:{name:'Alex Rivera',contact:'alex@example.invalid'}});
+    const crossSite = await desktop.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:'https://example.invalid'},data:{lastName:'Rivera',contact:'alex@example.invalid'}});
     assert.deepEqual(await crossSite.json(),{status:'unverified'});
     reset();
-    await desktop.page.getByLabel('Email or phone').fill('alex@example.invalid');
-    await desktop.page.getByRole('button',{name:'View schedule',exact:true}).click();
+    await desktop.page.getByRole('button',{name:'Start again',exact:true}).click();
+    await desktop.page.getByLabel('Email or phone number').fill('alex@example.invalid');
+    await desktop.page.getByRole('button',{name:'Continue',exact:true}).click();
+    await desktop.page.getByLabel('Last name').fill('Rivera');
+    await desktop.page.getByRole('button',{name:'Find schedule',exact:true}).click();
     await desktop.page.getByRole('heading',{name:'Choose a project',exact:true}).waitFor();
     assert(!(await desktop.ctx.cookies()).some(c=>c.name==='pl-volunteer-schedule'));
     await capture(desktop.page,'06-project-choice-mobile.png');
@@ -135,11 +146,11 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
     assert(!(await linked.ctx.cookies()).some(c=>c.name==='pl-volunteer-schedule'&&c.value));
     reset();
     const phone = await context(390);
-    await lookup(phone.page,'Alex Rivera','+1 406 555 0100');
+    await lookup(phone.page,'Rivera','+1 406 555 0100');
     await phone.page.waitForURL('**/v/schedule');
     await phone.page.getByRole('heading',{name:'Here’s your schedule'}).waitFor();
     // Secure flag is required behind HTTPS termination even for a local request URL.
-    const secure = await phone.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin,'x-forwarded-proto':'https'},data:{name:'Alex Rivera',contact:'+1 406 555 0100'}});
+    const secure = await phone.page.request.post(new URL('/v/lookup',baseUrl).href,{headers:{origin:new URL(baseUrl).origin,'x-forwarded-proto':'https'},data:{lastName:'Rivera',contact:'+1 406 555 0100'}});
     assert(/; Secure/i.test(secure.headers()['set-cookie']));
     assert.deepEqual(await secure.json(),{status:'verified'},'Bearer never enters app JSON.');
 
@@ -150,18 +161,36 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
       await go(admin.page,url);
       await admin.page.getByRole('heading',{name:title,exact:true}).first().waitFor();
       await capture(admin.page,name,{fullPage: name !== '16-volunteers-desktop.png'});
+      if(title==='Needs Attention') await admin.page.screenshot({path:path.join(review1246C,'04-needs-attention-unread-desktop.png'),fullPage:true});
+      if(title==='Volunteers') await admin.page.screenshot({path:path.join(review1246C,'05-volunteer-directory-desktop.png')});
+      if(title==='Calendar') await admin.page.screenshot({path:path.join(review1246C,'08-calendar-day-details-desktop.png'),fullPage:true});
     }
     await go(admin.page,'/admin/volunteers');
     const alex = admin.page.locator('article').filter({hasText:'Alex Rivera'}).first();
     await alex.scrollIntoViewIfNeeded();
-    await alex.locator('summary').click();
+    await alex.getByRole('button',{name:'Edit Alex Rivera',exact:true}).click();
     await capture(admin.page,'17-volunteer-edit-desktop.png',{fullPage:false});
+    await admin.page.screenshot({path:path.join(review1246C,'06-volunteer-editor-main-desktop.png')});
+    const desktopPrivate = admin.page.locator('aside[aria-label^="Editing volunteer"]').getByText('Private info',{exact:true});
+    await desktopPrivate.scrollIntoViewIfNeeded();
+    await desktopPrivate.click();
+    await admin.page.screenshot({path:path.join(review1246C,'07-volunteer-editor-private-desktop.png')});
     await admin.page.setViewportSize({width:390,height:844});
     await go(admin.page,'/admin/volunteers');
     const mobileAlex = admin.page.locator('article').filter({hasText:'Alex Rivera'}).first();
-    await mobileAlex.getByRole('button',{name:'Edit volunteer',exact:true}).click();
+    await mobileAlex.getByRole('button',{name:'Edit Alex Rivera',exact:true}).click();
     await admin.page.getByRole('dialog',{name:'volunteer editor',exact:true}).waitFor();
     await capture(admin.page,'19-volunteer-edit-mobile.png',{fullPage:false});
+    await admin.page.screenshot({path:path.join(review1246C,'14-volunteer-editor-mobile-390.png')});
+    const mobilePrivate = admin.page.getByRole('dialog',{name:'volunteer editor',exact:true}).getByText('Private info',{exact:true});
+    await mobilePrivate.scrollIntoViewIfNeeded();
+    await mobilePrivate.click();
+    await admin.page.screenshot({path:path.join(review1246C,'15-private-info-mobile-390.png')});
+    await admin.page.getByRole('button',{name:'Close volunteer editor',exact:true}).click();
+    await admin.page.screenshot({path:path.join(review1246C,'13-volunteer-directory-mobile-390.png')});
+    await admin.page.getByRole('button',{name:'Open more admin navigation',exact:true}).click();
+    await admin.page.screenshot({path:path.join(review1246C,'16-mobile-more-typography-390.png')});
+    await admin.page.getByRole('button',{name:'Close more admin navigation',exact:true}).click();
     await go(admin.page,route);
     await admin.page.setViewportSize({width:1440,height:1000});
     await admin.page.getByRole('button',{name:/Create item/,exact:true}).click();
@@ -181,15 +210,20 @@ export async function runFinalProductReview({ browser, fixture: f, applyAuthCook
     }
     await planner.getByRole('button',{name:'Close project work planner',exact:true}).click();
     await admin.page.setViewportSize({width:390,height:844});
+    sql(`delete from public.needs_attention_seen_states where workspace_id='${f.workspaceId}' and project_contact_id='${f.fullContactId}';`);
     for(const [name,url,title] of surfaces) {
       await go(admin.page,url);
       await admin.page.getByRole('heading',{name:title,exact:true}).first().waitFor();
       await capture(admin.page,name.replace('-desktop','-mobile'),{fullPage:false});
+      if(title==='Needs Attention') await admin.page.screenshot({path:path.join(review1246C,'12-needs-attention-mobile-390.png'),fullPage:true});
+      if(title==='Calendar') await admin.page.screenshot({path:path.join(review1246C,'17-calendar-day-details-mobile-390.png')});
     }
     await admin.page.setViewportSize({width:360,height:844});
     await go(admin.page,route);
     await admin.page.getByRole('heading',{name:'Calendar',exact:true}).first().waitFor();
     await capture(admin.page,'12-calendar-mobile-360.png',{fullPage:false});
+    await admin.page.setViewportSize({width:390,height:844});
+    await admin.page.screenshot({path:path.join(review1246C,'17-calendar-day-details-mobile-390.png')});
     await go(admin.page,`/admin/assignments/${f.assignmentIds.gate}`);
     await capture(admin.page,'21-assignment-detail-mobile.png',{fullPage:false});
     await go(admin.page,'/admin/settings');

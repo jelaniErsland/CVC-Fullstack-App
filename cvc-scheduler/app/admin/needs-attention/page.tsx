@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AdminShell } from "@/components/AdminShell";
+import { NeedsAttentionSeenTracker } from "@/components/NeedsAttentionSeenTracker";
 import { GlassCard } from "@/components/GlassCard";
 import type {
   NeedsAttentionSignal,
@@ -84,7 +85,7 @@ function scheduleLabel(signal: NeedsAttentionSignal) {
   return `${displayDate(signal.startDate)} · ${start}–${displayTime(signal.endTime)}`;
 }
 
-function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
+function AttentionRow({ signal, unseen }: { signal: NeedsAttentionSignal; unseen: boolean }) {
   const assignmentLinks = signal.group === "responses" ? signal.affectedAssignments : [];
   return (
     <details
@@ -92,12 +93,15 @@ function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
       data-signal-kind={signal.kind}
       data-signal-row
     >
-      <summary className="grid min-h-[78px] cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 transition hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--pl-blue)] sm:grid-cols-[132px_minmax(0,1fr)_auto_auto] sm:px-5 [&::-webkit-details-marker]:hidden">
+      <summary className={`grid min-h-[78px] cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 transition hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--pl-blue)] sm:grid-cols-[132px_minmax(0,1fr)_auto_auto] sm:px-5 [&::-webkit-details-marker]:hidden ${unseen ? "bg-blue-50/55" : ""}`}>
         <p className="hidden text-xs font-semibold leading-5 text-[var(--pl-muted)] sm:block">
           {scheduleLabel(signal)}
         </p>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-[var(--pl-ink)]">{signal.title}</p>
+          <p className="flex items-center gap-2 truncate text-sm font-bold text-[var(--pl-ink)]">
+            {unseen ? <span aria-label="New" className="size-1.5 shrink-0 rounded-full bg-[var(--pl-blue)]" /> : null}
+            <span className="truncate">{signal.title}</span>
+          </p>
           <p className="mt-1 text-xs font-semibold text-[var(--pl-text)]">{signal.problem}</p>
           <p className="mt-1 text-[11px] font-medium text-[var(--pl-muted)] sm:hidden">
             {scheduleLabel(signal)}
@@ -198,9 +202,11 @@ function AttentionRow({ signal }: { signal: NeedsAttentionSignal }) {
 function AttentionGroup({
   group,
   signals,
+  unseenSignalIds,
 }: {
   group: NeedsAttentionSignalGroup;
   signals: readonly NeedsAttentionSignal[];
+  unseenSignalIds: ReadonlySet<string>;
 }) {
   if (signals.length === 0) return null;
   const meta = groupMeta[group];
@@ -224,7 +230,7 @@ function AttentionGroup({
       </div>
       <div>
         {signals.map((signal) => (
-          <AttentionRow key={signal.id} signal={signal} />
+          <AttentionRow key={signal.id} signal={signal} unseen={unseenSignalIds.has(signal.id)} />
         ))}
       </div>
     </section>
@@ -308,14 +314,15 @@ export default async function AdminNeedsAttentionPage() {
   return (
     <AdminShell active="needs-attention" workspaceName={state.workspaceName}>
       <div className="space-y-5">
+        <NeedsAttentionSeenTracker workspaceId={state.workspaceId} signalIds={state.unseenSignalIds} />
         <InboxHeader state={state} />
         {state.summary.totalSignalCount === 0 ? (
           <AllCaughtUp today={state.today} />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-card)]">
-            <AttentionGroup group="staffing" signals={state.summary.staffing} />
+            <AttentionGroup group="staffing" signals={state.summary.staffing} unseenSignalIds={new Set(state.unseenSignalIds)} />
             <div className="border-t-4 border-[var(--pl-canvas)]">
-              <AttentionGroup group="responses" signals={state.summary.responses} />
+              <AttentionGroup group="responses" signals={state.summary.responses} unseenSignalIds={new Set(state.unseenSignalIds)} />
             </div>
             {state.summary.truncated ? (
               <p className="border-t border-[var(--pl-border)] px-5 py-3 text-xs font-medium text-[var(--pl-muted)]">

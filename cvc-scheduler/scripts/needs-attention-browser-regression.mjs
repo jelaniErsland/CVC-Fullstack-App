@@ -415,7 +415,7 @@ async function verifyPopulatedDesktop(browser) {
   await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
   await page.getByText("Gate Attendant", { exact: true }).waitFor();
   await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
-    waitUntil: "domcontentloaded",
+    waitUntil: "networkidle",
   });
 
   const deniedRow = page
@@ -501,23 +501,27 @@ async function verifyMobile(browser) {
   await mobileAssignmentLink.click();
   await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
   await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
-  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
-    waitUntil: "domcontentloaded",
-  });
-
-  await page.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
-  const more = page.getByRole("dialog", { name: "More admin navigation", exact: true });
-  await more.waitFor();
-  await more.getByRole("link", { name: "Volunteers", exact: true }).waitFor();
-  await more.getByRole("link", { name: "Communications", exact: true }).waitFor();
-  await more.getByRole("link", { name: "Settings", exact: true }).waitFor();
-  assert.equal(await primary.getByRole("link", { name: "Open Overview", exact: true }).getAttribute("href"), "/admin/dashboard");
-  assert.equal(await primary.getByRole("link", { name: "Open Tasks", exact: true }).getAttribute("href"), "/admin/tasks");
-  assert.equal(await primary.getByRole("link", { name: "Open Calendar", exact: true }).getAttribute("href"), "/admin/calendar");
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-  await capture(page, "needs-attention-mobile-more-volunteers-390x844.png");
   assert.deepEqual(populated.failures, []);
   await populated.context.close();
+
+  const navigation = await openInbox(browser, "populated", { width: 390, height: 844 });
+  const navigationPage = navigation.page;
+  const navigationPrimary = navigationPage.getByRole("navigation", {
+    name: "Primary admin navigation",
+    exact: true,
+  });
+  await navigationPage.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
+  const more = navigationPage.getByRole("dialog", { name: "More admin navigation", exact: true });
+  await more.waitFor();
+  await more.getByRole("link", { name: "Project Quick View", exact: true }).waitFor();
+  await more.getByRole("link", { name: "Volunteers", exact: true }).waitFor();
+  assert.equal(await navigationPrimary.getByRole("link", { name: "Open Overview", exact: true }).getAttribute("href"), "/admin/dashboard");
+  assert.equal(await navigationPrimary.getByRole("link", { name: "Open Tasks", exact: true }).getAttribute("href"), "/admin/tasks");
+  assert.equal(await navigationPrimary.getByRole("link", { name: "Open Calendar", exact: true }).getAttribute("href"), "/admin/calendar");
+  assert.equal(await navigationPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+  await capture(navigationPage, "needs-attention-mobile-more-volunteers-390x844.png");
+  assert.deepEqual(navigation.failures, []);
+  await navigation.context.close();
 }
 
 function cleanup(containerName) {
@@ -530,6 +534,7 @@ delete from public.assignment_responses where workspace_id in (${scope});
 delete from public.calendar_assignments where workspace_id in (${scope});
 delete from public.calendar_items where workspace_id in (${scope});
 delete from public.volunteer_profiles where workspace_id in (${scope});
+delete from public.task_presets where workspace_id in (${scope});
 delete from public.workspace_contact_grants where workspace_id in (${scope});
 delete from public.project_contacts where auth_user_id in (${authIds});
 delete from public.workspaces where workspace_key like ${sqlText(`${namespace}%`)};

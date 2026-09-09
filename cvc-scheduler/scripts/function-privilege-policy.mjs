@@ -29,6 +29,7 @@ export const authenticatedFunctions = Object.freeze([
   "issue_assignment_response_token(uuid,integer,text)",
   "issue_project_quick_view_access(uuid)",
   "issue_volunteer_schedule_access(uuid,integer)",
+  "mark_needs_attention_signal_seen(uuid,text)",
   "publish_calendar_item(uuid)",
   "read_assignment_detail_context(uuid)",
   "read_assignment_notification_delivery_health()",

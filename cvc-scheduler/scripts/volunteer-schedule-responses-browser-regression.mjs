@@ -23,6 +23,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
+const write1246CScreenshots = process.env.WRITE_12_46C_CAPTURES === "1";
+const review1246CDir = path.resolve(root, "..", "previews", "12.46c-volunteer-polish");
 const writeIterationReviewScreenshots =
   process.env.WRITE_ITERATION_12_44B5_CAPTURES === "1";
 const iterationReviewDir = path.resolve(
@@ -428,24 +430,31 @@ async function runBrowserProof(token) {
     await page.getByRole("button", { name: /^Confirm$/ }).click();
     await page.getByText("Your response is now Confirmed.").waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
-    await page.getByText("Confirmed").first().waitFor();
+    await page.getByRole("dialog").getByText("Confirmed", { exact: true }).first().waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByPlaceholder("Add a brief note if you can’t make it").fill("Browser note");
     await page.getByRole("button", { name: "Can’t make it" }).last().click();
     await page.getByText("Your response is now Can’t make it.").waitFor();
+    if (write1246CScreenshots) {
+      await mkdir(review1246CDir, { recursive: true });
+      await page.screenshot({ path: path.join(review1246CDir, "03-declined-schedule-desktop.png"), fullPage: true });
+    }
     await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
-    await page.getByText("Browser note", { exact: true }).waitFor();
+    await page.getByRole("dialog").getByText("Browser note", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: "Confirm all pending" }).click();
     await page.getByText(/Confirmed 3 assignments\./).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: reviewValues.titles.allA, exact: false }).click();
-    await page.getByText("Confirmed").first().waitFor();
+    await page.getByRole("dialog").getByText("Confirmed", { exact: true }).first().waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
@@ -477,6 +486,10 @@ async function runBrowserProof(token) {
     await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
       waitUntil: "domcontentloaded",
     });
+    await page.waitForLoadState("networkidle");
+    if (write1246CScreenshots) {
+      await page.screenshot({ path: path.join(review1246CDir, "11-declined-schedule-mobile-390.png"), fullPage: true });
+    }
     await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
     const mobileDetailScroll = page.getByTestId("volunteer-assignment-detail-scroll");
     await mobileDetailScroll.evaluate((element) => {

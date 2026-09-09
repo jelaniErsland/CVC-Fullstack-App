@@ -40,6 +40,7 @@ export function VolunteerDirectory({
   const [security, setSecurity] = useState("all");
   const [housing, setHousing] = useState("all");
   const [twoPlusDays, setTwoPlusDays] = useState("all");
+  const [desktopAddOpen, setDesktopAddOpen] = useState(false);
   const [mobileEditor, setMobileEditor] = useState<
     { kind: "add" } | { kind: "edit"; volunteer: VolunteerProfile } | null
   >(null);
@@ -103,22 +104,31 @@ export function VolunteerDirectory({
       >
         + Add volunteer
       </button>
-      <details className="group hidden border-b border-[var(--pl-border)] bg-white sm:block">
-        <summary className="m-4 inline-flex min-h-[42px] cursor-pointer list-none items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] marker:hidden hover:bg-[var(--pl-blue-deep)]">
+      <div className="hidden border-b border-[var(--pl-border)] bg-white sm:block">
+        <button
+          aria-expanded={desktopAddOpen}
+          className="m-4 inline-flex min-h-[42px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)]"
+          onClick={() => setDesktopAddOpen((open) => !open)}
+          type="button"
+        >
           + Add volunteer
-        </summary>
-        <div className="border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5">
+        </button>
+        {desktopAddOpen ? <div className="border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5">
           <p className="max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
             Saving does not send a message.
           </p>
-          <form action={createAction} className="mt-4 grid gap-4">
+          <form
+            action={createAction}
+            className="mt-4 grid gap-4"
+            onSubmit={() => setDesktopAddOpen(false)}
+          >
             <VolunteerFields />
             <Button className="mt-1 w-full sm:w-auto" type="submit">
               Save volunteer
             </Button>
           </form>
-        </div>
-      </details>
+        </div> : null}
+      </div>
     </>
   ) : (
     <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-900">
@@ -212,9 +222,7 @@ export function VolunteerDirectory({
             <VolunteerCard
               canEdit={canEdit}
               key={volunteer.id}
-              onDeleteRequest={deleteAction ? () => setDeleteCandidate(volunteer) : undefined}
-              onMobileEdit={() => setMobileEditor({ kind: "edit", volunteer })}
-              updateAction={updateAction}
+              onEdit={() => setMobileEditor({ kind: "edit", volunteer })}
               volunteer={volunteer}
             />
           ))}
@@ -233,11 +241,16 @@ export function VolunteerDirectory({
       )}
 
       <MobileOverlaySheet
-        description={mobileEditor?.kind === "add" ? "Saving does not send a message." : undefined}
+        description={
+          mobileEditor?.kind === "edit"
+            ? (mobileEditor.volunteer.congregation ?? "Volunteer profile")
+            : "Saving does not send a message."
+        }
+        eyebrow={mobileEditor?.kind === "edit" ? "Editing volunteer" : undefined}
         label="volunteer editor"
         onClose={() => setMobileEditor(null)}
         open={mobileEditor !== null}
-        title={mobileEditor?.kind === "edit" ? "Edit volunteer" : "Add volunteer"}
+        title={mobileEditor?.kind === "edit" ? mobileEditor.volunteer.fullName : "Add volunteer"}
       >
         {mobileEditor?.kind === "edit" && updateAction ? (
           <>
@@ -248,9 +261,18 @@ export function VolunteerDirectory({
                 value={mobileEditor.volunteer.id}
               />
               <VolunteerFields volunteer={mobileEditor.volunteer} />
-              <Button className="mt-1 w-full" type="submit">
-                Save changes
-              </Button>
+              <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 border-t border-[var(--pl-border)] bg-white px-4 py-3 shadow-[0_-10px_24px_rgba(15,23,42,.06)]">
+                <button
+                  className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-text)]"
+                  onClick={() => setMobileEditor(null)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <Button className="min-h-11 flex-1" type="submit">
+                  Save changes
+                </Button>
+              </div>
             </form>
             {deleteAction ? (
               <div
@@ -279,6 +301,19 @@ export function VolunteerDirectory({
           </form>
         ) : null}
       </MobileOverlaySheet>
+      {mobileEditor?.kind === "edit" && updateAction ? (
+        <aside aria-label={`Editing volunteer ${mobileEditor.volunteer.fullName}`} className="fixed inset-y-0 right-0 z-50 hidden w-[min(38rem,calc(100vw-2rem))] border-l border-[var(--pl-border)] bg-white shadow-[-18px_0_48px_rgba(15,23,42,.16)] sm:flex sm:flex-col">
+          <header className="flex items-start justify-between gap-4 border-b border-[var(--pl-border)] px-5 py-5">
+            <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--pl-blue)]">Editing volunteer</p><h2 className="mt-1 truncate text-xl font-bold text-[var(--pl-ink)]">{mobileEditor.volunteer.fullName}</h2><p className="mt-1 truncate text-sm text-[var(--pl-muted)]">{mobileEditor.volunteer.congregation ?? "Volunteer profile"}</p></div>
+            <button aria-label="Close volunteer editor" className="inline-flex size-10 items-center justify-center rounded-lg text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)]" onClick={() => setMobileEditor(null)} type="button"><X aria-hidden="true" className="size-5" /></button>
+          </header>
+          <form action={updateAction} className="flex min-h-0 flex-1 flex-col">
+            <input name="profileId" type="hidden" value={mobileEditor.volunteer.id} />
+            <div className="min-h-0 flex-1 overflow-y-auto p-5"><VolunteerFields volunteer={mobileEditor.volunteer} /></div>
+            <div className="sticky bottom-0 flex gap-3 border-t border-[var(--pl-border)] bg-white px-5 py-4"><button className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-text)]" onClick={() => setMobileEditor(null)} type="button">Cancel</button><Button className="min-h-11 flex-1" type="submit">Save changes</Button></div>
+          </form>
+        </aside>
+      ) : null}
       {deleteCandidate && deleteAction ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <button aria-label="Close delete confirmation backdrop" className="absolute inset-0 bg-slate-950/30 backdrop-blur-[2px]" onClick={() => setDeleteCandidate(null)} tabIndex={-1} type="button" />

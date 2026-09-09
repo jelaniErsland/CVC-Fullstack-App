@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightMealSystemPresetExpected", "MigrationPreflightConcurrentAdminSafetyExpected", "MigrationPreflightVolunteerProfileExpansionExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightMealSystemPresetTransitionPending", "MigrationPreflightConcurrentAdminSafetyTransitionPending", "MigrationPreflightVolunteerProfileExpansionTransitionPending", "MigrationPreflightMealSystemPresetWrongOldLock", "MigrationPreflightMealSystemPresetLockAhead", "MigrationPreflightMealSystemPresetSkipped", "MigrationPreflightMealSystemPresetArbitraryFuture", "MigrationPreflightMealSystemPresetMalformed", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightMealSystemPresetExpected", "MigrationPreflightConcurrentAdminSafetyExpected", "MigrationPreflightVolunteerProfileExpansionExpected", "MigrationPreflightVolunteerExperiencePolishExpected", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightMealSystemPresetTransitionPending", "MigrationPreflightConcurrentAdminSafetyTransitionPending", "MigrationPreflightVolunteerProfileExpansionTransitionPending", "MigrationPreflightVolunteerExperiencePolishTransitionPending", "MigrationPreflightMealSystemPresetWrongOldLock", "MigrationPreflightMealSystemPresetLockAhead", "MigrationPreflightMealSystemPresetSkipped", "MigrationPreflightMealSystemPresetArbitraryFuture", "MigrationPreflightMealSystemPresetMalformed", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -352,6 +352,9 @@ function Assert-MigrationPreflightProcessResult {
       ) -or (
         $ExpectedMigrationVersion -ceq $ConcurrentAdminSafetyProductionMigration -and
         $result.terminal_migration -ceq $VolunteerProfileExpansionProductionMigration
+      ) -or (
+        $ExpectedMigrationVersion -ceq $VolunteerProfileExpansionProductionMigration -and
+        $result.terminal_migration -ceq $VolunteerExperiencePolishProductionMigration
       )
     ) {
       throw "migration_lock_transition_pending"
@@ -1063,6 +1066,14 @@ function Invoke-FixtureScenario {
         "fixture_migration_preflight_volunteer_profile_expansion_expected_ok"
         return
       }
+      "MigrationPreflightVolunteerExperiencePolishExpected" {
+        Assert-MigrationPreflightProcessResult `
+          -ExitCode 0 `
+          -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260908130000"}' `
+          -ExpectedMigrationVersion "20260908130000"
+        "fixture_migration_preflight_volunteer_experience_polish_expected_ok"
+        return
+      }
       "MigrationPreflightTransitionPending" {
         try {
           Assert-MigrationPreflightProcessResult `
@@ -1191,6 +1202,19 @@ function Invoke-FixtureScenario {
           if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
         }
         "fixture_migration_preflight_volunteer_profile_expansion_transition_pending_rejected"
+        return
+      }
+      "MigrationPreflightVolunteerExperiencePolishTransitionPending" {
+        try {
+          Assert-MigrationPreflightProcessResult `
+            -ExitCode 0 `
+            -Output '{"database_name":"postgres","migration_relation_present":true,"terminal_migration":"20260908130000"}' `
+            -ExpectedMigrationVersion "20260908120000"
+          throw "fixture_volunteer_experience_polish_pending_transition_not_rejected"
+        } catch {
+          if ($_.Exception.Message -cne "migration_lock_transition_pending") { throw }
+        }
+        "fixture_migration_preflight_volunteer_experience_polish_transition_pending_rejected"
         return
       }
       "MigrationPreflightMealSystemPresetWrongOldLock" {

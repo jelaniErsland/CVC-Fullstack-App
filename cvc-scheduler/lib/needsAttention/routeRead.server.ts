@@ -15,6 +15,16 @@ import {
   type NeedsAttentionSummary,
 } from "./derive.server.ts";
 
+type NeedsAttentionSeenReader = {
+  from: (table: "needs_attention_seen_states") => {
+    select: (columns: "signal_id") => {
+      eq: (column: "workspace_id", value: string) => {
+        eq: (column: "project_contact_id", value: string) => Promise<{ data: Array<{ signal_id: string }> | null }>;
+      };
+    };
+  };
+};
+
 export const NEEDS_ATTENTION_PERSISTED_CUTOVER_IMPLEMENTED = true;
 export const NEEDS_ATTENTION_MOCK_FALLBACK_ALLOWED = false;
 export const NEEDS_ATTENTION_SERVICE_ROLE_AVAILABLE = false;
@@ -33,6 +43,9 @@ export type NeedsAttentionReadyRouteState = Readonly<{
   workspaceTimezone: string;
   today: string;
   summary: NeedsAttentionSummary;
+  workspaceId: string;
+  unseenSignalIds: readonly string[];
+  unseenSignalCount: number;
 }>;
 
 export type NeedsAttentionRouteState =
@@ -132,15 +145,26 @@ export async function readNeedsAttentionRouteState(
       };
     }
 
+    const summary = deriveNeedsAttentionSignals(calendar.items, {
+      at,
+      workspaceTimezone: context.workspace.timezone,
+    });
+    const seenResult = await (context.supabase as unknown as NeedsAttentionSeenReader)
+      .from("needs_attention_seen_states")
+      .select("signal_id")
+      .eq("workspace_id", context.workspace.id)
+      .eq("project_contact_id", context.projectContactId);
+    const seen = new Set<string>((seenResult.data ?? []).map((row: { signal_id: string }) => row.signal_id));
+    const unseenSignalIds = summary.signals.filter((signal) => !seen.has(signal.id)).map((signal) => signal.id);
     return {
       kind: "ready",
       workspaceName: context.workspace.displayName,
+      workspaceId: context.workspace.id,
       workspaceTimezone: context.workspace.timezone,
       today,
-      summary: deriveNeedsAttentionSignals(calendar.items, {
-        at,
-        workspaceTimezone: context.workspace.timezone,
-      }),
+      summary,
+      unseenSignalIds,
+      unseenSignalCount: unseenSignalIds.length,
     };
   } catch {
     return {

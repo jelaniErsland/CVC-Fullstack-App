@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
+import { NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
 
 export type AdminNavActive =
   | "projects"
@@ -110,6 +111,7 @@ export function AdminNav({
                 <Icon aria-hidden="true" className="size-4" />
               </span>
               <span>{item.label}</span>
+              {item.id === "needs-attention" ? <NeedsAttentionUnseenBadge /> : null}
               <AdminNavigationPendingIndicator disabled={active === item.id} />
             </Link>
           );

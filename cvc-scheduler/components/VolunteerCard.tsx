@@ -1,14 +1,11 @@
-import { Button } from "./Button";
 import { StatusPill } from "./StatusPill";
-import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Phone, Trash2 } from "lucide-react";
+import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerOperationalSummary, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
-  onDeleteRequest?: () => void;
-  onMobileEdit?: () => void;
-  updateAction?: (formData: FormData) => void | Promise<void>;
+  onEdit?: () => void;
 };
 
 function lifecycleLabel(lifecycle: VolunteerProfile["lifecycle"]) {
@@ -29,9 +26,7 @@ function preferredContactLabel(method: VolunteerProfile["preferredContactMethod"
 export function VolunteerCard({
   volunteer,
   canEdit,
-  onDeleteRequest,
-  onMobileEdit,
-  updateAction,
+  onEdit,
 }: VolunteerCardProps) {
   const sourceLabel =
     volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
@@ -90,6 +85,7 @@ export function VolunteerCard({
             {readinessLabel(volunteer.readinessStatus)}
           </span>
           <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
+          {canEdit ? <button aria-label={`Edit ${volunteer.fullName}`} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onEdit} type="button"><Pencil aria-hidden="true" className="size-3.5" /> Edit</button> : null}
         </div>
       </div>
 
@@ -104,47 +100,11 @@ export function VolunteerCard({
         </p> : null}
       </div>
 
-      {canEdit && updateAction ? (
-        <>
-          <button
-            className="w-full border-t border-[var(--pl-border)] px-4 py-3 text-left text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] sm:hidden"
-            onClick={onMobileEdit}
-            type="button"
-          >
-            Edit volunteer
-          </button>
-          <details className="group hidden border-t border-[var(--pl-border)] bg-white sm:block">
-            <summary className="cursor-pointer list-none px-4 py-2.5 text-xs font-semibold text-[var(--pl-blue)] marker:hidden hover:bg-[var(--pl-blue-soft)] lg:px-5">
-              Edit volunteer
-            </summary>
-            <form action={updateAction} className="grid gap-3 border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-4 lg:p-5">
-              <input name="profileId" type="hidden" value={volunteer.id} />
-              <VolunteerFields volunteer={volunteer} />
-              <Button className="mt-1 w-full sm:w-auto" type="submit">
-                Save changes
-              </Button>
-            </form>
-            {onDeleteRequest ? (
-              <div
-                className="border-t border-[var(--pl-border)] bg-white px-4 py-3 lg:px-5"
-              >
-                <button
-                  className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-[var(--pl-radius-control)] border border-rose-200 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                  onClick={onDeleteRequest}
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-                  Delete volunteer
-                </button>
-              </div>
-            ) : null}
-          </details>
-        </>
-      ) : (
+      {!canEdit ? (
         <p className="border-t border-[var(--pl-border)] px-4 py-2.5 text-xs font-medium text-[var(--pl-muted)] lg:px-5">
           Editing is unavailable for this signed-in contact.
         </p>
-      )}
+      ) : null}
     </article>
   );
 }

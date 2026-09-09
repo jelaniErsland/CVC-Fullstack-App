@@ -133,14 +133,6 @@ async function resolveLocalDatabaseContainer() {
   return containerName;
 }
 
-async function applyManualVolunteerMigration(containerName) {
-  const migration = await readFile(
-    path.join(root, "supabase", "migrations", "20260714121500_manual_volunteer_profiles.sql"),
-    "utf8",
-  );
-  runPsql(containerName, migration);
-}
-
 async function createAuthenticatedContact(label) {
   const email = `${fixture.namespace}-${label}-${randomUUID()}@example.invalid`;
   const password = `${randomBytes(24).toString("base64url")}aA1!`;
@@ -237,6 +229,7 @@ async function openVolunteersPage(context) {
   });
   assert(response?.ok(), `Volunteers route returned ${response?.status() ?? "no response"}`);
   await page.getByRole("heading", { name: "Volunteers", exact: true }).waitFor();
+  await page.waitForLoadState("networkidle");
   return { page, failures };
 }
 
@@ -289,7 +282,11 @@ async function run() {
   );
 
   const containerName = await resolveLocalDatabaseContainer();
-  await applyManualVolunteerMigration(containerName);
+  assert.equal(
+    runPsql(containerName, "select max(version) from supabase_migrations.schema_migrations;"),
+    "20260908130000",
+    "Volunteer browser QA requires the fresh current local migration chain.",
+  );
   const fullUserId = await createAuthenticatedContact("full");
   const viewOnlyUserId = await createAuthenticatedContact("view-only");
   const targetKey = `${fixture.namespace}-target`;
@@ -327,7 +324,7 @@ async function run() {
     await applyAuthCookies(context, "full");
     const { page, failures } = await openVolunteersPage(context);
     await page.getByText("No volunteers yet").waitFor();
-    await page.locator("summary").filter({ hasText: "Add volunteer" }).click();
+    await page.getByRole("button", { name: /Add volunteer/ }).click();
     await page.getByLabel("Full name").first().fill(reviewValues.createdVolunteerName);
     await page.getByLabel("Email").first().fill(reviewValues.volunteerEmail);
     await page.getByLabel("Phone").first().fill("406-555-9090");
@@ -338,10 +335,12 @@ async function run() {
       page.getByRole("button", { name: "Save volunteer" }).click(),
     ]);
     await page.getByText(reviewValues.createdVolunteerName).waitFor();
-    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.goto(createPreviewUrl(baseUrl, "/admin/dashboard"), { waitUntil: "networkidle" });
+    await page.goto(createPreviewUrl(baseUrl, "/admin/volunteers"), { waitUntil: "networkidle" });
     await page.getByText(reviewValues.createdVolunteerName).waitFor();
-    await page.locator("summary").filter({ hasText: "Edit volunteer" }).first().click();
-    const editDetails = page.locator("details").filter({ hasText: "Edit volunteer" }).first();
+    const createdRow = page.locator("article").filter({ hasText: reviewValues.createdVolunteerName }).first();
+    await createdRow.getByRole("button", { name: `Edit ${reviewValues.createdVolunteerName}`, exact: true }).click();
+    const editDetails = page.locator('aside[aria-label^="Editing volunteer"]');
     await editDetails.getByLabel("Full name").fill(reviewValues.volunteerName);
     await Promise.all([
       page.waitForURL(/notice=updated/),
@@ -390,7 +389,7 @@ async function run() {
     );
 
     const editTrigger = mobileEditorPage.getByRole("button", {
-      name: "Edit volunteer",
+      name: `Edit ${reviewValues.volunteerName}`,
       exact: true,
     }).first();
     await editTrigger.click();
@@ -448,6 +447,7 @@ async function cleanup(containerName) {
     `begin;
 delete from public.volunteer_profiles where workspace_id in (select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)});
 delete from public.questionnaire_submissions where workspace_id in (select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)});
+delete from public.task_presets where workspace_id in (select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)});
 delete from public.workspace_contact_grants
 where workspace_id in (select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)})
 or project_contact_id in (select id from public.project_contacts where auth_user_id = any(array[${authIdArray}]));

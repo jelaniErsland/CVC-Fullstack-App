@@ -293,7 +293,7 @@ assert.equal(bounded.signals.length, NEEDS_ATTENTION_SIGNAL_LIMIT);
 assert.equal(bounded.totalCandidateCount, 120);
 assert.equal(bounded.truncated, true);
 
-const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource, packageSource] =
+const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource, packageSource, migrationSource, actionSource, trackerSource] =
   await Promise.all([
     readFile(path.join(root, "app", "admin", "needs-attention", "page.tsx"), "utf8"),
     readFile(path.join(root, "lib", "needsAttention", "routeRead.server.ts"), "utf8"),
@@ -302,6 +302,9 @@ const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource
     readFile(path.join(root, "components", "AdminShell.tsx"), "utf8"),
     readFile(path.join(root, "lib", "auth", "project-contact-grants.ts"), "utf8"),
     readFile(path.join(root, "package.json"), "utf8"),
+    readFile(path.join(root, "supabase", "migrations", "20260908130000_volunteer_lookup_last_name_and_attention_seen.sql"), "utf8"),
+    readFile(path.join(root, "app", "admin", "needs-attention", "actions.ts"), "utf8"),
+    readFile(path.join(root, "components", "NeedsAttentionSeenTracker.tsx"), "utf8"),
   ]);
 const productSource = `${pageSource}\n${routeSource}\n${deriveSource}`;
 assert.match(pageSource, /export const dynamic = "force-dynamic"/);
@@ -312,10 +315,21 @@ assert.doesNotMatch(routeSource, /auth\.getUser\(\)|loadProjectContactGrantsWith
 assert.match(authSource, /\.eq\("status", "active"\)/);
 assert.doesNotMatch(productSource, /mockData|mock Needs Attention|groupNeedsAttentionItems/i);
 assert.doesNotMatch(productSource, /SUPABASE_SERVICE_ROLE_KEY|createServiceRole/i);
-assert.doesNotMatch(productSource, /\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.rpc\(/i);
-assert.doesNotMatch(productSource, /needs_attention(_items?|_issues?)?\b/i);
+assert.doesNotMatch(productSource, /\.insert\(|\.update\(|\.delete\(|\.upsert\(/i);
+assert.doesNotMatch(productSource, /needs_attention_(items?|issues?)\b/i);
 assert.doesNotMatch(pageSource, /needs-attention\/\[itemId\]|\/admin\/needs-attention\/\$\{/i);
-assert.doesNotMatch(pageSource, /capabilities|workspaceId|projectContactId|auth_user|response token|bearer/i);
+assert.match(pageSource, /NeedsAttentionSeenTracker/);
+assert.match(pageSource, /unseenSignalIds\.has\(signal\.id\)/);
+assert.match(actionSource, /mark_needs_attention_signal_seen/);
+assert.match(actionSource, /results\.every\(\(result\) => result\.error === null\)/);
+assert.match(trackerSource, /project-local:needs-attention-seen/);
+assert.match(migrationSource, /create policy needs_attention_seen_states_select_own/);
+assert.match(migrationSource, /contact\.auth_user_id = auth\.uid\(\)/);
+assert.match(migrationSource, /grant_row\.capabilities @> array\['workspace\.read','calendar\.view','assignments\.view'\]::text\[\]/);
+assert.match(migrationSource, /grant select on public\.needs_attention_seen_states to authenticated/);
+assert.match(migrationSource, /revoke all on function public\.mark_needs_attention_signal_seen\(uuid, text\) from public, anon, authenticated/);
+assert.match(migrationSource, /grant execute on function public\.mark_needs_attention_signal_seen\(uuid, text\) to authenticated/);
+assert.doesNotMatch(migrationSource, /grant execute on function public\.mark_needs_attention_signal_seen\(uuid, text\) to (?:anon|public)/i);
 assert.match(navSource, /label: "Needs Attention"[\s\S]*href: "\/admin\/needs-attention"/);
 assert.match(shellSource, /id: "needs-attention"[\s\S]*href: "\/admin\/needs-attention"/);
 assert.match(shellSource, /label: "Volunteers", href: "\/admin\/volunteers"/);
@@ -336,4 +350,4 @@ assert.deepEqual(contract.requiredCapabilities, [
 ]);
 
 console.log("Needs Attention persisted derived-inbox validation passed.");
-console.log("Confirmed canonical staffing/response windows, deterministic urgency/order/bounds, fail-closed scope, zero persistence, and zero mock fallback.");
+console.log("Confirmed canonical staffing/response windows, deterministic urgency/order/bounds, fail-closed scope, personal seen-state isolation, and zero mock fallback.");

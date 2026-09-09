@@ -19,8 +19,8 @@ const authId = randomUUID();
 const ids = Array.from({ length: 8 }, randomUUID);
 const namespace = `lookup-${randomUUID()}`;
 const reset = () => sql("delete from public.volunteer_lookup_attempts where bucket <> 'global'; update public.volunteer_lookup_attempts set attempts=0, window_started_at=now() where bucket='global';");
-async function verify(name, contact, projectChoice) {
-  const result = await client.rpc("verify_volunteer_schedule_lookup", { p_full_name: name, p_contact: contact, p_project_choice: projectChoice });
+async function verify(lastName, contact, projectChoice) {
+  const result = await client.rpc("verify_volunteer_schedule_lookup", { p_full_name: lastName, p_contact: contact, p_project_choice: projectChoice });
   assert.equal(result.error, null);
   return result.data;
 }
@@ -45,7 +45,7 @@ try {
     (id, workspace_id, profile_source, lifecycle, readiness_status, full_name, email, phone, availability_snapshot, skills_help_snapshot, manual_created_at, manual_created_by_project_contact_id)
     values (${text(ids[i])},${text(workspaces[w])},'manual',${text(lifecycle)},${text(readiness)},${text(name)},${text(email)},${phone ? text(phone) : 'null'},'{}','{}',now(),${text(contactId)});`);
   reset();
-  const first = await verify('  jOrDaN   RIVERA ', ' JORDAN@EXAMPLE.INVALID ');
+  const first = await verify('  rIvErA ', ' JORDAN@EXAMPLE.INVALID ');
   assert.equal(first.status, 'verified');
   assert.equal(parseLookupResult(first).status, 'verified');
   const schedule = await client.rpc('read_volunteer_schedule', { p_bearer_token: first.bearer_token });
@@ -53,22 +53,22 @@ try {
   assert.equal(schedule.data[0].volunteer_display_name, 'Jordan Rivera');
   assert.equal(schedule.data[0].workspace_display_name, 'Local project A');
   assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${text(first.bearer_token)},'sha256')`), ids[0]);
-  assert.equal((await verify('Jordan Rivera', '+1 406.555.0100')).status, 'verified');
-  for (const [name, contact] of [['Jordan Rivera','wrong@example.invalid'],['Unknown Person','wrong@example.invalid'],['Inactive Person','inactive@example.invalid'],['Held Person','held@example.invalid'],['Archived Project','archived@example.invalid'],['Jordan Rivera','4065550100']]) assert.deepEqual(await verify(name,contact), failed);
+  assert.equal((await verify('Rivera', '+1 406.555.0100')).status, 'verified');
+  for (const [name, contact] of [['Rivera','wrong@example.invalid'],['Unknown','wrong@example.invalid'],['Person','inactive@example.invalid'],['Person','held@example.invalid'],['Project','archived@example.invalid'],['Rivera','4065550100']]) assert.deepEqual(await verify(name,contact), failed);
   reset();
-  assert.deepEqual(await verify('Jordan Rivera', 'jordan@example.invalid', '0'.repeat(64)), failed);
+  assert.deepEqual(await verify('Rivera', 'jordan@example.invalid', '0'.repeat(64)), failed);
   assert.deepEqual(await verify('Jordan Rivera', ''), failed);
   assert.deepEqual(await verify(null, null), failed);
   assert.deepEqual(await verify('x'.repeat(1000), 'x@example.invalid'), failed);
   assert.deepEqual(await verify('Jordan Rivera', 'call 14065550100'), failed);
-  const choices = await verify('Morgan Lee', 'morgan@example.invalid');
+  const choices = await verify('Lee', 'morgan@example.invalid');
   assert.equal(choices.status, 'choose_project');
   assert.equal(choices.projects.length, 2);
   for (const p of choices.projects) assert.deepEqual(Object.keys(p).sort(), ['choice','name']);
   assert(!JSON.stringify(choices).includes('volunteer'));
   assert(!JSON.stringify(choices).includes(workspaces[0]) && !JSON.stringify(choices).includes(workspaces[1]));
   const selectedChoice = choices.projects.find((project) => project.name === 'Local project B').choice;
-  const selected = await verify('Morgan Lee', 'morgan@example.invalid', selectedChoice);
+  const selected = await verify('Lee', 'morgan@example.invalid', selectedChoice);
   assert.equal(selected.status, 'verified');
   assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${text(selected.bearer_token)},'sha256')`), ids[2]);
   const selectedSchedule = await client.rpc('read_volunteer_schedule', { p_bearer_token: selected.bearer_token });
@@ -79,22 +79,22 @@ try {
   assert.equal(originalScheduleAgain.error, null);
   assert.equal(originalScheduleAgain.data[0].workspace_display_name, 'Local project A');
   assert(!JSON.stringify(choices).match(/schedule|email|phone|bearer|token|volunteer/i));
-  assert.deepEqual(await verify('Morgan Lee','wrong@example.invalid',selectedChoice),failed);
+  assert.deepEqual(await verify('Lee','wrong@example.invalid',selectedChoice),failed);
   // Identical contact/name duplicates in a workspace must fail, not choose a record.
   sql(`insert into public.volunteer_profiles (id,workspace_id,profile_source,full_name,email,availability_snapshot,skills_help_snapshot,manual_created_at,manual_created_by_project_contact_id)
     values (${text(ids[7])},${text(workspaces[0])},'manual','Morgan Lee','morgan@example.invalid','{}','{}',now(),${text(contactId)});`);
-  assert.deepEqual(await verify('Morgan Lee','morgan@example.invalid'),failed);
+  assert.deepEqual(await verify('Lee','morgan@example.invalid'),failed);
   reset();
-  const attempts = await Promise.all(Array.from({length: 10}, () => verify('Jordan Rivera','jordan@example.invalid')));
+  const attempts = await Promise.all(Array.from({length: 10}, () => verify('Rivera','jordan@example.invalid')));
   assert.equal(attempts.filter(x => x.status === 'verified').length,6,'Concurrent calls cannot bypass the limiter.');
-  assert.deepEqual(await verify('Jordan Rivera','jordan@example.invalid'),failed);
+  assert.deepEqual(await verify('Rivera','jordan@example.invalid'),failed);
   sql("update public.volunteer_lookup_attempts set window_started_at=now()-interval '16 minutes';");
-  assert.equal((await verify('Jordan Rivera','jordan@example.invalid')).status,'verified','Temporary limit recovers.');
+  assert.equal((await verify('Rivera','jordan@example.invalid')).status,'verified','Temporary limit recovers.');
   reset();
-  for(let i=0;i<7;i++)assert.deepEqual(await verify('Unknown Person','wrong@example.invalid'),failed);
+  for(let i=0;i<7;i++)assert.deepEqual(await verify('Unknown','wrong@example.invalid'),failed);
   assert.equal(sql("select max(attempts) from public.volunteer_lookup_attempts where bucket <> 'global'"),'7');
   sql("update public.volunteer_lookup_attempts set attempts=200 where bucket='global';");
-  assert.deepEqual(await verify('Jordan Rivera','jordan@example.invalid'),failed);
+  assert.deepEqual(await verify('Rivera','jordan@example.invalid'),failed);
   assert.deepEqual(await verify('Anyone Else','wrong@example.invalid'),failed);
   reset();
   for (const table of ['volunteer_profiles','volunteer_schedule_access_tokens','volunteer_lookup_attempts']) {
@@ -108,10 +108,10 @@ try {
   assert.equal(sql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_repeated_calendar_items','delete_history_free_volunteer_profile','update_current_workspace_project_dates','issue_project_quick_view_share_access') and has_function_privilege('anon',p.oid,'EXECUTE')"),'0');
   const denied = spawnSync('docker',['exec','-i','supabase_db_cvc-scheduler','psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],{input:'set role authenticated; select * from public.volunteer_lookup_attempts;',encoding:'utf8',windowsHide:true});
   assert.notEqual(denied.status,0);
-  assert.equal(parseLookupInput({name:'Jordan Rivera'}),null);
-  assert.equal(parseLookupInput({name:'Jordan Rivera',contact:'x@y.invalid',projectChoice:'bad'}),null);
+  assert.equal(parseLookupInput({lastName:'Rivera'}),null);
+  assert.equal(parseLookupInput({lastName:'Rivera',contact:'x@y.invalid',projectChoice:'bad'}),null);
   assert.equal(parseLookupResult({status:'verified',bearer_token:'bad',expires_at:'tomorrow'}).status,'unverified');
-  console.log('PASS lookup: exact email/phone, normalization, generic failures, same-name and duplicate collisions, inactive/readiness/project gates, project choice, workspace/session scope, malformed input, concurrent/expiring/global limits, direct anon denial, explicit PUBLIC/anon/authenticated ACLs.');
+  console.log('PASS lookup: last-name plus email/phone, formatting normalization, generic failures, collisions, inactive/readiness/project gates, project choice, workspace/session scope, malformed input, concurrent/expiring/global limits, direct anon denial, explicit PUBLIC/anon/authenticated ACLs.');
 } finally {
   reset();
   sql(`delete from public.volunteer_schedule_access_tokens where workspace_id in (${workspaces.map(text)});

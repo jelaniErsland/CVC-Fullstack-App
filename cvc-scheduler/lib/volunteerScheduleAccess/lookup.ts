@@ -9,13 +9,13 @@ export type LookupResult =
 export function parseLookupInput(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  if (Object.keys(record).some((key) => !["name", "contact", "projectChoice"].includes(key))) return null;
-  if (typeof record.name !== "string" || typeof record.contact !== "string") return null;
-  const name = record.name.trim().replace(/\s+/g, " ");
+  if (Object.keys(record).some((key) => !["lastName", "contact", "projectChoice"].includes(key))) return null;
+  if (typeof record.lastName !== "string" || typeof record.contact !== "string") return null;
+  const lastName = record.lastName.trim().replace(/\s+/g, " ");
   const contact = record.contact.trim();
-  if (!name || name.length > 160 || contact.length < 3 || contact.length > 254) return null;
+  if (!lastName || lastName.length > 160 || contact.length < 3 || contact.length > 254) return null;
   if (record.projectChoice !== undefined && (typeof record.projectChoice !== "string" || !/^[0-9a-f]{64}$/.test(record.projectChoice))) return null;
-  return { name, contact, projectChoice: record.projectChoice as string | undefined };
+  return { lastName, contact, projectChoice: record.projectChoice as string | undefined };
 }
 
 export function parseLookupResult(value: unknown): LookupResult {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { KeyRound } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { VolunteerLookup } from "@/components/VolunteerLookup";
@@ -21,8 +22,8 @@ export default function Home() {
         <VolunteerLookup />
       </section>
       <footer className="mx-auto w-full max-w-6xl">
-        <Link href="/admin/login" className="inline-flex min-h-11 items-center rounded-lg text-xs font-medium text-slate-600 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500">
-          Project contact sign in
+        <Link href="/admin/login" className="inline-flex min-h-11 items-center gap-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500">
+          <KeyRound aria-hidden="true" className="size-3.5" /> Project contact sign in
         </Link>
       </footer>
     </PageShell>

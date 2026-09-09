@@ -712,15 +712,6 @@ function CalendarWorkspaceHeader({
             <h2 className="text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
               {periodLabel}
             </h2>
-            <button
-              aria-label="Open day details for the selected date"
-              className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/65 px-2.5 text-[11px] font-semibold text-[var(--pl-blue)] transition hover:bg-blue-50 ${calmFocusRing}`}
-              onClick={onOpenProjectDay}
-              type="button"
-            >
-              <Users aria-hidden="true" className="h-3.5 w-3.5" />
-              Day details
-            </button>
           </div>
           <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
             {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
@@ -728,7 +719,7 @@ function CalendarWorkspaceHeader({
           </p>
           </div>
 
-          <div className="inline-flex shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5">
+          <div className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5">
             <button
               aria-label={`Previous ${navigationUnit}`}
               className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
@@ -756,6 +747,16 @@ function CalendarWorkspaceHeader({
               type="button"
             >
               <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <button
+              aria-label="Open day details for the selected date"
+              className={`inline-flex min-h-9 items-center justify-center rounded-md border-l border-[var(--pl-border)] px-2.5 text-[11px] font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              onClick={onOpenProjectDay}
+              title="Day details"
+              type="button"
+            >
+              <Users aria-hidden="true" className="h-3.5 w-3.5" />
+              <span className="ml-1">Day details</span>
             </button>
           </div>
         </div>

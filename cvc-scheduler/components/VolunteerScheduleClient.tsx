@@ -37,7 +37,7 @@ const responseStyles: Record<
 > = {
   needs_response: "border-amber-200 bg-amber-50 text-amber-700",
   confirmed: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  declined: "border-slate-200 bg-slate-50 text-slate-600",
+  declined: "border-rose-200 bg-rose-50 text-rose-700",
 };
 
 function formatDate(value: string) {
@@ -111,6 +111,9 @@ export function VolunteerScheduleClient({
     startResponseTransition(async () => {
       const result = await submitResponseAction(formData);
       setActionNotice(result);
+      if (result.ok && status === "declined") {
+        setSelectedId(null);
+      }
       setPendingAssignmentId(null);
     });
   }
@@ -195,7 +198,11 @@ export function VolunteerScheduleClient({
           </div>
         ) : null}
         <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
-        {assignments.map((assignment, index) => (
+        {assignments.map((assignment) => {
+          const isNext = assignment.currentResponseStatus !== "declined" && !assignments.some(
+            (other) => other.currentResponseStatus !== "declined" && other.assignmentReference !== assignment.assignmentReference && other.startDate < assignment.startDate,
+          );
+          return (
           <button
             key={assignment.assignmentReference}
             ref={(node) => {
@@ -210,27 +217,27 @@ export function VolunteerScheduleClient({
             }}
             className={[
               "group flex w-full min-w-0 items-start gap-3 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
-              index === 0
+              isNext
                 ? "bg-[linear-gradient(115deg,rgba(234,242,255,.95),rgba(255,255,255,1)_64%,rgba(242,237,255,.7))] p-4 sm:p-5"
                 : "px-3.5 py-3 sm:px-4",
             ].join(" ")}
           >
-            <span className={index === 0 ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue)] text-white shadow-[0_8px_18px_rgba(23,105,255,.22)]" : "flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"}>
-              <CalendarDays aria-hidden="true" className={index === 0 ? "size-5" : "size-4"} strokeWidth={1.8} />
+            <span className={isNext ? "flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue)] text-white shadow-[0_8px_18px_rgba(23,105,255,.22)]" : "flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"}>
+              <CalendarDays aria-hidden="true" className={isNext ? "size-5" : "size-4"} strokeWidth={1.8} />
             </span>
             <span className="min-w-0 flex-1">
-              {index === 0 ? (
+              {isNext ? (
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Next assignment</span>
               ) : null}
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className={index === 0 ? "text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
+                <span className={isNext ? "text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
                 <span
                   className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}
                 >
                   {responseLabels[assignment.currentResponseStatus]}
                 </span>
               </span>
-              <span className={index === 0 ? "mt-1.5 block text-sm font-medium leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
+              <span className={isNext ? "mt-1.5 block text-sm font-medium leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
                 {dateTimeLabel(assignment)}
               </span>
               <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
@@ -240,13 +247,14 @@ export function VolunteerScheduleClient({
               </span>
             </span>
             <span className="inline-flex shrink-0 items-center gap-1 self-center rounded-lg px-1.5 py-1 text-[11px] font-semibold text-[var(--pl-blue)] sm:px-2">
-              {assignment.currentResponseStatus === "needs_response" ? (
+              {assignment.currentResponseStatus === "declined" ? <span>Change response</span> : assignment.currentResponseStatus === "needs_response" ? (
                 <span>Review &amp; respond</span>
               ) : null}
               <ArrowRight aria-hidden="true" className="size-4" />
             </span>
           </button>
-        ))}
+          );
+        })}
         </div>
       </div>
 

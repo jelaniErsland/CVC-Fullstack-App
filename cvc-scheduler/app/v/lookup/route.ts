@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
     const { data, error } = await client.rpc("verify_volunteer_schedule_lookup", {
-      p_full_name: input.name, p_contact: input.contact, p_project_choice: input.projectChoice,
+      p_full_name: input.lastName, p_contact: input.contact, p_project_choice: input.projectChoice,
     });
     if (error) return failure();
     const result = parseLookupResult(data);
