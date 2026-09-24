@@ -1,15 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import CalendarClient from "@/components/CalendarClient";
+import { planCalendarAssignmentsAction } from "@/lib/calendar/bulkAssignments.actions";
 import { saveCalendarMealAction, duplicateCalendarItemAction } from "@/lib/calendar/operations.actions";
 import {
   cancelAssignmentWithClient,
   createAssignmentsBatchWithClient,
 } from "@/lib/assignments/server";
-import {
-  InitialAssignmentNotificationBoundaryError,
-  sendInitialAssignmentNotificationsForItemWithClient,
-} from "@/lib/calendar/assignmentNotifications.server";
 import {
   readCalendarAssignmentMutationRouteContext,
   readCalendarMutationRouteContext,
@@ -388,50 +385,11 @@ async function archiveCalendarItemAction(formData: FormData) {
 
 async function sendInitialAssignmentNotificationsAction(formData: FormData) {
   "use server";
-
-  let notice:
-    | "unavailable"
-    | "validation"
-    | "error"
-    | "assignment_email_sent"
-    | "assignment_email_already_sent"
-    | "assignment_email_partial" = "error";
-  try {
-    const context = await readCalendarAssignmentMutationRouteContext();
-    if (!context) {
-      notice = "unavailable";
-      observeMutationFailure("assignment_email.request_failure", "unavailable");
-    } else {
-      const result = await sendInitialAssignmentNotificationsForItemWithClient(
-        context.supabase,
-        {
-          calendarItemId: formData.get("calendarItemId"),
-        },
-      );
-      if (result.sentCount > 0 && result.failedCount === 0) {
-        notice = "assignment_email_sent";
-      } else if (result.sentCount === 0 && result.alreadySentCount > 0) {
-        notice = "assignment_email_already_sent";
-      } else if (result.sentCount > 0 || result.failedCount > 0) {
-        notice = "assignment_email_partial";
-      } else {
-        notice = "unavailable";
-      }
-    }
-  } catch (error) {
-    notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
-      ? "validation"
-      : "error";
-    if (!(error instanceof InitialAssignmentNotificationBoundaryError)) {
-      observeMutationFailure(
-        "assignment_email.request_failure",
-        notice === "validation" ? "validation" : "error",
-      );
-    }
-  }
-
-  revalidatePath("/admin/calendar");
-  redirect(safeCalendarRedirect(formData, notice));
+  const context = await readCalendarAssignmentMutationRouteContext();
+  if (!context) redirect(safeCalendarRedirect(formData, "unavailable"));
+  // Sending now always enters the shared recipient/message review. This legacy
+  // Calendar action no longer dispatches individual messages directly.
+  redirect("/admin/announcements?kind=schedule");
 }
 
 async function updateCurrentVolunteerFacingContactDetailsAction(formData: FormData) {
@@ -509,6 +467,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
 
   return (
     <CalendarClient
+      bulkAssignmentAction={planCalendarAssignmentsAction}
       saveMealAction={saveCalendarMealAction}
       duplicateAction={duplicateCalendarItemAction}
       assignAction={createCalendarAssignmentsAction}

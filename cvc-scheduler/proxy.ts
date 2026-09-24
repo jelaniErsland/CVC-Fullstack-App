@@ -9,7 +9,7 @@ import { refreshProjectContactSession } from "@/lib/supabase/proxy";
 
 function isContainedBetaRoute(pathname: string) {
   return [
-    "/admin/announcements",
+    "/admin/announcements/templates",
     "/admin/food",
     "/admin/onboarding",
     "/admin/projects",
@@ -17,7 +17,7 @@ function isContainedBetaRoute(pathname: string) {
     "/admin/schedule",
     "/admin/security",
     "/admin/settings",
-  ].some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  ].some((route) => pathname === route || pathname.startsWith(`${route}/`)) || pathname.startsWith("/admin/announcements/");
 }
 
 function betaUnavailableResponse(request: NextRequest) {

@@ -1,0 +1,153 @@
+# 12.47 exact local release file scope
+
+Exact Git path inventory reconciled before the local release commit. It is the reviewed allowlist for staging and commit verification; regenerate it if any source path changes. It does not authorize a push or deployment.
+
+- Production baseline HEAD before the local release branch: de667eea158df44d99e7b31d95a089cb7440c5b4 on master.
+- Proposed release paths: 131, rechecked against all 131 current source/worktree paths on 2026-09-24. All paths below are repository-relative; no proposed path is missing or unlisted.
+- Excluded untracked review captures: 69 files under previews/12.47-*, including two fresh September 24 guide-route inspection captures.
+- Ignored .next, supabase/.temp, .local, .env.local, decrypted backup data and temporary SQL are outside commit scope.
+- The four forward migrations are the only pending migration files. The last includes the exact reviewed 37-signature service_role reconciliation; applied migrations are untouched.
+- Include the owner-supplied public guide and its assets, but keep its internal package notes/source map under docs.
+
+## Exact proposed paths
+
+- cvc-scheduler/.gitignore
+- cvc-scheduler/app/admin/announcements/page.tsx
+- cvc-scheduler/app/admin/calendar/page.tsx
+- cvc-scheduler/app/admin/dashboard/page.tsx
+- cvc-scheduler/app/admin/project-photo/route.ts
+- cvc-scheduler/app/admin/volunteers/csv/route.ts
+- cvc-scheduler/app/admin/volunteers/page.tsx
+- cvc-scheduler/app/v/project-photo/[asset]/[size]/route.ts
+- cvc-scheduler/app/v/schedule/home.actions.ts
+- cvc-scheduler/app/v/schedule/page.tsx
+- cvc-scheduler/components/AdminNav.tsx
+- cvc-scheduler/components/AdminShell.tsx
+- cvc-scheduler/components/BulkAssignmentPlanner.tsx
+- cvc-scheduler/components/CalendarAssignmentPicker.tsx
+- cvc-scheduler/components/CalendarClient.tsx
+- cvc-scheduler/components/CalendarMeals.tsx
+- cvc-scheduler/components/CommunicationsWorkspace.tsx
+- cvc-scheduler/components/ProjectHero.tsx
+- cvc-scheduler/components/ProjectPhotoEditor.tsx
+- cvc-scheduler/components/VolunteerCard.tsx
+- cvc-scheduler/components/VolunteerCsvTools.tsx
+- cvc-scheduler/components/VolunteerDirectory.tsx
+- cvc-scheduler/components/VolunteerHomeDashboard.tsx
+- cvc-scheduler/components/VolunteerScheduleClient.tsx
+- cvc-scheduler/docs/12_47_ACL_RECONCILIATION.md
+- cvc-scheduler/docs/12_47_AUTH_STORAGE_RECOVERY.md
+- cvc-scheduler/docs/12_47_CONTACT_GUIDE_README.txt
+- cvc-scheduler/docs/12_47_CONTACT_GUIDE_SCREENSHOT_SOURCES.json
+- cvc-scheduler/docs/12_47_IMPLEMENTATION_CHECKPOINT.md
+- cvc-scheduler/docs/12_47_LOCAL_REVIEW.md
+- cvc-scheduler/docs/12_47_PRODUCTION_READINESS.md
+- cvc-scheduler/docs/12_47_RELEASE_SCOPE.md
+- cvc-scheduler/docs/12_47_ROLLOUT_RUNBOOK.md
+- cvc-scheduler/docs/CURRENT_STATE.md
+- cvc-scheduler/docs/FUNCTION_PRIVILEGE_POLICY.md
+- cvc-scheduler/lib/calendar/bulkAssignments.actions.ts
+- cvc-scheduler/lib/calendar/bulkAssignments.ts
+- cvc-scheduler/lib/notifications/communicationBatches.ts
+- cvc-scheduler/lib/notifications/communicationDispatch.server.ts
+- cvc-scheduler/lib/notifications/communications.actions.ts
+- cvc-scheduler/lib/notifications/communications.server.ts
+- cvc-scheduler/lib/notifications/communications.ts
+- cvc-scheduler/lib/notifications/singleRecipientTransport.server.ts
+- cvc-scheduler/lib/projectPhoto/files.server.ts
+- cvc-scheduler/lib/projectPhoto/photo.ts
+- cvc-scheduler/lib/projectPhoto/server.ts
+- cvc-scheduler/lib/supabase/database.types.ts
+- cvc-scheduler/lib/volunteers/csv.actions.ts
+- cvc-scheduler/lib/volunteers/csv.ts
+- cvc-scheduler/lib/volunteers/routeRead.server.ts
+- cvc-scheduler/lib/volunteers/server.ts
+- cvc-scheduler/lib/volunteerScheduleAccess/home.server.ts
+- cvc-scheduler/next.config.ts
+- cvc-scheduler/package-lock.json
+- cvc-scheduler/package.json
+- cvc-scheduler/proxy.ts
+- cvc-scheduler/public/guide/assets/apple-touch-icon.png
+- cvc-scheduler/public/guide/assets/attention-mobile.webp
+- cvc-scheduler/public/guide/assets/attention-thumb.webp
+- cvc-scheduler/public/guide/assets/attention.webp
+- cvc-scheduler/public/guide/assets/away-thumb.webp
+- cvc-scheduler/public/guide/assets/away.webp
+- cvc-scheduler/public/guide/assets/calendar-thumb.webp
+- cvc-scheduler/public/guide/assets/calendar.webp
+- cvc-scheduler/public/guide/assets/csv-import-thumb.webp
+- cvc-scheduler/public/guide/assets/csv-import.webp
+- cvc-scheduler/public/guide/assets/existing-desktop.webp
+- cvc-scheduler/public/guide/assets/existing-detail.webp
+- cvc-scheduler/public/guide/assets/existing-mobile-thumb.webp
+- cvc-scheduler/public/guide/assets/existing-mobile.webp
+- cvc-scheduler/public/guide/assets/favicon.png
+- cvc-scheduler/public/guide/assets/guide-share.png
+- cvc-scheduler/public/guide/assets/history-detail.webp
+- cvc-scheduler/public/guide/assets/history.webp
+- cvc-scheduler/public/guide/assets/meal-inspector.webp
+- cvc-scheduler/public/guide/assets/meals-thumb.webp
+- cvc-scheduler/public/guide/assets/meals.webp
+- cvc-scheduler/public/guide/assets/overview-mobile.webp
+- cvc-scheduler/public/guide/assets/overview-thumb.webp
+- cvc-scheduler/public/guide/assets/overview.webp
+- cvc-scheduler/public/guide/assets/project-local-logo.png
+- cvc-scheduler/public/guide/assets/quick-view-mobile.webp
+- cvc-scheduler/public/guide/assets/quick-view-thumb.webp
+- cvc-scheduler/public/guide/assets/quick-view.webp
+- cvc-scheduler/public/guide/assets/repeat-desktop.webp
+- cvc-scheduler/public/guide/assets/repeat-detail.webp
+- cvc-scheduler/public/guide/assets/repeat-mobile-thumb.webp
+- cvc-scheduler/public/guide/assets/repeat-mobile.webp
+- cvc-scheduler/public/guide/assets/schedule-detail.webp
+- cvc-scheduler/public/guide/assets/schedules.webp
+- cvc-scheduler/public/guide/assets/tasks-mobile.webp
+- cvc-scheduler/public/guide/assets/tasks-thumb.webp
+- cvc-scheduler/public/guide/assets/tasks.webp
+- cvc-scheduler/public/guide/assets/volunteer-home-desktop.webp
+- cvc-scheduler/public/guide/assets/volunteer-home-thumb.webp
+- cvc-scheduler/public/guide/assets/volunteer-home.webp
+- cvc-scheduler/public/guide/assets/volunteers-thumb.webp
+- cvc-scheduler/public/guide/assets/volunteers.webp
+- cvc-scheduler/public/guide/assets/weekly-menu-thumb.webp
+- cvc-scheduler/public/guide/assets/weekly-menu.webp
+- cvc-scheduler/public/guide/assets/welcome-detail.webp
+- cvc-scheduler/public/guide/assets/welcome.webp
+- cvc-scheduler/public/guide/index.html
+- cvc-scheduler/public/guide/script.js
+- cvc-scheduler/public/guide/styles.css
+- cvc-scheduler/scripts/12-47-browser-regression.mjs
+- cvc-scheduler/scripts/12-47-local-fixtures.mjs
+- cvc-scheduler/scripts/12-47-ux-browser-regression.mjs
+- cvc-scheduler/scripts/bulk-assignment-browser.mjs
+- cvc-scheduler/scripts/bulk-assignment-regression.mjs
+- cvc-scheduler/scripts/communication-batches-browser-regression.mjs
+- cvc-scheduler/scripts/communication-batches-regression.mjs
+- cvc-scheduler/scripts/communication-dispatch-regression.mjs
+- cvc-scheduler/scripts/communication-ledger-regression.mjs
+- cvc-scheduler/scripts/communication-transport-regression.mjs
+- cvc-scheduler/scripts/final-product-readiness-local.mjs
+- cvc-scheduler/scripts/function-privilege-policy.mjs
+- cvc-scheduler/scripts/function-privilege-regression.mjs
+- cvc-scheduler/scripts/production-backup-12-47-transition-regression.mjs
+- cvc-scheduler/scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1
+- cvc-scheduler/scripts/production-backup/Prepare-ProjectLocal1247ScopedRestore.ps1
+- cvc-scheduler/scripts/production-backup/ProjectLocalProductionMigrationContract.ps1
+- cvc-scheduler/scripts/production-backup/Register-ProjectLocalBackupTask.ps1
+- cvc-scheduler/scripts/production-backup/Verify-ProjectLocal1247IsolatedRestore.mjs
+- cvc-scheduler/scripts/production-independent-backup-regression.mjs
+- cvc-scheduler/scripts/volunteer-csv-regression.mjs
+- cvc-scheduler/scripts/volunteer-home-photo-regression.mjs
+- cvc-scheduler/supabase/migrations/20260922120000_bulk_calendar_assignments.sql
+- cvc-scheduler/supabase/migrations/20260922130000_communication_delivery_operations.sql
+- cvc-scheduler/supabase/migrations/20260922140000_volunteer_csv_import.sql
+- cvc-scheduler/supabase/migrations/20260922150000_project_hero_volunteer_home.sql
+
+## Excluded review-capture directories
+
+- previews/12.47-final-ux-polish/
+- previews/12.47-guide/
+- previews/12.47-local-review/
+- previews/12.47-ux-consolidation/
+
+No git add -A; stage only reviewed paths if a later task explicitly authorizes a commit.

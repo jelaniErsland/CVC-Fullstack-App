@@ -2,12 +2,15 @@
 
 import { createContext, useContext } from "react";
 import type { CalendarMeal } from "@/lib/calendar/meals";
+import type { BulkAssignmentAction, BulkVolunteerOption } from "./BulkAssignmentPlanner";
 
 type Action = (formData: FormData) => void | Promise<void>;
 export const CalendarOperations = createContext<{
   readOnly: boolean;
   saveMealAction?: Action;
   duplicateAction?: Action;
+  bulkAssignmentAction?: BulkAssignmentAction;
+  bulkVolunteers?: readonly BulkVolunteerOption[];
 }>({ readOnly: false });
 export const useCalendarOperations = () => useContext(CalendarOperations);
 const inputClass = "mt-1 min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800";

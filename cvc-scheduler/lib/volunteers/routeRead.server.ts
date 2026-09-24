@@ -1,4 +1,5 @@
 import "server-only";
+import { communicationCapabilities } from "../notifications/communications.ts";
 
 import {
   isEffectiveWorkspaceReadGrant,
@@ -15,6 +16,7 @@ export type VolunteerManagementReadyRouteState = Readonly<{
   kind: "ready_with_profiles" | "ready_empty";
   workspaceName: string;
   canEdit: boolean;
+  canCommunicate?: boolean;
   profiles: readonly VolunteerProfile[];
   notice: VolunteerManagementNotice | null;
 }>;
@@ -31,6 +33,7 @@ export type VolunteerManagementRouteState =
 export type VolunteerManagementNotice =
   | "created"
   | "updated"
+  | "conflict"
   | "deleted"
   | "has_history"
   | "validation"
@@ -152,6 +155,7 @@ export function normalizeVolunteerManagementNotice(
   if (
     notice === "created" ||
     notice === "updated" ||
+    notice === "conflict" ||
     notice === "deleted" ||
     notice === "has_history" ||
     notice === "validation" ||
@@ -201,6 +205,7 @@ export async function readVolunteerManagementRouteState(
       kind: profiles.length > 0 ? "ready_with_profiles" : "ready_empty",
       workspaceName: routeContext.workspace.displayName,
       canEdit: routeContext.canEdit,
+      canCommunicate: communicationCapabilities.every(c => routeContext.capabilities.includes(c)),
       profiles,
       notice,
     };

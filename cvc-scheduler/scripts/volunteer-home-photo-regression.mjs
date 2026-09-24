@@ -1,0 +1,70 @@
+import assert from 'node:assert/strict';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdtemp, writeFile, readFile, cp, rm } from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import sharp from 'sharp';
+import { fixture, q, sql, value } from './12-47-local-fixtures.mjs';
+import { encodeProjectPhoto, localPhotoStorageEnabled } from '../lib/projectPhoto/files.server.ts';
+const f=await fixture();
+const anon=query=>`begin;set local role anon;${query};commit;`;
+const home=token=>JSON.parse(value(anon(`select public.read_volunteer_home(${q(token)},${q(f.day)})`))||'null');
+const root=await mkdtemp(path.join(os.tmpdir(),'project-local-asset-restore-fixture-'));
+try {
+  const h=home(f.token);assert(h);assert.equal(h.meals.length,3);assert.equal(h.away.length,0);
+  // A posted menu day without an assignment is visible only through the scoped
+  // home projection; it must not require fabricating a volunteer assignment.
+  const extraDay=new Date(f.day+'T12:00Z');extraDay.setUTCDate(extraDay.getUTCDate()-1);
+  const menuDay=extraDay.toISOString().slice(0,10);
+  value(f.auth(`select public.save_calendar_meal(${q(f.ws)},null,'lunch',${q(menuDay)},'12:00','13:00','Local meal team','PRIVATE MEAL CONTACT','Menu without assignment',20,'PRIVATE OPERATIONS',null)`));
+  const menuOnly=JSON.parse(value(anon(`select public.read_volunteer_home(${q(f.token)},${q(menuDay)})`)));
+  assert(JSON.stringify(menuOnly.meals).includes('Menu without assignment'));
+  const schedule=value(anon(`select public.read_volunteer_schedule(${q(f.token)})`));
+  assert(!schedule.includes('Menu without assignment'));
+  for(const forbidden of ['PRIVATE','date_of_birth','emergency','Casey Jordan','Riley Chen','contact','notes'])assert(!JSON.stringify(h).includes(forbidden));
+  assert.equal(home('invalid'),null);
+  const projectToday=value(`select (now() at time zone timezone)::date from public.workspaces where id=${q(f.ws)}`);
+  assert.equal(JSON.parse(value(anon(`select public.manage_volunteer_away(${q(f.token)},'preview',${q(randomUUID())},${q(projectToday)},${q(projectToday)},null)`))).kind,'preview');
+  assert.notEqual(sql(anon(`select public.manage_volunteer_away(${q(f.token)},'preview',${q(randomUUID())},${q(projectToday)}::date-1,${q(projectToday)},null)`),true).status,0,'Past project-local date denied');
+  const id=randomUUID(),preview=JSON.parse(value(anon(`select public.manage_volunteer_away(${q(f.token)},'preview',${q(id)},${q(f.day)},${q(f.day)},null)`)));
+  assert.equal(preview.conflicts.length,1);
+  const before=value(`select md5(jsonb_agg(to_jsonb(r) order by r.id)::text) from public.assignment_responses r where workspace_id=${q(f.ws)}`);
+  const save=()=>value(anon(`select public.manage_volunteer_away(${q(f.token)},'save',${q(id)},${q(f.day)},${q(f.day)},${q(preview.fingerprint)})`));
+  assert.equal(JSON.parse(save()).kind,'saved');assert.equal(JSON.parse(save()).kind,'saved');
+  assert.equal(home(f.token).away.length,1);
+  assert.equal(value(`select md5(jsonb_agg(to_jsonb(r) order by r.id)::text) from public.assignment_responses r where workspace_id=${q(f.ws)}`),before);
+  const other=JSON.parse(value(f.auth(`select row_to_json(t) from public.issue_volunteer_schedule_access(${q(f.volunteers[1])},720) t`)));
+  assert.equal(home(other.bearer_token).away.length,0,'Away periods are volunteer scoped');
+  value(anon(`select public.manage_volunteer_away(${q(other.bearer_token)},'remove',${q(id)},null,null,null)`));assert.equal(home(f.token).away.length,1);
+  const plan={itemIds:f.items,volunteers:[{id:f.volunteers[0],excludeDates:[]}],note:null};
+  const bulk=JSON.parse(value(f.auth(`select public.plan_calendar_assignments(${q(f.ws)},${q(randomUUID())},${q(JSON.stringify(plan))},null)`)));
+  assert.equal(bulk.awayPeriods.length,1);
+  const crop={desktopX:30,desktopY:50,mobileX:70,mobileY:30},asset=randomUUID();
+  const savePhoto=(version=0)=>f.auth(`select public.save_workspace_project_photo(${q(f.ws)},${q(asset)},${q(JSON.stringify(crop))},${version})`);
+  assert.notEqual(sql(savePhoto(),true).status,0,'Production-default upload boundary denies mutations');
+  sql(`insert into public.workspace_project_photos(workspace_id,uploads_enabled) values(${q(f.ws)},true)`);
+  assert.equal(JSON.parse(value(savePhoto())).asset_id,asset);
+  assert.notEqual(sql(savePhoto(),true).status,0,'Photo version prevents stale overwrite');
+  assert.equal(home(f.token).photo.asset_id,asset);
+  assert.notEqual(sql(`set role anon;select public.save_workspace_project_photo(${q(f.ws)},null,'{}',1)`,true).status,0);
+  const foreign=randomUUID();assert.notEqual(sql(f.auth(`select public.read_workspace_project_photo(${q(foreign)})`),true).status,0);
+  sql(`update public.volunteer_schedule_access_tokens set revoked_at=now() where id=${q(f.tokenId)}`);assert.equal(home(f.token),null,'Revoked session denied');
+  assert(!localPhotoStorageEnabled({NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co'}));
+  assert(!localPhotoStorageEnabled({NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',VERCEL:'1'}));
+  assert(localPhotoStorageEnabled({NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321'}));
+  const input=await sharp({create:{width:1800,height:1000,channels:3,background:'#376f88'}}).jpeg().withMetadata().toBuffer();
+  const images=await encodeProjectPhoto(input);
+  const meta=await sharp(images.desktop).metadata();assert.equal(meta.format,'webp');assert.equal(meta.exif,undefined);assert.equal(meta.icc,undefined);assert(meta.width<=1600);
+  assert((await sharp(images.mobile).metadata()).width<=780);
+  await assert.rejects(()=>encodeProjectPhoto(Buffer.from('<svg/>')));
+  await assert.rejects(()=>encodeProjectPhoto(Buffer.alloc(7*1024*1024)));
+  // Actual derivative BLOBs, independent copy, loss, restore, hash comparison.
+  // This local mechanics test does not authorize production object uploads.
+  const source=path.join(root,'source'),backup=path.join(root,'independent-copy'),restore=path.join(root,'restore');
+  const {mkdir}=await import('node:fs/promises');await mkdir(source);
+  const hash=b=>createHash('sha256').update(b).digest('hex');
+  for(const [size,bytes] of Object.entries(images))await writeFile(path.join(source,size+'.webp'),bytes);
+  await cp(source,backup,{recursive:true});await rm(source,{recursive:true});await cp(backup,restore,{recursive:true});
+  for(const [size,bytes] of Object.entries(images))assert.equal(hash(await readFile(path.join(restore,size+'.webp'))),hash(bytes));
+  console.log('PASS: session-scoped weekly menu, private exclusions, own away periods/conflict/replay/response preservation, bulk away warning, photo authorization/version/default-disabled boundary, validated stripped responsive images, local independent BLOB restore hash match. Production asset recovery remains blocked.');
+} finally {await f.cleanup();assert(root.startsWith(os.tmpdir())&&path.basename(root).startsWith('project-local-asset-restore-fixture-'));await rm(root,{recursive:true,force:true});}

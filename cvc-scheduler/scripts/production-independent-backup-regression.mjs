@@ -455,7 +455,7 @@ async function main() {
   assertIncludes(migrationContract, '"20260714122230"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260812123430"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260902120000"', "production migration contract");
-  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260908130000-transition-v1"', "production migration contract version");
+  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260922150000-transition-v1"', "production migration contract version");
   assertIncludes(migrationContract, '$FollowUpContactProductionMigration = "20260824123500"', "production migration contract current terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewProductionMigration = "20260902120000"', "production migration contract future terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"', "production migration contract security terminal");
@@ -465,6 +465,11 @@ async function main() {
   assertIncludes(migrationContract, '$ConcurrentAdminSafetyProductionMigration = "20260907120000"', "production migration contract concurrent-admin-safety terminal");
   assertIncludes(migrationContract, '$VolunteerProfileExpansionProductionMigration = "20260908120000"', "production migration contract volunteer-profile-expansion terminal");
   assertIncludes(migrationContract, '$VolunteerExperiencePolishProductionMigration = "20260908130000"', "production migration contract volunteer-experience-polish terminal");
+  assertIncludes(migrationContract, '$BulkCalendarAssignmentsProductionMigration = "20260922120000"', "production migration contract bulk terminal");
+  assertIncludes(migrationContract, '$CommunicationDeliveryOperationsProductionMigration = "20260922130000"', "production migration contract communications terminal");
+  assertIncludes(migrationContract, '$VolunteerCsvImportProductionMigration = "20260922140000"', "production migration contract CSV terminal");
+  assertIncludes(migrationContract, '$ProjectHeroVolunteerHomeProductionMigration = "20260922150000"', "production migration contract final terminal");
+  assertIncludes(migrationContract, "Assert-ProjectLocalBackupRunnableMigration", "production migration contract intermediate-run denial");
   assertIncludes(migrationContract, '"20260829130000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, '"20260901120000"', "production migration contract partial terminal");
   assertIncludes(migrationContract, "Test-ProjectLocalReviewedLockTransition", "production migration contract");
@@ -811,6 +816,10 @@ async function main() {
     ["20260906130000", "20260907120000"],
     ["20260907120000", "20260908120000"],
     ["20260908120000", "20260908130000"],
+    ["20260908130000", "20260922120000"],
+    ["20260922120000", "20260922130000"],
+    ["20260922130000", "20260922140000"],
+    ["20260922140000", "20260922150000"],
   ]) {
     assertIncludes(
       runPowerShell([
@@ -1095,6 +1104,7 @@ async function main() {
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightConcurrentAdminSafetyExpected"], { expectSuccess: true }), "fixture_migration_preflight_concurrent_admin_safety_expected_ok", "concurrent-admin-safety migration current-state fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightVolunteerProfileExpansionExpected"], { expectSuccess: true }), "fixture_migration_preflight_volunteer_profile_expansion_expected_ok", "volunteer-profile-expansion migration current-state fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightVolunteerExperiencePolishExpected"], { expectSuccess: true }), "fixture_migration_preflight_volunteer_experience_polish_expected_ok", "volunteer-experience-polish migration current-state fixture");
+  assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflight1247Sequence"], { expectSuccess: true }), "fixture_migration_preflight_1247_sequence_ok", "12.47 exact sequence, intermediate and mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_transition_pending_rejected", "pre-lock-transition migration mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightPrivilegeHardeningTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_privilege_hardening_transition_pending_rejected", "privilege-hardening pre-lock-transition mismatch fixture");
   assertIncludes(runPowerShell(["-File", backupScript, "-FixtureMode", "-FixtureScenario", "MigrationPreflightOperationalUsabilityTransitionPending"], { expectSuccess: true }), "fixture_migration_preflight_operational_usability_transition_pending_rejected", "operational-usability pre-lock-transition mismatch fixture");

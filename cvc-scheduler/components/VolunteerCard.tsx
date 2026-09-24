@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StatusPill } from "./StatusPill";
 import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerOperationalSummary, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
@@ -5,6 +6,7 @@ import { volunteerAge, volunteerOperationalSummary, volunteerWeekdays, type Volu
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
+  canCommunicate?: boolean;
   onEdit?: () => void;
 };
 
@@ -23,7 +25,7 @@ function preferredContactLabel(method: VolunteerProfile["preferredContactMethod"
   return `${method[0]?.toUpperCase()}${method.slice(1)} preferred`;
 }
 
-export function VolunteerCard({
+export function VolunteerCard({ canCommunicate = false,
   volunteer,
   canEdit,
   onEdit,
@@ -85,6 +87,7 @@ export function VolunteerCard({
             {readinessLabel(volunteer.readinessStatus)}
           </span>
           <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
+          {canCommunicate && <Link className="min-h-8 rounded-lg px-2 py-1 text-xs font-semibold text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600" href={`/admin/announcements?kind=schedule&volunteer=${volunteer.id}`}>Resend schedule</Link>}
           {canEdit ? <button aria-label={`Edit ${volunteer.fullName}`} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onEdit} type="button"><Pencil aria-hidden="true" className="size-3.5" /> Edit</button> : null}
         </div>
       </div>
@@ -115,6 +118,7 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
 
   return (
     <>
+      {volunteer ? <input type="hidden" name="expectedUpdatedAt" value={volunteer.updatedAt} /> : null}
       <section className="grid gap-3" aria-labelledby="volunteer-contact-heading">
       <h3 id="volunteer-contact-heading" className="text-sm font-semibold text-[var(--pl-ink)]">Contact</h3>
       <label className="block">

@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260908130000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260922150000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -15,6 +15,15 @@ $MealSystemPresetProductionMigration = "20260906130000"
 $ConcurrentAdminSafetyProductionMigration = "20260907120000"
 $VolunteerProfileExpansionProductionMigration = "20260908120000"
 $VolunteerExperiencePolishProductionMigration = "20260908130000"
+$BulkCalendarAssignmentsProductionMigration = "20260922120000"
+$CommunicationDeliveryOperationsProductionMigration = "20260922130000"
+$VolunteerCsvImportProductionMigration = "20260922140000"
+$ProjectHeroVolunteerHomeProductionMigration = "20260922150000"
+$ReleaseInProgressMigrations = @(
+  $BulkCalendarAssignmentsProductionMigration,
+  $CommunicationDeliveryOperationsProductionMigration,
+  $VolunteerCsvImportProductionMigration
+)
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
   "20260901120000"
@@ -33,8 +42,25 @@ $AllowedTerminalMigrations = @(
   $MealSystemPresetProductionMigration,
   $ConcurrentAdminSafetyProductionMigration,
   $VolunteerProfileExpansionProductionMigration,
-  $VolunteerExperiencePolishProductionMigration
+  $VolunteerExperiencePolishProductionMigration,
+  $BulkCalendarAssignmentsProductionMigration,
+  $CommunicationDeliveryOperationsProductionMigration,
+  $VolunteerCsvImportProductionMigration,
+  $ProjectHeroVolunteerHomeProductionMigration
 )
+
+function Test-ProjectLocalReleaseInProgressMigration {
+  param([Parameter(Mandatory = $true)][string]$Migration)
+  return $Migration -cin $ReleaseInProgressMigrations
+}
+
+function Assert-ProjectLocalBackupRunnableMigration {
+  param([Parameter(Mandatory = $true)][string]$Migration)
+  if (-not (Test-ProjectLocalApprovedTerminalMigration -Migration $Migration) -or
+      (Test-ProjectLocalReleaseInProgressMigration -Migration $Migration)) {
+    throw "Backup execution/enablement requires a reviewed completed release terminal."
+  }
+}
 
 function Test-ProjectLocalApprovedTerminalMigration {
   param([Parameter(Mandatory = $true)][string]$Migration)
@@ -64,7 +90,11 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $OnSiteFoodProductionMigration -and $TargetMigration -ceq $MealSystemPresetProductionMigration) -or
     ($CurrentMigration -ceq $MealSystemPresetProductionMigration -and $TargetMigration -ceq $ConcurrentAdminSafetyProductionMigration) -or
     ($CurrentMigration -ceq $ConcurrentAdminSafetyProductionMigration -and $TargetMigration -ceq $VolunteerProfileExpansionProductionMigration) -or
-    ($CurrentMigration -ceq $VolunteerProfileExpansionProductionMigration -and $TargetMigration -ceq $VolunteerExperiencePolishProductionMigration)
+    ($CurrentMigration -ceq $VolunteerProfileExpansionProductionMigration -and $TargetMigration -ceq $VolunteerExperiencePolishProductionMigration) -or
+    ($CurrentMigration -ceq $VolunteerExperiencePolishProductionMigration -and $TargetMigration -ceq $BulkCalendarAssignmentsProductionMigration) -or
+    ($CurrentMigration -ceq $BulkCalendarAssignmentsProductionMigration -and $TargetMigration -ceq $CommunicationDeliveryOperationsProductionMigration) -or
+    ($CurrentMigration -ceq $CommunicationDeliveryOperationsProductionMigration -and $TargetMigration -ceq $VolunteerCsvImportProductionMigration) -or
+    ($CurrentMigration -ceq $VolunteerCsvImportProductionMigration -and $TargetMigration -ceq $ProjectHeroVolunteerHomeProductionMigration)
   )
 }
 

@@ -6,6 +6,7 @@ import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 import { MobileOverlaySheet } from "./MobileOverlaySheet";
 import { VolunteerCard, VolunteerFields } from "./VolunteerCard";
+import { VolunteerCsvTools } from "./VolunteerCsvTools";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
@@ -13,6 +14,7 @@ type VolunteerDirectoryProps = {
   volunteers: readonly VolunteerProfile[];
   congregations: string[];
   canEdit: boolean;
+  canCommunicate?: boolean;
   createAction?: (formData: FormData) => void | Promise<void>;
   deleteAction?: (formData: FormData) => void | Promise<void>;
   updateAction?: (formData: FormData) => void | Promise<void>;
@@ -27,6 +29,7 @@ const lifecycles: Array<VolunteerProfile["lifecycle"] | "all"> = [
 
 export function VolunteerDirectory({
   canEdit,
+  canCommunicate = false,
   createAction,
   deleteAction,
   updateAction,
@@ -139,6 +142,7 @@ export function VolunteerDirectory({
   return (
     <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
       {addForm}
+      <VolunteerCsvTools canEdit={canEdit} filteredIds={filteredVolunteers.map(v => v.id)} />
       <div className="border-b border-[var(--pl-border)] bg-white p-3 sm:p-4">
       <div className="grid gap-2 md:grid-cols-[minmax(240px,1fr)_190px_160px]">
         <label className="block">
@@ -221,6 +225,7 @@ export function VolunteerDirectory({
           {filteredVolunteers.map((volunteer) => (
             <VolunteerCard
               canEdit={canEdit}
+              canCommunicate={canCommunicate}
               key={volunteer.id}
               onEdit={() => setMobileEditor({ kind: "edit", volunteer })}
               volunteer={volunteer}

@@ -39,6 +39,7 @@ export type Database = {
           attempt_count: number
           calendar_assignment_id: string
           calendar_item_id: string
+          communication_recipient_id: string | null
           created_at: string
           delivery_state: string
           failed_at: string | null
@@ -61,6 +62,7 @@ export type Database = {
           attempt_count?: number
           calendar_assignment_id: string
           calendar_item_id: string
+          communication_recipient_id?: string | null
           created_at?: string
           delivery_state: string
           failed_at?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           attempt_count?: number
           calendar_assignment_id?: string
           calendar_item_id?: string
+          communication_recipient_id?: string | null
           created_at?: string
           delivery_state?: string
           failed_at?: string | null
@@ -136,6 +139,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_communication_recipient_fk"
+            columns: ["workspace_id", "communication_recipient_id"]
+            isOneToOne: false
+            referencedRelation: "communication_recipients"
+            referencedColumns: ["workspace_id", "id"]
           },
         ]
       }
@@ -378,6 +388,48 @@ export type Database = {
           },
         ]
       }
+      calendar_bulk_assignment_operations: {
+        Row: {
+          actor_id: string
+          created_at: string
+          plan: Json
+          request_id: string
+          result: Json
+          workspace_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          plan: Json
+          request_id: string
+          result: Json
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          plan?: Json
+          request_id?: string
+          result?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_bulk_assignment_operations_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_bulk_assignment_operations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_items: {
         Row: {
           created_at: string
@@ -539,6 +591,196 @@ export type Database = {
           },
           {
             foreignKeyName: "calendar_repeat_creation_requests_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_assignment_coverage: {
+        Row: {
+          assignment_id: string
+          initially_unsent: boolean
+          recipient_id: string
+          workspace_id: string
+        }
+        Insert: {
+          assignment_id: string
+          initially_unsent: boolean
+          recipient_id: string
+          workspace_id: string
+        }
+        Update: {
+          assignment_id?: string
+          initially_unsent?: boolean
+          recipient_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_assignment_covera_workspace_id_assignment_id_fkey"
+            columns: ["workspace_id", "assignment_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_assignments"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "communication_assignment_coverag_workspace_id_recipient_id_fkey"
+            columns: ["workspace_id", "recipient_id"]
+            isOneToOne: false
+            referencedRelation: "communication_recipients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      communication_operations: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          kind: string
+          mode: string
+          plan: Json
+          workspace_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id: string
+          kind: string
+          mode: string
+          plan: Json
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          mode?: string
+          plan?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_operations_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_operations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communication_recipients: {
+        Row: {
+          attempt: number
+          claim_id: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          email: string
+          failure_code: string | null
+          finalized_at: string | null
+          id: string
+          operation_id: string
+          provider_message_id: string | null
+          snapshot: Json
+          state: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Insert: {
+          attempt?: number
+          claim_id?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          email: string
+          failure_code?: string | null
+          finalized_at?: string | null
+          id?: string
+          operation_id: string
+          provider_message_id?: string | null
+          snapshot: Json
+          state?: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Update: {
+          attempt?: number
+          claim_id?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          email?: string
+          failure_code?: string | null
+          finalized_at?: string | null
+          id?: string
+          operation_id?: string
+          provider_message_id?: string | null
+          snapshot?: Json
+          state?: string
+          volunteer_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_recipients_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_recipients_workspace_id_operation_id_fkey"
+            columns: ["workspace_id", "operation_id"]
+            isOneToOne: false
+            referencedRelation: "communication_operations"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "communication_recipients_workspace_id_volunteer_id_fkey"
+            columns: ["workspace_id", "volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      needs_attention_seen_states: {
+        Row: {
+          project_contact_id: string
+          seen_at: string
+          signal_id: string
+          workspace_id: string
+        }
+        Insert: {
+          project_contact_id: string
+          seen_at?: string
+          signal_id: string
+          workspace_id: string
+        }
+        Update: {
+          project_contact_id?: string
+          seen_at?: string
+          signal_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "needs_attention_seen_states_project_contact_id_fkey"
+            columns: ["project_contact_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "needs_attention_seen_states_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -791,6 +1033,90 @@ export type Database = {
           },
         ]
       }
+      volunteer_away_periods: {
+        Row: {
+          created_at: string
+          ends_on: string
+          id: string
+          starts_on: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on: string
+          id: string
+          starts_on: string
+          volunteer_profile_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string
+          id?: string
+          starts_on?: string
+          volunteer_profile_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_away_periods_volunteer_profile_id_workspace_id_fkey"
+            columns: ["volunteer_profile_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "volunteer_away_periods_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_csv_import_operations: {
+        Row: {
+          actor_id: string
+          created_at: string
+          payload_hash: string
+          request_id: string
+          result: Json
+          workspace_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          payload_hash: string
+          request_id: string
+          result: Json
+          workspace_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          payload_hash?: string
+          request_id?: string
+          result?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_csv_import_operations_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_csv_import_operations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteer_lookup_attempts: {
         Row: {
           attempts: number
@@ -821,6 +1147,7 @@ export type Database = {
           builder_assistant_communication: string
           congregation: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
@@ -829,17 +1156,16 @@ export type Database = {
           housing_option: string
           id: string
           lifecycle: string
-          date_of_birth: string | null
           manual_created_at: string | null
           manual_created_by_project_contact_id: string | null
+          other_support: string | null
           phone: string | null
           preferred_contact_method: string | null
           profile_notes: string
-          other_support: string | null
           profile_source: string
           readiness_status: string
-          skills_help_snapshot: Json
           skills_experience: string | null
+          skills_help_snapshot: Json
           source_submission_id: string | null
           updated_at: string
           workspace_id: string
@@ -852,6 +1178,7 @@ export type Database = {
           builder_assistant_communication?: string
           congregation?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -860,17 +1187,16 @@ export type Database = {
           housing_option?: string
           id?: string
           lifecycle?: string
-          date_of_birth?: string | null
           manual_created_at?: string | null
           manual_created_by_project_contact_id?: string | null
+          other_support?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
           profile_notes?: string
-          other_support?: string | null
           profile_source?: string
           readiness_status?: string
-          skills_help_snapshot: Json
           skills_experience?: string | null
+          skills_help_snapshot: Json
           source_submission_id?: string | null
           updated_at?: string
           workspace_id: string
@@ -883,6 +1209,7 @@ export type Database = {
           builder_assistant_communication?: string
           congregation?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -891,17 +1218,16 @@ export type Database = {
           housing_option?: string
           id?: string
           lifecycle?: string
-          date_of_birth?: string | null
           manual_created_at?: string | null
           manual_created_by_project_contact_id?: string | null
+          other_support?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
           profile_notes?: string
-          other_support?: string | null
           profile_source?: string
           readiness_status?: string
-          skills_help_snapshot?: Json
           skills_experience?: string | null
+          skills_help_snapshot?: Json
           source_submission_id?: string | null
           updated_at?: string
           workspace_id?: string
@@ -997,6 +1323,48 @@ export type Database = {
           },
         ]
       }
+      volunteer_welcome_deliveries: {
+        Row: {
+          campaign: string
+          email: string
+          recipient_id: string
+          sent_at: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Insert: {
+          campaign: string
+          email: string
+          recipient_id: string
+          sent_at?: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Update: {
+          campaign?: string
+          email?: string
+          recipient_id?: string
+          sent_at?: string
+          volunteer_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_welcome_deliveries_workspace_id_recipient_id_fkey"
+            columns: ["workspace_id", "recipient_id"]
+            isOneToOne: false
+            referencedRelation: "communication_recipients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "volunteer_welcome_deliveries_workspace_id_volunteer_id_fkey"
+            columns: ["workspace_id", "volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
       workspace_contact_grants: {
         Row: {
           capabilities: string[]
@@ -1049,6 +1417,50 @@ export type Database = {
             foreignKeyName: "workspace_contact_grants_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_project_photos: {
+        Row: {
+          asset_id: string | null
+          desktop_x: number
+          desktop_y: number
+          mobile_x: number
+          mobile_y: number
+          updated_at: string
+          uploads_enabled: boolean
+          version: number
+          workspace_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          desktop_x?: number
+          desktop_y?: number
+          mobile_x?: number
+          mobile_y?: number
+          updated_at?: string
+          uploads_enabled?: boolean
+          version?: number
+          workspace_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          desktop_x?: number
+          desktop_y?: number
+          mobile_x?: number
+          mobile_y?: number
+          updated_at?: string
+          uploads_enabled?: boolean
+          version?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_project_photos_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -1120,6 +1532,10 @@ export type Database = {
         Args: { p_assignment_id: string }
         Returns: string
       }
+      claim_communication_recipient: {
+        Args: { p_recipient_id: string; p_retry: boolean }
+        Returns: Json
+      }
       claim_initial_assignment_notification_deliveries: {
         Args: { p_calendar_item_id: string }
         Returns: {
@@ -1148,12 +1564,26 @@ export type Database = {
           workspace_timezone: string
         }[]
       }
+      communication_actor: { Args: { p_workspace: string }; Returns: string }
+      communication_preview: {
+        Args: { p_plan: Json; p_workspace: string }
+        Returns: Json
+      }
       confirm_all_volunteer_schedule_assignments: {
         Args: { p_bearer_token: string }
         Returns: {
           confirmed_count: number
           response_recorded_at: string
         }[]
+      }
+      confirm_communication_operation: {
+        Args: {
+          p_expected_preview: string
+          p_operation_id: string
+          p_plan: Json
+          p_workspace_id: string
+        }
+        Returns: string
       }
       convert_questionnaire_submission_to_volunteer_profile: {
         Args: { p_submission_id: string }
@@ -1215,10 +1645,7 @@ export type Database = {
         Returns: string[]
       }
       create_manual_volunteer_profile: {
-        Args: {
-          p_profile: Json
-          p_workspace_id: string
-        }
+        Args: { p_profile: Json; p_workspace_id: string }
         Returns: string
       }
       create_task_preset: {
@@ -1247,6 +1674,16 @@ export type Database = {
         }
         Returns: string
       }
+      finalize_communication_recipient: {
+        Args: {
+          p_claim_id: string
+          p_failure_code: string
+          p_outcome: string
+          p_provider_id: string
+          p_recipient_id: string
+        }
+        Returns: string
+      }
       finalize_initial_assignment_notification_delivery: {
         Args: {
           p_delivery_id: string
@@ -1259,6 +1696,10 @@ export type Database = {
           delivery_id: string
           delivery_state: string
         }[]
+      }
+      import_volunteer_profiles: {
+        Args: { p_request_id: string; p_rows: Json; p_workspace_id: string }
+        Returns: Json
       }
       issue_assignment_response_token: {
         Args: {
@@ -1287,6 +1728,30 @@ export type Database = {
           token_expires_at: string
           token_id: string
         }[]
+      }
+      manage_volunteer_away: {
+        Args: {
+          p_command: string
+          p_end: string
+          p_expected_preview: string
+          p_id: string
+          p_start: string
+          p_token: string
+        }
+        Returns: Json
+      }
+      mark_needs_attention_signal_seen: {
+        Args: { p_signal_id: string; p_workspace_id: string }
+        Returns: undefined
+      }
+      plan_calendar_assignments: {
+        Args: {
+          p_expected_preview: string
+          p_plan: Json
+          p_request_id: string
+          p_workspace_id: string
+        }
+        Returns: Json
       }
       publish_calendar_item: {
         Args: { p_calendar_item_id: string }
@@ -1342,6 +1807,10 @@ export type Database = {
           workspace_display_name: string
         }[]
       }
+      read_communication_history: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
       read_initial_assignment_notification_summaries: {
         Args: { p_calendar_item_ids: string[] }
         Returns: {
@@ -1378,6 +1847,10 @@ export type Database = {
           shared_access_enabled: boolean
         }[]
       }
+      read_volunteer_home: {
+        Args: { p_token: string; p_week: string }
+        Returns: Json
+      }
       read_volunteer_schedule: {
         Args: { p_bearer_token: string }
         Returns: {
@@ -1409,6 +1882,10 @@ export type Database = {
           workspace_display_name: string
           workspace_timezone: string
         }[]
+      }
+      read_workspace_project_photo: {
+        Args: { p_workspace_id: string }
+        Returns: Json
       }
       record_assignment_response_link_reveal_event: {
         Args: {
@@ -1460,6 +1937,10 @@ export type Database = {
           token_expires_at: string
         }[]
       }
+      review_communications: {
+        Args: { p_plan: Json; p_workspace_id: string }
+        Returns: Json
+      }
       revoke_assignment_response_token: {
         Args: { p_token_id: string }
         Returns: string
@@ -1478,7 +1959,7 @@ export type Database = {
           p_contact: string
           p_date: string
           p_end_time: string
-          p_expected_updated_at: string | null
+          p_expected_updated_at: string
           p_meal_kind: string
           p_menu: string
           p_notes: string
@@ -1488,6 +1969,15 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: string
+      }
+      save_workspace_project_photo: {
+        Args: {
+          p_asset_id: string
+          p_crop: Json
+          p_expected_version: number
+          p_workspace_id: string
+        }
+        Returns: Json
       }
       set_current_project_day_expected_on_site: {
         Args: { p_expected_on_site_count: number; p_project_date: string }
@@ -1597,10 +2087,7 @@ export type Database = {
         Returns: string
       }
       update_volunteer_profile_manual_fields: {
-        Args: {
-          p_profile_id: string
-          p_profile: Json
-        }
+        Args: { p_profile: Json; p_profile_id: string }
         Returns: string
       }
       verify_volunteer_schedule_lookup: {
@@ -1610,6 +2097,13 @@ export type Database = {
           p_project_choice?: string
         }
         Returns: Json
+      }
+      volunteer_home_identity: {
+        Args: { p_token: string }
+        Returns: {
+          volunteer_id: string
+          workspace_id: string
+        }[]
       }
     }
     Enums: {
@@ -1629,12 +2123,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1658,11 +2152,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1683,11 +2177,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1708,11 +2202,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1725,11 +2219,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

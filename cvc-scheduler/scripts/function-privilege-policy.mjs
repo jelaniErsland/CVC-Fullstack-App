@@ -5,12 +5,22 @@ export const anonymousFunctions = Object.freeze([
   "read_assignment_response_by_token(text)",
   "read_project_quick_view_by_token(text,date)",
   "read_volunteer_schedule(text)",
+  "read_volunteer_home(text,date)",
+  "manage_volunteer_away(text,text,uuid,date,date,text)",
   "submit_assignment_response_by_token(text,text,text)",
   "submit_questionnaire_submission(text,jsonb,integer)",
   "submit_volunteer_schedule_assignment_response(text,uuid,text,text)",
   "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "read_workspace_project_photo(uuid)",
+  "save_workspace_project_photo(uuid,uuid,jsonb,bigint)",
+  "review_communications(uuid,jsonb)",
+  "confirm_communication_operation(uuid,uuid,jsonb,text)",
+  "claim_communication_recipient(uuid,boolean)",
+  "finalize_communication_recipient(uuid,uuid,text,text,text)",
+  "read_communication_history(uuid)",
+  "plan_calendar_assignments(uuid,uuid,jsonb,text)",
   "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone)",
   "duplicate_calendar_item(uuid,date,time without time zone,time without time zone)",
   "archive_calendar_item(uuid)",
@@ -29,6 +39,7 @@ export const authenticatedFunctions = Object.freeze([
   "issue_assignment_response_token(uuid,integer,text)",
   "issue_project_quick_view_access(uuid)",
   "issue_volunteer_schedule_access(uuid,integer)",
+  "import_volunteer_profiles(uuid,uuid,jsonb)",
   "mark_needs_attention_signal_seen(uuid,text)",
   "publish_calendar_item(uuid)",
   "read_assignment_detail_context(uuid)",
@@ -51,6 +62,9 @@ export const authenticatedFunctions = Object.freeze([
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "volunteer_home_identity(text)",
+  "communication_actor(uuid)",
+  "communication_preview(uuid,jsonb)",
   "calendar_assignment_response_start_at(text,date,time without time zone,text)",
   "calendar_custom_values_are_valid(jsonb)",
   "enforce_calendar_item_workspace_timezone()",

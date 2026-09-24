@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { readdirSync } from "node:fs";
 import {
   anonymousFunctions, authenticatedFunctions, internalFunctions,
   migrationCreators, assertEffectiveFunctionPolicy, effectiveFunctionQuery,
@@ -17,7 +18,8 @@ function sql(query, expectSuccess = true) {
 }
 const output = query => sql(query).stdout.trim();
 const rows = output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse);
-assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), "20260908130000");
+const expectedTerminal = readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter(f => /^\d{14}_.*\.sql$/.test(f)).sort().at(-1).slice(0,14);
+assert.equal(output("select max(version) from supabase_migrations.schema_migrations"), expectedTerminal);
 assertEffectiveFunctionPolicy(assert, rows);
 // Prove that the invariant catches current privilege drift and missing grants.
 for (const [signature, key, value] of [
@@ -110,4 +112,4 @@ try {
 }
 assert.equal(snapshot(), beforeFixture, "Zero disposable fixture residue.");
 assertEffectiveFunctionPolicy(assert, output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
-console.log("PASS systemic ACL: 58 exact functions; 8 anonymous, 38 authenticated, 12 internal; PUBLIC 0; defaults denied; future postgres function denied; 13 direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.");
+console.log(`PASS systemic ACL: ${rows.length} exact functions; ${anonymousFunctions.length} anonymous, ${authenticatedFunctions.length} authenticated, ${internalFunctions.length} internal; PUBLIC 0; defaults denied; future postgres function denied; direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.`);

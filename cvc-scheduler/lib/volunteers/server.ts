@@ -284,14 +284,16 @@ export async function updateVolunteerProfileManualFieldsWithClient(
   supabase: AppSupabaseClient,
   profileId: string,
   input: ManualVolunteerProfileInput,
+  expectedUpdatedAt: string,
 ) {
   const normalizedProfileId = normalizeWorkspaceReference({ id: profileId }).value;
   const { data, error } = await supabase.rpc("update_volunteer_profile_manual_fields", {
     p_profile_id: normalizedProfileId,
-    p_profile: { ...input, availableWorkDays: [...input.availableWorkDays] },
+    p_profile: { ...input, availableWorkDays: [...input.availableWorkDays], expectedUpdatedAt },
   });
 
   if (error || typeof data !== "string") {
+    if (error?.code === "40001") throw new Error("volunteer_edit_conflict");
     throw new Error("Volunteer profile could not be updated.", { cause: error });
   }
 
@@ -344,4 +346,20 @@ export async function readCurrentContactVolunteerProfiles(workspaceId: string) {
   const { createServerSupabaseClient } = await import("../supabase/server.ts");
   const supabase = await createServerSupabaseClient();
   return readVolunteerProfilesWithClient(supabase, workspaceId);
+}
+
+// Bounded, paginated reads prevent an export/import match from silently treating
+// PostgREST's default row cap as the entire workspace directory.
+export async function readCsvVolunteerProfilesWithClient(supabase: AppSupabaseClient, workspaceId: string) {
+  const id = normalizeWorkspaceReference({ id: workspaceId }).value;
+  const profiles: VolunteerProfile[] = [];
+  for (let offset = 0; offset <= 5000; offset += 500) {
+    const { data, error } = await supabase.from("volunteer_profiles").select(volunteerProfileColumns)
+      .eq("workspace_id", id).order("id").range(offset, offset + 499);
+    if (error) throw new Error("Volunteer CSV directory unavailable.");
+    profiles.push(...(data ?? []).map(parseVolunteerProfile));
+    if (profiles.length > 5000) throw new Error("Workspace exceeds the supported CSV limit.");
+    if (!data || data.length < 500) return profiles;
+  }
+  throw new Error("Workspace exceeds the supported CSV limit.");
 }

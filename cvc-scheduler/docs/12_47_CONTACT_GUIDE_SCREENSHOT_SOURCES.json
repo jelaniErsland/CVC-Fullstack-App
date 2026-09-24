@@ -1,0 +1,265 @@
+{
+  "overview.webp": {
+    "source": "12.47-ux-consolidation/overview-1440.png",
+    "crop": null
+  },
+  "overview-thumb.webp": {
+    "source": "12.47-ux-consolidation/overview-1440.png",
+    "crop": [
+      245,
+      10,
+      1400,
+      635
+    ]
+  },
+  "overview-mobile.webp": {
+    "source": "12.47-ux-consolidation/overview-390.png",
+    "crop": null
+  },
+  "calendar.webp": {
+    "source": "final-product-readiness/12-calendar-desktop.png",
+    "crop": null
+  },
+  "calendar-thumb.webp": {
+    "source": "final-product-readiness/12-calendar-desktop.png",
+    "crop": [
+      237,
+      70,
+      1397,
+      650
+    ]
+  },
+  "repeat-desktop.webp": {
+    "source": "12.47-final-ux-polish/repeat-create-inspector-1440.png",
+    "crop": null
+  },
+  "repeat-detail.webp": {
+    "source": "12.47-final-ux-polish/repeat-create-inspector-1440.png",
+    "crop": [
+      934,
+      4,
+      1440,
+      1178
+    ]
+  },
+  "repeat-mobile.webp": {
+    "source": "12.47-final-ux-polish/repeat-create-inspector-390.png",
+    "crop": null
+  },
+  "repeat-mobile-thumb.webp": {
+    "source": "12.47-final-ux-polish/repeat-create-inspector-390.png",
+    "crop": [
+      0,
+      110,
+      390,
+      995
+    ]
+  },
+  "existing-desktop.webp": {
+    "source": "12.47-final-ux-polish/existing-multi-date-inspector-1440.png",
+    "crop": null
+  },
+  "existing-detail.webp": {
+    "source": "12.47-final-ux-polish/existing-multi-date-inspector-1440.png",
+    "crop": [
+      934,
+      4,
+      1440,
+      1178
+    ]
+  },
+  "existing-mobile.webp": {
+    "source": "12.47-final-ux-polish/existing-multi-date-inspector-390.png",
+    "crop": null
+  },
+  "existing-mobile-thumb.webp": {
+    "source": "12.47-final-ux-polish/existing-multi-date-inspector-390.png",
+    "crop": [
+      0,
+      110,
+      390,
+      995
+    ]
+  },
+  "tasks.webp": {
+    "source": "final-product-readiness/14-tasks-desktop.png",
+    "crop": null
+  },
+  "tasks-thumb.webp": {
+    "source": "final-product-readiness/14-tasks-desktop.png",
+    "crop": [
+      240,
+      70,
+      1230,
+      615
+    ]
+  },
+  "tasks-mobile.webp": {
+    "source": "final-product-readiness/14-tasks-mobile.png",
+    "crop": null
+  },
+  "volunteers.webp": {
+    "source": "final-product-readiness/16-volunteers-desktop.png",
+    "crop": null
+  },
+  "volunteers-thumb.webp": {
+    "source": "final-product-readiness/16-volunteers-desktop.png",
+    "crop": [
+      240,
+      75,
+      1290,
+      835
+    ]
+  },
+  "csv-import.webp": {
+    "source": "12.47-local-review/csv-import-match-preview-1440.png",
+    "crop": null
+  },
+  "csv-import-thumb.webp": {
+    "source": "12.47-local-review/csv-import-match-preview-1440.png",
+    "crop": [
+      490,
+      185,
+      1120,
+      880
+    ]
+  },
+  "welcome.webp": {
+    "source": "12.47-local-review/welcome-preview-confirmation-1440.png",
+    "crop": [
+      0,
+      0,
+      1440,
+      660
+    ]
+  },
+  "welcome-detail.webp": {
+    "source": "12.47-local-review/welcome-preview-confirmation-1440.png",
+    "crop": [
+      235,
+      159,
+      1195,
+      660
+    ]
+  },
+  "schedules.webp": {
+    "source": "12.47-ux-consolidation/communications-schedule-tab-1440.png",
+    "crop": null
+  },
+  "schedule-detail.webp": {
+    "source": "12.47-ux-consolidation/communications-schedule-tab-1440.png",
+    "crop": [
+      290,
+      167,
+      1030,
+      510
+    ]
+  },
+  "history.webp": {
+    "source": "12.47-ux-consolidation/communications-history-tab-390.png",
+    "crop": null
+  },
+  "history-detail.webp": {
+    "source": "12.47-ux-consolidation/communications-history-tab-390.png",
+    "crop": [
+      24,
+      326,
+      373,
+      853
+    ]
+  },
+  "attention.webp": {
+    "source": "final-product-readiness/15-needs-attention-desktop.png",
+    "crop": null
+  },
+  "attention-thumb.webp": {
+    "source": "final-product-readiness/15-needs-attention-desktop.png",
+    "crop": [
+      238,
+      70,
+      1290,
+      745
+    ]
+  },
+  "attention-mobile.webp": {
+    "source": "final-product-readiness/15-needs-attention-mobile.png",
+    "crop": null
+  },
+  "meals.webp": {
+    "source": "12.45-product-review/day-breakfast-lunch-desktop.png",
+    "crop": null
+  },
+  "meals-thumb.webp": {
+    "source": "12.45-product-review/day-breakfast-lunch-desktop.png",
+    "crop": [
+      10,
+      86,
+      1160,
+      565
+    ]
+  },
+  "meal-inspector.webp": {
+    "source": "12.45-product-review/meal-inspector-mobile.png",
+    "crop": null
+  },
+  "quick-view.webp": {
+    "source": "12.45-product-review/quick-view-week-desktop.png",
+    "crop": null
+  },
+  "quick-view-thumb.webp": {
+    "source": "12.45-product-review/quick-view-week-desktop.png",
+    "crop": [
+      10,
+      0,
+      1260,
+      660
+    ]
+  },
+  "quick-view-mobile.webp": {
+    "source": "12.45-product-review/quick-view-week-mobile.png",
+    "crop": null
+  },
+  "volunteer-home.webp": {
+    "source": "12.47-local-review/volunteer-home-default-390.png",
+    "crop": null
+  },
+  "volunteer-home-thumb.webp": {
+    "source": "12.47-local-review/volunteer-home-default-390.png",
+    "crop": [
+      0,
+      0,
+      390,
+      980
+    ]
+  },
+  "volunteer-home-desktop.webp": {
+    "source": "12.47-local-review/volunteer-home-default-1440.png",
+    "crop": null
+  },
+  "weekly-menu.webp": {
+    "source": "12.47-ux-consolidation/volunteer-weekly-menu-sheet-390.png",
+    "crop": null
+  },
+  "weekly-menu-thumb.webp": {
+    "source": "12.47-ux-consolidation/volunteer-weekly-menu-sheet-390.png",
+    "crop": [
+      0,
+      0,
+      390,
+      755
+    ]
+  },
+  "away.webp": {
+    "source": "12.47-ux-consolidation/away-conflict-without-extra-ack-390.png",
+    "crop": null
+  },
+  "away-thumb.webp": {
+    "source": "12.47-ux-consolidation/away-conflict-without-extra-ack-390.png",
+    "crop": [
+      0,
+      55,
+      390,
+      850
+    ]
+  }
+}

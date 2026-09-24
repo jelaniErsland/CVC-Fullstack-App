@@ -13,7 +13,7 @@ import {
   UserMinus,
   UserPlus,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
 
@@ -221,6 +221,7 @@ export function CalendarAssignmentPicker({
   currentView,
   itemId,
   neededCount,
+  unifiedAssignment,
 }: {
   assignAction?: CalendarMutationAction;
   assignmentPicker: CalendarPickerState;
@@ -231,6 +232,7 @@ export function CalendarAssignmentPicker({
   currentView: string;
   itemId: string;
   neededCount: number;
+  unifiedAssignment?: ReactNode;
 }) {
   const { readOnly } = useCalendarOperations();
   const [search, setSearch] = useState("");
@@ -366,7 +368,7 @@ export function CalendarAssignmentPicker({
           <p className="text-sm leading-6 text-slate-600">Volunteer choices are unavailable for this signed-in contact.</p>
         ) : assignmentPicker.kind === "error" ? (
           <p className="text-sm leading-6 text-slate-600">Volunteer choices could not be loaded safely right now.</p>
-        ) : canEditAssignments && assignAction ? (
+        ) : canEditAssignments && unifiedAssignment ? unifiedAssignment : canEditAssignments && assignAction ? (
           <form action={assignAction} className="space-y-3">
             <input name="calendarItemId" type="hidden" value={itemId} />
             <input name="redirectView" type="hidden" value={currentView} />

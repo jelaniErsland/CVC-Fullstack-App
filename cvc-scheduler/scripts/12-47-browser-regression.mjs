@@ -1,0 +1,100 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import { mkdir, rm, readFile } from 'node:fs/promises';
+import sharp from 'sharp';
+import { chromium } from 'playwright';
+import { fixture,q,sql,value } from './12-47-local-fixtures.mjs';
+import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
+const output=path.resolve('..','previews','12.47-local-review');await mkdir(output,{recursive:true});
+// Synthetic local scene only. This fixture is not a photo of the real project.
+const scene=Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#648eab"/><stop offset="1" stop-color="#d8e4d8"/></linearGradient></defs><rect width="1800" height="1000" fill="url(#sky)"/><path d="M0 650L350 140L750 650L1100 210L1600 690L1800 400V1000H0Z" fill="#577b80"/><path d="M180 390L350 140L530 400L400 340L330 290L270 380Z" fill="#f1f3ea"/><path d="M0 720Q900 580 1800 730V1000H0" fill="#5a8055"/><rect x="510" y="530" width="750" height="300" fill="#e4dbca"/><path d="M450 540L870 380L1330 540Z" fill="#536273"/><rect x="560" y="600" width="190" height="130" fill="#668d9b"/><rect x="960" y="600" width="190" height="130" fill="#668d9b"/><rect x="810" y="630" width="100" height="200" fill="#687884"/><path d="M830 830H900L1100 1000H650Z" fill="#c6bba4"/><circle cx="200" cy="640" r="130" fill="#3e6954"/><circle cx="1500" cy="670" r="150" fill="#3e6954"/></svg>`);
+const photo=await sharp(scene).jpeg({quality:88}).toBuffer();
+const browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
+try {
+  for(const width of [1440,390]) {
+    const f=await fixture(true),errors=[]; const context=await browser.newContext({viewport:{width,height:1000}});
+    const volunteerContext=await browser.newContext({viewport:{width,height:1000}});
+    for(const c of [context,volunteerContext])await c.route('**/*',route=>['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
+    await context.addCookies([...f.admin.jar.values()].map(c=>({name:c.name,value:c.value,domain:'127.0.0.1',path:'/',sameSite:'Lax'})));
+    await volunteerContext.addCookies([{name:'pl-volunteer-schedule',value:f.token,domain:'127.0.0.1',path:'/v',httpOnly:true,sameSite:'Lax'}]);
+    const page=await context.newPage(),volunteer=await volunteerContext.newPage();
+    for(const p of [page,volunteer]) {p.setDefaultTimeout(25000);p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});}
+    const go=async(p,route)=>{await p.goto('http://127.0.0.1:3000'+route,{waitUntil:'networkidle',timeout:90000});};
+    const capture=async(p,name)=>{await p.waitForFunction(()=>![...document.querySelectorAll('button')].some(b=>b.textContent==='Working…'));assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,name+' overflow');assert.equal(await p.evaluate(()=>[...document.querySelectorAll('dialog[open]')].some(d=>d.scrollWidth>d.clientWidth+1)),false,name+' dialog overflow');await p.addStyleTag({content:'nextjs-portal { display: none !important; }'});await p.screenshot({path:path.join(output,`${name}-${width}.png`),fullPage:!(await p.locator('dialog[open]').count())});};
+    try {
+      sql(`insert into public.workspace_project_photos(workspace_id,uploads_enabled) values(${q(f.ws)},true)`);
+      await go(page,'/admin/dashboard');await page.getByRole('button',{name:'Change photo'}).waitFor();
+      await capture(page,'overview-default');await go(volunteer,'/v/schedule');await volunteer.getByRole('heading',{name:'Welcome, Alex.'}).waitFor();await capture(volunteer,'volunteer-home-default');
+      await page.getByRole('button',{name:'Change photo'}).click();
+      const editor=page.getByRole('dialog');await editor.getByLabel('Choose photo').setInputFiles({name:'local-fixture.jpg',mimeType:'image/jpeg',buffer:photo});
+      await editor.getByLabel('mobile horizontal focal point').focus();await page.keyboard.press('End');
+      await capture(page,'shared-photo-crop-preview');const saveResponse=page.waitForResponse(r=>r.url().endsWith('/admin/project-photo')&&r.request().method()==='POST');await editor.getByRole('button',{name:'Save shared photo'}).click();
+      const savedPhotoResponse=await saveResponse;assert.equal(savedPhotoResponse.status(),200,await savedPhotoResponse.text());
+      await editor.waitFor({state:'hidden'});await page.locator('picture img').first().waitFor();await page.waitForFunction(()=>[...document.querySelectorAll('picture img')].every(i=>i.complete&&i.naturalWidth>0));await capture(page,'overview-shared-hero');
+      await go(volunteer,'/v/schedule');await volunteer.waitForFunction(()=>[...document.querySelectorAll('picture img')].every(i=>i.complete&&i.naturalWidth>0));
+      assert((await volunteer.locator('body').innerText()).includes('Garden sandwiches'));
+      for(const forbidden of ['PRIVATE','Casey Jordan','1980-01-01'])assert(!(await volunteer.locator('body').innerText()).includes(forbidden));
+      await capture(volunteer,'volunteer-home-shared-hero');
+      await volunteer.getByText('Weekly menu',{exact:true}).click();await capture(volunteer,'volunteer-weekly-menu');
+      await volunteer.getByRole('button',{name:'Add away period'}).click();const away=volunteer.getByRole('dialog');
+      await away.getByLabel('From',{exact:true}).fill(f.day);await away.getByLabel('Through',{exact:true}).fill(f.day);
+      await away.getByRole('button',{name:'Review away period'}).click();await away.getByText('1 existing assignment conflicts').waitFor();await capture(volunteer,'away-assignment-conflict');
+      await away.getByRole('checkbox').check();await away.getByRole('button',{name:'Save away period'}).click();await away.waitFor({state:'hidden'});await capture(volunteer,'away-period-management');
+      await go(page,`/admin/calendar?view=week&date=${f.day}`);await page.getByText('Assign across Calendar items',{exact:true}).click();
+      const planner=page.locator('details').filter({has:page.getByText('Assign across Calendar items',{exact:true})});
+      for(const d of [f.day,f.dayAt(1)])await planner.getByLabel(`${d} · Site preparation`,{exact:true}).check();
+      for(const name of ['Alex Morgan','Riley Chen'])await planner.getByLabel(name,{exact:true}).check();
+      await planner.getByRole('button',{name:'Review assignments',exact:true}).click();await planner.getByRole('button',{name:'Confirm 2 assignments'}).waitFor();
+      await planner.getByRole('heading',{name:'Review assignments'}).scrollIntoViewIfNeeded();await capture(page,'multi-day-assignment-preview');
+      await planner.getByRole('button',{name:'Confirm 2 assignments'}).click();await planner.waitFor({state:'detached'});
+      await page.getByRole('button',{name:width===390?'Create':'Create item',exact:true}).click();
+      const create=page.getByRole('dialog').filter({has:page.getByRole('heading',{name:'Plan project work'})});
+      await create.getByRole('button',{name:'Repeat',exact:true}).click();await create.getByLabel('Start date',{exact:true}).fill(f.dayAt(10));await create.getByLabel('End date',{exact:true}).fill(f.dayAt(11));
+      await create.getByLabel('Task preset',{exact:true}).selectOption(f.preset);
+      for(const day of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']){const b=create.getByRole('button',{name:day,exact:true});if(await b.getAttribute('aria-pressed')==='false')await b.click();}
+      await create.getByText('Assign volunteers across these dates',{exact:true}).click();const newPlanner=create.locator('details').filter({has:page.getByText('Assign volunteers across these dates',{exact:true})});
+      await newPlanner.getByLabel('Riley Chen',{exact:true}).check();await newPlanner.getByRole('button',{name:'Review assignments',exact:true}).click();await newPlanner.getByRole('button',{name:'Confirm 2 assignments'}).scrollIntoViewIfNeeded();await capture(page,'repeat-create-assignment-preview');
+      await newPlanner.getByRole('button',{name:'Confirm 2 assignments'}).click();await create.getByText(/Saved 2 new assignments/).waitFor();
+      assert.equal(value(`select count(*) from public.calendar_items where workspace_id=${q(f.ws)} and start_date between ${q(f.dayAt(10))} and ${q(f.dayAt(11))} and publication_state='draft'`),'2');
+      await go(page,'/admin/volunteers');await page.getByRole('button',{name:'Import CSV',exact:true}).click();const csv=page.getByRole('dialog');
+      const input=`fullName,email,housingOption,dateOfBirth\nAlex Morgan,fixture-${f.ws}-0@example.invalid,no,1981-01-01\nTaylor Rivera,taylor-${f.ws}@example.invalid,unknown,\nAmbiguous,fixture-${f.ws}-0@example.invalid,yes,\nBad email,broken,unknown,\n`;
+      await csv.getByLabel('CSV file').setInputFiles({name:'fixture.csv',mimeType:'text/csv',buffer:Buffer.from(input)});await csv.getByRole('button',{name:'Review import',exact:true}).click();await csv.getByLabel('CSV match preview').waitFor();
+      await csv.getByText('Review fields to update').click();assert(!(await csv.innerText()).includes('1981-01-01'));await capture(page,'csv-import-match-preview');
+      await csv.getByRole('button',{name:'Save 1 reviewed rows'}).click();await csv.getByText('1 added · 0 updated. No email sent.').waitFor();
+      await csv.getByRole('button',{name:'Close CSV'}).click();await page.getByRole('button',{name:'Export CSV',exact:true}).click();
+      await csv.getByLabel('Include private date of birth and emergency fields').check();await capture(page,'csv-export-controls');
+      await go(page,'/admin/announcements');await page.getByRole('button',{name:'Review recipients',exact:true}).waitFor();await capture(page,'communications-pending-introductions');
+      await page.getByRole('button',{name:'Review recipients',exact:true}).click();await page.getByRole('heading',{name:'Review 4 recipients'}).waitFor();await page.getByRole('checkbox',{name:'Send one individual email to each of these 4 recipients.'}).check();await capture(page,'welcome-preview-confirmation');
+      await page.getByRole('button',{name:'Confirm send to 4 recipients'}).click();await page.getByRole('button',{name:'Review resend',exact:true}).first().waitFor();await capture(page,'welcome-delivery-results');
+      await page.getByRole('button',{name:'Schedule deliveries',exact:false}).click();await page.getByLabel('From',{exact:true}).fill(f.day);await page.getByLabel('Through',{exact:true}).fill(f.dayAt(3));await page.getByRole('button',{name:'Review recipients',exact:true}).click();await page.getByRole('heading',{name:'Review 3 recipients'}).waitFor();
+      await capture(page,'consolidated-schedule-preview');await page.getByRole('checkbox',{name:'Send one individual email to each of these 3 recipients.'}).check();await page.getByRole('button',{name:'Confirm send to 3 recipients'}).click();
+      await page.waitForFunction(()=>document.body.innerText.includes('sent · 3 assignments'));await capture(page,'delivery-history-resend');
+      assert.equal(value(`select count(*) from public.communication_recipients where workspace_id=${q(f.ws)} and state='sent'`),'7');
+      const failurePlan={kind:'welcome',mode:'resend',volunteerIds:[f.volunteers[0]]},failureOperation=randomUUID();
+      const reviewed=JSON.parse(value(f.auth(`select public.review_communications(${q(f.ws)},${q(JSON.stringify(failurePlan))})`)));
+      value(f.auth(`select public.confirm_communication_operation(${q(f.ws)},${q(failureOperation)},${q(JSON.stringify(failurePlan))},${q(reviewed.fingerprint)})`));
+      const failureRecipient=value(`select id from public.communication_recipients where operation_id=${q(failureOperation)}`);
+      const failureClaim=JSON.parse(value(f.auth(`select public.claim_communication_recipient(${q(failureRecipient)},false)`)));
+      value(f.auth(`select public.finalize_communication_recipient(${q(failureRecipient)},${q(failureClaim.claimId)},'failed',null,'provider_rejected')`));
+      await page.getByRole('button',{name:'Refresh history'}).click();await page.getByRole('button',{name:'Retry failed message'}).click();
+      await page.getByRole('group',{name:'Confirm retry'}).scrollIntoViewIfNeeded();await capture(page,'delivery-failure-retry-confirmation');
+      await page.getByRole('button',{name:'Confirm retry to 1 recipient'}).click();await page.getByRole('group',{name:'Confirm retry'}).waitFor({state:'hidden'});
+      assert.equal(value(`select state||':'||attempt from public.communication_recipients where id=${q(failureRecipient)}`),'sent:2');
+      assert.equal(value(`select count(*) from public.communication_recipients where workspace_id=${q(f.ws)} and state='sent'`),'8','Retry sends only the failed recipient');
+      const recording=await readFile('.local/communication-recording.jsonl','utf8');assert(!recording.includes('@example.invalid'));assert(!recording.includes('/v/access/'));
+      const exported=await context.request.post('http://127.0.0.1:3000/admin/volunteers/csv',{headers:{origin:'http://127.0.0.1:3000'},form:{scope:'all'}});
+      assert.equal(exported.status(),200);assert(!(await exported.text()).includes('dateOfBirth'));assert(!(await exported.text()).includes('PRIVATE EMERGENCY'));
+      const csrf=await context.request.post('http://127.0.0.1:3000/admin/volunteers/csv',{headers:{origin:'https://untrusted.invalid'},form:{scope:'all'}});assert.equal(csrf.status(),403);
+      sql(`update public.workspace_contact_grants set capabilities=array['workspace.read','volunteers.view'] where workspace_id=${q(f.ws)}`);
+      const privateDenied=await context.request.post('http://127.0.0.1:3000/admin/volunteers/csv',{headers:{origin:'http://127.0.0.1:3000'},form:{scope:'all',privateFields:'yes',privateWarningAccepted:'yes'}});assert.equal(privateDenied.status(),403);
+      sql(`update public.workspace_contact_grants set capabilities=array['workspace.read','volunteers.view','volunteers.edit','calendar.view','calendar.edit','tasks.view','tasks.edit','assignments.view','assignments.edit','questionnaires.review'] where workspace_id=${q(f.ws)}`);
+      await go(page,'/admin/dashboard');await page.getByRole('button',{name:'Change photo'}).click();await page.keyboard.press('Escape');assert(await page.getByRole('button',{name:'Change photo'}).evaluate(e=>e===document.activeElement),'Photo dialog restores keyboard focus');
+      await page.getByRole('button',{name:'Change photo'}).click();await page.getByRole('dialog').getByRole('button',{name:'Remove photo'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
+      assert.equal(value(`select asset_id is null from public.workspace_project_photos where workspace_id=${q(f.ws)}`),'t');
+      await go(volunteer,'/v/schedule');assert.equal(await volunteer.locator('picture img').count(),0,'Removal restores shared default');
+      assert.deepEqual(errors,[],'No browser console/hydration/runtime errors');
+      console.log(`PASS 12.47 browser ${width}px: shared hero/crops, menu/privacy, away conflict, bulk existing/repeat save, CSV preview/import, explicit recorded welcome/schedule sends, history, overflow.`);
+    } finally {await context.close();await volunteerContext.close();await f.cleanup();const folder=path.resolve('.local/project-assets',f.ws);assert(folder.startsWith(path.resolve('.local/project-assets')+path.sep));await rm(folder,{recursive:true,force:true});}
+  }
+} finally {await browser.close();}

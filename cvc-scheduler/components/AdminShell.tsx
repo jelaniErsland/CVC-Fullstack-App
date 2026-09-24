@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import {
+  BookOpen,
   Bell,
   CalendarDays,
   ClipboardList,
   Eye,
   Home,
+  Mail,
   MoreHorizontal,
   Users,
   X,
@@ -84,6 +86,8 @@ const moreGroups: Array<{
     links: [
       { label: "Project Quick View", href: "/admin/quick-view", icon: Eye },
       { label: "Volunteers", href: "/admin/volunteers", icon: Users },
+      { label: "Communications", href: "/admin/announcements", icon: Mail },
+      { label: "Contact Guide", href: "/guide", icon: BookOpen },
     ],
   },
 ];

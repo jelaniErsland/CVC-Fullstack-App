@@ -104,7 +104,7 @@ async function createManualVolunteerAction(formData: FormData) {
 async function updateVolunteerProfileAction(formData: FormData) {
   "use server";
 
-  let notice: "unavailable" | "validation" | "error" | "updated" = "error";
+  let notice: "unavailable" | "validation" | "error" | "updated" | "conflict" = "error";
   try {
     const routeContext = await readVolunteerManagementRouteContext();
     const profileId = formData.get("profileId");
@@ -118,11 +118,12 @@ async function updateVolunteerProfileAction(formData: FormData) {
         routeContext.supabase,
         normalizedProfileId,
         input,
+        String(formData.get("expectedUpdatedAt") ?? ""),
       );
       notice = "updated";
     }
   } catch (error) {
-    notice = error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
+    notice = error instanceof Error && error.message === "volunteer_edit_conflict" ? "conflict" : error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
     observeVolunteerMutationFailure(
       "volunteer.update_failure",
       notice === "validation" ? "validation" : "error",
@@ -144,6 +145,7 @@ function Notice({ notice }: { notice: string | null }) {
       title: "Volunteer updated",
       message: "Your changes are saved.",
     },
+    conflict: { title: "Profile changed", message: "This profile changed while you were editing it. Review the latest version." },
     deleted: {
       title: "Volunteer deleted",
       message: "This history-free volunteer was removed from the project.",
@@ -199,6 +201,7 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
   return (
     <VolunteerDirectory
       canEdit={state.canEdit}
+      canCommunicate={state.canCommunicate}
       congregations={[
         ...new Set(
           state.profiles

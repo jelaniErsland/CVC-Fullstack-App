@@ -8,10 +8,13 @@ import {
   Plus,
   Sparkles,
   UserRoundPlus,
-  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ProjectPhotoEditor } from "@/components/ProjectPhotoEditor";
+import { readAdminProjectPhoto } from "@/lib/projectPhoto/server";
+import { defaultPhoto, type ProjectPhoto } from "@/lib/projectPhoto/photo";
 import { AdminShell } from "@/components/AdminShell";
+import { readNeedsAttentionRouteState } from "@/lib/needsAttention/routeRead.server";
 import { GlassCard } from "@/components/GlassCard";
 import {
   readOverviewRouteState,
@@ -66,25 +69,9 @@ function projectDateRange(state: OverviewReadyRouteState) {
   );
 }
 
-function OverviewHeader({ state }: { state: OverviewReadyRouteState }) {
+function OverviewHeader({ state, photo, canEdit }: { state: OverviewReadyRouteState; photo: ProjectPhoto; canEdit: boolean }) {
   const dateRange = projectDateRange(state);
-  return (
-    <header className="flex flex-col gap-4 border-b border-[var(--pl-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-          {state.workspaceName}
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
-          Overview
-        </h1>
-      </div>
-      {dateRange ? (
-        <p className="w-fit rounded-lg border border-[var(--pl-border)] bg-white px-3 py-2 text-xs font-semibold text-[var(--pl-muted)] shadow-sm">
-          {dateRange}
-        </p>
-      ) : null}
-    </header>
-  );
+  return <header><ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit={canEdit} />{dateRange && <p className="mt-2 text-xs text-slate-600">{dateRange}</p>}</header>;
 }
 
 function SectionHeader({ eyebrow, title, href, action }: {
@@ -149,7 +136,7 @@ function NextUp({ state }: { state: OverviewReadyRouteState }) {
         <div className="divide-y divide-[var(--pl-border)]">{items.map((item) => <UpcomingRow item={item} key={item.id} />)}</div>
       ) : (
         <div className="px-5 py-7">
-          <p className="text-sm font-semibold text-[var(--pl-ink)]">The next seven days are clear.</p>
+          <p className="text-sm font-semibold text-[var(--pl-ink)]">No Calendar items are scheduled in the next seven days.</p>
         </div>
       )}
     </section>
@@ -159,18 +146,10 @@ function NextUp({ state }: { state: OverviewReadyRouteState }) {
 function ScheduleReview({ state }: { state: OverviewReadyRouteState }) {
   if (!state.calendar || state.calendar.kind !== "ready") return null;
   const signals = state.calendar.value.reviewSignals;
-  if (signals.length === 0) {
-    return (
-      <section className="rounded-2xl border border-[var(--pl-border)] bg-white p-5 shadow-[var(--pl-shadow-card)]">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-[var(--pl-teal-soft)] text-[#177b6f]"><CheckCircle2 aria-hidden="true" className="size-[18px]" /></span>
-        <h2 className="mt-4 text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">Schedule looks ready</h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--pl-text)]">No upcoming coverage or response follow-ups need your attention.</p>
-      </section>
-    );
-  }
+  if (signals.length === 0) return null;
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-card)]">
-      <SectionHeader action="Review week" eyebrow="Schedule" href={`/admin/calendar?view=week&date=${state.today}`} title="To review" />
+      <SectionHeader action="Review week" eyebrow="Calendar · next seven days" href={`/admin/calendar?view=week&date=${state.today}`} title="To review" />
       <div className="divide-y divide-[var(--pl-border)]">
         {signals.map((signal) => (
           <Link className="flex min-h-[68px] items-center gap-3 px-4 py-3 transition hover:bg-[var(--pl-surface-subtle)] sm:px-5" href={signal.href} key={signal.id}>
@@ -183,25 +162,6 @@ function ScheduleReview({ state }: { state: OverviewReadyRouteState }) {
           </Link>
         ))}
       </div>
-    </section>
-  );
-}
-
-function Snapshot({ state }: { state: OverviewReadyRouteState }) {
-  const values = [
-    state.calendar?.kind === "ready" ? { label: "scheduled this week", value: state.calendar.value.scheduledCount, icon: CalendarDays } : null,
-    state.tasks?.kind === "ready" ? { label: "active reusable tasks", value: state.tasks.value.activeCount, icon: ClipboardList } : null,
-    state.volunteers?.kind === "ready" ? { label: "ready volunteers", value: state.volunteers.value.readyActiveCount, icon: Users } : null,
-  ].filter((item): item is { label: string; value: number; icon: LucideIcon } => Boolean(item));
-  if (values.length === 0 || state.isEmpty) return null;
-  return (
-    <section aria-label="Project snapshot" className="grid divide-y divide-[var(--pl-border)] overflow-hidden rounded-2xl border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-card)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-      {values.map(({ label, value, icon: Icon }) => (
-        <div className="flex items-center gap-3 px-4 py-3.5" key={label}>
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"><Icon aria-hidden="true" className="size-4" /></span>
-          <p className="min-w-0 text-xs font-semibold text-[var(--pl-muted)]"><strong className="mr-1 text-base text-[var(--pl-ink)]">{value}</strong>{" "}{label}</p>
-        </div>
-      ))}
     </section>
   );
 }
@@ -249,6 +209,8 @@ function EmptyProject({ state }: { state: OverviewReadyRouteState }) {
 
 export default async function AdminDashboardPage() {
   const state = await readOverviewRouteState();
+  const photo = await readAdminProjectPhoto().catch(() => null);
+  const attention = state.kind === "ready" ? await readNeedsAttentionRouteState() : null;
   if (state.kind !== "ready") {
     return (
       <AdminShell active="overview">
@@ -267,14 +229,14 @@ export default async function AdminDashboardPage() {
   return (
     <AdminShell active="overview" workspaceName={state.workspaceName}>
       <div className="space-y-5">
-        <OverviewHeader state={state} />
+        <OverviewHeader state={state} photo={photo?.photo ?? defaultPhoto} canEdit={photo?.canEdit ?? false} />
+        {attention?.kind === "ready" && attention.workspaceName === state.workspaceName && attention.summary.totalSignalCount > 0 ? <Link className="inline-flex min-h-9 items-center gap-1.5 text-sm font-semibold text-[var(--pl-blue)] hover:underline" href="/admin/needs-attention">{attention.summary.truncated ? "Follow-ups need review" : `${attention.summary.totalSignalCount} ${attention.summary.totalSignalCount === 1 ? "follow-up needs" : "follow-ups need"} review`}<ArrowRight aria-hidden="true" className="size-4" /></Link> : null}
         {state.isEmpty ? <EmptyProject state={state} /> : (
           <>
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.42fr)_minmax(310px,0.78fr)] xl:items-start">
               <NextUp state={state} />
               <ScheduleReview state={state} />
             </div>
-            <Snapshot state={state} />
           </>
         )}
         {!state.isEmpty ? <QuickActions actions={state.actions} /> : null}

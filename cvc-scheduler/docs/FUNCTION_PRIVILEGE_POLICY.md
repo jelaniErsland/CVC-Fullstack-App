@@ -1,6 +1,16 @@
-# Project Local function EXECUTE policy — 12.46C
+# Project Local function EXECUTE policy — local 12.47
 
-Status: migrations through `20260908130000` are live. The live catalog policy is 58 functions, including the authorized per-contact Needs Attention review RPC.
+Status: the September 24 read-only production preflight confirmed terminal `20260908130000` and 58 functions; production was not mutated. The fresh local migration catalog through `20260922150000` is **72 functions: 10 anonymous, 47 authenticated, 15 internal**. All four 12.47 migrations are local release source and unapplied to production.
+
+## Local 12.47 additions and boundaries
+
+PUBLIC EXECUTE and default PUBLIC/anon/authenticated EXECUTE remain zero. The hosted `postgres` public-schema default still grants `service_role` EXECUTE, whereas the fresh local default does not; [12.47's exact reconciliation](./12_47_ACL_RECONCILIATION.md) makes existing application-function grants deterministic without changing either default. All 57 local SECURITY DEFINER functions are owned by `postgres` with an empty pinned search path; the 15 internal helpers are SECURITY INVOKER with no PUBLIC/anon/authenticated/service_role grants. No service-role runtime credential was added. Existing signatures remain present; the JSONB profile update signature now requires a version inside its payload.
+
+Communications review, confirmation, claim, finalization and history all independently require an active contact/workspace grant with `workspace.read`, `volunteers.view`, `volunteers.edit`, `calendar.view`, `assignments.view`, and `assignments.edit`. Claims revalidate recipient and assignment eligibility before dispatch; accepted or unknown messages cannot be retried. Internal helpers cannot be called directly by application roles.
+
+Photo mutation additionally requires `calendar.edit`, an exact photo version and the database upload flag (false by default). The storage adapter is loopback-only and disabled on Vercel. Production photo uploads require independent asset recovery approval.
+
+The existing eight anonymous RPCs retain their policies. The two additions use the same hashed, unexpired, unrevoked, active-workspace/active-ready-volunteer schedule credential. They expose no directory, DOB/emergency details, private profile notes, meal contacts, internal notes or another volunteer's assignments. The weekly menu intentionally includes saved published meals on dates without an assignment. Away mutations affect only the credential owner's periods and never mutate responses.
 
 ## Evidence and severity
 
@@ -31,14 +41,16 @@ Token issuance, notification claims (which return contact details), audited resp
 
 ## Current policy
 
-Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 58 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on the existing application RPCs is retained; internal helpers lose service_role as well as anon/authenticated. There is no service-role-only product RPC in the reviewed inventory, and the application introduces no service-role secret.
+Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 72 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on application RPCs is retained; internal helpers deny service_role as well as anon/authenticated. There is no service-role-only product RPC or runtime secret.
 
-### A — intentional anonymous RPCs (8)
+### A — intentional anonymous RPCs (10 local; 8 last documented live)
 
 Each retains exact anon and authenticated grants; the existing service_role privilege is preserved. The public table ACL policy is unchanged.
 
 | Exact signature | Boundary and minimal result | Definition and caller |
 | --- | --- | --- |
+| `read_volunteer_home(text,date)` | Existing scoped schedule credential; safe posted weekly menu, own away periods, shared photo. | `20260922150000_project_hero_volunteer_home.sql`; `lib/volunteerScheduleAccess/home.server.ts` |
+| `manage_volunteer_away(text,text,uuid,date,date,text)` | Existing scoped credential; own bounded away periods, conflict preview/fingerprint, no response changes. | `20260922150000_project_hero_volunteer_home.sql`; `app/v/schedule/home.actions.ts` |
 | `confirm_all_volunteer_schedule_assignments(text)` | Verified schedule bearer; volunteer + workspace scoped; published active future assignments only; bounded count result. | [20260714122100_volunteer_schedule_responses.sql:480](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql); [lib/volunteerScheduleAccess/server.ts](../lib/volunteerScheduleAccess/server.ts) |
 | `read_assignment_response_by_token(text)` | Hashed, unexpired, unrevoked assignment bearer; matching assignment, volunteer, workspace, published item; narrow schedule/response projection. | [20260714121900_calendar_publication_visibility.sql:1197](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/responseTokens/server.ts](../lib/responseTokens/server.ts) |
 | `read_project_quick_view_by_token(text,date)` | Hashed project bearer; active project and expiry/date gate; trusted published Calendar projection includes Security, assigned names, operational notes, typed meal contacts and safe custom values; excludes profile contacts/notes and credentials. Pre-12.45 links are revoked on migration, preserving their audit records. | [20260902120000_project_quick_view_share_access.sql:260](../supabase/migrations/20260902120000_project_quick_view_share_access.sql); [lib/projectQuickViewAccess/server.ts](../lib/projectQuickViewAccess/server.ts) |
@@ -48,12 +60,21 @@ Each retains exact anon and authenticated grants; the existing service_role priv
 | `submit_volunteer_schedule_assignment_response(text,uuid,text,text)` | Verified schedule bearer and exact assignment/volunteer/workspace join; start/48-hour locks; narrow response result. | [20260714122100_volunteer_schedule_responses.sql:335](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql); [lib/volunteerScheduleAccess/server.ts](../lib/volunteerScheduleAccess/server.ts) |
 | `verify_volunteer_schedule_lookup(text,text,text)` | Exact normalized name/contact; active/ready gates; duplicate fail closed; opaque HMAC project choices; DB serialized limiter; hash-only stored bearer. Route exchanges bearer into existing HttpOnly cookie. | [20260905120000_volunteer_schedule_lookup.sql:14](../supabase/migrations/20260905120000_volunteer_schedule_lookup.sql); [app/v/lookup/route.ts](../app/v/lookup/route.ts) |
 
-### B — authenticated application RPCs (38)
+### B — authenticated application RPCs (47 local; 38 last documented live)
 
 Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing service_role ACL, and remains SECURITY DEFINER with search_path=''. Every row below has verified identity and live grant/capability/workspace checks. Capabilities listed are the source predicates (read_assignment_detail_context requires view and reports edit separately).
 
 | Exact signature | Capability predicates | Definition / application caller |
 | --- | --- | --- |
+| `plan_calendar_assignments(uuid,uuid,jsonb,text)` | workspace.read, calendar.view, assignments.view/edit, volunteers.view; composed creation also requires calendar.edit | `20260922120000_bulk_calendar_assignments.sql`; `lib/calendar/bulkAssignments.actions.ts` |
+| `review_communications(uuid,jsonb)` | Shared six-capability Communications guard | `20260922130000_communication_delivery_operations.sql`; `lib/notifications/communications.actions.ts` |
+| `confirm_communication_operation(uuid,uuid,jsonb,text)` | Same guard; serialized current recipient preview/fingerprint | Same migration and caller |
+| `claim_communication_recipient(uuid,boolean)` | Same guard; scoped claim, current eligibility, explicit failed-only retry | Same migration; `lib/notifications/communicationDispatch.server.ts` |
+| `finalize_communication_recipient(uuid,uuid,text,text,text)` | Same guard; exact claim and claiming contact, validated outcome | Same migration and dispatcher |
+| `read_communication_history(uuid)` | Same guard; current workspace only | Same migration; `lib/notifications/communications.server.ts` |
+| `import_volunteer_profiles(uuid,uuid,jsonb)` | workspace.read, volunteers.view/edit; bounded reviewed/versioned patches | `20260922140000_volunteer_csv_import.sql`; `lib/volunteers/csv.actions.ts` |
+| `read_workspace_project_photo(uuid)` | workspace.read with active workspace/contact/grant | `20260922150000_project_hero_volunteer_home.sql`; `lib/projectPhoto/server.ts` |
+| `save_workspace_project_photo(uuid,uuid,jsonb,bigint)` | workspace.read, calendar.edit, version, uploads_enabled | Same migration; `app/admin/project-photo/route.ts` |
 | `save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone)` | 'workspace.read', 'calendar.edit'; optimistic `updated_at` check on edits | [20260907120000_concurrent_admin_edit_guards.sql](../supabase/migrations/20260907120000_concurrent_admin_edit_guards.sql); [lib/calendar/operations.actions.ts](../lib/calendar/operations.actions.ts) |
 | `duplicate_calendar_item(uuid,date,time without time zone,time without time zone)` | 'workspace.read', 'calendar.view', 'calendar.edit'; own draft or published source | [20260906120000_on_site_food_calendar_operations.sql](../supabase/migrations/20260906120000_on_site_food_calendar_operations.sql); [lib/calendar/operations.actions.ts](../lib/calendar/operations.actions.ts) |
 | `archive_calendar_item(uuid)` | 'calendar.edit' | [20260714121900_calendar_publication_visibility.sql:521](../supabase/migrations/20260714121900_calendar_publication_visibility.sql); [lib/calendar/server.ts](../lib/calendar/server.ts) |
@@ -93,12 +114,15 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `update_volunteer_profile_manual_fields(uuid,jsonb)` | 'volunteers.edit' | [20260908120000_volunteer_profile_questionnaire_expansion.sql](../supabase/migrations/20260908120000_volunteer_profile_questionnaire_expansion.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
 | `mark_needs_attention_signal_seen(uuid,text)` | 'workspace.read', 'calendar.view', 'assignments.view' | [20260908130000_volunteer_lookup_last_name_and_attention_seen.sql](../supabase/migrations/20260908130000_volunteer_lookup_last_name_and_attention_seen.sql); authorized contact's own review state only. |
 
-### C — internal functions (12)
+### C — internal functions (15 local; 12 last documented live)
 
 No anon, PUBLIC, authenticated, or service_role EXECUTE. postgres owner access remains. Existing triggers execute through PostgreSQL's trigger mechanism; their invoker bodies run in the initiating SQL context, normally the RPC owner. No trigger is converted to SECURITY DEFINER. CHECK/helper evaluations inside definer RPCs inherit owner context. Timestamp/validation/Calendar/Task/volunteer/Project Day preservation tests exercise these paths.
 
 | Exact signature | Actual internal caller |
 | --- | --- |
+| `communication_actor(uuid)` | Shared live contact/workspace/capability guard used by communication RPCs. |
+| `communication_preview(uuid,jsonb)` | Reviewed/confirmed communication recipient projection; executes inside authorized SECURITY DEFINER boundary. |
+| `volunteer_home_identity(text)` | Existing schedule credential checks shared by home and own-away RPCs. |
 | `calendar_assignment_response_start_at(text,date,time without time zone,text)` | Called within owner-executed response/notification/schedule RPCs; no app caller. [Definition](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql) |
 | `calendar_custom_values_are_valid(jsonb)` | Calendar CHECK constraint and owner-executed Calendar RPC validation; app table writes already denied. [Definition](../supabase/migrations/20260701050000_calendar_items.sql) |
 | `enforce_calendar_item_workspace_timezone()` | Installed table trigger; no app RPC caller. [Definition](../supabase/migrations/20260701050000_calendar_items.sql) |

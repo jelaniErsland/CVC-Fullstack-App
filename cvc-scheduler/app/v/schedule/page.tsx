@@ -2,21 +2,18 @@ import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CalendarDays, Info, ShieldCheck } from "lucide-react";
+import { Info } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
 import { VolunteerScheduleAccessRefresh } from "@/components/VolunteerScheduleAccessRefresh";
-import { VolunteerScheduleClient } from "@/components/VolunteerScheduleClient";
+import { VolunteerHomeDashboard } from "@/components/VolunteerHomeDashboard";
+import { readVolunteerHome } from "@/lib/volunteerScheduleAccess/home.server";
 import { emitOperationalEvent } from "@/lib/observability/server";
 import {
   readVolunteerSchedule,
   volunteerScheduleAccessCookie,
 } from "@/lib/volunteerScheduleAccess/server";
-import {
-  confirmAllVolunteerScheduleAction,
-  submitVolunteerScheduleResponseAction,
-} from "./actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,10 +25,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
-
-function firstName(value: string) {
-  return value.trim().split(/\s+/)[0] || value;
-}
 
 async function leaveScheduleAction() {
   "use server";
@@ -151,109 +144,17 @@ export default async function VolunteerSchedulePage({
     ...schedule.pastAssignments,
   ];
 
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: schedule.workspaceTimezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const home = await readVolunteerHome(schedule.upcomingAssignments[0]?.startDate ?? today);
   return (
-    <PageShell className="bg-[radial-gradient(circle_at_72%_0%,rgba(219,234,254,.72),transparent_25rem),var(--pl-canvas)] px-4 py-4 sm:px-7 lg:px-10">
+    <PageShell className="bg-[var(--pl-canvas)] px-4 py-4 sm:px-7 lg:px-10">
       <div className="mx-auto w-full max-w-6xl">
         <PublicHeader />
-
-        <div className="pb-10 pt-4 sm:pt-6">
-          <section className="relative overflow-hidden rounded-[var(--pl-radius-panel)] border border-blue-100 bg-white p-4 shadow-[var(--pl-shadow-panel)] sm:p-5">
-            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-sky-400 via-blue-500 to-violet-500" />
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--pl-blue-soft)] text-sm font-bold text-[var(--pl-blue)]"
-              >
-                {schedule.volunteerDisplayName
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((part) => part[0]?.toUpperCase())
-                  .join("")}
-              </span>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">
-                  {schedule.workspaceDisplayName}
-                </p>
-                <p className="mt-0.5 truncate text-sm font-semibold text-[var(--pl-ink)]">
-                  {schedule.volunteerDisplayName}
-                </p>
-              </div>
-            </div>
-            <form action={leaveScheduleAction} className="shrink-0">
-              <button aria-label="Not you? Leave this schedule" className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-xs font-semibold text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-                Not you?
-              </button>
-            </form>
-            </div>
-
-            <div className="mt-3 sm:ml-[52px] sm:mt-4">
-              <p className="text-xs font-semibold text-[var(--pl-blue)]">
-                Welcome, {firstName(schedule.volunteerDisplayName)}.
-              </p>
-              <h1 className="mt-1 text-2xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
-                Here’s your schedule
-              </h1>
-            </div>
-          </section>
-
-          {schedule.kind === "ready_empty" ? (
-            <section className="mt-5 border-t border-[var(--pl-border)] px-1 py-6">
-              <div className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sky-800">
-                <CalendarDays aria-hidden="true" className="size-5" />
-              </div>
-              <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-950">
-                No assignments yet
-              </h2>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                Your assignments will appear here when they’re ready.
-              </p>
-              <form action={leaveScheduleAction} className="mt-6">
-                <button className="inline-flex min-h-11 items-center rounded-full border border-slate-200 bg-white/70 px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2">
-                  Not you? Leave this schedule
-                </button>
-              </form>
-            </section>
-          ) : (
-            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_280px] lg:items-start">
-              <section aria-labelledby="assignments-title">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <h2
-                      id="assignments-title"
-                      className="text-lg font-semibold tracking-tight text-[var(--pl-ink)]"
-                    >
-                      Your assignments
-                    </h2>
-                  </div>
-                  <span className="text-xs text-slate-400">
-                    {assignments.length} assignment{assignments.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <VolunteerScheduleClient
-                  assignments={assignments}
-                  confirmAllAction={confirmAllVolunteerScheduleAction}
-                  submitResponseAction={submitVolunteerScheduleResponseAction}
-                />
-              </section>
-
-              <aside className="rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white/70 p-4 lg:border-blue-100 lg:bg-[var(--pl-blue-soft)]/70 lg:p-5">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)] lg:size-9 lg:bg-white lg:shadow-sm">
-                  <ShieldCheck aria-hidden="true" className="size-4 lg:size-5" />
-                </div>
-                <h2 className="mt-3 text-base font-semibold tracking-tight text-[var(--pl-ink)]">
-                  Need help?
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--pl-text)]">
-                  Your contact is listed in each assignment.
-                </p>
-                <p className="mt-3 text-xs leading-5 text-[var(--pl-muted)]">
-                  Times shown in {schedule.workspaceTimezone}
-                </p>
-              </aside>
-            </div>
-          )}
+        <div className="flex items-center justify-between gap-3 py-3 text-xs text-slate-600">
+          <p>Times in {schedule.workspaceTimezone}</p>
+          <form action={leaveScheduleAction}><button className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600" aria-label="Not you? Leave this schedule">Not you?</button></form>
         </div>
+        <div className="pb-10"><VolunteerHomeDashboard name={schedule.volunteerDisplayName} projectName={schedule.workspaceDisplayName} assignments={assignments} upcoming={schedule.upcomingAssignments} initialHome={home} today={today} /></div>
       </div>
     </PageShell>
   );

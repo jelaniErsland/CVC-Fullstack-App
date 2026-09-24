@@ -3,7 +3,7 @@ param(
   [string]$Action = "Inspect",
   [switch]$ConfirmTaskAction,
   [switch]$FixtureMode,
-  [ValidateSet("Success", "WrongCurrent", "WrongTarget", "Duplicate", "Enabled", "Running", "UnexpectedTaskIdentity", "UnsupportedRuntime")]
+  [ValidateSet("Success", "WrongCurrent", "WrongTarget", "Duplicate", "Enabled", "Running", "Queued", "UnexpectedTaskIdentity", "UnsupportedRuntime")]
   [string]$FixtureScenario = "Success",
   [string]$TaskName = "Project Local Production Backup",
   [string]$ProjectName = "project-local-production",
@@ -58,6 +58,7 @@ function Get-TaskActionArgument {
 }
 
 function Assert-RegistrationContract {
+  Assert-ProjectLocalBackupRunnableMigration -Migration $ExpectedMigration
   if (
     $ProjectName -cne $ExpectedProjectName -or
     $ProjectRef -cne $ExpectedProjectRef -or
@@ -193,7 +194,8 @@ function Assert-BackupRuntimeTransitionContract {
   $runtimeSource = [System.IO.File]::ReadAllText($BackupScript)
   if (
     -not $runtimeSource.Contains('ProjectLocalProductionMigrationContract.ps1') -or
-    -not $runtimeSource.Contains('Test-ProjectLocalApprovedTerminalMigration')
+    -not $runtimeSource.Contains('Test-ProjectLocalApprovedTerminalMigration') -or
+    -not $runtimeSource.Contains('Assert-ProjectLocalBackupRunnableMigration')
   ) {
     throw "The production backup runtime does not use the reviewed migration contract."
   }
@@ -208,7 +210,7 @@ function Assert-MigrationLockUpdateWindow {
     [Parameter(Mandatory = $true)][bool]$Enabled,
     [Parameter(Mandatory = $true)][string]$State
   )
-  if ($Enabled -or $State -eq "Running") {
+  if ($Enabled -or $State -ne "Disabled") {
     throw "The production backup task must be disabled and not running before its migration lock is updated."
   }
 }
@@ -251,8 +253,20 @@ if ($env:OS -ne 'Windows_NT') {
 }
 
 if ($FixtureMode) {
+  if ($Action -ceq "Enable") {
+    $fixtureTaskName = if ($FixtureScenario -ceq "UnexpectedTaskIdentity") { "Unexpected Production Backup Task" } else { $TaskName }
+    Assert-TransitionTaskIdentity -CandidateTaskName $fixtureTaskName
+    Assert-ProjectLocalBackupRunnableMigration -Migration $ExpectedMigration
+    $fixtureEnabled = $FixtureScenario -ceq "Enabled"
+    $fixtureState = if ($FixtureScenario -ceq "Running") { "Running" } elseif ($FixtureScenario -ceq "Queued") { "Queued" } elseif ($fixtureEnabled) { "Ready" } else { "Disabled" }
+    if ($fixtureEnabled -or $fixtureState -ne "Disabled") {
+      throw "The permanent backup task must be Disabled and not running before enablement."
+    }
+    Write-Host "fixture_backup_task_enable_window_ok mutation_performed=false"
+    return
+  }
   if ($Action -notin @("ValidateExpectedMigrationTransition", "UpdateExpectedMigration")) {
-    throw "Fixture mode is available only for expected-migration transition validation or execution."
+    throw "Fixture mode is available only for expected-migration transition validation, execution, or enable-window proof."
   }
   $fixtureCurrent = if ($FixtureScenario -ceq "WrongCurrent") { "20260824123501" } else { $CurrentExpectedMigration }
   $fixtureTarget = if ($FixtureScenario -ceq "WrongTarget") { "20260902120001" } else { $ExpectedMigration }
@@ -275,7 +289,8 @@ if ($FixtureMode) {
     Write-Host "fixture_backup_migration_lock_transition_dry_run_ok mutation_performed=false"
     return
   }
-  Assert-MigrationLockUpdateWindow -Enabled ($FixtureScenario -ceq "Enabled") -State "Disabled"
+  $fixtureUpdateState = if ($FixtureScenario -ceq "Queued") { "Queued" } else { "Disabled" }
+  Assert-MigrationLockUpdateWindow -Enabled ($FixtureScenario -ceq "Enabled") -State $fixtureUpdateState
   $updatedFixtureArguments = Get-UpdatedExpectedMigrationArguments -Arguments $fixtureArguments -CurrentMigration $fixtureCurrent -TargetMigration $fixtureTarget
   if (
     $updatedFixtureArguments -notlike "*-ExpectedMigration*$fixtureTarget*" -or
@@ -336,11 +351,17 @@ switch ($Action) {
     Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Description "Project Local encrypted production backup. No database credential or age private identity is embedded in arguments." | Out-Null
   }
   "Enable" {
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+    Assert-ProjectLocalBackupRunnableMigration -Migration $ExpectedMigration
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ([bool]$task.Settings.Enabled -or [string]$task.State -ne "Disabled") {
+      throw "The permanent backup task must be Disabled and not running before enablement."
+    }
     if (-not (Test-ManagedTaskContract -Task $task)) { throw "Refusing to modify an unexpected scheduled task." }
     Enable-ScheduledTask -TaskName $TaskName | Out-Null
   }
   "Disable" {
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
     if (-not (Test-ManagedTaskContract -Task $task)) { throw "Refusing to modify an unexpected scheduled task." }
     Disable-ScheduledTask -TaskName $TaskName | Out-Null

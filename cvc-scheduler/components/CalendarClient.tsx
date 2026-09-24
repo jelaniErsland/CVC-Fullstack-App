@@ -31,6 +31,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AdminShell } from "@/components/AdminShell";
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
 import {
@@ -75,6 +76,7 @@ import type {
 } from "@/lib/mockData";
 import { customCalendarColorKey, taskPresetColor } from "@/lib/tasks/colors";
 import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } from "./CalendarMeals";
+import { BulkAssignmentPlanner, type AssignmentComposerHandle, type AssignmentItemOption, type BulkAssignmentAction } from "./BulkAssignmentPlanner";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
 
@@ -2108,6 +2110,9 @@ function CreatePanelContent({
   selectedTaskType: CalendarHighLevelTaskType;
 }) {
   const operations = useCalendarOperations();
+  const [bulkSelection, setBulkSelection] = useState(false);
+  const [bulkReady, setBulkReady] = useState(false);
+  const assignmentComposerRef = useRef<AssignmentComposerHandle>(null);
   const validationId = useId();
   const isOneOff = creationDraft.mode === "oneOff";
   const mealKind = !isOneOff &&
@@ -2698,10 +2703,31 @@ function CreatePanelContent({
 
         </section>
 
+        {operations.bulkAssignmentAction && operations.bulkVolunteers && canSubmitPersisted && !creationDraft.allDay ? <BulkAssignmentPlanner
+          ref={assignmentComposerRef}
+          action={operations.bulkAssignmentAction}
+          volunteers={operations.bulkVolunteers}
+          onSelectionChange={setBulkSelection}
+          onReadyChange={setBulkReady}
+          create={{
+            presetId: isOneOff ? null : creationDraft.presetId,
+            title: isOneOff ? creationDraft.customName : null,
+            taskType: isOneOff ? mapHighLevelTaskTypeToCalendarTaskType(creationDraft.customTaskType) : null,
+            startDate: creationDraft.date, endDate: isRepeat ? creationDraft.repeatEndDate : creationDraft.date,
+            weekdays: isRepeat ? creationDraft.repeatWeekdays : [new Date(`${creationDraft.date}T00:00:00Z`).getUTCDay()],
+            startTime: creationDraft.startTime, endTime: creationDraft.endTime,
+            neededCount: isMealPreset ? 0 : creationDraft.neededCount, notes: creationDraft.notes || null, customValues: {},
+            meal: mealKind ? { kind: mealKind, provider: creationDraft.mealProvider || null, contact: creationDraft.mealContact || null, menu: creationDraft.mealMenu || null, total: creationDraft.mealTotal === "" ? null : Number(creationDraft.mealTotal) } : null,
+          }}
+        /> : null}
       </div>
 
       <div className="shrink-0 border-t border-slate-200/70 px-4 py-4 sm:px-5">
-        <form action={selectedCreateAction} className="grid gap-2">
+        <form action={selectedCreateAction} className="grid gap-2" onSubmit={event => {
+          if (!bulkSelection) return;
+          event.preventDefault();
+          if (bulkReady) void assignmentComposerRef.current?.save().then(saved => { if (saved) onClose(); });
+        }}>
           <input name="redirectView" type="hidden" value={currentView} />
           <input name="redirectDate" type="hidden" value={currentDate} />
           <input name="sourceMode" type="hidden" value={creationDraft.mode === "preset" ? "preset" : "oneOff"} />
@@ -2746,10 +2772,10 @@ function CreatePanelContent({
                   ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
                   : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
               ].join(" ")}
-              disabled={!canSubmitPersisted}
+              disabled={!canSubmitPersisted || (bulkSelection && !bulkReady)}
               type="submit"
             >
-              {isRepeat ? `Create ${repeatDates.length || ""} items`.trim() : "Save & continue"}
+              {isRepeat ? `Create ${repeatDates.length || ""} items`.trim() : "Create item"}
             </button>
             <button
               className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
@@ -2769,6 +2795,7 @@ function CalendarInspector({
   assignAction,
   archiveAction,
   assignmentPicker,
+  assignmentItems,
   canEditAssignments,
   canEdit,
   cancelAssignmentAction,
@@ -2787,6 +2814,7 @@ function CalendarInspector({
   assignAction?: CalendarMutationAction;
   archiveAction?: CalendarMutationAction;
   assignmentPicker: CalendarAssignmentPickerState;
+  assignmentItems: readonly AssignmentItemOption[];
   canEditAssignments: boolean;
   canEdit: boolean;
   cancelAssignmentAction?: CalendarMutationAction;
@@ -2839,7 +2867,7 @@ function CalendarInspector({
         aria-describedby={`${descriptionId}-desktop`}
         aria-label="Calendar item inspector"
         aria-modal="false"
-        className={isOpen ? "hidden h-[calc(100vh-176px)] min-h-[560px] max-h-[760px] min-w-0 border-l border-[var(--pl-border)] bg-white lg:block" : "hidden"}
+        className={isOpen ? "hidden h-[calc(100vh-176px)] min-h-[560px] min-w-0 border-l border-[var(--pl-border)] bg-white lg:block" : "hidden"}
         role="dialog"
         ref={desktopDialogRef}
         tabIndex={-1}
@@ -2852,6 +2880,7 @@ function CalendarInspector({
             assignAction={assignAction}
             archiveAction={archiveAction}
             assignmentPicker={assignmentPicker}
+            assignmentItems={assignmentItems}
             canEditAssignments={canEditAssignments}
             canEdit={canEdit}
             cancelAssignmentAction={cancelAssignmentAction}
@@ -2897,6 +2926,7 @@ function CalendarInspector({
             assignAction={assignAction}
             archiveAction={archiveAction}
             assignmentPicker={assignmentPicker}
+            assignmentItems={assignmentItems}
             canEditAssignments={canEditAssignments}
             canEdit={canEdit}
             cancelAssignmentAction={cancelAssignmentAction}
@@ -2927,6 +2957,7 @@ function InspectorContent({
   assignAction,
   archiveAction,
   assignmentPicker,
+  assignmentItems,
   canEditAssignments,
   canEdit,
   cancelAssignmentAction,
@@ -2947,6 +2978,7 @@ function InspectorContent({
   assignAction?: CalendarMutationAction;
   archiveAction?: CalendarMutationAction;
   assignmentPicker: CalendarAssignmentPickerState;
+  assignmentItems: readonly AssignmentItemOption[];
   canEditAssignments: boolean;
   canEdit: boolean;
   cancelAssignmentAction?: CalendarMutationAction;
@@ -2964,7 +2996,8 @@ function InspectorContent({
   updateCurrentVolunteerFacingContactDetailsAction?: CalendarMutationAction;
   updateAction?: CalendarMutationAction;
 }) {
-  const { readOnly } = useCalendarOperations();
+  const operations = useCalendarOperations();
+  const { readOnly } = operations;
   const scheduleDisplay = getCalendarItemScheduleDisplay(item);
   const isOneOffItem = isOneOffCalendarItem(item);
   const isPresetBackedItem = Boolean(item.taskPresetId) && !isOneOffItem;
@@ -3168,8 +3201,14 @@ function InspectorContent({
               currentDate={currentDate}
               currentView={currentView}
               itemId={item.id}
-              key={`${item.id}:${currentAssignments.map((assignment) => assignment.assignmentId).join(",")}`}
+              key={item.id}
               neededCount={item.neededCount}
+              unifiedAssignment={operations.bulkAssignmentAction && operations.bulkVolunteers && assignmentPicker.kind === "ready" ? <BulkAssignmentPlanner
+                action={operations.bulkAssignmentAction}
+                volunteers={operations.bulkVolunteers}
+                primaryItem={{ id: item.id, date: item.date, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }}
+                otherItems={assignmentItems.filter(candidate => candidate.id !== item.id)}
+              /> : undefined}
             />
           </div>
         </div>
@@ -3322,7 +3361,7 @@ function InspectorContent({
                     type="submit"
                   >
                     <Send aria-hidden="true" className="h-4 w-4" />
-                    Send initial assignment emails
+                    Review schedule delivery
                   </button>
                 </form>
               ) : (
@@ -3893,6 +3932,7 @@ function buildCalendarInspectorHref(
 }
 
 export default function CalendarClient({
+  bulkAssignmentAction,
   readOnly = false,
   routeBase = "/admin/calendar",
   projectKey,
@@ -3913,6 +3953,7 @@ export default function CalendarClient({
   updateProjectDatesAction,
   updateAction,
 }: Readonly<{
+  bulkAssignmentAction?: BulkAssignmentAction;
   readOnly?: boolean;
   routeBase?: string;
   projectKey?: string;
@@ -4028,6 +4069,10 @@ export default function CalendarClient({
   const selectedItem = selectedId
     ? filteredItems.map(enrichCalendarClientItem).find((item) => item.id === selectedId)
     : undefined;
+  const scheduleRange = selectedItem ? { start: selectedItem.date, end: selectedItem.date }
+    : activeView === "day" ? { start: calendarAnchor, end: calendarAnchor }
+    : activeView === "month" ? { start: `${calendarAnchor.slice(0, 7)}-01`, end: new Date(Date.UTC(Number(calendarAnchor.slice(0, 4)), Number(calendarAnchor.slice(5, 7)), 0)).toISOString().slice(0, 10) }
+    : weekRange;
 
   const rememberSurfaceTrigger = () => {
     if (document.activeElement instanceof HTMLElement) {
@@ -4222,7 +4267,7 @@ export default function CalendarClient({
   };
 
   return (
-    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined }}>
+    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={readOnly}
       active="calendar"
       workspaceName={isReady ? state.workspaceName : undefined}
@@ -4244,6 +4289,7 @@ export default function CalendarClient({
           {readOnly ? "Project Quick View" : "Calendar"}
         </h1>
         </div>
+        {!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-blue-700"><Send className="size-4" aria-hidden="true" />Send schedules</Link> : null}
       </header>
 
       <section className="mt-4">
@@ -4354,6 +4400,7 @@ export default function CalendarClient({
               assignAction={assignAction}
               archiveAction={archiveAction}
               assignmentPicker={state.assignmentPicker}
+              assignmentItems={state.items.filter(item => item.id === selectedItem?.id || (item.taskPresetId && item.taskPresetId === selectedItem?.taskPresetId || !item.taskPresetId && !selectedItem?.taskPresetId && selectedItem && getCalendarItemDisplayName(item) === getCalendarItemDisplayName(selectedItem))).map(item => ({ id: item.id, date: item.date, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }))}
               canEditAssignments={state.canEditAssignments}
               canEdit={state.canEdit}
               cancelAssignmentAction={cancelAssignmentAction}

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { finishConfirmedCommunication } from '../lib/notifications/communicationBatches.ts';
+const results=(count,states=[])=>({kind:'results',history:[...Array.from({length:count},(_,i)=>({operation_id:'approved',recipient_id:String(i),state:'ready'})),...states.map(state=>({operation_id:'approved',state})),{operation_id:'unrelated',state:'ready'}]});
+const calls=[],progress=[];
+const final=await finishConfirmedCommunication(results(6,['sent']), 'approved',async form=>{
+  calls.push(Object.fromEntries(form));return results(calls.length===1?1:0,['sent','failed','unknown']);
+},state=>progress.push(state));
+assert.deepEqual(calls.map(c=>c.confirmedRecipients),['6','1']);
+assert(calls.every(c=>c.command==='continue'&&c.operationId==='approved'));
+assert.equal(final.kind,'results');assert.equal(progress.length,3);
+let forbiddenCalls=0;
+await finishConfirmedCommunication(results(0,['sent','failed','unknown','sending']), 'approved',async()=>{forbiddenCalls++;},()=>{});
+assert.equal(forbiddenCalls,0,'Never retry accepted, failed, unknown, sending, or another operation');
+let stalled=0;
+const stopped=await finishConfirmedCommunication(results(3),'approved',async()=>{stalled++;return results(3);},()=>{});
+assert.equal(stalled,1);assert.equal(stopped.kind,'error');
+let errors=0;
+const failed=await finishConfirmedCommunication(results(3),'approved',async()=>{errors++;return {kind:'error',message:'Revalidation failed'};},()=>{});
+assert.equal(errors,1);assert.equal(failed.kind,'error');
+console.log('PASS: one explicit operation confirmation completes bounded batches; only same-operation queued recipients; no implicit failed/unknown retry; stop on error or stalled progress. No email.');

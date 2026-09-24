@@ -3,11 +3,13 @@
 import Link from "next/link";
 import {
   Bell,
+  BookOpen,
   CalendarDays,
   ClipboardList,
   Eye,
   FolderKanban,
   Home,
+  Mail,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -59,6 +61,7 @@ const navItems: Array<{
   },
   { id: "quick-view", icon: Eye, label: "Quick View", href: "/admin/quick-view" },
   { id: "volunteers", icon: Users, label: "Volunteers", href: "/admin/volunteers" },
+  { id: "announcements", icon: Mail, label: "Communications", href: "/admin/announcements" },
 ];
 
 export function AdminNav({
@@ -117,6 +120,14 @@ export function AdminNav({
           );
         })}
       </nav>
+      <Link
+        className="mt-5 flex min-h-[42px] items-center gap-3 rounded-[0.7rem] px-3 text-sm font-medium text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]"
+        href="/guide"
+        onClick={onNavigate}
+      >
+        <BookOpen aria-hidden="true" className="size-4" />
+        Contact Guide
+      </Link>
     </div>
   );
 }

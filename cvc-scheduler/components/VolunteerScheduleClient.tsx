@@ -17,6 +17,7 @@ import { formatScheduleClockRange } from "@/lib/scheduleFormatting";
 import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/token";
 
 type VolunteerScheduleClientProps = Readonly<{
+  showMeals?: boolean;
   assignments: readonly VolunteerScheduleAssignment[];
   confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
   submitResponseAction: (formData: FormData) => Promise<VolunteerScheduleActionResult>;
@@ -73,6 +74,7 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
 }
 
 export function VolunteerScheduleClient({
+  showMeals = true,
   assignments,
   confirmAllAction,
   submitResponseAction,
@@ -151,7 +153,7 @@ export function VolunteerScheduleClient({
   return (
     <>
       <div className="mt-3 space-y-3">
-        {assignments.filter((assignment, index) => assignment.meals?.length && assignments.findIndex(other => other.startDate === assignment.startDate) === index).map(assignment => (
+        {showMeals && assignments.filter((assignment, index) => assignment.meals?.length && assignments.findIndex(other => other.startDate === assignment.startDate) === index).map(assignment => (
           <section key={assignment.startDate} aria-label={`Meals for ${assignment.startDate}`} className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
             <h2 className="text-sm font-bold">Meals · {formatDate(assignment.startDate)}</h2>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -216,7 +218,7 @@ export function VolunteerScheduleClient({
               setSelectedId(assignment.assignmentReference);
             }}
             className={[
-              "group flex w-full min-w-0 items-start gap-3 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
+              "group grid w-full min-w-0 grid-cols-[44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:flex sm:gap-3",
               isNext
                 ? "bg-[linear-gradient(115deg,rgba(234,242,255,.95),rgba(255,255,255,1)_64%,rgba(242,237,255,.7))] p-4 sm:p-5"
                 : "px-3.5 py-3 sm:px-4",
@@ -246,7 +248,7 @@ export function VolunteerScheduleClient({
                   : "Open for assignment details"}
               </span>
             </span>
-            <span className="inline-flex shrink-0 items-center gap-1 self-center rounded-lg px-1.5 py-1 text-[11px] font-semibold text-[var(--pl-blue)] sm:px-2">
+            <span className="col-start-2 inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-[11px] font-semibold text-[var(--pl-blue)] sm:self-center sm:px-2">
               {assignment.currentResponseStatus === "declined" ? <span>Change response</span> : assignment.currentResponseStatus === "needs_response" ? (
                 <span>Review &amp; respond</span>
               ) : null}

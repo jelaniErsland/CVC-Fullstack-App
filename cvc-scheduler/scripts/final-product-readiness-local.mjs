@@ -1,6 +1,8 @@
 // Local-only entry point: never loads .env files or prints credentials.
 import { spawnSync, spawn } from "node:child_process";
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
 const status = spawnSync("supabase", ["status", "-o", "env"], { encoding: "utf8", windowsHide: true, shell: process.platform === "win32" });
 assert.equal(status.status, 0, "Local Supabase must be running.");
@@ -10,5 +12,10 @@ assert(url && ["127.0.0.1", "localhost"].includes(new URL(url).hostname), "Only 
 const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: get("ANON_KEY"), ADMIN_AUTH_MODE: "enforced", ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT: "", RESEND_API_KEY: "", SUPABASE_SERVICE_ROLE_KEY: "", RESPONSE_LINK_BASE_URL: "http://127.0.0.1:3000", PREVIEW_BASE_URL: "http://127.0.0.1:3000" };
 assert(env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 const args = process.argv.slice(2);
-const child = spawn(process.execPath, args[0] === "preview" ? ["node_modules/next/dist/bin/next", "dev", "--webpack", "--hostname", "127.0.0.1"] : args, { stdio: "inherit", env, windowsHide: true });
+if (args[0] === "preview-recording") {
+  // Local UI delivery proof writes hashed fixture records only; never Resend.
+  mkdirSync(".local", { recursive: true });
+  Object.assign(env, { ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT: "recording", ASSIGNMENT_NOTIFICATION_BASE_URL: "http://127.0.0.1:3000", ASSIGNMENT_NOTIFICATION_FROM: "Project Local <fixture@example.invalid>", ASSIGNMENT_NOTIFICATION_RECORDING_PATH: path.resolve(".local/communication-recording.jsonl") });
+}
+const child = spawn(process.execPath, ["preview", "preview-recording"].includes(args[0]) ? ["node_modules/next/dist/bin/next", "dev", "--webpack", "--hostname", "127.0.0.1"] : args, { stdio: "inherit", env, windowsHide: true });
 child.on("exit", (code) => { process.exitCode = code ?? 1; });
