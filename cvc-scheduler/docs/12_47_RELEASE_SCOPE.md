@@ -2,8 +2,10 @@
 
 Exact Git path inventory reconciled before the local release commit. It is the reviewed allowlist for staging and commit verification; regenerate it if any source path changes. It does not authorize a push or deployment.
 
+**Post-stop operational correction:** the existing `6bd408aee9ee477d07cd8ead9eb966c24e2deffc` release commit contains the original 131 paths. The proposed corrected release scope below adds exactly three paths: the pre-start verifier, its local-only disposable-task regression, and the one-time maintenance-control procedure. The rollout runbook and this scope document are updated. Establish a new reviewed local tip before any eventual push or deployment; the original release commit remains intact.
+
 - Production baseline HEAD before the local release branch: de667eea158df44d99e7b31d95a089cb7440c5b4 on master.
-- Proposed release paths: 131, rechecked against all 131 current source/worktree paths on 2026-09-24. All paths below are repository-relative; no proposed path is missing or unlisted.
+- Proposed corrected release paths: 134 (the original 131 plus the three operational correction paths). All paths below are repository-relative; no proposed path may be missing or unlisted.
 - Excluded untracked review captures: 69 files under previews/12.47-*, including two fresh September 24 guide-route inspection captures.
 - Ignored .next, supabase/.temp, .local, .env.local, decrypted backup data and temporary SQL are outside commit scope.
 - The four forward migrations are the only pending migration files. The last includes the exact reviewed 37-signature service_role reconciliation; applied migrations are untouched.
@@ -41,6 +43,7 @@ Exact Git path inventory reconciled before the local release commit. It is the r
 - cvc-scheduler/docs/12_47_CONTACT_GUIDE_SCREENSHOT_SOURCES.json
 - cvc-scheduler/docs/12_47_IMPLEMENTATION_CHECKPOINT.md
 - cvc-scheduler/docs/12_47_LOCAL_REVIEW.md
+- cvc-scheduler/docs/12_47_MAINTENANCE_CONTROL.md
 - cvc-scheduler/docs/12_47_PRODUCTION_READINESS.md
 - cvc-scheduler/docs/12_47_RELEASE_SCOPE.md
 - cvc-scheduler/docs/12_47_ROLLOUT_RUNBOOK.md
@@ -130,8 +133,10 @@ Exact Git path inventory reconciled before the local release commit. It is the r
 - cvc-scheduler/scripts/function-privilege-policy.mjs
 - cvc-scheduler/scripts/function-privilege-regression.mjs
 - cvc-scheduler/scripts/production-backup-12-47-transition-regression.mjs
+- cvc-scheduler/scripts/production-backup-checkpoint-prestart-regression.ps1
 - cvc-scheduler/scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1
 - cvc-scheduler/scripts/production-backup/Prepare-ProjectLocal1247ScopedRestore.ps1
+- cvc-scheduler/scripts/production-backup/ProjectLocalCheckpointPrestart.psm1
 - cvc-scheduler/scripts/production-backup/ProjectLocalProductionMigrationContract.ps1
 - cvc-scheduler/scripts/production-backup/Register-ProjectLocalBackupTask.ps1
 - cvc-scheduler/scripts/production-backup/Verify-ProjectLocal1247IsolatedRestore.mjs
