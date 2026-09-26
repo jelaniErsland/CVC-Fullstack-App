@@ -27,7 +27,7 @@ export function calendarRouteHref(context: CalendarRouteContext, values: {
   const params = new URLSearchParams();
   if (["day", "week", "month", "list"].includes(values.view)) params.set("view", values.view);
   if (/^\d{4}-\d{2}-\d{2}$/.test(values.date)) params.set("date", values.date);
-  if (context.routeBase === "/admin/quick-view" && context.projectKey) params.set("project", context.projectKey);
+  if ((context.routeBase === "/admin/quick-view" || context.routeBase === "/admin/calendar") && context.projectKey) params.set("project", context.projectKey);
   if (values.item) {
     params.set("item", values.item);
     params.set("section", readInspectorSection(values.section));

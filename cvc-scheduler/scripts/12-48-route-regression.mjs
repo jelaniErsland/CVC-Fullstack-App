@@ -6,7 +6,7 @@ for (const routeBase of ['/admin/calendar', '/admin/quick-view', '/qv']) {
       const href=calendarRouteHref({routeBase,projectKey:'fixture-project',token:'must-not-copy'}, {view,date:'2026-10-01',...selection,token:'must-not-copy',redirect:'/admin/calendar',notice:'published'});
       const url=new URL(href,'https://fixture.invalid');
       assert.equal(url.pathname,routeBase); assert.equal(url.searchParams.get('view'),view);
-      assert.equal(url.searchParams.get('project'),routeBase==='/admin/quick-view'?'fixture-project':null);
+      assert.equal(url.searchParams.get('project'),routeBase==='/qv'?null:'fixture-project');
       assert(!href.includes('must-not-copy')); assert(!url.searchParams.has('notice')); assert(!url.searchParams.has('redirect'));
       assert.equal(url.searchParams.get('item'),selection.item??null);
       assert.equal(url.searchParams.get('day'),selection.day??null);

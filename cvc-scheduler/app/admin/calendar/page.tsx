@@ -446,7 +446,8 @@ async function updateProjectDatesAction(
 
 export default async function AdminCalendarPage({ searchParams }: CalendarPageProps) {
   const resolvedSearchParams = await searchParams;
-  const state = await readCalendarRouteState(resolvedSearchParams);
+  const projectKey = typeof resolvedSearchParams?.project === "string" ? resolvedSearchParams.project : undefined;
+  const state = await readCalendarRouteState(resolvedSearchParams, { workspaceKey: projectKey });
   const noticeValue = resolvedSearchParams?.notice;
   const notice = typeof noticeValue === "string" ? noticeValue : undefined;
   const requestedItemValue = resolvedSearchParams?.item;
@@ -467,6 +468,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
 
   return (
     <CalendarClient
+      projectKey={projectKey}
       bulkAssignmentAction={planCalendarAssignmentsAction}
       saveMealAction={saveCalendarMealAction}
       duplicateAction={duplicateCalendarItemAction}

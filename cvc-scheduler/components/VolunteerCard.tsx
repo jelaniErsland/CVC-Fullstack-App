@@ -1,12 +1,11 @@
-import Link from "next/link";
 import { StatusPill } from "./StatusPill";
-import { CalendarDays, ClipboardList, Mail, MessageCircle, NotebookPen, Pencil, Phone } from "lucide-react";
-import { volunteerAge, volunteerOperationalSummary, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
+import { ClipboardList, Mail, MessageCircle, Pencil, Phone } from "lucide-react";
+import { volunteerAge, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
-  canCommunicate?: boolean;
+  onView: () => void;
   onEdit?: () => void;
 };
 
@@ -25,7 +24,7 @@ function preferredContactLabel(method: VolunteerProfile["preferredContactMethod"
   return `${method[0]?.toUpperCase()}${method.slice(1)} preferred`;
 }
 
-export function VolunteerCard({ canCommunicate = false,
+export function VolunteerCard({ onView,
   volunteer,
   canEdit,
   onEdit,
@@ -37,7 +36,6 @@ export function VolunteerCard({ canCommunicate = false,
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-  const operationalSummary = volunteerOperationalSummary(volunteer);
 
   return (
     <article className="bg-white transition hover:bg-blue-50/20">
@@ -47,9 +45,7 @@ export function VolunteerCard({ canCommunicate = false,
             {initials}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]">
-              {volunteer.fullName}
-            </h2>
+            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button className="max-w-full truncate rounded text-left text-[var(--pl-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button">{volunteer.fullName}</button></h2>
             <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
               {volunteer.congregation ?? "No congregation listed"}
             </p>
@@ -87,20 +83,8 @@ export function VolunteerCard({ canCommunicate = false,
             {readinessLabel(volunteer.readinessStatus)}
           </span>
           <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
-          {canCommunicate && <Link className="min-h-8 rounded-lg px-2 py-1 text-xs font-semibold text-blue-700 focus-visible:outline-2 focus-visible:outline-blue-600" href={`/admin/announcements?kind=schedule&volunteer=${volunteer.id}`}>Resend schedule</Link>}
           {canEdit ? <button aria-label={`Edit ${volunteer.fullName}`} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onEdit} type="button"><Pencil aria-hidden="true" className="size-3.5" /> Edit</button> : null}
         </div>
-      </div>
-
-      <div className="grid gap-2 border-t border-[var(--pl-border)]/70 bg-[var(--pl-surface-subtle)]/55 px-4 py-2.5 text-xs leading-5 text-[var(--pl-muted)] sm:grid-cols-2 lg:px-5">
-        <p className="flex min-w-0 items-center gap-1.5 truncate">
-          <NotebookPen aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
-          <span className="sr-only">Notes: </span><span className="truncate">{volunteer.profileNotes || "No notes yet"}</span>
-        </p>
-        {operationalSummary ? <p className="flex min-w-0 items-center gap-1.5 truncate">
-          <CalendarDays aria-hidden="true" className="size-3.5 shrink-0 text-[var(--pl-muted)]" />
-          <span className="sr-only">Operational summary: </span><span className="truncate">{operationalSummary}</span>
-        </p> : null}
       </div>
 
       {!canEdit ? (

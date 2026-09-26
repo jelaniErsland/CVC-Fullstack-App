@@ -16,9 +16,12 @@ import type { VolunteerProfile } from "./profile.ts";
 export type VolunteerManagementReadyRouteState = Readonly<{
   kind: "ready_with_profiles" | "ready_empty";
   workspaceName: string;
+  workspaceTimezone: string;
+  workspaceKey: string;
   navigationDestinations?: readonly string[];
   canEdit: boolean;
   canCommunicate?: boolean;
+  canViewSchedule: boolean;
   profiles: readonly VolunteerProfile[];
   notice: VolunteerManagementNotice | null;
 }>;
@@ -206,9 +209,12 @@ export async function readVolunteerManagementRouteState(
     return {
       kind: profiles.length > 0 ? "ready_with_profiles" : "ready_empty",
       workspaceName: routeContext.workspace.displayName,
+      workspaceTimezone: routeContext.workspace.timezone,
+      workspaceKey: routeContext.workspace.key,
       navigationDestinations: adminDestinations(routeContext.capabilities),
       canEdit: routeContext.canEdit,
       canCommunicate: communicationCapabilities.every(c => routeContext.capabilities.includes(c)),
+      canViewSchedule: routeContext.capabilities.includes("calendar.view") && routeContext.capabilities.includes("assignments.view"),
       profiles,
       notice,
     };

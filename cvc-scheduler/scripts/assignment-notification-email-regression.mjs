@@ -179,7 +179,8 @@ async function verifyStaticContract() {
   ]);
 
   assert(page.includes("sendInitialAssignmentNotificationsAction"), "Calendar route action is not wired.");
-  assert(client.includes("Send initial assignment emails"), "Calendar inspector send control is missing.");
+  assert(client.includes("Review schedule delivery"), "Calendar inspector delivery review control is missing.");
+  assert(client.includes("formAction={sendInitialAssignmentNotificationsAction}"), "Calendar inspector delivery review must use the authorized action.");
   assert(serverHelper.includes("claim_initial_assignment_notification_deliveries"), "Notification helper must claim through the reviewed RPC.");
   assert(serverHelper.includes("finalize_initial_assignment_notification_delivery"), "Notification helper must finalize through the reviewed RPC.");
   assert(serverHelper.includes("issue_volunteer_schedule_access"), "Notification helper must use schedule access issuance.");

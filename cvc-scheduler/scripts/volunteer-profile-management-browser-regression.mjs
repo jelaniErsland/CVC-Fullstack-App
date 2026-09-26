@@ -4,7 +4,7 @@ import { chromium } from "playwright";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -282,11 +282,11 @@ async function run() {
   );
 
   const containerName = await resolveLocalDatabaseContainer();
-  assert.equal(
-    runPsql(containerName, "select max(version) from supabase_migrations.schema_migrations;"),
-    "20260908130000",
-    "Volunteer browser QA requires the fresh current local migration chain.",
-  );
+  const migrationVersions = (await readdir(path.join(root, "supabase", "migrations")))
+    .filter((file) => /^\d{14}_.+\.sql$/.test(file))
+    .map((file) => file.slice(0, 14)).sort();
+  const appliedVersions = runPsql(containerName, "select version from supabase_migrations.schema_migrations order by version;").split("\n");
+  assert.deepEqual(appliedVersions, migrationVersions, "Volunteer browser QA requires the complete current local migration chain.");
   const fullUserId = await createAuthenticatedContact("full");
   const viewOnlyUserId = await createAuthenticatedContact("view-only");
   const targetKey = `${fixture.namespace}-target`;

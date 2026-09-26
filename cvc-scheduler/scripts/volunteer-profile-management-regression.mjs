@@ -244,6 +244,11 @@ async function verifyStaticBoundaries() {
   assert.doesNotMatch(`${directory}\n${card}`, /lib\/mockData|ProjectVolunteer|getVolunteerById/);
   assert.match(packageSource, /"test:volunteer-profile-management"/);
 
+  const permittedRouteReadImports = new Map([
+    ["app/admin/volunteers/page.tsx", "readVolunteerManagementRouteContext"],
+    ["app/admin/volunteers/csv/route.ts", "readVolunteerManagementRouteContext"],
+    ["app/admin/announcements/page.tsx", "selectVolunteerManagementWorkspaceContext"],
+  ]);
   const importedProductFiles = [];
   const appAndComponentFiles = (await collectFiles(path.join(root, "app")))
     .concat(await collectFiles(path.join(root, "components")))
@@ -251,14 +256,13 @@ async function verifyStaticBoundaries() {
   for (const file of appAndComponentFiles) {
     const relative = path.relative(root, file).replaceAll(path.sep, "/");
     const source = await readFile(file, "utf8");
-    if (
-      source.includes("volunteers/routeRead.server") &&
-      relative !== "app/admin/volunteers/page.tsx"
-    ) {
-      importedProductFiles.push(relative);
-    }
+    if (!source.includes("volunteers/routeRead.server")) continue;
+    assert(permittedRouteReadImports.has(relative), `Unexpected product import of volunteer route context: ${relative}`);
+    assert(source.includes(permittedRouteReadImports.get(relative)), `${relative} must use its reviewed route-context reader.`);
+    assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|createServiceRole|auth\.admin/i);
+    importedProductFiles.push(relative);
   }
-  assert.deepEqual(importedProductFiles, []);
+  assert.deepEqual(importedProductFiles.sort(), [...permittedRouteReadImports.keys()].sort());
 
   const cutover = describeVolunteerProfileManagementCutover();
   assert.equal(cutover.routeCutoverImplemented, true);
@@ -558,6 +562,7 @@ async function run() {
       skillsExperience: "Updated painting",
       otherSupport: "",
     }),
+    createdProfile.updatedAt,
   );
   const profilesAfterEdit = await readVolunteerProfilesWithClient(
     full.client,
@@ -597,6 +602,7 @@ async function run() {
         fullName: "View Only Cannot Edit",
         email: "view-only-edit@example.invalid",
       }),
+      editedProfile.updatedAt,
     ),
     "view-only edit",
   );
@@ -619,6 +625,7 @@ async function run() {
         fullName: "Wrong Workspace Cannot Edit",
         email: "wrong-workspace@example.invalid",
       }),
+      editedProfile.updatedAt,
     ),
     "wrong-workspace edit",
   );
@@ -676,6 +683,7 @@ async function run() {
       readinessStatus: "ready",
       profileNotes: "Questionnaire provenance preserved.",
     }),
+    convertedProfile.updatedAt,
   );
   const convertedProvenance = runPsql(
     containerName,

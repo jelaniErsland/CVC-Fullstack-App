@@ -21,6 +21,8 @@ import {
   type VolunteerManagementRouteState,
 } from "@/lib/volunteers/routeRead.server";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
+import { readVolunteerScheduleWithClient, type VolunteerScheduleResult } from "@/lib/volunteers/schedule.server";
+import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,6 +31,13 @@ export const fetchCache = "force-no-store";
 type AdminVolunteersPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
+
+async function readVolunteerScheduleAction(profileId: string): Promise<VolunteerScheduleResult> {
+  "use server";
+  const context = await readVolunteerManagementRouteContext();
+  if (!context || !context.capabilities.includes("calendar.view") || !context.capabilities.includes("assignments.view")) return { kind: "unavailable" };
+  return readVolunteerScheduleWithClient({ client: context.supabase, workspaceId: context.workspace.id, profileId });
+}
 
 function observeVolunteerMutationFailure(
   event: Extract<
@@ -102,7 +111,7 @@ async function createManualVolunteerAction(formData: FormData) {
   redirect(`/admin/volunteers?notice=${notice}`);
 }
 
-async function updateVolunteerProfileAction(formData: FormData) {
+async function updateVolunteerProfileAction(formData: FormData): Promise<VolunteerUpdateResult> {
   "use server";
 
   let notice: "unavailable" | "validation" | "error" | "updated" | "conflict" = "error";
@@ -124,15 +133,16 @@ async function updateVolunteerProfileAction(formData: FormData) {
       notice = "updated";
     }
   } catch (error) {
-    notice = error instanceof Error && error.message === "volunteer_edit_conflict" ? "conflict" : error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
+    notice = error instanceof Error && error.message === "volunteer_edit_conflict" ? "conflict" : error instanceof Error && /invalid|is required|are required|too long|unsupported fields/i.test(error.message) ? "validation" : "error";
     observeVolunteerMutationFailure(
       "volunteer.update_failure",
       notice === "validation" ? "validation" : "error",
     );
   }
 
+  if (notice !== "updated") return { kind: "rejected", reason: notice };
   revalidatePath("/admin/volunteers");
-  redirect(`/admin/volunteers?notice=${notice}`);
+  return { kind: "updated" };
 }
 
 function Notice({ notice }: { notice: string | null }) {
@@ -203,6 +213,9 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
     <VolunteerDirectory
       canEdit={state.canEdit}
       canCommunicate={state.canCommunicate}
+      canViewSchedule={state.canViewSchedule}
+      workspaceTimezone={state.workspaceTimezone}
+      workspaceKey={state.workspaceKey}
       congregations={[
         ...new Set(
           state.profiles
@@ -213,6 +226,7 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
       createAction={createManualVolunteerAction}
       deleteAction={deleteVolunteerProfileAction}
       updateAction={updateVolunteerProfileAction}
+      readScheduleAction={readVolunteerScheduleAction}
       volunteers={state.profiles}
     />
   );

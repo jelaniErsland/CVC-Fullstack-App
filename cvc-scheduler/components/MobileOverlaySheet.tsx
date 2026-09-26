@@ -11,6 +11,7 @@ type MobileOverlaySheetProps = Readonly<{
   children: ReactNode;
   description?: string;
   eyebrow?: string;
+  headerAction?: ReactNode;
   label: string;
   onClose: () => void;
   open: boolean;
@@ -21,6 +22,7 @@ export function MobileOverlaySheet({
   children,
   description,
   eyebrow,
+  headerAction,
   label,
   onClose,
   open,
@@ -42,7 +44,7 @@ export function MobileOverlaySheet({
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && window.matchMedia("(max-width: 639px)").matches) {
         event.preventDefault();
         onClose();
       }
@@ -99,6 +101,7 @@ export function MobileOverlaySheet({
               </p>
             ) : null}
           </div>
+          {headerAction}
           <button
             aria-label={`Close ${label}`}
             className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"

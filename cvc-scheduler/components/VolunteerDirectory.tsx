@@ -1,7 +1,7 @@
 "use client";
 
-import { Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Pencil, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
 import { MobileOverlaySheet } from "./MobileOverlaySheet";
@@ -9,15 +9,24 @@ import { VolunteerCard, VolunteerFields } from "./VolunteerCard";
 import { VolunteerCsvTools } from "./VolunteerCsvTools";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useFocusContainment } from "@/hooks/useFocusContainment";
+import { VolunteerProfileView } from "./VolunteerProfileView";
+import { VolunteerEditForm } from "./VolunteerEditForm";
+import type { VolunteerScheduleResult } from "@/lib/volunteers/schedule.server";
+import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
 
 type VolunteerDirectoryProps = {
   volunteers: readonly VolunteerProfile[];
   congregations: string[];
   canEdit: boolean;
   canCommunicate?: boolean;
+  canViewSchedule: boolean;
+  workspaceTimezone: string;
+  workspaceKey: string;
+  readScheduleAction: (profileId: string) => Promise<VolunteerScheduleResult>;
   createAction?: (formData: FormData) => void | Promise<void>;
   deleteAction?: (formData: FormData) => void | Promise<void>;
-  updateAction?: (formData: FormData) => void | Promise<void>;
+  updateAction?: (formData: FormData) => Promise<VolunteerUpdateResult>;
 };
 
 const lifecycles: Array<VolunteerProfile["lifecycle"] | "all"> = [
@@ -30,6 +39,10 @@ const lifecycles: Array<VolunteerProfile["lifecycle"] | "all"> = [
 export function VolunteerDirectory({
   canEdit,
   canCommunicate = false,
+  canViewSchedule,
+  workspaceTimezone,
+  workspaceKey,
+  readScheduleAction,
   createAction,
   deleteAction,
   updateAction,
@@ -45,12 +58,68 @@ export function VolunteerDirectory({
   const [twoPlusDays, setTwoPlusDays] = useState("all");
   const [desktopAddOpen, setDesktopAddOpen] = useState(false);
   const [mobileEditor, setMobileEditor] = useState<
-    { kind: "add" } | { kind: "edit"; volunteer: VolunteerProfile } | null
+    { kind: "add" } | { kind: "view" | "edit"; volunteer: VolunteerProfile } | null
   >(null);
+  const [schedule, setSchedule] = useState<VolunteerScheduleResult | null>(null);
+  const dirtyRef = useRef(false);
+  const desktopDrawerRef = useRef<HTMLElement>(null);
+  const desktopCloseRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const scheduleRequestRef = useRef(0);
   const [deleteCandidate, setDeleteCandidate] = useState<VolunteerProfile | null>(null);
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
 
   useBodyScrollLock(deleteCandidate !== null);
+  useBodyScrollLock(mobileEditor !== null, "(min-width: 640px)");
+  useFocusContainment(mobileEditor !== null, desktopDrawerRef);
+
+  const closeEditor = useCallback(() => {
+    if (dirtyRef.current && !window.confirm("Discard unsaved volunteer changes?")) return;
+    scheduleRequestRef.current += 1;
+    setMobileEditor(null);
+    dirtyRef.current = false;
+    window.requestAnimationFrame(() => returnFocusRef.current?.isConnected && returnFocusRef.current.focus());
+  }, []);
+  const completeEdit = () => {
+    dirtyRef.current = false;
+    closeEditor();
+  };
+  const loadSchedule = useCallback((profileId: string) => {
+    const request = ++scheduleRequestRef.current;
+    if (!canViewSchedule) { setSchedule({ kind: "unavailable" }); return; }
+    setSchedule(null);
+    void readScheduleAction(profileId).then(result => { if (request === scheduleRequestRef.current) setSchedule(result); }).catch(() => { if (request === scheduleRequestRef.current) setSchedule({ kind: "error" }); });
+  }, [canViewSchedule, readScheduleAction]);
+  const openVolunteer = (volunteer: VolunteerProfile, kind: "view" | "edit") => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dirtyRef.current = false;
+    setMobileEditor({ kind, volunteer });
+    if (kind === "view") loadSchedule(volunteer.id);
+  };
+  const showProfile = () => {
+    if (mobileEditor?.kind !== "edit") return;
+    if (dirtyRef.current && !window.confirm("Discard unsaved volunteer changes?")) return;
+    dirtyRef.current = false;
+    setMobileEditor({ kind: "view", volunteer: mobileEditor.volunteer });
+    loadSchedule(mobileEditor.volunteer.id);
+  };
+  useEffect(() => {
+    if (mobileEditor?.kind !== "edit") return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return;
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [mobileEditor]);
+  useEffect(() => {
+    if (!mobileEditor) return;
+    const frame = window.requestAnimationFrame(() => desktopCloseRef.current?.focus());
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && window.innerWidth >= 640) closeEditor(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => { window.cancelAnimationFrame(frame); window.removeEventListener("keydown", onKeyDown); };
+  }, [mobileEditor, closeEditor]);
+  const today = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: workspaceTimezone }).format(new Date());
 
   useEffect(() => {
     if (!deleteCandidate) return;
@@ -225,9 +294,9 @@ export function VolunteerDirectory({
           {filteredVolunteers.map((volunteer) => (
             <VolunteerCard
               canEdit={canEdit}
-              canCommunicate={canCommunicate}
               key={volunteer.id}
-              onEdit={() => setMobileEditor({ kind: "edit", volunteer })}
+              onEdit={() => openVolunteer(volunteer, "edit")}
+              onView={() => openVolunteer(volunteer, "view")}
               volunteer={volunteer}
             />
           ))}
@@ -247,38 +316,20 @@ export function VolunteerDirectory({
 
       <MobileOverlaySheet
         description={
-          mobileEditor?.kind === "edit"
+          mobileEditor?.kind === "edit" || mobileEditor?.kind === "view"
             ? (mobileEditor.volunteer.congregation ?? "Volunteer profile")
             : "Saving does not send a message."
         }
-        eyebrow={mobileEditor?.kind === "edit" ? "Editing volunteer" : undefined}
-        label="volunteer editor"
-        onClose={() => setMobileEditor(null)}
+        eyebrow={mobileEditor?.kind === "edit" ? "Editing volunteer" : mobileEditor?.kind === "view" ? "Volunteer profile" : undefined}
+        headerAction={mobileEditor?.kind === "view" && canEdit ? <button className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[var(--pl-blue)] focus-visible:ring-2 focus-visible:ring-blue-500" onClick={() => setMobileEditor({ kind: "edit", volunteer: mobileEditor.volunteer })} type="button"><Pencil aria-hidden className="size-4" />Edit</button> : mobileEditor?.kind === "edit" ? <button className="min-h-10 shrink-0 rounded-lg px-2 text-sm font-semibold text-[var(--pl-blue)] focus-visible:ring-2 focus-visible:ring-blue-500" onClick={showProfile} type="button">View profile</button> : null}
+        label={mobileEditor?.kind === "view" ? "volunteer profile" : "volunteer editor"}
+        onClose={closeEditor}
         open={mobileEditor !== null}
-        title={mobileEditor?.kind === "edit" ? mobileEditor.volunteer.fullName : "Add volunteer"}
+        title={mobileEditor?.kind === "edit" || mobileEditor?.kind === "view" ? mobileEditor.volunteer.fullName : "Add volunteer"}
       >
-        {mobileEditor?.kind === "edit" && updateAction ? (
+        {mobileEditor?.kind === "view" ? <VolunteerProfileView key={mobileEditor.volunteer.id} volunteer={mobileEditor.volunteer} schedule={schedule} today={today} workspaceKey={workspaceKey} canCommunicate={canCommunicate} onNavigate={() => setMobileEditor(null)} onRetry={() => loadSchedule(mobileEditor.volunteer.id)} /> : mobileEditor?.kind === "edit" && updateAction ? (
           <>
-            <form action={updateAction} className="grid gap-4">
-              <input
-                name="profileId"
-                type="hidden"
-                value={mobileEditor.volunteer.id}
-              />
-              <VolunteerFields volunteer={mobileEditor.volunteer} />
-              <div className="sticky bottom-0 z-10 -mx-4 flex gap-3 border-t border-[var(--pl-border)] bg-white px-4 py-3 shadow-[0_-10px_24px_rgba(15,23,42,.06)]">
-                <button
-                  className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-text)]"
-                  onClick={() => setMobileEditor(null)}
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <Button className="min-h-11 flex-1" type="submit">
-                  Save changes
-                </Button>
-              </div>
-            </form>
+            <VolunteerEditForm key={mobileEditor.volunteer.id} mobile volunteer={mobileEditor.volunteer} updateAction={updateAction} onCancel={closeEditor} onDirty={() => { dirtyRef.current = true; }} onSaved={completeEdit} />
             {deleteAction ? (
               <div
                 className="mt-5 border-t border-[var(--pl-border)] pt-4"
@@ -306,17 +357,13 @@ export function VolunteerDirectory({
           </form>
         ) : null}
       </MobileOverlaySheet>
-      {mobileEditor?.kind === "edit" && updateAction ? (
-        <aside aria-label={`Editing volunteer ${mobileEditor.volunteer.fullName}`} className="fixed inset-y-0 right-0 z-50 hidden w-[min(38rem,calc(100vw-2rem))] border-l border-[var(--pl-border)] bg-white shadow-[-18px_0_48px_rgba(15,23,42,.16)] sm:flex sm:flex-col">
+      {mobileEditor?.kind !== "add" && mobileEditor ? (
+        <aside aria-label={`${mobileEditor.kind === "edit" ? "Editing" : "Viewing"} volunteer ${mobileEditor.volunteer.fullName}`} className="fixed inset-y-0 right-0 z-50 hidden w-[min(38rem,calc(100vw-2rem))] border-l border-[var(--pl-border)] bg-white shadow-[-18px_0_48px_rgba(15,23,42,.16)] sm:flex sm:flex-col" ref={desktopDrawerRef} tabIndex={-1}>
           <header className="flex items-start justify-between gap-4 border-b border-[var(--pl-border)] px-5 py-5">
-            <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--pl-blue)]">Editing volunteer</p><h2 className="mt-1 truncate text-xl font-bold text-[var(--pl-ink)]">{mobileEditor.volunteer.fullName}</h2><p className="mt-1 truncate text-sm text-[var(--pl-muted)]">{mobileEditor.volunteer.congregation ?? "Volunteer profile"}</p></div>
-            <button aria-label="Close volunteer editor" className="inline-flex size-10 items-center justify-center rounded-lg text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)]" onClick={() => setMobileEditor(null)} type="button"><X aria-hidden="true" className="size-5" /></button>
+            <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--pl-blue)]">{mobileEditor.kind === "edit" ? "Editing volunteer" : "Volunteer profile"}</p><h2 className="mt-1 truncate text-xl font-bold text-[var(--pl-ink)]">{mobileEditor.volunteer.fullName}</h2><p className="mt-1 truncate text-sm text-[var(--pl-muted)]">{mobileEditor.volunteer.congregation ?? "Volunteer profile"}</p></div>
+            <div className="flex shrink-0 items-center gap-1">{mobileEditor.kind === "view" && canEdit ? <button className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-[var(--pl-blue)] focus-visible:ring-2 focus-visible:ring-blue-500" onClick={() => setMobileEditor({ kind: "edit", volunteer: mobileEditor.volunteer })} type="button"><Pencil aria-hidden className="size-4" />Edit</button> : mobileEditor.kind === "edit" ? <button className="min-h-10 rounded-lg px-2 text-sm font-semibold text-[var(--pl-blue)] focus-visible:ring-2 focus-visible:ring-blue-500" onClick={showProfile} type="button">View profile</button> : null}<button aria-label={mobileEditor.kind === "view" ? "Close volunteer profile" : "Close volunteer editor"} className="inline-flex size-10 items-center justify-center rounded-lg text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] focus-visible:ring-2 focus-visible:ring-blue-500" onClick={closeEditor} ref={desktopCloseRef} type="button"><X aria-hidden="true" className="size-5" /></button></div>
           </header>
-          <form action={updateAction} className="flex min-h-0 flex-1 flex-col">
-            <input name="profileId" type="hidden" value={mobileEditor.volunteer.id} />
-            <div className="min-h-0 flex-1 overflow-y-auto p-5"><VolunteerFields volunteer={mobileEditor.volunteer} /></div>
-            <div className="sticky bottom-0 flex gap-3 border-t border-[var(--pl-border)] bg-white px-5 py-4"><button className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-text)]" onClick={() => setMobileEditor(null)} type="button">Cancel</button><Button className="min-h-11 flex-1" type="submit">Save changes</Button></div>
-          </form>
+          {mobileEditor.kind === "view" ? <div className="min-h-0 flex-1 overflow-y-auto p-5"><VolunteerProfileView key={mobileEditor.volunteer.id} volunteer={mobileEditor.volunteer} schedule={schedule} today={today} workspaceKey={workspaceKey} canCommunicate={canCommunicate} onNavigate={() => setMobileEditor(null)} onRetry={() => loadSchedule(mobileEditor.volunteer.id)} /></div> : updateAction ? <VolunteerEditForm key={mobileEditor.volunteer.id} volunteer={mobileEditor.volunteer} updateAction={updateAction} mobile={false} onCancel={closeEditor} onDirty={() => { dirtyRef.current = true; }} onSaved={completeEdit} /> : null}
         </aside>
       ) : null}
       {deleteCandidate && deleteAction ? (
