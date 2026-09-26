@@ -639,6 +639,38 @@ function handleCalendarGridArrowKey(
   nextTarget.focus();
 }
 
+const emptySlotDoubleClickDelayMs = 300;
+
+function useCalendarEmptySlotClick(
+  onCreateFromSlot: (slot: CalendarCreationSlot) => void,
+  onFocusDate: (date: string) => void,
+) {
+  const pendingClick = useRef<number | null>(null);
+  const cancelPendingClick = () => {
+    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
+    pendingClick.current = null;
+  };
+  useEffect(() => () => {
+    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
+  }, []);
+
+  const activate = (event: MouseEvent<HTMLButtonElement>, date: string, slot: CalendarCreationSlot) => {
+    cancelPendingClick();
+    if (event.detail >= 2) {
+      onFocusDate(date);
+    } else if (event.detail === 0) {
+      // Keyboard activation has no competing double-click gesture.
+      onCreateFromSlot(slot);
+    } else {
+      pendingClick.current = window.setTimeout(() => {
+        pendingClick.current = null;
+        onCreateFromSlot(slot);
+      }, emptySlotDoubleClickDelayMs);
+    }
+  };
+  return { activate, cancelPendingClick };
+}
+
 const toneStyles: Record<CalendarStatusTone, string> = {
   neutral: "border-slate-200 bg-slate-50 text-slate-700",
   info: "border-sky-200 bg-sky-50 text-sky-700",
@@ -1194,6 +1226,7 @@ function WeekGrid({
   onSelect: (item: CalendarItemWithPreset) => void;
 }) {
   const { readOnly } = useCalendarOperations();
+  const { activate, cancelPendingClick } = useCalendarEmptySlotClick(onCreateFromSlot, onFocusDate);
   const groups = groupCalendarItemsByDay(items, referenceDate);
   const timedGroups = groups.map((group) => ({
     ...group,
@@ -1232,7 +1265,7 @@ function WeekGrid({
         <div aria-hidden="true" className="border-r border-slate-200/80" />
         {groups.map((group) => (
           <div className="border-r border-[var(--pl-border)] px-2 py-2.5 text-center last:border-r-0" key={group.date}>
-            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => onFocusDate(group.date)} type="button">{group.dayLabel}</button>
+            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => { cancelPendingClick(); onFocusDate(group.date); }} type="button">{group.dayLabel}</button>
             <p className="mt-0.5 text-[10px] font-medium text-[var(--pl-muted)]">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </p>
@@ -1258,8 +1291,9 @@ function WeekGrid({
                 className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
                 data-calendar-arrow-target="week-context-day"
                 key={group.date}
-                onClick={() =>
-                  onCreateFromSlot({
+                title="Click to plan work; double-click to open Day view"
+                onClick={(event) =>
+                  activate(event, group.date, {
                     allDay: true,
                     date: group.date,
                     label: `${group.dayLabel}, no specific time`,
@@ -1288,7 +1322,7 @@ function WeekGrid({
                     : "",
                 ].join(" ")}
                 key={item.id}
-                onClick={() => onSelect(item)}
+                onClick={() => { cancelPendingClick(); onSelect(item); }}
                 style={{
                   gridColumn: `${startIndex + 1} / ${endIndex + 2}`,
                   gridRow: lane + 1,
@@ -1310,7 +1344,7 @@ function WeekGrid({
                   aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more project context item${count === 1 ? "" : "s"}`}
                   className={`pointer-events-auto self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
                   key={groups[dayIndex]?.date}
-                  onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
+                  onClick={() => { cancelPendingClick(); onFocusDate(groups[dayIndex]?.date ?? referenceDate); }}
                   style={{
                     gridColumn: dayIndex + 1,
                     gridRow: visibleBandLaneCount + 1,
@@ -1355,13 +1389,14 @@ function WeekGrid({
               aria-label={`Plan project work on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
               className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
               data-calendar-arrow-target="week-timed-day"
+              title="Click to plan work; double-click to open Day view"
               onClick={(event) => {
                 const slot =
                   event.detail === 0
                     ? dayTimelineSlots[9]
                     : getTimelineSlotFromPointer(event);
 
-                onCreateFromSlot({
+                activate(event, group.date, {
                   date: group.date,
                   label: `${group.dayLabel} at ${slot.label}`,
                   contextLabel: "Suggested from calendar grid",
@@ -1395,7 +1430,7 @@ function WeekGrid({
                       fillHeight
                       isSelected={selectedId === item.id}
                       item={item}
-                      onSelect={() => onSelect(item)}
+                      onSelect={() => { cancelPendingClick(); onSelect(item); }}
                     />
                   </div>
                 );
@@ -1644,6 +1679,7 @@ function MonthView({
   referenceDate: string;
 }) {
   const { readOnly } = useCalendarOperations();
+  const { activate, cancelPendingClick } = useCalendarEmptySlotClick(onCreateFromSlot, onFocusDate);
   const dates = deriveCalendarMonthDates(referenceDate);
   const reference = new Date(`${referenceDate}T00:00:00Z`);
   const agendaRef = useRef<HTMLElement>(null);
@@ -1753,8 +1789,9 @@ function MonthView({
                 aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)}`}
                 className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
                 data-calendar-arrow-target="month-date"
-                onClick={() =>
-                  onCreateFromSlot({
+                title="Click to plan work; double-click to open Day view"
+                onClick={(event) =>
+                  activate(event, date, {
                     date,
                     label: getCalendarCompactDayLabel(date),
                     contextLabel: "Suggested from calendar day",
@@ -1769,7 +1806,7 @@ function MonthView({
                 <button
                   aria-label={getCalendarDayViewActionLabel(date)}
                   className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
-                  onClick={() => onFocusDate(date)}
+                  onClick={() => { cancelPendingClick(); onFocusDate(date); }}
                   title="Open Day view"
                   type="button"
                 >
@@ -1788,7 +1825,7 @@ function MonthView({
                           : "",
                       ].join(" ")}
                       key={item.id}
-                      onClick={() => onSelect(item)}
+                      onClick={() => { cancelPendingClick(); onSelect(item); }}
                       style={getCalendarEventColorStyle(item)}
                       type="button"
                     >
@@ -1805,7 +1842,7 @@ function MonthView({
                     <button
                       aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
                       className={`pointer-events-auto hidden text-[11px] font-semibold text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
-                      onClick={() => onFocusDate(date)}
+                      onClick={() => { cancelPendingClick(); onFocusDate(date); }}
                       type="button"
                     >
                       +{desktopOverflowCount}

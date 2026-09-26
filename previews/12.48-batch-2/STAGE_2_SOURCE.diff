@@ -74,7 +74,7 @@ index 7ac4bd6..8b23a67 100644
    </ul>;
    return <div>
 diff --git a/cvc-scheduler/components/CalendarClient.tsx b/cvc-scheduler/components/CalendarClient.tsx
-index d8b3048..8342341 100644
+index d8b3048..ecf6703 100644
 --- a/cvc-scheduler/components/CalendarClient.tsx
 +++ b/cvc-scheduler/components/CalendarClient.tsx
 @@ -35,7 +35,7 @@ import { useRouter, useSearchParams } from "next/navigation";
@@ -109,7 +109,46 @@ index d8b3048..8342341 100644
  function shiftCalendarAnchor(
    date: string,
    amount: number,
-@@ -648,7 +657,7 @@ function ViewToggle({
+@@ -630,6 +639,38 @@ function handleCalendarGridArrowKey(
+   nextTarget.focus();
+ }
+ 
++const emptySlotDoubleClickDelayMs = 300;
++
++function useCalendarEmptySlotClick(
++  onCreateFromSlot: (slot: CalendarCreationSlot) => void,
++  onFocusDate: (date: string) => void,
++) {
++  const pendingClick = useRef<number | null>(null);
++  const cancelPendingClick = () => {
++    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
++    pendingClick.current = null;
++  };
++  useEffect(() => () => {
++    if (pendingClick.current !== null) window.clearTimeout(pendingClick.current);
++  }, []);
++
++  const activate = (event: MouseEvent<HTMLButtonElement>, date: string, slot: CalendarCreationSlot) => {
++    cancelPendingClick();
++    if (event.detail >= 2) {
++      onFocusDate(date);
++    } else if (event.detail === 0) {
++      // Keyboard activation has no competing double-click gesture.
++      onCreateFromSlot(slot);
++    } else {
++      pendingClick.current = window.setTimeout(() => {
++        pendingClick.current = null;
++        onCreateFromSlot(slot);
++      }, emptySlotDoubleClickDelayMs);
++    }
++  };
++  return { activate, cancelPendingClick };
++}
++
+ const toneStyles: Record<CalendarStatusTone, string> = {
+   neutral: "border-slate-200 bg-slate-50 text-slate-700",
+   info: "border-sky-200 bg-sky-50 text-sky-700",
+@@ -648,7 +689,7 @@ function ViewToggle({
    return (
      <div
        aria-label="Calendar view"
@@ -118,7 +157,7 @@ index d8b3048..8342341 100644
        role="group"
      >
        {viewModes.map((view) => (
-@@ -710,27 +719,27 @@ function CalendarWorkspaceHeader({
+@@ -710,27 +751,27 @@ function CalendarWorkspaceHeader({
  
    return (
      <section
@@ -152,7 +191,7 @@ index d8b3048..8342341 100644
                onClick={onNavigatePrevious}
                title={`Previous ${navigationUnit}`}
                type="button"
-@@ -739,17 +748,17 @@ function CalendarWorkspaceHeader({
+@@ -739,17 +780,17 @@ function CalendarWorkspaceHeader({
              </button>
              <button
                aria-label="Go to today"
@@ -173,7 +212,7 @@ index d8b3048..8342341 100644
                onClick={onNavigateNext}
                title={`Next ${navigationUnit}`}
                type="button"
-@@ -758,7 +767,7 @@ function CalendarWorkspaceHeader({
+@@ -758,7 +799,7 @@ function CalendarWorkspaceHeader({
              </button>
              <button
                aria-label="Open day details for the selected date"
@@ -182,7 +221,7 @@ index d8b3048..8342341 100644
                onClick={onOpenProjectDay}
                title="Day details"
                type="button"
-@@ -769,7 +778,7 @@ function CalendarWorkspaceHeader({
+@@ -769,7 +810,7 @@ function CalendarWorkspaceHeader({
            </div>
          </div>
  
@@ -191,7 +230,7 @@ index d8b3048..8342341 100644
            <button
              aria-label="Go to project date"
              className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] disabled:cursor-default disabled:opacity-45 ${calmFocusRing}`}
-@@ -781,7 +790,7 @@ function CalendarWorkspaceHeader({
+@@ -781,7 +822,7 @@ function CalendarWorkspaceHeader({
              <CalendarRange aria-hidden="true" className="h-4 w-4" />
              <span>Project</span>
            </button>
@@ -200,7 +239,7 @@ index d8b3048..8342341 100644
              <ViewToggle activeView={activeView} onChange={onViewChange} />
            </div>
            <button
-@@ -801,7 +810,7 @@ function CalendarWorkspaceHeader({
+@@ -801,7 +842,7 @@ function CalendarWorkspaceHeader({
            </button>
            {canCreate ? (
              <button
@@ -209,16 +248,79 @@ index d8b3048..8342341 100644
                onClick={onCreate}
                type="button"
              >
-@@ -1223,7 +1232,7 @@ function WeekGrid({
+@@ -1185,6 +1226,7 @@ function WeekGrid({
+   onSelect: (item: CalendarItemWithPreset) => void;
+ }) {
+   const { readOnly } = useCalendarOperations();
++  const { activate, cancelPendingClick } = useCalendarEmptySlotClick(onCreateFromSlot, onFocusDate);
+   const groups = groupCalendarItemsByDay(items, referenceDate);
+   const timedGroups = groups.map((group) => ({
+     ...group,
+@@ -1223,7 +1265,7 @@ function WeekGrid({
          <div aria-hidden="true" className="border-r border-slate-200/80" />
          {groups.map((group) => (
            <div className="border-r border-[var(--pl-border)] px-2 py-2.5 text-center last:border-r-0" key={group.date}>
 -            <p className="text-xs font-semibold text-[var(--pl-ink)]">{group.dayLabel}</p>
-+            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => onFocusDate(group.date)} type="button">{group.dayLabel}</button>
++            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => { cancelPendingClick(); onFocusDate(group.date); }} type="button">{group.dayLabel}</button>
              <p className="mt-0.5 text-[10px] font-medium text-[var(--pl-muted)]">
                {group.items.length} item{group.items.length === 1 ? "" : "s"}
              </p>
-@@ -1449,9 +1458,33 @@ function CalendarDayCard({ item, isSelected, onSelect, assignmentVisibility }: {
+@@ -1249,8 +1291,9 @@ function WeekGrid({
+                 className={`border-r border-slate-200/80 transition hover:bg-slate-50/55 last:border-r-0 focus-visible:ring-inset ${calmFocusRing}`}
+                 data-calendar-arrow-target="week-context-day"
+                 key={group.date}
+-                onClick={() =>
+-                  onCreateFromSlot({
++                title="Click to plan work; double-click to open Day view"
++                onClick={(event) =>
++                  activate(event, group.date, {
+                     allDay: true,
+                     date: group.date,
+                     label: `${group.dayLabel}, no specific time`,
+@@ -1279,7 +1322,7 @@ function WeekGrid({
+                     : "",
+                 ].join(" ")}
+                 key={item.id}
+-                onClick={() => onSelect(item)}
++                onClick={() => { cancelPendingClick(); onSelect(item); }}
+                 style={{
+                   gridColumn: `${startIndex + 1} / ${endIndex + 2}`,
+                   gridRow: lane + 1,
+@@ -1301,7 +1344,7 @@ function WeekGrid({
+                   aria-label={`Switch to Day view for ${groups[dayIndex]?.dayLabel} to show ${count} more project context item${count === 1 ? "" : "s"}`}
+                   className={`pointer-events-auto self-center justify-self-start px-1 text-[10px] font-semibold text-slate-500 transition hover:text-slate-950 ${calmFocusRing}`}
+                   key={groups[dayIndex]?.date}
+-                  onClick={() => onFocusDate(groups[dayIndex]?.date ?? referenceDate)}
++                  onClick={() => { cancelPendingClick(); onFocusDate(groups[dayIndex]?.date ?? referenceDate); }}
+                   style={{
+                     gridColumn: dayIndex + 1,
+                     gridRow: visibleBandLaneCount + 1,
+@@ -1346,13 +1389,14 @@ function WeekGrid({
+               aria-label={`Plan project work on ${group.dayLabel} in the Week time grid; keyboard default 9 AM`}
+               className={`absolute inset-0 cursor-pointer rounded-none transition hover:bg-slate-50/45 focus-visible:ring-inset ${calmFocusRing}`}
+               data-calendar-arrow-target="week-timed-day"
++              title="Click to plan work; double-click to open Day view"
+               onClick={(event) => {
+                 const slot =
+                   event.detail === 0
+                     ? dayTimelineSlots[9]
+                     : getTimelineSlotFromPointer(event);
+ 
+-                onCreateFromSlot({
++                activate(event, group.date, {
+                   date: group.date,
+                   label: `${group.dayLabel} at ${slot.label}`,
+                   contextLabel: "Suggested from calendar grid",
+@@ -1386,7 +1430,7 @@ function WeekGrid({
+                       fillHeight
+                       isSelected={selectedId === item.id}
+                       item={item}
+-                      onSelect={() => onSelect(item)}
++                      onSelect={() => { cancelPendingClick(); onSelect(item); }}
+                     />
+                   </div>
+                 );
+@@ -1449,9 +1493,33 @@ function CalendarDayCard({ item, isSelected, onSelect, assignmentVisibility }: {
    </article>;
  }
  
@@ -252,7 +354,7 @@ index d8b3048..8342341 100644
    onCreateFromSlot,
    onOpenDayDetails,
    selectedId,
-@@ -1460,6 +1493,7 @@ function DayView({
+@@ -1460,6 +1528,7 @@ function DayView({
  }: {
    date: string;
    items: CalendarItem[];
@@ -260,7 +362,7 @@ index d8b3048..8342341 100644
    onCreateFromSlot: (slot: CalendarCreationSlot) => void;
    onOpenDayDetails: (date: string) => void;
    selectedId?: string;
-@@ -1485,6 +1519,8 @@ function DayView({
+@@ -1485,6 +1554,8 @@ function DayView({
  
    return (
      <section className="overflow-hidden bg-white">
@@ -269,7 +371,7 @@ index d8b3048..8342341 100644
        <div className="flex items-center justify-between border-b border-slate-200/80 bg-blue-50/35 px-3 py-2 sm:px-4">
          <div>
            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Project day</p>
-@@ -1582,22 +1618,27 @@ function deriveCalendarMonthDates(referenceDate: string) {
+@@ -1582,33 +1653,110 @@ function deriveCalendarMonthDates(referenceDate: string) {
    });
  }
  
@@ -298,8 +400,9 @@ index d8b3048..8342341 100644
    selectedId?: string;
    onSelect: (item: CalendarItemWithPreset) => void;
    referenceDate: string;
-@@ -1605,10 +1646,81 @@ function MonthView({
+ }) {
    const { readOnly } = useCalendarOperations();
++  const { activate, cancelPendingClick } = useCalendarEmptySlotClick(onCreateFromSlot, onFocusDate);
    const dates = deriveCalendarMonthDates(referenceDate);
    const reference = new Date(`${referenceDate}T00:00:00Z`);
 +  const agendaRef = useRef<HTMLElement>(null);
@@ -381,7 +484,7 @@ index d8b3048..8342341 100644
        <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
            <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
-@@ -1621,10 +1733,6 @@ function MonthView({
+@@ -1621,10 +1769,6 @@ function MonthView({
            const dateItems = items
              .filter((item) => doesCalendarItemOccurOnDate(item, date))
              .map(enrichCalendarClientItem);
@@ -392,7 +495,19 @@ index d8b3048..8342341 100644
            const desktopOverflowCount = Math.max(
              dateItems.length - monthDesktopVisibleItemLimit,
              0,
-@@ -1659,22 +1767,21 @@ function MonthView({
+@@ -1645,8 +1789,9 @@ function MonthView({
+                 aria-label={`Plan project work on ${getCalendarCompactDayLabel(date)}`}
+                 className={`absolute inset-0 z-0 cursor-pointer transition hover:bg-slate-50/55 focus-visible:ring-inset ${calmFocusRing}`}
+                 data-calendar-arrow-target="month-date"
+-                onClick={() =>
+-                  onCreateFromSlot({
++                title="Click to plan work; double-click to open Day view"
++                onClick={(event) =>
++                  activate(event, date, {
+                     date,
+                     label: getCalendarCompactDayLabel(date),
+                     contextLabel: "Suggested from calendar day",
+@@ -1659,29 +1804,28 @@ function MonthView({
                /> : null}
                <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
                  <button
@@ -402,7 +517,7 @@ index d8b3048..8342341 100644
 -                  title="Open day details"
 +                  aria-label={getCalendarDayViewActionLabel(date)}
 +                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
-+                  onClick={() => onFocusDate(date)}
++                  onClick={() => { cancelPendingClick(); onFocusDate(date); }}
 +                  title="Open Day view"
                    type="button"
                  >
@@ -420,7 +535,15 @@ index d8b3048..8342341 100644
                          getCalendarEventClasses(item),
                          selectedId === item.id
                            ? "ring-2 ring-slate-900/30 ring-offset-1"
-@@ -1694,16 +1801,6 @@ function MonthView({
+                           : "",
+                       ].join(" ")}
+                       key={item.id}
+-                      onClick={() => onSelect(item)}
++                      onClick={() => { cancelPendingClick(); onSelect(item); }}
+                       style={getCalendarEventColorStyle(item)}
+                       type="button"
+                     >
+@@ -1694,21 +1838,11 @@ function MonthView({
                        </span>
                      </button>
                    ))}
@@ -437,7 +560,13 @@ index d8b3048..8342341 100644
                    {desktopOverflowCount > 0 ? (
                      <button
                        aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
-@@ -1720,6 +1817,7 @@ function MonthView({
+                       className={`pointer-events-auto hidden text-[11px] font-semibold text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
+-                      onClick={() => onFocusDate(date)}
++                      onClick={() => { cancelPendingClick(); onFocusDate(date); }}
+                       type="button"
+                     >
+                       +{desktopOverflowCount}
+@@ -1720,6 +1854,7 @@ function MonthView({
            );
          })}
        </div>
@@ -445,7 +574,7 @@ index d8b3048..8342341 100644
      </section>
    );
  }
-@@ -1802,6 +1900,7 @@ function CalendarListView({
+@@ -1802,6 +1937,7 @@ function CalendarListView({
        className="overflow-hidden border-y border-slate-200/90 bg-white/24"
        data-testid="calendar-list-view"
      >
@@ -453,7 +582,7 @@ index d8b3048..8342341 100644
        {groups.map((group) => {
          const headingId = `calendar-list-${group.date}`;
  
-@@ -4070,9 +4169,9 @@ export default function CalendarClient({
+@@ -4070,9 +4206,9 @@ export default function CalendarClient({
      }
  
      if (activeView === "month") {
@@ -466,7 +595,7 @@ index d8b3048..8342341 100644
      }
  
      return filteredItems.filter((item) =>
-@@ -4285,6 +4384,12 @@ export default function CalendarClient({
+@@ -4285,6 +4421,12 @@ export default function CalendarClient({
      navigate(buildCalendarRouteHref("day", date));
    };
  
@@ -479,7 +608,7 @@ index d8b3048..8342341 100644
    return (
      <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
      <CalendarFrame readOnly={routeBase === "/qv"}
-@@ -4300,9 +4405,9 @@ export default function CalendarClient({
+@@ -4300,9 +4442,9 @@ export default function CalendarClient({
          window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
        }}
      >
@@ -491,7 +620,7 @@ index d8b3048..8342341 100644
        />
        {projectControls && <div className="mt-4">{projectControls}</div>}
        <section className="mt-4">
-@@ -4365,12 +4470,14 @@ export default function CalendarClient({
+@@ -4365,12 +4507,14 @@ export default function CalendarClient({
                    assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
                    date={calendarAnchor}
                    items={visibleItems}
@@ -506,7 +635,7 @@ index d8b3048..8342341 100644
                {activeView === "week" ? (
                  <>
                    <WeekGrid
-@@ -4392,10 +4499,13 @@ export default function CalendarClient({
+@@ -4392,10 +4536,13 @@ export default function CalendarClient({
                ) : null}
                {activeView === "month" ? (
                  <MonthView
@@ -719,6 +848,139 @@ index 0000000..25c0e59
 +    assert.equal(await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).getAttribute('aria-pressed'), 'true');
 +  }
 +  console.log('PASS: desktop Month day-number keyboard route, empty-cell creation, exact event inspector, Week heading, mobile selection/Open Day, read-only Quick View, project context and back navigation. Synthetic fixture only.');
++} finally {
++  await browser.close();
++}
+diff --git a/cvc-scheduler/scripts/12-48-batch-2-double-click-regression.mjs b/cvc-scheduler/scripts/12-48-batch-2-double-click-regression.mjs
+new file mode 100644
+index 0000000..b02836d
+--- /dev/null
++++ b/cvc-scheduler/scripts/12-48-batch-2-double-click-regression.mjs
+@@ -0,0 +1,127 @@
++import assert from 'node:assert/strict';
++import { chromium } from 'playwright';
++import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
++
++// Isolated synthetic fixture. Start with `node scripts/12-48-preview.mjs --serve`.
++const browser = await chromium.launch({ executablePath: resolvePreviewBrowserExecutable(), headless: true });
++const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
++await context.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
++await context.addCookies([{ name: 'fixture-assignments', value: '1', domain: '127.0.0.1', path: '/' }]);
++const page = await context.newPage();
++const go = route => page.goto(`http://127.0.0.1:3148${route}`, { waitUntil: 'networkidle' });
++const planner = () => page.getByRole('dialog', { name: /Plan project work/ });
++const inspector = () => page.getByRole('dialog', { name: 'Calendar item inspector' });
++const routeState = () => { const url = new URL(page.url()); return { path: url.pathname, view: url.searchParams.get('view'), date: url.searchParams.get('date'), item: url.searchParams.get('item') }; };
++const monthEmpty = date => page.locator(`[data-calendar-month-cell="${date}"] [data-calendar-arrow-target="month-date"]`);
++const weekTimed = index => page.locator('[data-calendar-arrow-target="week-timed-day"]').nth(index);
++const weekContext = index => page.locator('[data-calendar-arrow-target="week-context-day"]').nth(index);
++
++try {
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await monthEmpty('2026-10-08').dblclick({ delay: 90 });
++  await page.waitForURL(/view=day.*date=2026-10-08/);
++  await page.waitForTimeout(360);
++  assert.deepEqual(routeState(), { path: '/admin/calendar', view: 'day', date: '2026-10-08', item: null });
++  assert.equal(await planner().count(), 0, 'First click of Month double-click opened creation');
++  await page.goBack({ waitUntil: 'networkidle' });
++  assert.equal(routeState().view, 'month', 'Double-click Day navigation did not preserve browser history');
++  assert.equal(routeState().date, '2026-10-05');
++
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await monthEmpty('2026-10-09').click();
++  await planner().waitFor();
++  assert.equal(await planner().getByLabel('Date', { exact: true }).inputValue(), '2026-10-09');
++  assert.equal(routeState().view, 'month');
++  await page.keyboard.press('Escape');
++  await planner().waitFor({ state: 'hidden' });
++
++  await page.locator('[data-calendar-month-cell="2026-10-05"]').getByRole('button', { name: /Food-service shift/ }).click();
++  await inspector().waitFor();
++  assert.equal(routeState().item, '22222222-2222-4222-8222-000000000003');
++  await page.waitForTimeout(360);
++  assert.equal(await planner().count(), 0, 'Existing Month event opened creation');
++  assert.equal(routeState().view, 'month', 'Existing Month event navigated to Day');
++
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await page.evaluate(() => {
++    document.querySelector('[data-calendar-month-cell="2026-10-08"] [data-calendar-arrow-target="month-date"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
++    document.querySelector('[data-calendar-month-cell="2026-10-05"] button[aria-label*="Food-service shift"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
++  });
++  await inspector().waitFor();
++  await page.waitForTimeout(360);
++  assert.equal(await planner().count(), 0, 'Selecting an event did not cancel a pending empty-cell click');
++
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await monthEmpty('2026-10-10').focus();
++  await page.keyboard.press('Enter');
++  await planner().waitFor();
++  assert.equal(routeState().view, 'month', 'Keyboard creation changed views');
++
++  await go('/admin/calendar?view=week&date=2026-10-05');
++  await weekTimed(3).dblclick({ delay: 90, position: { x: 35, y: 240 } });
++  await page.waitForURL(/view=day.*date=2026-10-08/);
++  await page.waitForTimeout(360);
++  assert.equal(await planner().count(), 0, 'First click of Week time-grid double-click opened creation');
++
++  await go('/admin/calendar?view=week&date=2026-10-05');
++  await weekContext(3).dblclick({ delay: 90 });
++  await page.waitForURL(/view=day.*date=2026-10-08/);
++  await page.waitForTimeout(360);
++  assert.equal(await planner().count(), 0, 'First click of Week context double-click opened creation');
++
++  await go('/admin/calendar?view=week&date=2026-10-05');
++  await weekTimed(4).click({ position: { x: 35, y: 240 } });
++  await planner().waitFor();
++  assert.equal(await planner().getByLabel('Date', { exact: true }).inputValue(), '2026-10-09');
++  assert.equal(routeState().view, 'week');
++  await page.keyboard.press('Escape');
++  await planner().waitFor({ state: 'hidden' });
++
++  await weekContext(2).click();
++  await planner().waitFor();
++  assert.equal(await planner().getByLabel('Date', { exact: true }).inputValue(), '2026-10-07');
++  assert.equal(routeState().view, 'week');
++  await page.keyboard.press('Escape');
++  await planner().waitFor({ state: 'hidden' });
++
++  await page.locator('[data-week-event-id="22222222-2222-4222-8222-000000000003"]').getByRole('button').click();
++  await inspector().waitFor();
++  assert.equal(routeState().item, '22222222-2222-4222-8222-000000000003');
++  await page.waitForTimeout(360);
++  assert.equal(await planner().count(), 0, 'Existing Week event opened creation');
++  assert.equal(routeState().view, 'week', 'Existing Week event navigated to Day');
++
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await page.getByRole('button', { name: 'Open calendar filters' }).click();
++  await page.getByLabel('Task name', { exact: true }).filter({ visible: true }).fill('Lunch');
++  await page.getByRole('button', { name: /Show results/ }).filter({ visible: true }).click();
++  await monthEmpty('2026-10-08').dblclick({ delay: 90 });
++  await page.waitForURL(/view=day.*date=2026-10-08/);
++  await page.getByRole('button', { name: 'Open calendar filters' }).click();
++  assert.equal(await page.getByLabel('Task name', { exact: true }).filter({ visible: true }).inputValue(), 'Lunch', 'Day navigation lost the active filter');
++
++  await go('/admin/calendar?view=day&date=2026-10-08');
++  await page.getByRole('button', { name: /Plan project work on .* at 9 AM/ }).click();
++  await planner().waitFor();
++  assert.equal(routeState().view, 'day', 'Day empty-slot creation changed views');
++
++  await go('/admin/quick-view?view=month&date=2026-10-05&project=fixture-project');
++  assert.equal(await monthEmpty('2026-10-08').count(), 0);
++  await page.locator('[data-calendar-month-cell="2026-10-08"]').dblclick({ position: { x: 90, y: 48 }, delay: 90 });
++  await page.waitForTimeout(360);
++  assert.equal(routeState().view, 'month');
++  assert.equal(await planner().count(), 0);
++  await page.locator('[data-calendar-month-cell="2026-10-08"]').getByRole('button', { name: 'Open October 8, 2026 in Day view' }).click();
++  await page.waitForURL(/view=day.*date=2026-10-08/);
++  assert.equal(new URL(page.url()).searchParams.get('project'), 'fixture-project');
++
++  await page.setViewportSize({ width: 390, height: 844 });
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7/ }).click();
++  await page.waitForURL(/date=2026-10-07/);
++  assert.equal(routeState().view, 'month');
++  assert.equal(await planner().count(), 0);
++  console.log('PASS: desktop Month/Week single-click creation and double-click Day routing remain separate; events select inspectors, Day keeps creation, mobile keeps selection, and Quick View stays read-only. Synthetic fixture only.');
 +} finally {
 +  await browser.close();
 +}
