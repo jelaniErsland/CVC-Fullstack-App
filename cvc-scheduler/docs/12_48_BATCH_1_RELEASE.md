@@ -1,12 +1,22 @@
-# 12.48 Batch 1 coordinated release readiness
+# 12.48 Batch 1 coordinated release closeout
 
 Prepared September 25, 2026 (local time), with refreshed September 26 UTC validation, on `codex/12.48-batch-1`.
 
-**Release status: authorized for deployment — pre-release checks passed.** The user established the existing authorized production session and confirmed Overview/Calendar. Both were independently verified in the correct workspace. Batch 1 and the assignment enhancement form one release candidate; deployment and post-release results will be appended here. No Batch 2 work began.
+**Release status: DEPLOYED — production smoke passed.** Batch 1 and the assignment-visibility enhancement were released together as commit `1447bb926dfb65cbc77c071bab5d33879d8c46c5`. The existing development checkout remains on `codex/12.48-batch-1`. No Batch 2 work began.
+
+## Production closeout
+
+The established Git workflow fast-forwarded `origin/master` from `5bb1cf6a0609285c7c4c53d4e3516727b67adbac` to the exact release commit. Vercel deployment [eV9vrCF97kQFP5Uw7u7GEYXCBMa7](https://vercel.com/jelanierslands-projects/project-local/eV9vrCF97kQFP5Uw7u7GEYXCBMa7) reports **Production / Ready**, 43-second build, September 25, 2026 at 23:39 MDT (September 26 UTC). Its source link resolves to the full release SHA. The canonical `https://projectlocal.app` serves the new design.
+
+Using the user's existing authorized production account, read-only smoke passed Overview, Calendar Day/List, volunteer-directory navigation, authenticated Quick View, desktop/mobile navigation and More. Actual 1440px and 390px viewports were verified, with no horizontal overflow. Calendar showed existing assigned names and Awaiting reply/Declined wording, separate per-occurrence rows, and correct active-staffing fractions. The read-only Quick View inspector preserved `/admin/quick-view` and had zero Assign/Remove/Save/Publish/Send controls. Its default route, without a forced view parameter, exposed the existing Lunch headcounts before inspection. Meals remained separate from staffing lists. The final mobile list item was scrolled above the fixed navigation. Browser error logs were empty.
+
+Overview correctly used `LDC Bozeman Major Remodel`, compact no-photo identity, review/next-up hierarchy and authorized navigation. No photo-edit controls appeared because production uploads remain disabled. No configured production photo was available to exercise image delivery; the actual local upload/replacement/scoped-image tests supply that evidence. No safe existing production bearer link was available, so none was created for smoke; real local bearer issuance, isolation, privacy-header/cookie and revocation checks passed. Confirmed/many-name expansion and all meal zero/missing/positive combinations were tested locally rather than manufacturing production data.
+
+Read-only repeatable-read snapshots before and after deployment/smoke matched **all 11 table counts and full-row fingerprints**: volunteer profiles, Calendar items, assignments, responses, assignment-notification deliveries, volunteer-welcome deliveries, communication operations/recipients, project photos, contact grants and contacts. There were no production volunteer/assignment edits or new delivery-ledger entries. No email-send operation was issued. The schema terminal remained `20260922150000`, photo uploads remained disabled, and the backup task retained successful result 0 and its unchanged next schedule. Production screenshots were inspected in the connected browser; the distributable gallery retains synthetic records only.
 
 ## Candidate and scope
 
-Base commit: `5bb1cf6a0609285c7c4c53d4e3516727b67adbac`. A fresh `git ls-remote origin refs/heads/master` returned that hash. The authorized Vercel project dashboard independently confirms Production/Ready at that exact full commit, deployment `FimEmup6H3obRsseCytNfi6qZ7v4`, with `master` as the production branch. There is no 12.48 deployed version or release commit yet.
+Pre-release baseline: `5bb1cf6a0609285c7c4c53d4e3516727b67adbac`, independently verified against both `origin/master` and Vercel deployment `FimEmup6H3obRsseCytNfi6qZ7v4` before release. The current release is the exact `1447bb9…` commit above.
 
 The candidate includes the approved shared foundation, navigation, Overview/photo identity, grouped-row routing, disclosure chevron, Quick View route repair and meal presentation, plus the focused Day/List assignment display. The [review report](12_48_BATCH_1_REVIEW.md), [foundation contract](design/12_48_SHARED_FOUNDATION.md), [gallery](../../previews/12.48-batch-1/index.html) and [source/test diff](../../previews/12.48-batch-1/source-diff.patch) form the review package.
 
@@ -37,7 +47,7 @@ No server action, migration, schema, RLS policy, authentication code, notificati
 | Production backup database preflight | Passed read-only against terminal `20260922150000`; no backup execution or database mutation. |
 | Fresh scheduled encrypted backup | Existing unchanged task was started and completed with result 0, returned to Ready, and produced a 234,041-byte encrypted artifact. Independent SHA-256 matched. |
 
-One earlier route-suite run, concurrent with other browser suites, timed out on the project-day-to-item transition. The complete isolated rerun passed all 15 journeys, including that transition, without a source change. The timeout was not reproduced; its cause is not established. This component result does not replace the blocked real-session release gate.
+One earlier route-suite run, concurrent with other browser suites, timed out on the project-day-to-item transition. The complete isolated rerun passed all 15 journeys, including that transition, without a source change. The timeout was not reproduced; its cause is not established. Real local authenticated/bearer journeys and production route smoke subsequently passed.
 
 ## Resolved environment and backup gates
 
@@ -49,13 +59,12 @@ Two legacy test assumptions were corrected: the photo fixture can cross the Mond
 
 ## Production-session gate resolved
 
-The user completed production sign-in and confirmed working Overview/Calendar. Independent browser inspection verified both routes resolve Bozeman Major Remodel. No account, grant, authentication setting or volunteer record was changed to establish this session. The initial unavailable screen is resolved by the authorized session. Vercel still shows Production/Ready at the exact baseline commit. Fresh read-only snapshots cover 11 operational, contact/grant, photo and delivery tables; terminal remains `20260922150000`, and production photo uploads remain disabled.
+The user completed production sign-in and confirmed working Overview/Calendar. Independent browser inspection verified both routes resolve Bozeman Major Remodel. No account, grant, authentication setting or volunteer record was changed to establish this session. The initial unavailable screen was resolved by the authorized session. Before deployment, Vercel showed Production/Ready at the exact baseline commit; the release commit was subsequently verified as described above. Read-only snapshots cover 11 operational, contact/grant, photo and delivery tables; terminal remains `20260922150000`, and production photo uploads remain disabled.
 
-## Exact next steps
+## Completed release procedure
 
-1. Create one exact reviewed release commit containing Batch 1 plus this enhancement. Fast-forward `master` through the established Vercel workflow while retaining the working development branch. No new database migration or 12.47 permission/lock transition is required. Verify Production/Ready at that exact full commit.
-2. Perform authorized read-only production smoke for Overview, Calendar Day/List, assigned names/statuses and occurrence dates, authenticated Quick View, project-photo disabled-upload boundary, navigation and mobile layout. Do not create/edit volunteer records or send messages. Compare operational/delivery fingerprints and record the exact deployed version. A bearer production session will be checked only if already safely available; local real-bearer isolation/revocation evidence passed.
+One reviewed application release commit was fast-forwarded to `master`, Vercel Production/Ready was verified at that commit, and authorized read-only smoke plus unchanged-data/delivery fingerprint comparison completed. No migration, permission transition, new administrator, substitute session, backup change or notification operation was used. Closeout documentation is retained on the development branch without triggering another production deployment.
 
 ## Production effects and limits
 
-There was no deployment and no production volunteer/assignment write or email-send operation in this attempt. Production database operations were the existing read-only backup preflight and logical backup. No post-deployment smoke or release-attributable data/notification comparison can be claimed because a release did not occur. Production photo uploads remain disabled under the established 12.47 boundary. Mobile month-density and the full Calendar/inspector redesign remain later-batch work.
+One coordinated application deployment occurred. Production database operations were read-only preflight, logical backup and fingerprint checks. No production volunteer/assignment write or email-send operation occurred, and the unchanged operational/delivery fingerprints confirm no observed data or delivery change across the release window. Production photo uploads remain disabled under the established 12.47 boundary. Mobile month-density/overflow and the full Calendar/inspector redesign remain later-batch work.
