@@ -23,6 +23,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type Ref,
+  type ReactNode,
   useActionState,
   useEffect,
   useId,
@@ -30,8 +31,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
 import Link from "next/link";
+import { PageHeader } from "@/components/PageHeader";
+import { CalendarAssignedVolunteers, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
+import { ldcProjectName } from "@/lib/projectIdentity";
 import { AdminShell } from "@/components/AdminShell";
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
 import {
@@ -243,7 +248,7 @@ const weekBandVisibleLaneCount = 2;
 const weekTimeLabels = dayTimelineSlots.filter(({ hour }) => hour % 2 === 0);
 
 function getCalendarOperationalCount(item: CalendarItem) {
-  return item.meal ? (item.meal.total === null ? "Total unset" : "Total " + item.meal.total) : getCalendarFilledLabel(item);
+  return item.meal ? (item.meal.total === null ? "Headcount not set" : "Headcount " + item.meal.total) : getCalendarFilledLabel(item);
 }
 
 function getCalendarEventStyle() {
@@ -279,6 +284,7 @@ function getCalendarEventClasses(item: CalendarItemWithPreset) {
 }
 
 function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
+  if (item.meal) return [getCalendarItemDisplayName(item), getCalendarOperationalCount(item), getCalendarCompactDayLabel(item.date), getCalendarItemTimeWindow(item), `Meal contact ${item.meal.contact?.trim() || "not assigned"}`].join(", ");
   if (isWeekBandCalendarItem(item)) {
     return getWeekBandItemAccessibleLabel(item);
   }
@@ -1423,6 +1429,26 @@ function EmptySlotAffordance({
   );
 }
 
+function CalendarDayCard({ item, isSelected, onSelect, assignmentVisibility }: {
+  item: CalendarClientDisplayItem;
+  isSelected: boolean;
+  onSelect: () => void;
+  assignmentVisibility: AssignmentVisibility;
+}) {
+  return <article data-calendar-task-item={item.id} className={`min-w-0 overflow-hidden rounded-lg border border-[var(--pl-border)] bg-white ${isSelected ? "ring-2 ring-[var(--pl-blue)] ring-offset-1" : ""}`}>
+    <button type="button" aria-label={!item.meal && isWeekBandCalendarItem(item) ? getProjectContextItemAccessibleLabel(item) : getCalendarItemAccessibleLabel(item)} onClick={onSelect}
+      className={`block w-full min-w-0 px-3 py-2.5 text-left ${calmFocusRing}`} style={getCalendarEventColorStyle(item)}>
+      <span className="block break-words text-sm font-semibold leading-5">{getCalendarItemDisplayName(item)}</span>
+      <span className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs leading-5">
+        <span>{getCalendarItemTimeWindow(item)}</span>
+        <span className="font-semibold">{getCalendarOperationalCount(item)}{item.meal ? "" : " assigned"}</span>
+      </span>
+    </button>
+    {item.meal ? <p className="px-3 py-2 text-sm text-[var(--pl-text)]">Main meal contact: {item.meal.contact?.trim() || "Not assigned"}</p>
+      : assignmentVisibility !== "hidden" && <div className="border-t border-[var(--pl-border)] px-3 py-2.5"><CalendarAssignedVolunteers itemId={item.id} assignments={item.assignments} visibility={assignmentVisibility} /></div>}
+  </article>;
+}
+
 function DayView({
   date,
   items,
@@ -1430,6 +1456,7 @@ function DayView({
   onOpenDayDetails,
   selectedId,
   onSelect,
+  assignmentVisibility,
 }: {
   date: string;
   items: CalendarItem[];
@@ -1437,6 +1464,7 @@ function DayView({
   onOpenDayDetails: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
+  assignmentVisibility: AssignmentVisibility;
 }) {
   const { readOnly } = useCalendarOperations();
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -1473,9 +1501,7 @@ function DayView({
       </div>
       {contextItems.length ? <div className="grid grid-cols-[58px_1fr] border-b border-slate-200 sm:grid-cols-[80px_1fr]" aria-label="No-specific-time Calendar items">
         <span className="p-2 text-[10px] font-semibold text-slate-500">No specific time</span>
-        <div className="flex flex-wrap gap-2 p-2">{contextItems.map(item => <button key={item.id} type="button" aria-label={getProjectContextItemAccessibleLabel(item)} onClick={() => onSelect(item)} className={getCalendarEventStyle() + " min-h-9 rounded-lg px-3 py-2 text-sm font-semibold " + calmFocusRing} style={getCalendarEventColorStyle(item)}>
-          {getCalendarItemDisplayName(item)} · {getCalendarOperationalCount(item)}
-        </button>)}</div>
+        <div className="grid min-w-0 gap-2 p-2 xl:grid-cols-2">{contextItems.map(item => <CalendarDayCard key={item.id} item={item} isSelected={selectedId === item.id} onSelect={() => onSelect(item)} assignmentVisibility={assignmentVisibility} />)}</div>
       </div> : null}
 
       <div className="max-h-[620px] overflow-y-auto" data-calendar-arrow-group="day-hours" ref={timelineRef}>
@@ -1515,10 +1541,11 @@ function DayView({
                   <div className="pointer-events-none relative z-10 grid gap-1.5 p-1.5 sm:p-2 xl:grid-cols-2">
                     {slotItems.map((item) => (
                       <div className="pointer-events-auto" key={item.id}>
-                        <CalendarBlock
+                        <CalendarDayCard
                           isSelected={selectedId === item.id}
                           item={item}
                           onSelect={() => onSelect(item)}
+                          assignmentVisibility={assignmentVisibility}
                         />
                       </div>
                     ))}
@@ -1581,6 +1608,7 @@ function MonthView({
 
   return (
     <section className="overflow-hidden bg-white">
+      {readOnly && items.some(item => item.meal) && <p className="border-b border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">Meals: B = Breakfast, L = Lunch; number = daily headcount; — = not recorded.</p>}
       <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
@@ -1644,7 +1672,8 @@ function MonthView({
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        `pointer-events-auto h-4 w-full rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
+                        `pointer-events-auto h-4 w-full min-w-0 overflow-hidden rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
+                        readOnly && item.meal ? "sm:h-5 sm:text-[11px] sm:leading-4" : "",
                         index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
                         getCalendarEventClasses(item),
                         selectedId === item.id
@@ -1656,13 +1685,12 @@ function MonthView({
                       style={getCalendarEventColorStyle(item)}
                       type="button"
                     >
-                      <span className="flex min-w-0 items-center gap-1">
-                        <span className="hidden shrink-0 opacity-70 sm:inline">
-                          {getCalendarOperationalCount(item)}
-                        </span>
-                        <span className="min-w-0 truncate">
-                          {getCalendarItemDisplayName(item)}
-                        </span>
+                      <span className="block truncate sm:hidden">{item.meal ? `${item.meal.kind === "breakfast" ? "B" : "L"}${item.meal.total === null ? "—" : item.meal.total}` : getCalendarItemDisplayName(item)}</span>
+                      <span className="hidden min-w-0 items-center gap-1 sm:flex">
+                        {readOnly && item.meal ? <span className="min-w-0 truncate">{item.meal.kind === "breakfast" ? "Breakfast" : "Lunch"} · {item.meal.total === null ? "—" : item.meal.total}</span> : <>
+                          <span className="hidden shrink-0 opacity-70 sm:inline">{getCalendarOperationalCount(item)}</span>
+                          <span className="min-w-0 truncate">{getCalendarItemDisplayName(item)}</span>
+                        </>}
                       </span>
                     </button>
                   ))}
@@ -1701,6 +1729,7 @@ function getCalendarListItemScheduleLabel(item: CalendarItem) {
 }
 
 function getCalendarListItemAccessibleLabel(item: CalendarItemWithPreset) {
+  if (item.meal) return [getCalendarItemDisplayName(item), getCalendarListItemScheduleLabel(item), getCalendarOperationalCount(item), `Meal contact ${item.meal.contact?.trim() || "not assigned"}`].join(", ");
   return [
     getCalendarItemDisplayName(item),
     getCalendarListItemScheduleLabel(item),
@@ -1714,11 +1743,13 @@ function CalendarListView({
   onSelect,
   referenceDate,
   selectedId,
+  assignmentVisibility,
 }: {
   items: CalendarItem[];
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
   selectedId?: string;
+  assignmentVisibility: AssignmentVisibility;
 }) {
   const weekRange = deriveCalendarWeekRange(referenceDate);
   const groups = Array.from(
@@ -1804,6 +1835,7 @@ function CalendarListView({
                 return (
                   <div
                     className="border-t border-slate-200/60 first:border-t-0"
+                    data-calendar-task-item={item.id}
                     key={item.id}
                     role="listitem"
                   >
@@ -1822,24 +1854,25 @@ function CalendarListView({
                         <p className="truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-slate-950 sm:text-sm">
                           {getCalendarItemDisplayName(item)}
                         </p>
-                        <p className="mt-1 hidden truncate text-[10px] font-semibold uppercase leading-4 tracking-[0.08em] text-slate-400 sm:block">
-                          {typeLabel}
-                        </p>
+                        {(item.meal || assignmentVisibility === "hidden") && <p className={`mt-1 hidden truncate leading-4 sm:block ${item.meal ? "text-xs font-medium text-slate-600" : "text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400"}`}>
+                          {item.meal ? `Meal contact: ${item.meal.contact?.trim() || "not assigned"}` : typeLabel}
+                        </p>}
                       </div>
 
                       <p className="hidden min-w-0 text-xs font-medium leading-5 text-slate-500 sm:block">
                         {scheduleLabel}
                       </p>
                       <span className="mt-0.5 inline-flex min-h-7 shrink-0 self-start items-center justify-center whitespace-nowrap rounded-full border border-slate-200/80 bg-white/58 px-2.5 text-[11px] font-semibold text-slate-700 sm:mt-0 sm:self-center">
-                        {getCalendarOperationalCount(item)}{item.meal ? "" : " helpers"}
+                        {getCalendarOperationalCount(item)}{item.meal ? "" : " assigned"}
                       </span>
                       <p className="col-span-2 mt-0.5 text-[11px] font-medium leading-4 text-slate-500 sm:hidden">
                         {scheduleLabel}
                       </p>
-                      <p className="col-span-2 truncate text-[10px] font-semibold uppercase leading-4 tracking-[0.08em] text-slate-400 sm:hidden">
-                        {typeLabel}
-                      </p>
+                      {(item.meal || assignmentVisibility === "hidden") && <p className={`col-span-2 truncate leading-4 sm:hidden ${item.meal ? "text-xs font-medium text-slate-600" : "text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400"}`}>
+                        {item.meal ? `Meal contact: ${item.meal.contact?.trim() || "not assigned"}` : typeLabel}
+                      </p>}
                     </button>
+                    {!item.meal && assignmentVisibility !== "hidden" && <div className="px-3 pb-3 sm:px-4"><CalendarAssignedVolunteers itemId={item.id} assignments={(item as CalendarClientDisplayItem).assignments} visibility={assignmentVisibility} /></div>}
                   </div>
                 );
               })}
@@ -3050,6 +3083,18 @@ function InspectorContent({
     });
     return () => window.cancelAnimationFrame(frame);
   }, [focusSection, focusSignal, item.id]);
+  if (readOnly && item.meal) return <>
+    <p className="sr-only" id={descriptionId}>{getCalendarItemAccessibleLabel(item)}. Read-only meal details.</p>
+    <div className="flex items-start justify-between gap-3 border-b border-[var(--pl-border)] px-4 py-4">
+      <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-widest text-[var(--pl-blue)]">Meal</p><h2 className="mt-1 break-words text-xl font-bold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</h2></div>
+      <button aria-label="Close calendar item inspector" className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-[var(--pl-border)] bg-white ${calmFocusRing}`} onClick={onClose} ref={closeButtonRef} type="button"><X aria-hidden className="size-4" /></button>
+    </div>
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5" data-overlay-scroll="calendar-inspector">
+      <p className="text-sm font-medium text-[var(--pl-muted)]">{getCalendarCompactDayLabel(item.date)} · {scheduleDisplay.label}</p>
+      <div className="mt-5 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-4"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--pl-muted)]">Daily headcount</p><p className="mt-1 text-3xl font-bold tracking-tight text-[var(--pl-ink)]">{item.meal.total === null ? "Not recorded" : item.meal.total}</p></div>
+      <div className="mt-5 border-t border-[var(--pl-border)] pt-4"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--pl-muted)]">Main meal contact</p><p className="mt-1 break-words text-base font-semibold text-[var(--pl-ink)]">{item.meal.contact?.trim() || "Not assigned"}</p></div>
+    </div>
+  </>;
   return (
     <>
       <p className="sr-only" id={descriptionId}>
@@ -3088,17 +3133,17 @@ function InspectorContent({
           <span className="inline-flex min-h-7 items-center rounded-full border border-[var(--pl-border)] bg-white px-2.5 text-[11px] font-semibold text-[var(--pl-text)]">
             {getCalendarOperationalCount(item)}{item.meal ? "" : " filled"}
           </span>
-          <span
+          {!readOnly && <span
             className="inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold"
             style={getCalendarEventColorStyle(item)}
           >
             {getCalendarCategoryLabel(item.category)}
-          </span>
-          <span
+          </span>}
+          {!readOnly && <span
             className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold ${toneStyles[tone]}`}
           >
             {getCalendarStatusLabel(item.status)}
-          </span>
+          </span>}
           <span
             className={[
               "inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold",
@@ -3590,6 +3635,7 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       workspaceName: string;
+      navigationDestinations?: readonly string[];
       projectStartsOn: string | null;
       projectEndsOn: string | null;
       items: Array<
@@ -3887,25 +3933,6 @@ function CalendarNotice({ notice }: { notice?: string }) {
   );
 }
 
-function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
-  const params = new URLSearchParams();
-  params.set("view", view);
-  params.set("date", date);
-  return `/admin/calendar?${params.toString()}`;
-}
-
-function buildCalendarProjectDayHref(
-  view: CalendarViewMode,
-  anchorDate: string,
-  projectDayDate: string,
-) {
-  const params = new URLSearchParams();
-  params.set("view", view);
-  params.set("date", anchorDate);
-  params.set("day", projectDayDate);
-  return `/admin/calendar?${params.toString()}`;
-}
-
 function getCalendarToday() {
   const parts = new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -3917,25 +3944,13 @@ function getCalendarToday() {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function buildCalendarInspectorHref(
-  view: CalendarViewMode,
-  date: string,
-  itemId: string,
-  section: CalendarInspectorSection,
-) {
-  const params = new URLSearchParams();
-  params.set("view", view);
-  params.set("date", date);
-  params.set("item", itemId);
-  params.set("section", section);
-  return `/admin/calendar?${params.toString()}`;
-}
-
 export default function CalendarClient({
   bulkAssignmentAction,
   readOnly = false,
   routeBase = "/admin/calendar",
   projectKey,
+  projectControls,
+  footer,
   saveMealAction,
   duplicateAction,
   assignAction,
@@ -3943,8 +3958,8 @@ export default function CalendarClient({
   cancelAssignmentAction,
   createAction,
   createRepeatedAction,
-  initialInspectorItemId,
-  initialInspectorSection = "details",
+  initialInspectorItemId: initialItemId,
+  initialInspectorSection: initialSection = "details",
   notice,
   publishAction,
   sendInitialAssignmentNotificationsAction,
@@ -3955,8 +3970,10 @@ export default function CalendarClient({
 }: Readonly<{
   bulkAssignmentAction?: BulkAssignmentAction;
   readOnly?: boolean;
-  routeBase?: string;
+  routeBase?: CalendarRouteBase;
   projectKey?: string;
+  projectControls?: ReactNode;
+  footer?: ReactNode;
   saveMealAction?: CalendarMutationAction;
   duplicateAction?: CalendarMutationAction;
   assignAction?: CalendarMutationAction;
@@ -3975,11 +3992,19 @@ export default function CalendarClient({
   updateAction?: CalendarMutationAction;
 }>) {
   const router = useRouter();
-  function navigate(href: string) {
-    const params = new URLSearchParams(href.split("?")[1]);
-    if (projectKey) params.set("project", projectKey);
-    router.push(routeBase + "?" + params.toString());
+  const searchParams = useSearchParams();
+  const initialInspectorItemId = searchParams.get("item") ?? undefined;
+  const initialInspectorSection = readInspectorSection(searchParams.get("section"));
+  function buildCalendarRouteHref(view: CalendarViewMode, date: string) {
+    return calendarRouteHref({ routeBase, projectKey }, { view, date });
   }
+  function buildCalendarProjectDayHref(view: CalendarViewMode, date: string, day: string) {
+    return calendarRouteHref({ routeBase, projectKey }, { view, date, day });
+  }
+  function buildCalendarInspectorHref(view: CalendarViewMode, date: string, item: string, section: CalendarInspectorSection) {
+    return calendarRouteHref({ routeBase, projectKey }, { view, date, item, section });
+  }
+  function navigate(href: string) { router.push(href); }
   const isReady = state.kind === "ready_with_items" || state.kind === "ready_empty";
   const isReadyEmpty = state.kind === "ready_empty";
   const projectCalendarAnchor = isReady ? state.projectStartsOn : null;
@@ -4001,22 +4026,20 @@ export default function CalendarClient({
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
-  const initialProjectDayDate = isReady ? state.projectDayDetails?.date : undefined;
+  const initialProjectDayDate = isReady ? readCalendarRouteDay(searchParams.get("day")) : undefined;
+  // Legacy initial props bootstrap callers; URL changes remain authoritative afterwards.
+  const bootstrapItemId = initialInspectorItemId ?? initialItemId;
   const [activeSurface, setActiveSurface] = useState<CalendarSurface>(
-    initialInspectorItemId ? "inspect" : initialProjectDayDate ? "projectDay" : "none",
+    bootstrapItemId ? "inspect" : initialProjectDayDate ? "projectDay" : "none",
   );
-  const [selectedId, setSelectedId] = useState<string | undefined>(initialInspectorItemId);
+  const [selectedId, setSelectedId] = useState<string | undefined>(bootstrapItemId);
   const [inspectorSection, setInspectorSection] = useState<CalendarInspectorSection>(
-    initialInspectorSection,
+    initialInspectorItemId ? initialInspectorSection : initialSection,
   );
-  const routeInspectorSelection = initialInspectorItemId
-    ? `${initialInspectorItemId}:${initialInspectorSection}`
-    : "";
-  const [appliedRouteInspectorSelection, setAppliedRouteInspectorSelection] =
-    useState(routeInspectorSelection);
-  const routeProjectDaySelection = initialProjectDayDate ?? "";
-  const [appliedRouteProjectDaySelection, setAppliedRouteProjectDaySelection] =
-    useState(routeProjectDaySelection);
+  const routeSelection = initialInspectorItemId
+    ? `item:${initialInspectorItemId}:${initialInspectorSection}`
+    : initialProjectDayDate ? `day:${initialProjectDayDate}` : "";
+  const [appliedRouteSelection, setAppliedRouteSelection] = useState(routeSelection);
   const [projectDayDate, setProjectDayDate] = useState(initialProjectDayDate);
   const [creationDraft, setCreationDraft] = useState<
     CalendarCreationDraft | undefined
@@ -4024,20 +4047,14 @@ export default function CalendarClient({
   const surfaceTriggerRef = useRef<HTMLElement | null>(null);
   const calendarViewRef = useRef<HTMLDivElement>(null);
 
-  if (routeInspectorSelection !== appliedRouteInspectorSelection) {
-    setAppliedRouteInspectorSelection(routeInspectorSelection);
+  if (routeSelection !== appliedRouteSelection) {
+    setAppliedRouteSelection(routeSelection);
     setSelectedId(initialInspectorItemId);
     setInspectorSection(initialInspectorSection);
-    setCreationDraft(undefined);
-    setActiveSurface(initialInspectorItemId ? "inspect" : "none");
-  }
-
-  if (routeProjectDaySelection !== appliedRouteProjectDaySelection) {
-    setAppliedRouteProjectDaySelection(routeProjectDaySelection);
-    setProjectDayDate(initialProjectDayDate);
-    setSelectedId(undefined);
-    setCreationDraft(undefined);
-    setActiveSurface(initialProjectDayDate ? "projectDay" : "none");
+    setProjectDayDate(initialInspectorItemId ? undefined : initialProjectDayDate);
+    if (initialInspectorItemId || initialProjectDayDate) setCreationDraft(undefined);
+    setActiveSurface(initialInspectorItemId ? "inspect" : initialProjectDayDate ? "projectDay"
+      : activeSurface === "filter" || activeSurface === "more" || activeSurface === "create" ? activeSurface : "none");
   }
 
   const filteredItems = useMemo(
@@ -4137,7 +4154,7 @@ export default function CalendarClient({
         window.history.replaceState(
           window.history.state,
           "",
-          buildCalendarRouteHref(activeView, calendarAnchor),
+          calendarRouteHref({ routeBase, projectKey }, { view: activeView, date: calendarAnchor }),
         );
         surfaceTriggerRef.current = null;
         window.requestAnimationFrame(() => {
@@ -4153,7 +4170,7 @@ export default function CalendarClient({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeSurface, activeView, calendarAnchor]);
+  }, [activeSurface, activeView, calendarAnchor, routeBase, projectKey]);
 
   useEffect(() => {
     if (!calendarViewRef.current) return;
@@ -4180,6 +4197,7 @@ export default function CalendarClient({
     setSelectedId(undefined);
     setCreationDraft(undefined);
     setActiveSurface("filter");
+    window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
   };
 
   const handleOpenProjectDay = (date: string) => {
@@ -4230,6 +4248,7 @@ export default function CalendarClient({
       repeatRequestKey: crypto.randomUUID(),
     });
     setActiveSurface("create");
+    window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
   };
 
   const clearFilters = () => {
@@ -4268,8 +4287,9 @@ export default function CalendarClient({
 
   return (
     <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
-    <CalendarFrame readOnly={readOnly}
-      active="calendar"
+    <CalendarFrame readOnly={routeBase === "/qv"}
+      active={routeBase === "/admin/quick-view" ? "quick-view" : "calendar"}
+      destinations={isReady ? state.navigationDestinations : ["overview"]}
       workspaceName={isReady ? state.workspaceName : undefined}
       onMobileMoreClose={closeCalendarSurface}
       onMobileMoreOpen={() => {
@@ -4277,21 +4297,14 @@ export default function CalendarClient({
         setSelectedId(undefined);
         setCreationDraft(undefined);
         setActiveSurface("more");
+        window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
       }}
     >
-      <header className="flex items-end justify-between gap-4 border-b border-[var(--pl-border)] pb-4">
-        <div>
-        <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-          <CalendarDays aria-hidden="true" className="h-3.5 w-3.5" />
-          {isReady ? state.workspaceName : "Project Calendar"}
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-[-0.045em] text-[var(--pl-ink)] sm:text-4xl">
-          {readOnly ? "Project Quick View" : "Calendar"}
-        </h1>
-        </div>
-        {!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-blue-700"><Send className="size-4" aria-hidden="true" />Send schedules</Link> : null}
-      </header>
-
+      <PageHeader title={readOnly ? "Project Quick View" : "Calendar"}
+        context={routeBase === "/qv" && isReady ? ldcProjectName(state.workspaceName) : readOnly ? "Read-only project schedule" : undefined}
+        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800"><Send className="size-[18px]" aria-hidden="true" />Send schedules</Link> : undefined}
+      />
+      {projectControls && <div className="mt-4">{projectControls}</div>}
       <section className="mt-4">
         {isReady ? (
           <>
@@ -4349,6 +4362,7 @@ export default function CalendarClient({
 
               {activeView === "day" ? (
                 <DayView
+                  assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
                   date={calendarAnchor}
                   items={visibleItems}
                   onCreateFromSlot={handleCreateFromSlot}
@@ -4389,6 +4403,7 @@ export default function CalendarClient({
               ) : null}
               {activeView === "list" ? (
                 <CalendarListView
+                  assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
                   items={visibleItems}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={weekRange.start}
@@ -4461,6 +4476,7 @@ export default function CalendarClient({
           />
         ) : null}
       </section>
+      {footer && <div className="mt-6">{footer}</div>}
     </CalendarFrame>
     </CalendarOperations.Provider>
   );
@@ -4468,5 +4484,5 @@ export default function CalendarClient({
 
 
 function CalendarFrame({ readOnly, children, ...props }: React.ComponentProps<typeof AdminShell> & { readOnly: boolean }) {
-  return readOnly ? <main className="mx-auto w-full max-w-[1600px] p-3 sm:p-6">{children}</main> : <AdminShell {...props}>{children}</AdminShell>;
+  return readOnly ? <><a className="skip-link" href="#main-content">Skip to main content</a><main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1600px] p-4 sm:p-6">{children}</main></> : <AdminShell {...props}>{children}</AdminShell>;
 }

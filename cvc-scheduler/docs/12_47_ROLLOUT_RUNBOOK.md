@@ -1,6 +1,6 @@
-# 12.47 proposed controlled rollout runbook
+# 12.47 controlled rollout runbook (historical)
 
-**Status: proposal; execution prohibited until a separate product-owner authorization.** Read [12.47 production readiness](12_47_PRODUCTION_READINESS.md) first. Its STOP blockers must be closed and independently reviewed before step A. This runbook does not authorize a production backup, task change, migration, deployment, photo upload or email.
+**Status: historical reviewed procedure, executed for the authorized 12.47 rollout on 2026-09-24.** The four migrations, backup-lock transitions, exact release deployment, application-grant restoration, live smoke and independent current-terminal recovery proof passed. Production is at `20260922150000`, the backup task is Enabled/Ready with the same lock, Vercel Production is Ready at `5bb1cf6a0609285c7c4c53d4e3516727b67adbac`, and Standard Protection has been restored. The public guide is live at `https://projectlocal.app/guide`. Photo uploads remain disabled; no volunteer email campaign was sent. See [current state](CURRENT_STATE.md) and [production readiness](12_47_PRODUCTION_READINESS.md) for closeout evidence. The steps below document the reviewed sequence and do not authorize any new production action.
 
 ## September 24 read-only starting evidence — verify again at rollout
 

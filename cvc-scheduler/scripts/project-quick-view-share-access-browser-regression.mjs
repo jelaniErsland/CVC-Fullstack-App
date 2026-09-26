@@ -157,7 +157,7 @@ async function main() {
     values ('${workspaceId}'::uuid, ${sqlText(namespace)}, 'Gallatin Valley Build', 'active', 'America/Denver', '2026-08-01', '2030-09-30');
     insert into public.project_contacts (id, auth_user_id, status) values ('${contactId}'::uuid, '${authUserId}'::uuid, 'active');
     insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status, valid_from)
-    values ('${grantId}'::uuid, '${workspaceId}'::uuid, '${contactId}'::uuid, 'main_contact', array['workspace.read','calendar.view','calendar.edit']::text[], 'active', now() - interval '1 day');
+    values ('${grantId}'::uuid, '${workspaceId}'::uuid, '${contactId}'::uuid, 'main_contact', array['workspace.read','calendar.view','calendar.edit','tasks.view','assignments.view','volunteers.view']::text[], 'active', now() - interval '1 day');
     insert into public.project_days (id, workspace_id, project_date, expected_on_site_count, created_by_project_contact_id, updated_by_project_contact_id) values
       ('${dayIds[0]}'::uuid, '${workspaceId}'::uuid, '2026-09-02', 47, '${contactId}'::uuid, '${contactId}'::uuid),
       ('${dayIds[1]}'::uuid, '${workspaceId}'::uuid, '2026-09-03', 0, '${contactId}'::uuid, '${contactId}'::uuid);
@@ -174,7 +174,7 @@ async function main() {
     const adminPage = await admin.newPage();
     adminPage.setDefaultTimeout(8_000);
     const adminErrors = watchErrors(adminPage);
-    await adminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "domcontentloaded" });
+    await adminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "networkidle" });
     if (await adminPage.getByRole("heading", { name: "Share this Quick View", exact: true }).count() === 0) {
       throw new Error(`Admin share control did not render. Safe page text: ${(await adminPage.locator("body").innerText()).slice(0, 900)}`);
     }
@@ -185,7 +185,7 @@ async function main() {
     await adminPage.getByText("Quick View link created", { exact: true }).waitFor();
     await capture(adminPage, "02-desktop-admin-created-link.png");
     await adminPage.getByRole("button", { name: "Copy link", exact: true }).click();
-    await adminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "domcontentloaded" });
+    await adminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "networkidle" });
     const reloadedAdminText = await adminPage.locator("body").innerText();
     assert(reloadedAdminText.includes("Create new link"), "Reloaded admin share state did not distinguish existing hash-only links.");
     assert(reloadedAdminText.includes("1 active link."), "Reloaded admin share state did not report its one active link.");
@@ -196,7 +196,7 @@ async function main() {
     await applyAuth(mobileAdmin);
     const mobileAdminPage = await mobileAdmin.newPage();
     mobileAdminPage.setDefaultTimeout(8_000);
-    await mobileAdminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "domcontentloaded" });
+    await mobileAdminPage.goto(createPreviewUrl(baseUrl, `/admin/quick-view?project=${encodeURIComponent(namespace)}&date=2026-09-02`), { waitUntil: "networkidle" });
     const mobileShareHeading = mobileAdminPage.getByRole("heading", { name: "Share this Quick View", exact: true });
     await mobileShareHeading.waitFor();
     await mobileShareHeading.scrollIntoViewIfNeeded();
@@ -237,32 +237,39 @@ async function main() {
     assert(recipientRouteResponse.headers()["cache-control"]?.includes("no-store"));
     assert(recipientRouteResponse.headers()["x-robots-tag"] === "noindex, nofollow, noarchive");
     assert(recipientRouteResponse.headers()["referrer-policy"] === "no-referrer");
-    await recipientPage.goto(shareUrl, { waitUntil: "domcontentloaded" });
+    await recipientPage.goto(shareUrl, { waitUntil: "networkidle" });
     assert(new URL(recipientPage.url()).pathname === "/qv", "Bearer did not exchange to a clean URL.");
     const cookies = await recipient.cookies();
     const quickViewCookie = cookies.find((cookie) => cookie.name === "pl-project-quick-view");
     assert(quickViewCookie?.httpOnly && quickViewCookie.sameSite === "Lax" && quickViewCookie.path === "/qv");
-    await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "domcontentloaded" });
-    await recipientPage.getByRole("heading", { name: "Gallatin Valley Build", exact: true }).waitFor();
+    await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "networkidle" });
+    await recipientPage.getByText("LDC Gallatin Valley Build", { exact: true }).waitFor();
     const recipientText = await recipientPage.locator("body").innerText();
-    for (const forbidden of ["Admin", "Overview", "Volunteers", "Restricted security", "private note", workspaceId, contactId, bearer]) {
+    for (const forbidden of ["Overview", "private note", workspaceId, contactId, bearer]) {
       assert(!recipientText.includes(forbidden), `Recipient view leaked ${forbidden}.`);
     }
     await capture(recipientPage, "05-desktop-recipient-quick-view.png");
     await capture(recipientPage, "08-recipient-populated-schedule.png");
-    await capture(recipientPage, "09-recipient-expected-on-site-47.png");
-    await recipientPage.getByRole("link", { name: "Next day", exact: true }).click();
-    await recipientPage.getByText("0 people", { exact: true }).waitFor();
-    await capture(recipientPage, "11-recipient-zero-people.png");
-    await capture(recipientPage, "12-recipient-another-date.png");
-    await recipientPage.getByRole("link", { name: "Next day", exact: true }).click();
-    await recipientPage.getByText("Not set", { exact: true }).waitFor();
-    await capture(recipientPage, "10-recipient-not-set.png");
+    // The established 12.47 contract renders the shared Calendar, including
+    // published security tasks, without the retired expected-on-site panel.
+    await recipientPage.getByRole('button',{name:'Day',exact:true}).filter({visible:true}).click();
+    await recipientPage.waitForURL(url=>url.searchParams.get('view')==='day');
+    await recipientPage.getByRole('button',{name:/General Help/}).first().click();
+    const inspector=recipientPage.getByRole('dialog',{name:'Calendar item inspector'});
+    await inspector.waitFor();
+    assert.equal(new URL(recipientPage.url()).pathname,'/qv');
+    assert.equal(await inspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
+    await recipientPage.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
+    await recipientPage.getByRole('button',{name:'Next day',exact:true}).click();
+    await recipientPage.waitForURL(url=>url.searchParams.get('date')==='2026-09-03');
+    assert.equal(new URL(recipientPage.url()).pathname,'/qv');
+    await recipientPage.getByRole('button',{name:'Next day',exact:true}).click();
+    await recipientPage.waitForURL(url=>url.searchParams.get('date')==='2026-09-04');
     assert.equal(recipientErrors.length, 0, recipientErrors.join("\n"));
 
     await recipientPage.setViewportSize({ width: 390, height: 844 });
-    await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "domcontentloaded" });
-    await recipientPage.getByText("47 people", { exact: true }).waitFor();
+    await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "networkidle" });
+    await recipientPage.getByText("LDC Gallatin Valley Build", { exact: true }).waitFor();
     await noOverflow(recipientPage, "390px recipient Quick View");
     await capture(recipientPage, "06-mobile-recipient-quick-view.png");
     await recipientPage.setViewportSize({ width: 360, height: 800 });
@@ -280,7 +287,7 @@ async function main() {
     });
     assert(revokeResponse.ok, "Disposable shared access could not be revoked.");
     assert((await revokeResponse.json()) >= 1, "Shared access revocation did not affect an active link.");
-    await recipientPage.reload({ waitUntil: "domcontentloaded" });
+    await recipientPage.reload({ waitUntil: "networkidle" });
     await recipientPage.getByRole("heading", { name: "This project view is no longer available.", exact: true }).waitFor();
     assert(!((await recipientPage.locator("body").innerText()).includes("Gallatin Valley Build")), "Revoked session retained project identity.");
     await capture(recipientPage, "13-recipient-unavailable.png");

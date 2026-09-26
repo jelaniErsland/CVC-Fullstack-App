@@ -2,7 +2,21 @@
 
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
-## Local 12.47 release source (NOT DEPLOYED)
+## 12.48 Batch 1 release preparation — 2026-09-25
+
+The approved Batch 1 design and final Day/List assignment-visibility enhancement are prepared on `codex/12.48-batch-1`. **Pre-release gates passed; coordinated deployment authorized.** Real local authenticated role, bearer and photo authorization/storage checks passed. The unchanged production backup task completed a fresh successful run (result 0) with independent checksum verification. Vercel Production/Ready was verified at baseline `5bb1cf6a0609285c7c4c53d4e3516727b67adbac`. The user established the authorized production session; independent Overview/Calendar checks now resolve the correct workspace. Fresh read-only operational/delivery fingerprints were captured for the post-deployment comparison. See [12.48 release report](12_48_BATCH_1_RELEASE.md) for the deployed-version and smoke closeout. No schema/security or backup-schedule change is included.
+
+## 12.47 production closeout — 2026-09-24
+
+Release `5bb1cf6a0609285c7c4c53d4e3516727b67adbac` is live and Ready on Vercel Production at `https://projectlocal.app`; `master`, local HEAD and `origin/master` match that commit. Vercel Authentication was restored from the temporary All Deployments gate to its original **Standard Protection** setting. The public site and canonical `/guide` respond normally; `/guide/` and `/guide/index.html` redirect to `/guide`.
+
+Production has all four 12.47 migrations, in order, ending at `20260922150000` (43 migration records). The permanent backup task is Enabled, Ready and not running with the matching `20260922150000` lock; recovery preflight is GREEN. All 26 public tables and the exact 72-function policy (10 anonymous, 47 authenticated-only, 15 internal) passed live ACL/RLS checks. The frozen pre-migration data fingerprints and operational relationships were preserved. The temporary public-schema write restriction was removed and effective application grants matched the saved pre-freeze state exactly.
+
+One controlled encrypted current-terminal checkpoint, `project-local-production-20260924T222318Z-01e8579b.zip.age`, passed execution, independent SHA-256 and manifest checks. Its exact artifact was restored in a fresh disconnected pinned Supabase target with application data, essential Auth users/identities and current empty Storage metadata. All 26 public table fingerprints, application ACL/RLS and contact/grant relationships matched production; the target and decrypted temporary material were removed. Pre-disaster sessions remain outside the recovery contract. Photo uploads remain disabled; no bulk/welcome/schedule email was sent during rollout. No volunteer schedule bearer URL was available for a safe direct live smoke, so that route remains supported by the prior synthetic browser/privacy regressions rather than a production browser visit.
+
+The pre-release observations below are retained as historical review evidence and are no longer statements of the current production terminal or deployment state.
+
+## Historical pre-release 12.47 source review
 
 The current workspace implements bulk Calendar assignments, explicit consolidated schedule and welcome delivery, volunteer CSV import/export, a shared project hero, the volunteer home/menu/away experience, and the owner-supplied public Contact Guide. These changes are local only. Fresh 2026-09-24 read-only database, ACL, backup-task and artifact observations are recorded in [12.47 production readiness](./12_47_PRODUCTION_READINESS.md); the production sections below record the last deployed rollout and must be freshly reverified during a separately authorized quiet window. The owner confirmed the Production-scoped Vercel variable names, Supabase/Resend settings and account/MFA/domain/DNS/credential/age-key custody arrangements. The Vercel Production/Ready screenshot showed the deployed `de667ee` prefix from master; its full deployed SHA and hidden key-to-consumer mapping were not independently demonstrated. Separate rollout authorization is still required.
 

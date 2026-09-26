@@ -161,13 +161,14 @@ export default async function AdminTasksPage({ searchParams }: AdminTasksPagePro
   }
 
   return (
-    <AdminShell active="tasks" workspaceName={state.workspaceName}>
+    <AdminShell active="tasks" workspaceName={state.workspaceName} destinations={state.navigationDestinations}>
       <TaskPresetManagement
         archiveAction={archiveTaskPresetAction}
         canEdit={state.canEdit}
         createAction={createTaskPresetAction}
         updateColorAction={updateTaskPresetColorAction}
         initialSelectedId={firstSearchParam(resolvedSearchParams?.preset)}
+        initialCreateOpen={state.canEdit && firstSearchParam(resolvedSearchParams?.create) === "1"}
         notice={state.notice}
         presets={state.presets}
         workspaceName={state.workspaceName}

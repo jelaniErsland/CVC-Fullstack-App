@@ -167,9 +167,12 @@ assert.deepEqual(buildOverviewQuickActions(roleOnly.capabilities, "2026-08-17"),
 
 const actions = buildOverviewQuickActions(selected.capabilities, "2026-08-17");
 assert.deepEqual(actions.map((action) => action.kind), ["calendar", "tasks", "volunteers"]);
-assert.equal(actions[0].label, "Schedule work");
-assert.equal(actions[1].label, "New task");
-assert.equal(actions[2].label, "Add volunteer");
+assert.equal(actions[0].label, "Open Calendar");
+assert.equal(actions[1].label, "Task library");
+assert.equal(actions[2].label, "Volunteers");
+assert.equal(actions[0].href, "/admin/calendar?view=week&date=2026-08-17");
+assert.equal(actions[1].href, "/admin/tasks");
+assert.equal(actions[2].href, "/admin/volunteers");
 assert.deepEqual(
   buildOverviewQuickActions(["workspace.read", "tasks.view"], "2026-08-17").map(
     (action) => action.kind,
@@ -221,12 +224,41 @@ assert.deepEqual(summary.upcomingItems.map((row) => row.title), [
 ]);
 assert.equal(summary.scheduledCount, 4);
 assert.equal(summary.pendingResponseCount, 1);
+assert(summary.reviewSignals.every(signal => signal.startDate && signal.startTime && signal.timezone));
+const mealSummary = summarizeOverviewCalendar([item("meal", "Lunch", "2026-08-17", {
+  assignedFractionLabel: "0/0 assigned", meal: {kind:"lunch",menu:"Sandwiches",provider:"Meal team",contact:"PRIVATE",total:25},
+})], "2026-08-17", "2026-08-24").upcomingItems[0];
+assert.equal(mealSummary.mealSummary, "Menu posted · Meal team");
+assert(!JSON.stringify(mealSummary).includes("PRIVATE"));
 assert.deepEqual(summary.reviewSignals.map((signal) => signal.kind), [
   "denied",
   "unfilled",
   "waiting",
 ]);
 assert(summary.reviewSignals.every((signal) => signal.href.startsWith("/admin/calendar?view=day&date=")));
+const duplicateIds = ["00000000-0000-4000-8000-000000000011", "00000000-0000-4000-8000-000000000012"];
+const sameDisplay = duplicateIds.map(id => item(id, "Site preparation", "2026-08-18", {
+  coverage: coverage({ unassignedCount: 1, coverageState: "unfilled", assignedFractionLabel: "0/1" }),
+  assignedFractionLabel: "0/1",
+}));
+const grouped = summarizeOverviewCalendar([
+  ...sameDisplay,
+  item("00000000-0000-4000-8000-000000000013", "Safety briefing", "2026-08-18"),
+], "2026-08-17", "2026-08-24");
+const groupedUpcoming = grouped.upcomingItems.find(row => row.title === "Site preparation");
+const groupedReview = grouped.reviewSignals.find(row => row.title === "Site preparation");
+assert.equal(groupedUpcoming?.itemCount, 2);
+assert.equal(groupedReview?.itemCount, 2);
+for (const row of [groupedUpcoming, groupedReview]) {
+  const url = new URL(row.href, "http://localhost");
+  assert.equal(url.pathname, "/admin/calendar");
+  assert.equal(url.searchParams.get("view"), "day");
+  assert.equal(url.searchParams.get("date"), "2026-08-18");
+  assert.equal(url.searchParams.has("item"), false, "a grouped row must not select only the first record");
+}
+const singleUrl = new URL(grouped.upcomingItems.find(row => row.title === "Safety briefing").href, "http://localhost");
+assert.equal(singleUrl.searchParams.get("item"), "00000000-0000-4000-8000-000000000013");
+assert.equal(singleUrl.searchParams.get("section"), "details");
 assert.equal(summarizeOverviewTasks([{ lifecycle: "active" }, { lifecycle: "archived" }]).activeCount, 1);
 assert.equal(
   summarizeOverviewVolunteers([

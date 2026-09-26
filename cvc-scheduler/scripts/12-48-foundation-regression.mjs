@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {adminDestinations} from '../lib/adminNavigation.ts';
+import {statusDisplay} from '../lib/statusDisplay.ts';
+import {asReadOnlyCalendar} from '../lib/calendar/quickView.server.ts';
+import {calendarRouteHref} from '../lib/calendar/routeHref.ts';
+const full=['workspace.read','calendar.view','calendar.edit','assignments.view','assignments.edit','tasks.view','tasks.edit','volunteers.view','volunteers.edit'];
+assert.deepEqual(adminDestinations([]),['overview']);
+assert.deepEqual(adminDestinations(['workspace.read','tasks.view']),['overview','tasks']);
+const read=full.filter(c=>!c.endsWith('.edit'));
+assert(!adminDestinations(read).includes('announcements'));
+assert(adminDestinations(read).includes('quick-view'));
+assert(adminDestinations(full).includes('announcements'));
+assert(!adminDestinations(full.filter(c=>c!=='assignments.view')).includes('calendar'));
+assert(!adminDestinations(full.filter(c=>c!=='volunteers.view')).includes('quick-view'));
+assert.equal(statusDisplay.needs_response.label,'Awaiting reply');assert.equal(statusDisplay.declined.label,'Declined');
+assert.notEqual(statusDisplay.draft.label,statusDisplay.published.label);
+const published={id:'fixture',publicationState:'published',canPublish:true,assignments:[{volunteerEmailAvailable:true,volunteerPhoneAvailable:true,volunteerProfileNotes:'PRIVATE',volunteerCongregation:'PRIVATE',volunteerPreferredContactMethod:'email'}]};
+const source={kind:'ready_with_items',items:[published,{...published,id:'draft',publicationState:'draft'}],canEdit:true,canEditAssignments:true,taskPresetSelector:{kind:'ready_with_presets',presets:[{id:'private'}]},assignmentPicker:{kind:'ready',volunteers:[{email:'PRIVATE'}],assignments:[]}};
+const safe=asReadOnlyCalendar(source);
+assert.equal(safe.items.length,1);assert.equal(safe.canEdit,false);assert.equal(safe.canEditAssignments,false);assert.equal(safe.items[0].canPublish,false);
+assert(!JSON.stringify(safe).includes('PRIVATE'));assert.deepEqual(safe.assignmentPicker.volunteers,[]);
+const unavailable=asReadOnlyCalendar({...source,assignmentPicker:{kind:'error',reason:'query_unavailable'}});
+assert.equal(unavailable.assignmentPicker.kind,'error','Quick View must not mislabel unavailable assignment data as an empty ready roster');
+// A caller-controlled route changes link construction, never the projection/authority.
+calendarRouteHref({routeBase:'/admin/calendar'}, {view:'list',date:'2026-10-05',item:'fixture'});
+assert.equal(safe.canEdit,false);assert.equal(source.canEdit,true);assert.equal(source.items.length,2);
+console.log('PASS: capability navigation, status meanings, published-only Quick View projection, private field stripping, immutable authority.');

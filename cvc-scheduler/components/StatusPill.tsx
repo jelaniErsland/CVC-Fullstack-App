@@ -29,7 +29,7 @@ const statusStyles: Record<StatusPillProps["status"], string> = {
 };
 
 export function StatusPill({ status }: StatusPillProps) {
-  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  const label = status === "Needs Reply" ? "Awaiting reply" : status === "Denied" ? "Declined" : status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
     <span

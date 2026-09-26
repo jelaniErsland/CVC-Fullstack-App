@@ -28,7 +28,7 @@ for (const source of [navSource, shellSource]) {
 
 assert.match(navSource, /<AdminNavigationPendingIndicator disabled=\{active === item\.id\} \/>/);
 assert.match(shellSource, /<AdminNavigationPendingIndicator compact disabled=\{active\} \/>/);
-assert.match(shellSource, /<AdminNavigationPendingIndicator disabled=\{isActive\} \/>/);
+assert.match(shellSource, /<AdminNavigationPendingIndicator (?:compact )?disabled=\{isActive\} \/>/);
 
 for (const route of [
   "app/admin/dashboard/page.tsx",

@@ -11,7 +11,11 @@ const anon=query=>`begin;set local role anon;${query};commit;`;
 const home=token=>JSON.parse(value(anon(`select public.read_volunteer_home(${q(token)},${q(f.day)})`))||'null');
 const root=await mkdtemp(path.join(os.tmpdir(),'project-local-asset-restore-fixture-'));
 try {
-  const h=home(f.token);assert(h);assert.equal(h.meals.length,3);assert.equal(h.away.length,0);
+  const h=home(f.token);assert(h);
+  // The fixture starts seven days from today and can cross a week boundary.
+  // read_volunteer_home intentionally returns only the requested Monday–Sunday.
+  const daysRemaining=7-((new Date(f.day+'T12:00Z').getUTCDay()+6)%7);
+  assert.equal(h.meals.length,Math.min(3,daysRemaining));assert.equal(h.away.length,0);
   // A posted menu day without an assignment is visible only through the scoped
   // home projection; it must not require fabricating a volunteer assignment.
   const extraDay=new Date(f.day+'T12:00Z');extraDay.setUTCDate(extraDay.getUTCDate()-1);

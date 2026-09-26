@@ -17,7 +17,9 @@ export function asReadOnlyCalendar(state: CalendarClientState): CalendarClientSt
   }));
   return { ...state, items, kind: items.length ? "ready_with_items" : "ready_empty",
     canEdit: false, canEditAssignments: false, canViewVolunteers: true, canViewTaskPresets: false,
-    assignmentPicker: { kind: "ready", volunteers: [], assignments: items.flatMap(item => item.assignments) },
+    assignmentPicker: state.assignmentPicker.kind === "ready"
+      ? { kind: "ready", volunteers: [], assignments: items.flatMap(item => item.assignments) }
+      : state.assignmentPicker,
     taskPresetSelector: { kind: "ready_empty", presets: [] },
     projectDayDetails: state.projectDayDetails,
   };

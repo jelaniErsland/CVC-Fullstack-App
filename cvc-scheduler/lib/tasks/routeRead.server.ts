@@ -1,4 +1,5 @@
 import "server-only";
+import { adminDestinations } from "../adminNavigation.ts";
 
 import {
   isEffectiveWorkspaceReadGrant,
@@ -36,6 +37,7 @@ export type TaskManagementNotice =
 export type TaskManagementReadyRouteState = Readonly<{
   kind: "ready_with_presets" | "ready_empty";
   workspaceName: string;
+  navigationDestinations?: readonly string[];
   canEdit: boolean;
   presets: readonly TaskManagementPreset[];
   notice: TaskManagementNotice | null;
@@ -217,6 +219,7 @@ export async function readTaskManagementRouteState(
     return {
       kind: presets.length > 0 ? "ready_with_presets" : "ready_empty",
       workspaceName: context.workspace.displayName,
+      navigationDestinations: adminDestinations(context.capabilities),
       canEdit: context.canEdit,
       presets,
       notice,

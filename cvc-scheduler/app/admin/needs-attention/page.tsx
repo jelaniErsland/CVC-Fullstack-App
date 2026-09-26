@@ -312,7 +312,7 @@ export default async function AdminNeedsAttentionPage() {
   }
 
   return (
-    <AdminShell active="needs-attention" workspaceName={state.workspaceName}>
+    <AdminShell active="needs-attention" workspaceName={state.workspaceName} destinations={state.navigationDestinations}>
       <div className="space-y-5">
         <NeedsAttentionSeenTracker workspaceId={state.workspaceId} signalIds={state.unseenSignalIds} />
         <InboxHeader state={state} />

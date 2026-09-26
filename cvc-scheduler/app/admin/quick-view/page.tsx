@@ -22,12 +22,11 @@ export default async function AdminQuickViewPage({ searchParams }: {
   if (!selected) return <main className="mx-auto max-w-2xl p-6"><h1 className="text-2xl font-bold">Quick View unavailable</h1><p className="mt-3">An active project grant with Calendar, task, assignment and volunteer viewing is required.</p></main>;
   const state = asReadOnlyCalendar(await readCalendarRouteState(params, { trustedReadOnly: true, workspaceKey: selected.key }));
   const share = await readProjectQuickViewShareState(selected.key).catch(() => null);
-  return <>
-    {projects.length > 1 ? <form className="mx-auto max-w-[1600px] px-3 pt-4 sm:px-6" action="/admin/quick-view">
-      <label className="text-sm font-semibold">Project<select className="mx-3 min-h-11 rounded-lg border px-3" name="project" defaultValue={selected.key}>{projects.map(project => <option key={project.key} value={project.key}>{project.displayName}</option>)}</select></label>
+  return <CalendarClient readOnly routeBase="/admin/quick-view" projectKey={selected.key} state={state} initialInspectorItemId={typeof params?.item === "string" ? params.item : undefined}
+    projectControls={projects.length > 1 ? <form className="flex flex-wrap items-end gap-3" action="/admin/quick-view">
+      <label className="grid min-w-0 flex-1 gap-2 text-sm font-semibold">Project<select className="min-h-11 w-full rounded-lg border border-[var(--pl-control-border)] bg-white px-3 text-base" name="project" defaultValue={selected.key}>{projects.map(project => <option key={project.key} value={project.key}>{project.displayName}</option>)}</select></label>
       <button className="min-h-11 rounded-lg border px-3" type="submit">Open project</button>
-    </form> : null}
-    <CalendarClient readOnly routeBase="/admin/quick-view" projectKey={selected.key} state={state} initialInspectorItemId={typeof params?.item === "string" ? params.item : undefined} />
-    {share ? <div className="mx-auto max-w-3xl px-3 pb-6"><ProjectQuickViewShareControl projectKey={selected.key} initialState={{ status: "idle", enabled: share.enabled, activeLinkCount: share.activeLinkCount, expiresAt: share.expiresAt, accessPath: null, message: "" }} /></div> : null}
-  </>;
+    </form> : undefined}
+    footer={share ? <ProjectQuickViewShareControl projectKey={selected.key} initialState={{ status: "idle", enabled: share.enabled, activeLinkCount: share.activeLinkCount, expiresAt: share.expiresAt, accessPath: null, message: "" }} /> : undefined}
+  />;
 }

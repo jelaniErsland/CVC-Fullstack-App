@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/PageHeader";
 
 import {
   Archive,
@@ -32,6 +33,7 @@ type TaskPresetManagementProps = Readonly<{
   canEdit: boolean;
   notice: TaskManagementNotice | null;
   initialSelectedId?: string;
+  initialCreateOpen?: boolean;
   createAction: (formData: FormData) => void | Promise<void>;
   archiveAction: (formData: FormData) => void | Promise<void>;
   updateColorAction: (formData: FormData) => void | Promise<void>;
@@ -479,10 +481,10 @@ export function TaskPresetManagement({
   canEdit,
   createAction,
   initialSelectedId,
+  initialCreateOpen = false,
   notice,
   presets,
   updateColorAction,
-  workspaceName,
 }: TaskPresetManagementProps) {
   const initialPreset =
     presets.find((preset) => preset.id === initialSelectedId) ??
@@ -492,9 +494,13 @@ export function TaskPresetManagement({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<TaskManagementPreset["taskType"] | "all">("all");
   const [lifecycle, setLifecycle] = useState<TaskManagementPreset["lifecycle"] | "all">("active");
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(canEdit && initialCreateOpen);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const createTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!initialCreateOpen) return;
+    createTriggerRef.current = [...document.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === "New task" && button.getBoundingClientRect().width > 0) ?? null;
+  }, [initialCreateOpen]);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const mobileDetailCloseButtonRef = useRef<HTMLButtonElement>(null);
   const mobileDetailDialogRef = useRef<HTMLElement>(null);
@@ -559,16 +565,7 @@ export function TaskPresetManagement({
 
   return (
     <>
-      <header className="flex flex-col gap-4 border-b border-[var(--pl-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-            {workspaceName}
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
-            Tasks
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader title="Tasks" secondaryActions={<div className="flex items-center gap-3">
           <p className="text-xs font-medium text-[var(--pl-muted)]">
             <strong className="mr-1 text-base text-[var(--pl-ink)]">{activeCount}</strong>
             active{archivedCount ? ` · ${archivedCount} archived` : ""}
@@ -590,10 +587,7 @@ export function TaskPresetManagement({
               View only
             </span>
           )}
-        </div>
-      </header>
-
-      <Notice notice={notice} />
+        </div>} />    <Notice notice={notice} />
 
       <div
         className={`mt-5 grid min-w-0 gap-4 ${hasPersistedTasks ? "lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]" : "lg:mx-auto lg:w-full lg:max-w-5xl"}`}

@@ -1,4 +1,5 @@
 import "server-only";
+import { adminDestinations } from "../adminNavigation.ts";
 import type { CalendarMeal } from "./meals.ts";
 
 import {
@@ -185,6 +186,7 @@ export type CalendarClientState =
       Readonly<{
         kind: "ready_with_items" | "ready_empty";
         workspaceName: string;
+        navigationDestinations?: readonly string[];
         projectStartsOn: string | null;
         projectEndsOn: string | null;
         items: CalendarClientItem[];
@@ -209,6 +211,7 @@ type CalendarRouteWorkspaceSelection =
       workspace: WorkspaceIdentity;
       projectContactId: string;
       capabilities: readonly ["calendar.view", "assignments.view"];
+      navigationDestinations?: readonly string[];
       canEdit: boolean;
       canEditAssignments: boolean;
       canViewVolunteers: boolean;
@@ -815,6 +818,7 @@ export function selectCalendarRouteWorkspaceContext(input: {
     return {
       ok: true,
       workspace: eligible[0].workspace,
+      navigationDestinations: adminDestinations([...eligible[0].capabilities]),
       projectContactId: input.projectContactId,
       capabilities: ["calendar.view", "assignments.view"],
       canEdit: eligible[0].capabilities.has("calendar.edit"),
@@ -945,6 +949,7 @@ export async function readCalendarRouteState(
       ? {
           kind: "ready_with_items",
           workspaceName: workspaceSelection.workspace.displayName,
+          navigationDestinations: workspaceSelection.navigationDestinations,
           projectStartsOn: workspaceSelection.workspace.startsOn,
           projectEndsOn: workspaceSelection.workspace.endsOn,
           items,
@@ -962,6 +967,7 @@ export async function readCalendarRouteState(
       : {
           kind: "ready_empty",
           workspaceName: workspaceSelection.workspace.displayName,
+          navigationDestinations: workspaceSelection.navigationDestinations,
           projectStartsOn: workspaceSelection.workspace.startsOn,
           projectEndsOn: workspaceSelection.workspace.endsOn,
           items: [],

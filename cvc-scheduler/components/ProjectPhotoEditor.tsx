@@ -3,9 +3,11 @@ import { Camera, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectHero } from "./ProjectHero";
+import { Button } from "./Button";
+import { ActionMenu } from "./ActionMenu";
 import type { ProjectPhoto } from "@/lib/projectPhoto/photo";
 const control = "rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-blue-600";
-export function ProjectPhotoEditor({ initialPhoto, projectName, canEdit }: { initialPhoto: ProjectPhoto; projectName: string; canEdit: boolean }) {
+export function ProjectPhotoEditor({ initialPhoto, projectName, canEdit, compact = false }: { compact?: boolean; initialPhoto: ProjectPhoto; projectName: string; canEdit: boolean }) {
   const [photo, setPhoto] = useState(initialPhoto), [crop, setCrop] = useState(initialPhoto);
   const [file, setFile] = useState<File | null>(null), [url, setUrl] = useState<string | undefined>();
   const [editing, setEditing] = useState(false);
@@ -25,8 +27,10 @@ export function ProjectPhotoEditor({ initialPhoto, projectName, canEdit }: { ini
     } catch { setMessage("Save could not be confirmed. Refresh the Overview before retrying."); }
     finally { setBusy(false); }
   }
+  const openEditor = () => { setCrop(photo); chooseFile(null); setMessage(""); setEditing(true); dialog.current?.showModal(); };
   return <>
-    <ProjectHero photo={photo} projectName={projectName} title="Overview">{canEdit && <button type="button" className="absolute right-3 top-3 flex items-center gap-2 rounded-lg bg-slate-950/65 px-3 py-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-white" onClick={() => { setCrop(photo); chooseFile(null); setMessage(""); setEditing(true); dialog.current?.showModal(); }}><Camera className="size-4" aria-hidden />Change photo</button>}</ProjectHero>
+    {compact && !photo.asset_id ? canEdit && <Button type="button" variant="ghost" onClick={openEditor}><Camera className="size-[18px]" aria-hidden />Add project photo</Button> :
+      <div className="relative"><ProjectHero compact={compact} photo={photo} projectName={projectName} title={compact ? "Project photo" : "Overview"}>{canEdit && !compact && <button type="button" className="relative mt-3 flex min-h-11 w-fit items-center gap-2 rounded-lg bg-slate-950/65 px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-white" onClick={openEditor}><Camera className="size-4" aria-hidden />Change photo</button>}</ProjectHero>{canEdit && compact && <div className="absolute right-3 top-3 z-10"><ActionMenu label="Project photo actions" items={[{ label: "Change project photo", onSelect: openEditor }]} /></div>}</div>}
     <dialog ref={dialog} className="m-auto max-h-[94dvh] w-[calc(100%-1.5rem)] max-w-4xl overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-xl backdrop:bg-slate-950/40" onCancel={e => { if (busy) e.preventDefault(); else { setEditing(false); chooseFile(null); } }}>
       <header className="flex items-center justify-between gap-3"><h2 className="text-xl font-semibold">Project photo</h2><button type="button" aria-label="Close photo editor" disabled={busy} className={control} onClick={() => { chooseFile(null); dialog.current?.close(); setEditing(false); }}><X className="size-4" /></button></header>
       <p className="mt-2 text-sm text-slate-600">The same photo appears on the admin Overview and volunteer home.</p>

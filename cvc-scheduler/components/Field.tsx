@@ -4,6 +4,8 @@ type FieldBaseProps = {
   label: string;
   id: string;
   hint?: string;
+  error?: string;
+  optional?: boolean;
 };
 
 type InputFieldProps = FieldBaseProps &
@@ -22,27 +24,34 @@ function FieldFrame({
   id,
   label,
   hint,
+  error,
+  optional,
+  required,
   children,
-}: FieldBaseProps & { children: ReactNode }) {
+}: FieldBaseProps & { children: ReactNode; required?: boolean }) {
   return (
-    <label className="block" htmlFor={id}>
-      <span className="mb-2 block text-sm font-medium text-slate-700">{label}</span>
+    <div className="min-w-0">
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-[var(--pl-text)]">{label}{required ? <span className="font-normal"> (required)</span> : optional ? <span className="font-normal text-[var(--pl-muted)]"> (optional)</span> : null}</label>
       {children}
-      {hint ? <span className="mt-2 block text-xs text-slate-500">{hint}</span> : null}
-    </label>
+      {hint ? <p id={`${id}-hint`} className="mt-2 text-sm text-[var(--pl-muted)]">{hint}</p> : null}
+      {error ? <p id={`${id}-error`} className="mt-2 text-sm font-medium text-red-800">{error}</p> : null}
+    </div>
   );
 }
 
-export function Field({ id, label, hint, ...props }: FieldProps) {
+/** Callers supply errors after blur/submit, keeping untouched fields neutral. */
+export function Field({ id, label, hint, error, optional, className = "", ...props }: FieldProps) {
+  const describedBy = [props["aria-describedby"], hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
   const controlClass =
-    "h-[52px] w-full rounded-lg border border-white/80 bg-white/68 px-4 text-base text-slate-950 shadow-inner shadow-white/35 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:bg-white/86 focus:ring-4 focus:ring-slate-200/70";
+    `min-h-[var(--pl-control-height)] w-full min-w-0 rounded-[var(--pl-radius-control)] border bg-white px-3 py-2 text-base text-[var(--pl-ink)] placeholder:text-[var(--pl-muted)] disabled:bg-[var(--pl-surface-subtle)] ${error ? "border-red-700" : "border-[var(--pl-control-border)]"} ${className}`;
+  const associations = { "aria-describedby": describedBy, "aria-invalid": error ? true : props["aria-invalid"] };
 
   if ("options" in props && props.options) {
     const { options, ...selectProps } = props;
 
     return (
-      <FieldFrame id={id} label={label} hint={hint}>
-        <select id={id} className={`${controlClass} appearance-none`} {...selectProps}>
+      <FieldFrame id={id} label={label} hint={hint} error={error} optional={optional} required={props.required}>
+        <select id={id} className={controlClass} {...selectProps} {...associations}>
           {options.map((option) => (
             <option key={option}>{option}</option>
           ))}
@@ -52,8 +61,16 @@ export function Field({ id, label, hint, ...props }: FieldProps) {
   }
 
   return (
-    <FieldFrame id={id} label={label} hint={hint}>
-      <input id={id} className={controlClass} {...props} />
+    <FieldFrame id={id} label={label} hint={hint} error={error} optional={optional} required={props.required}>
+      <input id={id} className={controlClass} {...props} {...associations} />
     </FieldFrame>
   );
+}
+
+export function FieldGroup({ id, legend, hint, error, children }: { id: string; legend: string; hint?: string; error?: string; children: ReactNode }) {
+  return <fieldset aria-describedby={[hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined} aria-invalid={error ? true : undefined} className="min-w-0 space-y-3">
+    <legend className="text-sm font-semibold text-[var(--pl-text)]">{legend}</legend>
+    {hint && <p id={`${id}-hint`} className="text-sm text-[var(--pl-muted)]">{hint}</p>}{children}
+    {error && <p id={`${id}-error`} className="text-sm font-medium text-red-800">{error}</p>}
+  </fieldset>;
 }

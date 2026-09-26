@@ -1,4 +1,5 @@
 import "server-only";
+import { adminDestinations } from "../adminNavigation.ts";
 
 import type { ProjectContactGrant } from "../auth/grant.ts";
 import {
@@ -40,6 +41,7 @@ export const NEEDS_ATTENTION_REQUIRED_CAPABILITIES = [
 export type NeedsAttentionReadyRouteState = Readonly<{
   kind: "ready";
   workspaceName: string;
+  navigationDestinations?: readonly string[];
   workspaceTimezone: string;
   today: string;
   summary: NeedsAttentionSummary;
@@ -159,6 +161,7 @@ export async function readNeedsAttentionRouteState(
     return {
       kind: "ready",
       workspaceName: context.workspace.displayName,
+      navigationDestinations: adminDestinations(context.capabilities),
       workspaceId: context.workspace.id,
       workspaceTimezone: context.workspace.timezone,
       today,

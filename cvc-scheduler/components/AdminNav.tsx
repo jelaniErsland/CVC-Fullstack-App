@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
 import { NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
+import { ldcProjectName } from "@/lib/projectIdentity";
 
 export type AdminNavActive =
   | "projects"
@@ -37,6 +38,7 @@ type AdminNavProps = {
   active?: AdminNavActive;
   workspaceName?: string;
   onNavigate?: () => void;
+  destinations?: readonly string[];
 };
 
 const navItems: Array<{
@@ -46,52 +48,43 @@ const navItems: Array<{
   href: string;
 }> = [
   { id: "overview", icon: Home, label: "Overview", href: "/admin/dashboard" },
-  {
-    id: "calendar",
-    icon: CalendarDays,
-    label: "Calendar",
-    href: "/admin/calendar",
-  },
-  { id: "tasks", icon: ClipboardList, label: "Tasks", href: "/admin/tasks" },
-  {
-    id: "needs-attention",
-    icon: Bell,
-    label: "Needs Attention",
-    href: "/admin/needs-attention",
-  },
-  { id: "quick-view", icon: Eye, label: "Quick View", href: "/admin/quick-view" },
+  { id: "calendar", icon: CalendarDays, label: "Calendar", href: "/admin/calendar" },
   { id: "volunteers", icon: Users, label: "Volunteers", href: "/admin/volunteers" },
+  { id: "needs-attention", icon: Bell, label: "Attention", href: "/admin/needs-attention" },
+  { id: "tasks", icon: ClipboardList, label: "Task library", href: "/admin/tasks" },
   { id: "announcements", icon: Mail, label: "Communications", href: "/admin/announcements" },
+  { id: "quick-view", icon: Eye, label: "Quick View", href: "/admin/quick-view" },
 ];
 
 export function AdminNav({
   active = "overview",
   workspaceName,
   onNavigate,
+  destinations,
 }: AdminNavProps) {
-  const visibleWorkspaceName = workspaceName ?? "Project workspace";
+  const visibleWorkspaceName = ldcProjectName(workspaceName);
 
   return (
-    <div className="mt-7 flex min-h-0 flex-1 flex-col">
+    <div className="mt-6 flex min-h-0 flex-1 flex-col">
       <div
         aria-label={`Current project: ${visibleWorkspaceName}`}
-        className="flex min-h-[58px] items-center gap-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-3 py-2.5"
+        className="flex min-h-[58px] min-w-0 shrink-0 items-start gap-2 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-2 py-2.5"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-[var(--pl-blue)] shadow-sm ring-1 ring-[var(--pl-border)]">
           <FolderKanban aria-hidden="true" className="size-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-muted)]">
+          <span className="block text-xs font-medium text-[var(--pl-muted)]">
             Current project
           </span>
-          <span className="mt-0.5 block line-clamp-2 text-[12px] font-semibold leading-4 text-[var(--pl-ink)]">
+          <span className="mt-0.5 block break-words [overflow-wrap:anywhere] text-sm font-semibold leading-tight text-[var(--pl-ink)]">
             {visibleWorkspaceName}
           </span>
         </span>
       </div>
 
-      <nav className="mt-6 grid gap-1 text-sm font-medium text-[var(--pl-text)]">
-        {navItems.map((item) => {
+      <nav aria-label="Workspace navigation" className="mt-6 grid min-w-0 gap-1 text-sm font-medium text-[var(--pl-text)]">
+        {navItems.filter(item => !destinations || destinations.includes(item.id)).map((item) => {
           const Icon = item.icon;
 
           return (
@@ -99,7 +92,7 @@ export function AdminNav({
               aria-current={active === item.id ? "page" : undefined}
               key={item.id}
               className={[
-                "flex min-h-[42px] items-center gap-3 rounded-[0.7rem] border border-transparent px-3 py-2 transition",
+                `${["tasks"].includes(item.id) ? "mt-5" : ""} flex min-h-11 min-w-0 items-center gap-2 rounded-[0.7rem] border border-transparent px-3 py-2 transition`,
                 active === item.id
                   ? "border-blue-100 bg-[var(--pl-blue-soft)] font-semibold text-[var(--pl-blue)]"
                   : "hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
@@ -108,12 +101,12 @@ export function AdminNav({
               onClick={onNavigate}
             >
               <span className={[
-                "flex size-7 shrink-0 items-center justify-center rounded-lg",
-                active === item.id ? "bg-white text-[var(--pl-blue)] shadow-sm" : "text-[var(--pl-muted)]",
+                "flex size-5 shrink-0 items-center justify-center rounded-lg",
+                active === item.id ? "text-[var(--pl-blue)]" : "text-[var(--pl-muted)]",
               ].join(" ")}>
-                <Icon aria-hidden="true" className="size-4" />
+                <Icon aria-hidden="true" className="size-[18px]" />
               </span>
-              <span>{item.label}</span>
+              <span className="min-w-0 flex-1 break-words">{item.label}</span>
               {item.id === "needs-attention" ? <NeedsAttentionUnseenBadge /> : null}
               <AdminNavigationPendingIndicator disabled={active === item.id} />
             </Link>
@@ -121,11 +114,11 @@ export function AdminNav({
         })}
       </nav>
       <Link
-        className="mt-5 flex min-h-[42px] items-center gap-3 rounded-[0.7rem] px-3 text-sm font-medium text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]"
+        className="mt-5 flex min-h-[42px] items-center gap-2 rounded-[0.7rem] border border-transparent px-3 text-sm font-medium text-[var(--pl-muted)] transition hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]"
         href="/guide"
         onClick={onNavigate}
       >
-        <BookOpen aria-hidden="true" className="size-4" />
+        <span className="flex size-5 shrink-0 items-center justify-center"><BookOpen aria-hidden="true" className="size-[18px]" /></span>
         Contact Guide
       </Link>
     </div>

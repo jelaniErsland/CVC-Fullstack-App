@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/PageHeader";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AdminShell } from "@/components/AdminShell";
@@ -244,27 +245,15 @@ export default async function AdminVolunteersPage({
         ];
 
   return (
-    <AdminShell active="volunteers" workspaceName={isReadyState ? state.workspaceName : undefined}>
-      <header className="flex flex-col gap-4 border-b border-[var(--pl-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">
-            {isReadyState ? state.workspaceName : "People"}
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-[-0.04em] text-[var(--pl-ink)] sm:text-4xl">
-            Volunteers
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--pl-muted)]">
+    <AdminShell active="volunteers" workspaceName={isReadyState ? state.workspaceName : undefined} destinations={isReadyState ? state.navigationDestinations : ["overview"]}>
+      <PageHeader title="Volunteers" secondaryActions={<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--pl-muted)]">
           {stats.map((stat) => (
             <span key={stat.label}>
               <strong className="mr-1 text-base font-bold text-[var(--pl-ink)]">{stat.value}</strong>
               {stat.label}{stat.label === "volunteer" && stat.value !== 1 ? "s" : ""}
             </span>
           ))}
-        </div>
-      </header>
-
-      <Notice notice={state.notice} />
+        </div>} />    <Notice notice={state.notice} />
 
       <section className="mt-5">
         <VolunteerContent state={state} />

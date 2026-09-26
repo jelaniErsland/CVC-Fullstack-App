@@ -1,4 +1,5 @@
 import "server-only";
+import { adminDestinations } from "../adminNavigation.ts";
 
 import {
   isEffectiveWorkspaceReadGrant,
@@ -30,6 +31,7 @@ type OverviewModuleState<T> =
 
 export type OverviewUpcomingItem = Readonly<{
   id: string;
+  itemCount?: number;
   title: string;
   startDate: string;
   endDate: string | null;
@@ -37,13 +39,20 @@ export type OverviewUpcomingItem = Readonly<{
   endTime: string | null;
   timezone: string;
   assignedFractionLabel: string;
+  mealSummary?: string;
   publicationState: "draft" | "published";
   href: string;
 }>;
 
 export type OverviewReviewSignal = Readonly<{
   id: string;
+  itemCount?: number;
   kind: "denied" | "unfilled" | "waiting";
+  startDate?: string;
+  endDate?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  timezone?: string;
   title: string;
   message: string;
   href: string;
@@ -66,6 +75,7 @@ export type OverviewCalendarSummary = Readonly<{
 export type OverviewReadyRouteState = Readonly<{
   kind: "ready";
   workspaceName: string;
+  navigationDestinations?: readonly string[];
   workspaceTimezone: string;
   workspaceStartsOn: string | null;
   workspaceEndsOn: string | null;
@@ -74,6 +84,7 @@ export type OverviewReadyRouteState = Readonly<{
   tasks: OverviewModuleState<Readonly<{ activeCount: number }>>;
   volunteers: OverviewModuleState<Readonly<{ readyActiveCount: number }>>;
   actions: readonly OverviewQuickAction[];
+  createTask?: boolean;
   isEmpty: boolean;
 }>;
 
@@ -164,8 +175,13 @@ export function selectOverviewWorkspaceContext(input: {
   };
 }
 
-function calendarHref(item: Pick<CalendarReadModelItem, "startDate">) {
-  const params = new URLSearchParams({ view: "day", date: item.startDate });
+function calendarDayHref(startDate: string) {
+  const params = new URLSearchParams({ view: "day", date: startDate });
+  return `/admin/calendar?${params.toString()}`;
+}
+
+function calendarHref(item: Pick<CalendarReadModelItem, "startDate" | "calendarItemId">) {
+  const params = new URLSearchParams({ view: "day", date: item.startDate, item: item.calendarItemId, section: "details" });
   return `/admin/calendar?${params.toString()}`;
 }
 
@@ -191,8 +207,16 @@ export function summarizeOverviewCalendar(
       left.calendarItemId.localeCompare(right.calendarItemId),
     );
 
-  const upcomingItems = relevant.slice(0, OVERVIEW_UPCOMING_LIMIT).map((item) => ({
+  const upcomingGroups = new Map<string, { item: CalendarReadModelItem; count: number }>();
+  for (const item of relevant) {
+    const key = JSON.stringify([item.taskSourceLabel, item.startDate, item.endDate, item.startTime, item.endTime, item.meal?.kind, item.meal?.menu, item.meal?.provider, item.assignedFractionLabel, item.publicationState]);
+    const group = upcomingGroups.get(key);
+    if (group) group.count += 1;
+    else upcomingGroups.set(key, { item, count: 1 });
+  }
+  const upcomingItems = [...upcomingGroups.values()].slice(0, OVERVIEW_UPCOMING_LIMIT).map(({ item, count }) => ({
     id: item.calendarItemId,
+    itemCount: count,
     title: item.taskSourceLabel,
     startDate: item.startDate,
     endDate: item.endDate,
@@ -200,8 +224,9 @@ export function summarizeOverviewCalendar(
     endTime: item.endTime,
     timezone: item.timezone,
     assignedFractionLabel: item.assignedFractionLabel,
+    mealSummary: item.meal ? [item.meal.menu ? "Menu posted" : "Menu not yet posted", item.meal.provider].filter(Boolean).join(" · ") : undefined,
     publicationState: item.publicationState,
-    href: calendarHref(item),
+    href: count > 1 ? calendarDayHref(item.startDate) : calendarHref(item),
   }));
 
   const candidates: OverviewReviewSignal[] = [];
@@ -212,6 +237,7 @@ export function summarizeOverviewCalendar(
         id: `${item.calendarItemId}:denied`,
         kind: "denied",
         title: item.taskSourceLabel,
+        startDate: item.startDate, endDate: item.endDate, startTime: item.startTime, endTime: item.endTime, timezone: item.timezone,
         message: `${countLabel(item.coverage.deniedCount, "volunteer")} can’t make it`,
         href,
       });
@@ -221,6 +247,7 @@ export function summarizeOverviewCalendar(
         id: `${item.calendarItemId}:unfilled`,
         kind: "unfilled",
         title: item.taskSourceLabel,
+        startDate: item.startDate, endDate: item.endDate, startTime: item.startTime, endTime: item.endTime, timezone: item.timezone,
         message: `${countLabel(item.coverage.unassignedCount, "volunteer")} still needed`,
         href,
       });
@@ -230,6 +257,7 @@ export function summarizeOverviewCalendar(
         id: `${item.calendarItemId}:waiting`,
         kind: "waiting",
         title: item.taskSourceLabel,
+        startDate: item.startDate, endDate: item.endDate, startTime: item.startTime, endTime: item.endTime, timezone: item.timezone,
         message: `${countLabel(item.coverage.waitingOnConfirmationCount, "response")} pending`,
         href,
       });
@@ -237,9 +265,15 @@ export function summarizeOverviewCalendar(
   }
 
   const priority = { denied: 0, unfilled: 1, waiting: 2 } as const;
-  const reviewSignals = candidates
-    .sort((left, right) => priority[left.kind] - priority[right.kind])
-    .slice(0, OVERVIEW_REVIEW_SIGNAL_LIMIT);
+  const reviewGroups = new Map<string, OverviewReviewSignal>();
+  for (const signal of candidates.sort((left, right) => priority[left.kind] - priority[right.kind])) {
+    const key = JSON.stringify([signal.kind, signal.title, signal.startDate, signal.endDate, signal.startTime, signal.endTime, signal.message]);
+    const group = reviewGroups.get(key);
+    reviewGroups.set(key, group
+      ? { ...group, itemCount: (group.itemCount ?? 1) + 1, href: calendarDayHref(signal.startDate!) }
+      : { ...signal, itemCount: 1 });
+  }
+  const reviewSignals = [...reviewGroups.values()].slice(0, OVERVIEW_REVIEW_SIGNAL_LIMIT);
 
   return {
     upcomingItems,
@@ -262,7 +296,7 @@ export function buildOverviewQuickActions(
     actions.push({
       kind: "calendar",
       href: `/admin/calendar?view=week&date=${today}`,
-      label: allowed.has("calendar.edit") ? "Schedule work" : "Open Calendar",
+      label: "Open Calendar",
       note: allowed.has("calendar.edit") ? "Add or review this week" : "Review this week",
     });
   }
@@ -270,7 +304,7 @@ export function buildOverviewQuickActions(
     actions.push({
       kind: "tasks",
       href: "/admin/tasks",
-      label: allowed.has("tasks.edit") ? "New task" : "Open Tasks",
+      label: "Task library",
       note: allowed.has("tasks.edit") ? "Build reusable work" : "Browse reusable work",
     });
   }
@@ -278,7 +312,7 @@ export function buildOverviewQuickActions(
     actions.push({
       kind: "volunteers",
       href: "/admin/volunteers",
-      label: allowed.has("volunteers.edit") ? "Add volunteer" : "Open Volunteers",
+      label: "Volunteers",
       note: allowed.has("volunteers.edit") ? "Keep the directory ready" : "Browse the directory",
     });
   }
@@ -413,6 +447,7 @@ export async function readOverviewRouteState(at = new Date()): Promise<OverviewR
     return {
       kind: "ready",
       workspaceName: context.workspace.displayName,
+      navigationDestinations: adminDestinations(context.capabilities),
       workspaceTimezone: context.workspace.timezone,
       workspaceStartsOn: context.workspace.startsOn,
       workspaceEndsOn: context.workspace.endsOn,
@@ -421,6 +456,7 @@ export async function readOverviewRouteState(at = new Date()): Promise<OverviewR
       tasks,
       volunteers,
       actions: buildOverviewQuickActions(context.capabilities, today),
+      createTask: capabilities.has("tasks.edit"),
       isEmpty: calendarCount === 0 && taskCount === 0 && volunteerCount === 0,
     };
   } catch {

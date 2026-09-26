@@ -1,5 +1,11 @@
 # 12.47 production readiness — updated 2026-09-24
 
+## Production rollout closeout — 2026-09-24
+
+The approved release `5bb1cf6a0609285c7c4c53d4e3516727b67adbac` is Ready on Vercel Production. Four ordered migrations advanced the live terminal from `20260908130000` to `20260922150000`; the backup lock matches, the permanent task is Enabled/Ready/not running, and recovery preflight is GREEN. Live application data fingerprints and relationships, 26 public tables, exact 72-function ACL policy (10 anonymous / 47 authenticated-only / 15 internal), RLS and restored application privileges passed. The original Vercel Standard Protection setting and normal public access were restored. The public Contact Guide is live at `/guide`.
+
+The exact new encrypted current-terminal checkpoint independently restored application data, essential Auth users/identities and empty Storage metadata in a fresh disconnected pinned Supabase target. All 26 public-table fingerprints and application ACL/RLS matched production. The target and plaintext temporary material were removed. Photo uploads remain disabled and no real volunteer email was sent. The volunteer schedule bearer route was not directly visited in production because no safe existing link was available; prior synthetic route/privacy evidence remains the relevant proof. External provider configuration disaster recovery and future photo BLOB backup remain separate contracts. Sections below record the pre-rollout decision and evidence, not the current live terminal.
+
 ## September 24 read-only release gate
 
 The fresh production inspection found the exact Bozeman project/ref, 39 migrations ending at `20260908130000`, and exactly the four reviewed 12.47 migration files pending locally. The public catalog matches the deployed 58-signature fixture exactly (8 anonymous / 38 authenticated / 12 internal), including owners, pinned empty search paths and per-signature grants. PUBLIC EXECUTE and reviewed creator-default PUBLIC/anon/authenticated EXECUTE remain zero. All 18 public tables have RLS, with no PUBLIC table grants or unexpected anonymous data access. Storage still has zero buckets and zero objects. No production mutation occurred.

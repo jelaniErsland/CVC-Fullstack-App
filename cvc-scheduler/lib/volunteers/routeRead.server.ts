@@ -1,4 +1,5 @@
 import "server-only";
+import { adminDestinations } from "../adminNavigation.ts";
 import { communicationCapabilities } from "../notifications/communications.ts";
 
 import {
@@ -15,6 +16,7 @@ import type { VolunteerProfile } from "./profile.ts";
 export type VolunteerManagementReadyRouteState = Readonly<{
   kind: "ready_with_profiles" | "ready_empty";
   workspaceName: string;
+  navigationDestinations?: readonly string[];
   canEdit: boolean;
   canCommunicate?: boolean;
   profiles: readonly VolunteerProfile[];
@@ -204,6 +206,7 @@ export async function readVolunteerManagementRouteState(
     return {
       kind: profiles.length > 0 ? "ready_with_profiles" : "ready_empty",
       workspaceName: routeContext.workspace.displayName,
+      navigationDestinations: adminDestinations(routeContext.capabilities),
       canEdit: routeContext.canEdit,
       canCommunicate: communicationCapabilities.every(c => routeContext.capabilities.includes(c)),
       profiles,
