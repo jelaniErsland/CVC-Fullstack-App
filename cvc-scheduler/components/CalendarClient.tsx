@@ -714,7 +714,7 @@ function CalendarWorkspaceHeader({
       data-testid="calendar-workspace-header"
     >
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center xl:flex-1">
           <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2 className="text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
@@ -727,7 +727,7 @@ function CalendarWorkspaceHeader({
           </p>
           </div>
 
-          <div className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5">
+          <div className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5" data-calendar-date-navigation>
             <button
               aria-label={`Previous ${navigationUnit}`}
               className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
@@ -1842,7 +1842,7 @@ function CalendarListView({
                     <button
                       aria-label={getCalendarListItemAccessibleLabel(item)}
                       className={[
-                        `grid min-h-[72px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3 py-2.5 text-left transition hover:bg-white/44 sm:min-h-14 sm:grid-cols-[minmax(0,1.15fr)_minmax(11rem,0.9fr)_auto] sm:gap-x-5 sm:px-4 sm:py-2 ${calmFocusRing}`,
+                        `grid min-h-[72px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 px-3 py-2.5 text-left transition hover:bg-white/44 sm:min-h-14 sm:grid-cols-[minmax(0,1.15fr)_minmax(11rem,0.9fr)_10rem] sm:gap-x-5 sm:px-4 sm:py-2 ${calmFocusRing}`,
                         selectedId === item.id
                           ? "bg-white/64 ring-2 ring-inset ring-slate-900/25"
                           : "",
@@ -1850,7 +1850,7 @@ function CalendarListView({
                       onClick={() => onSelect(item)}
                       type="button"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0" data-calendar-list-title>
                         <p className="truncate text-[15px] font-semibold leading-5 tracking-[-0.01em] text-slate-950 sm:text-sm">
                           {getCalendarItemDisplayName(item)}
                         </p>
@@ -1859,13 +1859,13 @@ function CalendarListView({
                         </p>}
                       </div>
 
-                      <p className="hidden min-w-0 text-xs font-medium leading-5 text-slate-500 sm:block">
+                      <p className="hidden min-w-0 self-start pt-px text-xs font-medium leading-5 text-slate-500 sm:block" data-calendar-list-time>
                         {scheduleLabel}
                       </p>
-                      <span className="mt-0.5 inline-flex min-h-7 shrink-0 self-start items-center justify-center whitespace-nowrap rounded-full border border-slate-200/80 bg-white/58 px-2.5 text-[11px] font-semibold text-slate-700 sm:mt-0 sm:self-center">
+                      <span className="mt-0.5 inline-flex min-h-7 shrink-0 self-start items-center justify-center whitespace-nowrap rounded-full border border-slate-200/80 bg-white/58 px-2.5 text-[11px] font-semibold text-slate-700 sm:mt-0 sm:justify-self-end sm:self-start" data-calendar-list-staffing>
                         {getCalendarOperationalCount(item)}{item.meal ? "" : " assigned"}
                       </span>
-                      <p className="col-span-2 mt-0.5 text-[11px] font-medium leading-4 text-slate-500 sm:hidden">
+                      <p className="col-span-2 mt-0.5 self-start text-[11px] font-medium leading-4 text-slate-500 sm:hidden" data-calendar-list-time>
                         {scheduleLabel}
                       </p>
                       {(item.meal || assignmentVisibility === "hidden") && <p className={`col-span-2 truncate leading-4 sm:hidden ${item.meal ? "text-xs font-medium text-slate-600" : "text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400"}`}>

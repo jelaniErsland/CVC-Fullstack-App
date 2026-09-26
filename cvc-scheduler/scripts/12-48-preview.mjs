@@ -53,7 +53,7 @@ export function calendar(params:any,readOnly:boolean){return {kind:'ready_with_i
 export function assignedCalendar(params:any,readOnly:boolean,visibility:string){
   const base=items[2];
   const names=['Avery Stone','Jordan Hale','Casey Morgan','Riley Chen','Taylor Brooks','Sam Rivera'];
-  const specs=[['Site preparation',0,'08:00',day],['Gate welcome',1,'09:00',day],['Food-service shift',3,'10:00',day],['Cleanup crew',6,'11:00',day],['Gate welcome',1,'09:00','2026-10-06']];
+  const specs=[['Site preparation',0,'08:00',day],['Gate welcome',1,'09:00',day],['Food-service shift and loading-zone equipment preparation',3,'10:00',day],['Cleanup crew',6,'11:00',day],['Gate welcome',1,'09:00','2026-10-06']];
   const work=specs.map(([title,count,start,date],index)=>{
     const id='22222222-2222-4222-8222-'+String(index+1).padStart(12,'0');
     const assignments=names.slice(0,Number(count)).map((name,n)=>({assignmentId:id+'-'+n,calendarItemId:id,volunteerProfileId:'fixture-person-'+n,volunteerDisplayName:index===4?'Morgan Reed':name,responseStatus:n===2?'declined':n===1?'needs_response':'confirmed',volunteerCongregation:'PRIVATE congregation',volunteerEmailAvailable:false,volunteerPhoneAvailable:false,volunteerProfileNotes:'PRIVATE notes'}));
