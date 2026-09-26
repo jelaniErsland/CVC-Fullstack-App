@@ -88,6 +88,12 @@ button {
 @media (max-width: 359px) {
   .pl-nav-label { font-size: 0.6875rem; }
 }
+@media (min-width: 280px) and (max-width: 639px) {
+  .calendar-page-header { flex-wrap: nowrap; align-items: center; gap: 8px; }
+  .calendar-page-header > div:first-child { flex: 1 1 auto; flex-basis: auto; }
+  .calendar-page-header > div:last-child { flex: 0 0 auto; }
+  .calendar-page-header .pl-page-title { font-size: 1.5rem; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

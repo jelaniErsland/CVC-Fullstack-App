@@ -11,7 +11,8 @@ assert.equal(process.env.ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT,'');
 const base='http://127.0.0.1:3000';
 const f=await fixture(true);
 const foreign=await fixture(true);
-const output=path.resolve('..','previews','12.48-batch-1','after');
+const output=path.resolve('..','previews','12.48-batch-2','implemented');
+await fs.mkdir(output,{recursive:true});
 const browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
 const full=['workspace.read','volunteers.view','volunteers.edit','calendar.view','calendar.edit','tasks.view','tasks.edit','assignments.view','assignments.edit','questionnaires.review'];
 const read=full.filter(c=>!c.endsWith('.edit'));
@@ -45,7 +46,8 @@ try {
       await go(`${route}?view=${view}&date=${f.day}`);
       const item=card(f.items[0]);await item.waitFor();
       const text=await item.innerText();
-      assert.match(text,/Alex Morgan\s+Confirmed/);assert.match(text,/Riley Chen\s+Declined/);assert.match(text,/Awaiting reply/);assert.match(text,/4\/6 assigned/);
+      assert.match(text,/Alex Morgan/);assert.match(text,/Riley Chen/);assert.match(text,/4\/6 assigned/);
+      for(const response of ['Confirmed','Awaiting reply',"Can't make it"]) assert.equal(await item.getByRole('img',{name:response}).count(),1);
       await item.locator('summary').click();
       for(const name of ['Alex Morgan','Casey Jordan','Riley Chen','Taylor Brooks','Morgan Reed']) assert((await item.innerText()).includes(name));
       assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
@@ -57,7 +59,7 @@ try {
       if(route.endsWith('quick-view')) assert.equal(await inspector.getByRole('button',{name:/^(Assign|Remove|Save|Publish|Send)/}).count(),0);
       await page.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
     }
-    console.log(`PASS: actual Auth/RLS ${role}: Day/List rosters, response words, expansion, selection and read-only boundaries.`);
+    console.log(`PASS: actual Auth/RLS ${role}: Day/List rosters, accessible response icons, expansion, selection and read-only boundaries.`);
   }
   setRole('main_contact',full);
   await go(`/admin/calendar?view=day&date=${f.dayAt(1)}`);assert.match(await card(f.items[1]).innerText(),/Casey Jordan/);assert.doesNotMatch(await card(f.items[1]).innerText(),/Alex Morgan/);
@@ -67,8 +69,10 @@ try {
     await go(`/admin/quick-view?date=${f.day}`);
     assert(!new URL(page.url()).searchParams.has('view'));
     assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
-    const defaultText=await page.locator('body').innerText();
-    for(const label of (width<640?['B—','L0','L25']:['Breakfast · —','Lunch · 0','Lunch · 25'])) assert(defaultText.includes(label),`Actual default Month exposes ${label}`);
+    const mealSummary=page.getByTestId('calendar-meal-summary').filter({visible:true});
+    assert.equal(await mealSummary.locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
+    assert.equal(await mealSummary.locator('[data-meal-kind="lunch"] [data-meal-headcount]').textContent(),'0');
+    assert.equal(await mealSummary.getByText('Main contact: Alex Morgan').count(),1);
     await page.screenshot({path:path.join(output,`authenticated-quick-view-default-${width}.png`),style:'nextjs-portal { visibility: hidden; }'});
     for(const view of ['day','list']){
       await go(`/admin/calendar?view=${view}&date=${f.day}`);

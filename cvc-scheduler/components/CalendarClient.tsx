@@ -35,7 +35,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
-import { CalendarAssignedVolunteers, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
+import { CalendarAssignedVolunteers, CalendarAssignmentLegend, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
 import { ldcProjectName } from "@/lib/projectIdentity";
 import { AdminShell } from "@/components/AdminShell";
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
@@ -251,6 +251,10 @@ function getCalendarOperationalCount(item: CalendarItem) {
   return item.meal ? (item.meal.total === null ? "Headcount not set" : "Headcount " + item.meal.total) : getCalendarFilledLabel(item);
 }
 
+function hasVisibleAssignmentResponses(items: CalendarItem[], visibility: AssignmentVisibility) {
+  return visibility === "available" && items.some(item => !item.meal && ((item as CalendarClientDisplayItem).assignments?.length ?? 0) > 0);
+}
+
 function getCalendarEventStyle() {
   return "border transition hover:brightness-[0.98]";
 }
@@ -413,6 +417,11 @@ function getCalendarAccessibleDayLabel(date: string) {
     timeZone: "UTC",
     weekday: "long",
   }).format(new Date(`${date}T00:00:00Z`));
+}
+
+function getCalendarDayViewActionLabel(date: string) {
+  const fullDate = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "long", timeZone: "UTC", year: "numeric" }).format(new Date(`${date}T00:00:00Z`));
+  return `Open ${fullDate} in Day view`;
 }
 
 function shiftCalendarAnchor(
@@ -648,7 +657,7 @@ function ViewToggle({
   return (
     <div
       aria-label="Calendar view"
-      className="inline-flex w-full min-w-0 rounded-lg border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-0.5 text-xs font-semibold text-[var(--pl-muted)] sm:w-auto sm:flex-none"
+      className="inline-flex w-full min-w-0 rounded-lg border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-0.5 text-xs font-semibold text-[var(--pl-muted)] sm:w-auto sm:flex-none max-[240px]:grid max-[240px]:grid-cols-2"
       role="group"
     >
       {viewModes.map((view) => (
@@ -710,27 +719,27 @@ function CalendarWorkspaceHeader({
 
   return (
     <section
-      className="border-b border-[var(--pl-border)] bg-white px-3 py-3 sm:px-4"
+      className="border-b border-[var(--pl-border)] bg-white px-3 py-3 sm:px-4 max-[240px]:px-2"
       data-testid="calendar-workspace-header"
     >
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center xl:flex-1">
+        <div className={`grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center xl:flex-1 ${activeView === "month" ? "min-[360px]:max-sm:grid-cols-[minmax(0,1fr)_auto]" : ""}`}>
           <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
+            <h2 className="break-words text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
               {periodLabel}
             </h2>
           </div>
-          <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
+          <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)] max-[240px]:overflow-visible max-[240px]:whitespace-normal">
             {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
             {activeFilterSummary}
           </p>
           </div>
 
-          <div className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5" data-calendar-date-navigation>
+          <div className="inline-flex w-fit max-w-full shrink-0 flex-wrap rounded-lg border border-[var(--pl-border)] bg-white p-0.5 max-[240px]:w-full" data-calendar-date-navigation>
             <button
               aria-label={`Previous ${navigationUnit}`}
-              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:size-7 ${calmFocusRing}`}
               onClick={onNavigatePrevious}
               title={`Previous ${navigationUnit}`}
               type="button"
@@ -739,17 +748,17 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label="Go to today"
-              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:min-h-7 max-[240px]:px-1.5 ${calmFocusRing}`}
               onClick={onNavigateToday}
               title="Go to today"
               type="button"
             >
-              <CalendarDays aria-hidden="true" className="h-4 w-4" />
+              <CalendarDays aria-hidden="true" className="h-4 w-4 max-[240px]:hidden" />
               <span>Today</span>
             </button>
             <button
               aria-label={`Next ${navigationUnit}`}
-              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:size-7 ${calmFocusRing}`}
               onClick={onNavigateNext}
               title={`Next ${navigationUnit}`}
               type="button"
@@ -758,7 +767,7 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label="Open day details for the selected date"
-              className={`inline-flex min-h-9 items-center justify-center rounded-md border-l border-[var(--pl-border)] px-2.5 text-[11px] font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
+              className={`inline-flex min-h-9 items-center justify-center rounded-md border-l border-[var(--pl-border)] px-2.5 text-[11px] font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:w-full max-[240px]:border-t max-[240px]:border-l-0 ${activeView === "month" ? "max-sm:hidden" : ""} ${calmFocusRing}`}
               onClick={onOpenProjectDay}
               title="Day details"
               type="button"
@@ -769,7 +778,7 @@ function CalendarWorkspaceHeader({
           </div>
         </div>
 
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap max-[240px]:grid-cols-[minmax(0,1fr)_auto]">
           <button
             aria-label="Go to project date"
             className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] disabled:cursor-default disabled:opacity-45 ${calmFocusRing}`}
@@ -781,7 +790,7 @@ function CalendarWorkspaceHeader({
             <CalendarRange aria-hidden="true" className="h-4 w-4" />
             <span>Project</span>
           </button>
-          <div className="order-last col-span-3 sm:order-none sm:contents">
+          <div className="order-last col-span-3 sm:order-none sm:contents max-[240px]:col-span-2">
             <ViewToggle activeView={activeView} onChange={onViewChange} />
           </div>
           <button
@@ -801,7 +810,7 @@ function CalendarWorkspaceHeader({
           </button>
           {canCreate ? (
             <button
-              className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
+              className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] max-[240px]:col-span-2 ${calmFocusRing}`}
               onClick={onCreate}
               type="button"
             >
@@ -1223,7 +1232,7 @@ function WeekGrid({
         <div aria-hidden="true" className="border-r border-slate-200/80" />
         {groups.map((group) => (
           <div className="border-r border-[var(--pl-border)] px-2 py-2.5 text-center last:border-r-0" key={group.date}>
-            <p className="text-xs font-semibold text-[var(--pl-ink)]">{group.dayLabel}</p>
+            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => onFocusDate(group.date)} type="button">{group.dayLabel}</button>
             <p className="mt-0.5 text-[10px] font-medium text-[var(--pl-muted)]">
               {group.items.length} item{group.items.length === 1 ? "" : "s"}
             </p>
@@ -1449,9 +1458,33 @@ function CalendarDayCard({ item, isSelected, onSelect, assignmentVisibility }: {
   </article>;
 }
 
+function MealHeadcountSummary({ date, items }: { date: string; items: CalendarItem[] }) {
+  const headingId = useId();
+  const dayMeals = items.filter(item => item.meal && doesCalendarItemOccurOnDate(item, date));
+  const cards = (["breakfast", "lunch"] as const).flatMap<{ kind: "breakfast" | "lunch"; item: CalendarItem | null }>(kind => {
+    const matches = dayMeals.filter(item => item.meal?.kind === kind);
+    return matches.length ? matches.map(item => ({ kind, item })) : [{ kind, item: null }];
+  });
+  return <section aria-labelledby={headingId} className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/50 px-3 py-3 sm:px-4" data-testid="calendar-meal-summary">
+    <h2 className="text-xs font-semibold text-[var(--pl-text)]" id={headingId}>Meal headcounts · {getCalendarAccessibleDayLabel(date)} <span className="font-normal text-[var(--pl-muted)]">(selected day)</span></h2>
+    <div className="mt-2 grid grid-cols-2 gap-2 max-[240px]:grid-cols-1">
+      {cards.map(({ kind, item }) => {
+        const label = kind === "breakfast" ? "Breakfast" : "Lunch";
+        return <div className="min-w-0 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2" data-meal-kind={kind} key={item?.id ?? kind}>
+          <p className="text-xs font-semibold text-amber-950">{label}</p>
+          <p className="mt-0.5 break-words text-xl font-bold leading-tight tracking-tight text-[var(--pl-ink)]" data-meal-headcount>{item ? item.meal?.total === null ? "Not recorded" : item.meal?.total : "Not scheduled"}</p>
+          {item ? <p className="mt-1 break-words text-xs leading-4 text-[var(--pl-text)]">Main contact: {item.meal?.contact?.trim() || "Not assigned"}</p> : null}
+          {item?.startTime && item.endTime ? <p className="mt-1 text-[11px] leading-4 text-[var(--pl-muted)]">{getCalendarItemTimeWindow(item)}</p> : null}
+        </div>;
+      })}
+    </div>
+  </section>;
+}
+
 function DayView({
   date,
   items,
+  mealSummaryItems,
   onCreateFromSlot,
   onOpenDayDetails,
   selectedId,
@@ -1460,6 +1493,7 @@ function DayView({
 }: {
   date: string;
   items: CalendarItem[];
+  mealSummaryItems: CalendarItem[];
   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   onOpenDayDetails: (date: string) => void;
   selectedId?: string;
@@ -1485,6 +1519,8 @@ function DayView({
 
   return (
     <section className="overflow-hidden bg-white">
+      {readOnly ? <MealHeadcountSummary date={date} items={mealSummaryItems} /> : null}
+      {hasVisibleAssignmentResponses(dayItems, assignmentVisibility) ? <CalendarAssignmentLegend /> : null}
       <div className="flex items-center justify-between border-b border-slate-200/80 bg-blue-50/35 px-3 py-2 sm:px-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Project day</p>
@@ -1582,22 +1618,27 @@ function deriveCalendarMonthDates(referenceDate: string) {
   });
 }
 
-const monthMobileVisibleItemLimit = 3;
 const monthDesktopVisibleItemLimit = 6;
 
 function MonthView({
   items,
+  mealSummaryItems,
+  assignmentVisibility,
   onCreateFromSlot,
   onFocusDate,
   onOpenDayDetails,
+  onSelectDate,
   selectedId,
   onSelect,
   referenceDate,
 }: {
   items: CalendarItem[];
+  mealSummaryItems: CalendarItem[];
+  assignmentVisibility: AssignmentVisibility;
   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
   onFocusDate: (date: string) => void;
   onOpenDayDetails: (date: string) => void;
+  onSelectDate: (date: string) => void;
   selectedId?: string;
   onSelect: (item: CalendarItemWithPreset) => void;
   referenceDate: string;
@@ -1605,10 +1646,81 @@ function MonthView({
   const { readOnly } = useCalendarOperations();
   const dates = deriveCalendarMonthDates(referenceDate);
   const reference = new Date(`${referenceDate}T00:00:00Z`);
+  const agendaRef = useRef<HTMLElement>(null);
+  const agendaHeadingId = useId();
+  const selectedDayItems = items.filter(item => doesCalendarItemOccurOnDate(item, referenceDate))
+    .map(enrichCalendarClientItem)
+    .sort((first, second) => {
+      const firstUntimed = isWeekBandCalendarItem(first);
+      const secondUntimed = isWeekBandCalendarItem(second);
+      if (firstUntimed !== secondUntimed) return firstUntimed ? -1 : 1;
+      return getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second)
+        || getCalendarItemDisplayName(first).localeCompare(getCalendarItemDisplayName(second))
+        || first.id.localeCompare(second.id);
+    });
+  const selectAgenda = () => {
+    agendaRef.current?.scrollIntoView({ block: "start" });
+    agendaRef.current?.focus({ preventScroll: true });
+  };
 
   return (
     <section className="overflow-hidden bg-white">
-      {readOnly && items.some(item => item.meal) && <p className="border-b border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">Meals: B = Breakfast, L = Lunch; number = daily headcount; — = not recorded.</p>}
+      <div className="sm:hidden" data-testid="calendar-mobile-month">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/50 px-3 py-2 text-xs">
+          <span className="font-semibold text-[var(--pl-ink)]">{getCalendarAccessibleDayLabel(referenceDate)} · {selectedDayItems.length} item{selectedDayItems.length === 1 ? "" : "s"}</span>
+          <button aria-controls={agendaHeadingId} className={`inline-flex min-h-8 items-center font-semibold text-[var(--pl-blue)] ${calmFocusRing}`} onClick={selectAgenda} type="button">View day&apos;s work ↓</button>
+        </div>
+        {readOnly ? <MealHeadcountSummary date={referenceDate} items={mealSummaryItems} /> : null}
+        <div className="grid grid-cols-7 border-b border-[var(--pl-border)]" aria-hidden="true">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => <span className="py-2 text-center text-[11px] font-semibold text-[var(--pl-muted)] max-[240px]:text-[9px]" key={day}>{day}</span>)}
+        </div>
+        <div className="grid grid-cols-7" role="group" aria-label="Select a date in the month">
+          {dates.map(date => {
+            const dayItems = items.filter(item => doesCalendarItemOccurOnDate(item, date));
+            const inMonth = date.slice(0, 7) === referenceDate.slice(0, 7);
+            const selected = date === referenceDate;
+            return <div className={`min-w-0 border-b border-r border-[var(--pl-border)] last:border-r-0 ${selected ? "bg-blue-50 ring-2 ring-inset ring-blue-300" : inMonth ? "bg-white" : "bg-[var(--pl-surface-subtle)]/60"}`} key={date}>
+              <button
+                aria-label={inMonth ? `Select ${getCalendarAccessibleDayLabel(date)}, ${dayItems.length} scheduled item${dayItems.length === 1 ? "" : "s"}` : `Select ${getCalendarAccessibleDayLabel(date)} to open that month`}
+                aria-pressed={selected}
+                className={`flex h-[42px] w-full min-w-0 flex-col items-center justify-center gap-0.5 p-0.5 text-xs font-semibold ${inMonth ? "text-[var(--pl-text)]" : "text-[var(--pl-muted)]"} ${calmFocusRing}`}
+                onClick={() => onSelectDate(date)}
+                type="button"
+              >
+                <span className={`flex size-6 items-center justify-center rounded-full ${selected ? "bg-[var(--pl-blue)] text-white" : ""}`}>{Number(date.slice(-2))}</span>
+                <span aria-hidden="true" className="flex h-2 min-w-0 items-center justify-center gap-0.5">
+                  {inMonth ? dayItems.slice(0, 3).map(item => <span className="size-1.5 shrink-0 rounded-full max-[240px]:size-1" key={item.id} style={{ backgroundColor: getCalendarEventColorStyle(item).borderColor }} />) : null}
+                  {inMonth && dayItems.length > 3 ? <span className="text-[9px] leading-none text-[var(--pl-blue)]">{dayItems.length}</span> : null}
+                </span>
+              </button>
+            </div>;
+          })}
+        </div>
+        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-[var(--pl-ink)]" id={agendaHeadingId}>{getCalendarAccessibleDayLabel(referenceDate)}</h2>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button aria-label={getCalendarDayViewActionLabel(referenceDate)} className={`inline-flex min-h-9 items-center text-xs font-semibold text-[var(--pl-blue)] hover:underline ${calmFocusRing}`} onClick={() => onFocusDate(referenceDate)} type="button">Open Day</button>
+              <button className={`inline-flex min-h-9 items-center text-xs font-semibold text-[var(--pl-muted)] hover:underline ${calmFocusRing}`} onClick={() => onOpenDayDetails(referenceDate)} type="button">Day details</button>
+            </div>
+          </div>
+          <p className="mt-0.5 text-xs text-[var(--pl-muted)]">{selectedDayItems.length} scheduled item{selectedDayItems.length === 1 ? "" : "s"} · Select an item for details</p>
+          {hasVisibleAssignmentResponses(selectedDayItems, assignmentVisibility) ? <div className="-mx-3 mt-2"><CalendarAssignmentLegend /></div> : null}
+          {selectedDayItems.length ? <div className="mt-2 space-y-2">
+            {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] border-l-[3px] bg-white" data-calendar-month-agenda-item={item.id} key={item.id} style={{ borderLeftColor: getCalendarEventColorStyle(item).borderColor }}>
+              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[240px]:grid-cols-1 max-[240px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
+                <span className="min-w-0 break-words text-sm font-semibold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</span>
+                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[240px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
+                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[240px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
+              </button>
+              {item.meal ? <p className="border-t border-[var(--pl-border)] px-3 py-1.5 text-xs text-[var(--pl-text)]">Main contact: {item.meal.contact?.trim() || "Not assigned"}</p>
+                : assignmentVisibility !== "hidden" ? <div className="border-t border-[var(--pl-border)] px-3 py-1.5"><CalendarAssignedVolunteers itemId={item.id} assignments={item.assignments} visibility={assignmentVisibility} /></div> : null}
+            </article>)}
+          </div> : <p className="mt-3 text-sm text-[var(--pl-muted)]">No scheduled items for this day.</p>}
+        </section>
+      </div>
+      <div className="hidden sm:block">
+      {readOnly ? <MealHeadcountSummary date={referenceDate} items={mealSummaryItems} /> : null}
       <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
@@ -1621,10 +1733,6 @@ function MonthView({
           const dateItems = items
             .filter((item) => doesCalendarItemOccurOnDate(item, date))
             .map(enrichCalendarClientItem);
-          const mobileOverflowCount = Math.max(
-            dateItems.length - monthMobileVisibleItemLimit,
-            0,
-          );
           const desktopOverflowCount = Math.max(
             dateItems.length - monthDesktopVisibleItemLimit,
             0,
@@ -1659,22 +1767,21 @@ function MonthView({
               /> : null}
               <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
                 <button
-                  aria-label={`Open day details for ${getCalendarCompactDayLabel(date)}`}
-                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] sm:text-xs sm:leading-4 ${calmFocusRing}`}
-                  onClick={() => onOpenDayDetails(date)}
-                  title="Open day details"
+                  aria-label={getCalendarDayViewActionLabel(date)}
+                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
+                  onClick={() => onFocusDate(date)}
+                  title="Open Day view"
                   type="button"
                 >
                   {Number(date.slice(-2))}
                 </button>
                 <div className="mt-1 space-y-0.5">
-                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item, index) => (
+                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item) => (
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
                         `pointer-events-auto h-4 w-full min-w-0 overflow-hidden rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
                         readOnly && item.meal ? "sm:h-5 sm:text-[11px] sm:leading-4" : "",
-                        index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
                         getCalendarEventClasses(item),
                         selectedId === item.id
                           ? "ring-2 ring-slate-900/30 ring-offset-1"
@@ -1694,16 +1801,6 @@ function MonthView({
                       </span>
                     </button>
                   ))}
-                  {mobileOverflowCount > 0 ? (
-                    <button
-                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${mobileOverflowCount} more calendar item${mobileOverflowCount === 1 ? "" : "s"}`}
-                      className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:hidden ${calmFocusRing}`}
-                      onClick={() => onFocusDate(date)}
-                      type="button"
-                    >
-                      +{mobileOverflowCount}
-                    </button>
-                  ) : null}
                   {desktopOverflowCount > 0 ? (
                     <button
                       aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
@@ -1719,6 +1816,7 @@ function MonthView({
             </div>
           );
         })}
+      </div>
       </div>
     </section>
   );
@@ -1802,6 +1900,7 @@ function CalendarListView({
       className="overflow-hidden border-y border-slate-200/90 bg-white/24"
       data-testid="calendar-list-view"
     >
+      {hasVisibleAssignmentResponses(items, assignmentVisibility) ? <CalendarAssignmentLegend /> : null}
       {groups.map((group) => {
         const headingId = `calendar-list-${group.date}`;
 
@@ -4070,9 +4169,9 @@ export default function CalendarClient({
     }
 
     if (activeView === "month") {
-      const month = calendarAnchor.slice(0, 7);
-
-      return filteredItems.filter((item) => item.date.startsWith(month));
+      const monthStart = `${calendarAnchor.slice(0, 7)}-01`;
+      const monthEnd = new Date(Date.UTC(Number(calendarAnchor.slice(0, 4)), Number(calendarAnchor.slice(5, 7)), 0)).toISOString().slice(0, 10);
+      return filteredItems.filter((item) => doesCalendarItemOverlapDateRange(item, monthStart, monthEnd));
     }
 
     return filteredItems.filter((item) =>
@@ -4285,6 +4384,12 @@ export default function CalendarClient({
     navigate(buildCalendarRouteHref("day", date));
   };
 
+  const handleSelectMonthDate = (date: string) => {
+    if (date === calendarAnchor) return;
+    closeCalendarSurface();
+    router.replace(buildCalendarRouteHref("month", date), { scroll: false });
+  };
+
   return (
     <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={routeBase === "/qv"}
@@ -4300,9 +4405,9 @@ export default function CalendarClient({
         window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
       }}
     >
-      <PageHeader title={readOnly ? "Project Quick View" : "Calendar"}
+      <PageHeader title={readOnly ? "Project Quick View" : "Calendar"} className={!readOnly ? "calendar-page-header" : undefined}
         context={routeBase === "/qv" && isReady ? ldcProjectName(state.workspaceName) : readOnly ? "Read-only project schedule" : undefined}
-        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800"><Send className="size-[18px]" aria-hidden="true" />Send schedules</Link> : undefined}
+        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800 max-[240px]:w-full max-[240px]:justify-center max-[240px]:px-2 max-[240px]:text-xs"><Send className="size-[18px] shrink-0" aria-hidden="true" />Send schedules</Link> : undefined}
       />
       {projectControls && <div className="mt-4">{projectControls}</div>}
       <section className="mt-4">
@@ -4365,12 +4470,14 @@ export default function CalendarClient({
                   assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
                   date={calendarAnchor}
                   items={visibleItems}
+                  mealSummaryItems={allItems}
                   onCreateFromSlot={handleCreateFromSlot}
                   onOpenDayDetails={handleOpenProjectDay}
                   onSelect={handleSelectCalendarItem}
                   selectedId={selectedItem?.id}
                 />
               ) : null}
+              {readOnly && (activeView === "week" || activeView === "list") ? <MealHeadcountSummary date={calendarAnchor} items={allItems} /> : null}
               {activeView === "week" ? (
                 <>
                   <WeekGrid
@@ -4392,10 +4499,13 @@ export default function CalendarClient({
               ) : null}
               {activeView === "month" ? (
                 <MonthView
+                  assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
                   items={visibleItems}
+                  mealSummaryItems={allItems}
                   onCreateFromSlot={handleCreateFromSlot}
                   onFocusDate={handleFocusCalendarDate}
                   onOpenDayDetails={handleOpenProjectDay}
+                  onSelectDate={handleSelectMonthDate}
                   onSelect={handleSelectCalendarItem}
                   referenceDate={calendarAnchor}
                   selectedId={selectedItem?.id}

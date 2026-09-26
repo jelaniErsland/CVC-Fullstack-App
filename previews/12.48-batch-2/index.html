@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Project Local 12.48 · Batch 2 Stage 1 comparison</title>
+  <title>Project Local 12.48 · Batch 2 Calendar review</title>
   <style>
     :root { font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif; color: #0b1733; background: #f7f9fc; }
     * { box-sizing: border-box; }
@@ -34,12 +34,13 @@
 </head>
 <body>
   <header>
-    <p class="eyebrow">Stage 1 · proposal only</p>
+    <p class="eyebrow">Stage 2 · implemented for review</p>
     <h1>Calendar visual comparison</h1>
-    <p class="note">Left images are the current production-baseline interface rendered with isolated synthetic fixture data. Right images are a standalone design prototype using the same fixture. No Calendar application component was changed for these previews. Open an image for full resolution.</p>
-    <div class="links"><a href="#desktop">Desktop</a><a href="#mobile-month">Mobile Month</a><a href="#mobile-views">Day, Week and List</a><a href="#quick-view">Quick View meals</a><a href="#large-text">320px and enlarged text</a><a href="prototype.html?view=month&date=2026-10-05">Explore prototype</a></div>
+    <p class="note">The first gallery compares the approved Stage 1 proposal with the implemented Calendar. The original production-baseline and proposal comparisons remain below it. All images use isolated synthetic fixture data. Open an image for full resolution.</p>
+    <div class="links"><a href="#implemented">Final vs proposal</a><a href="#desktop">Stage 1 desktop</a><a href="#mobile-month">Stage 1 mobile Month</a><a href="#mobile-views">Day, Week and List</a><a href="#quick-view">Quick View meals</a><a href="#large-text">320px and enlarged text</a><a href="prototype.html?view=month&date=2026-10-05">Explore prototype</a></div>
   </header>
   <main>
+    <section id="implemented"><h2>Stage 2 implementation vs approved proposal</h2><p class="description">The final application preserves the approved desktop structure and uses the actual shared Calendar component for both Calendar and Quick View. On 390px phones the first selected-day agenda item enters the initial viewport; at 320px the jump control immediately above the grid moves focus to that agenda. Meal counts appear above the Quick View month grid. Authenticated role screenshots are in the implemented folder.</p><div id="implemented-pairs"></div><div id="implemented-extra" class="mobile"></div></section>
     <section id="desktop"><h2>Desktop · 1440px</h2><p class="description">The established shell, four views, colors and actions remain recognizable. The proposal tightens spacing and introduces a compact status legend with named icons; Week event copy is more legible.</p><div id="desktop-pairs"></div></section>
     <section id="mobile-month"><h2>Mobile Month · 390px busy day</h2><p class="description">The existing Month cells truncate labels and hide remaining items behind “+3”. The proposed grid retains dates and category color while the selected-day agenda supplies readable times, titles, staffing and meal context.</p><div id="month-pairs" class="mobile"></div></section>
     <section id="mobile-views"><h2>Mobile Day, Week and List · 390px</h2><p class="description">Volunteer names remain visible in Day and List. A green check-circle, amber clock and red X-circle replace repeated response words, with a visible legend and accessible names. The extra-roster disclosure remains available.</p><div id="mobile-pairs" class="mobile"></div></section>
@@ -64,6 +65,32 @@
         holder.append(pair);
       }
     }
+    const implementationPairs = [
+      ['Desktop Day', 'calendar-day-1440'], ['Desktop Week', 'calendar-week-1440'],
+      ['Desktop Month', 'calendar-month-1440'], ['Desktop List', 'calendar-list-1440'],
+      ['Mobile Month, busy day', 'calendar-month-busy-390'],
+      ['Mobile Day roster', 'calendar-day-roster-390'], ['Mobile List roster', 'calendar-list-roster-390'],
+      ['Quick View, missing and zero', 'quick-view-month-390'], ['Quick View, positive count', 'quick-view-positive-390'],
+      ['320px Month', 'calendar-month-320'], ['320px at 200% text', 'calendar-month-text200-320'],
+      ['1440px List at 200% text', 'calendar-list-text200-1440']
+    ];
+    for (const [label, name] of implementationPairs) {
+      const pair = document.createElement('div');
+      pair.className = 'pair';
+      pair.innerHTML = ['proposed', 'implemented'].map(kind => `<div class="shot"><strong>${kind === 'proposed' ? 'Approved proposal' : 'Implemented'} · ${label}<span>${kind === 'proposed' ? 'Standalone prototype' : 'Actual Calendar component with safe fixture'}</span></strong><a href="${kind}/${name}.png"><img loading="lazy" src="${kind}/${name}.png" alt="${kind === 'proposed' ? 'Approved proposal' : 'Implemented'} ${label}"></a></div>`).join('');
+      document.getElementById('implemented-pairs').append(pair);
+    }
+    const extra = [
+      ['Mobile selected-day agenda after jump', 'calendar-month-agenda-jump-390'],
+      ['Desktop Month day number with keyboard focus', 'calendar-month-day-number-focus-1440'],
+      ['Mobile agenda Open Day action', 'calendar-month-open-day-390'],
+      ['Mobile Day expanded roster', 'calendar-day-expanded-roster-390'],
+      ['Mobile List expanded roster', 'calendar-list-expanded-roster-390'],
+      ['Bearer Quick View meal counts', 'bearer-quick-view-meals-390'],
+      ['320px at 200% effective zoom, agenda reached', 'calendar-month-text200-320-scrolled'],
+      ['320px at 200% root text, agenda reached', 'calendar-month-root-text200-320-scrolled']
+    ];
+    for (const [label, name] of extra) document.getElementById('implemented-extra').insertAdjacentHTML('beforeend', `<div class="pair"><div class="shot"><strong>Implemented · ${label}<span>Actual Calendar component with safe fixture</span></strong><a href="implemented/${name}.png"><img loading="lazy" src="implemented/${name}.png" alt="${label}"></a></div></div>`);
     document.getElementById('mobile-pairs').insertAdjacentHTML('beforeend', '<div class="pair"><div class="shot"><strong>Current · expanded roster<span>Current words and +N disclosure</span></strong><a href="before/calendar-day-roster-390.png"><img loading="lazy" src="before/calendar-day-roster-390.png" alt="Current mobile Day volunteer roster"></a></div><div class="shot"><strong>Proposed · expanded roster<span>Names and response icons remain visible</span></strong><a href="proposed/calendar-day-roster-expanded-390.png"><img loading="lazy" src="proposed/calendar-day-roster-expanded-390.png" alt="Proposed expanded volunteer roster"></a></div></div>');
     document.getElementById('large-pairs').insertAdjacentHTML('beforeend', '<div class="pair"><div class="shot"><strong>Current · 320px, 200% text<span>Initial viewport clips the toolbar</span></strong><a href="before/calendar-month-text200-320.png"><img loading="lazy" src="before/calendar-month-text200-320.png" alt="Current enlarged-text Month initial viewport"></a></div><div class="shot"><strong>Proposed · scrolled Month<span>Grid and selected-day agenda remain reachable</span></strong><a href="proposed/calendar-month-text200-320-scrolled.png"><img loading="lazy" src="proposed/calendar-month-text200-320-scrolled.png" alt="Proposed enlarged-text Month after scrolling"></a></div></div>');
   </script>

@@ -4,7 +4,7 @@ import path from 'node:path';
 import {chromium} from 'playwright';
 import {resolvePreviewBrowserExecutable} from './preview-config.mjs';
 
-const output=path.resolve('..','previews','12.48-batch-1','after');
+const output=path.resolve('..','previews','12.48-batch-2','implemented');
 fs.mkdirSync(output,{recursive:true});
 const browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
 const context=await browser.newContext();
@@ -14,6 +14,7 @@ page.on('pageerror',e=>errors.push(e.message));
 const cookie=(name,value)=>context.addCookies([{name,value,domain:'127.0.0.1',path:'/'}]);
 const go=p=>page.goto('http://127.0.0.1:3148'+p,{waitUntil:'networkidle'});
 const card=n=>page.locator(`[data-calendar-task-item="22222222-2222-4222-8222-${String(n).padStart(12,'0')}"]`);
+const status=async(item,name,label)=>{assert.match(await item.innerText(),new RegExp(name));assert.equal(await item.getByRole('img',{name:label}).count(),1);};
 const shot=name=>page.screenshot({path:path.join(output,name+'.png'),fullPage:false});
 try {
   await cookie('fixture-assignments','1');
@@ -21,9 +22,9 @@ try {
     await page.setViewportSize({width,height:width===1440?1000:844});
     await go(`${route}?view=${view}&date=2026-10-05`);
     assert.match(await card(1).innerText(),/No volunteers assigned/);
-    assert.match(await card(2).innerText(),/Avery Stone\s+Confirmed/);
-    assert.match(await card(3).innerText(),/Jordan Hale\s+Awaiting reply/);
-    assert.match(await card(3).innerText(),/Casey Morgan\s+Declined/);
+    await status(card(2),'Avery Stone','Confirmed');
+    await status(card(3),'Jordan Hale','Awaiting reply');
+    await status(card(3),'Casey Morgan',"Can't make it");
     assert.match(await card(3).innerText(),/2\/6 assigned/);
     assert.equal(await card(4).getByText('Avery Stone',{exact:true}).isVisible(),true);
     assert.equal(await card(4).getByText('Sam Rivera',{exact:true}).isVisible(),false);
@@ -56,7 +57,7 @@ try {
   }
   await go('/admin/calendar?view=day&date=2026-10-06');
   assert.equal(await card(2).count(),0);
-  assert.match(await card(5).innerText(),/Morgan Reed\s+Confirmed/);
+  await status(card(5),'Morgan Reed','Confirmed');
   assert.doesNotMatch(await card(5).innerText(),/Avery Stone/);
   await go('/admin/calendar?view=list&date=2026-10-05');
   assert.match(await card(2).innerText(),/Avery Stone/);
@@ -65,7 +66,7 @@ try {
   assert.equal(await page.getByRole('list',{name:'Assigned volunteers'}).count(),0,'Bearer surface does not gain the authenticated roster UI');
   await cookie('fixture-role','on-site');
   await go('/admin/calendar?view=list&date=2026-10-05');
-  assert.match(await card(2).innerText(),/Avery Stone\s+Confirmed/);
+  await status(card(2),'Avery Stone','Confirmed');
   assert.equal(await page.getByRole('button',{name:/^Create( item)?$/}).count(),0);
   await cookie('fixture-role','main');
   for(const visibility of ['hidden','unavailable']){

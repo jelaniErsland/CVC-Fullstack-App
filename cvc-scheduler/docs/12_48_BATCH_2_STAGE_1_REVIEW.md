@@ -1,6 +1,6 @@
 # Project Local 12.48 — Batch 2 Stage 1 visual decision
 
-**Status:** Design preview ready for product-owner review. Stage 2 implementation has **not** started.
+**Status:** Stage 1 approved. Stage 2 implementation and final evidence are documented in [12_48_BATCH_2_STAGE_2_REVIEW.md](12_48_BATCH_2_STAGE_2_REVIEW.md). The comparisons below remain the original proposal record.
 
 **Branch:** `codex/12.48-batch-2`, created from verified production commit `fd1fad41d01609c8ad437ebc0e24346c98d38fe9`. The existing Batch 1 branch and its closeout documentation remain in place. No Calendar product component, route, backend, authorization rule, notification path, database object, deployment setting or production data was changed for this stage.
 

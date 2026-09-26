@@ -105,11 +105,15 @@ try{
       await go(route);
       assert.equal(new URL(page.url()).searchParams.has('view'),false);
       assert.equal(await page.getByRole('button',{name:'Month',exact:true}).getAttribute('aria-pressed'),'true');
-      for(const pattern of [/Breakfast.*Headcount not set/,/Lunch.*Headcount 0/,/Lunch.*Headcount 25/]){
+      for(const pattern of (width===1440?[/Breakfast.*Headcount not set/,/Lunch.*Headcount 0/,/Lunch.*Headcount 25/]:[])){
         const entry=page.getByRole('button',{name:pattern}).first();
         assert.equal(await entry.isVisible(),true);
       }
-      for(const label of (width===1440?['Breakfast · —','Lunch · 0','Lunch · 25']:['B—','L0','L25'])){
+      const mealSummary=page.getByTestId('calendar-meal-summary').filter({visible:true});
+      await mealSummary.waitFor();
+      assert.equal(await mealSummary.locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
+      assert.equal(await mealSummary.locator('[data-meal-kind="lunch"] [data-meal-headcount]').textContent(),'0');
+      if(width===1440)for(const label of ['Breakfast · —','Lunch · 0','Lunch · 25']){
         assert.equal(await page.getByText(label,{exact:true}).filter({visible:true}).count()>0,true);
       }
       assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
@@ -143,7 +147,7 @@ try{
     await shot('quick-view-nonmeal-inspector-'+width);
   }
   await page.setViewportSize({width:390,height:844});await go('/admin/quick-view?view=month&date=2026-10-05&project=fixture-project');
-  assert.equal(await page.getByRole('button',{name:/Breakfast.*Headcount not set/}).count()>0,true);
+  assert.equal(await page.getByTestId('calendar-meal-summary').filter({visible:true}).locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
   await shot('quick-view-month-meals-390');
   assert.deepEqual(errors,[]);
   console.log('PASS: grouped links, no-photo/photo identity, menu/editor, direct create permission, disclosure, default Quick View meal counts and route on desktop/mobile. Synthetic fixture only.');

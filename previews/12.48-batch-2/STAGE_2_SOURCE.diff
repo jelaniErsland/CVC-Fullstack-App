@@ -1,0 +1,920 @@
+diff --git a/cvc-scheduler/app/globals.css b/cvc-scheduler/app/globals.css
+index 99f2422..ec3b27c 100644
+--- a/cvc-scheduler/app/globals.css
++++ b/cvc-scheduler/app/globals.css
+@@ -88,6 +88,12 @@ button {
+ @media (max-width: 359px) {
+   .pl-nav-label { font-size: 0.6875rem; }
+ }
++@media (min-width: 280px) and (max-width: 639px) {
++  .calendar-page-header { flex-wrap: nowrap; align-items: center; gap: 8px; }
++  .calendar-page-header > div:first-child { flex: 1 1 auto; flex-basis: auto; }
++  .calendar-page-header > div:last-child { flex: 0 0 auto; }
++  .calendar-page-header .pl-page-title { font-size: 1.5rem; }
++}
+ @media (prefers-reduced-motion: reduce) {
+   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+ }
+diff --git a/cvc-scheduler/components/CalendarAssignedVolunteers.tsx b/cvc-scheduler/components/CalendarAssignedVolunteers.tsx
+index 7ac4bd6..8b23a67 100644
+--- a/cvc-scheduler/components/CalendarAssignedVolunteers.tsx
++++ b/cvc-scheduler/components/CalendarAssignedVolunteers.tsx
+@@ -1,5 +1,5 @@
+ import { DisclosureSection } from "./DisclosureSection";
+-import { statusDisplay } from "@/lib/statusDisplay";
++import { CircleCheck, CircleX, Clock3 } from "lucide-react";
+ 
+ export type AssignmentVisibility = "hidden" | "unavailable" | "available";
+ export type CalendarVisibleAssignment = {
+@@ -9,11 +9,27 @@ export type CalendarVisibleAssignment = {
+   responseStatus: "confirmed" | "needs_response" | "declined";
+ };
+ 
+-const responseTone = {
+-  confirmed: "text-emerald-800",
+-  needs_response: "text-amber-900",
+-  declined: "text-red-800",
+-};
++const responseDisplay = {
++  confirmed: { label: "Confirmed", tone: "text-emerald-700", Icon: CircleCheck },
++  needs_response: { label: "Awaiting reply", tone: "text-amber-700", Icon: Clock3 },
++  declined: { label: "Can't make it", tone: "text-red-700", Icon: CircleX },
++} as const;
++
++function AssignmentResponseIcon({ status }: { status: CalendarVisibleAssignment["responseStatus"] }) {
++  const { label, tone, Icon } = responseDisplay[status];
++  return <span aria-label={label} className={`inline-flex shrink-0 items-center ${tone}`} role="img" title={label}>
++    <Icon aria-hidden="true" className="size-4" strokeWidth={2} />
++  </span>;
++}
++
++export function CalendarAssignmentLegend() {
++  return <div aria-label="Assignment response legend" className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/60 px-3 py-1.5 text-[11px] text-[var(--pl-text)] sm:gap-x-3 sm:px-4 sm:py-2 sm:text-xs">
++    <span className="hidden font-semibold sm:inline">Responses</span>
++    {(["confirmed", "needs_response", "declined"] as const).map(status => <span className="inline-flex items-center gap-1" key={status}>
++      <AssignmentResponseIcon status={status} />{responseDisplay[status].label}
++    </span>)}
++  </div>;
++}
+ 
+ /** Display only the assignment projection supplied for this exact scheduled item. */
+ export function CalendarAssignedVolunteers({ itemId, assignments, visibility }: {
+@@ -25,10 +41,10 @@ export function CalendarAssignedVolunteers({ itemId, assignments, visibility }:
+   if (visibility === "unavailable") return <p className="text-sm text-[var(--pl-muted)]">Assignment details unavailable</p>;
+   const people = (assignments ?? []).filter(person => person.calendarItemId === itemId);
+   if (!people.length) return <p className="text-sm text-[var(--pl-muted)]">No volunteers assigned</p>;
+-  const rows = (list: readonly CalendarVisibleAssignment[]) => <ul className="space-y-1.5" aria-label="Assigned volunteers">
+-    {list.map(person => <li key={person.assignmentId} className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm leading-5">
++  const rows = (list: readonly CalendarVisibleAssignment[]) => <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5" aria-label="Assigned volunteers">
++    {list.map(person => <li key={person.assignmentId} className="inline-flex min-w-0 max-w-full items-center gap-1 text-sm leading-5">
+       <span className="min-w-0 max-w-full break-words font-medium text-[var(--pl-text)]">{person.volunteerDisplayName}</span>
+-      <span className={`text-xs ${responseTone[person.responseStatus]}`}>{statusDisplay[person.responseStatus].label}</span>
++      <AssignmentResponseIcon status={person.responseStatus} />
+     </li>)}
+   </ul>;
+   return <div>
+diff --git a/cvc-scheduler/components/CalendarClient.tsx b/cvc-scheduler/components/CalendarClient.tsx
+index d8b3048..8342341 100644
+--- a/cvc-scheduler/components/CalendarClient.tsx
++++ b/cvc-scheduler/components/CalendarClient.tsx
+@@ -35,7 +35,7 @@ import { useRouter, useSearchParams } from "next/navigation";
+ import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
+ import Link from "next/link";
+ import { PageHeader } from "@/components/PageHeader";
+-import { CalendarAssignedVolunteers, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
++import { CalendarAssignedVolunteers, CalendarAssignmentLegend, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
+ import { ldcProjectName } from "@/lib/projectIdentity";
+ import { AdminShell } from "@/components/AdminShell";
+ import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
+@@ -251,6 +251,10 @@ function getCalendarOperationalCount(item: CalendarItem) {
+   return item.meal ? (item.meal.total === null ? "Headcount not set" : "Headcount " + item.meal.total) : getCalendarFilledLabel(item);
+ }
+ 
++function hasVisibleAssignmentResponses(items: CalendarItem[], visibility: AssignmentVisibility) {
++  return visibility === "available" && items.some(item => !item.meal && ((item as CalendarClientDisplayItem).assignments?.length ?? 0) > 0);
++}
++
+ function getCalendarEventStyle() {
+   return "border transition hover:brightness-[0.98]";
+ }
+@@ -415,6 +419,11 @@ function getCalendarAccessibleDayLabel(date: string) {
+   }).format(new Date(`${date}T00:00:00Z`));
+ }
+ 
++function getCalendarDayViewActionLabel(date: string) {
++  const fullDate = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "long", timeZone: "UTC", year: "numeric" }).format(new Date(`${date}T00:00:00Z`));
++  return `Open ${fullDate} in Day view`;
++}
++
+ function shiftCalendarAnchor(
+   date: string,
+   amount: number,
+@@ -648,7 +657,7 @@ function ViewToggle({
+   return (
+     <div
+       aria-label="Calendar view"
+-      className="inline-flex w-full min-w-0 rounded-lg border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-0.5 text-xs font-semibold text-[var(--pl-muted)] sm:w-auto sm:flex-none"
++      className="inline-flex w-full min-w-0 rounded-lg border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-0.5 text-xs font-semibold text-[var(--pl-muted)] sm:w-auto sm:flex-none max-[240px]:grid max-[240px]:grid-cols-2"
+       role="group"
+     >
+       {viewModes.map((view) => (
+@@ -710,27 +719,27 @@ function CalendarWorkspaceHeader({
+ 
+   return (
+     <section
+-      className="border-b border-[var(--pl-border)] bg-white px-3 py-3 sm:px-4"
++      className="border-b border-[var(--pl-border)] bg-white px-3 py-3 sm:px-4 max-[240px]:px-2"
+       data-testid="calendar-workspace-header"
+     >
+       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+-        <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center xl:flex-1">
++        <div className={`grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center xl:flex-1 ${activeView === "month" ? "min-[360px]:max-sm:grid-cols-[minmax(0,1fr)_auto]" : ""}`}>
+           <div className="min-w-0">
+           <div className="flex min-w-0 flex-wrap items-center gap-2">
+-            <h2 className="text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
++            <h2 className="break-words text-lg font-bold tracking-[-0.025em] text-[var(--pl-ink)] sm:truncate">
+               {periodLabel}
+             </h2>
+           </div>
+-          <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
++          <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)] max-[240px]:overflow-visible max-[240px]:whitespace-normal">
+             {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
+             {activeFilterSummary}
+           </p>
+           </div>
+ 
+-          <div className="inline-flex w-fit shrink-0 rounded-lg border border-[var(--pl-border)] bg-white p-0.5" data-calendar-date-navigation>
++          <div className="inline-flex w-fit max-w-full shrink-0 flex-wrap rounded-lg border border-[var(--pl-border)] bg-white p-0.5 max-[240px]:w-full" data-calendar-date-navigation>
+             <button
+               aria-label={`Previous ${navigationUnit}`}
+-              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
++              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:size-7 ${calmFocusRing}`}
+               onClick={onNavigatePrevious}
+               title={`Previous ${navigationUnit}`}
+               type="button"
+@@ -739,17 +748,17 @@ function CalendarWorkspaceHeader({
+             </button>
+             <button
+               aria-label="Go to today"
+-              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
++              className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:min-h-7 max-[240px]:px-1.5 ${calmFocusRing}`}
+               onClick={onNavigateToday}
+               title="Go to today"
+               type="button"
+             >
+-              <CalendarDays aria-hidden="true" className="h-4 w-4" />
++              <CalendarDays aria-hidden="true" className="h-4 w-4 max-[240px]:hidden" />
+               <span>Today</span>
+             </button>
+             <button
+               aria-label={`Next ${navigationUnit}`}
+-              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
++              className={`inline-flex size-9 items-center justify-center rounded-md text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:size-7 ${calmFocusRing}`}
+               onClick={onNavigateNext}
+               title={`Next ${navigationUnit}`}
+               type="button"
+@@ -758,7 +767,7 @@ function CalendarWorkspaceHeader({
+             </button>
+             <button
+               aria-label="Open day details for the selected date"
+-              className={`inline-flex min-h-9 items-center justify-center rounded-md border-l border-[var(--pl-border)] px-2.5 text-[11px] font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] ${calmFocusRing}`}
++              className={`inline-flex min-h-9 items-center justify-center rounded-md border-l border-[var(--pl-border)] px-2.5 text-[11px] font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:w-full max-[240px]:border-t max-[240px]:border-l-0 ${activeView === "month" ? "max-sm:hidden" : ""} ${calmFocusRing}`}
+               onClick={onOpenProjectDay}
+               title="Day details"
+               type="button"
+@@ -769,7 +778,7 @@ function CalendarWorkspaceHeader({
+           </div>
+         </div>
+ 
+-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap">
++        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:flex sm:flex-nowrap max-[240px]:grid-cols-[minmax(0,1fr)_auto]">
+           <button
+             aria-label="Go to project date"
+             className={`inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] disabled:cursor-default disabled:opacity-45 ${calmFocusRing}`}
+@@ -781,7 +790,7 @@ function CalendarWorkspaceHeader({
+             <CalendarRange aria-hidden="true" className="h-4 w-4" />
+             <span>Project</span>
+           </button>
+-          <div className="order-last col-span-3 sm:order-none sm:contents">
++          <div className="order-last col-span-3 sm:order-none sm:contents max-[240px]:col-span-2">
+             <ViewToggle activeView={activeView} onChange={onViewChange} />
+           </div>
+           <button
+@@ -801,7 +810,7 @@ function CalendarWorkspaceHeader({
+           </button>
+           {canCreate ? (
+             <button
+-              className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
++              className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] max-[240px]:col-span-2 ${calmFocusRing}`}
+               onClick={onCreate}
+               type="button"
+             >
+@@ -1223,7 +1232,7 @@ function WeekGrid({
+         <div aria-hidden="true" className="border-r border-slate-200/80" />
+         {groups.map((group) => (
+           <div className="border-r border-[var(--pl-border)] px-2 py-2.5 text-center last:border-r-0" key={group.date}>
+-            <p className="text-xs font-semibold text-[var(--pl-ink)]">{group.dayLabel}</p>
++            <button aria-label={getCalendarDayViewActionLabel(group.date)} className={`rounded px-1 text-xs font-semibold text-[var(--pl-ink)] transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline ${calmFocusRing}`} onClick={() => onFocusDate(group.date)} type="button">{group.dayLabel}</button>
+             <p className="mt-0.5 text-[10px] font-medium text-[var(--pl-muted)]">
+               {group.items.length} item{group.items.length === 1 ? "" : "s"}
+             </p>
+@@ -1449,9 +1458,33 @@ function CalendarDayCard({ item, isSelected, onSelect, assignmentVisibility }: {
+   </article>;
+ }
+ 
++function MealHeadcountSummary({ date, items }: { date: string; items: CalendarItem[] }) {
++  const headingId = useId();
++  const dayMeals = items.filter(item => item.meal && doesCalendarItemOccurOnDate(item, date));
++  const cards = (["breakfast", "lunch"] as const).flatMap<{ kind: "breakfast" | "lunch"; item: CalendarItem | null }>(kind => {
++    const matches = dayMeals.filter(item => item.meal?.kind === kind);
++    return matches.length ? matches.map(item => ({ kind, item })) : [{ kind, item: null }];
++  });
++  return <section aria-labelledby={headingId} className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/50 px-3 py-3 sm:px-4" data-testid="calendar-meal-summary">
++    <h2 className="text-xs font-semibold text-[var(--pl-text)]" id={headingId}>Meal headcounts · {getCalendarAccessibleDayLabel(date)} <span className="font-normal text-[var(--pl-muted)]">(selected day)</span></h2>
++    <div className="mt-2 grid grid-cols-2 gap-2 max-[240px]:grid-cols-1">
++      {cards.map(({ kind, item }) => {
++        const label = kind === "breakfast" ? "Breakfast" : "Lunch";
++        return <div className="min-w-0 rounded-lg border border-amber-200 bg-amber-50/70 px-3 py-2" data-meal-kind={kind} key={item?.id ?? kind}>
++          <p className="text-xs font-semibold text-amber-950">{label}</p>
++          <p className="mt-0.5 break-words text-xl font-bold leading-tight tracking-tight text-[var(--pl-ink)]" data-meal-headcount>{item ? item.meal?.total === null ? "Not recorded" : item.meal?.total : "Not scheduled"}</p>
++          {item ? <p className="mt-1 break-words text-xs leading-4 text-[var(--pl-text)]">Main contact: {item.meal?.contact?.trim() || "Not assigned"}</p> : null}
++          {item?.startTime && item.endTime ? <p className="mt-1 text-[11px] leading-4 text-[var(--pl-muted)]">{getCalendarItemTimeWindow(item)}</p> : null}
++        </div>;
++      })}
++    </div>
++  </section>;
++}
++
+ function DayView({
+   date,
+   items,
++  mealSummaryItems,
+   onCreateFromSlot,
+   onOpenDayDetails,
+   selectedId,
+@@ -1460,6 +1493,7 @@ function DayView({
+ }: {
+   date: string;
+   items: CalendarItem[];
++  mealSummaryItems: CalendarItem[];
+   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
+   onOpenDayDetails: (date: string) => void;
+   selectedId?: string;
+@@ -1485,6 +1519,8 @@ function DayView({
+ 
+   return (
+     <section className="overflow-hidden bg-white">
++      {readOnly ? <MealHeadcountSummary date={date} items={mealSummaryItems} /> : null}
++      {hasVisibleAssignmentResponses(dayItems, assignmentVisibility) ? <CalendarAssignmentLegend /> : null}
+       <div className="flex items-center justify-between border-b border-slate-200/80 bg-blue-50/35 px-3 py-2 sm:px-4">
+         <div>
+           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Project day</p>
+@@ -1582,22 +1618,27 @@ function deriveCalendarMonthDates(referenceDate: string) {
+   });
+ }
+ 
+-const monthMobileVisibleItemLimit = 3;
+ const monthDesktopVisibleItemLimit = 6;
+ 
+ function MonthView({
+   items,
++  mealSummaryItems,
++  assignmentVisibility,
+   onCreateFromSlot,
+   onFocusDate,
+   onOpenDayDetails,
++  onSelectDate,
+   selectedId,
+   onSelect,
+   referenceDate,
+ }: {
+   items: CalendarItem[];
++  mealSummaryItems: CalendarItem[];
++  assignmentVisibility: AssignmentVisibility;
+   onCreateFromSlot: (slot: CalendarCreationSlot) => void;
+   onFocusDate: (date: string) => void;
+   onOpenDayDetails: (date: string) => void;
++  onSelectDate: (date: string) => void;
+   selectedId?: string;
+   onSelect: (item: CalendarItemWithPreset) => void;
+   referenceDate: string;
+@@ -1605,10 +1646,81 @@ function MonthView({
+   const { readOnly } = useCalendarOperations();
+   const dates = deriveCalendarMonthDates(referenceDate);
+   const reference = new Date(`${referenceDate}T00:00:00Z`);
++  const agendaRef = useRef<HTMLElement>(null);
++  const agendaHeadingId = useId();
++  const selectedDayItems = items.filter(item => doesCalendarItemOccurOnDate(item, referenceDate))
++    .map(enrichCalendarClientItem)
++    .sort((first, second) => {
++      const firstUntimed = isWeekBandCalendarItem(first);
++      const secondUntimed = isWeekBandCalendarItem(second);
++      if (firstUntimed !== secondUntimed) return firstUntimed ? -1 : 1;
++      return getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second)
++        || getCalendarItemDisplayName(first).localeCompare(getCalendarItemDisplayName(second))
++        || first.id.localeCompare(second.id);
++    });
++  const selectAgenda = () => {
++    agendaRef.current?.scrollIntoView({ block: "start" });
++    agendaRef.current?.focus({ preventScroll: true });
++  };
+ 
+   return (
+     <section className="overflow-hidden bg-white">
+-      {readOnly && items.some(item => item.meal) && <p className="border-b border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">Meals: B = Breakfast, L = Lunch; number = daily headcount; — = not recorded.</p>}
++      <div className="sm:hidden" data-testid="calendar-mobile-month">
++        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/50 px-3 py-2 text-xs">
++          <span className="font-semibold text-[var(--pl-ink)]">{getCalendarAccessibleDayLabel(referenceDate)} · {selectedDayItems.length} item{selectedDayItems.length === 1 ? "" : "s"}</span>
++          <button aria-controls={agendaHeadingId} className={`inline-flex min-h-8 items-center font-semibold text-[var(--pl-blue)] ${calmFocusRing}`} onClick={selectAgenda} type="button">View day&apos;s work ↓</button>
++        </div>
++        {readOnly ? <MealHeadcountSummary date={referenceDate} items={mealSummaryItems} /> : null}
++        <div className="grid grid-cols-7 border-b border-[var(--pl-border)]" aria-hidden="true">
++          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => <span className="py-2 text-center text-[11px] font-semibold text-[var(--pl-muted)] max-[240px]:text-[9px]" key={day}>{day}</span>)}
++        </div>
++        <div className="grid grid-cols-7" role="group" aria-label="Select a date in the month">
++          {dates.map(date => {
++            const dayItems = items.filter(item => doesCalendarItemOccurOnDate(item, date));
++            const inMonth = date.slice(0, 7) === referenceDate.slice(0, 7);
++            const selected = date === referenceDate;
++            return <div className={`min-w-0 border-b border-r border-[var(--pl-border)] last:border-r-0 ${selected ? "bg-blue-50 ring-2 ring-inset ring-blue-300" : inMonth ? "bg-white" : "bg-[var(--pl-surface-subtle)]/60"}`} key={date}>
++              <button
++                aria-label={inMonth ? `Select ${getCalendarAccessibleDayLabel(date)}, ${dayItems.length} scheduled item${dayItems.length === 1 ? "" : "s"}` : `Select ${getCalendarAccessibleDayLabel(date)} to open that month`}
++                aria-pressed={selected}
++                className={`flex h-[42px] w-full min-w-0 flex-col items-center justify-center gap-0.5 p-0.5 text-xs font-semibold ${inMonth ? "text-[var(--pl-text)]" : "text-[var(--pl-muted)]"} ${calmFocusRing}`}
++                onClick={() => onSelectDate(date)}
++                type="button"
++              >
++                <span className={`flex size-6 items-center justify-center rounded-full ${selected ? "bg-[var(--pl-blue)] text-white" : ""}`}>{Number(date.slice(-2))}</span>
++                <span aria-hidden="true" className="flex h-2 min-w-0 items-center justify-center gap-0.5">
++                  {inMonth ? dayItems.slice(0, 3).map(item => <span className="size-1.5 shrink-0 rounded-full max-[240px]:size-1" key={item.id} style={{ backgroundColor: getCalendarEventColorStyle(item).borderColor }} />) : null}
++                  {inMonth && dayItems.length > 3 ? <span className="text-[9px] leading-none text-[var(--pl-blue)]">{dayItems.length}</span> : null}
++                </span>
++              </button>
++            </div>;
++          })}
++        </div>
++        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
++          <div className="flex flex-wrap items-center justify-between gap-2">
++            <h2 className="text-base font-bold text-[var(--pl-ink)]" id={agendaHeadingId}>{getCalendarAccessibleDayLabel(referenceDate)}</h2>
++            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
++              <button aria-label={getCalendarDayViewActionLabel(referenceDate)} className={`inline-flex min-h-9 items-center text-xs font-semibold text-[var(--pl-blue)] hover:underline ${calmFocusRing}`} onClick={() => onFocusDate(referenceDate)} type="button">Open Day</button>
++              <button className={`inline-flex min-h-9 items-center text-xs font-semibold text-[var(--pl-muted)] hover:underline ${calmFocusRing}`} onClick={() => onOpenDayDetails(referenceDate)} type="button">Day details</button>
++            </div>
++          </div>
++          <p className="mt-0.5 text-xs text-[var(--pl-muted)]">{selectedDayItems.length} scheduled item{selectedDayItems.length === 1 ? "" : "s"} · Select an item for details</p>
++          {hasVisibleAssignmentResponses(selectedDayItems, assignmentVisibility) ? <div className="-mx-3 mt-2"><CalendarAssignmentLegend /></div> : null}
++          {selectedDayItems.length ? <div className="mt-2 space-y-2">
++            {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] border-l-[3px] bg-white" data-calendar-month-agenda-item={item.id} key={item.id} style={{ borderLeftColor: getCalendarEventColorStyle(item).borderColor }}>
++              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[240px]:grid-cols-1 max-[240px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
++                <span className="min-w-0 break-words text-sm font-semibold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</span>
++                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[240px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
++                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[240px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
++              </button>
++              {item.meal ? <p className="border-t border-[var(--pl-border)] px-3 py-1.5 text-xs text-[var(--pl-text)]">Main contact: {item.meal.contact?.trim() || "Not assigned"}</p>
++                : assignmentVisibility !== "hidden" ? <div className="border-t border-[var(--pl-border)] px-3 py-1.5"><CalendarAssignedVolunteers itemId={item.id} assignments={item.assignments} visibility={assignmentVisibility} /></div> : null}
++            </article>)}
++          </div> : <p className="mt-3 text-sm text-[var(--pl-muted)]">No scheduled items for this day.</p>}
++        </section>
++      </div>
++      <div className="hidden sm:block">
++      {readOnly ? <MealHeadcountSummary date={referenceDate} items={mealSummaryItems} /> : null}
+       <div className="grid grid-cols-7 border-b border-slate-200/80 bg-white/62">
+         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+           <div className="px-2 py-2 text-center text-xs font-semibold text-slate-500" key={day}>
+@@ -1621,10 +1733,6 @@ function MonthView({
+           const dateItems = items
+             .filter((item) => doesCalendarItemOccurOnDate(item, date))
+             .map(enrichCalendarClientItem);
+-          const mobileOverflowCount = Math.max(
+-            dateItems.length - monthMobileVisibleItemLimit,
+-            0,
+-          );
+           const desktopOverflowCount = Math.max(
+             dateItems.length - monthDesktopVisibleItemLimit,
+             0,
+@@ -1659,22 +1767,21 @@ function MonthView({
+               /> : null}
+               <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
+                 <button
+-                  aria-label={`Open day details for ${getCalendarCompactDayLabel(date)}`}
+-                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] sm:text-xs sm:leading-4 ${calmFocusRing}`}
+-                  onClick={() => onOpenDayDetails(date)}
+-                  title="Open day details"
++                  aria-label={getCalendarDayViewActionLabel(date)}
++                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
++                  onClick={() => onFocusDate(date)}
++                  title="Open Day view"
+                   type="button"
+                 >
+                   {Number(date.slice(-2))}
+                 </button>
+                 <div className="mt-1 space-y-0.5">
+-                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item, index) => (
++                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item) => (
+                     <button
+                       aria-label={getCalendarItemAccessibleLabel(item)}
+                       className={[
+                         `pointer-events-auto h-4 w-full min-w-0 overflow-hidden rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
+                         readOnly && item.meal ? "sm:h-5 sm:text-[11px] sm:leading-4" : "",
+-                        index >= monthMobileVisibleItemLimit ? "hidden sm:block" : "",
+                         getCalendarEventClasses(item),
+                         selectedId === item.id
+                           ? "ring-2 ring-slate-900/30 ring-offset-1"
+@@ -1694,16 +1801,6 @@ function MonthView({
+                       </span>
+                     </button>
+                   ))}
+-                  {mobileOverflowCount > 0 ? (
+-                    <button
+-                      aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${mobileOverflowCount} more calendar item${mobileOverflowCount === 1 ? "" : "s"}`}
+-                      className={`pointer-events-auto text-[10px] font-semibold text-slate-400 transition hover:text-slate-700 sm:hidden ${calmFocusRing}`}
+-                      onClick={() => onFocusDate(date)}
+-                      type="button"
+-                    >
+-                      +{mobileOverflowCount}
+-                    </button>
+-                  ) : null}
+                   {desktopOverflowCount > 0 ? (
+                     <button
+                       aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
+@@ -1720,6 +1817,7 @@ function MonthView({
+           );
+         })}
+       </div>
++      </div>
+     </section>
+   );
+ }
+@@ -1802,6 +1900,7 @@ function CalendarListView({
+       className="overflow-hidden border-y border-slate-200/90 bg-white/24"
+       data-testid="calendar-list-view"
+     >
++      {hasVisibleAssignmentResponses(items, assignmentVisibility) ? <CalendarAssignmentLegend /> : null}
+       {groups.map((group) => {
+         const headingId = `calendar-list-${group.date}`;
+ 
+@@ -4070,9 +4169,9 @@ export default function CalendarClient({
+     }
+ 
+     if (activeView === "month") {
+-      const month = calendarAnchor.slice(0, 7);
+-
+-      return filteredItems.filter((item) => item.date.startsWith(month));
++      const monthStart = `${calendarAnchor.slice(0, 7)}-01`;
++      const monthEnd = new Date(Date.UTC(Number(calendarAnchor.slice(0, 4)), Number(calendarAnchor.slice(5, 7)), 0)).toISOString().slice(0, 10);
++      return filteredItems.filter((item) => doesCalendarItemOverlapDateRange(item, monthStart, monthEnd));
+     }
+ 
+     return filteredItems.filter((item) =>
+@@ -4285,6 +4384,12 @@ export default function CalendarClient({
+     navigate(buildCalendarRouteHref("day", date));
+   };
+ 
++  const handleSelectMonthDate = (date: string) => {
++    if (date === calendarAnchor) return;
++    closeCalendarSurface();
++    router.replace(buildCalendarRouteHref("month", date), { scroll: false });
++  };
++
+   return (
+     <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
+     <CalendarFrame readOnly={routeBase === "/qv"}
+@@ -4300,9 +4405,9 @@ export default function CalendarClient({
+         window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
+       }}
+     >
+-      <PageHeader title={readOnly ? "Project Quick View" : "Calendar"}
++      <PageHeader title={readOnly ? "Project Quick View" : "Calendar"} className={!readOnly ? "calendar-page-header" : undefined}
+         context={routeBase === "/qv" && isReady ? ldcProjectName(state.workspaceName) : readOnly ? "Read-only project schedule" : undefined}
+-        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800"><Send className="size-[18px]" aria-hidden="true" />Send schedules</Link> : undefined}
++        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800 max-[240px]:w-full max-[240px]:justify-center max-[240px]:px-2 max-[240px]:text-xs"><Send className="size-[18px] shrink-0" aria-hidden="true" />Send schedules</Link> : undefined}
+       />
+       {projectControls && <div className="mt-4">{projectControls}</div>}
+       <section className="mt-4">
+@@ -4365,12 +4470,14 @@ export default function CalendarClient({
+                   assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
+                   date={calendarAnchor}
+                   items={visibleItems}
++                  mealSummaryItems={allItems}
+                   onCreateFromSlot={handleCreateFromSlot}
+                   onOpenDayDetails={handleOpenProjectDay}
+                   onSelect={handleSelectCalendarItem}
+                   selectedId={selectedItem?.id}
+                 />
+               ) : null}
++              {readOnly && (activeView === "week" || activeView === "list") ? <MealHeadcountSummary date={calendarAnchor} items={allItems} /> : null}
+               {activeView === "week" ? (
+                 <>
+                   <WeekGrid
+@@ -4392,10 +4499,13 @@ export default function CalendarClient({
+               ) : null}
+               {activeView === "month" ? (
+                 <MonthView
++                  assignmentVisibility={routeBase === "/qv" || !state.canViewVolunteers ? "hidden" : state.assignmentPicker.kind === "ready" ? "available" : "unavailable"}
+                   items={visibleItems}
++                  mealSummaryItems={allItems}
+                   onCreateFromSlot={handleCreateFromSlot}
+                   onFocusDate={handleFocusCalendarDate}
+                   onOpenDayDetails={handleOpenProjectDay}
++                  onSelectDate={handleSelectMonthDate}
+                   onSelect={handleSelectCalendarItem}
+                   referenceDate={calendarAnchor}
+                   selectedId={selectedItem?.id}
+diff --git a/cvc-scheduler/components/PageHeader.tsx b/cvc-scheduler/components/PageHeader.tsx
+index e95a374..96c3988 100644
+--- a/cvc-scheduler/components/PageHeader.tsx
++++ b/cvc-scheduler/components/PageHeader.tsx
+@@ -1,8 +1,8 @@
+ import type { ReactNode } from "react";
+-export function PageHeader({ title, description, context, primaryAction, secondaryActions }: {
+-  title: string; description?: ReactNode; context?: ReactNode; primaryAction?: ReactNode; secondaryActions?: ReactNode;
++export function PageHeader({ title, description, context, primaryAction, secondaryActions, className = "" }: {
++  title: string; description?: ReactNode; context?: ReactNode; primaryAction?: ReactNode; secondaryActions?: ReactNode; className?: string;
+ }) {
+-  return <header className="flex min-w-0 flex-wrap items-start justify-between gap-4">
++  return <header className={`flex min-w-0 flex-wrap items-start justify-between gap-4 ${className}`}>
+     <div className="min-w-0 flex-1 basis-56"><h1 className="pl-page-title">{title}</h1>
+       {description && <div className="mt-2 text-sm leading-6 text-[var(--pl-text)]">{description}</div>}
+       {context && <div className="pl-metadata mt-2">{context}</div>}
+diff --git a/cvc-scheduler/scripts/12-48-assignment-visibility-regression.mjs b/cvc-scheduler/scripts/12-48-assignment-visibility-regression.mjs
+index 30fad3f..9a3fe90 100644
+--- a/cvc-scheduler/scripts/12-48-assignment-visibility-regression.mjs
++++ b/cvc-scheduler/scripts/12-48-assignment-visibility-regression.mjs
+@@ -4,7 +4,7 @@ import path from 'node:path';
+ import {chromium} from 'playwright';
+ import {resolvePreviewBrowserExecutable} from './preview-config.mjs';
+ 
+-const output=path.resolve('..','previews','12.48-batch-1','after');
++const output=path.resolve('..','previews','12.48-batch-2','implemented');
+ fs.mkdirSync(output,{recursive:true});
+ const browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
+ const context=await browser.newContext();
+@@ -14,6 +14,7 @@ page.on('pageerror',e=>errors.push(e.message));
+ const cookie=(name,value)=>context.addCookies([{name,value,domain:'127.0.0.1',path:'/'}]);
+ const go=p=>page.goto('http://127.0.0.1:3148'+p,{waitUntil:'networkidle'});
+ const card=n=>page.locator(`[data-calendar-task-item="22222222-2222-4222-8222-${String(n).padStart(12,'0')}"]`);
++const status=async(item,name,label)=>{assert.match(await item.innerText(),new RegExp(name));assert.equal(await item.getByRole('img',{name:label}).count(),1);};
+ const shot=name=>page.screenshot({path:path.join(output,name+'.png'),fullPage:false});
+ try {
+   await cookie('fixture-assignments','1');
+@@ -21,9 +22,9 @@ try {
+     await page.setViewportSize({width,height:width===1440?1000:844});
+     await go(`${route}?view=${view}&date=2026-10-05`);
+     assert.match(await card(1).innerText(),/No volunteers assigned/);
+-    assert.match(await card(2).innerText(),/Avery Stone\s+Confirmed/);
+-    assert.match(await card(3).innerText(),/Jordan Hale\s+Awaiting reply/);
+-    assert.match(await card(3).innerText(),/Casey Morgan\s+Declined/);
++    await status(card(2),'Avery Stone','Confirmed');
++    await status(card(3),'Jordan Hale','Awaiting reply');
++    await status(card(3),'Casey Morgan',"Can't make it");
+     assert.match(await card(3).innerText(),/2\/6 assigned/);
+     assert.equal(await card(4).getByText('Avery Stone',{exact:true}).isVisible(),true);
+     assert.equal(await card(4).getByText('Sam Rivera',{exact:true}).isVisible(),false);
+@@ -56,7 +57,7 @@ try {
+   }
+   await go('/admin/calendar?view=day&date=2026-10-06');
+   assert.equal(await card(2).count(),0);
+-  assert.match(await card(5).innerText(),/Morgan Reed\s+Confirmed/);
++  await status(card(5),'Morgan Reed','Confirmed');
+   assert.doesNotMatch(await card(5).innerText(),/Avery Stone/);
+   await go('/admin/calendar?view=list&date=2026-10-05');
+   assert.match(await card(2).innerText(),/Avery Stone/);
+@@ -65,7 +66,7 @@ try {
+   assert.equal(await page.getByRole('list',{name:'Assigned volunteers'}).count(),0,'Bearer surface does not gain the authenticated roster UI');
+   await cookie('fixture-role','on-site');
+   await go('/admin/calendar?view=list&date=2026-10-05');
+-  assert.match(await card(2).innerText(),/Avery Stone\s+Confirmed/);
++  await status(card(2),'Avery Stone','Confirmed');
+   assert.equal(await page.getByRole('button',{name:/^Create( item)?$/}).count(),0);
+   await cookie('fixture-role','main');
+   for(const visibility of ['hidden','unavailable']){
+diff --git a/cvc-scheduler/scripts/12-48-authenticated-browser-regression.mjs b/cvc-scheduler/scripts/12-48-authenticated-browser-regression.mjs
+index ab733c0..5d18c63 100644
+--- a/cvc-scheduler/scripts/12-48-authenticated-browser-regression.mjs
++++ b/cvc-scheduler/scripts/12-48-authenticated-browser-regression.mjs
+@@ -11,7 +11,8 @@ assert.equal(process.env.ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT,'');
+ const base='http://127.0.0.1:3000';
+ const f=await fixture(true);
+ const foreign=await fixture(true);
+-const output=path.resolve('..','previews','12.48-batch-1','after');
++const output=path.resolve('..','previews','12.48-batch-2','implemented');
++await fs.mkdir(output,{recursive:true});
+ const browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
+ const full=['workspace.read','volunteers.view','volunteers.edit','calendar.view','calendar.edit','tasks.view','tasks.edit','assignments.view','assignments.edit','questionnaires.review'];
+ const read=full.filter(c=>!c.endsWith('.edit'));
+@@ -45,7 +46,8 @@ try {
+       await go(`${route}?view=${view}&date=${f.day}`);
+       const item=card(f.items[0]);await item.waitFor();
+       const text=await item.innerText();
+-      assert.match(text,/Alex Morgan\s+Confirmed/);assert.match(text,/Riley Chen\s+Declined/);assert.match(text,/Awaiting reply/);assert.match(text,/4\/6 assigned/);
++      assert.match(text,/Alex Morgan/);assert.match(text,/Riley Chen/);assert.match(text,/4\/6 assigned/);
++      for(const response of ['Confirmed','Awaiting reply',"Can't make it"]) assert.equal(await item.getByRole('img',{name:response}).count(),1);
+       await item.locator('summary').click();
+       for(const name of ['Alex Morgan','Casey Jordan','Riley Chen','Taylor Brooks','Morgan Reed']) assert((await item.innerText()).includes(name));
+       assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
+@@ -57,7 +59,7 @@ try {
+       if(route.endsWith('quick-view')) assert.equal(await inspector.getByRole('button',{name:/^(Assign|Remove|Save|Publish|Send)/}).count(),0);
+       await page.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
+     }
+-    console.log(`PASS: actual Auth/RLS ${role}: Day/List rosters, response words, expansion, selection and read-only boundaries.`);
++    console.log(`PASS: actual Auth/RLS ${role}: Day/List rosters, accessible response icons, expansion, selection and read-only boundaries.`);
+   }
+   setRole('main_contact',full);
+   await go(`/admin/calendar?view=day&date=${f.dayAt(1)}`);assert.match(await card(f.items[1]).innerText(),/Casey Jordan/);assert.doesNotMatch(await card(f.items[1]).innerText(),/Alex Morgan/);
+@@ -67,8 +69,10 @@ try {
+     await go(`/admin/quick-view?date=${f.day}`);
+     assert(!new URL(page.url()).searchParams.has('view'));
+     assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
+-    const defaultText=await page.locator('body').innerText();
+-    for(const label of (width<640?['B—','L0','L25']:['Breakfast · —','Lunch · 0','Lunch · 25'])) assert(defaultText.includes(label),`Actual default Month exposes ${label}`);
++    const mealSummary=page.getByTestId('calendar-meal-summary').filter({visible:true});
++    assert.equal(await mealSummary.locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
++    assert.equal(await mealSummary.locator('[data-meal-kind="lunch"] [data-meal-headcount]').textContent(),'0');
++    assert.equal(await mealSummary.getByText('Main contact: Alex Morgan').count(),1);
+     await page.screenshot({path:path.join(output,`authenticated-quick-view-default-${width}.png`),style:'nextjs-portal { visibility: hidden; }'});
+     for(const view of ['day','list']){
+       await go(`/admin/calendar?view=${view}&date=${f.day}`);
+diff --git a/cvc-scheduler/scripts/12-48-batch-2-day-navigation-regression.mjs b/cvc-scheduler/scripts/12-48-batch-2-day-navigation-regression.mjs
+new file mode 100644
+index 0000000..25c0e59
+--- /dev/null
++++ b/cvc-scheduler/scripts/12-48-batch-2-day-navigation-regression.mjs
+@@ -0,0 +1,82 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import { chromium } from 'playwright';
++import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
++
++// Isolated fixture routes only. Run with `node scripts/12-48-preview.mjs --serve`.
++const output = path.resolve('..', 'previews', '12.48-batch-2', 'implemented');
++fs.mkdirSync(output, { recursive: true });
++const browser = await chromium.launch({ executablePath: resolvePreviewBrowserExecutable(), headless: true });
++const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
++await context.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
++await context.addCookies([{ name: 'fixture-assignments', value: '1', domain: '127.0.0.1', path: '/' }]);
++const page = await context.newPage();
++const go = route => page.goto(`http://127.0.0.1:3148${route}`, { waitUntil: 'networkidle' });
++const dayButton = date => page.locator(`[data-calendar-month-cell="${date}"]`).getByRole('button', { name: /in Day view/ });
++const routeState = () => { const url = new URL(page.url()); return { pathname: url.pathname, date: url.searchParams.get('date'), view: url.searchParams.get('view'), project: url.searchParams.get('project'), item: url.searchParams.get('item') }; };
++
++try {
++  for (const base of ['/admin/calendar', '/admin/quick-view', '/qv']) {
++    const project = base === '/qv' ? '' : '&project=fixture-project';
++    await go(`${base}?view=month&date=2026-10-05${project}`);
++    const day = dayButton('2026-10-07');
++    assert.match(await day.getAttribute('aria-label'), /Open October 7, 2026 in Day view/);
++    await day.focus();
++    if (base === '/admin/calendar') await page.screenshot({ path: path.join(output, 'calendar-month-day-number-focus-1440.png'), fullPage: false });
++    await page.keyboard.press('Enter');
++    await page.waitForURL(/view=day.*date=2026-10-07/);
++    assert.deepEqual(routeState(), { pathname: base, date: '2026-10-07', view: 'day', project: base === '/admin/quick-view' ? 'fixture-project' : null, item: null });
++    await page.goBack({ waitUntil: 'networkidle' });
++    assert.equal(routeState().view, 'month');
++    assert.equal(routeState().date, '2026-10-05');
++
++    const mealCell = page.locator('[data-calendar-month-cell="2026-10-05"]');
++    await mealCell.getByRole('button', { name: /Food-service shift/ }).click();
++    await page.getByRole('dialog', { name: 'Calendar item inspector' }).waitFor();
++    assert.equal(routeState().item, '22222222-2222-4222-8222-000000000003');
++    assert.equal(routeState().pathname, base);
++    await page.getByRole('dialog', { name: 'Calendar item inspector' }).getByRole('button', { name: 'Close calendar item inspector', exact: true }).click();
++
++    const emptyCell = page.locator('[data-calendar-month-cell="2026-10-08"]');
++    if (base === '/admin/calendar') {
++      await emptyCell.getByRole('button', { name: /Plan project work on/ }).click();
++      await page.getByRole('dialog', { name: /Plan project work/ }).waitFor();
++      assert.equal(routeState().pathname, base);
++      await page.keyboard.press('Escape');
++    } else {
++      assert.equal(await emptyCell.getByRole('button', { name: /Plan project work on/ }).count(), 0);
++    }
++  }
++
++  await go('/admin/calendar?view=week&date=2026-10-05&project=fixture-project');
++  await page.getByRole('button', { name: 'Open October 7, 2026 in Day view' }).click();
++  await page.waitForURL(/view=day.*date=2026-10-07/);
++  assert.equal(routeState().project, null);
++
++  await page.setViewportSize({ width: 390, height: 844 });
++  for (const base of ['/admin/calendar', '/admin/quick-view', '/qv']) {
++    const project = base === '/qv' ? '' : '&project=fixture-project';
++    await go(`${base}?view=month&date=2026-10-05${project}`);
++    const month = page.getByTestId('calendar-mobile-month');
++    await month.getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).click();
++    await page.waitForURL(/date=2026-10-07/);
++    assert.equal(routeState().view, 'month');
++    assert.equal(await month.getByTestId('calendar-month-agenda').getByText('Lunch', { exact: true }).count(), 1);
++    if (base === '/admin/calendar') {
++      await month.getByTestId('calendar-month-agenda').scrollIntoViewIfNeeded();
++      await page.screenshot({ path: path.join(output, 'calendar-month-open-day-390.png'), fullPage: false });
++    }
++    await month.getByTestId('calendar-month-agenda').getByRole('button', { name: 'Open October 7, 2026 in Day view' }).click();
++    await page.waitForURL(/view=day.*date=2026-10-07/);
++    assert.equal(routeState().pathname, base);
++    assert.equal(routeState().project, base === '/admin/quick-view' ? 'fixture-project' : null);
++    await page.goBack({ waitUntil: 'networkidle' });
++    assert.equal(routeState().view, 'month');
++    assert.equal(routeState().date, '2026-10-07');
++    assert.equal(await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).getAttribute('aria-pressed'), 'true');
++  }
++  console.log('PASS: desktop Month day-number keyboard route, empty-cell creation, exact event inspector, Week heading, mobile selection/Open Day, read-only Quick View, project context and back navigation. Synthetic fixture only.');
++} finally {
++  await browser.close();
++}
+diff --git a/cvc-scheduler/scripts/12-48-batch-2-regression.mjs b/cvc-scheduler/scripts/12-48-batch-2-regression.mjs
+new file mode 100644
+index 0000000..bdc984f
+--- /dev/null
++++ b/cvc-scheduler/scripts/12-48-batch-2-regression.mjs
+@@ -0,0 +1,159 @@
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import path from 'node:path';
++import { chromium } from 'playwright';
++import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
++
++// Run against `node scripts/12-48-preview.mjs --serve`: all people and schedule rows are synthetic.
++const output = path.resolve('..', 'previews', '12.48-batch-2', 'implemented');
++fs.mkdirSync(output, { recursive: true });
++const browser = await chromium.launch({ executablePath: resolvePreviewBrowserExecutable(), headless: true });
++const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
++await context.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
++await context.addCookies([{ name: 'fixture-assignments', value: '1', domain: '127.0.0.1', path: '/' }]);
++const page = await context.newPage();
++const errors = [];
++page.on('pageerror', error => errors.push(error.message));
++const go = route => page.goto(`http://127.0.0.1:3148${route}`, { waitUntil: 'networkidle' });
++const screenshot = name => page.screenshot({ path: path.join(output, `${name}.png`), fullPage: false, style: 'nextjs-portal { visibility: hidden; }' });
++const mealSummary = () => page.getByTestId('calendar-meal-summary').filter({ visible: true });
++const mealCount = kind => mealSummary().locator(`[data-meal-kind="${kind}"] [data-meal-headcount]`).textContent();
++const overflow = p => p.evaluate(() => document.documentElement.scrollWidth > innerWidth);
++
++try {
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  const mobileMonth = page.getByTestId('calendar-mobile-month');
++  const agenda = mobileMonth.getByTestId('calendar-month-agenda');
++  assert.equal(await mobileMonth.isVisible(), true);
++  assert.equal(await agenda.locator('[data-calendar-month-agenda-item]').count(), 6);
++  assert.equal(await mobileMonth.getByRole('button', { name: /Select Monday, Oct 5, 6 scheduled items/ }).getAttribute('aria-pressed'), 'true');
++  await screenshot('calendar-month-selected-390');
++  const firstItem = await agenda.locator('[data-calendar-month-agenda-item]').first().boundingBox();
++  assert(firstItem && firstItem.y < 844 - 64, 'The first agenda item is below the initial usable viewport');
++  await mobileMonth.getByRole('button', { name: "View day's work" }).click();
++  assert.equal(await agenda.evaluate(element => document.activeElement === element), true, 'Agenda jump did not move keyboard focus');
++  assert.equal(await agenda.evaluate(element => { const box = element.getBoundingClientRect(); return box.top < innerHeight && box.bottom > 0; }), true);
++  await screenshot('calendar-month-agenda-jump-390');
++  const foodItem = agenda.locator('[data-calendar-month-agenda-item="22222222-2222-4222-8222-000000000003"]');
++  assert.equal(await foodItem.getByText('Jordan Hale').count(), 1);
++  assert.equal(await foodItem.getByRole('img', { name: 'Awaiting reply' }).count(), 1);
++  assert.equal(await foodItem.getByRole('img', { name: "Can't make it" }).count(), 1);
++  await foodItem.getByRole('button', { name: /Food-service shift/ }).click();
++  await page.getByRole('dialog', { name: 'Calendar item inspector' }).waitFor();
++  assert.equal(new URL(page.url()).searchParams.get('item'), '22222222-2222-4222-8222-000000000003');
++  await page.getByRole('dialog', { name: 'Calendar item inspector' }).getByRole('button', { name: 'Close calendar item inspector', exact: true }).click();
++  await mobileMonth.getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).click();
++  await page.waitForURL(/date=2026-10-07/);
++  assert.equal(new URL(page.url()).pathname, '/admin/calendar');
++  assert.equal(new URL(page.url()).searchParams.get('view'), 'month');
++  assert.equal(await page.getByTestId('calendar-month-agenda').locator('[data-calendar-month-agenda-item]').count(), 1);
++  assert.equal(await page.getByTestId('calendar-month-agenda').getByText('Lunch', { exact: true }).count(), 1);
++  await screenshot('calendar-month-selected-positive-390');
++  await page.getByTestId('calendar-month-agenda').getByRole('button', { name: 'Open October 7, 2026 in Day view' }).click();
++  await page.waitForURL(/view=day.*date=2026-10-07/);
++
++  await go('/admin/quick-view?date=2026-10-05&project=fixture-project');
++  assert.equal(new URL(page.url()).searchParams.has('view'), false, 'Default Quick View route unexpectedly forced a view');
++  assert.equal(await page.getByRole('button', { name: 'Month', exact: true }).getAttribute('aria-pressed'), 'true');
++  assert.equal(await mealCount('breakfast'), 'Not recorded');
++  assert.equal(await mealCount('lunch'), '0');
++  assert.equal(await mealSummary().getByText('Main contact: Avery Stone').count(), 1);
++  assert.equal(await page.getByRole('button', { name: /Create item|Create$/ }).count(), 0);
++  await screenshot('quick-view-selected-meals-390');
++  await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).click();
++  await page.waitForURL(/date=2026-10-07/);
++  assert.equal(new URL(page.url()).pathname, '/admin/quick-view');
++  assert.equal(await mealCount('breakfast'), 'Not scheduled');
++  assert.equal(await mealCount('lunch'), '25');
++  assert.equal(await mealSummary().getByText('Main contact: Jordan Hale').count(), 1);
++  await screenshot('quick-view-positive-meals-390');
++  await page.getByTestId('calendar-month-agenda').getByRole('button', { name: /Lunch/ }).click();
++  await page.getByRole('dialog', { name: 'Calendar item inspector' }).waitFor();
++  assert.equal(new URL(page.url()).pathname, '/admin/quick-view');
++  assert.equal(await page.getByRole('dialog', { name: 'Calendar item inspector' }).getByText(/volunteer|helper|vacancy|staffing/i).count(), 0);
++
++  await go('/qv?date=2026-10-05');
++  assert.equal(await mealCount('breakfast'), 'Not recorded');
++  assert.equal(await mealCount('lunch'), '0');
++  assert.equal(await page.getByText('Casey Morgan').count(), 0, 'Bearer Quick View exposed an ordinary volunteer identity');
++  assert.equal(await page.getByRole('list', { name: 'Assigned volunteers' }).count(), 0);
++  assert.equal(await page.getByRole('button', { name: /Create item|Create$/ }).count(), 0);
++  await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7, 1 scheduled item/ }).click();
++  await page.waitForURL(/date=2026-10-07/);
++  assert.equal(new URL(page.url()).pathname, '/qv');
++  assert.equal(await mealCount('lunch'), '25');
++  await screenshot('bearer-quick-view-meals-390');
++
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  await page.getByRole('button', { name: 'Open calendar filters' }).click();
++  await page.getByLabel('Task name', { exact: true }).filter({ visible: true }).fill('no matching project work');
++  await page.getByRole('button', { name: /Show results/ }).filter({ visible: true }).click();
++  assert.equal(await page.getByTestId('calendar-month-agenda').getByText('No scheduled items for this day.').count(), 1);
++  await page.getByTestId('calendar-mobile-month').getByRole('button', { name: /Select Wednesday, Oct 7, 0 scheduled items/ }).click();
++  await page.waitForURL(/date=2026-10-07/);
++  assert.equal(await page.getByTestId('calendar-month-agenda').getByText('No scheduled items for this day.').count(), 1);
++
++  for (const view of ['day', 'list']) {
++    await go(`/admin/calendar?view=${view}&date=2026-10-05`);
++    const food = page.locator('[data-calendar-task-item="22222222-2222-4222-8222-000000000003"]');
++    assert.equal(await food.getByText('Avery Stone').count(), 1);
++    assert.equal(await food.getByText('Jordan Hale').count(), 1);
++    assert.equal(await food.getByText('Casey Morgan').count(), 1);
++    for (const label of ['Confirmed', 'Awaiting reply', "Can't make it"]) {
++      assert.equal(await food.getByRole('img', { name: label }).count(), 1);
++    }
++    assert.equal(await page.getByLabel('Assignment response legend').filter({ visible: true }).count(), 1);
++    const cleanup = page.locator('[data-calendar-task-item="22222222-2222-4222-8222-000000000004"]');
++    await cleanup.getByText('+3 more volunteers').click();
++    assert.equal(await cleanup.getByText('Sam Rivera').count(), 1);
++    await cleanup.scrollIntoViewIfNeeded();
++    await screenshot(`calendar-${view}-expanded-roster-390`);
++  }
++
++  await context.addCookies([{ name: 'fixture-assignment-visibility', value: 'unavailable', domain: '127.0.0.1', path: '/' }]);
++  await go('/admin/calendar?view=month&date=2026-10-05');
++  assert.equal(await page.getByTestId('calendar-month-agenda').getByText('Assignment details unavailable').count() > 0, true);
++  await context.addCookies([{ name: 'fixture-assignment-visibility', value: 'available', domain: '127.0.0.1', path: '/' }]);
++
++  for (const width of [320, 390, 768, 1024, 1440]) {
++    await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
++    await go('/admin/calendar?view=month&date=2026-10-05');
++    assert.equal(await overflow(page), false, `Month overflow at ${width}px`);
++    if (width < 640) {
++      const selected = page.getByTestId('calendar-month-agenda');
++      await selected.scrollIntoViewIfNeeded();
++      assert.equal(await selected.isVisible(), true, `Agenda unreachable at ${width}px`);
++    }
++  }
++  for (const physicalWidth of [320, 390, 768, 1024, 1440]) {
++    const zoomContext = await browser.newContext({ viewport: { width: physicalWidth / 2, height: physicalWidth < 768 ? 350 : 500 }, deviceScaleFactor: 2 });
++    await zoomContext.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
++    await zoomContext.addCookies([{ name: 'fixture-assignments', value: '1', domain: '127.0.0.1', path: '/' }]);
++    const zoomPage = await zoomContext.newPage();
++    await zoomPage.goto('http://127.0.0.1:3148/admin/calendar?view=month&date=2026-10-05', { waitUntil: 'networkidle' });
++    assert.equal(await overflow(zoomPage), false, `Month overflow at ${physicalWidth}px and 200% effective zoom`);
++    if (physicalWidth / 2 < 640) {
++      const selected = zoomPage.getByTestId('calendar-month-agenda');
++      await selected.scrollIntoViewIfNeeded();
++      assert.equal(await selected.isVisible(), true, `Agenda unreachable at ${physicalWidth}px and 200% effective zoom`);
++    }
++    if (physicalWidth === 320) await zoomPage.screenshot({ path: path.join(output, 'calendar-month-text200-320-scrolled.png'), fullPage: false });
++    await zoomContext.close();
++  }
++  for (const width of [320, 390, 768, 1024, 1440]) {
++    await page.setViewportSize({ width, height: width < 768 ? 844 : 1000 });
++    await go('/admin/calendar?view=month&date=2026-10-05');
++    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
++    assert.equal(await overflow(page), false, `Month overflow at ${width}px with 200% root text`);
++    if (width < 640) {
++      const selected = page.getByTestId('calendar-month-agenda');
++      await selected.scrollIntoViewIfNeeded();
++      assert.equal(await selected.isVisible(), true, `Agenda unreachable at ${width}px with 200% root text`);
++    }
++    if (width === 320) await screenshot('calendar-month-root-text200-320-scrolled');
++  }
++  assert.deepEqual(errors, []);
++  console.log('PASS: mobile Month selection/agenda, empty filtered state, exact inspector route, meal null/zero/positive, status icons/legend, roster disclosure, bearer isolation, and 320–1440px normal/enlarged scroll reachability. Synthetic fixture only.');
++} finally {
++  await browser.close();
++}
+diff --git a/cvc-scheduler/scripts/12-48-review-regression.mjs b/cvc-scheduler/scripts/12-48-review-regression.mjs
+index a3f4b2c..c46f8ce 100644
+--- a/cvc-scheduler/scripts/12-48-review-regression.mjs
++++ b/cvc-scheduler/scripts/12-48-review-regression.mjs
+@@ -105,11 +105,15 @@ try{
+       await go(route);
+       assert.equal(new URL(page.url()).searchParams.has('view'),false);
+       assert.equal(await page.getByRole('button',{name:'Month',exact:true}).getAttribute('aria-pressed'),'true');
+-      for(const pattern of [/Breakfast.*Headcount not set/,/Lunch.*Headcount 0/,/Lunch.*Headcount 25/]){
++      for(const pattern of (width===1440?[/Breakfast.*Headcount not set/,/Lunch.*Headcount 0/,/Lunch.*Headcount 25/]:[])){
+         const entry=page.getByRole('button',{name:pattern}).first();
+         assert.equal(await entry.isVisible(),true);
+       }
+-      for(const label of (width===1440?['Breakfast · —','Lunch · 0','Lunch · 25']:['B—','L0','L25'])){
++      const mealSummary=page.getByTestId('calendar-meal-summary').filter({visible:true});
++      await mealSummary.waitFor();
++      assert.equal(await mealSummary.locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
++      assert.equal(await mealSummary.locator('[data-meal-kind="lunch"] [data-meal-headcount]').textContent(),'0');
++      if(width===1440)for(const label of ['Breakfast · —','Lunch · 0','Lunch · 25']){
+         assert.equal(await page.getByText(label,{exact:true}).filter({visible:true}).count()>0,true);
+       }
+       assert.equal(await page.getByRole('dialog',{name:'Calendar item inspector'}).count(),0);
+@@ -143,7 +147,7 @@ try{
+     await shot('quick-view-nonmeal-inspector-'+width);
+   }
+   await page.setViewportSize({width:390,height:844});await go('/admin/quick-view?view=month&date=2026-10-05&project=fixture-project');
+-  assert.equal(await page.getByRole('button',{name:/Breakfast.*Headcount not set/}).count()>0,true);
++  assert.equal(await page.getByTestId('calendar-meal-summary').filter({visible:true}).locator('[data-meal-kind="breakfast"] [data-meal-headcount]').textContent(),'Not recorded');
+   await shot('quick-view-month-meals-390');
+   assert.deepEqual(errors,[]);
+   console.log('PASS: grouped links, no-photo/photo identity, menu/editor, direct create permission, disclosure, default Quick View meal counts and route on desktop/mobile. Synthetic fixture only.');
