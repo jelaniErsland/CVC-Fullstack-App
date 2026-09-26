@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Local 12.48 · Batch 2 Stage 1 comparison</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif; color: #0b1733; background: #f7f9fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { padding: 28px clamp(16px, 4vw, 54px); background: #fff; border-bottom: 1px solid #dfe6f1; }
+    h1 { margin: 0; font-size: clamp(24px, 3vw, 36px); letter-spacing: -.03em; }
+    h2 { margin: 34px 0 12px; font-size: 22px; letter-spacing: -.02em; }
+    p { color: #35435f; line-height: 1.5; }
+    .eyebrow { margin: 0 0 8px; color: #155eef; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .note { max-width: 960px; margin: 12px 0 0; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .links a { padding: 8px 11px; border: 1px solid #dfe6f1; border-radius: 8px; color: #1550c8; font-size: 13px; font-weight: 650; text-decoration: none; }
+    main { padding: 0 clamp(16px, 4vw, 54px) 70px; }
+    section { max-width: 1800px; margin-inline: auto; }
+    .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 12px 0 22px; }
+    .shot { min-width: 0; overflow: hidden; border: 1px solid #dfe6f1; border-radius: 12px; background: #fff; }
+    .shot strong { display: block; padding: 11px 14px; border-bottom: 1px solid #dfe6f1; font-size: 13px; }
+    .shot strong span { display: block; color: #5b6b83; font-size: 11px; font-weight: 500; margin-top: 3px; }
+    .shot a { display: block; }
+    .shot img { display: block; width: 100%; height: auto; object-fit: contain; object-position: top; }
+    .mobile .shot img { width: auto; max-width: 100%; max-height: 844px; margin: auto; }
+    .description { margin: -3px 0 15px; max-width: 1050px; font-size: 14px; }
+    .reference { max-width: 1000px; border: 1px solid #dfe6f1; background: #fff; padding: 14px; border-radius: 12px; }
+    .reference img { display: block; width: 100%; height: auto; }
+    a:focus-visible { outline: 3px solid #155eef; outline-offset: 3px; }
+    @media (max-width: 850px) { .pair { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">Stage 1 · proposal only</p>
+    <h1>Calendar visual comparison</h1>
+    <p class="note">Left images are the current production-baseline interface rendered with isolated synthetic fixture data. Right images are a standalone design prototype using the same fixture. No Calendar application component was changed for these previews. Open an image for full resolution.</p>
+    <div class="links"><a href="#desktop">Desktop</a><a href="#mobile-month">Mobile Month</a><a href="#mobile-views">Day, Week and List</a><a href="#quick-view">Quick View meals</a><a href="#large-text">320px and enlarged text</a><a href="prototype.html?view=month&date=2026-10-05">Explore prototype</a></div>
+  </header>
+  <main>
+    <section id="desktop"><h2>Desktop · 1440px</h2><p class="description">The established shell, four views, colors and actions remain recognizable. The proposal tightens spacing and introduces a compact status legend with named icons; Week event copy is more legible.</p><div id="desktop-pairs"></div></section>
+    <section id="mobile-month"><h2>Mobile Month · 390px busy day</h2><p class="description">The existing Month cells truncate labels and hide remaining items behind “+3”. The proposed grid retains dates and category color while the selected-day agenda supplies readable times, titles, staffing and meal context.</p><div id="month-pairs" class="mobile"></div></section>
+    <section id="mobile-views"><h2>Mobile Day, Week and List · 390px</h2><p class="description">Volunteer names remain visible in Day and List. A green check-circle, amber clock and red X-circle replace repeated response words, with a visible legend and accessible names. The extra-roster disclosure remains available.</p><div id="mobile-pairs" class="mobile"></div></section>
+    <section id="quick-view"><h2>Quick View · selected-day meals</h2><p class="description">The current key explains tiny B/L chips. The proposal puts Breakfast and Lunch headcounts before the calendar, labeled for the selected date, and distinguishes unrecorded, zero and positive counts. Meal contacts are shown only where already authorized; this visual fixture represents authenticated Quick View.</p><div id="quick-pairs" class="mobile"></div></section>
+    <section id="large-text"><h2>Narrow and enlarged text</h2><p class="description">The 320px proposal avoids clipped controls and horizontal overflow at simulated 200% zoom. The month grid and selected-day agenda remain scroll reachable. The three-destination extreme-size navigation preserves access through More.</p><div id="large-pairs" class="mobile"></div></section>
+    <section><h2>Approved visual reference</h2><p class="description">The approved Calendar reference informs the restrained surface, type hierarchy, category colors and scheduling density. Its illustrative content is not treated as application data or promised functionality.</p><div class="reference"><img src="../../cvc-scheduler/docs/design/approved-project-local-ui/22E39D54-D483-454F-97B5-977FD6890652.PNG" alt="Approved Project Local Calendar visual reference"></div></section>
+  </main>
+  <script>
+    const groups = [
+      ['desktop-pairs', [['Day', 'calendar-day-1440'], ['Week', 'calendar-week-1440'], ['Month', 'calendar-month-1440'], ['List', 'calendar-list-1440']]],
+      ['month-pairs', [['Busy Monday, first viewport', 'calendar-month-busy-390']]],
+      ['mobile-pairs', [['Day, first viewport', 'calendar-day-390'], ['Week, selected day', 'calendar-week-390'], ['Day, assigned volunteers', 'calendar-day-roster-390'], ['List, assigned volunteers', 'calendar-list-roster-390']]],
+      ['quick-pairs', [['Missing Breakfast count and recorded zero Lunch', 'quick-view-month-390'], ['Recorded positive Lunch count', 'quick-view-positive-390']]],
+      ['large-pairs', [['Month at 320px', 'calendar-month-320'], ['Month at 320px, 200% text', 'calendar-month-text200-320'], ['List at 1440px, 200% text', 'calendar-list-text200-1440']]],
+    ];
+    for (const [target, pairs] of groups) {
+      const holder = document.getElementById(target);
+      for (const [label, name] of pairs) {
+        const pair = document.createElement('div');
+        pair.className = 'pair';
+        pair.innerHTML = ['before', 'proposed'].map((kind) => `<div class="shot"><strong>${kind === 'before' ? 'Current' : 'Proposed'} · ${label}<span>${kind === 'before' ? 'Production-baseline fixture' : 'Standalone prototype'}</span></strong><a href="${kind}/${name}.png"><img loading="lazy" src="${kind}/${name}.png" alt="${kind === 'before' ? 'Current' : 'Proposed'} ${label}"></a></div>`).join('');
+        holder.append(pair);
+      }
+    }
+    document.getElementById('mobile-pairs').insertAdjacentHTML('beforeend', '<div class="pair"><div class="shot"><strong>Current · expanded roster<span>Current words and +N disclosure</span></strong><a href="before/calendar-day-roster-390.png"><img loading="lazy" src="before/calendar-day-roster-390.png" alt="Current mobile Day volunteer roster"></a></div><div class="shot"><strong>Proposed · expanded roster<span>Names and response icons remain visible</span></strong><a href="proposed/calendar-day-roster-expanded-390.png"><img loading="lazy" src="proposed/calendar-day-roster-expanded-390.png" alt="Proposed expanded volunteer roster"></a></div></div>');
+    document.getElementById('large-pairs').insertAdjacentHTML('beforeend', '<div class="pair"><div class="shot"><strong>Current · 320px, 200% text<span>Initial viewport clips the toolbar</span></strong><a href="before/calendar-month-text200-320.png"><img loading="lazy" src="before/calendar-month-text200-320.png" alt="Current enlarged-text Month initial viewport"></a></div><div class="shot"><strong>Proposed · scrolled Month<span>Grid and selected-day agenda remain reachable</span></strong><a href="proposed/calendar-month-text200-320-scrolled.png"><img loading="lazy" src="proposed/calendar-month-text200-320-scrolled.png" alt="Proposed enlarged-text Month after scrolling"></a></div></div>');
+  </script>
+</body>
+</html>

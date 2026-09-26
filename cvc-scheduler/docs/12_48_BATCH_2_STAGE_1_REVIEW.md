@@ -1,0 +1,32 @@
+# Project Local 12.48 — Batch 2 Stage 1 visual decision
+
+**Status:** Design preview ready for product-owner review. Stage 2 implementation has **not** started.
+
+**Branch:** `codex/12.48-batch-2`, created from verified production commit `fd1fad41d01609c8ad437ebc0e24346c98d38fe9`. The existing Batch 1 branch and its closeout documentation remain in place. No Calendar product component, route, backend, authorization rule, notification path, database object, deployment setting or production data was changed for this stage.
+
+**Evidence:** [Side-by-side gallery](../../previews/12.48-batch-2/index.html) and [standalone prototype](../../previews/12.48-batch-2/prototype.html). Both current and proposed screenshots use the isolated 12.48 preview fixture with synthetic project and volunteer names, six scheduled items on October 5 plus one on each of October 6 and 7. The proposed HTML is an illustrative design surface, not a production route. Its unrelated action buttons are not functional workflows.
+
+## Decision
+
+The current desktop Calendar is close to the approved design direction. The proposal preserves the familiar sidebar, Day/Week/Month/List selector, category colors, project-day context, toolbar action locations, stable date-navigation group, List time column and Day/List volunteer names. Desktop changes are restrained: tighter type and spacing, clearer active-hour event copy and a compact response legend. The [approved Calendar reference](design/approved-project-local-ui/22E39D54-D483-454F-97B5-977FD6890652.PNG) supports this hierarchy and restrained color; its sample schedule is illustrative rather than application data. Brief 03 of the original UX audit specifically identifies narrow Week event lanes, tiny Month labels and mobile control overhead. The current fixture images confirm those issues, though the subsequent Batch 1 releases already improved desktop List alignment and date navigation. Neither improvement should be reversed.
+
+The substantive proposed change is mobile Month. The current 390px grid shows clipped letter fragments for a busy October 5 and “+3” without readable details in the first viewport. The proposal keeps the seven-column month grid, makes the selected date unmistakable, uses the existing task/meal colors as small indicators and shows a total item count on busy dates. A selected-day agenda follows immediately below the grid, with complete titles, times, meal information and applicable staffing. This is more useful than simply shrinking the current event chips: the first scheduled row appears in the ordinary 390px viewport, and all six items are reachable by scrolling. Date buttons need full accessible names and the selected date must update both the agenda and any Quick View summary in Stage 2.
+
+Mobile Week remains a chronological list of the week’s days and tasks, as it is today; the proposal only refines row spacing and title wrapping. Mobile Day and List keep names visible on the first rows and keep the `+N more` roster expansion. The proposal uses a check-circle for Confirmed, clock for Awaiting reply, and X-circle for Can’t make it. The visible legend explains all three without hover, and prototype SVGs include accessible names. Stage 2 must preserve explicit words on consequential response buttons and current staffing semantics: declined is not active, and awaiting reply is not confirmed.
+
+Authenticated Quick View currently shows a key for abbreviated B/L month chips, requiring interpretation before food contacts can read a daily headcount. The proposed compact summary appears above the Month grid for the **selected date**, with full Breakfast/Lunch names and main meal contact where authorized. The fixture demonstrates an unrecorded Breakfast count, a saved zero Lunch count, and a positive Lunch count on October 7. It shows no volunteer roster or staffing fraction for meal entries; an ordinary food-service shift remains a separate staffed task. Stage 2 must consume only the existing authorized projection and must retain the bearer-link restricted contract. The prototype depicts authenticated Quick View, not a claim that bearer viewers may see meal contacts.
+
+## Spacing and responsive review
+
+At 1440px the proposal retains the current shell and action order. The desktop Day cards use the established two-column treatment when two items start together. List time labels remain in a stable column, and the Previous/Today/Next buttons remain a separate stable group. The desktop Week screenshot sketches active-hour event density; the production timeline, duration geometry and all-hour scroll behavior must remain intact during implementation. The proposal is not a change to time semantics.
+
+At 390px the Month calendar trades unreadable mini-labels for selected-day details. The Week list remains readable, and the Day/List rosters fit without widening cards. At 320px and simulated 200% effective zoom (a 160px CSS viewport rendered to 320 physical pixels), the prototype wraps controls, retains a three-destination Overview/Calendar/More navigation fallback, has no document-level horizontal overflow, and the Month grid and agenda are scroll reachable. Stage 2 must validate real browser text zoom, keyboard focus, touch targets and safe-area behavior at 320, 390, 768, 1024 and 1440px.
+
+## Evidence and limits
+
+- Captured current fixture Day/Week/Month/List at 1440px; Month/Day/Week/List at 390px; Month at 320px; Quick View at 390px; and 200% examples. Captured corresponding proposal views, plus expanded roster and scrolled 320px Month states.
+- Every proposed screenshot reported no document-level horizontal overflow. A browser check confirmed the enlarged-text selected-day agenda can be scrolled into view and the prototype roster disclosure expands with `aria-expanded=true`.
+- The images show visual decisions, not completed product behavior. Route state, recurring occurrences, filters, authenticated/bearer isolation, timezone correctness, keyboard operation, contrast, production build and regression suites are Stage 2 checks after explicit approval.
+- No real volunteer contact information, operational production data or production credentials appear in this gallery.
+
+**Approval gate:** Review the side-by-side gallery. Implement only after the product owner explicitly approves the Stage 1 direction. Do not merge, deploy or begin Batch 3 as part of this stage.
