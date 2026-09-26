@@ -8,7 +8,7 @@ const expectedProject = "project-local";
 const expectedOrigin = "https://projectlocal.app";
 const expectedSupabaseRef = "wdlaauzknfggoqldolmx";
 const forbiddenStagingRef = "kfuujcfxoayukywvtaeh";
-const expectedMigration = "20260812123430";
+const expectedMigration = "20260922150000";
 const optInName = "RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION";
 const expectedOptIn = `${expectedProject}|${expectedOrigin}|${expectedSupabaseRef}|${expectedMigration}`;
 
@@ -42,7 +42,7 @@ function command(commandName, args, options = {}) {
 }
 
 function gitStatusShort() {
-  const result = command("git", ["status", "--short"]);
+  const result = command("git", ["status", "--short", "--", "."]);
   if (result.status !== 0) throw new Error("Could not inspect git status.");
   return result.stdout.trim();
 }
@@ -152,7 +152,7 @@ async function main() {
   assert.equal(landing.status, 200, "Landing page did not return HTTP 200.");
   const landingBody = await text(landing);
   assert(landingBody.includes("Project Local"), "Landing page did not render Project Local.");
-  assert(landingBody.includes("Volunteer project access"), "Landing page did not render expected public access surface.");
+  assert(landingBody.includes("Volunteer schedule access"), "Landing page did not render expected public access surface.");
   assertSafeBody(landingBody, "Landing page");
 
   const admin = await request("/admin");
@@ -181,7 +181,7 @@ async function main() {
   assertNoCookieSet(schedule, "Unauthenticated volunteer schedule");
   const scheduleBody = await text(schedule);
   assert(scheduleBody.includes("This schedule link is unavailable"), "Unauthenticated volunteer schedule did not show safe unavailable state.");
-  assert(scheduleBody.includes("Open your latest secure schedule link"), "Unauthenticated volunteer schedule missing safe recovery copy.");
+  assert(scheduleBody.includes("Find your schedule below, or open your latest schedule link."), "Unauthenticated volunteer schedule missing safe recovery copy.");
   assert(!scheduleBody.includes("Your assignments"), "Unauthenticated volunteer schedule exposed assignment UI.");
   assert(!scheduleBody.includes("Confirm All"), "Unauthenticated volunteer schedule exposed response action UI.");
   assertSafeBody(scheduleBody, "Unauthenticated volunteer schedule");

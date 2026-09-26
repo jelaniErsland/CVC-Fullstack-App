@@ -34,3 +34,11 @@ The repeatable, read-only production fingerprints captured before the push and a
 ## Closeout
 
 The development checkout remains on `codex/12.48-batch-2`; this closeout document is a post-deployment documentation change and is not part of the deployed `ca54020…` application commit. The approved mobile Month agenda retains its intentional jump-to-work control for small phones. The full Calendar inspector redesign remains deferred to Batch 3.
+
+### Post-release harness closeout
+
+The two baseline-stale test harnesses identified above were corrected permanently on the development branch without changing application code or redeploying. `assignment-notification-health-regression.mjs` now requires the documented Supabase CLI 2.111.0, generates both `public` and `graphql_public` types, and compares the full parsed TypeScript token sequence while ignoring only redundant type parentheses and the CLI's known PostgREST-version metadata. Its authorization, isolation, bounded-query, direct-table-denial, no-mutation and cleanup assertions remain intact. The checked-in script passed unmodified through the loopback-only local runner with disposable fixtures and zero residue.
+
+`production-deployment-smoke-regression.mjs` now locks the verified production terminal `20260922150000`, checks the current volunteer-access and schedule-recovery wording, and requires the committed application subtree to be clean while ignoring unrelated sibling preview artifacts. Its canonical-origin, opt-in, no-service-role/no-email/no-fixture, redirect, privacy-header, cookie and response-body leak checks remain intact. The checked-in script passed unmodified using its documented opt-in against the canonical production origin; it issued unauthenticated GETs only. [CURRENT_STATE](CURRENT_STATE.md) records this local-only follow-up.
+
+The detached `batch-2-release-check` directory was inspected: it is no longer a registered Git worktree and contains only a `node_modules` junction pointing to the main checkout's dependencies. Automatic approval review blocked its removal; no forced deletion was attempted. It is outside the product source and deployment scope.

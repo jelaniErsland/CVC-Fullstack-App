@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import ts from "typescript";
 
 import { readAssignmentNotificationHealthWithClient } from "../lib/observability/assignmentNotificationHealth.server.ts";
 
@@ -122,17 +123,10 @@ function command(commandName, args, options = {}) {
 }
 
 function runSupabaseCli(args) {
-  const isWindows = process.platform === "win32";
-  const executable = isWindows ? process.execPath : "npx";
-  const executableArgs = isWindows
-    ? [
-        path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js"),
-        "--yes",
-        "supabase",
-        ...args,
-      ]
-    : ["--yes", "supabase", ...args];
-  const result = command(executable, executableArgs);
+  const version = command("supabase", ["--version"]);
+  assert.equal(version.status, 0, "Pinned local Supabase CLI is unavailable.");
+  assert.equal(version.stdout.trim(), "2.111.0", "Use the repository's documented Supabase CLI 2.111.0.");
+  const result = command("supabase", args);
   assert.equal(result.status, 0, "Local Supabase CLI generated-type check failed.");
   return result.stdout;
 }
@@ -151,6 +145,28 @@ function normalizeGeneratedTypes(source) {
     .trim();
 }
 
+function typeSyntax(source) {
+  const file = ts.createSourceFile("database.types.ts", normalizeGeneratedTypes(source), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  assert.equal(file.parseDiagnostics.length, 0, "Generated database types must parse without errors.");
+  const transformed = ts.transform(file, [(context) => (rootNode) => {
+    const visit = (node) => ts.isParenthesizedTypeNode(node)
+      ? ts.visitNode(node.type, visit)
+      : ts.visitEachChild(node, visit, context);
+    return ts.visitNode(rootNode, visit);
+  }]);
+  try {
+    const printed = ts.createPrinter({ removeComments: true }).printFile(transformed.transformed[0]);
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, printed);
+    const tokens = [];
+    for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+      tokens.push([kind, scanner.getTokenText()]);
+    }
+    return tokens;
+  } finally {
+    transformed.dispose();
+  }
+}
+
 async function verifyGeneratedTypes() {
   const current = await readFile(
     path.join(root, "lib", "supabase", "database.types.ts"),
@@ -162,12 +178,12 @@ async function verifyGeneratedTypes() {
     "typescript",
     "--local",
     "--schema",
-    "public",
+    "public,graphql_public",
   ]);
-  assert.equal(
-    normalizeGeneratedTypes(generated),
-    normalizeGeneratedTypes(current),
-    "Local generated public-schema types differ from repository types.",
+  assert.deepEqual(
+    typeSyntax(generated),
+    typeSyntax(current),
+    "Local generated public and graphql_public types differ structurally from repository types.",
   );
 }
 

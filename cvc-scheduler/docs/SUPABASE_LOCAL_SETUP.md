@@ -74,7 +74,7 @@ After 12.26 manual Auth proof, one or more approved Auth identities may legitima
 12.27 retargets the public HTTP-only production deployment smoke gate for Vercel project `project-local` to canonical production origin `https://projectlocal.app`. The temporary Vercel fallback alias remains `https://project-local-one.vercel.app`.
 
 ```powershell
-$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260812123430'
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260922150000'
 npm run test:production-deployment-smoke
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```

@@ -2,6 +2,12 @@
 
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
+## 12.48 Batch 2 production and local closeout — 2026-09-26
+
+**Deployed application:** `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923` is Production/Ready at `https://projectlocal.app`. Authorized Calendar and Quick View smoke passed at desktop and 390px mobile sizes. All 11 read-only production table fingerprints, including assignments and notification deliveries, matched before and after release. The scheduled encrypted backup and production preflight passed. See the [Batch 2 release report](12_48_BATCH_2_RELEASE.md) and [Stage 2 review](12_48_BATCH_2_STAGE_2_REVIEW.md).
+
+**Post-release local housekeeping:** the notification-health harness now uses the documented Supabase CLI 2.111.0 and both `public` and `graphql_public` schemas; the public-deployment-smoke harness now checks current public wording and the verified migration lock. These are regression and documentation changes on `codex/12.48-batch-2`, after the deployed application commit; they do not change or redeploy production code. The checked-in notification-health script passed against loopback Supabase with disposable fixtures and zero residue; the checked-in public smoke passed against the canonical site using unauthenticated GETs only. The old detached release-check directory contains only a `node_modules` junction to the main checkout; cleanup was blocked by automatic review, so it remains harmless and outside the application source.
+
 ## 12.48 Batch 1 production closeout — 2026-09-26
 
 **Deployed and verified:** `1447bb926dfb65cbc77c071bab5d33879d8c46c5` is Ready on Vercel Production and served at `https://projectlocal.app`. Batch 1 and the Day/List assignment-visibility enhancement shipped together through the normal fast-forward of `master`; the development checkout remains `codex/12.48-batch-1`. Real local role/bearer/photo checks and authorized production Overview, Calendar, assignment, Quick View, navigation and desktop/mobile smoke passed. All 11 production operational/contact/photo/delivery table counts and row fingerprints matched before and after release. No volunteer data changed or delivery was created by these checks. The schema remains `20260922150000`, photo uploads remain disabled, and backup/security/notification safeguards are unchanged. See the [release report](12_48_BATCH_1_RELEASE.md) for evidence and limitations. No Batch 2 work began.
