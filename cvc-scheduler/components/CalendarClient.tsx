@@ -1732,7 +1732,7 @@ function MonthView({
             </div>;
           })}
         </div>
-        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
+        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none max-[360px]:px-2" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-bold text-[var(--pl-ink)]" id={agendaHeadingId}>{getCalendarAccessibleDayLabel(referenceDate)}</h2>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -1744,10 +1744,10 @@ function MonthView({
           {hasVisibleAssignmentResponses(selectedDayItems, assignmentVisibility) ? <div className="-mx-3 mt-2"><CalendarAssignmentLegend /></div> : null}
           {selectedDayItems.length ? <div className="mt-2 space-y-2">
             {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] border-l-[3px] bg-white" data-calendar-month-agenda-item={item.id} key={item.id} style={{ borderLeftColor: getCalendarEventColorStyle(item).borderColor }}>
-              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[240px]:grid-cols-1 max-[240px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
+              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[360px]:grid-cols-1 max-[360px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
                 <span className="min-w-0 break-words text-sm font-semibold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</span>
-                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[240px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
-                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[240px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
+                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[360px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
+                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[360px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
               </button>
               {item.meal ? <p className="border-t border-[var(--pl-border)] px-3 py-1.5 text-xs text-[var(--pl-text)]">Main contact: {item.meal.contact?.trim() || "Not assigned"}</p>
                 : assignmentVisibility !== "hidden" ? <div className="border-t border-[var(--pl-border)] px-3 py-1.5"><CalendarAssignedVolunteers itemId={item.id} assignments={item.assignments} visibility={assignmentVisibility} /></div> : null}

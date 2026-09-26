@@ -9,12 +9,14 @@ import {
   selectAuthorizedOperationalWorkspace,
 } from "../lib/operations/projectDay.ts";
 import { readProjectQuickViewRouteState } from "../lib/operations/projectQuickViewRoute.server.ts";
+import { setProjectDayExpectedOnSiteWithVerifiedContext } from "../lib/operations/projectDay.server.ts";
 
 const root = process.cwd();
 const readSource = (...parts) => readFile(path.join(root, ...parts), "utf8");
-const [calendarPage, calendarClient, quickViewPage, quickViewClient, quickViewRoute, quickViewServer, adminNav, adminShell] = await Promise.all([
+const [calendarPage, calendarClient, projectDayServer, quickViewPage, quickViewClient, quickViewRoute, quickViewServer, adminNav, adminShell] = await Promise.all([
   readSource("app", "admin", "calendar", "page.tsx"),
   readSource("components", "CalendarClient.tsx"),
+  readSource("lib", "operations", "projectDay.server.ts"),
   readSource("app", "admin", "quick-view", "page.tsx"),
   readSource("components", "ProjectQuickView.tsx"),
   readSource("lib", "operations", "projectQuickViewRoute.server.ts"),
@@ -158,15 +160,28 @@ assert.equal(anonymous.kind, "unavailable");
 assert.deepEqual(anonymous.projects, []);
 
 assert.match(calendarPage, /readVerifiedAdminContext\(\)/);
-assert.match(calendarPage, /setProjectDayExpectedOnSiteWithVerifiedContext/);
-assert.match(calendarPage, /revalidatePath\("\/admin\/calendar"\)/);
-assert.match(calendarPage, /revalidatePath\("\/admin\/quick-view"\)/);
+assert.match(projectDayServer, /setProjectDayExpectedOnSiteWithVerifiedContext/);
+assert.match(projectDayServer, /requiredCapability: "calendar\.edit"/);
+assert.match(projectDayServer, /set_current_project_day_expected_on_site/);
 assert.doesNotMatch(calendarPage, /formData\.get\(["']workspace/i);
-assert.match(calendarClient, /Expected on site/);
-assert.match(calendarClient, /Daily total\. Leave blank to clear\./);
+assert.match(calendarClient, /publishedScheduleCount\} published Calendar items/);
+assert.doesNotMatch(calendarClient, /Save expected count|Daily total\. Leave blank to clear\./);
 assert.match(calendarClient, /MobileOverlaySheet/);
 assert.match(calendarClient, /buildCalendarProjectDayHref/);
-assert.match(quickViewPage, /readProjectQuickViewRouteState/);
+let deniedRpcCalls = 0;
+await assert.rejects(
+  setProjectDayExpectedOnSiteWithVerifiedContext(
+    { ...context, ownGrants: [ownGrants[1]], supabase: { rpc: () => { deniedRpcCalls += 1; } } },
+    { date: "2026-09-01", expectedOnSiteCount: 12 },
+  ),
+  /Project Day update is unavailable/,
+);
+assert.equal(deniedRpcCalls, 0, "Missing calendar.edit must be denied before any RPC.");
+assert.match(quickViewPage, /readVerifiedAdminContext\(\)/);
+assert.match(quickViewPage, /selectCalendarRouteWorkspaceContext/);
+assert.match(quickViewPage, /if \(!selected\) return/);
+assert.match(quickViewPage, /asReadOnlyCalendar\(await readCalendarRouteState\(params, \{ trustedReadOnly: true, workspaceKey: selected\.key \}\)\)/);
+assert.match(quickViewPage, /<CalendarClient readOnly routeBase="\/admin\/quick-view"/);
 assert.doesNotMatch(quickViewPage, /mockData|\.from\(/);
 assert.match(quickViewClient, /toLocaleLowerCase\(\)\.includes/);
 assert.match(quickViewClient, /Previous day/);

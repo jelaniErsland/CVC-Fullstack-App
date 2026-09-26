@@ -2567,14 +2567,6 @@ function quickViewUrl(date = "2026-01-13", project = `${fixture.namespace}-targe
   );
 }
 
-async function waitForProjectDaySave(page) {
-  await page.getByRole("button", { name: "Save expected count", exact: true }).waitFor();
-  assert(
-    !(await page.getByRole("button", { name: "Save expected count", exact: true }).isDisabled()),
-    "Project Day save did not settle.",
-  );
-}
-
 async function runProjectDayQuickViewDesktop(browser, containerName) {
   const context = await browser.newContext({ viewport: desktopViewport });
   await applyAuthCookies(context, "full");
@@ -2584,116 +2576,83 @@ async function runProjectDayQuickViewDesktop(browser, containerName) {
   page.setDefaultTimeout(10_000);
 
   try {
-    await step("Calendar date affordance opens unknown Project Day", async () => {
+    await step("Calendar day number opens Day view while details remain accessible", async () => {
       await page.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: "Month", exact: true }).click();
-      await page.getByRole("button", { name: "Open day details for Fri Jan 16", exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get("view") === "month");
+      await page.getByRole("button", { name: "Open January 16, 2026 in Day view", exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get("view") === "day" && url.searchParams.get("date") === "2026-01-16");
+      await page.getByRole("button", { name: "Open day details for the selected date", exact: true }).click();
       await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
       await page.waitForURL((url) => url.searchParams.get("day") === "2026-01-16");
       assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Calendar did not preserve the selected Project Day in route context.");
-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "", "Unknown Project Day should render a blank input.");
+      assert(/January 16, 2026/.test(await page.getByRole("complementary", { name: "Project day details" }).innerText()), "Selected Project Day date was missing.");
+      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Read-only day details unexpectedly exposed retired editor.");
       await writeProjectDayQuickViewCapture(page, "01-desktop-calendar-project-day-entry.png");
     });
 
-    await step("Project Day set, update, zero, and clear persist without event changes", async () => {
-      const input = page.getByLabel("Expected on site", { exact: true });
-      const save = page.getByRole("button", { name: "Save expected count", exact: true });
-      for (const [value, expectedSql] of [["31", "31"], ["52", "52"], ["0", "0"]]) {
-        await input.fill(value);
-        await save.click();
-        await waitForProjectDaySave(page);
-        assert(
-          runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === expectedSql,
-          `Project Day value ${value} did not persist.`,
-        );
-      }
-      await input.fill("");
-      await save.click();
-      await waitForProjectDaySave(page);
-      assert(
-        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
-        "Clearing Project Day did not persist null.",
-      );
+    await step("read-only Project Day details never mutate schedule or count", async () => {
+      assert(runPsql(containerName, `select coalesce((select expected_on_site_count::text from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16'), 'null');`) === "null", "Unknown Project Day count changed while viewing details.");
       assert(
         runPsql(containerName, `select count(*) from public.calendar_items where workspace_id = '${fixture.workspaceId}'::uuid and id in ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.calendarItemIds.siteWindow}'::uuid);`) === "2",
-        "Project Day edits changed Calendar event truth.",
-      );
-      assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Project Day save lost Calendar day context.");
-    });
-
-    await step("Project Day validation remains local and humane", async () => {
-      const input = page.getByLabel("Expected on site", { exact: true });
-      for (const value of ["-1", "1.5", "four"]) {
-        await input.fill(value);
-        await page.getByRole("button", { name: "Save expected count", exact: true }).click();
-        await page.getByText("Enter a whole number of zero or more.", { exact: true }).waitFor();
-      }
-      assert(
-        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
-        "Invalid Project Day input mutated persistence.",
+        "Viewing Project Day changed Calendar event truth.",
       );
     });
 
-    await step("existing Project Day count renders in Calendar", async () => {
+    await step("existing Project Day opens in Calendar without edit controls", async () => {
       await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
       await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Existing Project Day value did not render.");
+      assert(/January 13, 2026/.test(await page.getByRole("complementary", { name: "Project day details" }).innerText()), "Existing Project Day date was missing.");
+      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Calendar unexpectedly exposed retired Project Day editing.");
       await writeProjectDayQuickViewCapture(page, "03-desktop-calendar-existing-headcount.png");
     });
 
-    await step("Quick View selected project uses only safe published projection", async () => {
+    await step("Quick View selected project uses its authorized read-only Calendar projection", async () => {
       await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       const body = await page.locator("body").innerText();
       for (const forbidden of [
-        "Restricted security post alpha",
-        "Restricted security instructions",
-        "Private draft operations",
-        "Private draft note",
         "QA 12.12 Other Workspace",
         "qa-12-12-volunteer",
         fixture.workspaceId,
         fixture.calendarItemIds.gate,
       ]) assert(!body.includes(forbidden), `Quick View leaked ${forbidden}.`);
-      assert(body.includes("47 people"), "Quick View did not show expected-on-site count.");
+      // Authenticated Quick View shares the authorized Calendar read model; the
+      // separate bearer suite verifies the narrower public-link redaction.
       assert(body.includes("Gate attendant"), "Quick View did not show safe published schedule.");
       assert(body.includes("Site support week"), "Quick View did not show safe published multi-day work.");
+      assert(!body.includes("Save expected count") && !body.includes("Create event"), "Quick View exposed editing controls.");
       await writeProjectDayQuickViewCapture(page, "05-desktop-quick-view-selected-project.png");
     });
 
-    await step("Quick View project search exposes only authorized projects", async () => {
-      const search = page.getByLabel("Find a project", { exact: true });
-      await search.fill("QA 12.12 Other Workspace");
-      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
-      assert((await page.getByRole("link", { name: "QA 12.12 Other Workspace", exact: true }).count()) === 0, "Unauthorized project appeared in search.");
+    await step("Quick View project picker exposes only authorized projects", async () => {
+      assert((await page.locator('option[value$="-other"]').count()) === 0, "Unauthorized project appeared in selector.");
       await writeProjectDayQuickViewCapture(page, "06-desktop-quick-view-project-search.png");
-      await search.fill("");
     });
 
-    await step("Quick View day navigation preserves zero and null distinctly", async () => {
+    await step("Quick View date navigation preserves read-only route context", async () => {
       await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByText("0 people", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       await writeProjectDayQuickViewCapture(page, "07-desktop-quick-view-another-date.png");
       await page.goto(quickViewUrl("2026-01-16"), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByText("Not set", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       await writeProjectDayQuickViewCapture(page, "08-desktop-quick-view-unknown-headcount.png");
-      const previous = page.getByRole("link", { name: "Previous day", exact: true });
-      const next = page.getByRole("link", { name: "Next day", exact: true });
-      assert(new URL(await previous.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-15", "Previous day target is wrong.");
-      assert(new URL(await next.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-17", "Next day target is wrong.");
-      await page.getByLabel("Project date", { exact: true }).fill("2026-01-13");
-      await page.getByRole("button", { name: "Go", exact: true }).click();
-      await page.getByText("47 people", { exact: true }).waitFor();
+      await page.waitForLoadState("networkidle");
+      await page.getByRole("button", { name: "Day", exact: true }).click();
+      await page.waitForURL((url) => url.pathname === "/admin/quick-view" && url.searchParams.get("view") === "day" && url.searchParams.get("date") === "2026-01-16");
+      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Quick View date navigation exposed editing.");
     });
 
     await step("project key guessing and anonymous access fail closed", async () => {
       await page.goto(quickViewUrl("2026-01-13", `${fixture.namespace}-other`), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByText("Quick View unavailable", { exact: true }).waitFor();
+      assert((await page.locator("body").innerText()).includes("Quick View unavailable"), "Guessed project did not fail closed.");
       const anonymousContext = await browser.newContext({ viewport: desktopViewport });
       try {
         const anonymousPage = await anonymousContext.newPage();
         await anonymousPage.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
-        await anonymousPage.getByText("Quick View unavailable", { exact: true }).waitFor();
+        const anonymousBody = await anonymousPage.locator("body").innerText();
+        assert(anonymousBody.includes("Quick View unavailable") || /sign in|log in/i.test(anonymousBody), `Anonymous Quick View did not fail closed: ${anonymousPage.url()} ${anonymousBody.slice(0, 180)}`);
       } finally {
         await anonymousContext.close();
       }
@@ -2727,33 +2686,32 @@ async function runProjectDayQuickViewMobile(browser) {
 
       await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
       await page.getByRole("dialog", { name: "project day details", exact: true }).waitFor();
-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Mobile existing Project Day count is wrong.");
+      assert(/January 13, 2026/.test(await page.getByRole("dialog", { name: "project day details" }).innerText()), "Mobile Project Day date was missing.");
+      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Mobile Project Day exposed retired editor.");
       await writeProjectDayQuickViewCapture(page, "04-mobile-calendar-existing-headcount.png");
     });
 
     await step("mobile Quick View is compact and navigable", async () => {
       await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       await assertNoHorizontalOverflow(page, "Mobile Quick View");
       await writeProjectDayQuickViewCapture(page, "09-mobile-quick-view.png");
-      const search = page.getByLabel("Find a project", { exact: true });
-      await search.fill("Other Workspace");
-      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
-      await search.blur();
+      assert((await page.locator('option[value$="-other"]').count()) === 0, "Unauthorized project appeared in mobile selector.");
       await page.evaluate(() => window.scrollTo(0, 0));
       await writeProjectDayQuickViewCapture(page, "10-mobile-quick-view-project-search.png");
     });
 
     await step("mobile another date and populated schedule remain readable", async () => {
       await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByText("0 people", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       await writeProjectDayQuickViewCapture(page, "11-mobile-quick-view-another-date.png");
       await page.goto(quickViewUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
-      await page.getByText("Gate attendant", { exact: true }).waitFor();
+      await page.getByText("Gate attendant", { exact: true }).first().waitFor();
       await writeProjectDayQuickViewCapture(page, "12-mobile-quick-view-populated-schedule.png");
     });
 
     await step("mobile More includes Quick View without another nav paradigm", async () => {
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
       const link = page.getByRole("link", { name: "Project Quick View", exact: true });
       await link.waitFor();

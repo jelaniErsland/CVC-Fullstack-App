@@ -74,7 +74,7 @@ index 7ac4bd6..8b23a67 100644
    </ul>;
    return <div>
 diff --git a/cvc-scheduler/components/CalendarClient.tsx b/cvc-scheduler/components/CalendarClient.tsx
-index d8b3048..ecf6703 100644
+index d8b3048..9304b9c 100644
 --- a/cvc-scheduler/components/CalendarClient.tsx
 +++ b/cvc-scheduler/components/CalendarClient.tsx
 @@ -35,7 +35,7 @@ import { useRouter, useSearchParams } from "next/navigation";
@@ -456,7 +456,7 @@ index d8b3048..ecf6703 100644
 +            </div>;
 +          })}
 +        </div>
-+        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
++        <section aria-labelledby={agendaHeadingId} className="scroll-mt-3 border-t border-[var(--pl-border)] px-3 py-3 focus:outline-none max-[360px]:px-2" data-testid="calendar-month-agenda" ref={agendaRef} tabIndex={-1}>
 +          <div className="flex flex-wrap items-center justify-between gap-2">
 +            <h2 className="text-base font-bold text-[var(--pl-ink)]" id={agendaHeadingId}>{getCalendarAccessibleDayLabel(referenceDate)}</h2>
 +            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -468,10 +468,10 @@ index d8b3048..ecf6703 100644
 +          {hasVisibleAssignmentResponses(selectedDayItems, assignmentVisibility) ? <div className="-mx-3 mt-2"><CalendarAssignmentLegend /></div> : null}
 +          {selectedDayItems.length ? <div className="mt-2 space-y-2">
 +            {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] border-l-[3px] bg-white" data-calendar-month-agenda-item={item.id} key={item.id} style={{ borderLeftColor: getCalendarEventColorStyle(item).borderColor }}>
-+              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[240px]:grid-cols-1 max-[240px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
++              <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[360px]:grid-cols-1 max-[360px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
 +                <span className="min-w-0 break-words text-sm font-semibold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</span>
-+                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[240px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
-+                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[240px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
++                <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[360px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
++                <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[360px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
 +              </button>
 +              {item.meal ? <p className="border-t border-[var(--pl-border)] px-3 py-1.5 text-xs text-[var(--pl-text)]">Main contact: {item.meal.contact?.trim() || "Not assigned"}</p>
 +                : assignmentVisibility !== "hidden" ? <div className="border-t border-[var(--pl-border)] px-3 py-1.5"><CalendarAssignedVolunteers itemId={item.id} assignments={item.assignments} visibility={assignmentVisibility} /></div> : null}
@@ -1180,3 +1180,292 @@ index a3f4b2c..c46f8ce 100644
    await shot('quick-view-month-meals-390');
    assert.deepEqual(errors,[]);
    console.log('PASS: grouped links, no-photo/photo identity, menu/editor, direct create permission, disclosure, default Quick View meal counts and route on desktop/mobile. Synthetic fixture only.');
+diff --git a/cvc-scheduler/scripts/calendar-regression.mjs b/cvc-scheduler/scripts/calendar-regression.mjs
+index 6c603fb..727551d 100644
+--- a/cvc-scheduler/scripts/calendar-regression.mjs
++++ b/cvc-scheduler/scripts/calendar-regression.mjs
+@@ -2567,14 +2567,6 @@ function quickViewUrl(date = "2026-01-13", project = `${fixture.namespace}-targe
+   );
+ }
+ 
+-async function waitForProjectDaySave(page) {
+-  await page.getByRole("button", { name: "Save expected count", exact: true }).waitFor();
+-  assert(
+-    !(await page.getByRole("button", { name: "Save expected count", exact: true }).isDisabled()),
+-    "Project Day save did not settle.",
+-  );
+-}
+-
+ async function runProjectDayQuickViewDesktop(browser, containerName) {
+   const context = await browser.newContext({ viewport: desktopViewport });
+   await applyAuthCookies(context, "full");
+@@ -2584,116 +2576,83 @@ async function runProjectDayQuickViewDesktop(browser, containerName) {
+   page.setDefaultTimeout(10_000);
+ 
+   try {
+-    await step("Calendar date affordance opens unknown Project Day", async () => {
++    await step("Calendar day number opens Day view while details remain accessible", async () => {
+       await page.goto(calendarUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
++      await page.waitForLoadState("networkidle");
+       await page.getByRole("button", { name: "Month", exact: true }).click();
+-      await page.getByRole("button", { name: "Open day details for Fri Jan 16", exact: true }).click();
++      await page.waitForURL((url) => url.searchParams.get("view") === "month");
++      await page.getByRole("button", { name: "Open January 16, 2026 in Day view", exact: true }).click();
++      await page.waitForURL((url) => url.searchParams.get("view") === "day" && url.searchParams.get("date") === "2026-01-16");
++      await page.getByRole("button", { name: "Open day details for the selected date", exact: true }).click();
+       await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
+       await page.waitForURL((url) => url.searchParams.get("day") === "2026-01-16");
+       assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Calendar did not preserve the selected Project Day in route context.");
+-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "", "Unknown Project Day should render a blank input.");
++      assert(/January 16, 2026/.test(await page.getByRole("complementary", { name: "Project day details" }).innerText()), "Selected Project Day date was missing.");
++      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Read-only day details unexpectedly exposed retired editor.");
+       await writeProjectDayQuickViewCapture(page, "01-desktop-calendar-project-day-entry.png");
+     });
+ 
+-    await step("Project Day set, update, zero, and clear persist without event changes", async () => {
+-      const input = page.getByLabel("Expected on site", { exact: true });
+-      const save = page.getByRole("button", { name: "Save expected count", exact: true });
+-      for (const [value, expectedSql] of [["31", "31"], ["52", "52"], ["0", "0"]]) {
+-        await input.fill(value);
+-        await save.click();
+-        await waitForProjectDaySave(page);
+-        assert(
+-          runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === expectedSql,
+-          `Project Day value ${value} did not persist.`,
+-        );
+-      }
+-      await input.fill("");
+-      await save.click();
+-      await waitForProjectDaySave(page);
+-      assert(
+-        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
+-        "Clearing Project Day did not persist null.",
+-      );
++    await step("read-only Project Day details never mutate schedule or count", async () => {
++      assert(runPsql(containerName, `select coalesce((select expected_on_site_count::text from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16'), 'null');`) === "null", "Unknown Project Day count changed while viewing details.");
+       assert(
+         runPsql(containerName, `select count(*) from public.calendar_items where workspace_id = '${fixture.workspaceId}'::uuid and id in ('${fixture.calendarItemIds.gate}'::uuid, '${fixture.calendarItemIds.siteWindow}'::uuid);`) === "2",
+-        "Project Day edits changed Calendar event truth.",
++        "Viewing Project Day changed Calendar event truth.",
+       );
+-      assert(new URL(page.url()).searchParams.get("day") === "2026-01-16", "Project Day save lost Calendar day context.");
+     });
+ 
+-    await step("Project Day validation remains local and humane", async () => {
+-      const input = page.getByLabel("Expected on site", { exact: true });
+-      for (const value of ["-1", "1.5", "four"]) {
+-        await input.fill(value);
+-        await page.getByRole("button", { name: "Save expected count", exact: true }).click();
+-        await page.getByText("Enter a whole number of zero or more.", { exact: true }).waitFor();
+-      }
+-      assert(
+-        runPsql(containerName, `select coalesce(expected_on_site_count::text, 'null') from public.project_days where workspace_id = '${fixture.workspaceId}'::uuid and project_date = '2026-01-16';`) === "null",
+-        "Invalid Project Day input mutated persistence.",
+-      );
+-    });
+-
+-    await step("existing Project Day count renders in Calendar", async () => {
++    await step("existing Project Day opens in Calendar without edit controls", async () => {
+       await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+       await page.getByRole("complementary", { name: "Project day details", exact: true }).waitFor();
+-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Existing Project Day value did not render.");
++      assert(/January 13, 2026/.test(await page.getByRole("complementary", { name: "Project day details" }).innerText()), "Existing Project Day date was missing.");
++      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Calendar unexpectedly exposed retired Project Day editing.");
+       await writeProjectDayQuickViewCapture(page, "03-desktop-calendar-existing-headcount.png");
+     });
+ 
+-    await step("Quick View selected project uses only safe published projection", async () => {
++    await step("Quick View selected project uses its authorized read-only Calendar projection", async () => {
+       await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
++      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+       const body = await page.locator("body").innerText();
+       for (const forbidden of [
+-        "Restricted security post alpha",
+-        "Restricted security instructions",
+-        "Private draft operations",
+-        "Private draft note",
+         "QA 12.12 Other Workspace",
+         "qa-12-12-volunteer",
+         fixture.workspaceId,
+         fixture.calendarItemIds.gate,
+       ]) assert(!body.includes(forbidden), `Quick View leaked ${forbidden}.`);
+-      assert(body.includes("47 people"), "Quick View did not show expected-on-site count.");
++      // Authenticated Quick View shares the authorized Calendar read model; the
++      // separate bearer suite verifies the narrower public-link redaction.
+       assert(body.includes("Gate attendant"), "Quick View did not show safe published schedule.");
+       assert(body.includes("Site support week"), "Quick View did not show safe published multi-day work.");
++      assert(!body.includes("Save expected count") && !body.includes("Create event"), "Quick View exposed editing controls.");
+       await writeProjectDayQuickViewCapture(page, "05-desktop-quick-view-selected-project.png");
+     });
+ 
+-    await step("Quick View project search exposes only authorized projects", async () => {
+-      const search = page.getByLabel("Find a project", { exact: true });
+-      await search.fill("QA 12.12 Other Workspace");
+-      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
+-      assert((await page.getByRole("link", { name: "QA 12.12 Other Workspace", exact: true }).count()) === 0, "Unauthorized project appeared in search.");
++    await step("Quick View project picker exposes only authorized projects", async () => {
++      assert((await page.locator('option[value$="-other"]').count()) === 0, "Unauthorized project appeared in selector.");
+       await writeProjectDayQuickViewCapture(page, "06-desktop-quick-view-project-search.png");
+-      await search.fill("");
+     });
+ 
+-    await step("Quick View day navigation preserves zero and null distinctly", async () => {
++    await step("Quick View date navigation preserves read-only route context", async () => {
+       await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByText("0 people", { exact: true }).waitFor();
++      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+       await writeProjectDayQuickViewCapture(page, "07-desktop-quick-view-another-date.png");
+       await page.goto(quickViewUrl("2026-01-16"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByText("Not set", { exact: true }).waitFor();
++      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+       await writeProjectDayQuickViewCapture(page, "08-desktop-quick-view-unknown-headcount.png");
+-      const previous = page.getByRole("link", { name: "Previous day", exact: true });
+-      const next = page.getByRole("link", { name: "Next day", exact: true });
+-      assert(new URL(await previous.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-15", "Previous day target is wrong.");
+-      assert(new URL(await next.getAttribute("href"), baseUrl).searchParams.get("date") === "2026-01-17", "Next day target is wrong.");
+-      await page.getByLabel("Project date", { exact: true }).fill("2026-01-13");
+-      await page.getByRole("button", { name: "Go", exact: true }).click();
+-      await page.getByText("47 people", { exact: true }).waitFor();
++      await page.waitForLoadState("networkidle");
++      await page.getByRole("button", { name: "Day", exact: true }).click();
++      await page.waitForURL((url) => url.pathname === "/admin/quick-view" && url.searchParams.get("view") === "day" && url.searchParams.get("date") === "2026-01-16");
++      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Quick View date navigation exposed editing.");
+     });
+ 
+     await step("project key guessing and anonymous access fail closed", async () => {
+       await page.goto(quickViewUrl("2026-01-13", `${fixture.namespace}-other`), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByText("Quick View unavailable", { exact: true }).waitFor();
++      assert((await page.locator("body").innerText()).includes("Quick View unavailable"), "Guessed project did not fail closed.");
+       const anonymousContext = await browser.newContext({ viewport: desktopViewport });
+       try {
+         const anonymousPage = await anonymousContext.newPage();
+         await anonymousPage.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-        await anonymousPage.getByText("Quick View unavailable", { exact: true }).waitFor();
++        const anonymousBody = await anonymousPage.locator("body").innerText();
++        assert(anonymousBody.includes("Quick View unavailable") || /sign in|log in/i.test(anonymousBody), `Anonymous Quick View did not fail closed: ${anonymousPage.url()} ${anonymousBody.slice(0, 180)}`);
+       } finally {
+         await anonymousContext.close();
+       }
+@@ -2727,33 +2686,32 @@ async function runProjectDayQuickViewMobile(browser) {
+ 
+       await page.goto(projectDayCalendarUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+       await page.getByRole("dialog", { name: "project day details", exact: true }).waitFor();
+-      assert((await page.getByLabel("Expected on site", { exact: true }).inputValue()) === "47", "Mobile existing Project Day count is wrong.");
++      assert(/January 13, 2026/.test(await page.getByRole("dialog", { name: "project day details" }).innerText()), "Mobile Project Day date was missing.");
++      assert(await page.getByRole("button", { name: "Save expected count", exact: true }).count() === 0, "Mobile Project Day exposed retired editor.");
+       await writeProjectDayQuickViewCapture(page, "04-mobile-calendar-existing-headcount.png");
+     });
+ 
+     await step("mobile Quick View is compact and navigable", async () => {
+       await page.goto(quickViewUrl(), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByRole("heading", { name: "Project Quick View", exact: true }).waitFor();
++      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+       await assertNoHorizontalOverflow(page, "Mobile Quick View");
+       await writeProjectDayQuickViewCapture(page, "09-mobile-quick-view.png");
+-      const search = page.getByLabel("Find a project", { exact: true });
+-      await search.fill("Other Workspace");
+-      await page.getByText("No authorized projects match.", { exact: true }).waitFor();
+-      await search.blur();
++      assert((await page.locator('option[value$="-other"]').count()) === 0, "Unauthorized project appeared in mobile selector.");
+       await page.evaluate(() => window.scrollTo(0, 0));
+       await writeProjectDayQuickViewCapture(page, "10-mobile-quick-view-project-search.png");
+     });
+ 
+     await step("mobile another date and populated schedule remain readable", async () => {
+       await page.goto(quickViewUrl("2026-01-20"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByText("0 people", { exact: true }).waitFor();
++      await page.getByRole("button", { name: "Month", exact: true }).waitFor();
+       await writeProjectDayQuickViewCapture(page, "11-mobile-quick-view-another-date.png");
+       await page.goto(quickViewUrl("2026-01-13"), { waitUntil: "domcontentloaded", timeout: 30_000 });
+-      await page.getByText("Gate attendant", { exact: true }).waitFor();
++      await page.getByText("Gate attendant", { exact: true }).first().waitFor();
+       await writeProjectDayQuickViewCapture(page, "12-mobile-quick-view-populated-schedule.png");
+     });
+ 
+     await step("mobile More includes Quick View without another nav paradigm", async () => {
++      await page.waitForLoadState("networkidle");
+       await page.getByRole("button", { name: "Open more admin navigation", exact: true }).click();
+       const link = page.getByRole("link", { name: "Project Quick View", exact: true });
+       await link.waitFor();
+diff --git a/cvc-scheduler/scripts/calendar-route-cutover-stabilization-regression.mjs b/cvc-scheduler/scripts/calendar-route-cutover-stabilization-regression.mjs
+index 1033414..d8f52c6 100644
+--- a/cvc-scheduler/scripts/calendar-route-cutover-stabilization-regression.mjs
++++ b/cvc-scheduler/scripts/calendar-route-cutover-stabilization-regression.mjs
+@@ -34,7 +34,7 @@ assert.match(calendarRouteSource, /export const fetchCache = "force-no-store"/);
+ assert.match(calendarRouteSource, /searchParams/);
+ assert.match(
+   calendarRouteSource,
+-  /const resolvedSearchParams = await searchParams[\s\S]*readCalendarRouteState\(resolvedSearchParams\)/,
++  /const resolvedSearchParams = await searchParams[\s\S]*readCalendarRouteState\(resolvedSearchParams, \{ workspaceKey: projectKey \}\)/,
+ );
+ assert.doesNotMatch(
+   calendarRouteSource,
+@@ -69,9 +69,10 @@ assert.doesNotMatch(
+ 
+ assert.match(calendarClientSource, /useRouter/);
+ assert.match(calendarClientSource, /buildCalendarRouteHref/);
+-assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
++assert.match(calendarClientSource, /function navigate\(href: string\) \{ router\.push\(href\); \}/);
++assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
+ assert.match(calendarClientSource, /shiftCalendarAnchor\(calendarAnchor, amount, activeView\)/);
+-assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\("day", date\)\)/);
++assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\("day", date\)\)/);
+ assert.match(calendarClientSource, /aria-label="Go to today"/);
+ assert.match(calendarClientSource, /aria-label="Go to project date"/);
+ assert.match(calendarClientSource, /buildCalendarInspectorHref/);
+diff --git a/cvc-scheduler/scripts/project-day-quick-view-regression.mjs b/cvc-scheduler/scripts/project-day-quick-view-regression.mjs
+index 5f10131..0c2421a 100644
+--- a/cvc-scheduler/scripts/project-day-quick-view-regression.mjs
++++ b/cvc-scheduler/scripts/project-day-quick-view-regression.mjs
+@@ -9,12 +9,14 @@ import {
+   selectAuthorizedOperationalWorkspace,
+ } from "../lib/operations/projectDay.ts";
+ import { readProjectQuickViewRouteState } from "../lib/operations/projectQuickViewRoute.server.ts";
++import { setProjectDayExpectedOnSiteWithVerifiedContext } from "../lib/operations/projectDay.server.ts";
+ 
+ const root = process.cwd();
+ const readSource = (...parts) => readFile(path.join(root, ...parts), "utf8");
+-const [calendarPage, calendarClient, quickViewPage, quickViewClient, quickViewRoute, quickViewServer, adminNav, adminShell] = await Promise.all([
++const [calendarPage, calendarClient, projectDayServer, quickViewPage, quickViewClient, quickViewRoute, quickViewServer, adminNav, adminShell] = await Promise.all([
+   readSource("app", "admin", "calendar", "page.tsx"),
+   readSource("components", "CalendarClient.tsx"),
++  readSource("lib", "operations", "projectDay.server.ts"),
+   readSource("app", "admin", "quick-view", "page.tsx"),
+   readSource("components", "ProjectQuickView.tsx"),
+   readSource("lib", "operations", "projectQuickViewRoute.server.ts"),
+@@ -158,15 +160,28 @@ assert.equal(anonymous.kind, "unavailable");
+ assert.deepEqual(anonymous.projects, []);
+ 
+ assert.match(calendarPage, /readVerifiedAdminContext\(\)/);
+-assert.match(calendarPage, /setProjectDayExpectedOnSiteWithVerifiedContext/);
+-assert.match(calendarPage, /revalidatePath\("\/admin\/calendar"\)/);
+-assert.match(calendarPage, /revalidatePath\("\/admin\/quick-view"\)/);
++assert.match(projectDayServer, /setProjectDayExpectedOnSiteWithVerifiedContext/);
++assert.match(projectDayServer, /requiredCapability: "calendar\.edit"/);
++assert.match(projectDayServer, /set_current_project_day_expected_on_site/);
+ assert.doesNotMatch(calendarPage, /formData\.get\(["']workspace/i);
+-assert.match(calendarClient, /Expected on site/);
+-assert.match(calendarClient, /Daily total\. Leave blank to clear\./);
++assert.match(calendarClient, /publishedScheduleCount\} published Calendar items/);
++assert.doesNotMatch(calendarClient, /Save expected count|Daily total\. Leave blank to clear\./);
+ assert.match(calendarClient, /MobileOverlaySheet/);
+ assert.match(calendarClient, /buildCalendarProjectDayHref/);
+-assert.match(quickViewPage, /readProjectQuickViewRouteState/);
++let deniedRpcCalls = 0;
++await assert.rejects(
++  setProjectDayExpectedOnSiteWithVerifiedContext(
++    { ...context, ownGrants: [ownGrants[1]], supabase: { rpc: () => { deniedRpcCalls += 1; } } },
++    { date: "2026-09-01", expectedOnSiteCount: 12 },
++  ),
++  /Project Day update is unavailable/,
++);
++assert.equal(deniedRpcCalls, 0, "Missing calendar.edit must be denied before any RPC.");
++assert.match(quickViewPage, /readVerifiedAdminContext\(\)/);
++assert.match(quickViewPage, /selectCalendarRouteWorkspaceContext/);
++assert.match(quickViewPage, /if \(!selected\) return/);
++assert.match(quickViewPage, /asReadOnlyCalendar\(await readCalendarRouteState\(params, \{ trustedReadOnly: true, workspaceKey: selected\.key \}\)\)/);
++assert.match(quickViewPage, /<CalendarClient readOnly routeBase="\/admin\/quick-view"/);
+ assert.doesNotMatch(quickViewPage, /mockData|\.from\(/);
+ assert.match(quickViewClient, /toLocaleLowerCase\(\)\.includes/);
+ assert.match(quickViewClient, /Previous day/);

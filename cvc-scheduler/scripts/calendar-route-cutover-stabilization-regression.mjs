@@ -34,7 +34,7 @@ assert.match(calendarRouteSource, /export const fetchCache = "force-no-store"/);
 assert.match(calendarRouteSource, /searchParams/);
 assert.match(
   calendarRouteSource,
-  /const resolvedSearchParams = await searchParams[\s\S]*readCalendarRouteState\(resolvedSearchParams\)/,
+  /const resolvedSearchParams = await searchParams[\s\S]*readCalendarRouteState\(resolvedSearchParams, \{ workspaceKey: projectKey \}\)/,
 );
 assert.doesNotMatch(
   calendarRouteSource,
@@ -69,9 +69,10 @@ assert.doesNotMatch(
 
 assert.match(calendarClientSource, /useRouter/);
 assert.match(calendarClientSource, /buildCalendarRouteHref/);
-assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
+assert.match(calendarClientSource, /function navigate\(href: string\) \{ router\.push\(href\); \}/);
+assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
 assert.match(calendarClientSource, /shiftCalendarAnchor\(calendarAnchor, amount, activeView\)/);
-assert.match(calendarClientSource, /router\.push\(buildCalendarRouteHref\("day", date\)\)/);
+assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\("day", date\)\)/);
 assert.match(calendarClientSource, /aria-label="Go to today"/);
 assert.match(calendarClientSource, /aria-label="Go to project date"/);
 assert.match(calendarClientSource, /buildCalendarInspectorHref/);
