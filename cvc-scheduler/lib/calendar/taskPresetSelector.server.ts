@@ -16,6 +16,7 @@ const selectorColumns = [
   "workspace_id",
   "name",
   "description",
+  "assignment_details_approved_at",
   "task_type",
   "default_needed_count",
   "volunteer_visible",
@@ -52,6 +53,7 @@ export type CalendarTaskPresetSelectorOption = Readonly<{
   workspaceId: string;
   name: string;
   description: string | null;
+  assignmentDetailsApprovedAt: string | null;
   taskType: TaskPresetType;
   defaultNeededCount: number;
   volunteerVisible: boolean;
@@ -157,6 +159,7 @@ function normalizeRow(row: unknown): CalendarTaskPresetSelectorOption | null {
   const workspaceId = asString(row.workspace_id);
   const name = asString(row.name);
   const description = asOptionalString(row.description);
+  const assignmentDetailsApprovedAt = asOptionalString(row.assignment_details_approved_at);
   const taskType = normalizeTaskType(row.task_type);
   const defaultNeededCount = asNumber(row.default_needed_count);
   const volunteerVisible = asBoolean(row.volunteer_visible);
@@ -185,6 +188,7 @@ function normalizeRow(row: unknown): CalendarTaskPresetSelectorOption | null {
     workspaceId,
     name,
     description,
+    assignmentDetailsApprovedAt,
     taskType,
     defaultNeededCount,
     volunteerVisible,

@@ -1,5 +1,6 @@
 "use client";
 import { PageHeader } from "@/components/PageHeader";
+import { useRouter } from "next/navigation";
 
 import {
   Archive,
@@ -17,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { type Ref, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type Ref, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
@@ -25,6 +26,7 @@ import type {
   TaskManagementNotice,
   TaskManagementPreset,
 } from "@/lib/tasks/routeRead.server";
+import type { FutureInstructionCandidate } from "@/lib/tasks/server";
 import { taskPresetColorKeys, taskPresetColors, type TaskPresetColorKey } from "@/lib/tasks/colors";
 
 type TaskPresetManagementProps = Readonly<{
@@ -37,6 +39,10 @@ type TaskPresetManagementProps = Readonly<{
   createAction: (formData: FormData) => void | Promise<void>;
   archiveAction: (formData: FormData) => void | Promise<void>;
   updateColorAction: (formData: FormData) => void | Promise<void>;
+  updateDescriptionAction: (formData: FormData) => Promise<"saved" | "conflict" | "validation" | "unavailable" | "error">;
+  applyInstructionsAction: (formData: FormData) => Promise<"applied" | "conflict" | "validation" | "unavailable" | "error">;
+  instructionPreview: readonly FutureInstructionCandidate[] | null;
+  previewPresetId: string | null;
 }>;
 
 const categoryDetails: Record<
@@ -252,12 +258,12 @@ function CreateTaskDialog({
             </label>
           </div>
           <label className="grid gap-1.5 text-sm font-semibold text-[var(--pl-ink)]">
-            Description <span className="font-normal text-[var(--pl-muted)]">Optional</span>
+            Assignment details <span className="font-normal text-[var(--pl-muted)]">Optional</span>
             <textarea
               className={`${inputClass} min-h-28 resize-y py-3`}
               maxLength={2000}
               name="description"
-              placeholder="What should volunteers know about this work?"
+              placeholder={"Who should volunteers report to?\nWhere should they check in?\nWhat time should they arrive?\nWhat should they bring or wear?\nAre there any special instructions?"}
             />
           </label>
           <TaskColorPicker defaultValue="blue" />
@@ -296,21 +302,47 @@ function CreateTaskDialog({
 }
 
 function TaskInspector({
+  applyInstructionsAction,
   archiveAction,
   canEdit,
   closeButtonRef,
   onClose,
   preset,
+  instructionPreview,
+  previewPresetId,
   updateColorAction,
+  updateDescriptionAction,
+  onDirtyChange,
 }: {
+  applyInstructionsAction: TaskPresetManagementProps["applyInstructionsAction"];
   archiveAction: TaskPresetManagementProps["archiveAction"];
   canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
   onClose?: () => void;
   preset: TaskManagementPreset | undefined;
+  instructionPreview: TaskPresetManagementProps["instructionPreview"];
+  previewPresetId: string | null;
   updateColorAction: TaskPresetManagementProps["updateColorAction"];
+  updateDescriptionAction: TaskPresetManagementProps["updateDescriptionAction"];
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const [confirmingArchive, setConfirmingArchive] = useState(false);
+  const [editingInstructions, setEditingInstructions] = useState(false);
+  const [instructionText, setInstructionText] = useState(preset?.description ?? "");
+  const [instructionStatus, setInstructionStatus] = useState<string | null>(null);
+  const [savingInstructions, startSavingInstructions] = useTransition();
+  const [applyingInstructions, startApplyingInstructions] = useTransition();
+  const [applyStatus, setApplyStatus] = useState<string | null>(null);
+  const router = useRouter();
+  const instructionsDirty = editingInstructions && instructionText !== (preset?.description ?? "");
+
+  useEffect(() => { onDirtyChange(instructionsDirty); }, [instructionsDirty, onDirtyChange]);
+  useEffect(() => {
+    if (!instructionsDirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [instructionsDirty]);
 
   if (!preset) {
     return (
@@ -365,10 +397,8 @@ function TaskInspector({
             </button>
           ) : null}
         </div>
-        {preset.description ? (
-          <p className="mt-4 text-sm leading-6 text-[var(--pl-text)]">
-            {preset.description}
-          </p>
+        {!editingInstructions && preset.description ? (
+          <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-6 text-[var(--pl-text)]">{preset.description}</p>
         ) : null}
       </div>
 
@@ -376,6 +406,88 @@ function TaskInspector({
         className="grid min-h-0 flex-1 gap-5 overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
         data-overlay-scroll="task-details"
       >
+        {canEdit && preset.lifecycle === "active" && !preset.isSystemPreset ? (
+          <section className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">Assignment details</h3>
+              {!editingInstructions ? <button className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-2 focus-visible:outline-[var(--pl-blue)]" onClick={() => { setEditingInstructions(true); setInstructionStatus(null); }} type="button">Edit instructions</button> : null}
+            </div>
+            {!editingInstructions ? (
+              <p className="text-xs leading-5 text-[var(--pl-muted)]">
+                {preset.assignmentDetailsApprovedAt ? "Copied into new scheduled items. Existing items keep their own instructions." : "Review and save these instructions before they are copied into new items."}
+              </p>
+            ) : (
+              <form className="grid gap-3" onSubmit={(event) => {
+                event.preventDefault();
+                const formData = new FormData(event.currentTarget);
+                startSavingInstructions(async () => {
+                  const result = await updateDescriptionAction(formData);
+                  if (result === "saved") {
+                    onDirtyChange(false);
+                    setEditingInstructions(false);
+                    setInstructionStatus("Instructions saved. Existing scheduled items were not changed.");
+                    router.refresh();
+                  } else {
+                    setInstructionStatus(result === "conflict" ? "This task changed. Copy your text, refresh, then review the latest version before saving." :
+                      result === "validation" ? "Enter no more than 2,000 characters." : "Instructions were not saved. Please try again.");
+                  }
+                });
+              }}>
+                <input name="presetId" type="hidden" value={preset.id} />
+                <input name="expectedUpdatedAt" type="hidden" value={preset.updatedAt} />
+                <label className="grid gap-1.5 text-sm font-semibold text-[var(--pl-ink)]">Instructions for volunteers
+                  <textarea className="min-h-44 w-full resize-y rounded-xl border border-[var(--pl-border)] bg-white px-3 py-2 text-sm font-normal leading-6 text-[var(--pl-ink)] placeholder:text-[var(--pl-muted)] focus-visible:outline-2 focus-visible:outline-[var(--pl-blue)]" maxLength={2000} name="description" onChange={(event) => setInstructionText(event.target.value)} placeholder={"Who should volunteers report to?\nWhere should they check in?\nWhat time should they arrive?\nWhat should they bring or wear?\nAre there any special instructions?"} value={instructionText} />
+                </label>
+                <p className="text-xs leading-5 text-[var(--pl-muted)]">Saving approves this text for new occurrences. Published and previously scheduled items keep their own wording.</p>
+                <div className="flex flex-wrap gap-2">
+                  <button className="min-h-11 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={savingInstructions} type="submit">{savingInstructions ? "Saving…" : "Save instructions"}</button>
+                  <button className="min-h-11 rounded-lg px-3 text-sm font-semibold text-[var(--pl-text)]" onClick={() => {
+                    if (instructionsDirty && !window.confirm("Discard unsaved instructions?")) return;
+                    setInstructionText(preset.description ?? ""); setEditingInstructions(false); onDirtyChange(false); setInstructionStatus(null);
+                  }} type="button">Cancel</button>
+                </div>
+              </form>
+            )}
+            {instructionStatus ? <p aria-live="polite" className="text-sm text-[var(--pl-text)]">{instructionStatus}</p> : null}
+            {!editingInstructions && preset.assignmentDetailsApprovedAt && preset.description ? (
+              <div className="border-t border-[var(--pl-border)] pt-3">
+                <a className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--pl-blue)] underline-offset-2 hover:underline" href={`/admin/tasks?preset=${encodeURIComponent(preset.id)}&preview=1`}>Preview future occurrences</a>
+                {previewPresetId === preset.id && instructionPreview ? (
+                  <form className="mt-2 grid gap-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-3" onSubmit={(event) => {
+                    event.preventDefault();
+                    const formData = new FormData(event.currentTarget);
+                    startApplyingInstructions(async () => {
+                      const result = await applyInstructionsAction(formData);
+                      if (result === "applied") {
+                        setApplyStatus("Selected future instructions updated. Individual exceptions were not changed.");
+                        router.refresh();
+                      } else {
+                        setApplyStatus(result === "conflict" ? "A selected item changed. Refresh and review the preview before applying again." :
+                          result === "validation" ? "Select 1–100 future occurrences." : "Instructions were not applied. Please try again.");
+                      }
+                    });
+                  }}>
+                    <input name="presetId" type="hidden" value={preset.id} />
+                    <input name="expectedUpdatedAt" type="hidden" value={preset.updatedAt} />
+                    <p className="text-xs leading-5 text-[var(--pl-text)]">Select future occurrences to replace their copied preset wording. Individual edits and older unsourced items are excluded. No email is sent.</p>
+                    <div className="rounded-lg border border-[var(--pl-border)] bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--pl-muted)]">New instructions for selected occurrences</p>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[var(--pl-ink)]">{preset.description}</p>
+                    </div>
+                    {instructionPreview.length === 0 ? <p className="text-sm text-[var(--pl-muted)]">No eligible future occurrences need updating.</p> : instructionPreview.map((item) => (
+                      <label className="flex items-start gap-3 rounded-lg border border-[var(--pl-border)] bg-white p-3 text-sm" key={item.id}>
+                        <input className="mt-1 size-4 shrink-0" name="selectedOccurrence" type="checkbox" value={JSON.stringify({ id: item.id, updated_at: item.updatedAt })} />
+                        <span className="min-w-0"><strong className="block text-[var(--pl-ink)]">{item.date}{item.startTime ? ` · ${item.startTime.slice(0, 5)}` : ""}{item.endTime ? `–${item.endTime.slice(0, 5)}` : ""} · {item.publicationState}</strong><span className="mt-1 block whitespace-pre-wrap break-words text-xs text-[var(--pl-muted)]">Current: {item.currentText ?? "No instructions"}</span></span>
+                      </label>
+                    ))}
+                    {instructionPreview.length > 0 ? <button className="min-h-11 rounded-lg bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white disabled:opacity-60" disabled={applyingInstructions} type="submit">{applyingInstructions ? "Applying…" : "Apply to selected occurrences"}</button> : null}
+                    {applyStatus ? <p aria-live="polite" className="text-sm text-[var(--pl-text)]">{applyStatus}</p> : null}
+                  </form>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
         <section>
           <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--pl-muted)]">
             Defaults
@@ -477,15 +589,21 @@ function TaskInspector({
 }
 
 export function TaskPresetManagement({
+  applyInstructionsAction,
   archiveAction,
   canEdit,
   createAction,
+  updateDescriptionAction,
+  instructionPreview,
+  previewPresetId,
   initialSelectedId,
   initialCreateOpen = false,
   notice,
   presets,
   updateColorAction,
 }: TaskPresetManagementProps) {
+  const [desktopInspectorDirty, setDesktopInspectorDirty] = useState(false);
+  const [mobileInspectorDirty, setMobileInspectorDirty] = useState(false);
   const initialPreset =
     presets.find((preset) => preset.id === initialSelectedId) ??
     presets.find((preset) => preset.lifecycle === "active") ??
@@ -496,6 +614,12 @@ export function TaskPresetManagement({
   const [lifecycle, setLifecycle] = useState<TaskManagementPreset["lifecycle"] | "all">("active");
   const [createOpen, setCreateOpen] = useState(canEdit && initialCreateOpen);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  useEffect(() => {
+    if (!previewPresetId || !window.matchMedia("(max-width: 1023px)").matches) return;
+    const frame = window.requestAnimationFrame(() => setMobileDetailOpen(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [previewPresetId]);
+  const inspectorDirty = mobileDetailOpen ? mobileInspectorDirty : desktopInspectorDirty;
   const createTriggerRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (!initialCreateOpen) return;
@@ -513,9 +637,10 @@ export function TaskPresetManagement({
     window.requestAnimationFrame(() => createTriggerRef.current?.focus());
   }, []);
   const closeMobileDetail = useCallback(() => {
+    if (inspectorDirty && !window.confirm("Discard unsaved instructions?")) return;
     setMobileDetailOpen(false);
     window.requestAnimationFrame(() => detailTriggerRef.current?.focus());
-  }, []);
+  }, [inspectorDirty]);
 
   useEffect(() => {
     if (!mobileDetailOpen) {
@@ -678,6 +803,9 @@ export function TaskPresetManagement({
                     className={`grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-left transition md:grid-cols-[auto_minmax(0,1fr)_120px_100px_24px] ${selected ? "bg-[var(--pl-blue-soft)]/65" : "hover:bg-[var(--pl-surface-subtle)]"}`}
                     key={preset.id}
                     onClick={(event) => {
+                      if (inspectorDirty && preset.id !== selectedId && !window.confirm("Discard unsaved instructions?")) return;
+                      setDesktopInspectorDirty(false);
+                      setMobileInspectorDirty(false);
                       detailTriggerRef.current = event.currentTarget;
                       setSelectedId(preset.id);
                       setMobileDetailOpen(true);
@@ -763,11 +891,16 @@ export function TaskPresetManagement({
         {hasPersistedTasks ? (
           <aside className="hidden min-w-0 self-start overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)] lg:sticky lg:top-5 lg:block">
             <TaskInspector
+              applyInstructionsAction={applyInstructionsAction}
               archiveAction={archiveAction}
               canEdit={canEdit}
+              instructionPreview={instructionPreview}
+              previewPresetId={previewPresetId}
+              onDirtyChange={setDesktopInspectorDirty}
               key={`desktop-${selectedPreset?.id ?? "none"}`}
               preset={selectedPreset}
               updateColorAction={updateColorAction}
+              updateDescriptionAction={updateDescriptionAction}
             />
           </aside>
         ) : null}
@@ -789,13 +922,18 @@ export function TaskPresetManagement({
             role="dialog"
           >
             <TaskInspector
+              applyInstructionsAction={applyInstructionsAction}
               archiveAction={archiveAction}
               canEdit={canEdit}
+              instructionPreview={instructionPreview}
+              previewPresetId={previewPresetId}
+              onDirtyChange={setMobileInspectorDirty}
               key={`mobile-${selectedPreset.id}`}
               closeButtonRef={mobileDetailCloseButtonRef}
               onClose={closeMobileDetail}
               preset={selectedPreset}
               updateColorAction={updateColorAction}
+              updateDescriptionAction={updateDescriptionAction}
             />
           </section>
         </div>

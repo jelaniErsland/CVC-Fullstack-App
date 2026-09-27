@@ -96,6 +96,8 @@ const longScheduleNote = Array.from(
   { length: 22 },
   (_, index) => `Arrival detail ${index + 1}: use the marked volunteer entrance and check in with the project team.`,
 ).join("\n");
+const instructionsOnly = process.env.ASSIGNMENT_INSTRUCTIONS_ONLY === "1";
+const instructionPreviewDirectory = path.join(root, "docs", "previews", "assignment-instructions");
 
 function isLoopbackUrl(value) {
   try {
@@ -314,6 +316,34 @@ async function runBrowserProof(token) {
     });
     await page.waitForURL(/\/v\/schedule$/, { timeout: 30_000 });
     assert(!page.url().includes(token), "final schedule URL leaked bearer");
+    if (instructionsOnly) {
+      await page.getByText(reviewValues.titles.confirm).first().waitFor();
+      await page.waitForLoadState("networkidle");
+      await mkdir(instructionPreviewDirectory, { recursive: true });
+      for (const viewport of [
+        { width: 1280, height: 900, label: "desktop" },
+        { width: 390, height: 844, label: "mobile" },
+      ]) {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).first().click();
+        const dialog = page.getByRole("dialog");
+        await dialog.waitFor();
+        const disclosure = dialog.locator("details").filter({ hasText: "Assignment details" });
+        assert.equal(await disclosure.count(), 1);
+        assert.equal(await disclosure.evaluate((node) => node.hasAttribute("open")), false);
+        await disclosure.locator("summary").click();
+        assert.equal(await disclosure.evaluate((node) => node.hasAttribute("open")), true);
+        await disclosure.getByText("Arrival detail 22:", { exact: false }).waitFor();
+        assert.equal(await dialog.getByRole("button", { name: "Confirm", exact: true }).count(), 1);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+        await page.screenshot({ path: path.join(instructionPreviewDirectory, `volunteer-disclosure-${viewport.label}.png`), animations: "disabled" });
+        await dialog.getByRole("button", { name: "Close assignment details", exact: true }).click();
+        await dialog.waitFor({ state: "detached" });
+      }
+      assert.deepEqual(failures, []);
+      await context.close();
+      return;
+    }
     await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
     await page.getByText(reviewValues.titles.confirm).waitFor();
     await page.getByText("5 assignments need your response.", { exact: true }).waitFor();
@@ -322,7 +352,6 @@ async function runBrowserProof(token) {
       5,
       "Each pending assignment must expose a response-oriented row action.",
     );
-
     if (writeIterationReviewScreenshots) {
       await mkdir(iterationReviewDir, { recursive: true });
       await page.screenshot({
@@ -583,7 +612,17 @@ async function main() {
     const user = await createAuthenticatedUser();
     insertFixtures(containerName, user.userId);
     token = await issueToken(user.client);
+    const before = instructionsOnly ? queryJson(containerName,
+      `select id, response_status from public.assignment_responses where workspace_id = ${sqlUuid(fixture.workspaceId)} order by id`) : null;
     await runBrowserProof(token);
+    if (instructionsOnly) {
+      const after = queryJson(containerName,
+        `select id, response_status from public.assignment_responses where workspace_id = ${sqlUuid(fixture.workspaceId)} order by id`);
+      assert.deepEqual(after, before, "Opening assignment details must not change responses.");
+      assert.deepEqual(queryJson(containerName,
+        `select id from public.assignment_notification_deliveries where workspace_id = ${sqlUuid(fixture.workspaceId)}`), [],
+      "Opening assignment details must not send a notification.");
+    }
   } finally {
     try {
       cleanup(containerName);
@@ -592,7 +631,9 @@ async function main() {
       throw new Error(`Volunteer schedule response browser cleanup failed: ${redact(error)}`);
     }
   }
-  console.log("Validated browser Confirm/Deny, denial notes, Confirm All, reload persistence, 390px layout, safe cookie handling, and zero disposable residue.");
+  console.log(instructionsOnly
+    ? "Validated real local volunteer Assignment details disclosure at desktop/mobile sizes, unchanged responses/deliveries, and zero residue."
+    : "Validated browser Confirm/Deny, denial notes, Confirm All, reload persistence, 390px layout, safe cookie handling, and zero disposable residue.");
 }
 
 main().catch((error) => {

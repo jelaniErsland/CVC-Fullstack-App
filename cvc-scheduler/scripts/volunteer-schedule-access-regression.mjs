@@ -475,6 +475,10 @@ async function run() {
   assert(allAssignments.some((assignment) => assignment.currentResponseStatus === "confirmed"));
   assert(allAssignments.some((assignment) => assignment.currentResponseStatus === "declined"));
   assert(allAssignments.some((assignment) => assignment.taskTitle.includes("Published Preset")));
+  const presetAssignment = schedule.raw.find((assignment) => assignment.task_title.includes("Published Preset"));
+  assert.equal(presetAssignment?.schedule_notes, "Preset fixture", "Volunteer access should receive only the stored occurrence snapshot.");
+  const oneOffAssignment = schedule.raw.find((assignment) => assignment.task_title.includes("Published One-Off"));
+  assert.equal(oneOffAssignment?.schedule_notes, "Bring gloves.");
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Draft")));
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Archived")));
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Other Volunteer")));

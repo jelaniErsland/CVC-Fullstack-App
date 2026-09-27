@@ -40,6 +40,7 @@ const taskPresetColumns = [
   "workspace_id",
   "name",
   "description",
+  "assignment_details_approved_at",
   "task_type",
   "default_needed_count",
   "volunteer_visible",
@@ -187,6 +188,130 @@ export async function updateTaskPresetColorWithClient(
   if (isTaskPresetEditConflict(error)) throw new TaskPresetEditConflictError();
   if (error || typeof data !== "string") throw new Error("Task preset color could not be updated.", { cause: error });
   return { presetId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export function taskPresetDescriptionInputFromFormData(formData: FormData) {
+  const fields = [...new Set(formData.keys())].filter((key) => !key.startsWith("$ACTION_"));
+  if (fields.some((key) => !["presetId", "expectedUpdatedAt", "description"].includes(key)) ||
+    fields.some((key) => formData.getAll(key).length !== 1)) {
+    throw new TaskPresetValidationError(["The submitted assignment details are invalid."]);
+  }
+  const presetId = formData.get("presetId");
+  const expectedUpdatedAt = formData.get("expectedUpdatedAt");
+  const description = formData.get("description");
+  if (typeof presetId !== "string" || typeof expectedUpdatedAt !== "string" ||
+    Number.isNaN(Date.parse(expectedUpdatedAt)) || typeof description !== "string" ||
+    description.trim().length > 2000) {
+    throw new TaskPresetValidationError(["Assignment details must be at most 2,000 characters."]);
+  }
+  return {
+    presetId: normalizeWorkspaceReference({ id: presetId }).value,
+    expectedUpdatedAt,
+    description: description.trim() || null,
+  };
+}
+
+export async function updateTaskPresetDescriptionWithClient(
+  supabase: AppSupabaseClient,
+  input: ReturnType<typeof taskPresetDescriptionInputFromFormData>,
+): Promise<TaskPresetMutationResult> {
+  await requireAuthenticatedContact(supabase);
+  const { data, error } = await supabase.rpc("update_task_preset_description", {
+    p_preset_id: input.presetId,
+    p_description: input.description,
+    p_expected_updated_at: input.expectedUpdatedAt,
+  } as unknown as PublicRpcArgs<"update_task_preset_description">);
+  if (isTaskPresetEditConflict(error)) throw new TaskPresetEditConflictError();
+  if (error || typeof data !== "string") throw new Error("Assignment details could not be saved.", { cause: error });
+  return { presetId: normalizeWorkspaceReference({ id: data }).value };
+}
+
+export type FutureInstructionCandidate = Readonly<{
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  currentText: string | null;
+  updatedAt: string;
+  publicationState: string;
+}>;
+
+export async function readFuturePresetInstructionCandidatesWithClient(
+  supabase: AppSupabaseClient,
+  workspaceId: string,
+  presetId: string,
+  currentDescription: string,
+  projectContactId: string,
+  projectToday: string,
+): Promise<readonly FutureInstructionCandidate[]> {
+  const { data, error } = await supabase.from("calendar_items")
+    .select("id,start_date,start_time,end_time,schedule_notes,updated_at,publication_state,created_by_project_contact_id")
+    .eq("workspace_id", normalizeWorkspaceReference({ id: workspaceId }).value)
+    .eq("task_preset_id", normalizeWorkspaceReference({ id: presetId }).value)
+    .eq("instruction_source", "preset")
+    .neq("schedule_notes", currentDescription)
+    .eq("lifecycle", "active")
+    .is("meal_kind", null)
+    .gt("start_date", projectToday)
+    .or(`publication_state.eq.published,created_by_project_contact_id.eq.${normalizeWorkspaceReference({ id: projectContactId }).value}`)
+    .order("start_date", { ascending: true })
+    .order("start_time", { ascending: true })
+    .limit(100);
+  if (error) throw new Error("Future occurrences could not be previewed.", { cause: error });
+  return (data ?? [])
+    .filter((item) => item.schedule_notes !== currentDescription &&
+      (item.publication_state === "published" || item.created_by_project_contact_id === projectContactId))
+    .map((item) => ({
+      id: item.id,
+      date: item.start_date,
+      startTime: item.start_time,
+      endTime: item.end_time,
+      currentText: item.schedule_notes,
+      updatedAt: item.updated_at,
+      publicationState: item.publication_state,
+    }));
+}
+
+export function selectedInstructionTargetsFromFormData(formData: FormData) {
+  const selected = formData.getAll("selectedOccurrence");
+  if (selected.length < 1 || selected.length > 100) throw new TaskPresetValidationError(["Select 1–100 future occurrences."]);
+  const seen = new Set<string>();
+  return selected.map((value) => {
+    if (typeof value !== "string") throw new TaskPresetValidationError(["Invalid occurrence selection."]);
+    let parsed: unknown;
+    try { parsed = JSON.parse(value); } catch { throw new TaskPresetValidationError(["Invalid occurrence selection."]); }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new TaskPresetValidationError(["Invalid occurrence selection."]);
+    const target = parsed as Record<string, unknown>;
+    if (Object.keys(target).sort().join(",") !== "id,updated_at" ||
+      typeof target.id !== "string" || typeof target.updated_at !== "string" ||
+      Number.isNaN(Date.parse(target.updated_at))) throw new TaskPresetValidationError(["Invalid occurrence selection."]);
+    const id = normalizeWorkspaceReference({ id: target.id }).value;
+    if (seen.has(id)) throw new TaskPresetValidationError(["An occurrence was selected twice."]);
+    seen.add(id);
+    return { id, updated_at: target.updated_at };
+  });
+}
+
+export async function applyTaskPresetInstructionsWithClient(
+  supabase: AppSupabaseClient,
+  input: Readonly<{ presetId: string; expectedUpdatedAt: string; targets: ReturnType<typeof selectedInstructionTargetsFromFormData> }>,
+) {
+  await requireAuthenticatedContact(supabase);
+  const { data, error } = await supabase.rpc("apply_task_preset_instructions", {
+    p_preset_id: input.presetId,
+    p_expected_preset_updated_at: input.expectedUpdatedAt,
+    p_targets: input.targets,
+  });
+  if (isTaskPresetEditConflict(error)) throw new TaskPresetEditConflictError();
+  if (isCalendarItemEditConflict(error)) throw new TaskPresetEditConflictError();
+  if (error || typeof data !== "number") throw new Error("Future instructions could not be applied.", { cause: error });
+  return data;
+}
+
+function isCalendarItemEditConflict(error: unknown) {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "40001" &&
+    "details" in error && error.details === "calendar_item_edit_conflict";
 }
 
 export async function createTaskPreset(input: CreateTaskPresetInput | unknown) {

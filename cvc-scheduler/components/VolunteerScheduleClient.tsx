@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 import type { VolunteerScheduleActionResult } from "@/app/v/schedule/actions";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
@@ -365,13 +366,10 @@ export function VolunteerScheduleClient({
                 </div>
               </dl>
 
-              {selected.scheduleNotes ? (
-                <section className="mt-4 border-l-2 border-blue-200 bg-blue-50/45 px-3 py-2.5">
-                  <h3 className="text-sm font-semibold text-slate-950">Notes</h3>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
-                    {selected.scheduleNotes}
-                  </p>
-                </section>
+              {selected.scheduleNotes?.trim() ? (
+                <DisclosureSection className="mt-4" summary="Assignment details">
+                  <p className="whitespace-pre-wrap break-words">{selected.scheduleNotes}</p>
+                </DisclosureSection>
               ) : null}
 
               {selected.responseNote ? (

@@ -65,6 +65,7 @@ type CalendarClientTaskPreset = {
   projectId: string;
   name: string;
   description: string | null;
+  assignmentDetailsApprovedAt?: string | null;
   category: CalendarClientCategory;
   neededCount: number;
   visibility: "mainContacts" | "allContacts" | "volunteers";
@@ -490,6 +491,7 @@ function mapSelectorPresetToClientPreset(
     projectId: `workspace:${preset.workspaceId}`,
     name: preset.name,
     description: preset.description,
+    assignmentDetailsApprovedAt: preset.assignmentDetailsApprovedAt,
     category: mapPresetTaskTypeToCategory(preset.taskType),
     neededCount: preset.defaultNeededCount,
     visibility: preset.volunteerVisible ? "volunteers" : "mainContacts",

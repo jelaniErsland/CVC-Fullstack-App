@@ -178,13 +178,15 @@ values (${sqlUuid(fixture.items.meal)}, ${sqlUuid(fixture.workspaceId)}, ${sqlUu
 async function createVolunteer(client) {
   const result = await client.rpc("create_manual_volunteer_profile", {
     p_workspace_id: fixture.workspaceId,
-    p_full_name: "Concurrent Volunteer",
-    p_email: `${fixture.namespace}-volunteer@example.invalid`,
-    p_phone: null,
-    p_congregation: null,
-    p_preferred_contact_method: "Email",
-    p_profile_notes: null,
-    p_readiness_status: "ready",
+    p_profile: {
+      fullName: "Concurrent Volunteer",
+      email: `${fixture.namespace}-volunteer@example.invalid`,
+      phone: null,
+      congregation: null,
+      preferredContactMethod: "Email",
+      profileNotes: "",
+      readinessStatus: "ready",
+    },
   });
   assert(!result.error && typeof result.data === "string");
   fixture.volunteerId = result.data;

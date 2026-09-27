@@ -2,9 +2,13 @@
 
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
+## Assignment details implementation in development — 2026-09-27
+
+The approved simplified architecture at `0248eec` is being implemented on `codex/simplified-task-details`. Preset description editing, new-occurrence instruction snapshots, individual occurrence editing, explicit selected-future apply and the volunteer Assignment details disclosure are in the development tree with a local-only migration. See the [implementation review](project-resources/TASK_DETAILS_IMPLEMENTATION_REVIEW.md). This is not merged or deployed. The project site map remains [design/integration preparation only](project-resources/SITE_MAP_INTEGRATION_READINESS.md), pending the exact approved map and independently encrypted disposable restore proof.
+
 ## Assignment details and site-map architecture proposal — 2026-09-26
 
-The dedicated `codex/project-resources-architecture` branch starts at `e2eeed8`, which contains the Batch 2 harness closeout and descends from deployed `ca54020`. The [revised architecture package](project-resources/README.md) proposes only editable task/occurrence instructions and one project-wide site map, with synthetic previews. The prior broader Project Resources design is preserved in Git commit `edd1114`. The actual map was unavailable for size, legibility and approval review. This is **not implemented or approved for implementation**; production, application code, schema, authentication, notifications and backup configuration are unchanged.
+The dedicated `codex/project-resources-architecture` branch starts at `e2eeed8`, which contains the Batch 2 harness closeout and descends from deployed `ca54020`. The [revised architecture package](project-resources/README.md) proposes only editable task/occurrence instructions and one project-wide site map, with synthetic previews. The prior broader Project Resources design is preserved in Git commit `edd1114`. The actual map was unavailable for size, legibility and approval review. This paragraph records the architecture-stage baseline; the implementation status is above.
 
 ## 12.48 Batch 2 production and local closeout — 2026-09-26
 

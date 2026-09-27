@@ -13,6 +13,11 @@ import {
   archiveTaskPresetWithClient,
   createTaskPresetWithClient,
   readTaskPresetsWithClient,
+  readFuturePresetInstructionCandidatesWithClient,
+  selectedInstructionTargetsFromFormData,
+  applyTaskPresetInstructionsWithClient,
+  taskPresetDescriptionInputFromFormData,
+  updateTaskPresetDescriptionWithClient,
   taskPresetCreateInputFromFormData,
   taskPresetColorUpdateInputFromFormData,
   TaskPresetEditConflictError,
@@ -129,6 +134,46 @@ async function updateTaskPresetColorAction(formData: FormData) {
   redirect(safeTasksRedirect(notice, selectedPresetId));
 }
 
+async function updateTaskPresetDescriptionAction(formData: FormData): Promise<"saved" | "conflict" | "validation" | "unavailable" | "error"> {
+  "use server";
+  try {
+    const context = await readTaskManagementRouteContext();
+    if (!context || !context.canEdit) return "unavailable";
+    const input = taskPresetDescriptionInputFromFormData(formData);
+    const presets = await readTaskPresetsWithClient(context.supabase, context.workspace.id);
+    if (!presets.some((preset) => preset.id === input.presetId && preset.lifecycle === "active" && !preset.isSystemPreset)) return "unavailable";
+    await updateTaskPresetDescriptionWithClient(context.supabase, input);
+    revalidatePath("/admin/tasks");
+    revalidatePath("/admin/calendar");
+    return "saved";
+  } catch (error) {
+    return error instanceof TaskPresetEditConflictError ? "conflict" :
+      error instanceof TaskPresetValidationError ? "validation" : "error";
+  }
+}
+
+async function applyTaskPresetInstructionsAction(formData: FormData): Promise<"applied" | "conflict" | "validation" | "unavailable" | "error"> {
+  "use server";
+  try {
+    const context = await readTaskManagementRouteContext();
+    if (!context || !context.canEdit || !context.capabilities.includes("calendar.edit")) return "unavailable";
+    const rawPresetId = formData.get("presetId");
+    const rawVersion = formData.get("expectedUpdatedAt");
+    if (typeof rawPresetId !== "string" || typeof rawVersion !== "string" || Number.isNaN(Date.parse(rawVersion))) return "validation";
+    const presetId = normalizeWorkspaceReference({ id: rawPresetId }).value;
+    const targets = selectedInstructionTargetsFromFormData(formData);
+    await applyTaskPresetInstructionsWithClient(context.supabase, {
+      presetId, expectedUpdatedAt: rawVersion, targets,
+    });
+    revalidatePath("/admin/tasks");
+    revalidatePath("/admin/calendar");
+    return "applied";
+  } catch (error) {
+    return error instanceof TaskPresetEditConflictError ? "conflict" :
+      error instanceof TaskPresetValidationError ? "validation" : "error";
+  }
+}
+
 function isReadyState(
   state: TaskManagementRouteState,
 ): state is TaskManagementReadyRouteState {
@@ -160,12 +205,38 @@ export default async function AdminTasksPage({ searchParams }: AdminTasksPagePro
     );
   }
 
+  let instructionPreview: Awaited<ReturnType<typeof readFuturePresetInstructionCandidatesWithClient>> | null = null;
+  let previewPresetId: string | null = null;
+  if (firstSearchParam(resolvedSearchParams?.preview) === "1" &&
+      state.canEdit && state.presets.length > 0) {
+    const context = await readTaskManagementRouteContext();
+    if (context && context.capabilities.includes("calendar.edit") && context.capabilities.includes("calendar.view")) {
+      const preset = state.presets.find((item) => item.id === firstSearchParam(resolvedSearchParams?.preset));
+      if (preset?.description && preset.assignmentDetailsApprovedAt && !preset.isSystemPreset) {
+        const dateParts = new Intl.DateTimeFormat("en-US", {
+          timeZone: context.workspace.timezone, year: "numeric", month: "2-digit", day: "2-digit",
+        }).formatToParts(new Date());
+        const part = (type: string) => dateParts.find((value) => value.type === type)?.value ?? "";
+        const projectToday = `${part("year")}-${part("month")}-${part("day")}`;
+        instructionPreview = await readFuturePresetInstructionCandidatesWithClient(
+          context.supabase, context.workspace.id, preset.id, preset.description,
+          context.projectContactId, projectToday,
+        );
+        previewPresetId = preset.id;
+      }
+    }
+  }
+
   return (
     <AdminShell active="tasks" workspaceName={state.workspaceName} destinations={state.navigationDestinations}>
       <TaskPresetManagement
         archiveAction={archiveTaskPresetAction}
         canEdit={state.canEdit}
         createAction={createTaskPresetAction}
+        updateDescriptionAction={updateTaskPresetDescriptionAction}
+        applyInstructionsAction={applyTaskPresetInstructionsAction}
+        instructionPreview={instructionPreview}
+        previewPresetId={previewPresetId}
         updateColorAction={updateTaskPresetColorAction}
         initialSelectedId={firstSearchParam(resolvedSearchParams?.preset)}
         initialCreateOpen={state.canEdit && firstSearchParam(resolvedSearchParams?.create) === "1"}

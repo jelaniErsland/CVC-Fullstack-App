@@ -10,10 +10,14 @@ import { readCalendarReadModelWithClient } from "../lib/calendar/readModelQuery.
 import { readCalendarTaskPresetSelectorWithClient } from "../lib/calendar/taskPresetSelector.server.ts";
 import { validateCreateCalendarItemInput } from "../lib/calendar/item.ts";
 import {
+  applyTaskPresetInstructionsWithClient,
   archiveTaskPresetWithClient,
   createTaskPresetWithClient,
+  readFuturePresetInstructionCandidatesWithClient,
   readTaskPresetsWithClient,
+  taskPresetDescriptionInputFromFormData,
   taskPresetCreateInputFromFormData,
+  updateTaskPresetDescriptionWithClient,
   updateTaskPresetColorWithClient,
 } from "../lib/tasks/server.ts";
 import {
@@ -179,7 +183,7 @@ async function verifyStaticRouteBoundary() {
   );
   assert.deepEqual(
     [...server.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
-    ["task_presets"],
+    ["task_presets", "calendar_items"],
   );
   assert.match(packageSource, /"test:tasks-management"/);
 }
@@ -311,6 +315,141 @@ async function createCalendarItem(client, input) {
   return data;
 }
 
+async function updateCalendarPresetTimedItemWithClient(client, input) {
+  const { data, error } = await client.rpc("update_calendar_item_preset_timed", {
+    p_calendar_item_id: input.calendarItemId,
+    p_start_date: input.schedule.date,
+    p_start_time: input.schedule.startTime,
+    p_end_time: input.schedule.endTime,
+    p_needed_count: input.neededCount,
+    p_schedule_notes: input.notes,
+    p_custom_values: input.customValues,
+    p_expected_updated_at: input.expectedUpdatedAt,
+  });
+  if (error || data !== input.calendarItemId) throw new Error("Authorized occurrence edit failed.", { cause: error });
+}
+
+async function verifyInstructionLifecycle(containerName, users, presetId) {
+  const workspaceId = fixture.workspaceId;
+  const textBefore = "Keep incoming materials organized.";
+  const textAfter = "Report to the materials lead.\n\nBring work gloves and check in at the east gate.";
+  const schedule = (date) => ({ kind: "timed", date, startTime: "09:00", endTime: "11:00" });
+  const create = (date, notes = null) => createCalendarItem(users.editor.client, {
+    workspaceId, source: { kind: "preset", taskPresetId: presetId }, schedule: schedule(date),
+    neededCount: 3, notes, customValues: {},
+  });
+  const row = (id) => queryJson(containerName,
+    `select id, schedule_notes, instruction_source, instruction_preset_updated_at, updated_at, publication_state
+     from public.calendar_items where id = ${sqlUuid(id)}`)[0];
+
+  const oldItem = await create("2026-08-18");
+  const futureA = await create("2026-11-17");
+  const futureB = await create("2026-11-18");
+  const exception = await create("2026-11-19", "Meet at the west gate for this date only.");
+  assert.equal(row(oldItem).schedule_notes, textBefore);
+  assert.equal(row(futureA).instruction_source, "preset");
+  assert.equal(row(exception).instruction_source, "manual");
+  runPsql(containerName, `update public.calendar_items set publication_state = 'published', published_at = now(),
+    published_by_project_contact_id = ${sqlUuid(fixture.contacts.editor)}
+    where id in (${sqlUuid(oldItem)}, ${sqlUuid(futureA)});`);
+
+  const preset = (await readTaskPresetsWithClient(users.editor.client, workspaceId)).find((item) => item.id === presetId);
+  assert(preset?.assignmentDetailsApprovedAt, "New task instructions must be approved for copying.");
+  const editForm = new FormData();
+  editForm.set("presetId", presetId);
+  editForm.set("expectedUpdatedAt", preset.updatedAt);
+  editForm.set("description", textAfter);
+  const editInput = taskPresetDescriptionInputFromFormData(editForm);
+  await expectFailure("view-only instructions edit", () => updateTaskPresetDescriptionWithClient(users.viewOnly.client, editInput));
+  await expectFailure("cross-project instructions edit", () => updateTaskPresetDescriptionWithClient(users.other.client, editInput));
+  const anonClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  const anonymousEdit = await anonClient.rpc("update_task_preset_description", {
+    p_preset_id: presetId, p_description: textAfter, p_expected_updated_at: preset.updatedAt,
+  });
+  assert(anonymousEdit.error, "Anonymous preset edits must remain denied at the database boundary.");
+  await updateTaskPresetDescriptionWithClient(users.editor.client, editInput);
+  await expectFailure("stale preset instructions edit", () => updateTaskPresetDescriptionWithClient(users.editor.client, editInput));
+  assert.equal(row(oldItem).schedule_notes, textBefore, "Past published wording must not change with preset edits.");
+  assert.equal(row(futureA).schedule_notes, textBefore, "Published future wording must not silently change.");
+  assert.equal(row(exception).schedule_notes, "Meet at the west gate for this date only.");
+
+  const newItem = await create("2026-11-20");
+  assert.equal(row(newItem).schedule_notes, textAfter, "New items should snapshot the approved preset text.");
+  const currentPreset = (await readTaskPresetsWithClient(users.editor.client, workspaceId)).find((item) => item.id === presetId);
+  const preview = await readFuturePresetInstructionCandidatesWithClient(
+    users.editor.client, workspaceId, presetId, textAfter, fixture.contacts.editor, "2026-09-27",
+  );
+  assert.deepEqual(new Set(preview.map((item) => item.id)), new Set([futureA, futureB]));
+
+  const beforeExceptionEdit = row(futureB);
+  await updateCalendarPresetTimedItemWithClient(users.editor.client, {
+    calendarItemId: futureB, expectedUpdatedAt: beforeExceptionEdit.updated_at,
+    schedule: schedule("2026-11-18"), neededCount: 3,
+    notes: "Use the temporary loading entrance on this date.", customValues: {},
+  });
+  assert.equal(row(futureB).instruction_source, "manual", "Occurrence edit must become an exception.");
+  const currentPreview = await readFuturePresetInstructionCandidatesWithClient(
+    users.editor.client, workspaceId, presetId, textAfter, fixture.contacts.editor, "2026-09-27",
+  );
+  assert.deepEqual(currentPreview.map((item) => item.id), [futureA]);
+  const selected = [{ id: futureA, updated_at: currentPreview[0].updatedAt }];
+  const applyInput = { presetId, expectedUpdatedAt: currentPreset.updatedAt, targets: selected };
+  await expectFailure("view-only future apply", () => applyTaskPresetInstructionsWithClient(users.viewOnly.client, applyInput));
+  await expectFailure("cross-project future apply", () => applyTaskPresetInstructionsWithClient(users.other.client, applyInput));
+  const anonymousApply = await anonClient.rpc("apply_task_preset_instructions", {
+    p_preset_id: presetId, p_expected_preset_updated_at: currentPreset.updatedAt,
+    p_targets: selected,
+  });
+  assert(anonymousApply.error, "Anonymous future-occurrence updates must remain denied.");
+  await updateCalendarPresetTimedItemWithClient(users.editor.client, {
+    calendarItemId: futureA, expectedUpdatedAt: selected[0].updated_at,
+    schedule: { kind: "timed", date: "2026-11-17", startTime: "10:00", endTime: "12:00" },
+    neededCount: 3, notes: textBefore, customValues: {},
+  });
+  await expectFailure("stale selected occurrence", () => applyTaskPresetInstructionsWithClient(users.editor.client, applyInput));
+  const fresh = row(futureA);
+  await applyTaskPresetInstructionsWithClient(users.editor.client, {
+    presetId, expectedUpdatedAt: currentPreset.updatedAt,
+    targets: [{ id: futureA, updated_at: fresh.updated_at }],
+  });
+  assert.equal(row(futureA).schedule_notes, textAfter);
+  assert.equal(row(futureA).instruction_source, "preset");
+  assert.equal(row(futureB).schedule_notes, "Use the temporary loading entrance on this date.");
+  const history = queryJson(containerName,
+    `select previous_text, new_text, item_was_published from public.assignment_instruction_revisions
+     where calendar_item_id = ${sqlUuid(futureA)} order by id`);
+  assert(history.some((revision) => revision.previous_text === textBefore &&
+    revision.new_text === textAfter && revision.item_was_published === true));
+
+  const deliveries = queryJson(containerName,
+    `select id from public.assignment_notification_deliveries where workspace_id = ${sqlUuid(workspaceId)}`);
+  assert.deepEqual(deliveries, [], "Instruction edits and previews must not create notification deliveries.");
+
+  const repeat = await users.editor.client.rpc("create_current_workspace_repeated_calendar_items", {
+    p_request_key: randomUUID(), p_task_preset_id: presetId,
+    p_one_off_title: null, p_one_off_task_type: null,
+    p_start_date: "2026-11-01", p_end_date: "2026-11-30", p_weekdays: [0,1,2,3,4,5,6],
+    p_start_time: "13:00", p_end_time: "15:00", p_needed_count: 3,
+    p_schedule_notes: null, p_custom_values: {}, p_meal_kind: null, p_meal_provider: null,
+    p_meal_contact: null, p_meal_menu: null, p_meal_total: null,
+  });
+  assert(!repeat.error && repeat.data?.length === 30, "Busy-month repeat creation should produce 30 independent snapshots.");
+  const busyRows = queryJson(containerName,
+    `select instruction_source, schedule_notes, count(*)::integer as count from public.calendar_items
+     where id = any(${sqlArray(repeat.data).replace("::text[]", "::uuid[]")}) group by instruction_source, schedule_notes`);
+  assert.deepEqual(busyRows, [{ instruction_source: "preset", schedule_notes: textAfter, count: 30 }]);
+  const busyStart = performance.now();
+  const monthModel = await readCalendarReadModelWithClient({
+    client: users.editor.client, workspaceId, actorContactId: fixture.contacts.editor,
+    workspaceTimezone: "America/Denver", rangeStart: "2026-11-01", rangeEnd: "2026-11-30",
+    periodKind: "month", capabilities: ["calendar.view", "assignments.view"],
+  });
+  const busyMs = Math.round(performance.now() - busyStart);
+  assert(monthModel.ok && monthModel.items.length >= 30);
+  assert(busyMs < 10_000, `Busy-month authorized Calendar read took ${busyMs}ms locally.`);
+  console.log(`Instruction lifecycle and busy-month read passed (${busyMs}ms local month read).`);
+}
+
 async function verifyPersistedBoundary(containerName, users) {
   const initial = await readTaskPresetsWithClient(users.editor.client, fixture.workspaceId);
   assert.deepEqual(
@@ -409,6 +548,8 @@ async function verifyPersistedBoundary(containerName, users) {
     customValues: {},
   });
 
+  await verifyInstructionLifecycle(containerName, users, created.presetId);
+
   await expectFailure("view-only archive", () =>
     archiveTaskPresetWithClient(users.viewOnly.client, created.presetId),
   );
@@ -493,6 +634,9 @@ delete from public.assignment_responses where workspace_id in (${sqlUuid(
       fixture.workspaceId,
     )}, ${sqlUuid(fixture.otherWorkspaceId)});
 delete from public.calendar_assignments where workspace_id in (${sqlUuid(
+      fixture.workspaceId,
+    )}, ${sqlUuid(fixture.otherWorkspaceId)});
+delete from public.calendar_repeat_creation_requests where workspace_id in (${sqlUuid(
       fixture.workspaceId,
     )}, ${sqlUuid(fixture.otherWorkspaceId)});
 delete from public.calendar_items where workspace_id in (${sqlUuid(

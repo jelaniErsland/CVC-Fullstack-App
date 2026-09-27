@@ -27,6 +27,8 @@ const writeColorReviewScreenshots = process.env.WRITE_12_45_COLOR_CAPTURES === "
 const writeIterationReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D1_CAPTURES === "1";
 const writeNamedReview = writeReviewScreenshots || writeIterationReviewScreenshots || writeColorReviewScreenshots;
+const writeInstructionScreenshots = process.env.WRITE_ASSIGNMENT_INSTRUCTIONS_SCREENSHOTS === "1";
+const instructionScreenshotDirectory = path.join(root, "docs", "previews", "assignment-instructions");
 const reviewScreenshotDirectory = writeColorReviewScreenshots
   ? path.resolve(root, "..", "previews", "12.45-product-review")
   : path.join(root, "docs", "previews", "iteration-12-37-tasks-review");
@@ -47,9 +49,17 @@ const fixture = {
   workspaceKey: `qa-12-37-${randomUUID()}`,
   validFrom: "2026-07-01T00:00:00.000Z",
   initialPresetId: randomUUID(),
+  instructionPreviewItemId: randomUUID(),
 };
 
-const values = writeNamedReview
+const values = writeInstructionScreenshots
+  ? {
+      workspaceName: "LDC Sample Project",
+      initialTask: "Gate Attendant",
+      desktopTask: "Material Staging",
+      mobileTask: "Site Cleanup",
+    }
+  : writeNamedReview
   ? {
       workspaceName: "Bozeman Local Project",
       initialTask: "Gate Attendant",
@@ -347,6 +357,20 @@ ${seedPresets
   )
   .join(",\n")};`,
   );
+  if (writeInstructionScreenshots) {
+    runPsql(containerName, `insert into public.calendar_items (
+  id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
+  schedule_kind, start_date, start_time, end_time, timezone, needed_count,
+  custom_values, lifecycle, created_by_project_contact_id, publication_state
+)
+select ${sqlText(fixture.instructionPreviewItemId)}::uuid, workspace.id,
+  ${sqlText(fixture.initialPresetId)}::uuid, ${sqlText(values.initialTask)}, 'general',
+  'timed', '2026-11-20', '09:00:00', '11:00:00', 'America/Denver', 2,
+  '{}'::jsonb, 'active', contact.id, 'draft'
+from public.workspaces workspace
+join public.project_contacts contact on contact.auth_user_id = ${sqlText(editorUserId)}::uuid
+where workspace.workspace_key = ${sqlText(fixture.workspaceKey)} limit 1;`);
+  }
 }
 
 async function captureReviewScreenshot(page, filename) {
@@ -414,17 +438,19 @@ async function openTasksPage(context) {
   });
   assert(response?.ok(), `Tasks route returned ${response?.status() ?? "no response"}.`);
   await page.getByRole("heading", { name: "Tasks", exact: true }).waitFor();
+  await page.waitForLoadState("networkidle");
   return { page, failures };
 }
 
 async function createTaskThroughUi(page, name, count = "3") {
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "New task", exact: true }).first().click();
   const dialog = page.getByRole("dialog", { name: "New task" });
   await dialog.waitFor();
   await dialog.getByLabel("Task name").fill(name);
   await dialog.getByLabel("Category").selectOption("general");
   await dialog.getByLabel("Volunteers needed").fill(count);
-  await dialog.getByLabel(/Description/).fill("Created through the persisted Tasks route.");
+  await dialog.getByLabel(/Assignment details/).fill("Created through the persisted Tasks route.");
   await Promise.all([
     page.waitForURL(/notice=created/),
     dialog.getByRole("button", { name: "Save task" }).click(),
@@ -434,6 +460,7 @@ async function createTaskThroughUi(page, name, count = "3") {
 }
 
 async function archiveSelectedTask(page, name) {
+  await page.waitForLoadState("networkidle");
   const detail = page.getByRole("dialog", { name: "Task details" });
   if (!(await detail.isVisible())) {
     await page.getByText(name, { exact: true }).first().click();
@@ -456,6 +483,7 @@ async function assertCalendarPresetOption(page, taskName, expected) {
   });
   assert(response?.ok(), `Calendar route returned ${response?.status() ?? "no response"}.`);
   await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Create item", exact: true }).click();
   await page.getByRole("heading", { name: "Plan project work", exact: true }).waitFor();
   await page.getByRole("button", { name: "Task preset", exact: true }).click();
@@ -489,9 +517,42 @@ async function verifyDesktop(browser) {
     return;
   }
   await page.getByText(values.initialTask, { exact: true }).first().waitFor();
+  await page.waitForLoadState("networkidle");
   assert.equal(await page.getByText("Site Preparation", { exact: true }).count(), 0);
-  await page.getByText(values.initialTask, { exact: true }).first().click();
-  await page.getByRole("heading", { name: values.initialTask, exact: true }).waitFor();
+  await page.getByRole("button", { name: new RegExp(values.initialTask.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }).first().click();
+  try {
+    await page.getByRole("heading", { name: values.initialTask, exact: true }).waitFor({ timeout: 5000 });
+  } catch {
+    throw new Error(`Task inspector did not open. Visible content: ${(await page.locator("body").innerText()).slice(0, 1300)}. Browser failures: ${failures.join(" | ")}`);
+  }
+  if (writeInstructionScreenshots) {
+    await mkdir(instructionScreenshotDirectory, { recursive: true });
+    const inspector = page.locator("aside").filter({ hasText: values.initialTask });
+    await inspector.getByRole("button", { name: "Edit instructions" }).click();
+    await inspector.getByLabel("Instructions for volunteers").fill("Report to the volunteer desk.\n\nCheck in at the east entrance and bring work gloves.");
+    await page.screenshot({ path: path.join(instructionScreenshotDirectory, "task-editor-desktop.png"), animations: "disabled" });
+    await inspector.getByRole("button", { name: "Save instructions" }).click();
+    await inspector.getByText("Instructions saved.", { exact: false }).waitFor({ timeout: 8000 }).catch(async () => {
+      throw new Error(`Instruction save did not finish: ${(await inspector.innerText()).slice(0, 1000)}`);
+    });
+    await inspector.getByRole("link", { name: "Preview future occurrences" }).click();
+    await page.waitForURL(/preview=1/);
+    await inspector.getByText("New instructions for selected occurrences").waitFor();
+    await page.waitForLoadState("networkidle");
+    await inspector.getByText("Current: Welcome arriving volunteers", { exact: false }).waitFor();
+    await page.screenshot({ path: path.join(instructionScreenshotDirectory, "task-preview-desktop.png"), animations: "disabled" });
+    await inspector.locator('input[name="selectedOccurrence"]').check();
+    await inspector.locator('[data-overlay-scroll="task-details"]').evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await page.screenshot({ path: path.join(instructionScreenshotDirectory, "task-preview-selection-desktop.png"), animations: "disabled" });
+    await inspector.getByRole("button", { name: "Apply to selected occurrences" }).click();
+    await inspector.getByText("Selected future instructions updated.", { exact: false }).waitFor({ timeout: 10000 }).catch(async (error) => {
+      const persisted = runPsql(containerName, `select schedule_notes from public.calendar_items where id = ${sqlText(fixture.instructionPreviewItemId)}::uuid;`);
+      const visible = await page.locator("body").innerText({ timeout: 2000 }).catch(() => "[no body]");
+      throw new Error(`Instruction apply did not finish: ${page.url()}; saved=${persisted.replaceAll("\r\n", " ").slice(0, 160)}; visible=${visible.slice(0, 1200)}`, { cause: error });
+    });
+    const instructionText = runPsql(containerName, `select schedule_notes from public.calendar_items where id = ${sqlText(fixture.instructionPreviewItemId)}::uuid;`);
+    assert.equal(instructionText.replaceAll("\r\n", "\n"), "Report to the volunteer desk.\n\nCheck in at the east entrance and bring work gloves.");
+  }
   if (!writeColorReviewScreenshots) await captureReviewScreenshot(page, "tasks-desktop-library-1440x1000.png");
 
   if (writeNamedReview) {
@@ -575,6 +636,18 @@ async function verifyMobile(browser) {
   await page.getByText(values.initialTask, { exact: true }).first().click();
   const contractDetailDialog = page.getByRole("dialog", { name: "Task details" });
   await contractDetailDialog.waitFor();
+  if (writeInstructionScreenshots) {
+    await contractDetailDialog.getByRole("button", { name: "Edit instructions" }).click();
+    await contractDetailDialog.getByLabel("Instructions for volunteers").fill("Check in with the materials lead.\n\nUse the east entrance for this shift.");
+    await page.screenshot({ path: path.join(instructionScreenshotDirectory, "task-editor-mobile.png"), animations: "disabled" });
+    page.once("dialog", (dialog) => dialog.accept());
+    await contractDetailDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await contractDetailDialog.getByRole("link", { name: "Preview future occurrences" }).click();
+    await page.waitForURL(/preview=1/);
+    await contractDetailDialog.getByText("No eligible future occurrences need updating.").waitFor();
+    await contractDetailDialog.locator('[data-overlay-scroll="task-details"]').evaluate((element) => { element.scrollTop = 170; });
+    await page.screenshot({ path: path.join(instructionScreenshotDirectory, "task-preview-mobile.png"), animations: "disabled" });
+  }
   await assertMobileOverlayContract(
     page,
     contractDetailDialog,
@@ -582,11 +655,15 @@ async function verifyMobile(browser) {
     "Mobile task-details dialog",
     false,
   );
-  await page.getByRole("button", { name: "Close task details backdrop" }).click({
-    position: { x: 8, y: 8 },
-  });
+  await contractDetailDialog.getByRole("button", { name: "Close task details", exact: true }).click();
   await contractDetailDialog.waitFor({ state: "hidden" });
   await page.setViewportSize(writeNamedReview ? { width: 390, height: 844 } : { width: 390, height: 932 });
+  if (writeInstructionScreenshots) {
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+    assert.deepEqual(failures, []);
+    await context.close();
+    return;
+  }
 
   if (writeNamedReview) {
     await page.getByText(values.initialTask, { exact: true }).first().click();
@@ -736,9 +813,9 @@ try {
     await browser.close();
   }
   console.log("Tasks management browser validation passed.");
-  console.log(
-    "Confirmed persisted desktop/mobile create, inspector, archive confirmation, view-only state, Calendar selector integration, and 390px width.",
-  );
+  console.log(writeInstructionScreenshots
+    ? "Confirmed desktop/mobile task-instruction editor, preview and selected-future apply with safe local fixtures."
+    : "Confirmed persisted desktop/mobile create, inspector, archive confirmation, view-only state, Calendar selector integration, and 390px width.");
   if (writeReviewScreenshots) {
     console.log(`Tasks visual-review screenshots written to ${reviewScreenshotDirectory}.`);
   }

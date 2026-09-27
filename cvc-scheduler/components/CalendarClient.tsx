@@ -147,6 +147,7 @@ type CalendarTaskPresetOption = {
   projectId: string;
   name: string;
   description: string | null;
+  assignmentDetailsApprovedAt?: string | null;
   category: TaskPresetCategory;
   neededCount: number;
   visibility: "mainContacts" | "allContacts" | "volunteers";
@@ -2858,17 +2859,18 @@ function CreatePanelContent({
         <section className="mt-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Users aria-hidden="true" className="h-3.5 w-3.5" />
-            Helpers and notes
+            Helpers and assignment details
           </p>
           <label className="mt-2 block">
-            <span className="text-sm font-semibold text-slate-700">Schedule notes</span>
+            <span className="text-sm font-semibold text-slate-700">Assignment details for this occurrence</span>
             <textarea
               className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
               onChange={(event) => onUpdate({ notes: event.target.value })}
-              placeholder="Add planning notes for this work..."
+              placeholder="Leave blank to copy approved task instructions, or write instructions specific to this date."
               value={creationDraft.notes}
             />
           </label>
+          {creationDraft.mode === "preset" && selectedPreset?.description ? <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">{selectedPreset.assignmentDetailsApprovedAt ? `Approved task instructions to copy when the field is blank:\n${selectedPreset.description}` : "This task has older description text that has not been reviewed and saved as volunteer instructions. It will not be copied automatically."}</p> : null}
 
         </section>
 
@@ -3740,13 +3742,14 @@ function InspectorContent({
                 </label>
               </div>
               <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Schedule notes</span>
+                <span className="text-sm font-semibold text-slate-700">Assignment details for this occurrence</span>
                 <textarea
                   className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-3 text-sm font-medium leading-6 text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
                   defaultValue={item.scheduleNotes ?? ""}
                   maxLength={4000}
                   name="notes"
                 />
+                <span className="mt-1 block text-xs leading-5 text-slate-500">This changes only this scheduled item. Its previous published wording is retained in instruction history; other occurrences keep their own wording. Saving does not send an email.</span>
               </label>
               <button
                 className="min-h-11 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)]"

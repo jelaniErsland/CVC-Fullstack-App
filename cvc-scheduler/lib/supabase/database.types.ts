@@ -34,6 +34,64 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_instruction_revisions: {
+        Row: {
+          actor_auth_user_id: string | null
+          calendar_item_id: string | null
+          changed_at: string
+          id: number
+          item_was_published: boolean | null
+          new_text: string | null
+          previous_text: string | null
+          task_preset_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          actor_auth_user_id?: string | null
+          calendar_item_id?: string | null
+          changed_at?: string
+          id?: never
+          item_was_published?: boolean | null
+          new_text?: string | null
+          previous_text?: string | null
+          task_preset_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          actor_auth_user_id?: string | null
+          calendar_item_id?: string | null
+          changed_at?: string
+          id?: never
+          item_was_published?: boolean | null
+          new_text?: string | null
+          previous_text?: string | null
+          task_preset_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_instruction_revisions_calendar_item_id_fkey"
+            columns: ["calendar_item_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_instruction_revisions_task_preset_id_fkey"
+            columns: ["task_preset_id"]
+            isOneToOne: false
+            referencedRelation: "task_presets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_instruction_revisions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignment_notification_deliveries: {
         Row: {
           attempt_count: number
@@ -439,6 +497,8 @@ export type Database = {
           end_time: string | null
           follow_up_project_contact_id: string | null
           id: string
+          instruction_preset_updated_at: string | null
+          instruction_source: string
           lifecycle: string
           meal_contact: string | null
           meal_kind: string | null
@@ -468,6 +528,8 @@ export type Database = {
           end_time?: string | null
           follow_up_project_contact_id?: string | null
           id?: string
+          instruction_preset_updated_at?: string | null
+          instruction_source?: string
           lifecycle?: string
           meal_contact?: string | null
           meal_kind?: string | null
@@ -497,6 +559,8 @@ export type Database = {
           end_time?: string | null
           follow_up_project_contact_id?: string | null
           id?: string
+          instruction_preset_updated_at?: string | null
+          instruction_source?: string
           lifecycle?: string
           meal_contact?: string | null
           meal_kind?: string | null
@@ -976,6 +1040,7 @@ export type Database = {
       }
       task_presets: {
         Row: {
+          assignment_details_approved_at: string | null
           color_key: string
           created_at: string
           custom_field_definitions: Json
@@ -992,6 +1057,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          assignment_details_approved_at?: string | null
           color_key?: string
           created_at?: string
           custom_field_definitions?: Json
@@ -1008,6 +1074,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          assignment_details_approved_at?: string | null
           color_key?: string
           created_at?: string
           custom_field_definitions?: Json
@@ -1510,6 +1577,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_task_preset_instructions: {
+        Args: {
+          p_expected_preset_updated_at: string
+          p_preset_id: string
+          p_targets: Json
+        }
+        Returns: number
+      }
       archive_calendar_item: {
         Args: { p_calendar_item_id: string }
         Returns: string
@@ -2086,6 +2161,14 @@ export type Database = {
         }
         Returns: string
       }
+      update_task_preset_description: {
+        Args: {
+          p_description: string
+          p_expected_updated_at: string
+          p_preset_id: string
+        }
+        Returns: string
+      }
       update_volunteer_profile_manual_fields: {
         Args: { p_profile: Json; p_profile_id: string }
         Returns: string
@@ -2123,12 +2206,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2152,11 +2235,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2177,11 +2260,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2202,11 +2285,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2219,11 +2302,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

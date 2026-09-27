@@ -36,6 +36,7 @@ export type TaskPreset = Readonly<{
   workspaceId: string;
   name: string;
   description: string | null;
+  assignmentDetailsApprovedAt: string | null;
   taskType: TaskPresetType;
   defaultNeededCount: number;
   volunteerVisible: boolean;
@@ -287,6 +288,7 @@ export function parseTaskPreset(value: unknown): TaskPreset {
     workspaceId,
     name: required("name"),
     description: nullable("description"),
+    assignmentDetailsApprovedAt: value.assignment_details_approved_at === undefined ? null : nullable("assignment_details_approved_at"),
     taskType: taskType as TaskPresetType,
     defaultNeededCount: value.default_needed_count,
     volunteerVisible: value.volunteer_visible,

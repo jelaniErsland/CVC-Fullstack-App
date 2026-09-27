@@ -15,6 +15,7 @@ export type TaskManagementPreset = Readonly<{
   id: string;
   name: string;
   description: string | null;
+  assignmentDetailsApprovedAt: string | null;
   taskType: TaskPresetType;
   defaultNeededCount: number;
   volunteerVisible: boolean;
@@ -193,6 +194,7 @@ function toRoutePreset(preset: Awaited<ReturnType<typeof readTaskPresetsWithClie
     id: preset.id,
     name: preset.name,
     description: preset.description,
+    assignmentDetailsApprovedAt: preset.assignmentDetailsApprovedAt,
     taskType: preset.taskType,
     defaultNeededCount: preset.defaultNeededCount,
     volunteerVisible: preset.volunteerVisible,
@@ -246,6 +248,7 @@ export function describeTaskManagementCutover() {
       "id",
       "name",
       "description",
+      "assignmentDetailsApprovedAt",
       "taskType",
       "defaultNeededCount",
       "volunteerVisible",
