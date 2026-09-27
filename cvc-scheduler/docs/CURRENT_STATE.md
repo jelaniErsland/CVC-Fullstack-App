@@ -2,6 +2,10 @@
 
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
+## Project Resources architecture proposal — 2026-09-26
+
+The dedicated `codex/project-resources-architecture` branch starts at `e2eeed8`, which contains the Batch 2 harness closeout and descends from deployed `ca54020`. [Architecture review package](project-resources/README.md) proposes project information, assignment instructions, private resources and complete encrypted object recovery. It includes synthetic previews only. The five private Belgrade PDFs were unavailable, so their extraction, map comparison, exact audience and version approval remain pending. This is **not implemented or approved for implementation**; production, application code, schema, authentication, notifications and backup configuration are unchanged.
+
 ## 12.48 Batch 2 production and local closeout — 2026-09-26
 
 **Deployed application:** `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923` is Production/Ready at `https://projectlocal.app`. Authorized Calendar and Quick View smoke passed at desktop and 390px mobile sizes. All 11 read-only production table fingerprints, including assignments and notification deliveries, matched before and after release. The scheduled encrypted backup and production preflight passed. See the [Batch 2 release report](12_48_BATCH_2_RELEASE.md) and [Stage 2 review](12_48_BATCH_2_STAGE_2_REVIEW.md).

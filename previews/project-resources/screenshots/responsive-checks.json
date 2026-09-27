@@ -1,0 +1,245 @@
+{
+  "kind": "isolated-synthetic-preview-only",
+  "checks": [
+    {
+      "view": "home",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "arrival",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "documents",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "admin",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "preset",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "assignment",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "security",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "map",
+      "documentWidth": 305,
+      "h1Count": 1,
+      "width": 320
+    },
+    {
+      "view": "home",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "arrival",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "documents",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "admin",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "preset",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "assignment",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "security",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "map",
+      "documentWidth": 375,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "home",
+      "documentWidth": 768,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "arrival",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "documents",
+      "documentWidth": 768,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "admin",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "preset",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "assignment",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "security",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "map",
+      "documentWidth": 753,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "home",
+      "documentWidth": 1024,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "arrival",
+      "documentWidth": 1009,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "documents",
+      "documentWidth": 1024,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "admin",
+      "documentWidth": 1009,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "preset",
+      "documentWidth": 1024,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "assignment",
+      "documentWidth": 1009,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "security",
+      "documentWidth": 1024,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "map",
+      "documentWidth": 1009,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "home",
+      "documentWidth": 1440,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "arrival",
+      "documentWidth": 1425,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "documents",
+      "documentWidth": 1440,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "admin",
+      "documentWidth": 1425,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "preset",
+      "documentWidth": 1440,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "assignment",
+      "documentWidth": 1425,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "security",
+      "documentWidth": 1440,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "map",
+      "documentWidth": 1425,
+      "h1Count": 1,
+      "width": 1440
+    }
+  ]
+}
