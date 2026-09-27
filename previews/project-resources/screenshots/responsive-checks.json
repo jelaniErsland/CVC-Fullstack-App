@@ -2,31 +2,13 @@
   "kind": "isolated-synthetic-preview-only",
   "checks": [
     {
-      "view": "home",
+      "view": "task-edit",
       "documentWidth": 305,
       "h1Count": 1,
       "width": 320
     },
     {
-      "view": "arrival",
-      "documentWidth": 305,
-      "h1Count": 1,
-      "width": 320
-    },
-    {
-      "view": "documents",
-      "documentWidth": 305,
-      "h1Count": 1,
-      "width": 320
-    },
-    {
-      "view": "admin",
-      "documentWidth": 305,
-      "h1Count": 1,
-      "width": 320
-    },
-    {
-      "view": "preset",
+      "view": "occurrence",
       "documentWidth": 305,
       "h1Count": 1,
       "width": 320
@@ -38,205 +20,133 @@
       "width": 320
     },
     {
-      "view": "security",
+      "view": "map-admin",
       "documentWidth": 305,
       "h1Count": 1,
       "width": 320
     },
     {
-      "view": "map",
+      "view": "map-view",
       "documentWidth": 305,
       "h1Count": 1,
       "width": 320
     },
     {
-      "view": "home",
+      "view": "task-edit",
       "documentWidth": 375,
       "h1Count": 1,
       "width": 390
     },
     {
-      "view": "arrival",
-      "documentWidth": 375,
-      "h1Count": 1,
-      "width": 390
-    },
-    {
-      "view": "documents",
-      "documentWidth": 375,
-      "h1Count": 1,
-      "width": 390
-    },
-    {
-      "view": "admin",
-      "documentWidth": 375,
-      "h1Count": 1,
-      "width": 390
-    },
-    {
-      "view": "preset",
+      "view": "occurrence",
       "documentWidth": 375,
       "h1Count": 1,
       "width": 390
     },
     {
       "view": "assignment",
+      "documentWidth": 390,
+      "h1Count": 1,
+      "width": 390
+    },
+    {
+      "view": "map-admin",
       "documentWidth": 375,
       "h1Count": 1,
       "width": 390
     },
     {
-      "view": "security",
+      "view": "map-view",
       "documentWidth": 375,
       "h1Count": 1,
       "width": 390
     },
     {
-      "view": "map",
-      "documentWidth": 375,
-      "h1Count": 1,
-      "width": 390
-    },
-    {
-      "view": "home",
+      "view": "task-edit",
       "documentWidth": 768,
       "h1Count": 1,
       "width": 768
     },
     {
-      "view": "arrival",
+      "view": "occurrence",
       "documentWidth": 753,
       "h1Count": 1,
       "width": 768
     },
     {
-      "view": "documents",
+      "view": "assignment",
       "documentWidth": 768,
       "h1Count": 1,
       "width": 768
     },
     {
-      "view": "admin",
+      "view": "map-admin",
+      "documentWidth": 768,
+      "h1Count": 1,
+      "width": 768
+    },
+    {
+      "view": "map-view",
       "documentWidth": 753,
       "h1Count": 1,
       "width": 768
     },
     {
-      "view": "preset",
-      "documentWidth": 753,
-      "h1Count": 1,
-      "width": 768
-    },
-    {
-      "view": "assignment",
-      "documentWidth": 753,
-      "h1Count": 1,
-      "width": 768
-    },
-    {
-      "view": "security",
-      "documentWidth": 753,
-      "h1Count": 1,
-      "width": 768
-    },
-    {
-      "view": "map",
-      "documentWidth": 753,
-      "h1Count": 1,
-      "width": 768
-    },
-    {
-      "view": "home",
+      "view": "task-edit",
       "documentWidth": 1024,
       "h1Count": 1,
       "width": 1024
     },
     {
-      "view": "arrival",
-      "documentWidth": 1009,
-      "h1Count": 1,
-      "width": 1024
-    },
-    {
-      "view": "documents",
-      "documentWidth": 1024,
-      "h1Count": 1,
-      "width": 1024
-    },
-    {
-      "view": "admin",
-      "documentWidth": 1009,
-      "h1Count": 1,
-      "width": 1024
-    },
-    {
-      "view": "preset",
+      "view": "occurrence",
       "documentWidth": 1024,
       "h1Count": 1,
       "width": 1024
     },
     {
       "view": "assignment",
-      "documentWidth": 1009,
-      "h1Count": 1,
-      "width": 1024
-    },
-    {
-      "view": "security",
       "documentWidth": 1024,
       "h1Count": 1,
       "width": 1024
     },
     {
-      "view": "map",
+      "view": "map-admin",
+      "documentWidth": 1024,
+      "h1Count": 1,
+      "width": 1024
+    },
+    {
+      "view": "map-view",
       "documentWidth": 1009,
       "h1Count": 1,
       "width": 1024
     },
     {
-      "view": "home",
+      "view": "task-edit",
       "documentWidth": 1440,
       "h1Count": 1,
       "width": 1440
     },
     {
-      "view": "arrival",
-      "documentWidth": 1425,
-      "h1Count": 1,
-      "width": 1440
-    },
-    {
-      "view": "documents",
-      "documentWidth": 1440,
-      "h1Count": 1,
-      "width": 1440
-    },
-    {
-      "view": "admin",
-      "documentWidth": 1425,
-      "h1Count": 1,
-      "width": 1440
-    },
-    {
-      "view": "preset",
+      "view": "occurrence",
       "documentWidth": 1440,
       "h1Count": 1,
       "width": 1440
     },
     {
       "view": "assignment",
-      "documentWidth": 1425,
-      "h1Count": 1,
-      "width": 1440
-    },
-    {
-      "view": "security",
       "documentWidth": 1440,
       "h1Count": 1,
       "width": 1440
     },
     {
-      "view": "map",
+      "view": "map-admin",
+      "documentWidth": 1440,
+      "h1Count": 1,
+      "width": 1440
+    },
+    {
+      "view": "map-view",
       "documentWidth": 1425,
       "h1Count": 1,
       "width": 1440

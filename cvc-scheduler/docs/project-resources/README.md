@@ -1,18 +1,13 @@
-# Project Resources & Assignment Details — architecture review
-Status: **PROPOSED; source-document review incomplete; implementation not authorized.** Prepared 2026-09-26.
+# Project Local: assignment details and one site map
 
-Branch `codex/project-resources-architecture` was created from `e2eeed8`. That commit contains the permanent Batch 2 test-harness corrections and descends from production `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`. Existing release documentation, Batch 2 branch and unrelated untracked previews were preserved. Only design documents and synthetic previews belong to this branch's new diff.
+**Revised architecture proposal · 2026-09-26 · implementation not started.** Branch `codex/project-resources-architecture` follows architecture commit `edd1114`. The original broad Project Resources package and gallery remain available at that commit in Git history. This revision replaces the active proposal with exactly two features.
 
-## Review order
-1. [Product specification](PRODUCT_SPEC.md) and [synthetic desktop/mobile gallery](../../../previews/project-resources/index.html).
-2. [Decisions requiring approval](DECISIONS_REQUIRED.md).
-3. [Authorization matrix](AUTHORIZATION_MATRIX.md), [data/storage](DATA_AND_STORAGE_DESIGN.md), [independent recovery](BACKUP_AND_RECOVERY_DESIGN.md).
-4. [Email/deep links](EMAIL_AND_DEEP_LINK_DESIGN.md), [implementation gates](IMPLEMENTATION_PLAN.md).
-5. [Document classification](DOCUMENT_CLASSIFICATION.md) and [source evidence](SOURCE_REVIEW.md).
-6. [Executed review checks and remaining limits](REVIEW_VALIDATION.md).
+Read [the product specification](PRODUCT_SPEC.md), [authorization matrix](AUTHORIZATION_MATRIX.md), [minimal data/storage design](DATA_AND_STORAGE_DESIGN.md), [independent encrypted recovery design](BACKUP_AND_RECOVERY_DESIGN.md), [implementation plan](IMPLEMENTATION_PLAN.md), [decisions](DECISIONS_REQUIRED.md) and [baseline/validation notes](REVIEW_VALIDATION.md). The [synthetic desktop/mobile preview gallery](../../../previews/project-resources/index.html) shows the five requested moments.
 
-The five private Belgrade PDFs were not found in the workspace or Codex attachments. No original document was read, copied, rendered, uploaded or committed. The classification file is a redacted review framework, **not an extraction of those documents**. The preview map is entirely fictional. Exact document versions, redactions, audiences and invitation extraction remain blocked on receiving the private package. Architecture approval cannot substitute for that coordinator review.
+**Recommended architecture:** add an authorized edit path for the existing task-preset description; use existing `calendar_items.schedule_notes` as the resolved per-occurrence instruction snapshot; display nonblank text through the existing volunteer assignment dialog and shared disclosure. Keep exactly one approved map per workspace, with its bytes in private PostgreSQL storage if the actual map is suitable. This keeps map bytes inside the current independently encrypted database backup, but production uploads remain gated on a proven nonempty disposable restore.
 
-Proposed core: project-scoped structured information; immutable published instruction revisions bound to actual Calendar item IDs; resources authorized at each read; private object storage with quarantine and validation; independent encrypted metadata-plus-object recovery. General volunteers keep the existing project-independent lookup. Security operations require an explicit person/workspace grant and stronger identity assurance than knowing a household contact address.
+The current Tasks page does not edit general preset text, even though its create form has a multiline description. The current volunteer assignment dialog already displays occurrence notes. These are implementation gaps and reusable contracts, respectively; no new feature has shipped from this architecture branch.
 
-No migration, application component, route, authentication, notification, production data, infrastructure or backup configuration changed. No merge or deployment is authorized by this package.
+Out of scope: project document library, document categories or attachments, security-document distribution, new security accounts, multi-reviewer publishing, invitation extraction, broad email changes and the broken training link. The current assignment response link, session boundaries, Quick View and notification safeguards remain the authority.
+
+The private Belgrade PDFs were absent from the workspace. Only the **exact approved site map** and its accessible directions need private coordinator review for this scope. No source PDF was copied into Git or a preview. No migration, application route, production storage, backup task, email, merge or deployment changed in this stage.

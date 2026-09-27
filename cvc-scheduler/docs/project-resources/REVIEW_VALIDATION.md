@@ -1,33 +1,17 @@
-# Architecture review evidence — 2026-09-26
+# Baseline and review evidence
 
-## Branch and scope
+Repository inspected at `edd1114` on `codex/project-resources-architecture`; that earlier architecture commit descends from `e2eeed8` and deployed `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`. The unrelated pre-existing untracked previews and `batch-2-release-check` junction remain untouched. The original broad architecture is recoverable from `edd1114`.
 
-Verified `e2eeed8` contains `test: refresh post-release safety harnesses`, follows `b7c0e96` release documentation and descends from deployed `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`. Created `codex/project-resources-architecture` from that development commit. The Batch 2 branch, release reports, existing untracked previews and harmless release-check junction remain untouched.
+## Verified source contracts
 
-The architecture diff is restricted to this documentation directory, the directly relevant CURRENT_STATE entry and `previews/project-resources/`. No application, migration, dependency, notification, authentication, storage policy or backup executable/configuration changes are included. No production session, database, task scheduler or provider configuration was accessed for this stage.
+- [Tasks server](../../lib/tasks/server.ts), [preset validator](../../lib/tasks/preset.ts), [Tasks page](../../app/admin/tasks/page.tsx) and [management component](../../components/TaskPresetManagement.tsx): preset description is nullable, accepts up to 2,000 characters on creation, and has a multiline create control. Current mutations are create, color update and archive; no general preset-description update currently exists. The task inspector is the appropriate existing view/edit surface. New editing must honor `tasks.edit`, expected-version conflicts and unsaved drafts.
+- [Calendar item validator](../../lib/calendar/item.ts), [Calendar server](../../lib/calendar/server.ts) and [item management migrations](../../supabase/migrations/20260907120000_concurrent_admin_edit_guards.sql): `schedule_notes` is nullable, bounded to 4,000 characters and edited through existing Calendar RPCs with conflict checks. Repeat creation produces independent item IDs. Preset color currently follows the preset, while instruction text should be copied to each item at creation.
+- [Volunteer schedule projection](../../lib/volunteerScheduleAccess/token.ts) and [assignment dialog](../../components/VolunteerScheduleClient.tsx): exact assignment projection already includes `scheduleNotes`; the dialog shows it as “Notes” with line breaks, beside response actions. The proposed disclosure is a focused presentation change. [Shared DisclosureSection](../../components/DisclosureSection.tsx) already provides native details/summary and one chevron.
+- [Photo adapter](../../lib/projectPhoto/files.server.ts) is loopback-only and rejects Vercel. [Current state](../CURRENT_STATE.md) records production uploads disabled and no proven nonempty BLOB restore. A map needs its own approved production persistence and independent recovery proof.
+- Existing [admin grant model](../../lib/auth/grant.ts), [volunteer lookup migration](../../supabase/migrations/20260908130000_volunteer_lookup_last_name_and_attention_seen.sql), [schedule access](../../lib/volunteerScheduleAccess/server.ts), [Quick View projection](../../lib/calendar/quickView.server.ts) and [native backup](../../scripts/production-backup/Invoke-ProjectLocalProductionBackup.ps1) remain the required authorization and recovery baseline.
 
-## Checks actually performed
+## Architecture preview checks
 
-- Repository source, latest overriding migrations and current documentation inspected. Corrected the source inventory to cite the current last-name/contact lookup, superseding the older full-name migration. Product requirements were treated as planning, not proof of implementation.
-- Local Markdown link resolution and both preview JavaScript syntax checks passed.
-- Eight isolated synthetic pages measured at 320, 390, 768, 1024 and 1440px: 40 checks, no document-level horizontal overflow, one primary heading per page. [Raw measurements](../../../previews/project-resources/screenshots/responsive-checks.json).
-- Native disclosure opened with Enter. Map zoom changed its labeled pressed state and expanded only its scrollable region; Fit page reset it. Secondary-action disclosure opened. These are mock interactions, not the production shared components.
-- At 390 × 844, the home information entry is reachable in the first viewport; keyboard navigation reached the last link at the actual scroll end (216px of scroll in that capture). No fixed overlay masks content. The gallery's taller mobile images show full content, not a claim that all content fits one viewport.
-- Desktop/mobile screenshots cover all eight concepts, plus expanded states and an ordinary phone viewport. Inspected the rendered gallery and representative full-size layouts.
-- Official R2, Supabase and Vercel documentation checked for storage costs/access tradeoffs and payload limits. Actual account quotas and worker pricing are unverified.
+Only isolated HTML/CSS mockups were changed; these are not application tests. Five synthetic desktop and mobile concepts were captured. Their layout was checked at 320, 390, 768, 1024 and 1440px; focus/disclosure and map zoom were inspected. The approved 12.48 foundation's blue, ink, spacing and single-chevron language guided the mockups. Details placeholder text is visibly gray and not saved content. The gallery contains no actual Belgrade map or private contact.
 
-## Visual comparison and corrections
-
-Compared with the [12.48 shared foundation](../design/12_48_SHARED_FOUNDATION.md): corrected the preliminary green accent palette to the application's blue/canvas/ink/control-border tokens; aligned heading sizes and panel/control radii; retained readable 16px body text, explicit status words and a single disclosure indicator. The isolated system font and illustrative icons approximate Geist/Lucide; implementation must use actual shared components.
-
-Moved the site-map card ahead of optional visit disclosures on mobile, with matching DOM reading order. Kept essentials and map top-aligned on desktop. Corrected the mobile preset contact field so the fictional name and email are readable across two lines. Document links have title-specific accessible names. Viewer controls wrap without page overflow and preserve a written map alternative.
-
-The browser's initial full-page capture distorted some narrow images despite correct layout measurements. Replaced those images using a taller capture canvas and a screenshot clip to rendered content, then inspected the resulting files. Retained a separate ordinary 390 × 844 viewport image so capture dimensions are transparent.
-
-## Not tested or established
-
-No full application build or database/browser regression suite was rerun: there is no application implementation change. No new authorization, malware scanner, provider credential, signed upload, delivery gateway, migration or complete object recovery exists yet. Their required real local tests are acceptance gates in IMPLEMENTATION_PLAN, not claimed results. Enlarged-text/PDF accessibility certification awaits actual components and approved documents.
-
-All five private Belgrade PDFs were absent from the workspace and Codex attachments. No extraction, real map comparison, security-content assessment, document size/legibility result or actual publishable derivative could be verified. DOCUMENT_CLASSIFICATION is a pending review framework. Request the private package before finalizing those deliverables; do not approve source versions from filenames.
-
-Status: **architecture draft ready for review; source-specific completion and policy approval pending. Implementation stopped.**
+No local database migration, authorized route test, storage upload, backup run or full application build is claimed during this architecture-only revision. Those are explicit implementation/release gates in the plan. The actual approved map size and legibility were unavailable, so the precise file cap and final persistence feasibility are unresolved rather than guessed.

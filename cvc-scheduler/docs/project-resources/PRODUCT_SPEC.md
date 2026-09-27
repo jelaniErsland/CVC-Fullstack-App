@@ -1,56 +1,39 @@
-# Product specification — proposed
-This proposal is conditional on [the decisions](DECISIONS_REQUIRED.md) and missing source review. All example content in previews is synthetic.
+# Assignment details and one project site map — product proposal
 
-## Volunteer experience
-Project-independent lookup remains the initial entry. After the server establishes the exact volunteer profile and workspace, the home keeps the next assignment and response controls primary. Add a compact **Before you arrive** card and at most three relevant general documents with **All project documents** as a secondary link. A displayed project switch returns to the existing authorized selection flow; a URL/workspace name cannot switch identity. Use ldcProjectName exactly once throughout.
+Status: architecture only. The complete earlier Project Resources proposal remains at Git commit `edd1114`; its library, security-document distribution and email redesign are outside this revision.
 
-**Before you arrive** opens a calm project page: project identity, address/location, arrival/reporting, hours and essential PPE first; parking/site map and help next; meals, housing/travel and additional guidance as informative native disclosures. Hide every empty or unpublished section server-side. Display published/reviewed date and project timezone where times occur. No security teaser titles, empty placeholders or global file-browser navigation.
+## Administrator journeys
 
-Proposed structured fields:
-- Location: site label, postal address lines, city/region/postal code, optional validated HTTPS directions link. The app does not geocode or share location automatically.
-- Arrival: short reporting instruction, reporting place, optional typical arrival time.
-- Parking/access: concise paragraph, approved map reference, accessible-route alternative.
-- Hours: normal start/end and timezone, short exception note; assignment time always wins.
-- Clothing/PPE: a bounded list of practical requirements; no training URL or claim that reading this page fulfills required training.
-- Meals/breaks: short logistics note plus link to the existing weekly meal menu; never invent daily counts.
-- Housing/travel: optional bounded prose and approved resource.
-- Help: approved role/display name and specifically publishable contact channels; never copy a full profile/contact row.
-- Additional guidance: bounded plain-text paragraphs, optional disclosures and approved documents.
+**Task library.** An authorized contact opens an existing task preset and chooses **Edit task** in its current inspector. Add one optional multiline **Assignment details** field to the existing task form. Its gray placeholder is only guidance and is never submitted as content:
 
-Use 10–120 character section headings, up to 2,000 characters per prose section and small bounded lists (proposed limits, not existing schema). No arbitrary HTML, embedded iframe, pasted scripts or uncontrolled Markdown images. Fields are optional, but published nonempty sections need an explicit visibility decision. A page can publish selected sections atomically; its unpublished revision stays private.
+> Who should volunteers report to?
+> Where should they check in?
+> What time should they arrive?
+> What should they bring or wear?
+> Are there any special instructions?
 
-## Assignment details
-Open the volunteer's actual assignment from their schedule/email. Header: actual date/time/timezone, title and response status. Retain current Confirm / Can't make it / cutoff/help behavior. Then **What you'll do**, **Where to report**, **Bring with you**, **Your contact**, applicable documents and a compact project-information link. Supplemental instructions disclose progressively. No volunteer roster, security contact directory or generic document search.
+The field accepts several plain-text paragraphs, preserves line breaks and has a visible character count near the tested limit. No required subfields, rich-text editor, document attachments or new task category. Save uses the existing `tasks.edit` scope, expected `updated_at` version and the current inspector/drawer interaction. Validation or a failed request leaves the draft dirty and offers the existing conflict resolution; only a confirmed successful save clears it. Task name and other existing editable fields should use the same authorized update path when exposed; do not imply that the current color-only edit already provides this.
 
-Preset instruction fields: brief description, reporting/arrival note, reporting location, designated reporting contact, clothing/equipment list, additional instructions and linked resource versions. Existing description remains intact; migration must not silently treat internal notes/custom values as published volunteer instructions. Initially copy only admin-reviewed content into a new draft revision. Reporting contact and assignment Follow-up Contact are separately labeled if different. Missing reporting contact falls back only to an already authorized Follow-up Contact projection, not a random project contact. Meals retain their existing headcount/free-text-contact model and do not receive staffed-assignment instructions automatically.
+**Scheduled occurrence.** The existing Calendar item editor presents the same multiline field with the preset text as the default for a newly scheduled item. The administrator may keep it, replace it for this date, or clear it. The saved item contains the resolved text, so a change to the preset does not silently rewrite already scheduled work. Existing one-off items can use the field directly. Repeat creation produces independent items; each carries its own details and exact date. A future-item update, if wanted, must select exact item IDs, show a before/after count and preserve assignments and responses. It does not silently propagate when a preset is saved.
 
-Admin preset editing adds **Volunteer instructions** within the existing Tasks edit experience. Fields show **Use preset**, **Override for this date**, or **Hide for this date** at the Calendar occurrence layer. An explicit null override clears inherited content; absent override inherits. Preview renders the volunteer's resolved result without inheritance jargon.
+Existing `schedule_notes` already belongs to the scheduled item and is projected to a volunteer as “Notes.” Migration must retain nonempty notes unchanged and label them accurately as assignment details after coordinator review. Existing `task_presets.description` may contain prior prose; do not automatically republish it to old items. An explicit migration review can copy approved text for newly scheduled work. Breakfast/Lunch keep their separate headcount and meal-contact model; no ordinary staffing field is introduced on meal entries.
 
-**Proposed update policy (D4):** draft occurrences may refresh from the latest approved preset with a visible review action. Publishing an occurrence captures an immutable resolved instruction revision and exact resource versions. Later preset changes affect new occurrences only. Updating already-published future occurrences requires selection of exact item IDs, a before/after preview, optimistic version checks and explicit approval. A shared instruction revision is referenced by all assignees on that occurrence; reassignment is not instruction ownership. Past occurrence revisions remain historical and admin-auditable. A resource revocation overrides every snapshot, including historical ones.
+**Map management.** The project's administrator sees one **Site map** card near project identity/settings, showing the current approved map, file type, review date and **Upload map**, **Replace map** or **Remove map** as appropriate. A replacement is validated and previewed before it becomes current. A failed replacement leaves the previous map available. A removal revokes new retrieval immediately while retained backup copies follow the approved retention rule. There is no resource library or attachment workflow.
 
-Date/time, publication, assignment response and staffing remain authoritative in existing Calendar records; do not copy them into editable resource fields. Multiple assignments with matching titles must stay distinct. Duplicate/repeat creates a new occurrence and reviewable instruction snapshot; it does not copy security permissions or assignments. One-off items can author the same instruction structure without creating a preset.
+## Volunteer journeys
 
-## Administrator resources
-Enter **Project information & documents** contextually from Overview/project settings or an authorized More destination; no new primary navigation bar. Existing right drawer/responsive sheet handles resource detail. Resource cards show title, audience, draft/published state, updated date, version and reference count. A compact table on desktop becomes stacked cards on mobile.
+The existing schedule, selected assignment dialog and Confirm/Decline controls remain the primary workflow. If resolved details contain nonblank text, show one shared `DisclosureSection` titled **Assignment details** within the dialog. Opening it reveals escaped plain text with paragraph breaks and natural wrapping. If details are blank, omit the disclosure. Show the project site-map link alongside the details or in the dialog's practical information area when a map is published, even if no instruction text exists. The link rechecks the verified volunteer's project session; it is not a public file URL or a substitute response link.
 
-Flow: choose project → upload to quarantine → scan/validate → title/description/accessible summary → audience → preview exact processed version → review reference impact → publish. Publish, Replace, Unpublish and Archive retain explicit wording; secondary details use the existing ellipsis menu. Upload completion never publishes. Approval records actor, version/hash, audience, source approval and timestamp. A failed scan cannot be overridden by a browser flag.
+On the existing project home, a compact **Site map** card appears when the project has an approved map. Opening it shows a legible page or image, **Zoom in**, **Zoom out**, **Fit page**, keyboard focus, mobile pan confined to the viewer, and text directions or alternative text approved with the map. A PDF download is offered only when its safe approved bytes can be delivered; the original file is not assumed to be accessible by itself. A missing map leaves no empty card. A removed/unavailable map produces a neutral message without serving a stale cached version.
 
-Replacement creates a new immutable version. The old published version stays live until explicit promotion. Show all current page/preset/occurrence references and whether they are pinned. Update references only through a previewed transaction; never redirect a restricted revoked version automatically to a broader/new resource. Unpublish revokes retrieval immediately through the gateway; archive hides a resource from new selection and revokes volunteer delivery. Administrative retention is separate from volunteer access. Physical purge requires an authorized retention workflow and confirmation, not an ellipsis one-click delete.
+Initial volunteer sign-in remains project-independent. The server uses the verified profile and selected workspace for the map. A volunteer associated with two workspaces never gains one project's map from the other project's session; sharing an email address does not merge identities. Quick View retains its existing read-only and bearer boundaries.
 
-## Documents and site map
-A document card has a useful title, short purpose, format/size, reviewed date and Open. The dedicated viewer retains project and back context, a text summary, page controls, zoom in/out, fit width and **Download approved PDF** if permitted. On mobile the map occupies the content width; intentional pan within the viewer does not cause page overflow. Keyboard controls and explicit reset remain available; no pinch-only control. Provide a text route description and accessible equivalent where the map conveys directions. A scanned PDF alone is not an accessibility solution. Preserve useful PDF text/tags through validation; check processing for lost tags. Do not embed third-party viewers.
+## Instruction update policy
 
-The preview illustrates viewing a fictional map only. The actual site map, its approval state and any public/restricted split cannot be selected until the originals are compared. Downloads are deliberate user actions; no offline cache or bulk ZIP. Explain that downloaded copies cannot be recalled.
+Recommendation for approval: **copy the resolved preset details into each Calendar item when it is created**. A later preset edit affects newly created items only. A scheduled item may be edited explicitly; each published edit records its previous and new text for audit. Past published instructions remain retrievable to authorized administrators as historical revisions, while volunteers see the current permitted item text. Before migration, existing nonempty item notes win; existing blank items stay blank until an administrator reviews them. This avoids pretending the old preset description was already an assignment instruction.
 
-## Empty, error and restriction states
-| Condition | Volunteer result |
-| --- | --- |
-| Information not published | Home entry hidden; a direct authorized page says “Project information isn't available yet” with approved help. |
-| No applicable documents | Omit Documents section; direct page says “No documents are available for this project.” |
-| Replaced version | If still allowed, offer current approved version with review date; require fresh authorization for both. |
-| Revoked/removed or unauthorized | Same generic unavailable state; do not reveal restricted title, audience, reference count or existence. |
-| Temporary object failure | Authorized metadata can say “Document temporarily unavailable. Try again”; no raw storage error. |
-| Expired identity | Clear restricted state, offer project-independent verification, retain only an allowlisted intended destination. |
-| Draft/scan pending | Admin-only progress/error, retry with same upload intent; volunteers see nothing. |
+Do not send email when a preset, occurrence or map changes. A coordinator can use the established Communications review/resend workflow separately if an urgent correction must reach volunteers. Existing recipient selection, preview/fingerprint, deduplication, delivery ledger, confirmation and unknown-outcome safeguards remain intact. The current primary assignment email link and response route remain unchanged.
 
-Use 44px touch targets, visible focus, semantic headings, readable 16px body text, non-color status labels, escape/close/focus restoration and content-driven single columns at enlarged text. Proposed UI contracts are described in the implementation plan; previews are isolated, nonfunctional representations.
+## Boundaries and shared design
+
+Use the existing 12.48 Panel, Field, Button, ActionMenu and `DisclosureSection` with one chevron and native keyboard semantics. Preserve the volunteer dialog's close, Escape, focus return, mobile scroll and safe areas. Batch 3 may reuse the same read-only resolved-details block and authoritative item ID without changing Calendar gestures, meals or assignment editing. These proposals introduce neither security-document access nor new welcome-email flows.

@@ -2,9 +2,9 @@
 
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
-## Project Resources architecture proposal — 2026-09-26
+## Assignment details and site-map architecture proposal — 2026-09-26
 
-The dedicated `codex/project-resources-architecture` branch starts at `e2eeed8`, which contains the Batch 2 harness closeout and descends from deployed `ca54020`. [Architecture review package](project-resources/README.md) proposes project information, assignment instructions, private resources and complete encrypted object recovery. It includes synthetic previews only. The five private Belgrade PDFs were unavailable, so their extraction, map comparison, exact audience and version approval remain pending. This is **not implemented or approved for implementation**; production, application code, schema, authentication, notifications and backup configuration are unchanged.
+The dedicated `codex/project-resources-architecture` branch starts at `e2eeed8`, which contains the Batch 2 harness closeout and descends from deployed `ca54020`. The [revised architecture package](project-resources/README.md) proposes only editable task/occurrence instructions and one project-wide site map, with synthetic previews. The prior broader Project Resources design is preserved in Git commit `edd1114`. The actual map was unavailable for size, legibility and approval review. This is **not implemented or approved for implementation**; production, application code, schema, authentication, notifications and backup configuration are unchanged.
 
 ## 12.48 Batch 2 production and local closeout — 2026-09-26
 

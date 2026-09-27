@@ -1,17 +1,7 @@
-# Project Resources design previews
+# Focused architecture previews
 
-Architecture-only, synthetic and isolated from the application. Open [the gallery](index.html). No uploads, sends, saves, authentication or document retrieval are implemented. Disabled controls illustrate future placement; native disclosures and the fictional map's zoom/fit controls are the only local interactions beyond navigation.
+Open [the gallery](index.html). Five synthetic desktop/mobile layouts show task instruction editing, a scheduled-date exception, volunteer disclosure, one site-map management card and a map viewer. Extra captures show an opened assignment disclosure and mobile zoom. The mockups do not save, upload, authenticate or send email.
 
-Run from the repository root, if needed:
+From the repository root, a local isolated preview server can be started with `python -m http.server 8767 --bind 127.0.0.1 --directory previews/project-resources`. The folder contains only fictional map geometry, example names and sample instructions. No original Belgrade PDF or production contact is included.
 
-```powershell
-python -m http.server 8767 --bind 127.0.0.1 --directory previews/project-resources
-```
-
-Then open `http://127.0.0.1:8767/index.html`. The server exposes this synthetic folder only, not the repository or private references. The gallery also opens directly as a local HTML file.
-
-Eight concepts have desktop and mobile screenshots under `screenshots/`: home, arrival, documents, admin, preset, assignment, security and map. Extra images show open disclosure, secondary actions and map zoom. Desktop captures use 1440px width; mobile captures use 390px width with a taller capture canvas cropped to rendered content. Ordinary viewport reachability is checked separately at 390 × 844; full-content images do not claim everything fits in one phone viewport.
-
-The previews follow the checked-in 12.48 blue/canvas/ink/border tokens and heading scale. System font approximates the application's Geist; inline illustrative icons approximate Lucide. Implementation must reuse actual shared components, rather than copy this standalone CSS/JavaScript into application components.
-
-No Belgrade source map or private contact is present. Every map shape, instruction, name and example.invalid contact is fictional. These layouts do not establish access controls or approve an actual document for publication. Read the [architecture package](../../cvc-scheduler/docs/project-resources/README.md) and its source-review limitations before approval.
+Colors, heading sizes, compact cards and focus treatment follow the checked-in 12.48 design foundation. The implementation should use the actual shared React components. The old eight-screen library/security previews remain available in Git history at `edd1114`.
