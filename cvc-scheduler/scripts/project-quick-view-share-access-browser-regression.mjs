@@ -138,6 +138,14 @@ function watchErrors(page) {
   });
   return errors;
 }
+function responseMediaType(response) {
+  return (response.headers()["content-type"] ?? "").split(";", 1)[0].trim().toLowerCase();
+}
+function notificationFingerprint() {
+  return runPsql(`select jsonb_agg(jsonb_build_object('table',name,'count',n,'digest',digest) order by name) from (
+    ${['assignment_notification_deliveries', 'volunteer_welcome_deliveries', 'communication_operations', 'communication_recipients'].map(name => `select '${name}' name,count(*) n,md5(coalesce(string_agg(to_jsonb(t)::text,'|' order by to_jsonb(t)::text),'')) digest from public.${name} t`).join(' union all ')}
+  ) fingerprints;`);
+}
 async function cleanup() {
   if (!containerName) return;
   runPsql(`
@@ -158,6 +166,8 @@ async function main() {
   assert(loopback(baseUrl), "Browser regression requires a loopback preview.");
   containerName = await resolveContainer();
   assert(supabaseUrl && anonKey && loopback(supabaseUrl), "Browser regression requires loopback Supabase.");
+  assert(!process.env.ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT?.trim() && !process.env.RESEND_API_KEY?.trim(), 'Real email providers must be disabled for the bearer browser regression.');
+  const notificationsBefore = notificationFingerprint();
   secrets.add(anonKey);
   const authUserId = await createAuth();
   runPsql(`
@@ -268,6 +278,22 @@ async function main() {
     secrets.add(shareUrl);
 
     const recipient = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    // Keep an independent reader on the actual Flight fetch. The framework can
+    // cancel its consumer after decoding enough to navigate, before network EOF.
+    // Draining a clone preserves the original response and sends no extra request.
+    // Successful requestfinished + full Playwright body reads remain mandatory.
+    await recipient.addInitScript(() => {
+      const fetch = window.fetch;
+      window.fetch = async (...args) => {
+        const response = await fetch(...args);
+        const url = new URL(response.url);
+        if (url.origin === location.origin && url.pathname === '/qv'
+          && response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase() === 'text/x-component') {
+          response.clone().arrayBuffer().catch(() => {});
+        }
+        return response;
+      };
+    });
     const recipientPage = await recipient.newPage();
     recipientPage.setDefaultTimeout(8_000);
     const recipientErrors = watchErrors(recipientPage);
@@ -277,10 +303,10 @@ async function main() {
     recipientPage.on('requestfinished', request => {
       payloadChecks.push(request.response().then(async response => {
         if (!response) return {safe:false,kind:'missing response'};
-        const type = response.headers()['content-type'] ?? '';
-        if ((response.status() >= 300 && response.status() < 400) || !/text\/html|text\/x-component|application\/json/.test(type)) return {safe:true,kind:'ignored'};
+        const type = responseMediaType(response);
+        if ((response.status() >= 300 && response.status() < 400) || !['text/html','text/x-component','application/json'].includes(type)) return {safe:true,kind:'ignored'};
         const body = await response.text();
-        return {safe: !/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(body),kind:type,status:response.status()};
+        return {safe: !/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(body),kind:type,status:response.status(),characters:body.length};
       }).catch(() => ({safe:false,kind:'completed body unavailable'})));
     });
     await recipientPage.goto(shareUrl, { waitUntil: "networkidle" });
@@ -299,7 +325,38 @@ async function main() {
     await capture(recipientPage, "08-recipient-populated-schedule.png");
     // The established 12.47 contract renders the shared Calendar, including
     // published security tasks, without the retired expected-on-site panel.
-    await recipientPage.getByRole('button',{name:'Day',exact:true}).filter({visible:true}).click();
+    // URL/DOM changes can precede the streamed response's EOF. Register before
+    // the real Day click and wait for requestfinished, before another navigation
+    // can supersede the stream. Cached, redirected or canceled bodies cannot pass.
+    const completedDayRsc = recipientPage.waitForEvent('requestfinished', {
+      timeout: 10_000,
+      predicate: async request => {
+        const url = new URL(request.url());
+        if (url.origin !== new URL(baseUrl).origin || url.pathname !== '/qv'
+          || url.searchParams.get('view') !== 'day' || url.searchParams.get('date') !== '2026-09-02'
+          || request.resourceType() !== 'fetch' || request.headers().rsc !== '1'
+          || request.headers()['next-router-prefetch']) return false;
+        const response = await request.response();
+        return response?.status() === 200 && responseMediaType(response) === 'text/x-component';
+      },
+    });
+    const [dayRscRequest] = await Promise.all([
+      completedDayRsc,
+      recipientPage.getByRole('button',{name:'Day',exact:true}).filter({visible:true}).click(),
+    ]);
+    const dayRscResponse = await dayRscRequest.response();
+    assert(dayRscResponse && await dayRscResponse.finished() === null, 'Day navigation RSC response did not complete.');
+    assert((await dayRscRequest.allHeaders()).cookie?.includes(`${quickViewCookie.name}=${quickViewCookie.value}`), 'Day RSC request did not use the established bearer session.');
+    const dayRscBody = await dayRscResponse.text();
+    assert(!/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(dayRscBody), 'Completed bearer RSC body leaked private instructions.');
+    for (const operational of ['Gallatin Valley Build', 'General Help', '2026-09-02', '07:30', '17:00', 'Lunch', 'Synthetic meal contact', 'Synthetic meal team', 'Vegetable soup']) {
+      assert(dayRscBody.includes(operational), `Completed bearer RSC body omitted operational ${operational}.`);
+    }
+    assert(dayRscBody.includes('"neededCount":4') && dayRscBody.includes('"filledCount":0'), 'Completed bearer RSC body omitted staffing data.');
+    assert(dayRscBody.includes('"total":47'), 'Completed bearer RSC body omitted the meal headcount.');
+    assert(dayRscBody.includes(itemIds[0]) && dayRscBody.includes(itemIds[1])
+      && dayRscBody.includes('"publicationState":"published"'), 'Completed bearer RSC body omitted the actual published fixture records.');
+    console.log(`Completed bearer Day-navigation RSC privacy proof: PASS (${Buffer.byteLength(dayRscBody)} bytes; exact workspace, schedule, staffing and meal data; private sentinels absent).`);
     await recipientPage.waitForURL(url=>url.searchParams.get('view')==='day');
     await recipientPage.getByRole('button',{name:/General Help/}).first().click();
     const inspector=recipientPage.getByRole('dialog',{name:'Calendar item inspector'});
@@ -369,6 +426,9 @@ async function main() {
     assert(checkedPayloads.some(result => result.kind.startsWith('text/html')), 'No completed HTML payload inspected.');
     assert(checkedPayloads.some(result => result.kind.startsWith('text/x-component')), 'No completed RSC payload inspected.');
     assert(checkedPayloads.every(result => result.safe), 'Bearer payload review failed: '+JSON.stringify(checkedPayloads.filter(result => !result.safe)));
+    console.log('Completed bearer payload inspection counts: '+JSON.stringify(Object.fromEntries(['text/html','text/x-component','application/json'].map(type => [type,checkedPayloads.filter(result => result.kind === type).length]))));
+    assert.equal(notificationFingerprint(), notificationsBefore, 'Opening/navigating Quick View changed notification or communication ledgers.');
+    console.log('Notification/communication fingerprints unchanged; real providers disabled.');
     await admin.close(); await mobileAdmin.close(); await recipient.close();
   } finally {
     await browser.close();
