@@ -4258,7 +4258,7 @@ export default function CalendarClient({
   const closeSelectedInspector = () => {
     closeCalendarSurface();
     window.history.replaceState(
-      window.history.state,
+      null,
       "",
       buildCalendarRouteHref(activeView, calendarAnchor),
     );
@@ -4267,7 +4267,7 @@ export default function CalendarClient({
   const closeProjectDayDetails = () => {
     closeCalendarSurface();
     window.history.replaceState(
-      window.history.state,
+      null,
       "",
       buildCalendarRouteHref(activeView, calendarAnchor),
     );
@@ -4291,7 +4291,7 @@ export default function CalendarClient({
         setCreationDraft(undefined);
         setProjectDayDate(undefined);
         window.history.replaceState(
-          window.history.state,
+          null,
           "",
           calendarRouteHref({ routeBase, projectKey }, { view: activeView, date: calendarAnchor }),
         );
@@ -4324,7 +4324,7 @@ export default function CalendarClient({
     setInspectorSection("details");
     setActiveSurface("inspect");
     window.history.replaceState(
-      window.history.state,
+      null,
       "",
       buildCalendarInspectorHref(activeView, calendarAnchor, item.id, "details"),
     );
@@ -4336,7 +4336,7 @@ export default function CalendarClient({
     setSelectedId(undefined);
     setCreationDraft(undefined);
     setActiveSurface("filter");
-    window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
+    window.history.replaceState(null, "", buildCalendarRouteHref(activeView, calendarAnchor));
   };
 
   const handleOpenProjectDay = (date: string) => {
@@ -4387,7 +4387,7 @@ export default function CalendarClient({
       repeatRequestKey: crypto.randomUUID(),
     });
     setActiveSurface("create");
-    window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
+    window.history.replaceState(null, "", buildCalendarRouteHref(activeView, calendarAnchor));
   };
 
   const clearFilters = () => {
@@ -4442,7 +4442,7 @@ export default function CalendarClient({
         setSelectedId(undefined);
         setCreationDraft(undefined);
         setActiveSurface("more");
-        window.history.replaceState(window.history.state, "", buildCalendarRouteHref(activeView, calendarAnchor));
+        window.history.replaceState(null, "", buildCalendarRouteHref(activeView, calendarAnchor));
       }}
     >
       <PageHeader title={readOnly ? "Project Quick View" : "Calendar"} className={!readOnly ? "calendar-page-header" : undefined}

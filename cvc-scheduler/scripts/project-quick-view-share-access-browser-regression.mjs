@@ -34,6 +34,7 @@ const workspaceId = randomUUID();
 const contactId = randomUUID();
 const grantId = randomUUID();
 const itemIds = [randomUUID(), randomUUID(), randomUUID()];
+const presetId = randomUUID();
 const dayIds = [randomUUID(), randomUUID()];
 const authUserIds = [];
 const authCookies = new Map();
@@ -137,6 +138,7 @@ async function cleanup() {
     delete from public.project_quick_view_access_tokens where workspace_id = '${workspaceId}'::uuid;
     delete from public.project_days where workspace_id = '${workspaceId}'::uuid;
     delete from public.calendar_items where workspace_id = '${workspaceId}'::uuid;
+    delete from public.task_presets where workspace_id = '${workspaceId}'::uuid;
     delete from public.workspace_contact_grants where id = '${grantId}'::uuid;
     delete from public.project_contacts where id = '${contactId}'::uuid;
     delete from public.workspaces where id = '${workspaceId}'::uuid;
@@ -165,6 +167,12 @@ async function main() {
       ('${itemIds[0]}'::uuid, '${workspaceId}'::uuid, 'General Help', 'general', 'timed', '2026-09-02', '07:30', '17:00', 'America/Denver', 4, 'private note', 'published', now(), '${contactId}'::uuid),
       ('${itemIds[1]}'::uuid, '${workspaceId}'::uuid, 'Lunch', 'food', 'timed', '2026-09-02', '12:00', '12:30', 'America/Denver', 1, 'private lunch note', 'published', now(), '${contactId}'::uuid),
       ('${itemIds[2]}'::uuid, '${workspaceId}'::uuid, 'Restricted security post', 'security', 'timed', '2026-09-02', '08:00', '09:00', 'America/Denver', 2, 'restricted location', 'published', now(), '${contactId}'::uuid);
+  `);
+
+  runPsql(`
+    insert into public.task_presets (id, workspace_id, name, description, task_type, default_needed_count)
+    values ('${presetId}'::uuid, '${workspaceId}'::uuid, 'General Help instructions', 'Current synthetic preset instructions.', 'general', 4);
+    update public.calendar_items set task_preset_id='${presetId}'::uuid, custom_values='{"reporting_point":"Synthetic entrance"}'::jsonb where id='${itemIds[0]}'::uuid;
   `);
 
   const browser = await chromium.launch(browserExecutable ? { executablePath: browserExecutable } : {});
@@ -258,6 +266,10 @@ async function main() {
     const inspector=recipientPage.getByRole('dialog',{name:'Calendar item inspector'});
     await inspector.waitFor();
     assert.equal(new URL(recipientPage.url()).pathname,'/qv');
+    await inspector.getByText('Schedule notes', {exact:true}).waitFor();
+    await inspector.getByText('private note', {exact:true}).waitFor();
+    await inspector.getByText('Current synthetic preset instructions.', {exact:true}).waitFor();
+    await inspector.getByText('Synthetic entrance', {exact:true}).waitFor();
     assert.equal(await inspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
     await recipientPage.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
     await recipientPage.getByRole('button',{name:'Next day',exact:true}).click();
@@ -275,6 +287,16 @@ async function main() {
     await recipientPage.setViewportSize({ width: 360, height: 800 });
     await noOverflow(recipientPage, "360px recipient Quick View");
     await capture(recipientPage, "07-narrow-360-recipient-quick-view.png");
+
+    await recipientPage.goto(createPreviewUrl(baseUrl, '/qv?date=2026-09-02&view=day&item='+itemIds[0]), {waitUntil:'networkidle'});
+    const mobileInspector = recipientPage.getByRole('dialog', {name:'Calendar item inspector',exact:true});
+    await mobileInspector.getByText('private note', {exact:true}).waitFor();
+    await mobileInspector.getByText('Current synthetic preset instructions.', {exact:true}).waitFor();
+    await mobileInspector.getByText('Synthetic entrance', {exact:true}).waitFor();
+    assert.equal(await mobileInspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
+    await noOverflow(recipientPage, 'Mobile bearer inspector');
+    await recipientPage.keyboard.press('Escape');
+    await mobileInspector.waitFor({state:'hidden'});
 
     const revokeResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/revoke_project_quick_view_access`, {
       method: "POST",

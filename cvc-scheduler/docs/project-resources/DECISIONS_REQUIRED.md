@@ -1,6 +1,6 @@
 # Decisions for the simplified architecture
 
-Only four owner decisions remain before implementation planning is finalized. Recommended defaults are explicit proposals; the prior eight-decision document is retained in Git history at `edd1114`.
+The four simplified architecture decisions are retained below. Task-instruction implementation is now approved for final verification; the additional bearer audience decision below must be resolved before release. Recommended defaults are explicit proposals; the prior eight-decision document is retained in Git history at `edd1114`.
 
 | ID | Proposed choice | Alternatives and tradeoffs | Approval needed |
 | --- | --- | --- | --- |
@@ -10,3 +10,7 @@ Only four owner decisions remain before implementation planning is finalized. Re
 | D4 — actual map and recovery | Use a reviewed, approved site-map file and PostgreSQL bytes if its real size, format, legibility and restore tests support this. Set the upload cap from that file and measured headroom. | A large map may require private object storage, extra credentials and a separate encrypted object backup; public URLs are unacceptable. | Provide/identify the exact approved map and written directions; confirm replacement authority, backup retention/capacity and the result of the disposable restore before uploads are enabled. |
 
 No Belgrade invitation extraction, multiple-document publication, security-account model, extra email link scheme or general resource-library policy is needed for these two features. The supplied private map PDFs were not present in this workspace; filename and date alone cannot establish which map is approved. The earlier source-analysis framework remains accessible at `edd1114` if that broader project is ever reopened.
+
+## D5 — instruction audience before release
+
+Production's existing project bearer Quick View exposes published `schedule_notes`, current preset descriptions and custom values. Reusing those fields does not establish assigned-volunteer-only privacy. Accept that existing audience, or approve a reviewed forward migration nulling notes and descriptions only in the bearer RPC. The latter preserves own-volunteer/admin reads but also removes legacy general notes from bearer inspectors. If restricting, decide whether custom values and authenticated read-only contacts may still receive prose; a separate public summary is a larger deferred alternative. See the [exact exposure, consumers, alternatives and migration proposal](QUICK_VIEW_INSTRUCTION_PRIVACY_REVIEW.md). No policy-changing migration is created or applied in this review.

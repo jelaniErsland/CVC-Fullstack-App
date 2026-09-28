@@ -527,6 +527,7 @@ async function cleanupFixtures(containerName) {
     .map((id) => `delete from auth.users where id = '${id}'::uuid;`)
     .join("\n");
   const residue = runPsql(containerName, `begin;
+delete from public.calendar_bulk_assignment_operations where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.volunteer_schedule_access_tokens where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.assignment_responses where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
 delete from public.calendar_assignments where workspace_id in ('${fixture.workspaceId}'::uuid, '${fixture.otherWorkspaceId}'::uuid);
@@ -591,7 +592,7 @@ async function writeProjectDayQuickViewCapture(page, filename) {
 }
 
 function errorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
+  return error instanceof Error ? error.stack ?? error.message : String(error);
 }
 
 async function collectPageDiagnostics(page) {
@@ -790,7 +791,7 @@ async function waitForFocusLabel(page, label) {
 
 async function expectButtonEnabled(page, locator, label) {
   await locator.waitFor({ state: "visible" });
-  await page.waitForTimeout(25);
+  await page.waitForFunction(element => element?.isConnected && !element.disabled, await locator.elementHandle());
   assert(await locator.isEnabled(), `${label} should be enabled`);
 }
 
@@ -909,6 +910,12 @@ async function assertDialogFocusContainment(page, dialog, label, expectedModal =
     `${label} accessible description is missing or empty`,
   );
 
+  await assertDialogKeyboardCycle(page, dialog, label);
+
+  return (await description.textContent())?.trim() ?? "";
+}
+
+async function assertDialogKeyboardCycle(page, dialog, label) {
   const focusable = dialog.locator(`${dialogFocusableSelector}:visible`);
   const focusableCount = await focusable.count();
   assert(focusableCount > 0, `${label} has no focusable controls`);
@@ -940,7 +947,6 @@ async function assertDialogFocusContainment(page, dialog, label, expectedModal =
     `${label} allowed focus to leave after Tab`,
   );
 
-  return (await description.textContent())?.trim() ?? "";
 }
 
 async function closeWithEscape(page, dialogName, triggerLabel) {
@@ -953,6 +959,90 @@ async function closeWithEscape(page, dialogName, triggerLabel) {
     (await visibleCalendarSurfaceCount(page)) === 0,
     `${dialogName} did not leave a clean Calendar surface`,
   );
+}
+
+function bulkPlanner(inspector) {
+  return inspector.getByRole("region", { name: "Assign volunteers", exact: true });
+}
+
+async function verifyBulkPlannerRoundTrip(page, inspector, selectedIndexes, label) {
+  const container = await resolveLocalDatabaseContainer();
+  const planner = bulkPlanner(inspector);
+  await planner.waitFor();
+  const choices = planner.getByRole("checkbox", { name: /^Select / });
+  assert(await choices.count() === 52, `${label}: exactly 52 active/ready project volunteers are selectable.`);
+  for (const index of [52, 53, 54, 55]) {
+    assert(await planner.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count() === 0, `${label}: ineligible volunteer leaked into planner.`);
+  }
+  const list = choices.first().locator("xpath=../..");
+  assert(await list.evaluate(element => element.scrollHeight > element.clientHeight), `${label}: ready-volunteer list must scroll internally.`);
+  await list.evaluate(element => { element.scrollTop = Math.floor(element.scrollHeight / 2); });
+  assert(await list.evaluate(element => element.scrollTop) > 0);
+  await assertNoHorizontalOverflow(page, `${label} bulk planner`);
+  await writeAssignmentPickerCapture(page, `${label.toLowerCase()}-bulk-assignment-planner.png`);
+  await assertDialogFocusContainment(page, inspector, `${label} bulk planner`, await page.evaluate(() => window.innerWidth < 640));
+  const itemId = fixture.calendarItemIds.gate;
+  const activeCount = () => runPsql(container, `select count(*) from public.calendar_assignments where calendar_item_id='${itemId}' and lifecycle='active';`);
+  const existingResponse = () => runPsql(container, `select to_jsonb(r) from public.assignment_responses r where assignment_id='${fixture.assignmentIds.gate}';`);
+  const deliveries = () => runPsql(container, `select (select count(*) from public.assignment_notification_deliveries where workspace_id='${fixture.workspaceId}') + (select count(*) from public.volunteer_welcome_deliveries where workspace_id='${fixture.workspaceId}');`);
+  const foreignItems = () => runPsql(container, `select md5(coalesce(jsonb_agg(to_jsonb(i) order by i.id)::text,'')) from public.calendar_items i where workspace_id='${fixture.otherWorkspaceId}';`);
+  const responseBefore = existingResponse(), foreignBefore = foreignItems();
+  if (await page.evaluate(() => window.innerWidth < 640)) {
+    await inspector.getByRole("button", { name: `View volunteer context for ${reviewVolunteerNames[0]}`, exact: true }).click();
+    const profile = page.getByRole("dialog", { name: `Volunteer context for ${reviewVolunteerNames[0]}`, exact: true });
+    await profile.waitFor();
+    await profile.getByText(reviewVolunteerNames[0], { exact: true }).waitFor();
+    assert(await profile.getAttribute("aria-modal") === "true");
+    await profile.getByText("Read-only scheduling context.", { exact: true }).waitFor();
+    await assertDialogKeyboardCycle(page, profile, `${label} volunteer context`);
+    await profile.getByRole("button", { name: `Close Volunteer context for ${reviewVolunteerNames[0]}`, exact: true }).click();
+  }
+  assert(new URL(page.url()).searchParams.get("item") === itemId, `${label}: context lost the selected item.`);
+  assert(activeCount() === "1");
+  assert(deliveries() === "0");
+  // Already assigned people remain selectable in the CURRENT planner. Preview
+  // explains deduplication; saving must preserve their actual response row.
+  for (const index of [0, ...selectedIndexes]) {
+    const choice = planner.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true });
+    await choice.focus();
+    await page.keyboard.press("Space");
+    assert(await choice.isChecked(), `${label}: keyboard selection did not persist.`);
+  }
+  await planner.getByText(/4 volunteers · 3 new assignments · 1 already assigned/).waitFor();
+  assert(activeCount() === "1", `${label}: preview created assignments.`);
+  assert(existingResponse() === responseBefore, `${label}: preview changed response.`);
+  assert(deliveries() === "0", `${label}: opening/preview sent a notification.`);
+  const note = `${label} planner fixture note`;
+  await planner.getByLabel("Assignment note (optional)", { exact: true }).fill(note);
+  const save = planner.getByRole("button", { name: "Save assignments", exact: true });
+  await expectButtonEnabled(page, save, `${label} previewed save`);
+  await save.click();
+  await planner.getByText("Saved 3 assignments. Existing responses were preserved. No email was sent.", { exact: true }).waitFor();
+  await planner.getByText("Ready volunteers · 0 selected", { exact: true }).waitFor();
+  assert(new URL(page.url()).searchParams.get("item") === itemId, `${label}: save lost the selected item.`);
+  assert(activeCount() === "4");
+  assert(existingResponse() === responseBefore, `${label}: save overwrote confirmed response.`);
+  for (const index of selectedIndexes) {
+    assert(runPsql(container, `select a.assignment_note || '|' || r.response_status from public.calendar_assignments a join public.assignment_responses r on r.assignment_id=a.id where a.calendar_item_id='${itemId}' and a.volunteer_profile_id='${fixture.volunteerIds[index]}' and a.lifecycle='active';`) === `${note}|needs_response`, `${label}: saved assignment/note/response mismatch.`);
+    await inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).waitFor();
+  }
+  assert(deliveries() === "0" && foreignItems() === foreignBefore, `${label}: unexpected delivery or cross-project mutation.`);
+  await page.waitForLoadState("networkidle");
+  assert(new URL(page.url()).searchParams.get("item") === itemId, `${label}: settled refresh lost item context.`);
+  await page.reload();
+  await inspector.waitFor();
+  assert(activeCount() === "4", `${label}: assignments did not persist after reload.`);
+  for (const index of selectedIndexes) {
+    await Promise.all([
+      page.waitForURL(/notice=assignment_canceled/),
+      inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
+    ]);
+    await inspector.waitFor();
+    await inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).waitFor({ state: "hidden" });
+    assert(new URL(page.url()).searchParams.get("item") === itemId, `${label}: cancel lost item context.`);
+    assert(runPsql(container, `select count(*) from public.calendar_assignments where calendar_item_id='${itemId}' and volunteer_profile_id='${fixture.volunteerIds[index]}' and lifecycle='active';`) === "0");
+  }
+  assert(activeCount() === "1" && existingResponse() === responseBefore && deliveries() === "0" && foreignItems() === foreignBefore);
 }
 
 async function runDesktop(browser) {
@@ -1800,112 +1890,12 @@ async function runDesktop(browser) {
       );
     });
 
-    await step("desktop assignment picker scales, preserves selection, and refreshes in place", async () => {
-      await page.setViewportSize(desktopViewport);
-      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
-        waitUntil: "domcontentloaded",
-      });
-      await page
-        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
-        .first()
-        .click();
-      const inspector = page.getByRole("dialog", {
-        name: "Calendar item inspector",
-        exact: true,
-      });
+    await step("desktop Bulk Assignment Planner preview/save/deduplication/cancel", async () => {
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), { waitUntil: "domcontentloaded" });
+      await page.getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ }).first().click();
+      const inspector = page.getByRole("dialog", { name: "Calendar item inspector", exact: true });
       await inspector.waitFor();
-      const candidateList = inspector.locator('[data-picker-scroll="volunteer-candidates"]');
-      const candidateCheckboxes = candidateList.locator('input[type="checkbox"]');
-      assert((await candidateCheckboxes.count()) === 51, "Picker should expose 51 ready, active, unassigned candidates.");
-      assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[0]}`, { exact: true }).count()) === 0, "Already-assigned volunteer appeared as a candidate.");
-      for (const index of [52, 53, 54, 55]) {
-        assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count()) === 0, "Ineligible volunteer appeared as assignable.");
-      }
-      const listDimensions = await candidateList.evaluate((element) => ({
-        clientHeight: element.clientHeight,
-        scrollHeight: element.scrollHeight,
-      }));
-      assert(listDimensions.scrollHeight > listDimensions.clientHeight, "Large candidate list did not use intentional internal scrolling.");
-      await inspector.getByLabel("Search ready volunteers", { exact: true }).focus();
-      await writeAssignmentPickerCapture(page, "01-desktop-picker-default.png");
-
-      const selectedIndexes = [20, 21, 22];
-      for (const index of selectedIndexes) {
-        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).click();
-      }
-      await inspector.getByText("3 selected", { exact: true }).waitFor();
-      await inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true }).scrollIntoViewIfNeeded();
-      await writeAssignmentPickerCapture(page, "02-desktop-picker-three-selected.png");
-
-      const search = inspector.getByLabel("Search ready volunteers", { exact: true });
-      await search.fill(reviewVolunteerNames[20]);
-      assert((await candidateCheckboxes.count()) === 1, "Name search did not narrow to the intended volunteer.");
-      assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[20]}`, { exact: true }).count()) === 1, "Name search returned the wrong volunteer.");
-      await search.fill(reviewCongregations[2]);
-      assert((await candidateCheckboxes.count()) > 0, "Congregation search returned no candidates.");
-      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Search silently cleared hidden selections.");
-      await writeAssignmentPickerCapture(page, "03-desktop-search-result.png");
-      await search.fill("no volunteer can match this value");
-      await inspector.getByText("No ready volunteers match the current search and filters.", { exact: true }).waitFor();
-      await inspector.getByRole("button", { name: "Clear search and filters", exact: true }).click();
-
-      await inspector.getByRole("button", { name: "Filters", exact: true }).click();
-      await inspector.getByText("All congregations", { exact: true }).waitFor();
-      await inspector.getByText("Congregation", { exact: true }).scrollIntoViewIfNeeded();
-      await writeAssignmentPickerCapture(page, "04-desktop-filters-open.png");
-      await inspector.getByRole("radio", { name: reviewCongregations[2], exact: true }).click();
-      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Filter silently cleared hidden selections.");
-      await inspector.getByRole("button", { name: /Filters · 1/, exact: true }).click();
-      await inspector.getByRole("button", { name: "Reset", exact: true }).click();
-
-      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
-      await inspector.getByText("Name A–Z", { exact: true }).waitFor();
-      await writeAssignmentPickerCapture(page, "05-desktop-sort-open.png");
-      await inspector.getByRole("radio", { name: "Name Z–A", exact: true }).click();
-      const expectedDescendingName = reviewVolunteerNames
-        .slice(0, 52)
-        .filter((_, index) => index !== 0)
-        .sort((first, second) => second.localeCompare(first))[0];
-      assert(
-        (await candidateCheckboxes.first().getAttribute("aria-label")) === `Select ${expectedDescendingName}`,
-        "Name Z–A did not produce deterministic descending order.",
-      );
-      await inspector.getByRole("radio", { name: "Congregation A–Z", exact: true }).click();
-      assert((await inspector.getByText("3 selected", { exact: true }).count()) === 1, "Sort silently cleared selections.");
-      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
-
-      await inspector
-        .getByRole("button", { name: `View volunteer context for ${reviewVolunteerNames[20]}`, exact: true })
-        .click();
-      const context = inspector.locator("[data-volunteer-context]");
-      await context.getByText(reviewVolunteerNames[20], { exact: true }).waitFor();
-      assert((await context.getByText(reviewVolunteerNames[21], { exact: true }).count()) === 0, "Volunteer context showed the wrong person.");
-      await writeAssignmentPickerCapture(page, "06-desktop-volunteer-context.png");
-      await inspector.getByRole("button", { name: "Back to volunteers", exact: true }).click();
-      assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Volunteer context lost the selected Calendar item.");
-
-      await Promise.all([
-        page.waitForURL(/notice=assigned/),
-        inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true }).click(),
-      ]);
-      await inspector.waitFor();
-      await inspector.getByText("0 selected", { exact: true }).waitFor();
-      for (const index of selectedIndexes) {
-        await inspector.getByText(reviewVolunteerNames[index], { exact: true }).first().waitFor();
-        assert((await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count()) === 0, "New assignment remained in candidates.");
-      }
-      await inspector.getByText("4/1 filled", { exact: true }).waitFor();
-      await writeAssignmentPickerCapture(page, "07-desktop-post-assignment.png");
-
-      for (const index of selectedIndexes) {
-        await Promise.all([
-          page.waitForURL(/notice=assignment_canceled/),
-          inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
-        ]);
-        await inspector.waitFor();
-        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).waitFor();
-        assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Removing an assignment closed the inspector.");
-      }
+      await verifyBulkPlannerRoundTrip(page, inspector, [20, 21, 22], "Desktop");
       await inspector.getByRole("button", { name: "Close calendar item inspector", exact: true }).click();
       await page.waitForURL(/\/admin\/calendar\?view=day&date=2026-01-13$/);
     });
@@ -1922,42 +1912,22 @@ async function runDesktop(browser) {
       await page.waitForURL((url) => url.searchParams.has("item"));
       const inspector = page.locator('aside[aria-label="Calendar item inspector"]').first();
       await inspector.waitFor();
-      await inspector
-        .getByLabel(`Select ${reviewVolunteerNames[1]}`, { exact: true })
-        .click({ force: true });
-      await inspector.locator('input[name="volunteerProfileIds"]').waitFor({
-        state: "attached",
-      });
-      const submittedVolunteerIds = await inspector
-        .locator('input[name="volunteerProfileIds"]')
-        .evaluateAll((inputs) =>
-          inputs.map((input) => input instanceof HTMLInputElement ? input.value : ""),
-        );
-      assert(
-        submittedVolunteerIds.includes(fixture.volunteerIds[1]),
-        "Selecting the volunteer did not update the assignment form submitted state.",
-      );
-      const assignSelectedButton = inspector.getByRole("button", {
-        name: "Assign 1 volunteer",
-        exact: true,
-      });
-      await expectButtonEnabled(page, assignSelectedButton, "Assign 1 volunteer");
-      await Promise.all([
-        page.waitForURL(/notice=(assigned|validation|error|unavailable)/),
-        assignSelectedButton.click(),
-      ]);
-      assert(
-        new URL(page.url()).searchParams.get("notice") === "assigned",
-        `Assignment submit returned ${page.url()} instead of the persisted assigned notice.`,
-      );
-      await page.getByText("Volunteer assigned", { exact: true }).waitFor();
-      await inspector.waitFor();
-      await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
+      const composer = bulkPlanner(inspector);
+      const choice = composer.getByLabel(`Select ${reviewVolunteerNames[1]}`, { exact: true });
+      await choice.check();
+      assert(await choice.isChecked(), "Selecting volunteer did not update planner state.");
+      await composer.getByText(/1 volunteer · 1 new assignment · 0 already assigned/).waitFor();
+      const assignSelectedButton = composer.getByRole("button", { name: "Save assignments", exact: true });
+      await expectButtonEnabled(page, assignSelectedButton, "Previewed single assignment");
+      await assignSelectedButton.click();
+      await composer.getByText("Saved 1 assignment. Existing responses were preserved. No email was sent.", { exact: true }).waitFor();
+      assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Saving assignment lost route context.");
+      await inspector.getByRole("link", { name: `View assignment for ${reviewVolunteerNames[1]}`, exact: true }).waitFor();
       await writeCalendarFlowCapture(page, "09-after-assignment-inspector.png");
 
       await page.reload();
       await inspector.waitFor();
-      await inspector.getByText(reviewVolunteerNames[1], { exact: true }).waitFor();
+      await inspector.getByRole("link", { name: `View assignment for ${reviewVolunteerNames[1]}`, exact: true }).waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
       const assignmentDetailLink = inspector.getByRole("link", {
         name: `View assignment for ${reviewVolunteerNames[1]}`,
@@ -2115,57 +2085,25 @@ async function runMobile(browser) {
       assert(!mobileListAudit.overflow, "Mobile List has horizontal overflow");
 
       await selectView(page, "Month");
+      const month = page.getByTestId("calendar-mobile-month");
       const mobileMonthDate = await assertUnique(
-        page.getByRole("button", {
-          name: "Plan project work on Wed Jan 14",
-          exact: true,
-        }),
+        month.getByRole("button", { name: /^Select Wednesday, Jan 14, \d+ scheduled item/ }),
         "Mobile Month date target",
       );
-      await mobileMonthDate.focus();
-      await pressAndWaitForFocus(
-        page,
-        "ArrowRight",
-        "Plan project work on Thu Jan 15",
-      );
-      const overflow = await assertUnique(
-        page.getByRole("button", {
-          name: /^Switch to Day view for Wed Jan 14 to show \d+ more calendar item/,
-        }),
-        "Mobile Month overflow button",
-      );
-      const overflowSiblingState = await overflow.evaluate((overflowControl) => {
-        const cell = overflowControl.closest("[data-calendar-month-cell]");
-        const background = cell?.querySelector("[data-calendar-arrow-target]");
-
-        return {
-          backgroundFound: Boolean(background),
-          nested:
-            Boolean(background) &&
-            (background.contains(overflowControl) ||
-              overflowControl.contains(background)),
-        };
-      });
-      assert(
-        overflowSiblingState.backgroundFound && !overflowSiblingState.nested,
-        "Mobile Month overflow and date creation target must remain sibling controls",
-      );
-      await activateWithKeyboard(overflow, "Mobile Month overflow button");
-      await page.waitForFunction(() =>
-        Array.from(
-          document.querySelectorAll('[aria-label="Calendar view"] button'),
-        ).some(
-          (candidate) =>
-            candidate.textContent?.trim() === "Day" &&
-            candidate.getAttribute("aria-pressed") === "true",
-        ),
-      );
-      assert(
-        (await page
-          .getByRole("button", { name: "Day", exact: true })
-          .getAttribute("aria-pressed")) === "true",
-        "Mobile Month overflow should switch to Day view",
-      );
+      const scheduledCount = Number((await mobileMonthDate.getAttribute("aria-label")).match(/(\d+) scheduled/)[1]);
+      await activateWithKeyboard(mobileMonthDate, "Mobile Month date target");
+      await page.waitForURL(url => url.searchParams.get("view") === "month" && url.searchParams.get("date") === "2026-01-14");
+      assert(await mobileMonthDate.getAttribute("aria-pressed") === "true", "Mobile Month must select the tapped date.");
+      const agenda = page.getByTestId("calendar-month-agenda");
+      await agenda.getByRole("heading", { name: "Wednesday, Jan 14", exact: true }).waitFor();
+      assert(scheduledCount >= 4 && await agenda.locator("[data-calendar-month-agenda-item]").count() === scheduledCount, "Mobile agenda must expose every crowded-day item without the retired overflow control.");
+      assert(await visibleCalendarSurfaceCount(page) === 0, "Mobile date selection must not open an inspector or creation sheet.");
+      await month.getByRole("button", { name: "View day's work ↓", exact: true }).click();
+      assert(await agenda.evaluate(element => element === document.activeElement), "Agenda jump must transfer keyboard focus.");
+      const openDay = agenda.getByRole("button", { name: "Open January 14, 2026 in Day view", exact: true });
+      await activateWithKeyboard(openDay, "Mobile agenda Open Day");
+      await page.waitForURL(url => url.searchParams.get("view") === "day" && url.searchParams.get("date") === "2026-01-14");
+      assert((await page.getByRole("button", { name: "Day", exact: true }).getAttribute("aria-pressed")) === "true", "Mobile Open Day must preserve the selected date.");
       await selectView(page, "Week");
       await assertNoHorizontalOverflow(page, "Mobile view controls");
     });
@@ -2196,9 +2134,12 @@ async function runMobile(browser) {
         "Mobile More",
       );
       assert(
-        moreDescription.includes("Additional beta admin destinations"),
+        moreDescription.includes("Supporting workspace destinations and help."),
         "Mobile More description lacks destination context",
       );
+      for (const [name, href] of [["Task library", "/admin/tasks"], ["Communications", "/admin/announcements"], ["Project Quick View", "/admin/quick-view"]]) {
+        assert(await more.getByRole("link", { name, exact: true }).getAttribute("href") === href, `Mobile More must retain its authorized ${name} destination.`);
+      }
       assert(
         (await trigger.getAttribute("aria-expanded")) === "true",
         "Mobile More should expose aria-expanded=true while open",
@@ -2314,92 +2255,24 @@ async function runMobile(browser) {
         (await visibleCalendarSurfaceCount(page)) === 1,
         "Mobile creation should be the only active surface",
       );
-      await planner.getByText("Schedule", { exact: true }).waitFor();
+      await planner.getByRole("button", { name: "Create item", exact: true }).waitFor();
       await closeWithEscape(page, "Plan project work", triggerLabel);
     });
 
-    await step("mobile assignment picker remains usable at scale without overlay traps", async () => {
+    await step("mobile Bulk Assignment Planner scroll/preview/save/cancel/focus", async () => {
       await page.setViewportSize(mobileViewport);
-      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
-        waitUntil: "domcontentloaded",
-      });
-      await page
-        .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
-        .first()
-        .click();
+      await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), { waitUntil: "domcontentloaded" });
+      await page.getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ }).first().click();
       const inspector = page.locator('[role="dialog"][aria-label="Calendar item inspector"]:visible');
       await inspector.waitFor();
-      const volunteerSection = inspector.locator('[data-inspector-section="volunteers"]');
-      await volunteerSection.scrollIntoViewIfNeeded();
-      const candidateList = inspector.locator('[data-picker-scroll="volunteer-candidates"]');
-      assert((await candidateList.locator('input[type="checkbox"]').count()) === 51, "Mobile picker candidate truth differed from desktop.");
-      await assertNoHorizontalOverflow(page, "Mobile picker default");
-      await writeAssignmentPickerCapture(page, "08-mobile-picker-default.png");
-
-      await candidateList.evaluate((element) => {
-        element.scrollTop = Math.floor(element.scrollHeight * 0.55);
-      });
-      assert((await candidateList.evaluate((element) => element.scrollTop)) > 0, "Mobile long list did not scroll internally.");
-      await writeAssignmentPickerCapture(page, "09-mobile-long-list-scrolled.png");
-
-      await inspector.getByRole("button", { name: "Filters", exact: true }).click();
-      const filters = page.getByRole("dialog", { name: "Volunteer filters", exact: true });
-      await filters.waitFor();
-      await writeAssignmentPickerCapture(page, "10-mobile-filters.png");
-      await filters.getByRole("radio", { name: reviewCongregations[2], exact: true }).click();
-      await filters.getByRole("button", { name: "Close Volunteer filters", exact: true }).click();
-      await inspector.getByRole("button", { name: /Filters · 1/, exact: true }).waitFor();
-
-      await inspector
-        .getByRole("button", { name: `View volunteer context for ${reviewVolunteerNames[2]}`, exact: true })
-        .click();
-      const profile = page.getByRole("dialog", {
-        name: `Volunteer context for ${reviewVolunteerNames[2]}`,
-        exact: true,
-      });
-      await profile.waitFor();
-      await profile.getByText(reviewVolunteerNames[2], { exact: true }).waitFor();
-      assert((await profile.getByText(reviewVolunteerNames[3], { exact: true }).count()) === 0, "Mobile context showed the wrong volunteer.");
-      await writeAssignmentPickerCapture(page, "11-mobile-volunteer-context.png");
-      await profile.getByRole("button", { name: `Close Volunteer context for ${reviewVolunteerNames[2]}`, exact: true }).click();
-      assert(new URL(page.url()).searchParams.get("item") === fixture.calendarItemIds.gate, "Closing mobile context lost the Calendar item.");
-      await inspector.getByRole("button", { name: "Reset", exact: true }).click();
-
-      const selectedIndexes = [23, 24, 25];
-      for (const index of selectedIndexes) {
-        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).click();
-      }
-      await inspector.getByText("3 selected", { exact: true }).waitFor();
-      const assignButton = inspector.getByRole("button", { name: "Assign 3 volunteers", exact: true });
-      await assignButton.scrollIntoViewIfNeeded();
-      await assertNoHorizontalOverflow(page, "Mobile picker multi-select");
-      await writeAssignmentPickerCapture(page, "12-mobile-multi-select.png");
-      await Promise.all([page.waitForURL(/notice=assigned/), assignButton.click()]);
-      await inspector.waitFor();
-      await inspector.getByText("0 selected", { exact: true }).waitFor();
-      await inspector.locator('[data-inspector-section="volunteers"]').scrollIntoViewIfNeeded();
-      await inspector.getByText("4/1 filled", { exact: true }).waitFor();
-      await writeAssignmentPickerCapture(page, "13-mobile-post-assignment.png");
-
+      await verifyBulkPlannerRoundTrip(page, inspector, [23, 24, 25], "Mobile");
       await page.setViewportSize({ width: 360, height: 800 });
-      await assertNoHorizontalOverflow(page, "Narrow mobile picker");
-      await inspector.getByRole("button", { name: "Sort", exact: true }).click();
-      const sortSheet = page.getByRole("dialog", { name: "Volunteer sort", exact: true });
-      await sortSheet.waitFor();
-      await sortSheet.getByRole("radio", { name: "Name Z–A", exact: true }).click();
-      await sortSheet.getByRole("button", { name: "Close Volunteer sort", exact: true }).click();
-      assert(await inspector.isVisible(), "Closing the nested mobile sort sheet closed the Calendar inspector.");
-
-      for (const index of selectedIndexes) {
-        await Promise.all([
-          page.waitForURL(/notice=assignment_canceled/),
-          inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
-        ]);
-        await inspector.waitFor();
-        await inspector.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).waitFor();
-      }
+      await assertNoHorizontalOverflow(page, "Narrow mobile bulk planner");
+      await inspector.getByRole("button", { name: "Close calendar item inspector", exact: true }).focus();
+      await assertDialogFocusContainment(page, inspector, "Narrow mobile bulk planner");
       await inspector.getByRole("button", { name: "Close calendar item inspector", exact: true }).click();
-      assert((await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden", "Mobile picker close left the background locked.");
+      assert((await page.evaluate(() => getComputedStyle(document.body).overflow)) !== "hidden", "Mobile planner close left background locked.");
+      assert(!new URL(page.url()).searchParams.has("item"), "Mobile close retained orphaned item context.");
       await page.setViewportSize(mobileViewport);
     });
 
@@ -2465,15 +2338,15 @@ async function runMobile(browser) {
       await assertNoHorizontalOverflow(page, "Mobile after-save inspector");
       await writeCalendarFlowCapture(page, "11-mobile-after-save-inspector.png");
 
-      const volunteerChoice = inspector.locator('input[type="checkbox"]').first();
-      await volunteerChoice.click();
-      assert(await volunteerChoice.isChecked(), "Mobile volunteer choice did not stay selected");
-      const assignButton = inspector.getByRole("button", { name: "Assign 1 volunteer", exact: true });
-      await expectButtonEnabled(page, assignButton, "Mobile Assign 1 volunteer");
-      await Promise.all([
-        page.waitForURL(/notice=assigned/),
-        assignButton.click(),
-      ]);
+      const composer = bulkPlanner(inspector);
+      const volunteerChoice = composer.getByRole("checkbox", { name: /^Select / }).first();
+      await volunteerChoice.check();
+      assert(await volunteerChoice.isChecked(), "Mobile selection did not persist.");
+      await composer.getByText(/1 volunteer · 1 new assignment · 0 already assigned/).waitFor();
+      const assignButton = composer.getByRole("button", { name: "Save assignments", exact: true });
+      await expectButtonEnabled(page, assignButton, "Mobile previewed assignment");
+      await assignButton.click();
+      await composer.getByText("Saved 1 assignment. Existing responses were preserved. No email was sent.", { exact: true }).waitFor();
       await inspector.waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
       const afterAssignmentCloseBox = await mobileClose.boundingBox();
@@ -3118,9 +2991,20 @@ async function main() {
       await runProjectDayQuickViewDesktop(browser, containerName);
       await runProjectDayQuickViewMobile(browser);
     } else {
+      const foreignFingerprint = () => runPsql(containerName, `select md5(jsonb_build_array(
+        (select jsonb_agg(to_jsonb(i) order by i.id) from public.calendar_items i where workspace_id='${fixture.otherWorkspaceId}'),
+        (select jsonb_agg(to_jsonb(a) order by a.id) from public.calendar_assignments a where workspace_id='${fixture.otherWorkspaceId}'),
+        (select jsonb_agg(to_jsonb(r) order by r.assignment_id) from public.assignment_responses r where workspace_id='${fixture.otherWorkspaceId}'),
+        (select jsonb_agg(to_jsonb(v) order by v.id) from public.volunteer_profiles v where workspace_id='${fixture.otherWorkspaceId}')
+      )::text);`);
+      const foreignBefore = foreignFingerprint();
       await runUnavailable(browser);
       await runDesktop(browser);
       await runMobile(browser);
+      assert(foreignFingerprint() === foreignBefore, "Complete Calendar journeys mutated another project's records.");
+      assert(runPsql(containerName, `select
+        (select count(*) from public.assignment_notification_deliveries where workspace_id='${fixture.workspaceId}') +
+        (select count(*) from public.volunteer_welcome_deliveries where workspace_id='${fixture.workspaceId}');`) === "0", "Complete Calendar journeys created notification deliveries.");
     }
   } finally {
     await browser?.close();

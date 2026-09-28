@@ -25,6 +25,7 @@ const workspaceIds = [randomUUID(), randomUUID(), randomUUID()];
 const contactIds = [randomUUID(), randomUUID(), randomUUID()];
 const grantIds = [randomUUID(), randomUUID(), randomUUID()];
 const itemIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+const presetId = randomUUID();
 const dayIds = [randomUUID(), randomUUID()];
 const authUserIds = [];
 const clients = [];
@@ -98,6 +99,7 @@ async function cleanup() {
     delete from public.project_quick_view_access_tokens where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.project_days where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.calendar_items where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
+    delete from public.task_presets where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.workspace_contact_grants where id = any(array[${grantIds.map(sqlUuid).join(",")}]);
     delete from public.project_contacts where id = any(array[${contactIds.map(sqlUuid).join(",")}]);
     delete from public.workspaces where id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
@@ -164,6 +166,12 @@ try {
       (${sqlUuid(itemIds[3])}, ${sqlUuid(workspaceIds[0])}, 'Private draft work', 'general', 'timed', '2026-09-02', '10:00', '11:00', 'America/Denver', 2, 'draft secret', 'draft', null, null);
   `);
 
+  runPsql(`
+    insert into public.task_presets (id, workspace_id, name, description, task_type, default_needed_count)
+    values (${sqlUuid(presetId)}, ${sqlUuid(workspaceIds[0])}, 'Setup instructions', 'Current preset instructions, independent of the saved occurrence.', 'general', 3);
+    update public.calendar_items set task_preset_id=${sqlUuid(presetId)}, custom_values='{"reporting_point":"Synthetic entrance"}'::jsonb where id=${sqlUuid(itemIds[0])};
+  `);
+
   const anon = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   await expectError("unauthenticated creation", () => anon.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[0] }));
   await expectError("wrong workspace creation", () => owner.client.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[1] }));
@@ -189,6 +197,18 @@ try {
   // The established bearer contract already includes published operational
   // notes. Task instructions reuse that field; do not claim assignee-only privacy.
   assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes, "private setup note");
+  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, "Current preset instructions, independent of the saved occurrence.");
+  const raw = await anon.rpc("read_project_quick_view_by_token", { p_bearer_token: issued.token, p_project_date: "2026-09-02" });
+  assert(!raw.error);
+  const source = raw.data[0].schedule_sources.find(item => item.id === itemIds[0]);
+  assert.equal(source.schedule_notes, "private setup note");
+  assert.equal(source.task_description, "Current preset instructions, independent of the saved occurrence.");
+  assert.deepEqual(source.custom_values, { "reporting_point": "Synthetic entrance" });
+  runPsql(`update public.task_presets set description='Later current preset wording.' where id=${sqlUuid(presetId)};`);
+  const afterPresetEdit = await rpcRead(anon, issued.token);
+  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, "Later current preset wording.", "Bearer descriptions follow the current preset, not the occurrence snapshot.");
+  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes, "private setup note", "Preset edits must not replace the saved occurrence note.");
+  assert(!JSON.stringify(afterPresetEdit).includes("assignment_instruction_revisions"));
   assert(!serialized.includes("assignment_instruction_revisions") && !serialized.includes("actor_auth_user_id"));
   for (const forbidden of ["Private draft", "draft secret", contactIds[0], issued.token]) {
     assert(!serialized.includes(forbidden), `Shared projection leaked ${forbidden}.`);

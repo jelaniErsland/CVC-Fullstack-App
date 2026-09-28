@@ -25,12 +25,14 @@ const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABAS
   ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT: "", ASSIGNMENT_NOTIFICATION_FROM: "",
   RESPONSE_LINK_BASE_URL: base, PREVIEW_BASE_URL: base,
   WRITE_ASSIGNMENT_INSTRUCTIONS_SCREENSHOTS: "1", ASSIGNMENT_INSTRUCTIONS_ONLY: "",
+  FINAL_PRODUCT_READINESS_REVIEW: "", PROJECT_DAY_QUICK_VIEW_ONLY: "",
+  ARCHIVE_UI_BROWSER_ONLY: "", OPERATIONAL_USABILITY_BROWSER_ONLY: "",
   TASK_COLOR_MOBILE_ONLY: "", WRITE_BETA_REVIEW_SCREENSHOTS: "", WRITE_ITERATION_12_44B5_CAPTURES: "" };
 function safe(output) {
   return output.replaceAll(key, "[redacted]").replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[redacted-jwt]");
 }
-async function run(args, label) {
-  const child = spawn(process.execPath, args, { env, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+async function run(args, label, overrides = {}) {
+  const child = spawn(process.execPath, args, { env: { ...env, ...overrides }, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
   let output = "";
   child.stdout.on("data", data => { output += data; });
   child.stderr.on("data", data => { output += data; });
@@ -54,10 +56,13 @@ try {
     await wait(250);
   }
   assert(ready, "Local production preview did not start.");
+  await run([...flags, "scripts/calendar-regression.mjs"], "Complete desktop/mobile Calendar browser regression");
+  await run([...flags, "scripts/calendar-regression.mjs"], "Project Day and authenticated Quick View browser boundaries", { PROJECT_DAY_QUICK_VIEW_ONLY: "1" });
   for (let runNumber = 1; runNumber <= 5; runNumber++) {
     await run([...flags, "scripts/tasks-management-browser-regression.mjs"], `Persisted instruction edit/preview/apply journey ${runNumber}/5`);
   }
   await run([...flags, "scripts/volunteer-schedule-responses-browser-regression.mjs"], "Complete volunteer-response browser regression and maximum-length dialogs");
+  await run([...flags, "scripts/project-quick-view-share-access-browser-regression.mjs"], "Existing bearer Quick View contract, desktop/mobile inspectors and revocation");
   assert(!/Unexpected end of JSON input|An unexpected response was received|uncaughtException/.test(serverLog), "Production-like preview emitted a Server Action transport failure.");
   console.log("Fresh loopback production verification passed; real providers disabled; preview stopped; all browser fixtures cleaned.");
 } finally {
