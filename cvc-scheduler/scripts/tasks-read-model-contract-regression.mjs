@@ -273,12 +273,12 @@ assert.doesNotMatch(
   routeReadSource,
   /select\("\*"\)|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|calendar_items|calendar_assignments/i,
 );
-assert.match(serverSource, /\.from\("task_presets"\)/);
+assert.match(serverSource, /\.rpc\("read_authorized_task_presets"/);
 assert.match(serverSource, /\.select\(taskPresetColumns\)/);
 assert.doesNotMatch(serverSource, /select\("\*"\)|SUPABASE_SERVICE_ROLE_KEY|createServiceRole/i);
 assert.deepEqual(
   [...serverSource.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_task_preset", "update_task_preset_color", "update_task_preset_description", "apply_task_preset_instructions", "archive_task_preset"],
+  ["read_authorized_task_presets", "create_task_preset", "update_task_preset_color", "update_task_preset_description", "read_authorized_calendar_items", "apply_task_preset_instructions", "archive_task_preset"],
 );
 assert.match(calendarSelectorSource, /\.eq\("lifecycle", "active"\)/);
 assert.equal(contractSource.includes("mock_prototype_until_separate_cutover"), false);

@@ -74,7 +74,7 @@ export async function readTaskPresetsWithClient(
 ): Promise<readonly TaskPreset[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
   const { data, error } = await supabase
-    .from("task_presets")
+    .rpc("read_authorized_task_presets", { p_workspace_id: normalizedWorkspaceId })
     .select(taskPresetColumns)
     .eq("workspace_id", normalizedWorkspaceId)
     .order("lifecycle", { ascending: true })
@@ -244,7 +244,7 @@ export async function readFuturePresetInstructionCandidatesWithClient(
   projectContactId: string,
   projectToday: string,
 ): Promise<readonly FutureInstructionCandidate[]> {
-  const { data, error } = await supabase.from("calendar_items")
+  const { data, error } = await supabase.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceId })
     .select("id,start_date,start_time,end_time,schedule_notes,updated_at,publication_state,created_by_project_contact_id")
     .eq("workspace_id", normalizeWorkspaceReference({ id: workspaceId }).value)
     .eq("task_preset_id", normalizeWorkspaceReference({ id: presetId }).value)

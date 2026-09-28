@@ -440,11 +440,26 @@ async function verifyNotifications(containerName, users) {
     ),
   );
 
+  let instructionClaimVerified = false;
+  const checkedScheduler = new Proxy(users.scheduler.client, {
+    get(client, property) {
+      if (property === "rpc") return async (name, args) => {
+        const result = await client.rpc(name, args);
+        if (name === "claim_initial_assignment_notification_deliveries") {
+          assert(!result.error && result.data.some(row => row.schedule_notes === "Email QA notes."), "Authorized notification composition must retain saved occurrence instructions.");
+          instructionClaimVerified = true;
+        }
+        return result;
+      };
+      return Reflect.get(client, property, client);
+    },
+  });
   const result = await sendInitialAssignmentNotificationsForItemWithClient(
-    users.scheduler.client,
+    checkedScheduler,
     { calendarItemId: fixture.items.published },
     config,
   );
+  assert(instructionClaimVerified);
   assert.equal(result.sentCount, 1);
   assert.equal(result.skippedCount, 1);
   assert.equal(result.failedCount, 0);

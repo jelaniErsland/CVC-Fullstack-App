@@ -215,7 +215,7 @@ export async function readCalendarTaskPresetSelectorWithClient(input: {
   }
 
   const { data, error } = await input.client
-    .from("task_presets")
+    .rpc("read_authorized_task_presets", { p_workspace_id: workspaceId })
     .select(selectorColumns)
     .eq("workspace_id", workspaceId)
     .eq("lifecycle", "active")

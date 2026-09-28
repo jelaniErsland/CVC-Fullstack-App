@@ -75,7 +75,7 @@ assert.doesNotMatch(
   /createClient|createServerSupabaseClient|createBrowserSupabaseClient|lib\/supabase\/server|from\s+["']app\/|cookies\(|headers\(|SUPABASE_SERVICE_ROLE_KEY|createServiceRole|serviceRoleClient|serviceRolePath/i,
 );
 assert.doesNotMatch(queryHelperSource, /\.select\(\s*["']\*["']\s*\)/);
-assert.doesNotMatch(queryHelperSource, /\.rpc\(/);
+assert.deepEqual([...queryHelperSource.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map(match => match[1]), ["read_authorized_calendar_items", "read_authorized_task_presets"], "Read helper may call only the two reviewed privacy-safe read RPCs.");
 for (const forbiddenFrom of [
   "volunteer_profiles",
   "questionnaire_submissions",
@@ -323,6 +323,11 @@ function createFakeSupabaseClient({ errorTable } = {}) {
 
   return {
     calls,
+    rpc(name, args) {
+      assert(["read_authorized_calendar_items", "read_authorized_task_presets"].includes(name));
+      assert.equal(args.p_workspace_id, workspaceId);
+      return this.from(name === "read_authorized_calendar_items" ? "calendar_items" : "task_presets");
+    },
     from(table) {
       const call = { table, selector: null, eq: [], lte: [], or: [], in: [], order: [] };
       calls.push(call);

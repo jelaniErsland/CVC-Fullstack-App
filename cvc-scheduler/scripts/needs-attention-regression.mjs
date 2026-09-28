@@ -330,7 +330,7 @@ assert.match(migrationSource, /grant select on public\.needs_attention_seen_stat
 assert.match(migrationSource, /revoke all on function public\.mark_needs_attention_signal_seen\(uuid, text\) from public, anon, authenticated/);
 assert.match(migrationSource, /grant execute on function public\.mark_needs_attention_signal_seen\(uuid, text\) to authenticated/);
 assert.doesNotMatch(migrationSource, /grant execute on function public\.mark_needs_attention_signal_seen\(uuid, text\) to (?:anon|public)/i);
-assert.match(navSource, /label: "Needs Attention"[\s\S]*href: "\/admin\/needs-attention"/);
+assert.match(navSource, /label: "Attention"[\s\S]*href: "\/admin\/needs-attention"/);
 assert.match(shellSource, /id: "needs-attention"[\s\S]*href: "\/admin\/needs-attention"/);
 assert.match(shellSource, /label: "Volunteers", href: "\/admin\/volunteers"/);
 assert.match(packageSource, /"test:needs-attention"/);

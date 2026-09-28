@@ -1,86 +1,61 @@
-# Bearer Quick View: existing instruction exposure and approval decision
+# Instruction privacy — approved policy and enforcement
 
-Reviewed September 27, 2026 against deployed source `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923` and development `0b529f8`. This is an investigation and policy proposal. **No application projection, function, grant, migration or production behavior is changed by this review.** All examples/tests use disposable synthetic local data.
+Reviewed September 27, 2026 on `codex/simplified-task-details`, continuing from `cbb35c5`. **The product-owner decision is resolved and implemented locally.** Detailed instructions belong to the volunteer's own authorized assignment and appropriately authorized administrators. Bearer Quick View and generic authenticated schedule viewers receive operational data without detailed instructions. No production migration or deployment has occurred.
 
-## Current boundary
+## Enforcement boundaries
 
-A project bearer is a trusted project-wide read credential, not an individual volunteer identity. `read_project_quick_view_by_token(text,date)` already returns published occurrence notes and the linked preset's current description. The task-details feature reuses those fields. Consequently, the approved instruction snapshots and private revision table do **not** make published instructions assignee-private.
+The new forward migration is [20260927120000_instruction_privacy.sql](../../supabase/migrations/20260927120000_instruction_privacy.sql). No deployed migration is edited. It changes no instruction data, snapshots, history, notification operation or volunteer credential function.
 
-The production function definition is in `supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql`. It is postgres-owned, SECURITY DEFINER, with an empty search path and EXECUTE for anon/authenticated/service_role. It verifies the hashed 43-character bearer, purpose/version, revocation, expiration, active project and project end date; it updates only token `last_used_at` during retrieval. It returns active, published items belonging to that token's workspace, with source dates before selected date + 42 and end dates on/after selected date − 31. This is the loaded source window, not merely the selected day's visible rows. Recurrence expansion happens in the existing read model. A valid bearer can choose another permitted date and retrieve its window.
-
-Neither task type nor assignment ownership restricts this output. Published security-named tasks are included; a task name never establishes security authorization. Draft items, private instruction revisions and other workspaces are excluded. Bearer retrieval must not be described as anonymous access without a credential, but it also must not be described as individually assigned-volunteer access.
-
-## Exact returned fields
-
-Top-level fields: `access_state`, `workspace_display_name`, `workspace_timezone`, `project_date`, `project_starts_on`, `project_ends_on`, `token_expires_at`, `expected_on_site_count` (currently null), `schedule_sources`.
-
-Each `schedule_sources` item contains:
-
-| Group | Existing fields |
+| Retrieval path | Enforcement |
 | --- | --- |
-| Identity/classification | `id`, `workspace_id`, `task_preset_id`, `title_snapshot`, `task_type_snapshot`, `schedule_kind` |
-| Date/time | `start_date`, `end_date`, `start_time`, `end_time`, `timezone` |
-| Operational text | **`schedule_notes`**, **`task_description`**, **`custom_values`** |
-| Staffing/preset presentation | `needed_count`, `task_preset_label`, `task_preset_color_key`, `assignments` |
-| Meals | `meal_kind`, `meal_provider`, `meal_contact`, `meal_menu`, `meal_total` |
-| Publication/lifecycle | `lifecycle`, `publication_state`, `published_at` |
+| `read_project_quick_view_by_token(text,date)` | `schedule_notes` and `task_description` are JSON null; `custom_values` is an empty object. Enforcement precedes server rendering and serialization. |
+| `read_authorized_calendar_items(uuid,date,date)` | Auth identity, active contact/workspace/live grant, `calendar.view`, publication/creator ownership and optional existing date-window predicates. Saved notes and custom values require `calendar.edit`; otherwise notes are null and custom values empty. |
+| `read_authorized_task_presets(uuid)` | Auth identity, active contact/workspace/live grant and `tasks.view`. Description and custom-field definitions require `tasks.edit` or `calendar.edit`; otherwise description is null and definitions empty. |
+| Direct Task/Calendar table REST or GraphQL reads | Existing SELECT RLS is tightened to the corresponding existing view + edit authority. Generic view grants cannot recover sensitive columns by bypassing the RPCs. Table privileges and default privileges are unchanged. |
+| Assignment/response table reads | Existing assignments-view, Calendar-view, workspace, publication and creator gates remain. A narrowly scoped boolean `can_view_calendar_item_operations(uuid,uuid)` helper avoids losing staffing rows when raw instruction-row RLS is tightened. It returns no text or profile data. |
+| Personal volunteer assignment access | Existing `read_volunteer_schedule` remains unchanged: matching hashed schedule credential, person/workspace/profile/assignment/publication/lifecycle checks and saved occurrence instructions. A project Quick View bearer cannot substitute for that credential. |
+| Notification composition | Existing authorized claim still receives saved occurrence notes; existing recipient, confirmation, ledger, idempotency and resend rules remain. No application delivery code changes. |
+| Private instruction history | Existing RLS with zero client policies and revoked table/sequence access; no new history retrieval route. |
 
-`schedule_notes` is the saved occurrence text: legacy operational notes, copied instructions or individual exceptions. `task_description` is the linked preset's **current** `description`, without an instruction-approval filter or historical snapshot. Editing a preset can therefore change bearer-visible text even when published occurrence instructions remain untouched. `custom_values` is the existing free-form JSON projection; an administrator could place reporting instructions there as well.
+No new role or capability is introduced. A role label, task name, client flag, guessed ID or household email does not establish instruction authority. Authenticated Quick View remains read-only even for an administrator allowed to see instructions; generic read-only/on-site contacts do not gain text merely by authenticating.
 
-Nested active assignments already include `assignmentId`, `calendarItemId`, `volunteerProfileId`, `volunteerDisplayName`, `responseStatus` (missing response becomes `needs_response`). This review does not broaden or remove those existing identities. Email, phone, congregation, profile notes, assignment-private notes, response notes, contact/grant identities and revision actors are not added to this projection.
+All seven existing server read boundaries now use the authorized projections: Calendar read model, item reader, task selector, Tasks reader, future-instruction preview, volunteer-directory schedule and the legacy operational Quick View reader. Explicit selectors, ordering, date/context filters, bounded Calendar range and existing parallel read groups remain. There is no unsafe raw-read fallback or runtime service-role credential.
 
-## Where text appears
+## Exact bearer operational contract retained
 
-`app/qv/access/[token]/route.ts` verifies access and establishes the existing HttpOnly `/qv` cookie, then redirects to a clean URL. Its metadata parser does not render schedule text. `app/qv/page.tsx` subsequently calls the bearer RPC, passes the result through `lib/calendar/quickView.server.ts::sharedCalendarState` and renders the common `CalendarClient` with `readOnly` and `/qv` route context.
+Top-level fields remain `access_state`, `workspace_display_name`, `workspace_timezone`, `project_date`, `project_starts_on`, `project_ends_on`, `token_expires_at`, `expected_on_site_count` (currently null), and `schedule_sources`.
 
-The adapter maps notes to `scheduleNotes` and the preset description to `taskDescription`. The read-only adapter removes editing/directory/private assignment context; it does **not** redact these text fields or custom values. They reach serialized Calendar props regardless of whether an inspector is open. Hiding DOM text would not establish confidentiality.
-
-In `components/CalendarClient.tsx`, the ordinary-task inspector displays:
-
-- A **Schedule notes** heading followed by the occurrence notes (or “No schedule-specific notes.”).
-- The current preset description immediately below, if nonblank, with paragraph formatting but no separate heading.
-- The existing custom-field name/value list.
-
-This applies to the desktop drawer and mobile sheet, including item deep links. Month/Week/Day/List summary rows do not display these instructions. Read-only Breakfast/Lunch inspectors use their meal-specific path and omit the ordinary instruction section; their raw source/serialized fields are still present. A hidden meal field is not private.
-
-The authenticated `/admin/quick-view` route uses an authorized Calendar read rather than the bearer RPC but shares the renderer. Any restriction proposed here must be explicitly scoped; changing the common item mapper would also affect authorized administrators.
-
-## Consumers to preserve
-
-| Consumer | Dependency |
+| Item fields retained | Purpose |
 | --- | --- |
-| Real bearer `/qv` route and common inspector | Both text fields and custom values, as above. |
-| Authenticated Calendar/Quick View | Occurrence notes and current preset description; existing live workspace/capability checks. |
-| Calendar occurrence editing and future-apply preview | Saved notes, versions, preset instructions and provenance; manual exceptions/history must survive. |
-| Tasks editor and scheduling defaults | Existing preset description; approved snapshots for newly created non-meal occurrences. |
-| Personalized volunteer schedule/dialog | Own authorized `schedule_notes`, rendered in Assignment details; existing individual credential/assignment filtering. |
-| Initial assignment/resend email composition | Existing notification claim reads `schedule_notes`; the Details text accompanies the primary Review assignment & respond link. No delivery behavior or recipient safeguards may change accidentally. |
-| Private instruction revision/history | Prior wording and publication state, inaccessible through bearer/client reads. |
+| `id`, `workspace_id`, `task_preset_id`, `title_snapshot`, `task_type_snapshot`, `schedule_kind` | Exact identity/classification and selection. |
+| `start_date`, `end_date`, `start_time`, `end_time`, `timezone` | Date/time and recurrence context. |
+| `needed_count`, `task_preset_label`, `task_preset_color_key`, `assignments` | Staffing and existing presentation. Active assignment objects retain assignment/item/profile IDs, permitted volunteer display name and response status. Declined is distinct from active staffing. |
+| `meal_kind`, `meal_provider`, `meal_contact`, `meal_menu`, `meal_total` | Existing meal operational information; missing, recorded zero and positive counts remain distinct. Meal entries retain headcount/contact presentation rather than volunteer rosters. |
+| `lifecycle`, `publication_state`, `published_at` | Existing active/published boundary. |
+| `schedule_notes`, `task_description`, `custom_values` | Keys retained for compatibility; values are null, null and {} respectively. |
 
-The older `SharedProjectQuickView`/`ProjectQuickView` components and `lib/operations/projectQuickViewRoute.server.ts` contract remain in the repository/tests but are not the render path imported by the current `/qv` or `/admin/quick-view` page. Their smaller historical projection is not evidence of the live bearer boundary.
+The bearer function retains its hashed 43-character credential, purpose/version, revocation/expiry, active project/end-date checks, date window (source start before selected date + 42 and end on/after selected date − 31), preset-owned color, security-task inclusion and active assignment/status projection. Retrieval still updates only token last-use metadata. The security regression compares its entire function definition with the last deployed definition after exactly those three approved field substitutions.
 
-## Least disruptive restriction, if approved
+## Custom values audit
 
-For **assigned volunteers and authorized administrators only**, return JSON null for both `schedule_notes` and `task_description` in the **database bearer projection**. Preserve the function signature, JSON keys, token validation, loaded date window, workspace scope, meal data, staffing/identity contract and grants. Keep authenticated administrative reads, the own-volunteer projection, snapshots/history and notification composition unchanged.
+`custom_values` permits arbitrary administrator-defined scalar fields, including up to 2,000-character strings, without a fixed operational audience. Its preset definitions likewise accept prose labels/options. Allowing all strings, number-shaped strings, arbitrary keys or trusted-looking labels would permit instructions to bypass the policy.
 
-This requires one reviewed forward migration replacing the existing function body; no new table, backfill or RLS expansion is needed. Do not edit an already deployed migration or rely on client redaction. Add direct anonymous-RPC tests proving both fields remain null across linked/unlinked presets, preset changes, manual exceptions, meals and dates; retain cross-project/draft/expiry/revocation tests. Add actual desktop/mobile recipient-inspector tests and retain positive administrator/assigned-volunteer tests. Only after approval, omit the instruction block from the bearer inspector rather than implying there are no instructions.
+**The explicit read-only custom-value allowlist is empty.** The repository establishes no fixed custom key required by current Quick View. Required operational structure already has dedicated fields in the table above. Current Breakfast/Lunch system presets use empty definitions, and the meal repeat command requires empty custom values. The retired/general project-day expected total is not reinterpreted as a meal headcount. No structured meal/staffing/date field is removed. Administrators retain every original custom value/definition. Adding a future public custom key requires a reviewed typed contract; no implicit free-form prose channel is introduced.
 
-The tradeoff is that **all legacy occurrence notes and preset descriptions disappear from bearer inspectors**, including useful general operational notes. These shared columns do not classify public versus private prose. `instruction_source`, approval timestamp or task name cannot safely distinguish audience: manual exceptions and old notes also contain instructions.
+All legacy notes/descriptions, including general wording, are withheld from the restricted audiences because these columns do not distinguish public from private instructions. Approval timestamps, provenance, task type or title are not audience classifiers. This is the owner's approved policy, not an unresolved alternative.
 
-| Alternative | Consequence |
-| --- | --- |
-| Retain the current contract | Least code/UX disruption; valid project bearers can read published instructions. Requires explicit acceptance of that audience. |
-| Null the two bearer text fields | Smallest reliable restriction for these fields; eliminates legacy general notes too. Proposed approach if assignee/admin privacy is required. |
-| Add an explicitly public summary separate from private instructions | Retains useful bearer prose, but requires a new classification/schema/editor/migration policy. Defer as separately approved scope. |
+## Executed evidence
 
-There are two additional policy boundaries. First, `custom_values` can carry prose. If “instructions are private” is intended as an absolute guarantee, approve excluding free-form custom values or an explicit public-field allowlist too; redacting only the two named fields cannot make arbitrary text entered elsewhere private. Second, authenticated read-only contacts currently inherit Calendar text under existing server capabilities. Define whether “authorized administrators” includes those contacts. Restricting them would require an additional field-level capability/projection decision, not an incidental bearer fix.
+- Real local Auth/RPC: bearer null notes/descriptions across linked/unlinked presets, preset changes and meal counts; no custom prose; unchanged mixed confirmed/pending/declined identities; generic viewer safe rows plus direct-table denial; foreign project and anonymous denial; draft exclusion, malformed/expired/ended/revoked bearers.
+- Personal credential: assigned volunteer still receives the saved occurrence note and only their assignment. The project bearer fails to recover it through personal schedule/response RPCs. Full personal-access and response suites retain cross-person, same-household, revocation, publication and response persistence checks.
+- Browser: actual bearer route and item deep links on desktop/mobile; privileged administrator positive text; live grant downgrade followed by authenticated Calendar/Quick View negative serialized payload checks; mobile read-only check; completed HTML/RSC/JSON network bodies inspected. Superseded, cancelled prefetches do not count as completed payload evidence. Meal summary and inspector retain headcount/contact; no editing action is exposed.
+- Editing and notification: five fresh-production save/preview/apply journeys verify DB persistence; full Calendar/Bulk planner and volunteer responses pass. The real authorized notification claim retains saved notes, and mocked-provider HTML/text contains those details and the primary response link. No real provider is enabled or real email sent.
+- Exact local catalog: 80 signatures, 10 anonymous, 52 authenticated-only, 18 internal; PUBLIC zero; hardened defaults, private history/sequence, trigger preservation and stale-version checks remain. Three added RPCs/helpers are postgres-owned SECURITY DEFINER with empty search paths, authenticated/service_role EXECUTE only, and server-derived identity checks. No new anonymous grant.
 
-Revocation controls future retrieval. It cannot recall text already copied, cached outside the app or delivered in an existing assignment email. Private/no-store headers and existing link expiry reduce future access, not retrospective disclosure.
+Full commands/results and screenshots: [implementation review](TASK_DETAILS_IMPLEMENTATION_REVIEW.md), [gallery](../previews/assignment-instructions/README.md).
 
-## Approval required before release
+## Release requirements and limits
 
-1. Accept existing project-wide bearer instruction visibility, or approve the narrow forward-migration restriction above.
-2. If restricting, decide the treatment of `custom_values` and authenticated read-only contacts.
-3. If general bearer notes are still required, approve a separate public-summary design rather than implicit classification of existing text.
+Privacy is implemented and verified locally; final production release approval is still required. Pending instruction migration `20260926120000` precedes privacy migration `20260927120000`. A coordinated approved release must include the compatible projection-reading application: an old application using raw reads cannot preserve generic viewer operational data after tightened RLS. Do not restore broader grants or roll back privacy to accommodate an old client; use a compatible forward fix. Existing quiet-window, backup, migration/preflight, fingerprint and smoke safeguards remain release gates.
 
-No restriction migration is created or applied here. The implementation report records the final executed local regression results. The checked-in bearer data/browser suites now explicitly exercise the current notes, current description and custom-value exposure, while retaining their authorization, read-only and revocation checks.
+Previously retrieved/downloaded/copied instructions cannot be recalled. Existing private/no-store and credential expiry/revocation govern future app retrieval. Development Server Action transport root cause and production slowness remain unresolved; local timings are not production performance evidence. Site-map upload remains disabled. No merge, production migration, deployment, backup configuration change or Batch 3 work is authorized by this review.

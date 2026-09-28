@@ -1,3 +1,4 @@
+import { parseIssuedVolunteerScheduleAccess } from "../lib/volunteerScheduleAccess/token.ts";
 import { sharedCalendarState } from "../lib/calendar/quickView.server.ts";
 import nextEnv from "@next/env";
 import { createClient } from "@supabase/supabase-js";
@@ -26,6 +27,8 @@ const contactIds = [randomUUID(), randomUUID(), randomUUID()];
 const grantIds = [randomUUID(), randomUUID(), randomUUID()];
 const itemIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
 const presetId = randomUUID();
+const volunteerIds = [randomUUID(), randomUUID(), randomUUID()];
+const assignmentIds = [randomUUID(), randomUUID(), randomUUID()];
 const dayIds = [randomUUID(), randomUUID()];
 const authUserIds = [];
 const clients = [];
@@ -98,6 +101,10 @@ async function cleanup() {
   runPsql(`
     delete from public.project_quick_view_access_tokens where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.project_days where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
+    delete from public.volunteer_schedule_access_tokens where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
+    delete from public.assignment_responses where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
+    delete from public.calendar_assignments where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
+    delete from public.volunteer_profiles where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.calendar_items where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.task_presets where workspace_id = any(array[${workspaceIds.map(sqlUuid).join(",")}]);
     delete from public.workspace_contact_grants where id = any(array[${grantIds.map(sqlUuid).join(",")}]);
@@ -153,9 +160,9 @@ try {
       (${sqlUuid(contactIds[1])}, ${sqlUuid(otherOwner.userId)}, 'active'),
       (${sqlUuid(contactIds[2])}, ${sqlUuid(viewOnly.userId)}, 'active');
     insert into public.workspace_contact_grants (id, workspace_id, project_contact_id, role, capabilities, status, valid_from) values
-      (${sqlUuid(grantIds[0])}, ${sqlUuid(workspaceIds[0])}, ${sqlUuid(contactIds[0])}, 'main_contact', array['workspace.read','calendar.view','calendar.edit']::text[], 'active', now() - interval '1 day'),
+      (${sqlUuid(grantIds[0])}, ${sqlUuid(workspaceIds[0])}, ${sqlUuid(contactIds[0])}, 'main_contact', array['workspace.read','calendar.view','calendar.edit','tasks.view','tasks.edit','assignments.view','assignments.edit']::text[], 'active', now() - interval '1 day'),
       (${sqlUuid(grantIds[1])}, ${sqlUuid(workspaceIds[1])}, ${sqlUuid(contactIds[1])}, 'main_contact', array['workspace.read','calendar.view','calendar.edit']::text[], 'active', now() - interval '1 day'),
-      (${sqlUuid(grantIds[2])}, ${sqlUuid(workspaceIds[0])}, ${sqlUuid(contactIds[2])}, 'assistant_contact', array['workspace.read','calendar.view']::text[], 'active', now() - interval '1 day');
+      (${sqlUuid(grantIds[2])}, ${sqlUuid(workspaceIds[0])}, ${sqlUuid(contactIds[2])}, 'assistant_contact', array['workspace.read','calendar.view','tasks.view','assignments.view']::text[], 'active', now() - interval '1 day');
     insert into public.project_days (id, workspace_id, project_date, expected_on_site_count, created_by_project_contact_id, updated_by_project_contact_id) values
       (${sqlUuid(dayIds[0])}, ${sqlUuid(workspaceIds[0])}, '2026-09-02', 47, ${sqlUuid(contactIds[0])}, ${sqlUuid(contactIds[0])}),
       (${sqlUuid(dayIds[1])}, ${sqlUuid(workspaceIds[1])}, '2026-09-02', 8, ${sqlUuid(contactIds[1])}, ${sqlUuid(contactIds[1])});
@@ -172,6 +179,17 @@ try {
     update public.calendar_items set task_preset_id=${sqlUuid(presetId)}, custom_values='{"reporting_point":"Synthetic entrance"}'::jsonb where id=${sqlUuid(itemIds[0])};
   `);
 
+  for (let index = 0; index < 3; index++) {
+    const response = ["needs_response", "confirmed", "declined"][index];
+    runPsql(`
+      insert into public.volunteer_profiles (id,workspace_id,full_name,email,profile_source,manual_created_by_project_contact_id,manual_created_at,availability_snapshot,skills_help_snapshot)
+      values (${sqlUuid(volunteerIds[index])},${sqlUuid(workspaceIds[0])},${sqlText('Synthetic Volunteer '+index)},'synthetic@example.invalid','manual',${sqlUuid(contactIds[0])},now(),'{}','{}');
+      insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id)
+      values (${sqlUuid(assignmentIds[index])},${sqlUuid(workspaceIds[0])},${sqlUuid(itemIds[0])},${sqlUuid(volunteerIds[index])});
+      insert into public.assignment_responses (workspace_id,assignment_id,response_status,responded_at)
+      values (${sqlUuid(workspaceIds[0])},${sqlUuid(assignmentIds[index])},${sqlText(response)},${response==='needs_response'?'null':'now()'});
+    `);
+  }
   const anon = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   await expectError("unauthenticated creation", () => anon.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[0] }));
   await expectError("wrong workspace creation", () => owner.client.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[1] }));
@@ -194,23 +212,77 @@ try {
   assert(!JSON.stringify(ready).includes("expectedOnSiteCount"));
   assert.deepEqual(ready.calendar.items.map((item) => item.displayName).sort(), ["General setup", "Lunch", "Restricted security post"].sort());
   const serialized = JSON.stringify(ready);
-  // The established bearer contract already includes published operational
-  // notes. Task instructions reuse that field; do not claim assignee-only privacy.
-  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes, "private setup note");
-  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, "Current preset instructions, independent of the saved occurrence.");
+  // Approved privacy is enforced in the RPC, before rendering or serialization.
+  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes ?? null, null);
+  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, null);
+  const ownIssued = await owner.client.rpc("issue_volunteer_schedule_access", { p_volunteer_profile_id: volunteerIds[0], p_ttl_hours: 24 });
+  assert(!ownIssued.error);
+  const personal = parseIssuedVolunteerScheduleAccess(ownIssued.data); secrets.add(personal.token);
+  const personalRead = await anon.rpc("read_volunteer_schedule", { p_bearer_token: personal.token });
+  assert(!personalRead.error && personalRead.data.some(row => row.assignment_reference === assignmentIds[0] && row.schedule_notes === "private setup note"));
+  assert(personalRead.data.every(row => row.assignment_reference === assignmentIds[0]), "Personalized access crossed volunteer identities.");
+  for (const fn of ["read_volunteer_schedule", "read_assignment_response_by_token"]) {
+    const unrelatedCredential = await anon.rpc(fn, { p_bearer_token: issued.token });
+    assert(!unrelatedCredential.error && !/private setup note|Current preset instructions|Synthetic entrance/.test(JSON.stringify(unrelatedCredential.data)), "Project bearer recovered instructions through a personal credential route.");
+  }
   const raw = await anon.rpc("read_project_quick_view_by_token", { p_bearer_token: issued.token, p_project_date: "2026-09-02" });
   assert(!raw.error);
   const source = raw.data[0].schedule_sources.find(item => item.id === itemIds[0]);
-  assert.equal(source.schedule_notes, "private setup note");
-  assert.equal(source.task_description, "Current preset instructions, independent of the saved occurrence.");
-  assert.deepEqual(source.custom_values, { "reporting_point": "Synthetic entrance" });
+  assert.equal(source.schedule_notes, null);
+  assert.equal(source.task_description, null);
+  assert.deepEqual(source.custom_values, {});
+  assert.deepEqual(source.assignments.map(a => a.responseStatus), ["needs_response", "confirmed", "declined"]);
+  assert.deepEqual(source.assignments.map(a => a.volunteerDisplayName), ["Synthetic Volunteer 0", "Synthetic Volunteer 1", "Synthetic Volunteer 2"]);
+  assert.equal(source.needed_count, 3);
+  const assignments = await viewOnly.client.from("calendar_assignments").select("id").eq("workspace_id",workspaceIds[0]);
+  const responses = await viewOnly.client.from("assignment_responses").select("assignment_id,response_status").eq("workspace_id",workspaceIds[0]);
+  assert(!assignments.error && assignments.data.length === 3, "Read-only staffing rows must survive tightened instruction RLS.");
+  assert(!responses.error && responses.data.length === 3, "Read-only response rows must survive tightened instruction RLS.");
+  const alternate = await viewOnly.client.rpc("read_assignment_detail_context", { p_assignment_id: assignmentIds[0] });
+  assert(!alternate.error && alternate.data.length === 1);
+  assert(!/private setup note|Current preset instructions|Synthetic entrance/.test(JSON.stringify(alternate.data)));
+  await expectError("read-only notification claim", () => viewOnly.client.rpc("claim_initial_assignment_notification_deliveries", { p_calendar_item_id: itemIds[0] }));
+  assert.equal(Number(runPsql(`select count(*) from public.assignment_notification_deliveries where workspace_id=${sqlUuid(workspaceIds[0])};`)), 0);
+  for (const actor of [owner.client, viewOnly.client]) {
+    const administrative = actor === owner.client;
+    const calendar = await actor.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceIds[0] }).select("*");
+    const presets = await actor.rpc("read_authorized_task_presets", { p_workspace_id: workspaceIds[0] }).select("*");
+    assert(!calendar.error && !presets.error);
+    assert.equal(calendar.data.length, 3, "Operational publication rows must survive safe projection.");
+    assert.equal(presets.data.length >= 1, true);
+    const item = calendar.data.find(item => item.id === itemIds[0]);
+    const preset = presets.data.find(preset => preset.id === presetId);
+    assert.equal(item.schedule_notes, administrative ? "private setup note" : null);
+    assert.equal(preset.description, administrative ? "Current preset instructions, independent of the saved occurrence." : null);
+    assert.deepEqual(item.custom_values, administrative ? { reporting_point: "Synthetic entrance" } : {});
+    for (const table of ["calendar_items", "task_presets"]) {
+      const direct = await actor.from(table).select("*").eq("workspace_id", workspaceIds[0]);
+      assert(!direct.error);
+      assert.equal(direct.data.length > 0, administrative, "Direct table RLS must not bypass instruction privacy.");
+    }
+    const foreign = await actor.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceIds[1] });
+    assert(!foreign.error && foreign.data.length === 0, "Safe RPC must retain workspace isolation.");
+  }
+  for (const fn of ["read_authorized_calendar_items", "read_authorized_task_presets"]) {
+    await expectError("anonymous instruction read", () => anon.rpc(fn, { p_workspace_id: workspaceIds[0] }));
+  }
+  // Preserve dedicated operational meal fields, including null, zero and positive.
+  runPsql(`update public.calendar_items set meal_kind='lunch',meal_provider='Synthetic meal group',meal_contact='Synthetic main contact',meal_menu='Vegetable soup',meal_total=47 where id=${sqlUuid(itemIds[1])};`);
+  for (const total of [null, 0, 47]) {
+    runPsql(`update public.calendar_items set meal_total=${total === null ? 'null' : total} where id=${sqlUuid(itemIds[1])};`);
+    const mealRead = await anon.rpc("read_project_quick_view_by_token", { p_bearer_token: issued.token, p_project_date: "2026-09-02" });
+    const meal = mealRead.data[0].schedule_sources.find(item => item.id === itemIds[1]);
+    assert.equal(meal.meal_total, total); assert.equal(meal.meal_contact, "Synthetic main contact");
+    assert.equal(meal.meal_menu, "Vegetable soup"); assert.equal(meal.meal_provider, "Synthetic meal group");
+    assert.equal(meal.schedule_notes, null); assert.equal(meal.task_description, null); assert.deepEqual(meal.custom_values, {});
+  }
   runPsql(`update public.task_presets set description='Later current preset wording.' where id=${sqlUuid(presetId)};`);
   const afterPresetEdit = await rpcRead(anon, issued.token);
-  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, "Later current preset wording.", "Bearer descriptions follow the current preset, not the occurrence snapshot.");
-  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes, "private setup note", "Preset edits must not replace the saved occurrence note.");
+  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.taskDescription, null, "Preset changes must never expose instructions to bearers.");
+  assert.equal(afterPresetEdit.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes ?? null, null, "Occurrence notes must remain private after preset edits.");
   assert(!JSON.stringify(afterPresetEdit).includes("assignment_instruction_revisions"));
   assert(!serialized.includes("assignment_instruction_revisions") && !serialized.includes("actor_auth_user_id"));
-  for (const forbidden of ["Private draft", "draft secret", contactIds[0], issued.token]) {
+  for (const forbidden of ["private setup note", "private lunch note", "restricted location", "Current preset instructions", "Synthetic entrance", "Private draft", "draft secret", contactIds[0], issued.token]) {
     assert(!serialized.includes(forbidden), `Shared projection leaked ${forbidden}.`);
   }
   assert.equal((await rpcRead(anon, "A".repeat(43))).kind, "unavailable");

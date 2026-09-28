@@ -182,9 +182,10 @@ async function verifyStaticRouteBoundary() {
     /SUPABASE_SERVICE_ROLE_KEY|createServiceRole/i,
   );
   assert.deepEqual(
-    [...server.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
-    ["task_presets", "calendar_items"],
+    [...server.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
+    ["read_authorized_task_presets", "create_task_preset", "update_task_preset_color", "update_task_preset_description", "read_authorized_calendar_items", "apply_task_preset_instructions", "archive_task_preset"],
   );
+  assert.doesNotMatch(server, /\.from\(/, "Task reads must not bypass reviewed projections.");
   assert.match(packageSource, /"test:tasks-management"/);
 }
 

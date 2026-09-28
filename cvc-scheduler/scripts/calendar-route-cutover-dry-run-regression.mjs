@@ -278,6 +278,11 @@ function createFakeSupabaseClient({ empty = false, errorTable } = {}) {
   };
   return {
     calls,
+    rpc(name, args) {
+      assert(["read_authorized_calendar_items", "read_authorized_task_presets"].includes(name));
+      assert.equal(args.p_workspace_id, workspaceId);
+      return this.from(name === "read_authorized_calendar_items" ? "calendar_items" : "task_presets");
+    },
     from(table) {
       const call = { table, selector: null, eq: [], lte: [], or: [], in: [], order: [] };
       calls.push(call);
@@ -603,7 +608,7 @@ assert.deepEqual(
   ["app/admin/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
-assert.deepEqual(assignmentDetailLinks, []);
+assert.deepEqual(assignmentDetailLinks.sort(), ["app/admin/needs-attention/page.tsx", "components/CalendarAssignmentPicker.tsx"], "Only established assignment-detail consumers may link to that route.");
 
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
@@ -616,7 +621,7 @@ assert.doesNotMatch(
 );
 
 assert.match(packageSource, /"test:calendar-route-cutover-dry-run"/);
-assert.match(currentStateSource, /Iteration 12\.8/);
+assert.match(currentStateSource, /Assignment details implementation in development/);
 assert.match(roadmapSource, /12\.9 Calendar Route Cutover Final Preflight/);
 assert.match(calendarReadinessSource, /12\.8 Calendar Route Cutover Dry-Run Harness/);
 assert.match(authReadinessSource, /12\.8 Calendar route cutover dry-run harness/i);

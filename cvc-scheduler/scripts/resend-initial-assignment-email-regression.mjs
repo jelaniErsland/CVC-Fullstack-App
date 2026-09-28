@@ -260,6 +260,8 @@ async function main() {
   assert.match(body.text, /Date: Tuesday, August 18, 2026/);
   assert.match(body.text, /Time: 8:00 AM – 12:00 PM/);
   assert(body.text.includes(scheduleAccessUrl));
+  assert.match(body.text, /Details: Meet at the north entrance\./);
+  assert.match(body.html, /Meet at the north entrance\./);
   assert(body.html.includes(scheduleAccessUrl));
   assert.match(body.html, /Gate &amp; Welcome/);
   assert.match(body.html, /Please review your assignment/);

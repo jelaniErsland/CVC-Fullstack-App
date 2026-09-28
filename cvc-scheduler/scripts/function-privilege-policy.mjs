@@ -13,6 +13,9 @@ export const anonymousFunctions = Object.freeze([
   "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "read_authorized_calendar_items(uuid,date,date)",
+  "read_authorized_task_presets(uuid)",
+  "can_view_calendar_item_operations(uuid,uuid)",
   "update_task_preset_description(uuid,text,timestamp with time zone)",
   "apply_task_preset_instructions(uuid,timestamp with time zone,jsonb)",
   "read_workspace_project_photo(uuid)",

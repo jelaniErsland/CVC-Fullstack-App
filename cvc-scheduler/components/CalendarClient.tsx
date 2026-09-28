@@ -3607,14 +3607,14 @@ function InspectorContent({
           </div>
         ) : null}
 
-        <div className="order-2 mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
+        {item.scheduleNotes || canEditSelectedItem ? <div className="order-2 mt-3 border-b border-[var(--pl-border)] px-1 pb-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Schedule notes
           </p>
           <p className="mt-3 text-sm leading-6 text-slate-700">
             {item.scheduleNotes ?? "No schedule-specific notes."}
           </p>
-        </div>
+        </div> : null}
 
         {item.taskDescription ? <p className="order-2 mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.taskDescription}</p> : null}
         {item.customValues && Object.keys(item.customValues).length ? <dl className="order-2 mt-3 space-y-2 text-sm">

@@ -74,6 +74,7 @@ type SupabaseLikeQueryBuilder = {
 
 export type CalendarReadModelQueryClient = Readonly<{
   from(table: string): SupabaseLikeQueryBuilder;
+  rpc(name: "read_authorized_calendar_items" | "read_authorized_task_presets", args: { p_workspace_id: string; p_range_start?: string; p_range_end?: string }): SupabaseLikeQueryBuilder;
 }>;
 
 export type CalendarReadModelQueryInput = Readonly<{
@@ -219,7 +220,7 @@ function normalizeResponseStatus(value: unknown) {
 }
 
 function hasQueryableClient(value: unknown): value is CalendarReadModelQueryClient {
-  return isRecord(value) && typeof value.from === "function";
+  return isRecord(value) && typeof value.from === "function" && typeof value.rpc === "function";
 }
 
 async function runSafeQuery(
@@ -370,7 +371,7 @@ export async function readCalendarReadModelWithClient(
   const { scope } = queryShape.value;
   const calendarItemsResult = await runSafeQuery(
     input.client
-      .from("calendar_items")
+      .rpc("read_authorized_calendar_items", { p_workspace_id: scope.workspaceId, p_range_start: scope.rangeStart, p_range_end: scope.rangeEnd })
       .select(CALENDAR_READ_MODEL_QUERY_SELECTORS.calendarItems)
       .eq("workspace_id", scope.workspaceId)
       .eq("lifecycle", "active")
@@ -410,7 +411,7 @@ export async function readCalendarReadModelWithClient(
   if (taskPresetIds.length > 0) {
     const taskPresetsResult = await runSafeQuery(
       input.client
-        .from("task_presets")
+        .rpc("read_authorized_task_presets", { p_workspace_id: scope.workspaceId })
         .select(CALENDAR_READ_MODEL_QUERY_SELECTORS.taskPresets)
         .eq("workspace_id", scope.workspaceId)
         .in("id", taskPresetIds),

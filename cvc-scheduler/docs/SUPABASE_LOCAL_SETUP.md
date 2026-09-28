@@ -585,3 +585,7 @@ For a configured local Supabase stack, use `--local` instead of `--linked`. Revi
 - Mock-to-real route cutovers beyond the approved persisted `/admin/calendar` read route and persisted `/admin/volunteers` manual profile-management route.
 
 The existing deterministic mock application remains the behavior reference. The next slice must not treat a successful health check as permission to query or mutate product data.
+
+## Approved instruction privacy local verification — September 27, 2026
+
+Use pinned CLI 2.111.0 with disposable loopback Docker Supabase. Apply the pending local migration chain through `20260927120000_instruction_privacy.sql`; production remains unchanged. Type generation uses `supabase gen types typescript --local --schema public,graphql_public`. Run `npm run test:assignment-instructions-security` and `npm run test:task-details-release`. The latter owns a fresh loopback production build/server on 3001 and disables actual providers. Local suites use `node scripts/final-product-readiness-local.mjs --conditions=react-server --no-warnings --experimental-strip-types scripts/<suite>.mjs`. Do not run global zero-mutation fingerprint suites concurrently with database browser fixtures. Their assertions compare the entire local product state and must remain strict.

@@ -70,7 +70,7 @@ export async function readCalendarItemsWithClient(
 ): Promise<readonly CalendarItem[]> {
   const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
   const { data, error } = await supabase
-    .from("calendar_items")
+    .rpc("read_authorized_calendar_items", { p_workspace_id: normalizedWorkspaceId })
     .select(calendarItemColumns)
     .eq("workspace_id", normalizedWorkspaceId)
     .order("start_date")

@@ -353,7 +353,7 @@ async function verifyStaticBoundaries() {
   );
   assert.match(packageSource, /"test:calendar-read-model-query-helper"/);
   assert.match(packageSource, /"test:calendar-route-cutover-dry-run"/);
-  assert.match(currentStateSource, /Iteration 12\.8/);
+  assert.match(currentStateSource, /Assignment details implementation in development/);
   assert.match(roadmapSource, /12\.9 Calendar Route Cutover Final Preflight/);
   assert.match(calendarReadinessSource, /12\.5 Route-Unused Calendar Read Model Disposable Local Data Validation/);
   assert.match(calendarReadinessSource, /12\.6 Route-Unused Calendar Read Model Query-Helper Readiness/);
@@ -692,7 +692,7 @@ async function verifyLiveRows(containerName, clientsForFixture) {
   );
 
   const itemRead = await fullClient
-    .from("calendar_items")
+    .rpc("read_authorized_calendar_items", { p_workspace_id: fixture.workspaceId })
     .select("*")
     .eq("workspace_id", fixture.workspaceId)
     .order("start_date", { ascending: true });
@@ -762,7 +762,7 @@ async function verifyLiveRows(containerName, clientsForFixture) {
   assert.equal(timedItem.timezone, "America/Denver");
   assert.equal(timedItem.neededCount, 6);
   assert.equal(timedItem.lifecycle, "active");
-  assert.equal(timedItem.scheduleNotes, "Safe schedule note");
+  assert.equal(timedItem.scheduleNotes, null, "View-only capabilities retain operational items but must not receive private notes.");
   assert.equal(timedItem.coverage.assignedCount, 4);
   assert.equal(timedItem.coverage.confirmedCount, 3);
   assert.equal(timedItem.coverage.waitingOnConfirmationCount, 1);
@@ -824,6 +824,7 @@ async function verifyLiveRows(containerName, clientsForFixture) {
       "assignments",
       "calendarItemId",
       "coverage",
+      "customValues",
       "displayType",
       "endDate",
       "endTime",
@@ -831,6 +832,7 @@ async function verifyLiveRows(containerName, clientsForFixture) {
       "followUpProjectContactId",
       "isOwnDraft",
       "lifecycle",
+      "meal",
       "neededCount",
       "oneOffTaskLabel",
       "oneOffTaskType",
@@ -841,11 +843,14 @@ async function verifyLiveRows(containerName, clientsForFixture) {
       "stableDisplayReference",
       "startDate",
       "startTime",
+      "taskDescription",
+      "taskPresetColorKey",
       "taskPresetId",
       "taskPresetLabel",
       "taskPresetType",
       "taskSourceLabel",
       "timezone",
+      "updatedAt",
     ]);
     assertCredentialFree(item, "Calendar read-model projection", fixture.namespace);
   }

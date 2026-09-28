@@ -1603,6 +1603,10 @@ export type Database = {
         Args: { p_values: Json }
         Returns: boolean
       }
+      can_view_calendar_item_operations: {
+        Args: { p_item_id: string; p_workspace_id: string }
+        Returns: boolean
+      }
       cancel_calendar_assignment: {
         Args: { p_assignment_id: string }
         Returns: string
@@ -1881,6 +1885,76 @@ export type Database = {
           task_title: string
           workspace_display_name: string
         }[]
+      }
+      read_authorized_calendar_items: {
+        Args: {
+          p_range_end?: string
+          p_range_start?: string
+          p_workspace_id: string
+        }
+        Returns: {
+          created_at: string
+          created_by_project_contact_id: string | null
+          custom_values: Json
+          end_date: string | null
+          end_time: string | null
+          follow_up_project_contact_id: string | null
+          id: string
+          instruction_preset_updated_at: string | null
+          instruction_source: string
+          lifecycle: string
+          meal_contact: string | null
+          meal_kind: string | null
+          meal_menu: string | null
+          meal_provider: string | null
+          meal_total: number | null
+          needed_count: number
+          publication_state: string
+          published_at: string | null
+          published_by_project_contact_id: string | null
+          schedule_kind: string
+          schedule_notes: string | null
+          start_date: string
+          start_time: string | null
+          task_preset_id: string | null
+          task_type_snapshot: string
+          timezone: string
+          title_snapshot: string
+          updated_at: string
+          workspace_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "calendar_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      read_authorized_task_presets: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          assignment_details_approved_at: string | null
+          color_key: string
+          created_at: string
+          custom_field_definitions: Json
+          default_needed_count: number
+          description: string | null
+          id: string
+          is_system_preset: boolean
+          lifecycle: string
+          name: string
+          system_key: string | null
+          task_type: string
+          updated_at: string
+          volunteer_visible: boolean
+          workspace_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "task_presets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       read_communication_history: {
         Args: { p_workspace_id: string }

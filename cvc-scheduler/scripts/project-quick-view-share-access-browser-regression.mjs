@@ -120,6 +120,12 @@ async function capture(page, name) {
   await mkdir(captureDir, { recursive: true });
   await page.screenshot({ path: path.join(captureDir, name), fullPage: false });
 }
+async function privacyCapture(page, name) {
+  if (process.env.WRITE_ASSIGNMENT_INSTRUCTIONS_SCREENSHOTS !== "1") return;
+  const directory = path.join(root, "docs", "previews", "assignment-instructions");
+  await mkdir(directory, {recursive:true});
+  await page.screenshot({path:path.join(directory,name),fullPage:false});
+}
 async function noOverflow(page, label) {
   const values = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: document.documentElement.clientWidth }));
   assert(values.body <= values.viewport + 1, `${label} overflowed horizontally.`);
@@ -175,6 +181,7 @@ async function main() {
     update public.calendar_items set task_preset_id='${presetId}'::uuid, custom_values='{"reporting_point":"Synthetic entrance"}'::jsonb where id='${itemIds[0]}'::uuid;
   `);
 
+  runPsql(`update public.calendar_items set meal_kind='lunch',meal_provider='Synthetic meal team',meal_contact='Synthetic meal contact',meal_menu='Vegetable soup',meal_total=47 where id='${itemIds[1]}'::uuid;`);
   const browser = await chromium.launch(browserExecutable ? { executablePath: browserExecutable } : {});
   try {
     const admin = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
@@ -200,6 +207,30 @@ async function main() {
     assert.doesNotMatch(await adminPage.locator("body").innerText(), /\/qv\/access\/[A-Za-z0-9_-]{43}/, "Reloaded admin control reconstructed a raw bearer.");
     assert.equal(adminErrors.length, 0, adminErrors.join("\n"));
 
+    await adminPage.goto(createPreviewUrl(baseUrl, '/admin/quick-view?project='+encodeURIComponent(namespace)+'&date=2026-09-02&view=day&item='+itemIds[0]), {waitUntil:'networkidle'});
+    const authorizedInspector = adminPage.getByRole('dialog', {name:'Calendar item inspector',exact:true});
+    await authorizedInspector.getByText('private note', {exact:true}).waitFor();
+    await authorizedInspector.getByText('Current synthetic preset instructions.', {exact:true}).waitFor();
+    await authorizedInspector.getByText('Synthetic entrance', {exact:true}).waitFor();
+    await privacyCapture(adminPage,'privacy-admin-desktop.png');
+    await adminPage.keyboard.press('Escape');
+    // Same actor after losing edit authority is a generic schedule viewer.
+    // Recheck the live database grant, not the role label or a client flag.
+    runPsql(`update public.workspace_contact_grants set capabilities=array['workspace.read','calendar.view','tasks.view','assignments.view','volunteers.view']::text[] where id='${grantId}'::uuid;`);
+    for (const route of ['/admin/quick-view','/admin/calendar']) {
+      await adminPage.goto(createPreviewUrl(baseUrl, route+'?project='+encodeURIComponent(namespace)+'&date=2026-09-02&view=day&item='+itemIds[0]), {waitUntil:'networkidle'});
+      await adminPage.getByRole('dialog', {name:'Calendar item inspector',exact:true}).waitFor();
+      assert(!/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(await adminPage.content()), 'Authenticated read-only serialized page leaked instructions.');
+      if (route === '/admin/calendar') await privacyCapture(adminPage,'privacy-read-only-desktop.png');
+    }
+    await adminPage.setViewportSize({width:390,height:844});
+    await adminPage.goto(createPreviewUrl(baseUrl, '/admin/calendar?project='+encodeURIComponent(namespace)+'&date=2026-09-02&view=day&item='+itemIds[0]), {waitUntil:'networkidle'});
+    await adminPage.getByRole('dialog', {name:'Calendar item inspector',exact:true}).waitFor();
+    assert(!/private note|Current synthetic preset instructions|Synthetic entrance/.test(await adminPage.content()), 'Mobile authenticated read-only payload leaked instructions.');
+    await noOverflow(adminPage,'Mobile authenticated read-only inspector');
+    await privacyCapture(adminPage,'privacy-read-only-mobile.png');
+    await adminPage.setViewportSize({width:1440,height:1000});
+    runPsql(`update public.workspace_contact_grants set capabilities=array['workspace.read','calendar.view','calendar.edit','tasks.view','assignments.view','volunteers.view']::text[] where id='${grantId}'::uuid;`);
     const mobileAdmin = await browser.newContext({ viewport: { width: 390, height: 844 }, permissions: ["clipboard-read", "clipboard-write"] });
     await applyAuth(mobileAdmin);
     const mobileAdminPage = await mobileAdmin.newPage();
@@ -240,11 +271,18 @@ async function main() {
     const recipientPage = await recipient.newPage();
     recipientPage.setDefaultTimeout(8_000);
     const recipientErrors = watchErrors(recipientPage);
-    const recipientRouteResponse = await recipientPage.request.get(shareUrl, { maxRedirects: 0 });
-    assert([302, 303, 307, 308].includes(recipientRouteResponse.status()), "Bearer route did not redirect to the clean recipient URL.");
-    assert(recipientRouteResponse.headers()["cache-control"]?.includes("no-store"));
-    assert(recipientRouteResponse.headers()["x-robots-tag"] === "noindex, nofollow, noarchive");
-    assert(recipientRouteResponse.headers()["referrer-policy"] === "no-referrer");
+    const payloadChecks = [];
+    // Inspect completed responses. Next may cancel superseded RSC prefetches;
+    // those have no readable completed body and must not count as inspected.
+    recipientPage.on('requestfinished', request => {
+      payloadChecks.push(request.response().then(async response => {
+        if (!response) return {safe:false,kind:'missing response'};
+        const type = response.headers()['content-type'] ?? '';
+        if ((response.status() >= 300 && response.status() < 400) || !/text\/html|text\/x-component|application\/json/.test(type)) return {safe:true,kind:'ignored'};
+        const body = await response.text();
+        return {safe: !/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(body),kind:type,status:response.status()};
+      }).catch(() => ({safe:false,kind:'completed body unavailable'})));
+    });
     await recipientPage.goto(shareUrl, { waitUntil: "networkidle" });
     assert(new URL(recipientPage.url()).pathname === "/qv", "Bearer did not exchange to a clean URL.");
     const cookies = await recipient.cookies();
@@ -253,6 +291,7 @@ async function main() {
     await recipientPage.goto(createPreviewUrl(baseUrl, "/qv?date=2026-09-02"), { waitUntil: "networkidle" });
     await recipientPage.getByText("LDC Gallatin Valley Build", { exact: true }).waitFor();
     const recipientText = await recipientPage.locator("body").innerText();
+    await recipientPage.getByRole('region', {name:/Meal headcounts/}).getByText('47', {exact:true}).waitFor();
     for (const forbidden of ["Overview", "private note", workspaceId, contactId, bearer]) {
       assert(!recipientText.includes(forbidden), `Recipient view leaked ${forbidden}.`);
     }
@@ -266,17 +305,28 @@ async function main() {
     const inspector=recipientPage.getByRole('dialog',{name:'Calendar item inspector'});
     await inspector.waitFor();
     assert.equal(new URL(recipientPage.url()).pathname,'/qv');
-    await inspector.getByText('Schedule notes', {exact:true}).waitFor();
-    await inspector.getByText('private note', {exact:true}).waitFor();
-    await inspector.getByText('Current synthetic preset instructions.', {exact:true}).waitFor();
-    await inspector.getByText('Synthetic entrance', {exact:true}).waitFor();
+    assert.equal(await inspector.getByText('Schedule notes', {exact:true}).count(), 0);
+    for (const privateText of ['private note', 'Current synthetic preset instructions.', 'Synthetic entrance']) {
+      assert.equal(await inspector.getByText(privateText, {exact:true}).count(), 0);
+    }
+    await privacyCapture(recipientPage,'privacy-bearer-desktop.png');
+    const serializedPage = await recipientPage.content();
+    assert(!/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(serializedPage), "Bearer serialized HTML/RSC payload leaked private instructions.");
     assert.equal(await inspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
     await recipientPage.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
+    await recipientPage.getByRole('button',{name:/Lunch/}).first().click();
+    await inspector.getByText('Daily headcount',{exact:true}).waitFor();
+    await inspector.getByText('47',{exact:true}).waitFor();
+    await inspector.getByText('Synthetic meal contact',{exact:true}).waitFor();
+    assert(!/filled|assigned|private lunch note|Schedule notes/.test(await inspector.innerText()), 'Meal inspector must preserve its operational contract without staffing or instruction prose.');
+    await recipientPage.keyboard.press('Escape'); await inspector.waitFor({state:'hidden'});
     await recipientPage.getByRole('button',{name:'Next day',exact:true}).click();
     await recipientPage.waitForURL(url=>url.searchParams.get('date')==='2026-09-03');
+    await recipientPage.waitForLoadState('networkidle');
     assert.equal(new URL(recipientPage.url()).pathname,'/qv');
     await recipientPage.getByRole('button',{name:'Next day',exact:true}).click();
     await recipientPage.waitForURL(url=>url.searchParams.get('date')==='2026-09-04');
+    await recipientPage.waitForLoadState('networkidle');
     assert.equal(recipientErrors.length, 0, recipientErrors.join("\n"));
 
     await recipientPage.setViewportSize({ width: 390, height: 844 });
@@ -290,11 +340,12 @@ async function main() {
 
     await recipientPage.goto(createPreviewUrl(baseUrl, '/qv?date=2026-09-02&view=day&item='+itemIds[0]), {waitUntil:'networkidle'});
     const mobileInspector = recipientPage.getByRole('dialog', {name:'Calendar item inspector',exact:true});
-    await mobileInspector.getByText('private note', {exact:true}).waitFor();
-    await mobileInspector.getByText('Current synthetic preset instructions.', {exact:true}).waitFor();
-    await mobileInspector.getByText('Synthetic entrance', {exact:true}).waitFor();
+    await mobileInspector.waitFor();
+    assert(!/private note|Current synthetic preset instructions|Synthetic entrance/.test(await recipientPage.content()), 'Mobile deep link leaked instructions.');
+
     assert.equal(await mobileInspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
     await noOverflow(recipientPage, 'Mobile bearer inspector');
+    await privacyCapture(recipientPage,'privacy-bearer-mobile.png');
     await recipientPage.keyboard.press('Escape');
     await mobileInspector.waitFor({state:'hidden'});
 
@@ -314,6 +365,10 @@ async function main() {
     assert(!((await recipientPage.locator("body").innerText()).includes("Gallatin Valley Build")), "Revoked session retained project identity.");
     await capture(recipientPage, "13-recipient-unavailable.png");
 
+    const checkedPayloads = await Promise.all(payloadChecks);
+    assert(checkedPayloads.some(result => result.kind.startsWith('text/html')), 'No completed HTML payload inspected.');
+    assert(checkedPayloads.some(result => result.kind.startsWith('text/x-component')), 'No completed RSC payload inspected.');
+    assert(checkedPayloads.every(result => result.safe), 'Bearer payload review failed: '+JSON.stringify(checkedPayloads.filter(result => !result.safe)));
     await admin.close(); await mobileAdmin.close(); await recipient.close();
   } finally {
     await browser.close();

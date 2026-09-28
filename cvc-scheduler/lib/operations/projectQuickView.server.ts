@@ -66,7 +66,7 @@ async function readSafeOperationalSources(
       .eq("project_date", date)
       .maybeSingle(),
     context.supabase
-      .from("calendar_items")
+      .rpc("read_authorized_calendar_items", { p_workspace_id: workspaceId })
       .select(safeScheduleColumns)
       .eq("workspace_id", workspaceId)
       .eq("lifecycle", "active")

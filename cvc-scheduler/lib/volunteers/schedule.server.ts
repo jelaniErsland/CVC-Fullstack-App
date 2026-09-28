@@ -40,7 +40,7 @@ export async function readVolunteerScheduleWithClient(input: {
     const itemIds = [...new Set(assignmentRows.map((row) => row.calendar_item_id))];
     const assignmentIds = assignmentRows.map((row) => row.id);
     const [items, responses] = await Promise.all([
-      input.client.from("calendar_items")
+      input.client.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceId })
         .select("id,start_date,title_snapshot,start_time,end_time,timezone,lifecycle")
         .eq("workspace_id", workspaceId).in("id", itemIds),
       input.client.from("assignment_responses")
