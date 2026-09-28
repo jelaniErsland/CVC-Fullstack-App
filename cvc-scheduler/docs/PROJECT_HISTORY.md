@@ -1,5 +1,11 @@
 # Project History
 
+## Task Details resumed production verification — 2026-09-28
+
+- Reconciled reviewed release HEAD `f4821e8dbe81722ac149b349f5e15a66ff6525e2` with approved application `6aeb382`: application directories and both forward migrations are identical. Fresh remote checks retain production `ca54020`, and the exact release contract passes.
+- Fresh lint, TypeScript, production build, complete desktop/mobile Calendar/Bulk regression, Project Day/authenticated Quick View boundaries, five database-persisted instruction journeys and full volunteer-response/max-length dialog tests pass. The release runner stops at bearer browser `No completed RSC payload inspected`; two isolated unmodified repetitions reproduce it. No assertion or application behavior was changed to bypass the failure. Other release gates remain to be refreshed after a reviewed capture correction.
+- Fresh scheduled encrypted artifact verification passes independent SHA-256, six-member manifest/lengths, old terminal and zero plaintext/partial residue. Production preflight remains 43 migrations through `20260922150000`. All 29 relation fingerprints, function/policy/migration metadata and permanent task XML match across the stop; assignment-notification deliveries remain 168. Task is Enabled/Ready/not running at the original lock. Authorized Overview works. No production migration, release push/deployment, task mutation, manual backup, email, volunteer/assignment/response edit, map upload or Batch 3 work occurred. See [release report](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md) for exact evidence and next step.
+
 ## Iteration 12.44F.3C - Quick View Issuance Privilege Hardening
 
 - Recorded the safe F.3 production stop after the database and permanent backup-task lock reached `20260902120000` with recovery GREEN but before application deployment or UI smoke testing. The security gate found explicit anonymous EXECUTE on the three admin Quick View share-management functions; active Quick View credentials remained zero and application email remained disabled.

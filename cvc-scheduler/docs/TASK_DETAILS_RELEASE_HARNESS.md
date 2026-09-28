@@ -2,6 +2,8 @@
 
 This is local tooling preparation for the approved Task Details application at `6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583`. Production application/database and the permanent backup task have not been changed by this task. The stopped attempt and its existing backup observations are retained in [the release report](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md).
 
+**Resumed release verification, September 28:** reviewed HEAD `f4821e8dbe81722ac149b349f5e15a66ff6525e2` passes exact approved-content reconciliation. Live backup integrity/task/preflight evidence was refreshed successfully, but the fresh production-build browser runner and two isolated unmodified repeats fail `No completed RSC payload inspected.` Production changes stopped: database/lock remain `20260922150000`, task Enabled/Ready, application `ca54020`. All 29 captured relation fingerprints and task XML match before/after. The next harness correction must obtain and await real completed RSC evidence without dropping privacy assertions; all release gates must then restart from a clean reviewed checkout. No migration-lock, application or test-source change was made in this stopped attempt. The report distinguishes fresh passes from unexecuted gates; earlier recovery passes are not substituted for new release evidence.
+
 ## Exact contract
 
 `20260922150000 -> 20260926120000 -> 20260927120000`, contract `20260927120000-transition-v1`.
