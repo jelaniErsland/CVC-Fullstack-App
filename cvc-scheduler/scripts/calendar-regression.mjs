@@ -1472,13 +1472,13 @@ async function runDesktop(browser) {
       await endInput.fill("14:00");
 
       const scheduleButton = await assertUnique(
-        planner.getByRole("button", { name: "Save & continue", exact: true }),
-        "Save and continue persisted action",
+        planner.getByRole("button", { name: "Create item", exact: true }),
+        "Create item persisted action",
       );
-      assert(await scheduleButton.isEnabled(), "Save & continue should be enabled for valid timed creation");
+      assert(await scheduleButton.isEnabled(), "Create item should be enabled for valid timed creation");
       assert(
         Boolean(await scheduleButton.getAttribute("aria-describedby")),
-        "Save & continue should describe its persisted action state",
+        "Create item should describe its persisted action state",
       );
       await planner
         .getByText("Private draft", { exact: true })
@@ -1610,7 +1610,7 @@ async function runDesktop(browser) {
       await planner.getByLabel("Start", { exact: true }).scrollIntoViewIfNeeded();
       await writeCalendarFlowCapture(page, "06-create-default-times.png");
       await planner
-        .getByRole("button", { name: "Save & continue", exact: true })
+        .getByRole("button", { name: "Create item", exact: true })
         .scrollIntoViewIfNeeded();
       await writeCalendarFlowCapture(page, "07-create-save-and-continue.png");
       await closeWithEscape(page, "Plan project work", triggerLabel);
@@ -1682,11 +1682,11 @@ async function runDesktop(browser) {
       await planner.getByLabel("Custom task name", { exact: true }).fill(createdTitle);
       await planner.locator('input[type="number"]').first().fill("0");
       await planner
-        .getByLabel("Schedule notes", { exact: true })
+        .getByLabel("Assignment details for this occurrence", { exact: true })
         .fill("Browser regression persisted create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
+        planner.getByRole("button", { name: "Create item", exact: true }).click(),
       ]);
       await page.getByText("Calendar draft saved", { exact: true }).waitFor();
       const inspector = page.getByRole("dialog", {
@@ -1768,11 +1768,11 @@ async function runDesktop(browser) {
       await planner.getByLabel("Task preset", { exact: true }).selectOption(fixture.generalTaskPresetId);
       await planner.locator('input[type="number"]').first().fill("2");
       await planner
-        .getByLabel("Schedule notes", { exact: true })
+        .getByLabel("Assignment details for this occurrence", { exact: true })
         .fill("Browser regression persisted preset create note.");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
+        planner.getByRole("button", { name: "Create item", exact: true }).click(),
       ]);
       await page.getByText("Calendar draft saved", { exact: true }).waitFor();
       await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
@@ -2448,7 +2448,7 @@ async function runMobile(browser) {
       await planner.locator('input[type="number"]').first().fill("1");
       await Promise.all([
         page.waitForURL(/notice=created/),
-        planner.getByRole("button", { name: "Save & continue", exact: true }).click(),
+        planner.getByRole("button", { name: "Create item", exact: true }).click(),
       ]);
       const inspector = page.locator('section[aria-label="Calendar item inspector"]');
       await inspector.waitFor();

@@ -535,6 +535,9 @@ async function verifyDesktop(browser) {
     await inspector.getByText("Instructions saved.", { exact: false }).waitFor({ timeout: 8000 }).catch(async () => {
       throw new Error(`Instruction save did not finish: ${(await inspector.innerText()).slice(0, 1000)}`);
     });
+    const savedPreset = JSON.parse(runPsql(containerName, `select jsonb_build_object('description',description,'approved',assignment_details_approved_at is not null) from public.task_presets where id=${sqlText(fixture.initialPresetId)}::uuid;`));
+    assert.deepEqual({ ...savedPreset, description: savedPreset.description.replaceAll("\r\n", "\n") }, { description: "Report to the volunteer desk.\n\nCheck in at the east entrance and bring work gloves.", approved: true });
+    assert.equal(runPsql(containerName, `select schedule_notes from public.calendar_items where id=${sqlText(fixture.instructionPreviewItemId)}::uuid;`), "Welcome arriving volunteers.", "Saving a preset must not silently change an existing occurrence.");
     await inspector.getByRole("link", { name: "Preview future occurrences" }).click();
     await page.waitForURL(/preview=1/);
     await inspector.getByText("New instructions for selected occurrences").waitFor();
@@ -552,6 +555,9 @@ async function verifyDesktop(browser) {
     });
     const instructionText = runPsql(containerName, `select schedule_notes from public.calendar_items where id = ${sqlText(fixture.instructionPreviewItemId)}::uuid;`);
     assert.equal(instructionText.replaceAll("\r\n", "\n"), "Report to the volunteer desk.\n\nCheck in at the east entrance and bring work gloves.");
+    const applied = JSON.parse(runPsql(containerName, `select jsonb_build_object('source',item.instruction_source,'version_matches',item.instruction_preset_updated_at=preset.updated_at,'publication',item.publication_state) from public.calendar_items item join public.task_presets preset on preset.id=item.task_preset_id where item.id=${sqlText(fixture.instructionPreviewItemId)}::uuid;`));
+    assert.deepEqual(applied, { source: "preset", version_matches: true, publication: "draft" });
+    assert.equal(runPsql(containerName, `select count(*) from public.assignment_notification_deliveries where workspace_id=(select id from public.workspaces where workspace_key=${sqlText(fixture.workspaceKey)});`), "0");
   }
   if (!writeColorReviewScreenshots) await captureReviewScreenshot(page, "tasks-desktop-library-1440x1000.png");
 

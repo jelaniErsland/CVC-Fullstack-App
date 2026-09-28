@@ -34,6 +34,8 @@ create index instruction_revisions_preset_idx on public.assignment_instruction_r
 create index instruction_revisions_item_idx on public.assignment_instruction_revisions(calendar_item_id, changed_at);
 alter table public.assignment_instruction_revisions enable row level security;
 revoke all on public.assignment_instruction_revisions from public, anon, authenticated;
+-- Supabase grants public-schema sequences separately from table defaults.
+revoke all on sequence public.assignment_instruction_revisions_id_seq from public, anon, authenticated;
 
 create function public.prepare_assignment_instruction_insert()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -65,7 +67,8 @@ create trigger prepare_task_assignment_instructions before insert on public.task
 for each row execute function public.prepare_assignment_instruction_insert();
 create trigger prepare_calendar_assignment_instructions before insert on public.calendar_items
 for each row execute function public.prepare_assignment_instruction_insert();
-revoke all on function public.prepare_assignment_instruction_insert() from public, anon, authenticated;
+alter function public.prepare_assignment_instruction_insert() owner to postgres;
+revoke all on function public.prepare_assignment_instruction_insert() from public, anon, authenticated, service_role;
 
 create function public.track_assignment_instruction_update()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -83,7 +86,8 @@ end;
 $$;
 create trigger track_calendar_assignment_instruction_update before update on public.calendar_items
 for each row execute function public.track_assignment_instruction_update();
-revoke all on function public.track_assignment_instruction_update() from public, anon, authenticated;
+alter function public.track_assignment_instruction_update() owner to postgres;
+revoke all on function public.track_assignment_instruction_update() from public, anon, authenticated, service_role;
 
 create function public.audit_assignment_instruction_update()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -109,7 +113,8 @@ create trigger audit_task_assignment_instruction_update after update on public.t
 for each row execute function public.audit_assignment_instruction_update();
 create trigger audit_calendar_assignment_instruction_update after update on public.calendar_items
 for each row execute function public.audit_assignment_instruction_update();
-revoke all on function public.audit_assignment_instruction_update() from public, anon, authenticated;
+alter function public.audit_assignment_instruction_update() owner to postgres;
+revoke all on function public.audit_assignment_instruction_update() from public, anon, authenticated, service_role;
 
 create function public.update_task_preset_description(
   p_preset_id uuid, p_description text, p_expected_updated_at timestamptz

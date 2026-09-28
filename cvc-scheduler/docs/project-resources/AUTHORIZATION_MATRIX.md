@@ -20,4 +20,6 @@ Map bytes are private database content. The volunteer endpoint checks a valid sc
 
 ## Required local tests
 
+**Implementation review clarification (September 27):** the deployed bearer Quick View RPC already includes published `schedule_notes` and preset descriptions. Reusing those fields for instructions preserves that existing visibility; “no new instruction projection” above does not establish assignee-only confidentiality. The final local bearer regression explicitly verifies published-note visibility, draft exclusion, isolation and revocation. Private revision history and the future map are inaccessible to bearer recipients. Before release, acknowledge this existing operational-text audience or approve a separately tested narrowing. See [final review](TASK_DETAILS_IMPLEMENTATION_REVIEW.md).
+
 Exercise main/assistant/on-site/no-grant contacts; active/expired/revoked grants and schedule sessions; two workspaces and same-household profiles; guessed map IDs and cross-workspace paths; stale replacement and removal; assignment cancellation/reassignment; published/draft/past item details; direct database/table/API retrieval; unchanged Quick View bearer projection and volunteer response links. Test actual forbidden responses, not only hidden UI controls. No production volunteer fixture is required.

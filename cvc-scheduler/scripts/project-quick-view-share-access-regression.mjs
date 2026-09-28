@@ -186,6 +186,10 @@ try {
   assert(!JSON.stringify(ready).includes("expectedOnSiteCount"));
   assert.deepEqual(ready.calendar.items.map((item) => item.displayName).sort(), ["General setup", "Lunch", "Restricted security post"].sort());
   const serialized = JSON.stringify(ready);
+  // The established bearer contract already includes published operational
+  // notes. Task instructions reuse that field; do not claim assignee-only privacy.
+  assert.equal(ready.calendar.items.find(item => item.id === itemIds[0])?.scheduleNotes, "private setup note");
+  assert(!serialized.includes("assignment_instruction_revisions") && !serialized.includes("actor_auth_user_id"));
   for (const forbidden of ["Private draft", "draft secret", contactIds[0], issued.token]) {
     assert(!serialized.includes(forbidden), `Shared projection leaked ${forbidden}.`);
   }

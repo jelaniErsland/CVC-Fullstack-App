@@ -13,6 +13,8 @@ export const anonymousFunctions = Object.freeze([
   "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "update_task_preset_description(uuid,text,timestamp with time zone)",
+  "apply_task_preset_instructions(uuid,timestamp with time zone,jsonb)",
   "read_workspace_project_photo(uuid)",
   "save_workspace_project_photo(uuid,uuid,jsonb,bigint)",
   "review_communications(uuid,jsonb)",
@@ -62,6 +64,9 @@ export const authenticatedFunctions = Object.freeze([
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "prepare_assignment_instruction_insert()",
+  "track_assignment_instruction_update()",
+  "audit_assignment_instruction_update()",
   "volunteer_home_identity(text)",
   "communication_actor(uuid)",
   "communication_preview(uuid,jsonb)",
@@ -78,6 +83,13 @@ export const internalFunctions = Object.freeze([
   "set_workspace_updated_at()",
   "task_custom_field_definitions_are_valid(jsonb)"
 ]);
+// These exact trigger-only helpers need owner rights to maintain private history
+// and snapshot provenance. No application role can execute them directly.
+export const internalDefinerFunctions = Object.freeze([
+  "prepare_assignment_instruction_insert()",
+  "track_assignment_instruction_update()",
+  "audit_assignment_instruction_update()",
+]);
 export const migrationCreators = Object.freeze(["postgres"]);
 
 export function assertEffectiveFunctionPolicy(assert, rows) {
@@ -89,7 +101,7 @@ export function assertEffectiveFunctionPolicy(assert, rows) {
     assert.equal(row.anon, anonymousFunctions.includes(row.signature), row.signature + ": anon EXECUTE");
     assert.equal(row.authenticated, !internalFunctions.includes(row.signature), row.signature + ": authenticated EXECUTE");
     assert.equal(row.service_role, !internalFunctions.includes(row.signature), row.signature + ": service_role EXECUTE");
-    assert.equal(row.definer, !internalFunctions.includes(row.signature), row.signature + ": execution context changed");
+    assert.equal(row.definer, !internalFunctions.includes(row.signature) || internalDefinerFunctions.includes(row.signature), row.signature + ": execution context changed");
     assert.deepEqual(row.config, ['search_path=""'], row.signature + ": unsafe search_path");
   }
 }

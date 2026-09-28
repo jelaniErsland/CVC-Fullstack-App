@@ -1,4 +1,18 @@
-# Project Local function EXECUTE policy — local 12.47
+# Project Local function EXECUTE policy
+
+## Task-instruction local review — September 27, 2026
+
+The pending `20260926120000_assignment_instructions.sql` migration has a verified local inventory of **77 exact signatures: 10 anonymous, 49 authenticated, 18 internal**. The deployed schema remains unchanged. Historical 12.47 counts below describe that earlier stage.
+
+The two new authenticated functions are `update_task_preset_description(uuid,text,timestamp with time zone)` and `apply_task_preset_instructions(uuid,timestamp with time zone,jsonb)`. Both have EXECUTE for authenticated/service_role only, require nonnull `auth.uid()`, and independently enforce live workspace/contact/capability and version checks. No new anonymous function or runtime service-role credential is introduced.
+
+Three new internal trigger functions — `prepare_assignment_instruction_insert()`, `track_assignment_instruction_update()`, and `audit_assignment_instruction_update()` — are postgres-owned SECURITY DEFINER with empty pinned search paths. Exact inventory permits only these three exceptions to internal invoker classification. PUBLIC/anon/authenticated/service_role EXECUTE is explicitly revoked; installed PostgreSQL triggers execute normally. The other 15 internal helpers remain invokers. Unknown signatures, unsafe search paths, owner changes and grant/context drift still fail closed.
+
+Private revision history has enabled RLS, zero client policies and no PUBLIC/anon/authenticated table privileges. The new identity sequence is explicitly revoked from those roles because platform sequence defaults are separate from hardened table/function defaults. This review removed inherited client sequence privileges and internal service-role EXECUTE from the unapplied migration and verified the exact local catalog plus actual forbidden operations. Privileged owner/service-role maintenance access remains; no client history endpoint exists.
+
+Both `function-privilege-regression.mjs` and `assignment-instructions-security-regression.mjs` passed against loopback Docker, including a denied future postgres-created function, denied anonymous mutations, trigger preservation, RLS history/sequence denial and no residue. The full [implementation review](project-resources/TASK_DETAILS_IMPLEMENTATION_REVIEW.md) records isolation/conflict tests and the existing bearer published-note boundary; published notes/descriptions already in Quick View are not a new anonymous function grant.
+
+## Historical 12.47 review
 
 Status: the September 24 read-only production preflight confirmed terminal `20260908130000` and 58 functions; production was not mutated. The fresh local migration catalog through `20260922150000` is **72 functions: 10 anonymous, 47 authenticated, 15 internal**. All four 12.47 migrations are local release source and unapplied to production.
 

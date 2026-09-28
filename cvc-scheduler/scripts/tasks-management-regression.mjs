@@ -345,6 +345,7 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   const oldItem = await create("2026-08-18");
   const futureA = await create("2026-11-17");
   const futureB = await create("2026-11-18");
+  const futureC = await create("2026-11-21");
   const exception = await create("2026-11-19", "Meet at the west gate for this date only.");
   assert.equal(row(oldItem).schedule_notes, textBefore);
   assert.equal(row(futureA).instruction_source, "preset");
@@ -360,8 +361,12 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   editForm.set("expectedUpdatedAt", preset.updatedAt);
   editForm.set("description", textAfter);
   const editInput = taskPresetDescriptionInputFromFormData(editForm);
-  await expectFailure("view-only instructions edit", () => updateTaskPresetDescriptionWithClient(users.viewOnly.client, editInput));
-  await expectFailure("cross-project instructions edit", () => updateTaskPresetDescriptionWithClient(users.other.client, editInput));
+  for (const label of ["viewOnly", "roleOnly", "revoked", "expired", "inactive", "other"]) {
+    const denied = await users[label].client.rpc("update_task_preset_description", {
+      p_preset_id: presetId, p_description: textAfter, p_expected_updated_at: preset.updatedAt,
+    });
+    assert.equal(denied.error?.code, "42501", `${label}: instruction edit must fail at the authorized boundary.`);
+  }
   const anonClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const anonymousEdit = await anonClient.rpc("update_task_preset_description", {
     p_preset_id: presetId, p_description: textAfter, p_expected_updated_at: preset.updatedAt,
@@ -369,6 +374,11 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   assert(anonymousEdit.error, "Anonymous preset edits must remain denied at the database boundary.");
   await updateTaskPresetDescriptionWithClient(users.editor.client, editInput);
   await expectFailure("stale preset instructions edit", () => updateTaskPresetDescriptionWithClient(users.editor.client, editInput));
+  const stalePreset = await users.editor.client.rpc("update_task_preset_description", {
+    p_preset_id: presetId, p_description: "Stale replacement", p_expected_updated_at: preset.updatedAt,
+  });
+  assert.equal(stalePreset.error?.code, "40001");
+  assert.equal(stalePreset.error?.details, "task_preset_edit_conflict");
   assert.equal(row(oldItem).schedule_notes, textBefore, "Past published wording must not change with preset edits.");
   assert.equal(row(futureA).schedule_notes, textBefore, "Published future wording must not silently change.");
   assert.equal(row(exception).schedule_notes, "Meet at the west gate for this date only.");
@@ -379,7 +389,7 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   const preview = await readFuturePresetInstructionCandidatesWithClient(
     users.editor.client, workspaceId, presetId, textAfter, fixture.contacts.editor, "2026-09-27",
   );
-  assert.deepEqual(new Set(preview.map((item) => item.id)), new Set([futureA, futureB]));
+  assert.deepEqual(new Set(preview.map((item) => item.id)), new Set([futureA, futureB, futureC]));
 
   const beforeExceptionEdit = row(futureB);
   await updateCalendarPresetTimedItemWithClient(users.editor.client, {
@@ -391,11 +401,15 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   const currentPreview = await readFuturePresetInstructionCandidatesWithClient(
     users.editor.client, workspaceId, presetId, textAfter, fixture.contacts.editor, "2026-09-27",
   );
-  assert.deepEqual(currentPreview.map((item) => item.id), [futureA]);
+  assert.deepEqual(new Set(currentPreview.map((item) => item.id)), new Set([futureA, futureC]));
   const selected = [{ id: futureA, updated_at: currentPreview[0].updatedAt }];
   const applyInput = { presetId, expectedUpdatedAt: currentPreset.updatedAt, targets: selected };
-  await expectFailure("view-only future apply", () => applyTaskPresetInstructionsWithClient(users.viewOnly.client, applyInput));
-  await expectFailure("cross-project future apply", () => applyTaskPresetInstructionsWithClient(users.other.client, applyInput));
+  for (const label of ["viewOnly", "roleOnly", "revoked", "expired", "inactive", "other"]) {
+    const denied = await users[label].client.rpc("apply_task_preset_instructions", {
+      p_preset_id: presetId, p_expected_preset_updated_at: currentPreset.updatedAt, p_targets: selected,
+    });
+    assert.equal(denied.error?.code, "42501", `${label}: future apply must fail closed.`);
+  }
   const anonymousApply = await anonClient.rpc("apply_task_preset_instructions", {
     p_preset_id: presetId, p_expected_preset_updated_at: currentPreset.updatedAt,
     p_targets: selected,
@@ -407,6 +421,21 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
     neededCount: 3, notes: textBefore, customValues: {},
   });
   await expectFailure("stale selected occurrence", () => applyTaskPresetInstructionsWithClient(users.editor.client, applyInput));
+  const beforeC = row(futureC);
+  const atomicConflict = await users.editor.client.rpc("apply_task_preset_instructions", {
+    p_preset_id: presetId, p_expected_preset_updated_at: currentPreset.updatedAt,
+    p_targets: [{ id: futureC, updated_at: beforeC.updated_at }, ...selected],
+  });
+  assert.equal(atomicConflict.error?.code, "40001");
+  assert.equal(atomicConflict.error?.details, "calendar_item_edit_conflict");
+  assert.deepEqual(row(futureC), beforeC, "A later stale target must roll back every earlier update in the same request.");
+  for (const id of [oldItem, exception, fixture.presets.other]) {
+    const denied = await users.editor.client.rpc("apply_task_preset_instructions", {
+      p_preset_id: presetId, p_expected_preset_updated_at: currentPreset.updatedAt,
+      p_targets: [{ id, updated_at: row(futureA).updated_at }],
+    });
+    assert.equal(denied.error?.code, "42501", "Past, exception and foreign targets must remain unavailable.");
+  }
   const fresh = row(futureA);
   await applyTaskPresetInstructionsWithClient(users.editor.client, {
     presetId, expectedUpdatedAt: currentPreset.updatedAt,
@@ -415,6 +444,7 @@ async function verifyInstructionLifecycle(containerName, users, presetId) {
   assert.equal(row(futureA).schedule_notes, textAfter);
   assert.equal(row(futureA).instruction_source, "preset");
   assert.equal(row(futureB).schedule_notes, "Use the temporary loading entrance on this date.");
+  assert.deepEqual(row(futureC), beforeC, "An unselected future item must retain its published snapshot.");
   const history = queryJson(containerName,
     `select previous_text, new_text, item_was_published from public.assignment_instruction_revisions
      where calendar_item_id = ${sqlUuid(futureA)} order by id`);

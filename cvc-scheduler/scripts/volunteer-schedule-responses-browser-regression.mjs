@@ -24,6 +24,7 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const betaReviewDir = path.join(root, "docs", "previews", "beta-review");
 const writeBetaReviewScreenshots = process.env.WRITE_BETA_REVIEW_SCREENSHOTS === "1";
 const write1246CScreenshots = process.env.WRITE_12_46C_CAPTURES === "1";
+const writeInstructionScreenshots = process.env.WRITE_ASSIGNMENT_INSTRUCTIONS_SCREENSHOTS === "1";
 const review1246CDir = path.resolve(root, "..", "previews", "12.46c-volunteer-polish");
 const writeIterationReviewScreenshots =
   process.env.WRITE_ITERATION_12_44B5_CAPTURES === "1";
@@ -65,9 +66,9 @@ const fixture = {
     inside48: randomUUID(),
   },
 };
-const reviewValues = writeBetaReviewScreenshots || writeIterationReviewScreenshots
+const reviewValues = writeBetaReviewScreenshots || writeIterationReviewScreenshots || writeInstructionScreenshots
   ? {
-      workspaceName: "Bozeman Local Project",
+      workspaceName: writeInstructionScreenshots ? "LDC Sample Project" : "Bozeman Local Project",
       volunteerName: "Alex Rivera",
       volunteerEmail: "alex.rivera@example.invalid",
       congregation: "Bozeman Congregation",
@@ -92,10 +93,16 @@ const reviewValues = writeBetaReviewScreenshots || writeIterationReviewScreensho
         inside48: `${fixture.namespace} Inside 48`,
       },
     };
-const longScheduleNote = Array.from(
-  { length: 22 },
-  (_, index) => `Arrival detail ${index + 1}: use the marked volunteer entrance and check in with the project team.`,
-).join("\n");
+function instructionAtLength(length) {
+  const end = "\nEnd of assignment instructions.";
+  const paragraphs = Array.from({ length: 80 }, (_, index) =>
+    `Arrival detail ${index + 1}: use the marked volunteer entrance and check in with the project team.`).join("\n\n");
+  return paragraphs.slice(0, length - end.length) + end;
+}
+const longScheduleNote = instructionAtLength(4000);
+const presetLengthNote = instructionAtLength(2000);
+assert.equal(longScheduleNote.length, 4000);
+assert.equal(presetLengthNote.length, 2000);
 const instructionsOnly = process.env.ASSIGNMENT_INSTRUCTIONS_ONLY === "1";
 const instructionPreviewDirectory = path.join(root, "docs", "previews", "assignment-instructions");
 
@@ -228,8 +235,8 @@ async function createAuthenticatedUser() {
   return { client, userId: signup.data.user.id };
 }
 
-function itemValues(id, title, dateSql) {
-  return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(title)}, 'general', 'timed', (${dateSql})::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, ${sqlText(longScheduleNote)}, '{}'::jsonb, 'active', ${sqlUuid(fixture.contactId)}, ${sqlUuid(fixture.contactId)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contactId)})`;
+function itemValues(id, title, dateSql, notes = longScheduleNote) {
+  return `(${sqlUuid(id)}, ${sqlUuid(fixture.workspaceId)}, null, ${sqlText(title)}, 'general', 'timed', (${dateSql})::date, null, '09:00'::time, '11:00'::time, 'America/Denver', 1, ${sqlText(notes)}, '{}'::jsonb, 'active', ${sqlUuid(fixture.contactId)}, ${sqlUuid(fixture.contactId)}, 'published', clock_timestamp(), ${sqlUuid(fixture.contactId)})`;
 }
 
 function insertFixtures(containerName, userId) {
@@ -255,7 +262,7 @@ insert into public.calendar_items (
 )
 values
   ${itemValues(fixture.items.confirm, reviewValues.titles.confirm, "current_date + 10")},
-  ${itemValues(fixture.items.decline, reviewValues.titles.decline, "current_date + 11")},
+  ${itemValues(fixture.items.decline, reviewValues.titles.decline, "current_date + 11", presetLengthNote)},
   ${itemValues(fixture.items.allA, reviewValues.titles.allA, "current_date + 12")},
   ${itemValues(fixture.items.allB, reviewValues.titles.allB, "current_date + 13")},
   ${itemValues(fixture.items.inside48, reviewValues.titles.inside48, "current_date + 1")};
@@ -299,6 +306,80 @@ async function watchPage(page) {
   return failures;
 }
 
+function fullSchedule(page) {
+  return page.locator("details").filter({
+    has: page.locator("summary").filter({ hasText: /^View full schedule/ }),
+  });
+}
+
+async function openFullSchedule(page) {
+  await page.getByRole("region", { name: "Next assignment", exact: true }).waitFor();
+  const schedule = fullSchedule(page);
+  await schedule.locator("summary").waitFor();
+  if (!(await schedule.evaluate((element) => element.open))) await schedule.locator("summary").click();
+  await page.waitForLoadState("networkidle");
+  return schedule;
+}
+
+async function verifyMaximumInstructions(page) {
+  for (const viewport of [
+    { width: 1280, height: 900, label: "desktop" },
+    { width: 390, height: 844, label: "mobile" },
+    { width: 320, height: 640, label: "narrow" },
+  ]) {
+    await page.setViewportSize(viewport);
+    for (const [title, length] of [[reviewValues.titles.confirm, 4000], [reviewValues.titles.decline, 2000]]) {
+      const trigger = fullSchedule(page).getByRole("button", { name: title, exact: false });
+      await trigger.click();
+      const dialog = page.getByRole("dialog");
+      const disclosure = dialog.locator("details").filter({ hasText: "Assignment details" });
+      const summary = disclosure.locator("summary");
+      assert.equal(await disclosure.evaluate((element) => element.open), false);
+      if (writeInstructionScreenshots && length === 4000) {
+        await mkdir(instructionPreviewDirectory, { recursive: true });
+        await page.screenshot({ path: path.join(instructionPreviewDirectory, `volunteer-details-closed-${viewport.label}.png`), animations: "disabled" });
+      }
+      await summary.focus();
+      await page.keyboard.press("Enter");
+      assert.equal(await disclosure.evaluate((element) => element.open), true);
+      assert.equal(await disclosure.locator("p").evaluate((element) => element.textContent.length), length);
+      await disclosure.getByText("End of assignment instructions.", { exact: false }).waitFor();
+      const scroll = dialog.getByTestId("volunteer-assignment-detail-scroll");
+      assert(await scroll.evaluate((element) => element.scrollHeight > element.clientHeight), `${length}-character instructions must exercise ${viewport.label} scrolling.`);
+      if (writeInstructionScreenshots && length === 4000) {
+        await mkdir(instructionPreviewDirectory, { recursive: true });
+        await page.screenshot({ path: path.join(instructionPreviewDirectory, `volunteer-max-details-${viewport.label}.png`), animations: "disabled" });
+      }
+      for (const name of ["Confirm", "Can’t make it"]) {
+        const response = dialog.getByRole("button", { name, exact: true });
+        await response.focus();
+        assert(await response.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return document.activeElement === element && rect.top >= 0 && rect.bottom <= window.innerHeight;
+        }), `${name} must remain keyboard-reachable with ${length}-character ${viewport.label} instructions.`);
+      }
+      const close = dialog.getByRole("button", { name: "Close assignment details", exact: true });
+      assert(await close.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.top >= 0 && rect.bottom <= window.innerHeight;
+      }), "Instruction scrolling must not obscure the close button.");
+      if (writeInstructionScreenshots && length === 4000) {
+        await page.screenshot({ path: path.join(instructionPreviewDirectory, `volunteer-max-response-${viewport.label}.png`), animations: "disabled" });
+      }
+      await close.focus();
+      await page.keyboard.press("Shift+Tab");
+      assert(await dialog.getByTestId("volunteer-assignment-detail-panel").evaluate((element) => element.contains(document.activeElement)), "Keyboard focus escaped the dialog.");
+      await page.keyboard.press("Tab");
+      assert(await close.evaluate((element) => element === document.activeElement), "Keyboard focus did not wrap to Close.");
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
+      await page.keyboard.press("Escape");
+      await dialog.waitFor({ state: "detached" });
+      assert(await trigger.evaluate((element) => element === document.activeElement), "Closing must restore assignment-row focus.");
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
+
 async function runBrowserProof(token) {
   assert(isLoopbackUrl(baseUrl), "Volunteer schedule response browser QA accepts only loopback preview.");
   const preview = await fetch(createPreviewUrl(baseUrl, "/v/schedule"), { redirect: "manual" });
@@ -316,6 +397,7 @@ async function runBrowserProof(token) {
     });
     await page.waitForURL(/\/v\/schedule$/, { timeout: 30_000 });
     assert(!page.url().includes(token), "final schedule URL leaked bearer");
+    await openFullSchedule(page);
     if (instructionsOnly) {
       await page.getByText(reviewValues.titles.confirm).first().waitFor();
       await page.waitForLoadState("networkidle");
@@ -325,7 +407,7 @@ async function runBrowserProof(token) {
         { width: 390, height: 844, label: "mobile" },
       ]) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
-        await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).first().click();
+        await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).first().click();
         const dialog = page.getByRole("dialog");
         await dialog.waitFor();
         const disclosure = dialog.locator("details").filter({ hasText: "Assignment details" });
@@ -344,21 +426,21 @@ async function runBrowserProof(token) {
       await context.close();
       return;
     }
-    await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
-    await page.getByText(reviewValues.titles.confirm).waitFor();
-    await page.getByText("5 assignments need your response.", { exact: true }).waitFor();
+    await fullSchedule(page).getByText(reviewValues.titles.confirm, { exact: true }).waitFor();
+    await fullSchedule(page).getByText("5 assignments need your response.", { exact: true }).waitFor();
     assert.equal(
-      await page.getByText("Review & respond", { exact: true }).count(),
+      await fullSchedule(page).getByText("Review & respond", { exact: true }).count(),
       5,
       "Each pending assignment must expose a response-oriented row action.",
     );
+    await verifyMaximumInstructions(page);
     if (writeIterationReviewScreenshots) {
       await mkdir(iterationReviewDir, { recursive: true });
       await page.screenshot({
         path: path.join(iterationReviewDir, "schedule-home-desktop.png"),
         fullPage: true,
       });
-      await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+      await fullSchedule(page).getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
       const desktopDialog = page.getByRole("dialog");
       await desktopDialog.getByRole("heading", { name: reviewValues.titles.confirm }).waitFor();
       assert.equal(
@@ -381,11 +463,13 @@ async function runBrowserProof(token) {
       await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
         waitUntil: "domcontentloaded",
       });
+    await openFullSchedule(page);
       await page.screenshot({
         path: path.join(iterationReviewDir, "schedule-home-mobile.png"),
         fullPage: true,
       });
-      await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+      await fullSchedule(page).getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+      await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
       await page.screenshot({
         path: path.join(iterationReviewDir, "assignment-detail-mobile.png"),
       });
@@ -426,7 +510,7 @@ async function runBrowserProof(token) {
         "Closing assignment detail did not restore page scrolling.",
       );
 
-      await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+      await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
       const lockedDialog = page.getByRole("dialog");
       await lockedDialog.getByText("A response is still needed.", { exact: false }).waitFor();
       assert.equal(
@@ -453,18 +537,20 @@ async function runBrowserProof(token) {
       await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
         waitUntil: "domcontentloaded",
       });
+    await openFullSchedule(page);
     }
 
-    await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByRole("button", { name: /^Confirm$/ }).click();
     await page.getByText("Your response is now Confirmed.").waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
+    await openFullSchedule(page);
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
     await page.getByRole("dialog").getByText("Confirmed", { exact: true }).first().waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
-    await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByPlaceholder("Add a brief note if you can’t make it").fill("Browser note");
     await page.getByRole("button", { name: "Can’t make it" }).last().click();
     await page.getByText("Your response is now Can’t make it.").waitFor();
@@ -473,20 +559,22 @@ async function runBrowserProof(token) {
       await page.screenshot({ path: path.join(review1246CDir, "03-declined-schedule-desktop.png"), fullPage: true });
     }
     await page.reload({ waitUntil: "domcontentloaded" });
+    await openFullSchedule(page);
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
     await page.getByRole("dialog").getByText("Browser note", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
-    await page.getByRole("button", { name: "Confirm all pending" }).click();
+    await fullSchedule(page).getByRole("button", { name: "Confirm all pending" }).click();
     await page.getByText(/Confirmed 3 assignments\./).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
+    await openFullSchedule(page);
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: reviewValues.titles.allA, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.allA, exact: false }).click();
     await page.getByRole("dialog").getByText("Confirmed", { exact: true }).first().waitFor();
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
-    await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
     await page.getByText(/Changes are closed this close to the assignment/).waitFor();
     const finalLockedDialog = page.getByRole("dialog");
     assert.equal(await finalLockedDialog.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
@@ -515,11 +603,13 @@ async function runBrowserProof(token) {
     await page.goto(createPreviewUrl(baseUrl, "/v/schedule"), {
       waitUntil: "domcontentloaded",
     });
+    await openFullSchedule(page);
     await page.waitForLoadState("networkidle");
     if (write1246CScreenshots) {
       await page.screenshot({ path: path.join(review1246CDir, "11-declined-schedule-mobile-390.png"), fullPage: true });
     }
-    await page.getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+    await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
+    await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
     const mobileDetailScroll = page.getByTestId("volunteer-assignment-detail-scroll");
     await mobileDetailScroll.evaluate((element) => {
       element.scrollTop = element.scrollHeight;
@@ -558,15 +648,20 @@ async function runBrowserProof(token) {
         fullPage: true,
       });
     }
-    await page.getByRole("button", {
-      name: "Close assignment details backdrop",
-    }).click({ position: { x: 8, y: 8 } });
+    await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
     await page.getByRole("dialog").waitFor({ state: "detached" });
     assert.notEqual(
       await page.evaluate(() => getComputedStyle(document.body).overflow),
       "hidden",
       "Closing volunteer assignment detail did not restore page scrolling",
     );
+    const anonymous = await browser.newContext();
+    const anonymousPage = await anonymous.newPage();
+    await anonymousPage.goto(createPreviewUrl(baseUrl, "/v/schedule"), { waitUntil: "domcontentloaded" });
+    await anonymousPage.getByRole("heading", { name: "This schedule link is unavailable" }).waitFor();
+    assert.equal(await anonymousPage.getByText(reviewValues.titles.confirm, { exact: false }).count(), 0);
+    assert.equal(await anonymousPage.getByRole("button", { name: "Confirm", exact: true }).count(), 0);
+    await anonymous.close();
   } finally {
     await browser.close();
   }
@@ -612,9 +707,19 @@ async function main() {
     const user = await createAuthenticatedUser();
     insertFixtures(containerName, user.userId);
     token = await issueToken(user.client);
+    const records = () => queryJson(containerName, `select 'item' as kind, id,
+      jsonb_build_object('date', start_date, 'notes', schedule_notes, 'updated_at', updated_at) as value
+      from public.calendar_items where workspace_id = ${sqlUuid(fixture.workspaceId)}
+      union all select 'assignment', id, jsonb_build_object('item', calendar_item_id, 'volunteer', volunteer_profile_id, 'lifecycle', lifecycle)
+      from public.calendar_assignments where workspace_id = ${sqlUuid(fixture.workspaceId)} order by kind,id`);
+    const beforeRecords = records();
     const before = instructionsOnly ? queryJson(containerName,
       `select id, response_status from public.assignment_responses where workspace_id = ${sqlUuid(fixture.workspaceId)} order by id`) : null;
     await runBrowserProof(token);
+    assert.deepEqual(records(), beforeRecords, "Browser responses must not modify scheduled items or assignments.");
+    assert.deepEqual(queryJson(containerName,
+      `select id from public.assignment_notification_deliveries where workspace_id = ${sqlUuid(fixture.workspaceId)}`), [],
+    "Browser reads and responses must not send assignment notifications.");
     if (instructionsOnly) {
       const after = queryJson(containerName,
         `select id, response_status from public.assignment_responses where workspace_id = ${sqlUuid(fixture.workspaceId)} order by id`);
@@ -622,6 +727,16 @@ async function main() {
       assert.deepEqual(queryJson(containerName,
         `select id from public.assignment_notification_deliveries where workspace_id = ${sqlUuid(fixture.workspaceId)}`), [],
       "Opening assignment details must not send a notification.");
+    } else {
+      const responses = queryJson(containerName, `select assignment_id, response_status, response_source, response_note
+        from public.assignment_responses where workspace_id = ${sqlUuid(fixture.workspaceId)} order by assignment_id`);
+      assert.equal(responses.length, 5);
+      for (const [label, assignmentId] of Object.entries(fixture.assignments)) {
+        const response = responses.find((row) => row.assignment_id === assignmentId);
+        assert.equal(response.response_status, label === "decline" ? "declined" : "confirmed");
+        assert.equal(response.response_source, "volunteer_schedule");
+        if (label === "decline") assert.equal(response.response_note, "Browser note");
+      }
     }
   } finally {
     try {

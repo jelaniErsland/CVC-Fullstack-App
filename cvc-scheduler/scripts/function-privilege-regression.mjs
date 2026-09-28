@@ -89,6 +89,8 @@ try {
     ["archive_calendar_item", literal],
     ["create_task_preset", `${literal},'ACL',null,'general',1,true,'[]','blue'`],
     ["update_task_preset_color", `${literal},'blue',clock_timestamp()`],
+    ["update_task_preset_description", `${literal},'ACL instructions',clock_timestamp()`],
+    ["apply_task_preset_instructions", `${literal},clock_timestamp(),'[]'::jsonb`],
     ["archive_task_preset", literal],
     ["create_calendar_assignment", `${literal},${literal},null`],
     ["cancel_calendar_assignment", literal],

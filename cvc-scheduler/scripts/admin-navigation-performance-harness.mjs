@@ -305,6 +305,14 @@ async function prepareRoute(proxyClient, pageClient) {
   return context;
 }
 
+function assertOnlySeededMealPresets(presets, workspaceId) {
+  // Since the existing meal-preset migration, an empty new workspace has these
+  // two system presets. Keep the call-graph and isolation assertions exact.
+  assert.deepEqual(presets.map(preset => [preset.systemKey, preset.name]).sort(), [["breakfast", "Breakfast"], ["lunch", "Lunch"]]);
+  assert(presets.every(preset => preset.workspaceId === workspaceId && preset.isSystemPreset &&
+    preset.lifecycle === "active" && preset.description === null));
+}
+
 async function runRoute(route, syntheticLatencyMs) {
   const calls = [];
   let clientCreations = 0;
@@ -379,7 +387,7 @@ async function runRoute(route, syntheticLatencyMs) {
       ),
     ]);
     assert(calendar.ok && calendar.items.length === 0);
-    assert.deepEqual(tasks, []);
+    assertOnlySeededMealPresets(tasks, selection.workspace.id);
     assert.deepEqual(volunteers, []);
     groups = [
       ...baseGroups,
@@ -410,7 +418,8 @@ async function runRoute(route, syntheticLatencyMs) {
       ),
     ]);
     assert(calendar.ok && calendar.items.length === 0);
-    assert(selector.ok && selector.presets.length === 0);
+    assert(selector.ok);
+    assertOnlySeededMealPresets(selector.presets, selection.workspace.id);
     const itemIds = calendar.items.map((item) => item.calendarItemId);
     const [picker, notifications] = await Promise.all([
       runInStage("calendar_picker", () =>
@@ -575,6 +584,10 @@ async function cleanup(containerName) {
   const residue = runPsql(
     containerName,
     `begin;
+delete from public.task_presets
+where workspace_id in (
+  select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)}
+);
 delete from public.workspace_contact_grants
 where workspace_id in (
   select id from public.workspaces where workspace_key like ${sqlText(`${fixture.namespace}%`)}
