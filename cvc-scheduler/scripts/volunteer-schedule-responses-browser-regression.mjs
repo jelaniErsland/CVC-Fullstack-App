@@ -306,17 +306,16 @@ async function watchPage(page) {
   return failures;
 }
 
+// The home schedule is now inline: Next plus all additional upcoming cards.
 function fullSchedule(page) {
-  return page.locator("details").filter({
-    has: page.locator("summary").filter({ hasText: /^View full schedule/ }),
-  });
+  return page.getByRole("region", { name: "Next assignment", exact: true });
 }
 
 async function openFullSchedule(page) {
-  await page.getByRole("region", { name: "Next assignment", exact: true }).waitFor();
   const schedule = fullSchedule(page);
-  await schedule.locator("summary").waitFor();
-  if (!(await schedule.evaluate((element) => element.open))) await schedule.locator("summary").click();
+  await schedule.waitFor();
+  const toggle = schedule.getByRole("button", { name: "View full schedule", exact: true });
+  if (await toggle.count()) await toggle.click();
   await page.waitForLoadState("networkidle");
   return schedule;
 }
@@ -429,9 +428,9 @@ async function runBrowserProof(token) {
     await fullSchedule(page).getByText(reviewValues.titles.confirm, { exact: true }).waitFor();
     await fullSchedule(page).getByText("5 assignments need your response.", { exact: true }).waitFor();
     assert.equal(
-      await fullSchedule(page).getByText("Review & respond", { exact: true }).count(),
+      await fullSchedule(page).getByRole("button").filter({ has: page.getByText("Needs reply", { exact: true }) }).count(),
       5,
-      "Each pending assignment must expose a response-oriented row action.",
+      "Each pending assignment must expose its existing response status on a selectable card.",
     );
     await verifyMaximumInstructions(page);
     if (writeIterationReviewScreenshots) {

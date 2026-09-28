@@ -20,6 +20,7 @@ import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/
 type VolunteerScheduleClientProps = Readonly<{
   showMeals?: boolean;
   presentation?: "default" | "next" | "compact";
+  confirmAllAssignments?: readonly VolunteerScheduleAssignment[];
   assignments: readonly VolunteerScheduleAssignment[];
   confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
   submitResponseAction: (formData: FormData) => Promise<VolunteerScheduleActionResult>;
@@ -79,6 +80,7 @@ export function VolunteerScheduleClient({
   showMeals = true,
   presentation = "default",
   assignments,
+  confirmAllAssignments = assignments,
   confirmAllAction,
   submitResponseAction,
 }: VolunteerScheduleClientProps) {
@@ -94,7 +96,7 @@ export function VolunteerScheduleClient({
   const selected = assignments.find(
     (assignment) => assignment.assignmentReference === selectedId,
   );
-  const confirmAllCount = assignments.filter(
+  const confirmAllCount = confirmAllAssignments.filter(
     (assignment) =>
       assignment.currentResponseStatus === "needs_response" && assignment.canConfirm,
   ).length;
@@ -155,7 +157,7 @@ export function VolunteerScheduleClient({
 
   return (
     <>
-      <div className="mt-3 space-y-3">
+      <div className={presentation === "compact" ? "space-y-3" : "mt-3 space-y-3"}>
         {showMeals && assignments.filter((assignment, index) => assignment.meals?.length && assignments.findIndex(other => other.startDate === assignment.startDate) === index).map(assignment => (
           <section key={assignment.startDate} aria-label={`Meals for ${assignment.startDate}`} className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
             <h2 className="text-sm font-bold">Meals · {formatDate(assignment.startDate)}</h2>
@@ -169,7 +171,7 @@ export function VolunteerScheduleClient({
             </div>
           </section>
         ))}
-        {presentation !== "compact" && confirmAllCount > 1 ? (
+        {confirmAllCount > 1 ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-2.5">
             <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">
               {confirmAllCount} assignments need your response.
@@ -202,7 +204,7 @@ export function VolunteerScheduleClient({
             {actionNotice.message}
           </div>
         ) : null}
-        <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
+        <div className={presentation === "compact" ? "grid gap-2" : "overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]"}>
         {assignments.map((assignment) => {
           if (presentation === "compact") return (
             <button
@@ -212,15 +214,15 @@ export function VolunteerScheduleClient({
                 returnFocusRef.current = event.currentTarget;
                 setSelectedId(assignment.assignmentReference);
               }}
-              className="grid min-h-11 w-full min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-3 border-t border-[var(--pl-border)] px-3 py-3 text-left first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 sm:grid-cols-[6rem_minmax(0,1fr)]"
+              className="grid min-h-11 w-full min-w-0 grid-cols-[32px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-[var(--pl-border)] bg-blue-50/40 px-3 py-3 text-left hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:px-4"
             >
-              <span className="text-xs font-medium leading-5 text-[var(--pl-blue)]">{new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(assignment.startDate + "T12:00Z"))}</span>
+              <span className="flex size-8 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-[var(--pl-blue)]"><CalendarDays aria-hidden="true" className="size-4" strokeWidth={1.8} /></span>
               <span className="min-w-0">
-                <span className="block break-words text-sm font-semibold text-[var(--pl-ink)]">{assignment.taskTitle}</span>
-                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-[var(--pl-muted)]">
-                  <span>{formatScheduleClockRange(assignment.startTime, assignment.endTime) ?? "No specific time"}</span>
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="min-w-0 max-w-full break-words text-sm font-semibold text-[var(--pl-ink)]">{assignment.taskTitle}</span>
                   <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}>{responseLabels[assignment.currentResponseStatus]}</span>
                 </span>
+                <span className="mt-1 block text-xs leading-5 text-[var(--pl-muted)]">{dateTimeLabel(assignment)}</span>
               </span>
             </button>
           );
