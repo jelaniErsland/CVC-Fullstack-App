@@ -1,8 +1,46 @@
 # Task Details production release — 2026-09-28
 
-**Status: RESUMED VERIFICATION STOPPED BEFORE PRODUCTION CHANGES.** The September 28 resumed attempt verified reviewed release HEAD `f4821e8dbe81722ac149b349f5e15a66ff6525e2`, but the fresh browser runner failed its completed-RSC privacy gate. Neither migration was applied; no release push, deployment, permanent backup-task mutation, real email or production product-data write occurred. Production remains `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`, database terminal `20260922150000` with 43 migrations. The original lock blocker was corrected by the reviewed harness commit; the current blocker is documented below. Earlier attempt and tooling evidence are retained as history.
+**Status: LOCAL RSC PRIVACY-HARNESS REPAIR VERIFIED; PRODUCTION RELEASE NOT RESTARTED.** The stopped attempt and its evidence are retained below. The capture-only fix is committed separately as `49a1fa54434904ca949f2ebfc44010876580597b`; five consecutive isolated passes and the complete Task Details runner now pass. Neither migration was applied; no release push, deployment, permanent backup-task mutation, real email or production product-data write occurred. Production remains `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`, database terminal `20260922150000` with 43 migrations. A future separately resumed release must refresh all release gates and live evidence.
 
-## Resumed release verification — 2026-09-28
+## Bearer RSC capture repair — 2026-09-28
+
+### Diagnosis and bounded repair
+
+The finish-only collector was installed **before** bearer exchange and navigation. Diagnostic response headers showed actual same-origin `/qv` fetches with `RSC: 1`, HTTP 200 and `text/x-component`, with no router-prefetch flag. Full `page.goto`/reload requests were correctly classified as HTML, but the existing Day/arrow buttons also caused real client-side Flight requests. This was not absence of an RSC request, a late listener, a charset-parameter parsing failure, a redirect being mistaken for data, or a cached response being counted.
+
+The decisive failure was response lifecycle: the browser reported `requestfailed / net::ERR_ABORTED` for navigation streams before `requestfinished`, even in an experiment that paused after the Day click. URL/render readiness and `networkidle` did not guarantee a readable completed Flight body. The old collector correctly excluded those aborted streams, leaving no completed RSC evidence. Diagnostic instrumentation sometimes changed timing enough to allow one stream to complete; that accidental pass was not accepted as the deterministic repair. No specific internal garbage-collection/cancellation stack or the separate development Server Action transport root cause is claimed.
+
+The test-only recipient context now observes native `window.fetch` responses and drains `response.clone().arrayBuffer()` for exact same-origin `/qv` RSC responses. It returns the original response to Next unchanged. This supplies an independent full-body consumer before the application receives the stream; no additional request, mocked response, synthetic payload, production change, new route or application interaction is introduced. Actual request traces with the observer show successful completion rather than the earlier aborted requests.
+
+Before the **existing user-visible Day button click**, the test registers a bounded `requestfinished` wait for the exact date/view, same origin, fetch resource, `RSC: 1`, non-prefetch, HTTP 200 and exact media type. It then requires `response.finished()` to succeed and reads the full body through Playwright. It positively verifies that the request carried the already-established HttpOnly bearer cookie. Failure of the clone reader cannot satisfy any privacy gate: successful network completion, full readable body and all negative/positive assertions remain mandatory. No arbitrary sleep was added to the browser journey.
+
+The full Day body must exclude **all five existing private sentinels** (ordinary/meal notes, restricted location, preset description and arbitrary custom reporting prose) and include the actual fixture item IDs, project name, published state, date, both work times, staffing counts, meal total, contact, provider and menu. Empty/unrelated payloads therefore cannot pass. The passive collector still reads every completed HTML/RSC/JSON body and fails on private text or an unreadable completed body. Exact normalized media types handle parameters and cannot accept a lookalike MIME type. Rendered UI, desktop/mobile inspector, admin positive, generic read-only negative, clean URL/session and revocation assertions are retained unchanged.
+
+### Five consecutive isolated proof runs
+
+Each run used the final tracked browser script without temporary changes, a **new local production build**, a newly started owned loopback preview, new browser contexts/fixtures and disabled real providers. The proof finished at `2026-09-28T18:19:48.577Z`; ignored local evidence is `.local/rsc-capture-five-build-proof.json`.
+
+| Run | Fresh build | Browser exit | Populated completed Day RSC | Completed HTML / RSC / JSON bodies | Notifications and cleanup |
+| --- | --- | --- | --- | --- | --- |
+| 1 | PASS | 0 | 7,578 bytes; all assertions PASS | 5 / 3 / 0 | Four ledger fingerprints unchanged; zero fixture residue |
+| 2 | PASS | 0 | 7,578 bytes; all assertions PASS | 5 / 3 / 0 | Same |
+| 3 | PASS | 0 | 7,578 bytes; all assertions PASS | 5 / 3 / 0 | Same |
+| 4 | PASS | 0 | 7,578 bytes; all assertions PASS | 5 / 3 / 0 | Same |
+| 5 | PASS | 0 | 7,578 bytes; all assertions PASS | 5 / 3 / 0 | Same |
+
+The recipient route made **no separate browser `application/json` response**: its client props are serialized in HTML/Flight, whose full bodies were inspected. The collector retains JSON inspection for any such response; the direct bearer RPC regression additionally verifies the actual JSON server projection. No fake JSON request was introduced to inflate browser evidence. No privacy assertion is skipped or removed. Providers are disabled by environment and an explicit test guard; complete fingerprints of assignment deliveries, welcome deliveries and communication operations/recipients remain unchanged in every isolated run. The script's finally-cleanup asserts zero workspace/Auth residue; each owned preview exits. All five runs also report no production-build Server Action transport error.
+
+### Additional fresh verification and release SHA reconciliation
+
+- **PASS:** complete checked-in `task-details-release-verification.mjs` from clean committed fix `49a1fa5`, including fresh build, complete desktop/mobile Calendar/Bulk, Project Day/authenticated Quick View, five actually persisted edit/preview/apply journeys, full volunteer responses/max-length dialogs and the repaired bearer/admin/generic browser boundaries. Owned server/fixtures are cleaned.
+- **PASS, serial real local database suites:** assignment-instructions security; bearer share-access/privacy and privilege; volunteer schedule access and responses; function privilege. These preserve exact 80-function policy, admin positive/generic negative/raw-table denial, cross-workspace/anonymous/expired/revoked bearer denial, own saved volunteer instructions, response controls, meal null/zero/positive operational fields and permitted staffing names/statuses.
+- **PASS:** assignment-notification email claim/finalize/composition, resend fake-network safety and notification health. Recording/fake providers exercise expected disposable test behavior; there is zero real provider traffic/email and fixture cleanup passes. These are distinct from the five browser runs' unchanged notification fingerprints.
+- **PASS:** ESLint, TypeScript, exact approved-content release contract and diff whitespace. No application screenshot change is needed; the capture mechanism leaves the approved UI intact.
+- Approved payload **`6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583`**, reviewed harness **`f4821e8dbe81722ac149b349f5e15a66ff6525e2`**, and test-fix HEAD **`49a1fa54434904ca949f2ebfc44010876580597b`** have **identical** `app/`, `components/`, `lib/`, `proxy.ts` and both feature migrations. The fix commit changes one browser-test file only. Its LF-canonical SHA-256 is `5836eb87b7a2ce7fc55591d9071ea3c34c46e241dccbe403f39972a5408f3fe2`.
+
+The final documentation HEAD is identified with its full SHA in the repair handoff as the potential eventual release candidate; it changes evidence only, not approved application behavior. No commit was fast-forwarded to master or deployed. Fresh `git ls-remote` still reports `ca54020`. This task deliberately does **not** restart the full production release, refresh production preflight/backup artifacts or manipulate the backup task. The prior 43-migration/old-lock production evidence remains historical; the permanent task must be left Enabled/Ready at that lock. All known limitations below remain, including development transport, reported production latency, assigned-person ellipsis and disabled site-map uploads.
+
+## Historical stopped release verification — 2026-09-28
 
 The intended production application SHA was explicitly reconciled as **`f4821e8dbe81722ac149b349f5e15a66ff6525e2`**. `git diff 6aeb382 f4821e8 -- app components lib proxy.ts supabase/migrations` is empty, and the checked-in release-contract verification passes: approved application ancestry, both exact LF-canonical migration hashes, 45-file repository ledger and precisely two ordered pending migrations. The reviewed final contract is `20260927120000-transition-v1`. This SHA was **not pushed or deployed**. Any subsequent documentation commit is release evidence, not a new deployed application or automatically approved release SHA.
 
@@ -34,7 +72,7 @@ The bearer test reached the final completed-payload checks after its UI, inspect
 - **All 29 relation counts and full-row fingerprints match:** every public table, `auth.users`, `storage.buckets` and `storage.objects`. Migration ledger, function metadata and policies also match. Assignment-notification deliveries remain **168**, volunteer-welcome deliveries **261**, communication operations **8**, communication recipients **289**. No delivery rows increased and no tracked volunteer, task, Calendar, assignment, response, grant, project or storage data changed during this attempt. Ignored local snapshots contain only metadata/counts/digests, not exported row bodies.
 - Production deployment preparation, final migration security postflight, controlled lock transitions, Vercel Production/Ready verification for the candidate and post-release smoke remain **unexecuted**. All retained limitations below remain in force; map uploads stay disabled.
 
-## Essential release gate failure
+## Historical first-attempt lock failure
 
 At the stopped attempt, the checked-in and installed backup runtime used `scripts/production-backup/ProjectLocalProductionMigrationContract.ps1`, contract `20260922150000-transition-v1`. Its approved terminals and exact adjacent lock transitions stop at `20260922150000`. Neither new migration terminal is supported, and the approved application diff contains no backup-contract update.
 
