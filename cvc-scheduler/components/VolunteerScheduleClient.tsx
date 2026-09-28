@@ -19,6 +19,7 @@ import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/
 
 type VolunteerScheduleClientProps = Readonly<{
   showMeals?: boolean;
+  presentation?: "default" | "next" | "compact";
   assignments: readonly VolunteerScheduleAssignment[];
   confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
   submitResponseAction: (formData: FormData) => Promise<VolunteerScheduleActionResult>;
@@ -76,6 +77,7 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
 
 export function VolunteerScheduleClient({
   showMeals = true,
+  presentation = "default",
   assignments,
   confirmAllAction,
   submitResponseAction,
@@ -167,7 +169,7 @@ export function VolunteerScheduleClient({
             </div>
           </section>
         ))}
-        {confirmAllCount > 1 ? (
+        {presentation !== "compact" && confirmAllCount > 1 ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-2.5">
             <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">
               {confirmAllCount} assignments need your response.
@@ -202,6 +204,26 @@ export function VolunteerScheduleClient({
         ) : null}
         <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
         {assignments.map((assignment) => {
+          if (presentation === "compact") return (
+            <button
+              key={assignment.assignmentReference}
+              type="button"
+              onClick={(event) => {
+                returnFocusRef.current = event.currentTarget;
+                setSelectedId(assignment.assignmentReference);
+              }}
+              className="grid min-h-11 w-full min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-3 border-t border-[var(--pl-border)] px-3 py-3 text-left first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 sm:grid-cols-[6rem_minmax(0,1fr)]"
+            >
+              <span className="text-xs font-medium leading-5 text-[var(--pl-blue)]">{new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(assignment.startDate + "T12:00Z"))}</span>
+              <span className="min-w-0">
+                <span className="block break-words text-sm font-semibold text-[var(--pl-ink)]">{assignment.taskTitle}</span>
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 text-[var(--pl-muted)]">
+                  <span>{formatScheduleClockRange(assignment.startTime, assignment.endTime) ?? "No specific time"}</span>
+                  <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}>{responseLabels[assignment.currentResponseStatus]}</span>
+                </span>
+              </span>
+            </button>
+          );
           const isNext = assignment.currentResponseStatus !== "declined" && !assignments.some(
             (other) => other.currentResponseStatus !== "declined" && other.assignmentReference !== assignment.assignmentReference && other.startDate < assignment.startDate,
           );
@@ -219,7 +241,8 @@ export function VolunteerScheduleClient({
               setSelectedId(assignment.assignmentReference);
             }}
             className={[
-              "group grid w-full min-w-0 grid-cols-[44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:flex sm:gap-3",
+              "group grid w-full min-w-0 grid-cols-[44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
+              presentation === "next" ? "sm:grid" : "sm:flex sm:gap-3",
               isNext
                 ? "bg-[linear-gradient(115deg,rgba(234,242,255,.95),rgba(255,255,255,1)_64%,rgba(242,237,255,.7))] p-4 sm:p-5"
                 : "px-3.5 py-3 sm:px-4",
@@ -233,7 +256,7 @@ export function VolunteerScheduleClient({
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Next assignment</span>
               ) : null}
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className={isNext ? "text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
+                <span className={isNext ? "min-w-0 max-w-full break-words text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "min-w-0 max-w-full break-words text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
                 <span
                   className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}
                 >
@@ -243,14 +266,14 @@ export function VolunteerScheduleClient({
               <span className={isNext ? "mt-1.5 block text-sm font-medium leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
                 {dateTimeLabel(assignment)}
               </span>
-              <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
+              {presentation !== "next" || hasFollowUpContact(assignment) ? <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
                 {hasFollowUpContact(assignment)
                   ? `Follow-up: ${assignment.followUpContact.displayName ?? "Project contact"}`
                   : "Open for assignment details"}
-              </span>
+              </span> : null}
             </span>
-            <span className="col-start-2 inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-[11px] font-semibold text-[var(--pl-blue)] sm:self-center sm:px-2">
-              {assignment.currentResponseStatus === "declined" ? <span>Change response</span> : assignment.currentResponseStatus === "needs_response" ? (
+            <span className={`col-start-2 inline-flex shrink-0 items-center gap-1 rounded-lg py-1 text-[11px] font-semibold text-[var(--pl-blue)] ${presentation === "next" ? "sm:px-0" : "sm:self-center sm:px-2"}`}>
+              {presentation === "next" ? <span className="text-sm">View assignment details</span> : assignment.currentResponseStatus === "declined" ? <span>Change response</span> : assignment.currentResponseStatus === "needs_response" ? (
                 <span>Review &amp; respond</span>
               ) : null}
               <ArrowRight aria-hidden="true" className="size-4" />
