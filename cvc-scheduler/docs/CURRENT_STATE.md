@@ -1,8 +1,16 @@
 # Current State
 
-## Task Details production closeout — 2026-09-28
+## Volunteer home schedule polish released — 2026-09-28
 
-**Released and verified:** `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a` is on `origin/master` and Vercel **Production / Ready**, serving [projectlocal.app](https://projectlocal.app). Both approved migrations were applied in order; the live database has **45 migrations**, terminal **`20260927120000`**, 27 public tables and the exact 80-function policy (10 anonymous, 52 authenticated-only, 18 internal; PUBLIC EXECUTE zero). No site-map or Batch 3 implementation was included.
+Current production application: **`80203cb77ecd3c02427888958d10d62dd0a6a5f7`**, exact reviewed candidate, fast-forwarded to master and verified **Vercel Production / Ready** on `projectlocal.app`.
+
+Frontend-only changes: explicit assignment-details action; a single inline all-upcoming expansion beneath Next Assignment when other assignments exist; no toggle or Coming up for one assignment; compact cards and accessible collapse/scroll. All refreshed quality/build/home/full-response gates passed. Authorized live volunteer one-assignment/detail-sheet smoke passed at an actual **390px viewport with 390px scroll width**, and admin Overview reload passed. The available volunteer has no additional assignments, so live expansion/collapse is not claimed; complete multi-assignment and duplicate-identity coverage passed locally.
+
+No production response/assignment/volunteer edit, email, migration, backup-task mutation or manual backup occurred. Database/backup contracts are unchanged by this release. The release report distinguishes exact deployed SHA from the subsequent development documentation closeout. See [release evidence](VOLUNTEER_HOME_SCHEDULE_POLISH_RELEASE.md).
+
+## Previous Task Details production closeout — 2026-09-28
+
+**Previously released and verified:** `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a` preceded the frontend-only release above and is its production ancestor, serving [projectlocal.app](https://projectlocal.app). Both approved migrations were applied in order; the live database has **45 migrations**, terminal **`20260927120000`**, 27 public tables and the exact 80-function policy (10 anonymous, 52 authenticated-only, 18 internal; PUBLIC EXECUTE zero). No site-map or Batch 3 implementation was included.
 
 The permanent `Project Local Production Backup` task is **Enabled / Ready / not running**, final lock `20260927120000`. Full Triggers/Principals/Settings/Actions XML matches the pre-release configuration after substituting only the two reviewed migration-lock advances. Last task result remains 0; no manual backup was started. Next normal run is **2026-09-29 03:15 MDT / 09:15 UTC**. There is not yet a post-release scheduled encrypted artifact.
 

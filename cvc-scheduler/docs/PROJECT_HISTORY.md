@@ -1,5 +1,12 @@
 # Project History
 
+## Volunteer home schedule polish released — 2026-09-28
+
+- Deployed reviewed `80203cb77ecd3c02427888958d10d62dd0a6a5f7` by exact fast-forward from `0efa042`; Vercel Production/Ready, source SHA and canonical domain mapping verified.
+- Fresh lint, TypeScript, production build, focused home/browser and full volunteer-response gates passed; real local authorization/isolation/response/notification/home safety checks also passed.
+- Authorized production volunteer home and existing detail sheet passed at actual 390px with no overflow; one upcoming assignment correctly omits schedule toggle/Coming up. Admin Overview reload passed. Live multi-assignment state was unavailable and is explicitly covered locally rather than fabricated in production.
+- No production response/data mutation, real email, migration, backup-task action, manual backup or feature expansion. Documentation-only closeout remains on the development branch without redeployment. See [release report](VOLUNTEER_HOME_SCHEDULE_POLISH_RELEASE.md).
+
 ## Task Details production release completed — 2026-09-28
 
 - Fast-forwarded/deployed exact `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a`; approved `6aeb382` application/migration payload remains unchanged. Reviewed `f4821e8` harness and `49a1fa5` completed-RSC test repair are included, along with their documentation-only handoff.

@@ -1,6 +1,6 @@
 # Volunteer home schedule polish — corrected inline interaction
 
-Status: local implementation, awaiting visual review. **Not deployed or merged.** This revision supersedes the unapproved interaction in `8964acf` on `codex/volunteer-home-schedule-polish`. The Task Details production release and its original development branch remain unchanged.
+Status: reviewed and **released as `80203cb77ecd3c02427888958d10d62dd0a6a5f7`**. See [production release verification](VOLUNTEER_HOME_SCHEDULE_POLISH_RELEASE.md). This revision supersedes the unapproved interaction in `8964acf` on `codex/volunteer-home-schedule-polish`. The Task Details production release and its original development branch remain unchanged.
 
 ## Corrected experience
 
@@ -30,7 +30,7 @@ Focus stays on the toggle during expansion/collapse. Its visible label, `aria-ex
 
 The final comparison checks spacing, alignment, typography, hierarchy and mobile usability. Expanded cards begin directly under the Next toggle; Lunch and Availability follow them, never precede them. The compact cards reuse the icon/chip language, subtle blue surface and border, with 8px gaps. Their title/status wrap at narrow widths without overflow. The named Next action remains aligned with the title. The one-assignment page has no leftover toggle margin or empty Coming up row.
 
-Rendered measurements verify the inline region begins 8px below its toggle (within 2px), Lunch moves downward, all upcoming cards appear, and no second schedule destination exists. Scroll targets and actual clamped browser positions are compared. Smooth and reduced-motion paths are both exercised. Final screenshots are local evidence; this change has not been deployed.
+Rendered measurements verify the inline region begins 8px below its toggle (within 2px), Lunch moves downward, all upcoming cards appear, and no second schedule destination exists. Scroll targets and actual clamped browser positions are compared. Smooth and reduced-motion paths are both exercised. These screenshots remain synthetic local evidence; authorized live results are recorded separately in the production release report.
 
 ## Executed checks — 2026-09-28
 
@@ -58,4 +58,4 @@ The isolated focused browser harness strips credentials/providers, blocks non-lo
 
 Application edits remain confined to `VolunteerHomeDashboard.tsx` and presentation/count context in `VolunteerScheduleClient.tsx`. No authentication, schedule-session credentials, server projections, instruction privacy, response handlers, meals, away actions, email delivery, schema, RPCs, RLS, Quick View, Calendar or storage changes. No site-map or Batch 3 work.
 
-Production was not accessed or changed for this correction. Existing unrelated untracked previews and the release-check directory were preserved. The previously documented development Server Action transport issue, production busy-month latency, desktop assigned-person ellipsis limitation and site-map recovery/upload readiness remain outside this task.
+Production was not accessed or changed during the implementation correction; the subsequently authorized release is documented separately. Existing unrelated untracked previews and the release-check directory were preserved. The previously documented development Server Action transport issue, production busy-month latency, desktop assigned-person ellipsis limitation and site-map recovery/upload readiness remain outside this task.
