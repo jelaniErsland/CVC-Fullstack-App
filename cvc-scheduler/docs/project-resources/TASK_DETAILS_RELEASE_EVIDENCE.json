@@ -1,0 +1,512 @@
+{
+  "release_date": "2026-09-28",
+  "production_commit": "0efa0427e8cc0290ab87d70ecbafb759afdcbf7a",
+  "approved_application_commit": "6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583",
+  "harness_commit": "f4821e8dbe81722ac149b349f5e15a66ff6525e2",
+  "rsc_repair_commit": "49a1fa54434904ca949f2ebfc44010876580597b",
+  "baseline_commit": "ca54020ef3f8e8ecc55bcd46f7fedf1331a56923",
+  "migration_terminal": "20260927120000",
+  "migration_count": 45,
+  "public_tables": 27,
+  "functions": 80,
+  "public_execute": 0,
+  "anonymous_functions": 10,
+  "authenticated_only_functions": 52,
+  "internal_functions": 18,
+  "vercel": {
+    "environment": "Production",
+    "status": "Ready",
+    "deployment_id": "Bpd5pBNDJYdC1dD2onS7BenL7b1q",
+    "canonical_domain": "https://projectlocal.app"
+  },
+  "pre_release_captured_at": "2026-09-28T18:54:09.234058+00:00",
+  "post_release_captured_at": "2026-09-28T22:23:59.05953+00:00",
+  "backup": {
+    "CapturedAt": "2026-09-28T18:54:08.9375949Z",
+    "TaskName": "Project Local Production Backup",
+    "Enabled": true,
+    "State": "Ready",
+    "LastRunTime": "2026-09-28T16:38:53.0000000Z",
+    "LastTaskResult": 0,
+    "NextRunTime": "2026-09-29T09:15:00.0000000Z",
+    "Artifact": "project-local-production-20260928T163915Z-efce08db.zip.age",
+    "Bytes": 320669,
+    "Sha256": "fe92863a7eeeba6824537fd3efe5a8c698385b1c9c19cdf2d89855af94e48d75",
+    "StatusTimestamp": "2026-09-28T16:39:15.4889754Z",
+    "ManifestTerminal": "20260922150000",
+    "ManifestTimestamp": "2026-09-28T16:39:15.0330480Z",
+    "Members": [
+      "data.sql",
+      "manifest.json",
+      "roles.sql",
+      "schema.sql",
+      "supabase_migrations_data.sql",
+      "supabase_migrations_schema.sql"
+    ],
+    "LengthsVerified": true,
+    "ResidueCount": 0
+  },
+  "final_backup_task": {
+    "CapturedAt": "2026-09-28T22:24:47.6891763Z",
+    "TaskName": "Project Local Production Backup",
+    "Enabled": true,
+    "State": "Ready",
+    "Lock": "20260927120000",
+    "ConfigurationSectionsUnchangedExceptReviewedLock": true,
+    "LastTaskResult": 0,
+    "LastRunTime": "2026-09-28T16:38:53.0000000Z",
+    "NextRunTime": "2026-09-29T09:15:00.0000000Z",
+    "ManuallyStarted": false
+  },
+  "relation_fingerprints": [
+    {
+      "relation": "auth.users",
+      "before_count": 9,
+      "after_count": 9,
+      "before_original_columns_md5": "010a290876db1c2abab135725f1b4322",
+      "after_original_columns_md5": "9f0f6acf4741f506c89902108d83951e",
+      "original_columns_equal": false
+    },
+    {
+      "relation": "public.assignment_notification_deliveries",
+      "before_count": 168,
+      "after_count": 168,
+      "before_original_columns_md5": "26c6d6335701c9ef3c8018cfa80dd19e",
+      "after_original_columns_md5": "26c6d6335701c9ef3c8018cfa80dd19e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.assignment_response_link_reveal_events",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.assignment_response_tokens",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.assignment_responses",
+      "before_count": 194,
+      "after_count": 194,
+      "before_original_columns_md5": "162c2155182a4c9abba1f0daf6309120",
+      "after_original_columns_md5": "162c2155182a4c9abba1f0daf6309120",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.calendar_assignments",
+      "before_count": 194,
+      "after_count": 194,
+      "before_original_columns_md5": "689db930ea68d52c84bf3a2fa4516459",
+      "after_original_columns_md5": "689db930ea68d52c84bf3a2fa4516459",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.calendar_bulk_assignment_operations",
+      "before_count": 86,
+      "after_count": 86,
+      "before_original_columns_md5": "217421812e4112f40015d7528cc9b959",
+      "after_original_columns_md5": "217421812e4112f40015d7528cc9b959",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.calendar_items",
+      "before_count": 330,
+      "after_count": 330,
+      "before_original_columns_md5": "6224c0506964bee13aabb60595e0cd93",
+      "after_original_columns_md5": "6224c0506964bee13aabb60595e0cd93",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.calendar_repeat_creation_requests",
+      "before_count": 13,
+      "after_count": 13,
+      "before_original_columns_md5": "72cb53a61bf92db2b551338495f376f6",
+      "after_original_columns_md5": "72cb53a61bf92db2b551338495f376f6",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.communication_assignment_coverage",
+      "before_count": 164,
+      "after_count": 164,
+      "before_original_columns_md5": "2b262fb4206f9d4960e9557b954909ba",
+      "after_original_columns_md5": "2b262fb4206f9d4960e9557b954909ba",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.communication_operations",
+      "before_count": 8,
+      "after_count": 8,
+      "before_original_columns_md5": "b5b5ff0cb51b9974cb0381342bb2c35d",
+      "after_original_columns_md5": "b5b5ff0cb51b9974cb0381342bb2c35d",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.communication_recipients",
+      "before_count": 289,
+      "after_count": 289,
+      "before_original_columns_md5": "27f086c3d8a7e2115fc5d62bd550386b",
+      "after_original_columns_md5": "27f086c3d8a7e2115fc5d62bd550386b",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.needs_attention_seen_states",
+      "before_count": 144,
+      "after_count": 144,
+      "before_original_columns_md5": "3d25d59e4916c4c49ce72147715a3246",
+      "after_original_columns_md5": "3d25d59e4916c4c49ce72147715a3246",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.project_contacts",
+      "before_count": 9,
+      "after_count": 9,
+      "before_original_columns_md5": "4e5f6555f801227a95eb2787edeebf49",
+      "after_original_columns_md5": "4e5f6555f801227a95eb2787edeebf49",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.project_days",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.project_quick_view_access_tokens",
+      "before_count": 4,
+      "after_count": 4,
+      "before_original_columns_md5": "cf2312ef5838ae1da6454129cbbc0aaf",
+      "after_original_columns_md5": "1cf42685bc0e229eb280cc7c42e9406b",
+      "original_columns_equal": false
+    },
+    {
+      "relation": "public.questionnaire_submissions",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.task_presets",
+      "before_count": 13,
+      "after_count": 13,
+      "before_original_columns_md5": "1ba0739b17a0c95eed77b29529af8910",
+      "after_original_columns_md5": "1ba0739b17a0c95eed77b29529af8910",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.volunteer_away_periods",
+      "before_count": 8,
+      "after_count": 8,
+      "before_original_columns_md5": "28353067981b2943302c25b69b20b466",
+      "after_original_columns_md5": "28353067981b2943302c25b69b20b466",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.volunteer_csv_import_operations",
+      "before_count": 2,
+      "after_count": 2,
+      "before_original_columns_md5": "cdafbc1cedd00c6e92b42e3d25684158",
+      "after_original_columns_md5": "cdafbc1cedd00c6e92b42e3d25684158",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.volunteer_lookup_attempts",
+      "before_count": 2,
+      "after_count": 2,
+      "before_original_columns_md5": "45da93ee5502acc6014fed3a5ada8438",
+      "after_original_columns_md5": "d82cff3a0076c8100a3af691f3f43266",
+      "original_columns_equal": false
+    },
+    {
+      "relation": "public.volunteer_profiles",
+      "before_count": 287,
+      "after_count": 287,
+      "before_original_columns_md5": "48d2647f1203a08dacc6f5b864b75538",
+      "after_original_columns_md5": "48d2647f1203a08dacc6f5b864b75538",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.volunteer_schedule_access_tokens",
+      "before_count": 187,
+      "after_count": 189,
+      "before_original_columns_md5": "2d85d2a78ed5893459a1713e9cdb3ea7",
+      "after_original_columns_md5": "ab1ea04e2364e51414db312a3e93aa91",
+      "original_columns_equal": false
+    },
+    {
+      "relation": "public.volunteer_welcome_deliveries",
+      "before_count": 261,
+      "after_count": 261,
+      "before_original_columns_md5": "92547aa31419fabbaa8c185d865b9e28",
+      "after_original_columns_md5": "92547aa31419fabbaa8c185d865b9e28",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.workspace_contact_grants",
+      "before_count": 9,
+      "after_count": 9,
+      "before_original_columns_md5": "da90b0403e0e6eced19efe6906cd8099",
+      "after_original_columns_md5": "da90b0403e0e6eced19efe6906cd8099",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.workspace_project_photos",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "public.workspaces",
+      "before_count": 1,
+      "after_count": 1,
+      "before_original_columns_md5": "664c21d0f67c9a785cfbb37655301d5a",
+      "after_original_columns_md5": "664c21d0f67c9a785cfbb37655301d5a",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "storage.buckets",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    },
+    {
+      "relation": "storage.objects",
+      "before_count": 0,
+      "after_count": 0,
+      "before_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "after_original_columns_md5": "d41d8cd98f00b204e9800998ecf8427e",
+      "original_columns_equal": true
+    }
+  ],
+  "private_revision_count": 0,
+  "access_identity_audit_investigation": [
+    {
+      "excludedAuditFields": [
+        "updated_at",
+        "last_sign_in_at"
+      ],
+      "backupCount": 9,
+      "table": "users",
+      "extraRecordsDuringRelease": 0,
+      "count": 9,
+      "allExistingStableRecordsMatchScheduledBackup": true,
+      "stable_md5": "746a2771c637f877ae5b9494d19a17a2",
+      "extraRecordsPredatingRelease": 0
+    },
+    {
+      "excludedAuditFields": [
+        "updated_at",
+        "last_used_at"
+      ],
+      "backupCount": 3,
+      "table": "project_quick_view_access_tokens",
+      "extraRecordsDuringRelease": 0,
+      "count": 4,
+      "allExistingStableRecordsMatchScheduledBackup": true,
+      "stable_md5": "45f04280107fe5b27d1abac877800af4",
+      "extraRecordsPredatingRelease": 1
+    },
+    {
+      "excludedAuditFields": [
+        "updated_at",
+        "last_used_at"
+      ],
+      "backupCount": 186,
+      "table": "volunteer_schedule_access_tokens",
+      "extraRecordsDuringRelease": 2,
+      "count": 189,
+      "allExistingStableRecordsMatchScheduledBackup": true,
+      "stable_md5": "fad813ace7aef8de0f6de62c495c83f8",
+      "extraRecordsPredatingRelease": 1
+    }
+  ],
+  "standalone_serial_gates": [
+    {
+      "name": "assignment-instructions-security",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-read-model-query-helper-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-route-cutover-dry-run-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "tasks-read-model-contract-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "tasks-management-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-read-model-local-data-validation",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-read-model-contract-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-route-cutover-stabilization-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-item-management-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-source-selection-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-assignment-management-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-publication-visibility-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "calendar-edit-validation-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "concurrent-admin-safety-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "project-quick-view-share-access-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "project-quick-view-privilege-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "volunteer-schedule-access-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "volunteer-schedule-responses-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "volunteer-profile-management-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "volunteer-profile-expansion-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "assignment-notification-email-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "resend-initial-assignment-email-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "assignment-notification-health-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "function-privilege-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "operational-usability-privilege-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "project-local-table-privileges-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "grants-authorization-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "verified-admin-context-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "overview-persisted-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "needs-attention-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "project-day-quick-view-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "admin-navigation-performance-harness",
+      "exit_code": 0
+    },
+    {
+      "name": "bulk-assignment-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "12-48-batch-2-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "12-48-batch-2-day-navigation-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "12-48-batch-2-double-click-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "12-48-calendar-layout-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "production-backup-task-details-transition-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "production-backup-12-47-transition-regression",
+      "exit_code": 0
+    },
+    {
+      "name": "independent-backup-native-loopback",
+      "exit_code": 0
+    },
+    {
+      "name": "encrypted-task-details-recovery",
+      "exit_code": 0
+    },
+    {
+      "name": "recovery-readiness",
+      "exit_code": 0
+    },
+    {
+      "name": "checkpoint-prestart",
+      "exit_code": 0
+    }
+  ],
+  "generic_viewer_live": "Not directly exercised because no such production identity currently exists. Covered by real local Auth/RLS regression plus exact live production policy/projection verification. No user or grant was created or modified for testing."
+}

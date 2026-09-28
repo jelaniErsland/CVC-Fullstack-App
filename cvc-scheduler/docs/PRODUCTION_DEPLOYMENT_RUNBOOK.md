@@ -1,5 +1,15 @@
 # Production Deployment Runbook
 
+## Current deployment and rollback constraint — 2026-09-28
+
+Production is **`0efa0427e8cc0290ab87d70ecbafb759afdcbf7a`**, Vercel Production/Ready on `projectlocal.app`; database is **45 migrations / `20260927120000`**. The approved `6aeb382` application and two feature migrations are unchanged; newer commits add reviewed release harness, the real completed-RSC test repair and evidence. Exact deployed application SHA and documentation-only closeout commits must be distinguished.
+
+Task Details was released through the established fast-forward workflow after all refreshed gates. Final admin/volunteer/bearer read-only smoke, exact live privacy policy/projection and invariant operational/notification fingerprints passed. Generic read-only/on-site production identity is absent; the owner-approved real local Auth/RLS and exact live contract checks cover that boundary without adding users/grants.
+
+After the privacy migration, **do not blindly roll back the app to `ca54020`**. Use a reviewed compatible forward repair that preserves instruction masking, raw-table RLS and assigned-volunteer/admin access. Any database rollback requires separate review and must preserve privacy. The backup task is Enabled/Ready at the final lock with unchanged configuration and no manual run.
+
+See [production release closeout](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md). Launch conclusions and earlier deployment observations below are historical.
+
 ## Current Task Details release-harness preparation — 2026-09-28
 
 Production remains at application `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923` and database `20260922150000`. The first Task Details attempt stopped before changes when lock validation rejected the pending migrations. The local harness now recognizes only `20260922150000 -> 20260926120000 -> 20260927120000`; the middle state forbids scheduled backup execution/enablement. The final terminal requires the compatible approved application and both migrations in order, with exact function/RLS/privacy checks. See [TASK_DETAILS_RELEASE_HARNESS.md](TASK_DETAILS_RELEASE_HARNESS.md) and [release report](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md).

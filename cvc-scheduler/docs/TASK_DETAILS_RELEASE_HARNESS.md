@@ -1,5 +1,26 @@
 # Task Details release and recovery harness
 
+## Live contract verified — 2026-09-28
+
+The reviewed contract `20260927120000-transition-v1` is now live: database/backup lock **`20260927120000`**, 45 migrations, compatible Production/Ready application **`0efa0427e8cc0290ab87d70ecbafb759afdcbf7a`**. The exact `20260922150000 -> 20260926120000 -> 20260927120000` transitions were performed with the permanent task disabled. At the middle terminal actual execution validation and actual task enablement both failed closed; at the final terminal execution validation passed and the same task was re-enabled without starting it or changing configuration.
+
+The complete refreshed affected harness gates passed: release-content contract, Task Details transition, historical 12.47 transition, independent native-loopback encrypted backup, Task Details encrypted recovery, recovery readiness and checkpoint prestart. Final public smoke passed with independently verified 45-record/final-terminal production metadata. The encrypted recovery proof remains a synthetic disconnected disposable restore, not a claim that a new final-terminal production backup has run.
+
+Safe recovery after privacy RLS is live requires a reviewed compatible forward repair. Do not restore `ca54020` alone, broaden raw Task/Calendar grants or weaken instruction masking. A full database disaster restore must follow the independent recovery runbook, apply the approved migrations in order where needed, verify exact privacy/ACL/data contracts, and use the compatible application before reopening service. See [release evidence](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md).
+
+After independently re-verifying the live database terminal, current public smoke uses:
+
+```powershell
+$env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260927120000'
+try {
+  node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-deployment-smoke-regression.mjs --migration-terminal 20260927120000
+} finally {
+  Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
+}
+```
+
+The preparation and stopped-attempt text below records historical stages. Its old-terminal smoke example is historical, not the current production terminal.
+
 This is local tooling preparation for the approved Task Details application at `6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583`. Production application/database and the permanent backup task have not been changed by this task. The stopped attempt and its existing backup observations are retained in [the release report](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md).
 
 **Resumed release verification, September 28:** reviewed HEAD `f4821e8dbe81722ac149b349f5e15a66ff6525e2` passes exact approved-content reconciliation. Live backup integrity/task/preflight evidence was refreshed successfully, but the fresh production-build browser runner and two isolated unmodified repeats fail `No completed RSC payload inspected.` Production changes stopped: database/lock remain `20260922150000`, task Enabled/Ready, application `ca54020`. All 29 captured relation fingerprints and task XML match before/after. The next harness correction must obtain and await real completed RSC evidence without dropping privacy assertions; all release gates must then restart from a clean reviewed checkout. No migration-lock, application or test-source change was made in this stopped attempt. The report distinguishes fresh passes from unexecuted gates; earlier recovery passes are not substituted for new release evidence.

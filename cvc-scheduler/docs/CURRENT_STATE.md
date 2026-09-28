@@ -1,8 +1,20 @@
 # Current State
 
+## Task Details production closeout — 2026-09-28
+
+**Released and verified:** `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a` is on `origin/master` and Vercel **Production / Ready**, serving [projectlocal.app](https://projectlocal.app). Both approved migrations were applied in order; the live database has **45 migrations**, terminal **`20260927120000`**, 27 public tables and the exact 80-function policy (10 anonymous, 52 authenticated-only, 18 internal; PUBLIC EXECUTE zero). No site-map or Batch 3 implementation was included.
+
+The permanent `Project Local Production Backup` task is **Enabled / Ready / not running**, final lock `20260927120000`. Full Triggers/Principals/Settings/Actions XML matches the pre-release configuration after substituting only the two reviewed migration-lock advances. Last task result remains 0; no manual backup was started. Next normal run is **2026-09-29 03:15 MDT / 09:15 UTC**. There is not yet a post-release scheduled encrypted artifact.
+
+All required refreshed release checks passed: lint, TypeScript, fresh production build, complete Calendar/Bulk desktop/mobile browser regression, five database-persisted edit/preview/apply journeys, full volunteer responses/max-length dialogs, repaired genuine completed bearer RSC proof, and 43 serial data/Auth/RLS/security/notification/responsive/backup/recovery gates. Final public GET-only smoke passed with independently verified final-terminal metadata.
+
+Existing volunteer/profile, task, Calendar, assignment, response, contact/grant, project, photo/storage and notification/communication records are unchanged. **Do not claim all 29 whole-row fingerprints match:** 25 original-column fingerprints match; four access/auth/lookup relations differ for the investigated bookkeeping and concurrent volunteer lookup activity described in the release report. No email was sent by deployment or smoke checks; all five delivery/communication ledger fingerprints remain identical.
+
+See [production release report](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md), [redacted count/hash evidence](project-resources/TASK_DETAILS_RELEASE_EVIDENCE.json), and [release/recovery contract](TASK_DETAILS_RELEASE_HARNESS.md). Development Server Action transport, reported busy-month production latency, desktop assigned-person ellipsis and disabled site-map storage/recovery remain unresolved. The earlier preparation and stopped-release records below are **historical**, not the current production state.
+
 This is the authoritative present-state context for Project Local. Historical implementation evidence is recorded in [PROJECT_HISTORY.md](./PROJECT_HISTORY.md) and Git history.
 
-## Task Details production release attempt — 2026-09-28
+## Historical Task Details production release attempts — 2026-09-28
 
 The owner approved application candidate `6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583` and the coordinated instruction/privacy migrations. **The first attempt stopped before production changes:** its backup migration contract ended at `20260922150000` and rejected the required next lock transition. Actual read-only validation and the isolated fixture both failed safely. Production/master remains `ca54020ef3f8e8ecc55bcd46f7fedf1331a56923`. Production Supabase terminal: `20260922150000` (43 migrations). Both Task Details migrations remain UNAPPLIED to production. No migration, release push, deployment, permanent-task mutation or real email occurred.
 

@@ -1,5 +1,15 @@
 # Production Backup, Recovery, and Rollback Runbook
 
+## Current production/recovery boundary — 2026-09-28
+
+Task Details is released at application `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a`, database **45 migrations / `20260927120000`**, contract `20260927120000-transition-v1`. The same permanent backup task is Enabled/Ready/not running at that final lock; schedule, principal, action, destination, encryption, retention and failure notifications are unchanged except the reviewed lock. The next autonomous run is 2026-09-29 03:15 MDT. No task was manually started; the latest verified encrypted artifact still represents the previous `20260922150000` terminal.
+
+Both exact adjacent transitions were verified while disabled; the intermediate `20260926120000` could neither execute nor enable scheduled backups. The final contract now permits normal scheduling. Fresh local encrypted disposable recovery proved all 45 migrations, 27 table fingerprints, private revision history/sequence, exact 80-function/creator ACL policy and instruction masking. This is synthetic recovery evidence, not a new post-release production-artifact restore.
+
+**Privacy-preserving recovery:** prefer reviewed compatible forward application repairs. Never blindly deploy `ca54020` after the privacy migration or restore broad raw-table/function grants to accommodate it. When restoring an older encrypted checkpoint into isolated recovery infrastructure, retain its original migration ledger, apply the two approved forward migrations in order, reconcile data/security and deploy the compatible application before service returns. A database-only restore does not establish site-map/object recovery; uploads remain disabled.
+
+See [exact artifact, integrity, task and release evidence](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md). Older preparation/recovery observations below are historical.
+
 ## Task Details coordinated-release compatibility — local preparation, 2026-09-28
 
 The first Task Details release attempt stopped safely before production changes because the existing lock contract ended at `20260922150000`. The reviewed local extension supports exactly **20260922150000 -> 20260926120000 -> 20260927120000**, contract `20260927120000-transition-v1`. `20260926120000` is a migration-in-progress state, never a completed scheduled-backup terminal: execution and enablement remain denied. Only the final `20260927120000` may resume ordinary backup operation after all release checks. Historical exact transitions and fail-closed unknown/skipped/reversed/partial rules remain intact.

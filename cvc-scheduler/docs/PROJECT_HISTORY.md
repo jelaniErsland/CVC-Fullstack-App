@@ -1,5 +1,16 @@
 # Project History
 
+## Task Details production release completed — 2026-09-28
+
+- Fast-forwarded/deployed exact `0efa0427e8cc0290ab87d70ecbafb759afdcbf7a`; approved `6aeb382` application/migration payload remains unchanged. Reviewed `f4821e8` harness and `49a1fa5` completed-RSC test repair are included, along with their documentation-only handoff.
+- Refreshed all release gates from the committed checkout. Independently verified the scheduled encrypted backup and original 43-migration production baseline; replayed that baseline into disconnected disposable infrastructure and compared the full schema/security catalog exactly before mutation.
+- Applied only `20260926120000` then `20260927120000`, with atomic migration-ledger advances to 44 then 45. All 29 original-column data fingerprints matched after each migration before browser smoke. The intermediate disabled backup lock rejected both execution and enablement; the final exact catalog/owner/search-path/RLS/history/sequence/default-ACL policy matches the reviewed disposable rehearsal.
+- Authorized admin, bearer and own-volunteer smoke passed, including live 390px Month agenda/Open Day, all admin Calendar views, stable date controls/aligned List times, inspector reload and visible Bulk Planner. Generic view-only production identity does not exist; owner-approved real local Auth/RLS plus exact live policy/projection verification covers that boundary without creating or changing grants.
+- Operational and delivery fingerprints remain invariant. Investigated access/refresh timestamps and two concurrent 24-hour volunteer lookup credentials separately; no agent lookup, resend, assignment/response edit or real email was invoked. The redacted release evidence distinguishes these differences from unchanged product data.
+- Re-enabled the same scheduled backup at final lock `20260927120000`; Enabled/Ready/not running, unchanged configuration, next ordinary run 03:15 MDT. No manual backup or new post-release artifact is claimed. Known transport/performance/ellipsis/map limits remain. See [full closeout](project-resources/TASK_DETAILS_PRODUCTION_RELEASE.md).
+
+The prior stopped attempts below are retained as historical evidence.
+
 ## Task Details resumed production verification — 2026-09-28
 
 - Reconciled reviewed release HEAD `f4821e8dbe81722ac149b349f5e15a66ff6525e2` with approved application `6aeb382`: application directories and both forward migrations are identical. Fresh remote checks retain production `ca54020`, and the exact release contract passes.
