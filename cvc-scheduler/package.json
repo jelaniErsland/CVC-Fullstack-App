@@ -111,7 +111,9 @@
     "test:project-day-quick-view:browser": "node scripts/project-day-quick-view-browser-regression.mjs",
     "test:project-quick-view-share-access": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-regression.mjs",
     "test:project-quick-view-privileges": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-privilege-regression.mjs",
-    "test:project-quick-view-share-access:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-browser-regression.mjs"
+    "test:project-quick-view-share-access:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-browser-regression.mjs",
+    "test:production-backup-task-details": "node scripts/production-backup-task-details-transition-regression.mjs",
+    "test:production-backup-task-details-recovery": "node scripts/production-backup-task-details-recovery-regression.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

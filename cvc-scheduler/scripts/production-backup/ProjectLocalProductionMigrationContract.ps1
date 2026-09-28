@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260922150000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260927120000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -19,10 +19,13 @@ $BulkCalendarAssignmentsProductionMigration = "20260922120000"
 $CommunicationDeliveryOperationsProductionMigration = "20260922130000"
 $VolunteerCsvImportProductionMigration = "20260922140000"
 $ProjectHeroVolunteerHomeProductionMigration = "20260922150000"
+$AssignmentInstructionsProductionMigration = "20260926120000"
+$InstructionPrivacyProductionMigration = "20260927120000"
 $ReleaseInProgressMigrations = @(
   $BulkCalendarAssignmentsProductionMigration,
   $CommunicationDeliveryOperationsProductionMigration,
-  $VolunteerCsvImportProductionMigration
+  $VolunteerCsvImportProductionMigration,
+  $AssignmentInstructionsProductionMigration
 )
 $PartialProductionMigrationTerminals = @(
   "20260829130000",
@@ -46,7 +49,9 @@ $AllowedTerminalMigrations = @(
   $BulkCalendarAssignmentsProductionMigration,
   $CommunicationDeliveryOperationsProductionMigration,
   $VolunteerCsvImportProductionMigration,
-  $ProjectHeroVolunteerHomeProductionMigration
+  $ProjectHeroVolunteerHomeProductionMigration,
+  $AssignmentInstructionsProductionMigration,
+  $InstructionPrivacyProductionMigration
 )
 
 function Test-ProjectLocalReleaseInProgressMigration {
@@ -94,7 +99,9 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $VolunteerExperiencePolishProductionMigration -and $TargetMigration -ceq $BulkCalendarAssignmentsProductionMigration) -or
     ($CurrentMigration -ceq $BulkCalendarAssignmentsProductionMigration -and $TargetMigration -ceq $CommunicationDeliveryOperationsProductionMigration) -or
     ($CurrentMigration -ceq $CommunicationDeliveryOperationsProductionMigration -and $TargetMigration -ceq $VolunteerCsvImportProductionMigration) -or
-    ($CurrentMigration -ceq $VolunteerCsvImportProductionMigration -and $TargetMigration -ceq $ProjectHeroVolunteerHomeProductionMigration)
+    ($CurrentMigration -ceq $VolunteerCsvImportProductionMigration -and $TargetMigration -ceq $ProjectHeroVolunteerHomeProductionMigration) -or
+    ($CurrentMigration -ceq $ProjectHeroVolunteerHomeProductionMigration -and $TargetMigration -ceq $AssignmentInstructionsProductionMigration) -or
+    ($CurrentMigration -ceq $AssignmentInstructionsProductionMigration -and $TargetMigration -ceq $InstructionPrivacyProductionMigration)
   )
 }
 

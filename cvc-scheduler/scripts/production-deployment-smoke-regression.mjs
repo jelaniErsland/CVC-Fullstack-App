@@ -2,13 +2,14 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { resolveTaskDetailsSmokeTerminal } from "./task-details-release-contract.mjs";
 
 const root = process.cwd();
 const expectedProject = "project-local";
 const expectedOrigin = "https://projectlocal.app";
 const expectedSupabaseRef = "wdlaauzknfggoqldolmx";
 const forbiddenStagingRef = "kfuujcfxoayukywvtaeh";
-const expectedMigration = "20260922150000";
+const expectedMigration = resolveTaskDetailsSmokeTerminal(process.argv.slice(2));
 const optInName = "RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION";
 const expectedOptIn = `${expectedProject}|${expectedOrigin}|${expectedSupabaseRef}|${expectedMigration}`;
 

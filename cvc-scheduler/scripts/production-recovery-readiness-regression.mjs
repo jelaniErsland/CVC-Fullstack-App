@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { taskDetailsRelease } from "./task-details-release-contract.mjs";
 
 import {
   PRODUCTION_RECOVERY_CAN_ACCESS_PRODUCTION,
@@ -255,9 +256,11 @@ async function main() {
     assertIncludes(source, "NO-GO", "canonical production docs");
   }
   assertIncludes(currentState, "PRODUCTION_BACKUP_RECOVERY_RUNBOOK.md", "current recovery reference");
-  assertIncludes(currentState, "Production Supabase terminal: `20260905130000`", "current production terminal");
+  assertIncludes(currentState, `Production Supabase terminal: \`${taskDetailsRelease.before}\``, "current production terminal");
   assertIncludes(currentState, "Recovery validation is GREEN", "current recovery status");
-  assertIncludes(currentState, "UNAPPLIED to production", "local migration deployment boundary");
+  assertIncludes(currentState, "Both Task Details migrations remain UNAPPLIED to production", "local migration deployment boundary");
+  assertIncludes(runbook, `${taskDetailsRelease.before} -> ${taskDetailsRelease.intermediate} -> ${taskDetailsRelease.final}`, "exact reviewed Task Details recovery chain");
+  assertIncludes(runbook, "production-backup-task-details-recovery-regression.mjs", "local recovery proof command");
 
   const routeFiles = [
     "app/admin/calendar/page.tsx",

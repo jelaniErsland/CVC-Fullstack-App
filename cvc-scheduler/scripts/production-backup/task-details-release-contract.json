@@ -1,0 +1,20 @@
+{
+  "version": "20260927120000-transition-v1",
+  "applicationCommit": "6aeb38275e8bf9fc2d78c5dcb7b3c391185eb583",
+  "productionApplicationBaseline": "ca54020ef3f8e8ecc55bcd46f7fedf1331a56923",
+  "before": "20260922150000",
+  "intermediate": "20260926120000",
+  "final": "20260927120000",
+  "migrations": [
+    {
+      "file": "20260926120000_assignment_instructions.sql",
+      "sha256": "f68776edcbc4bf1b009fb6fa6b77ab9253c9233da4f3900ad268eb4bb0b878b5"
+    },
+    {
+      "file": "20260927120000_instruction_privacy.sql",
+      "sha256": "7dc8e019079c4039fa95c66361bc941eb969b16693f1b9b359ceacf374b79c51"
+    }
+  ],
+  "publicTables": 27,
+  "publicFunctions": 80
+}

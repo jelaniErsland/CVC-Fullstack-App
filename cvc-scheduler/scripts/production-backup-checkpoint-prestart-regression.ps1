@@ -58,7 +58,19 @@ try {
   $results.unexpectedTriggerRejected = (Test-ProjectLocalCheckpointPrestart -Task $withTrigger -TaskInfo $withTriggerInfo -ExpectedAction $action -ExpectedOperatorSid $operatorSid -MarkerPath $markerAbsent).Failures -contains 'unexpected_trigger'
 
   $results.oldCheckpointTaskAbsent = @(Get-ScheduledTask -TaskName 'Project Local 12.47 Controlled Checkpoint *' -ErrorAction SilentlyContinue).Count -eq 0
-  $results.oldMarkerAbsent = -not (Test-Path -LiteralPath (Join-Path $repositoryRoot '.local/12-47-checkpoint-task-name.txt'))
+  # Preserve historical release evidence. An old marker naming a removed task
+  # is not this fixture's fresh marker; the verifier must still reject any
+  # existing marker supplied for an actual checkpoint (staleMarkerRejected).
+  $legacyMarker = Join-Path $repositoryRoot '.local/12-47-checkpoint-task-name.txt'
+  $legacyMarkerState = 'absent'
+  $results.oldMarkerSafe = $true
+  if (Test-Path -LiteralPath $legacyMarker) {
+    $legacyTaskName = (Get-Content -LiteralPath $legacyMarker -Raw).Trim()
+    $results.oldMarkerSafe = $legacyTaskName -cmatch '^Project Local 12\.47 Controlled Checkpoint \d{8}$' -and
+      @(Get-ScheduledTask -TaskName $legacyTaskName -ErrorAction SilentlyContinue).Count -eq 0
+    $legacyMarkerState = if ($results.oldMarkerSafe) { 'historical_removed_task' } else { 'unsafe_legacy_marker' }
+  }
+  $results.legacyMarkerState = $legacyMarkerState
   $results.legacyNullCount = @($null).Count
   $results.correctedNullCount = @($null | Where-Object { $null -ne $_ }).Count
   [pscustomobject]$results | ConvertTo-Json -Compress

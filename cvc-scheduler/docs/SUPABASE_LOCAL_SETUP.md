@@ -75,11 +75,13 @@ After 12.26 manual Auth proof, one or more approved Auth identities may legitima
 
 ```powershell
 $env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION='project-local|https://projectlocal.app|wdlaauzknfggoqldolmx|20260922150000'
-npm run test:production-deployment-smoke
+node --conditions=react-server --no-warnings --experimental-strip-types scripts/production-deployment-smoke-regression.mjs --migration-terminal 20260922150000
 Remove-Item Env:RUN_PRODUCTION_DEPLOYMENT_SMOKE_VALIDATION
 ```
 
 This command sends unauthenticated GET requests only and does not request magic links, create Auth users, create fixtures, call Vercel/Supabase APIs, send email, or mutate data. Manual operator evidence confirms the final production Auth Site URL and callback are configured, magic-link sign-in passed through `https://projectlocal.app/admin/auth/callback`, and a signed-in user without Project Local grants failed closed. Commit `082c960` was pushed to `origin/master`; the Vercel Production deployment sourced from `082c960` reached Ready; and the exact final-domain smoke passed after deployment with exit code `0`. Rerun the command after future deployment, domain, Auth redirect, or production environment changes.
+
+Task Details local release-harness preparation adds only exact terminal support; production still ends at `20260922150000`. The smoke command above explicitly selects that current baseline. After a separately approved release and independently verified database terminal `20260927120000`, the default `npm run test:production-deployment-smoke` uses an opt-in ending with `|20260927120000`. The intermediate `20260926120000` is never accepted as a steady-state smoke terminal. See [local lock/recovery regressions and remaining production gates](TASK_DETAILS_RELEASE_HARNESS.md); HTTP smoke does not establish database migration state.
 
 ## Client boundary
 
