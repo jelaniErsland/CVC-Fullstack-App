@@ -115,7 +115,7 @@ export function SharedProjectQuickView({
                   <p className="font-semibold text-[var(--pl-ink)]">{item.title}</p>
                   <p className="text-sm font-semibold text-[var(--pl-text)]">
                     {item.schedule.kind === "timed"
-                      ? `${timeLabel(item.schedule.startTime)}–${timeLabel(item.schedule.endTime)}`
+                      ? `${item.schedule.startDate} ${timeLabel(item.schedule.startTime)}–${item.schedule.endDate && item.schedule.endDate !== item.schedule.startDate ? `${item.schedule.endDate} ` : ""}${timeLabel(item.schedule.endTime)}`
                       : "Time not set"}
                   </p>
                 </li>

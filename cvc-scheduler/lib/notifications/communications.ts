@@ -1,6 +1,6 @@
 export type CommunicationPlan = { kind: "welcome" | "schedule"; mode: "new" | "all" | "resend"; volunteerIds: string[]; startDate?: string; endDate?: string };
-export type CommunicationAssignment = { assignmentId: string; itemId: string; date: string; title: string; startTime: string | null; endTime: string | null; delivered: boolean | null };
-export type CommunicationRecipient = { volunteerId: string; name: string; email: string; assignments: CommunicationAssignment[]; newAssignments: number; previousAssignments: number; excludedAssignments: number; emailChanged: boolean };
+export type CommunicationAssignment = { assignmentId: string; itemId: string; date: string; endDate?: string | null; title: string; startTime: string | null; endTime: string | null; delivered: boolean | null };
+export type CommunicationRecipient = { volunteerId: string; name: string; email: string; assignments: CommunicationAssignment[]; newAssignments: number; previousAssignments: number; excludedAssignments: number; emailChanged: boolean; sharedContact?: boolean };
 export type CommunicationPreview = { workspaceName: string; kind: "welcome" | "schedule"; mode: string; recipients: CommunicationRecipient[]; exclusions: { volunteerId: string; name: string; reason: string; excludedAssignments: number }[]; fingerprint: string };
 export type CommunicationHistory = { operation_id: string; recipient_id: string; volunteer_id: string; kind: string; mode: string; created_at: string; name: string; email: string; state: "ready" | "sending" | "sent" | "failed" | "unknown" | "excluded"; attempt: number; failure_code: string | null; assignment_count: number };
 export type CommunicationActionState = { kind: "preview"; preview: CommunicationPreview } | { kind: "results"; history: CommunicationHistory[] } | { kind: "error"; message: string };
@@ -18,14 +18,14 @@ export function buildCommunicationMessage(input: { kind: "welcome" | "schedule";
   const lines = input.kind === "welcome" ? [
     `Hi ${input.name},`, `Welcome to Project Local for ${input.workspaceName}.`,
     "Project Local helps you see your assigned work and let the project team know whether you can make it.",
-    "To find your schedule, enter the email address or phone number you shared with the project team, then your last name. Choose your project if asked.",
+    "To find your schedule, enter the email address or phone number you shared with the project team. If others share that contact, choose your name and project.",
     "Open an assignment to Confirm or choose Can't make it. Each assignment has its own response.",
     "Your schedule also shows the posted weekly lunch menu. You can record dates when you'll be away so the project team can plan around your availability.",
     "If your schedule is empty, the project team has not posted work for you yet.",
     `Find your schedule: ${input.url}`,
   ] : [
     `Hi ${input.name},`, `Here is your current schedule for ${input.workspaceName}.`,
-    ...input.assignments.map(a => `${a.date} · ${a.title} · ${a.startTime ? `${a.startTime.slice(0,5)}–${a.endTime?.slice(0,5) ?? ""}` : "Time not specified"}`),
+    ...input.assignments.map(a => `${a.date}${a.endDate && a.endDate !== a.date ? ` → ${a.endDate}` : ""} · ${a.title} · ${a.startTime ? `${a.startTime.slice(0,5)}–${a.endTime?.slice(0,5) ?? ""}` : "Time not specified"}`),
     "Review each assignment and Confirm or choose Can't make it. Existing responses are preserved.",
     `View schedule & respond: ${input.url}`,
   ];

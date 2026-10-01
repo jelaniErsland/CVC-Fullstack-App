@@ -6,7 +6,7 @@ export type BulkAssignmentPlan = {
   note: string | null;
   create?: {
     presetId: string | null; title: string | null; taskType: string | null;
-    startDate: string; endDate: string; weekdays: number[];
+    startDate: string; endDate: string; endDayOffset?: number; weekdays: number[];
     startTime: string; endTime: string; neededCount: number;
     notes: string | null; customValues: Record<string, string | number | boolean | null>;
     meal: { kind: "breakfast" | "lunch"; provider: string | null; contact: string | null; menu: string | null; total: number | null } | null;
@@ -40,13 +40,13 @@ export function validateBulkAssignmentPlan(input: unknown, workspaceId: string, 
   if (input.note !== null && (typeof input.note !== "string" || input.note.length > 2000)) throw new Error("Assignment note is too long.");
   const result: BulkAssignmentPlan = { itemIds, volunteers, note: input.note as string | null };
   if (input.create != null) {
-    if (!record(input.create) || itemIds.length || Object.keys(input.create).some(k => !["presetId", "title", "taskType", "startDate", "endDate", "weekdays", "startTime", "endTime", "neededCount", "notes", "customValues", "meal"].includes(k))) throw new Error("Invalid creation selection.");
+    if (!record(input.create) || itemIds.length || Object.keys(input.create).some(k => !["presetId", "title", "taskType", "startDate", "endDate", "endDayOffset", "weekdays", "startTime", "endTime", "neededCount", "notes", "customValues", "meal"].includes(k))) throw new Error("Invalid creation selection.");
     const c = input.create;
     if (typeof c.startDate !== "string" || typeof c.endDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(c.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(c.endDate) || (Date.parse(c.endDate) - Date.parse(c.startDate)) / 86400000 > 366) throw new Error("Choose a date range of up to one year.");
     const normalized = validateCreateRepeatedCalendarItemsInput({
       requestKey: requestId, workspaceId,
       source: c.presetId ? { kind: "preset", taskPresetId: c.presetId } : { kind: "one_off", title: c.title, taskType: c.taskType },
-      startDate: c.startDate, endDate: c.endDate, weekdays: c.weekdays,
+      startDate: c.startDate, endDate: c.endDate, endDayOffset: c.endDayOffset, weekdays: c.weekdays,
       startTime: c.startTime, endTime: c.endTime, neededCount: c.neededCount,
       notes: c.notes, customValues: c.customValues, meal: c.meal,
     });
@@ -54,7 +54,7 @@ export function validateBulkAssignmentPlan(input: unknown, workspaceId: string, 
       presetId: normalized.source.kind === "preset" ? normalized.source.taskPresetId : null,
       title: normalized.source.kind === "one_off" ? normalized.source.title : null,
       taskType: normalized.source.kind === "one_off" ? normalized.source.taskType : null,
-      startDate: normalized.startDate, endDate: normalized.endDate, weekdays: [...normalized.weekdays],
+      startDate: normalized.startDate, endDate: normalized.endDate, endDayOffset: normalized.endDayOffset, weekdays: [...normalized.weekdays],
       startTime: normalized.startTime, endTime: normalized.endTime, neededCount: normalized.neededCount,
       notes: normalized.notes, customValues: { ...normalized.customValues }, meal: normalized.meal,
     };

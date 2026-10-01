@@ -73,18 +73,27 @@ export function normalizeCsvRow(row: string[], mapping: (CsvField | "")[]): CsvP
 export type CsvMatch = { row: number; kind: "new"|"matched"|"invalid"|"ambiguous"; profileId?: string; version?: string; name: string; fields: CsvField[]; patch: CsvProfilePatch; reason?: string };
 export function matchVolunteerCsv(rows: string[][],mapping:(CsvField|"")[],profiles:readonly VolunteerProfile[]): CsvMatch[] {
   const seen=new Set<string>();
+  const seenNewNames=new Set<string>();
+  const normalizedName=(value:string)=>value.trim().replace(/\s+/g,' ').toLowerCase();
   return rows.map((row,index)=>{
     try {
       const patch=normalizeCsvRow(row,mapping);
       const email=typeof patch.email==='string'?patch.email:null, tel=typeof patch.phone==='string'?patch.phone.replace(/\D/g,''):null;
-      const candidates=profiles.filter(p=>(patch.id && p.id===patch.id)||(email&&p.email?.trim().toLowerCase()===email)||(tel&&p.phone?.replace(/\D/g,'')===tel));
-      const identifiers=[patch.id&&`id:${patch.id}`,email&&`email:${email}`,tel&&`phone:${tel}`].filter(Boolean) as string[];
-      const duplicate=identifiers.some(k=>seen.has(k));identifiers.forEach(k=>seen.add(k));
-      const base={row:index+2,name:typeof patch.fullName==='string'?patch.fullName:candidates[0]?.fullName??'Unnamed row',fields:Object.keys(patch).filter(k=>k!=='id') as CsvField[],patch};
-      if(duplicate||candidates.length>1||(patch.id&&!profiles.some(p=>p.id===patch.id)))return {...base,kind:'ambiguous',reason:'Duplicate or conflicting identifiers; review outside this import.'};
-      if(candidates.length===1)return {...base,kind:'matched',profileId:candidates[0].id,version:candidates[0].updatedAt};
+      const identified=patch.id ? profiles.find(p=>p.id===patch.id) : undefined;
+      const name=typeof patch.fullName==='string'?normalizedName(patch.fullName):null;
+      // Contact details can be shared. They can flag a possible duplicate, but never authorize an update.
+      const possible=profiles.filter(p=>name===normalizedName(p.fullName)
+        && ((email&&p.email?.trim().toLowerCase()===email)||(tel&&p.phone?.replace(/\D/g,'')===tel)));
+      const rowKey=patch.id&&identified?`id:${identified.id}`:`person:${name ?? ''}:${email ?? ''}:${tel ?? ''}`;
+      const duplicate=seen.has(rowKey);seen.add(rowKey);
+      const base={row:index+2,name:typeof patch.fullName==='string'?patch.fullName:identified?.fullName??'Unnamed row',fields:Object.keys(patch).filter(k=>k!=='id') as CsvField[],patch};
+      if(duplicate)return {...base,kind:'ambiguous',reason:'Duplicate volunteer row in this CSV.'};
+      if(identified)return {...base,kind:'matched',profileId:identified.id,version:identified.updatedAt};
+      if(possible.length)return {...base,kind:'ambiguous',reason:'A possible existing volunteer shares this name and contact. Use the exported internal ID to update.'};
       if(!patch.fullName || (!email&&!tel))return {...base,kind:'invalid',reason:'New volunteers need a name and email or phone.'};
-      if(profiles.some(p=>p.fullName.trim().toLowerCase()===String(patch.fullName).toLowerCase()))return {...base,kind:'ambiguous',reason:'Name matches an existing volunteer without a reliable identifier match.'};
+      if(profiles.some(p=>normalizedName(p.fullName)===name))return {...base,kind:'ambiguous',reason:'Name matches an existing volunteer without an authoritative internal ID.'};
+      if(seenNewNames.has(name!))return {...base,kind:'ambiguous',reason:'Another new row has this name. Review both identities.'};
+      seenNewNames.add(name!);
       return {...base,kind:'new'};
     } catch(e) {return {row:index+2,kind:'invalid',name:'Invalid row',fields:[],patch:{},reason:e instanceof Error?e.message:'Invalid row'};}
   });

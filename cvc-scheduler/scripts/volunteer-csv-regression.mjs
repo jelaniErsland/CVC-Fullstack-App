@@ -24,7 +24,7 @@ assert.throws(()=>exportVolunteerCsv([fixture],true,false));
 const round=parseVolunteerCsv(exportVolunteerCsv([fixture],true,true));
 assert.equal(normalizeCsvRow(round.rows[0],round.mapping).dateOfBirth,'1980-01-01');
 assert.equal(matchVolunteerCsv([['Doe, Alex','new@example.invalid']],['fullName','email'],[fixture])[0].kind,'ambiguous');
-assert.equal(matchVolunteerCsv([['alex@example.invalid']],['email'],[fixture])[0].kind,'matched');
+assert.equal(matchVolunteerCsv([['alex@example.invalid']],['email'],[fixture])[0].kind,'invalid','Contact alone cannot identify a volunteer');
 assert.equal(matchVolunteerCsv([['New','new@example.invalid'],['New','new@example.invalid']],['fullName','email'],[])[1].kind,'ambiguous');
 try {
   sql(`insert into public.workspaces(id,workspace_key,display_name,lifecycle,timezone) values(${q(ws)},${q('qa-csv-'+ws)},'Local CSV','active','America/Denver');
@@ -52,6 +52,16 @@ try {
   const results=await Promise.all([concurrent(importSql([racing])),concurrent(importSql([racing]))]);
   assert.equal(results.filter(r=>r.status===0).length,1,'Concurrent imports do not duplicate');
   assert.equal(val(`select count(*) from public.volunteer_profiles where workspace_id=${q(ws)}`),'2');
+  const household=JSON.parse(val(importSql([
+    {patch:{fullName:'Synthetic Household A',email:'shared@example.invalid',phone:'+12025550333'}},
+    {patch:{fullName:'Synthetic Household B',email:'shared@example.invalid',phone:'+12025550333'}},
+  ])));
+  assert.equal(household.created,2,'Shared contact methods do not merge identities');
+  assert.notEqual(household.profileIds[0],household.profileIds[1]);
+  assert.equal(val(`select count(*) from public.volunteer_profiles where workspace_id=${q(ws)} and lower(email)='shared@example.invalid'`),'2');
+  assert.notEqual(sql(importSql([{patch:{fullName:'Synthetic Household A',email:'shared@example.invalid'}}]),true).status,0,'Repeat without an internal ID requires review');
+  const householdVersion=val(`select updated_at from public.volunteer_profiles where id=${q(household.profileIds[0])}`);
+  assert.equal(JSON.parse(val(importSql([{profileId:household.profileIds[0],expectedUpdatedAt:householdVersion,patch:{congregation:'Reviewed household member'}}]))).updated,1);
   assert.equal(val(`select count(*) from public.communication_operations where workspace_id=${q(ws)}`),'0','No automatic email');
   assert.notEqual(sql(`set role anon; select public.import_volunteer_profiles(${q(ws)},${q(randomUUID())},'[]');`,true).status,0);
   sql(`update public.workspace_contact_grants set capabilities=array['workspace.read','volunteers.view'] where workspace_id=${q(ws)};`);

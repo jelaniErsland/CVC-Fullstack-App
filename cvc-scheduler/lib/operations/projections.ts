@@ -48,7 +48,7 @@ export type QuickViewScheduleSummary = Readonly<{
   title: string;
   category: "general" | "food" | "custom";
   schedule:
-    | Readonly<{ kind: "timed"; startTime: string; endTime: string }>
+    | Readonly<{ kind: "timed"; startDate: string; endDate: string | null; startTime: string; endTime: string }>
     | Readonly<{ kind: "untimed" }>;
   plannedStaffingCount: number;
 }>;
@@ -81,7 +81,7 @@ function safeScheduleSummary(
   }
   const schedule =
     source.scheduleKind === "timed" && source.startTime && source.endTime
-      ? { kind: "timed" as const, startTime: source.startTime, endTime: source.endTime }
+      ? { kind: "timed" as const, startDate: source.startDate, endDate: source.endDate, startTime: source.startTime, endTime: source.endTime }
       : { kind: "untimed" as const };
   return {
     title: source.title,

@@ -423,6 +423,19 @@ async function verifyNotifications(containerName, users) {
     `Unexpected initial summary: ${JSON.stringify({ parsed: initialSummary, raw: rawSummary.data })}`,
   );
   assert.equal(initialSummary.summaries[0]?.missingEmailCount, 1);
+  const householdId=randomUUID();
+  runPsql(containerName, `insert into public.volunteer_profiles
+    (id,workspace_id,profile_source,manual_created_by_project_contact_id,manual_created_at,lifecycle,readiness_status,full_name,email,availability_snapshot,skills_help_snapshot)
+    values (${sqlUuid(householdId)},${sqlUuid(fixture.workspaceId)},'manual',${sqlUuid(fixture.contacts.scheduler)},clock_timestamp(),'active','ready','Synthetic Household Member',${sqlText(`${fixture.namespace}-ready@example.invalid`)},'{}','{}');`);
+  const sharedSummary=await readInitialAssignmentNotificationSummariesWithClient({
+    supabase:users.scheduler.client,calendarItemIds:[fixture.items.published],canSendInitialAssignmentNotifications:true,
+  });
+  assert.equal(sharedSummary.summaries[0]?.eligibleToSendCount,1,'Shared contact remains eligible for its own assignment email.');
+  const sharedClaim=await users.scheduler.client.rpc('claim_initial_assignment_notification_deliveries',{p_calendar_item_id:fixture.items.published});
+  assert(!sharedClaim.error,'Shared-contact claim should succeed.');
+  assert(sharedClaim.data.some(row=>row.volunteer_profile_id===fixture.volunteers.readyWithEmail && row.send_status==='sendable'));
+  runPsql(containerName, `delete from public.assignment_notification_deliveries where calendar_item_id=${sqlUuid(fixture.items.published)};`);
+  runPsql(containerName, `delete from public.volunteer_profiles where id=${sqlUuid(householdId)};`);
 
   const readOnlySummary = await readInitialAssignmentNotificationSummariesWithClient({
     supabase: users.viewOnly.client,

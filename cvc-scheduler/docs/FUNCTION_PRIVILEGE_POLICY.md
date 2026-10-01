@@ -2,7 +2,9 @@
 
 ## Task-instruction local review — September 27, 2026
 
-The pending instruction migration `20260926120000` and forward privacy migration `20260927120000` have a verified local inventory of **80 exact signatures: 10 anonymous, 52 authenticated, 18 internal**. The deployed schema remains unchanged. Historical 12.47 counts below describe that earlier stage.
+The pending 12.49 migration adds `publish_draft_on_assignment()` as an internal, postgres-owned SECURITY DEFINER trigger helper with pinned empty search path and no PUBLIC, anon, authenticated or service-role EXECUTE. Its only operation is to call the existing authorized publish RPC after a creator with both `calendar.edit` and `assignments.edit` saves an assignment; it leaves old drafts untouched. The 12.49 local inventory is **81 exact signatures: 10 anonymous, 52 authenticated, 19 internal**. The 12.49 migration is not deployed. Historical 12.47 and Task Details counts below describe their earlier stages.
+
+The pending instruction migration `20260926120000` and forward privacy migration `20260927120000` had a verified local inventory of **80 exact signatures: 10 anonymous, 52 authenticated, 18 internal** before 12.49. Historical 12.47 counts below describe that earlier stage.
 
 The two new authenticated functions are `update_task_preset_description(uuid,text,timestamp with time zone)` and `apply_task_preset_instructions(uuid,timestamp with time zone,jsonb)`. Both have EXECUTE for authenticated/service_role only, require nonnull `auth.uid()`, and independently enforce live workspace/contact/capability and version checks. No new anonymous function or runtime service-role credential is introduced.
 
@@ -16,7 +18,7 @@ New authenticated privacy functions: `read_authorized_calendar_items(uuid,date,d
 
 ## Historical 12.47 review
 
-Status: the September 24 read-only production preflight confirmed terminal `20260908130000` and 58 functions; production was not mutated. The fresh local migration catalog through `20260922150000` is **72 functions: 10 anonymous, 47 authenticated, 15 internal**. All four 12.47 migrations are local release source and unapplied to production.
+Status: the September 24 read-only production preflight confirmed terminal `20260908130000` and 58 functions; production was not mutated. The current local catalog through `20260930130000` is **87 functions: 10 anonymous, 55 authenticated, 22 internal**. The 12.49 migrations are local release source and unapplied to production.
 
 ## Local 12.47 additions and boundaries
 
@@ -57,7 +59,7 @@ Token issuance, notification claims (which return contact details), audited resp
 
 ## Current policy
 
-Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). All 72 local-source signatures must be classified; extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on application RPCs is retained; internal helpers deny service_role as well as anon/authenticated. There is no service-role-only product RPC or runtime secret.
+Exact test data: [function-privilege-policy.mjs](../scripts/function-privilege-policy.mjs). The current local inventory has 87 classified signatures: 10 anonymous, 55 authenticated, and 22 internal. Extra/missing functions or different owners fail. PUBLIC execution is denied on every Project Local function. Service-role access on application RPCs is retained; internal helpers deny service_role as well as anon/authenticated. There is no service-role-only product RPC or runtime secret.
 
 ### A — intentional anonymous RPCs (10 local; 8 last documented live)
 
@@ -74,9 +76,9 @@ Each retains exact anon and authenticated grants; the existing service_role priv
 | `submit_assignment_response_by_token(text,text,text)` | Assignment bearer with exact scope; start/48-hour response locks, concurrency guards; narrow response result. | [20260714122100_volunteer_schedule_responses.sql:595](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql); [lib/responseTokens/server.ts](../lib/responseTokens/server.ts) |
 | `submit_questionnaire_submission(text,jsonb,integer)` | Public intake explicitly enabled on active workspace key; bounded validated answers/version; returns newly created submission reference, no existing data. | [20260701020000_questionnaire_submissions.sql:78](../supabase/migrations/20260701020000_questionnaire_submissions.sql); [lib/questionnaires/server.ts](../lib/questionnaires/server.ts) |
 | `submit_volunteer_schedule_assignment_response(text,uuid,text,text)` | Verified schedule bearer and exact assignment/volunteer/workspace join; start/48-hour locks; narrow response result. | [20260714122100_volunteer_schedule_responses.sql:335](../supabase/migrations/20260714122100_volunteer_schedule_responses.sql); [lib/volunteerScheduleAccess/server.ts](../lib/volunteerScheduleAccess/server.ts) |
-| `verify_volunteer_schedule_lookup(text,text,text)` | Exact normalized name/contact; active/ready gates; duplicate fail closed; opaque HMAC project choices; DB serialized limiter; hash-only stored bearer. Route exchanges bearer into existing HttpOnly cookie. | [20260905120000_volunteer_schedule_lookup.sql:14](../supabase/migrations/20260905120000_volunteer_schedule_lookup.sql); [app/v/lookup/route.ts](../app/v/lookup/route.ts) |
+| `resolve_volunteer_schedule_contact(text,text)` | Contact-only lookup; eligible shared-contact matches yield opaque volunteer choices with name/project/congregation. The selected volunteer is rechecked before a scoped, hash-only stored schedule bearer is issued. The serialized limiter remains in force. This is intentionally lightweight access, not strong identity authentication. | [20260930130000_overnight_calendar_intervals.sql](../supabase/migrations/20260930130000_overnight_calendar_intervals.sql); [app/v/lookup/route.ts](../app/v/lookup/route.ts) |
 
-### B — authenticated application RPCs (47 local; 38 last documented live)
+### B — authenticated application RPCs (55 local; 38 last documented live)
 
 Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing service_role ACL, and remains SECURITY DEFINER with search_path=''. Every row below has verified identity and live grant/capability/workspace checks. Capabilities listed are the source predicates (read_assignment_detail_context requires view and reports edit separately).
 
@@ -130,9 +132,11 @@ Each denies anon/PUBLIC, explicitly grants authenticated, preserves the existing
 | `update_volunteer_profile_manual_fields(uuid,jsonb)` | 'volunteers.edit' | [20260908120000_volunteer_profile_questionnaire_expansion.sql](../supabase/migrations/20260908120000_volunteer_profile_questionnaire_expansion.sql); [lib/volunteers/server.ts](../lib/volunteers/server.ts) |
 | `mark_needs_attention_signal_seen(uuid,text)` | 'workspace.read', 'calendar.view', 'assignments.view' | [20260908130000_volunteer_lookup_last_name_and_attention_seen.sql](../supabase/migrations/20260908130000_volunteer_lookup_last_name_and_attention_seen.sql); authorized contact's own review state only. |
 
-### C — internal functions (15 local; 12 last documented live)
+### C — internal functions (22 local; 12 last documented live)
 
 No anon, PUBLIC, authenticated, or service_role EXECUTE. postgres owner access remains. Existing triggers execute through PostgreSQL's trigger mechanism; their invoker bodies run in the initiating SQL context, normally the RPC owner. No trigger is converted to SECURITY DEFINER. CHECK/helper evaluations inside definer RPCs inherit owner context. Timestamp/validation/Calendar/Task/volunteer/Project Day preservation tests exercise these paths.
+
+The 12.49 interval migration adds `calendar_local_time_is_unique(date,time without time zone,text)` and the `validate_calendar_timed_interval()` trigger helper. It keeps the old surname lookup signature unavailable to app roles. The new edit and recurrence overloads retain the corresponding authenticated capability checks; the old signatures remain available for compatible same-day clients. [Migration](../supabase/migrations/20260930130000_overnight_calendar_intervals.sql).
 
 | Exact signature | Actual internal caller |
 | --- | --- |

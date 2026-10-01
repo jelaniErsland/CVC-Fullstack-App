@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 export const q=v=>v==null?'null':`'${String(v).replaceAll("'","''")}'`;
-export function sql(query,fail=false){const r=spawnSync('docker',['exec','-i','supabase_db_cvc-scheduler','psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],{input:query,encoding:'utf8',windowsHide:true});if(!fail)assert.equal(r.status,0,r.stderr);return r;}
+const localContainer=process.env.LOCAL_FIXTURE_CONTAINER || 'supabase_db_cvc-scheduler';
+assert(/^supabase_db_cvc-(?:scheduler|1249-replay)$/.test(localContainer),'Only a named local fixture database is supported.');
+export function sql(query,fail=false){const r=spawnSync('docker',['exec','-i',localContainer,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],{input:query,encoding:'utf8',windowsHide:true});if(!fail)assert.equal(r.status,0,r.stderr);return r;}
 export const value=query=>sql(query).stdout.trim();
 export async function fixture(browser=false){
   const admin=browser?await (await import('./bulk-assignment-browser.mjs')).createBrowserAdmin():null;

@@ -45,6 +45,7 @@ export type InitialAssignmentEmailInput = Readonly<{
   taskTitle: string;
   taskType: string;
   scheduleDate: string;
+  scheduleEndDate?: string | null;
   scheduleStartTime: string | null;
   scheduleEndTime: string | null;
   scheduleNotes: string | null;
@@ -263,7 +264,9 @@ function scheduleTimeLabel(input: InitialAssignmentEmailInput) {
 
 function buildResendMessage(input: InitialAssignmentEmailInput) {
   const subject = `New Project Local assignment · ${input.workspaceDisplayName.trim()}`;
-  const dateLabel = formatScheduleDate(input.scheduleDate);
+  const dateLabel = input.scheduleEndDate && input.scheduleEndDate !== input.scheduleDate
+    ? `${formatScheduleDate(input.scheduleDate)} – ${formatScheduleDate(input.scheduleEndDate)}`
+    : formatScheduleDate(input.scheduleDate);
   const timeLabel = scheduleTimeLabel(input);
   const followUpPhone = input.followUpContact.phone?.trim();
   const note = input.scheduleNotes?.trim();

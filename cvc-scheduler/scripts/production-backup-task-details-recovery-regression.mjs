@@ -53,7 +53,25 @@ function verify(container) {
   assert.equal(sql(container, "select string_agg(version,',' order by version) from supabase_migrations.schema_migrations"), migrations.map(m => m.slice(0, 14)).join(","));
   const functions = sql(container, effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse);
   assert.equal(functions.length, release.publicFunctions);
-  assertEffectiveFunctionPolicy(assert, functions);
+  const legacyLookup = "verify_volunteer_schedule_lookup(text,text,text)";
+  const legacy = functions.find(row => row.signature === legacyLookup);
+  assert(legacy, "Historical lookup function is missing");
+  assert.equal(legacy.owner, "postgres");
+  assert.equal(legacy.public, false);
+  assert.equal(legacy.anon, true);
+  assert.equal(legacy.authenticated, true);
+  assert.equal(legacy.service_role, true);
+  assert.deepEqual(legacy.config, ['search_path=""']);
+  assertEffectiveFunctionPolicy(assert, functions.filter(row => row.signature !== legacyLookup), { historicalExclusions: [
+    "resolve_volunteer_schedule_contact(text,text)",
+    "create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,integer,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
+    "update_calendar_item_one_off_timed(uuid,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+    "update_calendar_item_preset_timed(uuid,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+    "publish_draft_on_assignment()",
+    "calendar_local_time_is_unique(date,time without time zone,text)",
+    "validate_calendar_timed_interval()",
+    legacyLookup,
+  ] });
   assert.equal(sql(container, "select count(*) from pg_tables where schemaname='public' and not rowsecurity"), "0");
   assert.equal(sql(container, "select count(*) from pg_policy where polrelid='public.assignment_instruction_revisions'::regclass"), "0");
   assert.equal(sql(container, "select count(*) from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a where d.defaclrole='postgres'::regrole and d.defaclnamespace in (0,'public'::regnamespace) and d.defaclobjtype in ('r','f') and a.grantee in (0,'anon'::regrole,'authenticated'::regrole)"), "0");

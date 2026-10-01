@@ -492,12 +492,14 @@ function parseCalendarTimeMinutes(value?: string) {
   return hour * 60 + Number(minuteText);
 }
 
-function getCalendarItemStartMinutes(item: CalendarItem) {
+function getCalendarItemStartMinutes(item: CalendarItem, displayDate?: string) {
+  if (displayDate && displayDate > item.date) return 0;
   return parseCalendarTimeMinutes(item.startTime) ?? 9 * 60;
 }
 
-function getCalendarItemEndMinutes(item: CalendarItem) {
-  const start = getCalendarItemStartMinutes(item);
+function getCalendarItemEndMinutes(item: CalendarItem, displayDate?: string) {
+  if (displayDate && item.endDate && displayDate < item.endDate) return 24 * 60;
+  const start = getCalendarItemStartMinutes(item,displayDate);
   const parsedEnd = parseCalendarTimeMinutes(item.endTime);
 
   if (parsedEnd === undefined) {
@@ -507,22 +509,22 @@ function getCalendarItemEndMinutes(item: CalendarItem) {
   return parsedEnd <= start ? 24 * 60 : parsedEnd;
 }
 
-function getCalendarItemStartHour(item: CalendarItem) {
-  return Math.floor(getCalendarItemStartMinutes(item) / 60);
+function getCalendarItemStartHour(item: CalendarItem, displayDate?: string) {
+  return Math.floor(getCalendarItemStartMinutes(item,displayDate) / 60);
 }
 
-function layoutWeekItems(items: CalendarItemWithPreset[]) {
+function layoutWeekItems(items: CalendarItemWithPreset[], displayDate: string) {
   const timedItems = [...items]
     .sort(
       (first, second) =>
-        getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second) ||
-        getCalendarItemEndMinutes(first) - getCalendarItemEndMinutes(second) ||
+        getCalendarItemStartMinutes(first,displayDate) - getCalendarItemStartMinutes(second,displayDate) ||
+        getCalendarItemEndMinutes(first,displayDate) - getCalendarItemEndMinutes(second,displayDate) ||
         (first.id < second.id ? -1 : first.id > second.id ? 1 : 0),
     )
     .map((item) => ({
-      end: getCalendarItemEndMinutes(item),
+      end: getCalendarItemEndMinutes(item,displayDate),
       item,
-      start: getCalendarItemStartMinutes(item),
+      start: getCalendarItemStartMinutes(item,displayDate),
     }));
   const clusters: (typeof timedItems)[] = [];
   let activeCluster: typeof timedItems = [];
@@ -1410,7 +1412,7 @@ function WeekGrid({
               }
               type="button"
             /> : null}
-            {layoutWeekItems(group.items).map(
+            {layoutWeekItems(group.items,group.date).map(
               ({ height, item, lane, laneCount, top }) => {
                 const laneWidth = 100 / laneCount;
 
@@ -1579,7 +1581,7 @@ function DayView({
       <div className="max-h-[620px] overflow-y-auto" data-calendar-arrow-group="day-hours" ref={timelineRef}>
         {dayTimelineSlots.map((slot) => {
           const slotItems = timedItems.filter(
-            (item) => getCalendarItemStartHour(item) === slot.hour,
+            (item) => getCalendarItemStartHour(item,date) === slot.hour,
           );
 
           return (
@@ -2308,7 +2310,10 @@ function CreatePanelContent({
   const timedRangeInvalid =
     !creationDraft.allDay &&
     !timedTimeMissing &&
-    creationDraft.endTime <= creationDraft.startTime;
+    (creationDraft.endDate < creationDraft.date ||
+      (creationDraft.endDate === creationDraft.date && creationDraft.endTime <= creationDraft.startTime));
+  const endDayOffset = Math.round((Date.parse(`${creationDraft.endDate}T00:00:00Z`) - Date.parse(`${creationDraft.date}T00:00:00Z`)) / 86400000);
+  const repeatOffsetInvalid = isRepeat && (!Number.isInteger(endDayOffset) || endDayOffset < 0 || endDayOffset > 7);
   const neededCountInvalid =
     creationDraft.neededCount < 0 || creationDraft.neededCount > 99;
   const unsupportedAllDay = creationDraft.allDay && !isMealPreset;
@@ -2319,7 +2324,7 @@ function CreatePanelContent({
     isRepeat && !dateMissing && !repeatEndMissing && !repeatRangeInvalid
       ? expandRepeatDates(creationDraft.date, creationDraft.repeatEndDate, creationDraft.repeatWeekdays)
       : [];
-  const repeatInvalid = isRepeat && (repeatEndMissing || repeatRangeInvalid || repeatDates.length === 0 || repeatDates.length > CALENDAR_REPEAT_MAX_ITEMS);
+  const repeatInvalid = isRepeat && (repeatEndMissing || repeatRangeInvalid || repeatOffsetInvalid || repeatDates.length === 0 || repeatDates.length > CALENDAR_REPEAT_MAX_ITEMS);
   const customNameErrorId = `${validationId}-custom-task-name-error`;
   const dateErrorId = `${validationId}-creation-date-error`;
   const timeErrorId = `${validationId}-creation-time-error`;
@@ -2343,7 +2348,7 @@ function CreatePanelContent({
   const timeValidationMessage = timedTimeMissing
     ? "Choose both a start and end time."
     : timedRangeInvalid
-      ? "End time must be later than Start."
+      ? "Choose a later end time or an explicit later end date."
       : undefined;
   const actionStatus =
     (customNameInvalid && "Add a custom task name.") ||
@@ -2717,6 +2722,12 @@ function CreatePanelContent({
                     value={creationDraft.endTime}
                   />
                 </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Ends on</span>
+                  <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold" min={creationDraft.date} onChange={event => onUpdate({ endDate: event.target.value })} type="date" value={creationDraft.endDate} />
+                  <span className="mt-1 block text-xs text-slate-600">{creationDraft.endDate === creationDraft.date ? "Same day" : `Continues through ${creationDraft.endDate}`}</span>
+                </label>
+                {creationDraft.endDate === creationDraft.date && creationDraft.endTime < creationDraft.startTime && <button className="min-h-10 text-left text-xs font-semibold text-blue-700 underline sm:col-span-2" onClick={() => { const next = new Date(`${creationDraft.date}T00:00:00Z`); next.setUTCDate(next.getUTCDate()+1); onUpdate({ endDate: next.toISOString().slice(0,10) }); }} type="button">Use the following day for this end time</button>}
               </>
             ) : null}
             {!isRepeat && dateValidationMessage ? (
@@ -2885,6 +2896,7 @@ function CreatePanelContent({
             title: isOneOff ? creationDraft.customName : null,
             taskType: isOneOff ? mapHighLevelTaskTypeToCalendarTaskType(creationDraft.customTaskType) : null,
             startDate: creationDraft.date, endDate: isRepeat ? creationDraft.repeatEndDate : creationDraft.date,
+            endDayOffset,
             weekdays: isRepeat ? creationDraft.repeatWeekdays : [new Date(`${creationDraft.date}T00:00:00Z`).getUTCDay()],
             startTime: creationDraft.startTime, endTime: creationDraft.endTime,
             neededCount: isMealPreset ? 0 : creationDraft.neededCount, notes: creationDraft.notes || null, customValues: {},
@@ -2910,6 +2922,8 @@ function CreatePanelContent({
             value={mapHighLevelTaskTypeToCalendarTaskType(creationDraft.customTaskType)}
           />
           <input name="date" type="hidden" value={creationDraft.date} />
+          <input name="endDate" type="hidden" value={creationDraft.endDate} />
+          <input name="endDayOffset" type="hidden" value={String(endDayOffset)} />
           <input name="repeatRequestKey" type="hidden" value={creationDraft.repeatRequestKey} />
           <input name="repeatStartDate" type="hidden" value={creationDraft.date} />
           <input name="repeatEndDate" type="hidden" value={creationDraft.repeatEndDate} />
@@ -3297,12 +3311,12 @@ function InspectorContent({
         {!readOnly ? <>
         <div className="order-5 mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5" data-inspector-section="visibility">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            STEP 3 · VISIBILITY
+            Visibility
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {item.publicationState === "draft"
-              ? "Private to its creator until published. Assignments may be prepared now; email stays off."
-              : "Visible to authorized project contacts. Email still requires the explicit action below."}
+              ? "Private planning item. Saving an assignment makes it visible to that volunteer automatically when the creator can publish. Email remains a separate action."
+              : "Visible to authorized project contacts and assigned volunteers. Email still requires a separate action."}
           </p>
           {item.publishedAt ? (
             <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -3400,7 +3414,7 @@ function InspectorContent({
         <div className="order-6 mt-3 border-b border-[var(--pl-border)] bg-sky-50/45 px-3 py-3" data-inspector-section="notification">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
-            STEP 4 · NOTIFICATION
+            Communication
           </p>
           {initialNotification?.kind === "ready" ? (
             <div className="mt-3 space-y-3">
@@ -3409,7 +3423,7 @@ function InspectorContent({
                   Notify volunteers
                 </h3>
                 <p className="mt-1 text-sm leading-5 text-slate-600">
-                  Send the first notice only after publication. Nothing sends automatically.
+                  Saving and assigning do not send email. Review eligible recipients before delivery.
                 </p>
               </div>
               <div className="grid gap-2 text-xs font-semibold text-slate-600 sm:grid-cols-2">
@@ -3425,6 +3439,15 @@ function InspectorContent({
                 <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                   Needs Follow-up Contact: {initialNotification.missingFollowUpContactCount}
                 </span>
+                {initialNotification.failedRetryableCount > 0 && <span className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                  Failed, needs review: {initialNotification.failedRetryableCount}
+                </span>}
+                {initialNotification.sendingCount > 0 && <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Sending or pending: {initialNotification.sendingCount}
+                </span>}
+                {initialNotification.ineligibleCount > 0 && <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  Not eligible: {initialNotification.ineligibleCount}
+                </span>}
               </div>
               {followUpContactSelfEdit?.kind === "current_contact" &&
               updateCurrentVolunteerFacingContactDetailsAction ? (
@@ -3521,8 +3544,12 @@ function InspectorContent({
               ) : null}
               {item.publicationState !== "published" ? (
                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
-                  Publish this item before sending assignment email. Assigning and
-                  publishing still do not send email automatically.
+                  This item is still a private draft. Publish it to make saved assignments visible to volunteers before sending email. Publishing sends no email.
+                </p>
+              ) : null}
+              {item.publicationState === "published" && initialNotification.eligibleToSendCount === 0 ? (
+                <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">
+                  No first notices are eligible. Check missing email or contact details, shared addresses, pending or failed deliveries, and whether assignments were already sent. Communications can send a reviewed shared-address notice without a personal link or a deliberate resend.
                 </p>
               ) : null}
               {canEditAssignments && sendInitialAssignmentNotificationsAction ? (
@@ -3692,6 +3719,11 @@ function InspectorContent({
                     required
                     type="date"
                   />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-semibold text-slate-700">Ends on</span>
+                  <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1" defaultValue={item.endDate ?? item.date} min={item.date} name="endDate" required type="date" />
+                  <span className="mt-1 block text-xs text-slate-600">Use the following day for an overnight shift.</span>
                 </label>
                 {isOneOffItem ? (
                   <label className="block">

@@ -84,7 +84,9 @@ async function readSafeOperationalSources(
   return {
     projectDay:
       projectDayResult.data === null ? null : parseProjectDay(projectDayResult.data),
-    schedule: (scheduleResult.data ?? []).map(parseScheduleSource),
+    schedule: (scheduleResult.data ?? []).map(parseScheduleSource).filter(source =>
+      !(source.scheduleKind === "timed" && source.endDate === date && /^00:00(?::00(?:\.0+)?)?$/.test(source.endTime ?? ""))
+    ),
   };
 }
 

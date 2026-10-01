@@ -41,7 +41,21 @@ try {
   const rejected={fetch:async()=>new Response('{}',{status:422})};
   await dispatchCommunicationRecipients(client,f.ws,welcome,false,configuration,rejected);
   await dispatchCommunicationRecipients(client,f.ws,welcome,true,configuration,runtime);assert.equal(outbound.length,4);
-  assert(outbound[3].text.includes('last name'));assert(!outbound[3].text.includes('/v/access/'));
+  assert(outbound[3].text.includes('email address or phone number'));assert(!outbound[3].text.includes('last name'));assert(!outbound[3].text.includes('/v/access/'));
+  value(f.auth(`select public.create_calendar_assignment(${q(f.items[0])},${q(f.volunteers[2])},null)`));
+  const sharedAddress=value(`select email from public.volunteer_profiles where id=${q(f.volunteers[1])}`);
+  value(`update public.volunteer_profiles set email=${q(sharedAddress)} where id=${q(f.volunteers[2])}`);
+  const accessBefore=Number(value(`select count(*) from public.volunteer_schedule_access_tokens where workspace_id=${q(f.ws)}`));
+  const shared=queue([f.volunteers[1],f.volunteers[2]],'schedule','resend');
+  assert.equal(shared.length,2,'One reviewed operation keeps two shared-address volunteer recipients.');
+  await dispatchCommunicationRecipients(client,f.ws,shared,false,configuration,runtime);
+  assert.equal(outbound.length,6);
+  for(const message of outbound.slice(4)) {
+    assert.equal(message.to[0],sharedAddress);
+    assert(message.text.includes('/v/access/') && message.text.includes('Site preparation'));
+    assert(message.html.includes('<a '),'Each reviewed recipient receives their own scoped schedule link.');
+  }
+  assert.equal(Number(value(`select count(*) from public.volunteer_schedule_access_tokens where workspace_id=${q(f.ws)}`)),accessBefore+2,'Shared-address sends issue separate scoped credentials.');
   const before=outbound.length;await assert.rejects(()=>dispatchCommunicationRecipients(client,f.ws,[],false,{ok:false,reason:'transport_disabled'},runtime));assert.equal(outbound.length,before);
   console.log('PASS: real local ledger/credential dispatcher with stubbed provider, one message per recipient, consolidated work, scoped links/privacy, accepted deduplication, lost-finalization token preservation, explicit failed-only retry, welcome template, disabled transport. Real sends 0.');
 } finally {await f.cleanup();}

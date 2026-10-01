@@ -82,7 +82,7 @@ function displayTime(time: string | null) {
 function scheduleLabel(signal: NeedsAttentionSignal) {
   const start = displayTime(signal.startTime);
   if (!signal.endTime || !signal.startTime) return `${displayDate(signal.startDate)} · ${start}`;
-  return `${displayDate(signal.startDate)} · ${start}–${displayTime(signal.endTime)}`;
+  return `${displayDate(signal.startDate)} · ${start}–${signal.endDate && signal.endDate !== signal.startDate ? `${displayDate(signal.endDate)} ` : ""}${displayTime(signal.endTime)}`;
 }
 
 function AttentionRow({ signal, unseen }: { signal: NeedsAttentionSignal; unseen: boolean }) {

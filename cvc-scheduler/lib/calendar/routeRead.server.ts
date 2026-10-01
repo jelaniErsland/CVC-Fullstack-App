@@ -712,7 +712,8 @@ export function mapPersistedItemToCalendarItem(
     endTime,
     startTimeValue: normalizeCalendarEditTimeValue(item.startTime),
     endTimeValue: normalizeCalendarEditTimeValue(item.endTime),
-    timeWindow: startTime && endTime ? `${startTime} - ${endTime}` : undefined,
+    timeWindow: startTime && endTime ? item.endDate && item.endDate !== item.startDate
+      ? `${item.startDate} ${startTime} – ${item.endDate} ${endTime}` : `${startTime} - ${endTime}` : undefined,
     category,
     colorKey,
     assignedVolunteerIds: assignments.map((assignment) => assignment.volunteerProfileId),

@@ -102,7 +102,7 @@ export async function createCalendarItemWithClient(
       p_schedule_kind: schedule.kind,
       p_start_date:
         schedule.kind === "multi_day_window" ? schedule.startDate : schedule.date,
-      p_end_date: schedule.kind === "multi_day_window" ? schedule.endDate : null,
+      p_end_date: schedule.kind === "multi_day_window" ? schedule.endDate : schedule.kind === "timed" ? schedule.endDate ?? null : null,
       p_start_time: schedule.kind === "timed" ? schedule.startTime : null,
       p_end_time: schedule.kind === "timed" ? schedule.endTime : null,
       p_needed_count: item.neededCount,
@@ -134,6 +134,7 @@ export async function updateCalendarOneOffTimedItemWithClient(
       p_one_off_title: item.source.title,
       p_one_off_task_type: item.source.taskType,
       p_start_date: item.schedule.date,
+      p_end_date: item.schedule.endDate ?? null,
       p_start_time: item.schedule.startTime,
       p_end_time: item.schedule.endTime,
       p_needed_count: item.neededCount,
@@ -167,6 +168,7 @@ export async function updateCalendarPresetTimedItemWithClient(
     {
       p_calendar_item_id: item.calendarItemId,
       p_start_date: item.schedule.date,
+      p_end_date: item.schedule.endDate ?? null,
       p_start_time: item.schedule.startTime,
       p_end_time: item.schedule.endTime,
       p_needed_count: item.neededCount,
@@ -264,6 +266,7 @@ export function calendarOneOffTimedCreateInputFromFormData(
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),
+      endDate: textFromFormData(formData, "endDate"),
       startTime: textFromFormData(formData, "startTime"),
       endTime: textFromFormData(formData, "endTime"),
     },
@@ -286,6 +289,7 @@ export function calendarPresetTimedCreateInputFromFormData(
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),
+      endDate: textFromFormData(formData, "endDate"),
       startTime: textFromFormData(formData, "startTime"),
       endTime: textFromFormData(formData, "endTime"),
     },
@@ -308,6 +312,7 @@ export function calendarOneOffTimedUpdateInputFromFormData(
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),
+      endDate: textFromFormData(formData, "endDate"),
       startTime: textFromFormData(formData, "startTime"),
       endTime: textFromFormData(formData, "endTime"),
     },
@@ -326,6 +331,7 @@ export function calendarPresetTimedUpdateInputFromFormData(
     schedule: {
       kind: "timed",
       date: textFromFormData(formData, "date"),
+      endDate: textFromFormData(formData, "endDate"),
       startTime: textFromFormData(formData, "startTime"),
       endTime: textFromFormData(formData, "endTime"),
     },

@@ -1603,6 +1603,10 @@ export type Database = {
         Args: { p_values: Json }
         Returns: boolean
       }
+      calendar_local_time_is_unique: {
+        Args: { p_date: string; p_time: string; p_timezone: string }
+        Returns: boolean
+      }
       can_view_calendar_item_operations: {
         Args: { p_item_id: string; p_workspace_id: string }
         Returns: boolean
@@ -1701,28 +1705,52 @@ export type Database = {
         }
         Returns: string
       }
-      create_current_workspace_repeated_calendar_items: {
-        Args: {
-          p_custom_values: Json
-          p_end_date: string
-          p_end_time: string
-          p_meal_contact: string
-          p_meal_kind: string
-          p_meal_menu: string
-          p_meal_provider: string
-          p_meal_total: number
-          p_needed_count: number
-          p_one_off_task_type: string
-          p_one_off_title: string
-          p_request_key: string
-          p_schedule_notes: string
-          p_start_date: string
-          p_start_time: string
-          p_task_preset_id: string
-          p_weekdays: number[]
-        }
-        Returns: string[]
-      }
+      create_current_workspace_repeated_calendar_items:
+        | {
+            Args: {
+              p_custom_values: Json
+              p_end_date: string
+              p_end_day_offset: number
+              p_end_time: string
+              p_meal_contact: string
+              p_meal_kind: string
+              p_meal_menu: string
+              p_meal_provider: string
+              p_meal_total: number
+              p_needed_count: number
+              p_one_off_task_type: string
+              p_one_off_title: string
+              p_request_key: string
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+              p_task_preset_id: string
+              p_weekdays: number[]
+            }
+            Returns: string[]
+          }
+        | {
+            Args: {
+              p_custom_values: Json
+              p_end_date: string
+              p_end_time: string
+              p_meal_contact: string
+              p_meal_kind: string
+              p_meal_menu: string
+              p_meal_provider: string
+              p_meal_total: number
+              p_needed_count: number
+              p_one_off_task_type: string
+              p_one_off_title: string
+              p_request_key: string
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+              p_task_preset_id: string
+              p_weekdays: number[]
+            }
+            Returns: string[]
+          }
       create_manual_volunteer_profile: {
         Args: { p_profile: Json; p_workspace_id: string }
         Returns: string
@@ -2066,6 +2094,10 @@ export type Database = {
           token_id: string
         }[]
       }
+      resolve_volunteer_schedule_contact: {
+        Args: { p_choice?: string; p_contact: string }
+        Returns: Json
+      }
       response_link_reveal_metadata_is_valid: {
         Args: { p_metadata: Json }
         Returns: boolean
@@ -2183,34 +2215,66 @@ export type Database = {
         }
         Returns: string
       }
-      update_calendar_item_one_off_timed: {
-        Args: {
-          p_calendar_item_id: string
-          p_custom_values: Json
-          p_end_time: string
-          p_expected_updated_at: string
-          p_needed_count: number
-          p_one_off_task_type: string
-          p_one_off_title: string
-          p_schedule_notes: string
-          p_start_date: string
-          p_start_time: string
-        }
-        Returns: string
-      }
-      update_calendar_item_preset_timed: {
-        Args: {
-          p_calendar_item_id: string
-          p_custom_values: Json
-          p_end_time: string
-          p_expected_updated_at: string
-          p_needed_count: number
-          p_schedule_notes: string
-          p_start_date: string
-          p_start_time: string
-        }
-        Returns: string
-      }
+      update_calendar_item_one_off_timed:
+        | {
+            Args: {
+              p_calendar_item_id: string
+              p_custom_values: Json
+              p_end_date: string
+              p_end_time: string
+              p_expected_updated_at: string
+              p_needed_count: number
+              p_one_off_task_type: string
+              p_one_off_title: string
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_calendar_item_id: string
+              p_custom_values: Json
+              p_end_time: string
+              p_expected_updated_at: string
+              p_needed_count: number
+              p_one_off_task_type: string
+              p_one_off_title: string
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+            }
+            Returns: string
+          }
+      update_calendar_item_preset_timed:
+        | {
+            Args: {
+              p_calendar_item_id: string
+              p_custom_values: Json
+              p_end_date: string
+              p_end_time: string
+              p_expected_updated_at: string
+              p_needed_count: number
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_calendar_item_id: string
+              p_custom_values: Json
+              p_end_time: string
+              p_expected_updated_at: string
+              p_needed_count: number
+              p_schedule_notes: string
+              p_start_date: string
+              p_start_time: string
+            }
+            Returns: string
+          }
       update_current_project_contact_volunteer_facing_details: {
         Args: {
           p_display_name: string

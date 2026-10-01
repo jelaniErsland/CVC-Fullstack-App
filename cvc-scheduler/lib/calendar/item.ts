@@ -15,7 +15,7 @@ export type CalendarTaskSource =
   | Readonly<{ kind: "one_off"; title: string; taskType: CalendarTaskType }>;
 
 export type CalendarSchedule =
-  | Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>
+  | Readonly<{ kind: "timed"; date: string; endDate?: string; startTime: string; endTime: string }>
   | Readonly<{ kind: "date_based"; date: string }>
   | Readonly<{ kind: "multi_day_window"; startDate: string; endDate: string }>
   | Readonly<{ kind: "milestone"; date: string }>;
@@ -33,7 +33,7 @@ export type UpdateCalendarOneOffTimedItemInput = Readonly<{
   calendarItemId: string;
   expectedUpdatedAt: string;
   source: Readonly<{ title: string; taskType: CalendarTaskType }>;
-  schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
+  schedule: Readonly<{ kind: "timed"; date: string; endDate?: string; startTime: string; endTime: string }>;
   neededCount: number;
   notes?: string | null;
   customValues: Readonly<Record<string, CalendarCustomValue>>;
@@ -42,7 +42,7 @@ export type UpdateCalendarOneOffTimedItemInput = Readonly<{
 export type UpdateCalendarPresetTimedItemInput = Readonly<{
   calendarItemId: string;
   expectedUpdatedAt: string;
-  schedule: Readonly<{ kind: "timed"; date: string; startTime: string; endTime: string }>;
+  schedule: Readonly<{ kind: "timed"; date: string; endDate?: string; startTime: string; endTime: string }>;
   neededCount: number;
   notes?: string | null;
   customValues: Readonly<Record<string, CalendarCustomValue>>;
@@ -271,15 +271,20 @@ function parseSchedule(value: unknown, issues: string[]): CalendarSchedule {
     return { kind: "milestone", date: "" };
   }
   if (value.kind === "timed") {
-    rejectUnknownKeys(value, ["kind", "date", "startTime", "endTime"], "schedule", issues);
+    rejectUnknownKeys(value, ["kind", "date", "endDate", "startTime", "endTime"], "schedule", issues);
+    const date = normalizeDate(value.date, "schedule.date", issues);
+    const endDate = value.endDate === undefined || value.endDate === null || value.endDate === ""
+      ? undefined : normalizeDate(value.endDate, "schedule.endDate", issues);
     const startTime = normalizeTime(value.startTime, "schedule.startTime", issues);
     const endTime = normalizeTime(value.endTime, "schedule.endTime", issues);
-    if (startTime && endTime && timeMinutes(endTime) <= timeMinutes(startTime)) {
-      issues.push("schedule.endTime must be later than startTime; overnight work is deferred.");
+    if (endDate && date && endDate < date) issues.push("schedule.endDate must not be before the start date.");
+    if (startTime && endTime && (!endDate || endDate === date) && timeMinutes(endTime) <= timeMinutes(startTime)) {
+      issues.push("Choose a later end time or an explicit later end date.");
     }
     return {
       kind: "timed",
-      date: normalizeDate(value.date, "schedule.date", issues),
+      date,
+      ...(endDate && endDate !== date ? { endDate } : {}),
       startTime,
       endTime,
     };
@@ -464,6 +469,7 @@ export function parseCalendarItem(value: unknown): CalendarItem {
       ? {
           kind: "timed",
           date: value.start_date,
+          endDate: value.end_date,
           startTime: typeof value.start_time === "string" ? value.start_time.slice(0, 5) : value.start_time,
           endTime: typeof value.end_time === "string" ? value.end_time.slice(0, 5) : value.end_time,
         }

@@ -7,6 +7,7 @@ export type VolunteerScheduleItem = Readonly<{
   assignmentId: string;
   itemId: string;
   date: string;
+  endDate: string | null;
   title: string;
   startTime: string | null;
   endTime: string | null;
@@ -41,7 +42,7 @@ export async function readVolunteerScheduleWithClient(input: {
     const assignmentIds = assignmentRows.map((row) => row.id);
     const [items, responses] = await Promise.all([
       input.client.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceId })
-        .select("id,start_date,title_snapshot,start_time,end_time,timezone,lifecycle")
+        .select("id,start_date,end_date,title_snapshot,start_time,end_time,timezone,lifecycle")
         .eq("workspace_id", workspaceId).in("id", itemIds),
       input.client.from("assignment_responses")
         .select("assignment_id,response_status,updated_at")
@@ -65,6 +66,7 @@ export async function readVolunteerScheduleWithClient(input: {
         assignmentId: assignment.id,
         itemId: item.id,
         date: item.start_date,
+        endDate: item.end_date,
         title: item.title_snapshot,
         startTime: item.start_time,
         endTime: item.end_time,

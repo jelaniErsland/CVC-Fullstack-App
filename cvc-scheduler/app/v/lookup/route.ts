@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     const client = createClient<Database>(config.url, config.anonKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
-    const { data, error } = await client.rpc("verify_volunteer_schedule_lookup", {
-      p_full_name: input.lastName, p_contact: input.contact, p_project_choice: input.projectChoice,
+    const { data, error } = await client.rpc("resolve_volunteer_schedule_contact", {
+      p_contact: input.contact, p_choice: input.choice ?? undefined,
     });
     if (error) return failure();
     const result = parseLookupResult(data);
@@ -49,8 +49,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set(volunteerScheduleAccessCookie.name, result.bearer_token, {
       httpOnly: true, sameSite: "lax", path: volunteerScheduleAccessCookie.path,
       secure: request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https",
-      // Match personalized-link session lifetime: browser session, with DB expiry.
+      maxAge: 30 * 24 * 60 * 60,
     });
+    response.headers.append("Set-Cookie", `${volunteerScheduleAccessCookie.name}=; Path=/v; Max-Age=0; SameSite=Lax; HttpOnly`);
     return response;
   } catch {
     // Do not log submitted identity, database errors, or returned credentials.

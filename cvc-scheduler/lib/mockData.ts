@@ -4381,7 +4381,9 @@ export function getCalendarItemPreviewTimingKind(
 }
 
 export function doesCalendarItemOccurOnDate(item: CalendarItem, date: string) {
-  return item.date <= date && (item.endDate ?? item.date) >= date;
+  if (item.date > date || (item.endDate ?? item.date) < date) return false;
+  if (item.endDate === date && item.startTime && /^12:00\s*AM$/i.test(item.endTime ?? "")) return false;
+  return true;
 }
 
 export function doesCalendarItemOverlapDateRange(
@@ -4389,7 +4391,10 @@ export function doesCalendarItemOverlapDateRange(
   startDate: string,
   endDate: string,
 ) {
-  return item.date <= endDate && (item.endDate ?? item.date) >= startDate;
+  const lastVisibleDate = item.endDate && item.startTime && /^12:00\s*AM$/i.test(item.endTime ?? "")
+    ? new Date(Date.parse(`${item.endDate}T00:00:00Z`) - 86400000).toISOString().slice(0, 10)
+    : item.endDate ?? item.date;
+  return item.date <= endDate && lastVisibleDate >= startDate;
 }
 
 export function getCalendarItemsForProject(projectId = demoProjectId) {
@@ -4469,19 +4474,12 @@ export function groupCalendarItemsByDay(
   items = getCalendarItemsByWeek(),
   referenceDate = items[0]?.date ?? scheduleReferenceDate,
 ): CalendarDayGroup[] {
-  const itemsByDate = items.reduce<Record<string, CalendarItemWithPreset[]>>(
-    (grouped, item) => {
-      grouped[item.date] = [...(grouped[item.date] ?? []), enrichCalendarItem(item)];
-      return grouped;
-    },
-    {},
-  );
   const weekRange = deriveCalendarWeekRange(referenceDate);
 
   return weekRange.dates.map((date) => ({
     date,
     dayLabel: getCalendarDateLabel(date),
-    items: itemsByDate[date] ?? [],
+    items: items.filter(item => doesCalendarItemOccurOnDate(item,date)).map(enrichCalendarItem),
   }));
 }
 
@@ -4500,6 +4498,7 @@ export function getCalendarItemDisplayName(item: CalendarItem) {
 
 export function getCalendarItemTimeWindow(item: CalendarItem) {
   if (item.startTime && item.endTime) {
+    if (item.endDate && item.endDate !== item.date) return `${getCalendarCompactDayLabel(item.date)} ${item.startTime} – ${getCalendarCompactDayLabel(item.endDate)} ${item.endTime}`;
     return `${item.startTime} - ${item.endTime}`;
   }
 

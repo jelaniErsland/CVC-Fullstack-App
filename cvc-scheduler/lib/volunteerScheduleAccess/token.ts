@@ -324,11 +324,21 @@ export function parseIssuedVolunteerScheduleAccess(
   return result;
 }
 
-function compareAssignmentDates(assignment: VolunteerScheduleAssignment, now: Date) {
+function compareAssignmentDates(assignment: VolunteerScheduleAssignment, localNow: string) {
   const end = assignment.endDate ?? assignment.startDate;
-  const time = assignment.endTime ?? assignment.startTime ?? "23:59";
-  const value = Date.parse(`${end}T${time.slice(0, 5)}:00Z`);
-  return Number.isFinite(value) ? value - now.getTime() : 1;
+  const time = assignment.endTime ?? assignment.startTime ?? "23:59:59";
+  const clock = time.length >= 8 ? time.slice(0, 8) : `${time.slice(0, 5)}:00`;
+  const localEnd = `${end}T${clock}`;
+  return localEnd === localNow ? 0 : localEnd > localNow ? 1 : -1;
+}
+
+function currentLocalDateTime(timezone: string, now: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(now);
+  const part = (type: string) => parts.find(value => value.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}:${part("second")}`;
 }
 
 export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
@@ -410,6 +420,7 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
 
   if (issues.length > 0) throw new Error("Volunteer schedule returned an invalid result.");
   const now = new Date();
+  const localNow = currentLocalDateTime(workspaceTimezone, now);
   const safeAssignments = assignments.filter(
     (assignment): assignment is VolunteerScheduleAssignment => Boolean(assignment),
   );
@@ -419,10 +430,10 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
     workspaceTimezone,
     volunteerDisplayName,
     upcomingAssignments: safeAssignments.filter(
-      (assignment) => compareAssignmentDates(assignment, now) >= 0,
+      (assignment) => compareAssignmentDates(assignment, localNow) >= 0,
     ),
     pastAssignments: safeAssignments.filter(
-      (assignment) => compareAssignmentDates(assignment, now) < 0,
+      (assignment) => compareAssignmentDates(assignment, localNow) < 0,
     ),
   };
 }

@@ -21,6 +21,7 @@ export async function createRepeatedCalendarItemsWithClient(
       p_one_off_task_type: value.source.kind === "one_off" ? value.source.taskType : null,
       p_start_date: value.startDate,
       p_end_date: value.endDate,
+      p_end_day_offset: value.endDayOffset,
       p_weekdays: [...value.weekdays],
       p_start_time: value.startTime,
       p_end_time: value.endTime,

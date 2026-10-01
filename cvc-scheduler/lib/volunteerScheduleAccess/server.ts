@@ -26,7 +26,7 @@ import {
 
 export const volunteerScheduleAccessCookie = {
   name: "pl-volunteer-schedule",
-  path: "/v",
+  path: "/",
 } as const;
 
 function createVolunteerScheduleReadClient(): AppSupabaseClient {

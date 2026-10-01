@@ -455,7 +455,7 @@ async function main() {
   assertIncludes(migrationContract, '"20260714122230"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260812123430"', "production migration contract historical terminal");
   assertIncludes(migrationContract, '"20260902120000"', "production migration contract");
-  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260927120000-transition-v1"', "production migration contract version");
+  assertIncludes(migrationContract, '$ProjectLocalProductionMigrationContractVersion = "20260930130000-transition-v1"', "production migration contract version");
   assertIncludes(migrationContract, '$FollowUpContactProductionMigration = "20260824123500"', "production migration contract current terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewProductionMigration = "20260902120000"', "production migration contract future terminal");
   assertIncludes(migrationContract, '$ProjectQuickViewPrivilegeHardeningProductionMigration = "20260903120000"', "production migration contract security terminal");

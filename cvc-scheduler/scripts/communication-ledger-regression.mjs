@@ -21,13 +21,14 @@ try {
     insert into public.project_contacts(id,auth_user_id,status) values(${q(contact)},${q(user)},'active');
     insert into public.workspace_contact_grants(workspace_id,project_contact_id,role,capabilities,status,valid_from)
     values(${q(ws)},${q(contact)},'main_contact',array['workspace.read','volunteers.view','volunteers.edit','calendar.view','calendar.edit','assignments.view','assignments.edit'],'active',now()-interval '1 day');`);
-  for(let i=0;i<3;i++) volunteers.push(val(auth(`select public.create_manual_volunteer_profile(${q(ws)},${q(JSON.stringify({fullName:`Communication volunteer ${i}`,email:i<2?`${ws}-${i}@example.invalid`:null,phone:'+12025550123',dateOfBirth:'1980-01-01',emergencyContactName:'PRIVATE EXCLUDED',profileNotes:'PRIVATE NOTES'}))})`)));
+  for(let i=0;i<3;i++) volunteers.push(val(auth(`select public.create_manual_volunteer_profile(${q(ws)},${q(JSON.stringify({fullName:`Communication volunteer ${i}`,email:i<2?`${ws}-shared@example.invalid`:null,phone:'+12025550123',dateOfBirth:'1980-01-01',emergencyContactName:'PRIVATE EXCLUDED',profileNotes:'PRIVATE NOTES'}))})`)));
   sql(`insert into public.calendar_items(id,workspace_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,start_time,end_time,timezone,needed_count,lifecycle,created_by_project_contact_id,publication_state,published_at,published_by_project_contact_id)
     values ${[item,item2].map((id,i)=>`(${q(id)},${q(ws)},'Local work ${i}','general','timed','2035-10-0${i+1}','08:00','10:00','America/Denver',2,'active',${q(contact)},'published',now(),${q(contact)})`).join(',')};`);
   for(const id of [item,item2]) sql(auth(`select public.create_calendar_assignments_batch(${q(id)},array[${volunteers.map(q).join(',')}]::uuid[],null)`));
   const plan={kind:'schedule',mode:'new',startDate:'2035-10-01',endDate:'2035-10-02',volunteerIds:[]};
   const p=preview(plan);
   assert.equal(p.recipients.length,2); assert.equal(p.exclusions.length,1);
+  assert(p.recipients.every(person=>person.sharedContact===true),'Shared address produces distinct sanitized recipients.');
   assert.equal(p.recipients[0].assignments.length,2);assert.equal(p.recipients[0].newAssignments,2);
   assert(!JSON.stringify(p).includes('PRIVATE'));assert(!JSON.stringify(p).includes('1980-01-01'));
   const ops=[randomUUID(),randomUUID()];
@@ -41,8 +42,9 @@ try {
   assert(claims.every(r=>r.status===0));
   const nonnull=claims.filter(r=>r.stdout.trim());assert.equal(nonnull.length,1,'Only one dispatcher can claim a recipient.');
   const c=JSON.parse(nonnull[0].stdout.trim());assert.equal(c.assignments.length,2);
+  assert.equal(c.sharedContact,true,'Claim retains shared-contact privacy mode.');
   assert.equal(finalize(c,'sent'),'sent');assert.equal(claim(r.recipient_id,true),null,'Accepted recipient cannot be resent by retry.');
-  const other=claim(rows[1].recipient_id);assert(other);
+  const other=claim(rows[1].recipient_id);assert(other);assert.equal(other.sharedContact,true);
   assert.equal(finalize(other,'failed','provider_rejected'),'failed');
   assert.equal(claim(rows[1].recipient_id),null,'Failed recipient needs explicit retry.');
   const retry=claim(rows[1].recipient_id,true);assert.equal(retry.attempt,2);

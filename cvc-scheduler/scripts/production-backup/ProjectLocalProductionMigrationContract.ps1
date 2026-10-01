@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 
-$ProjectLocalProductionMigrationContractVersion = "20260927120000-transition-v1"
+$ProjectLocalProductionMigrationContractVersion = "20260930130000-transition-v1"
 $ProductionBaselineMigration = "20260714122230"
 $EstablishedProductionMigration = "20260812123430"
 $FollowUpContactProductionMigration = "20260824123500"
@@ -21,6 +21,8 @@ $VolunteerCsvImportProductionMigration = "20260922140000"
 $ProjectHeroVolunteerHomeProductionMigration = "20260922150000"
 $AssignmentInstructionsProductionMigration = "20260926120000"
 $InstructionPrivacyProductionMigration = "20260927120000"
+$HouseholdIdentityImportProductionMigration = "20260930120000"
+$OvernightCalendarProductionMigration = "20260930130000"
 $ReleaseInProgressMigrations = @(
   $BulkCalendarAssignmentsProductionMigration,
   $CommunicationDeliveryOperationsProductionMigration,
@@ -51,7 +53,9 @@ $AllowedTerminalMigrations = @(
   $VolunteerCsvImportProductionMigration,
   $ProjectHeroVolunteerHomeProductionMigration,
   $AssignmentInstructionsProductionMigration,
-  $InstructionPrivacyProductionMigration
+  $InstructionPrivacyProductionMigration,
+  $HouseholdIdentityImportProductionMigration,
+  $OvernightCalendarProductionMigration
 )
 
 function Test-ProjectLocalReleaseInProgressMigration {
@@ -101,7 +105,9 @@ function Test-ProjectLocalReviewedLockTransition {
     ($CurrentMigration -ceq $CommunicationDeliveryOperationsProductionMigration -and $TargetMigration -ceq $VolunteerCsvImportProductionMigration) -or
     ($CurrentMigration -ceq $VolunteerCsvImportProductionMigration -and $TargetMigration -ceq $ProjectHeroVolunteerHomeProductionMigration) -or
     ($CurrentMigration -ceq $ProjectHeroVolunteerHomeProductionMigration -and $TargetMigration -ceq $AssignmentInstructionsProductionMigration) -or
-    ($CurrentMigration -ceq $AssignmentInstructionsProductionMigration -and $TargetMigration -ceq $InstructionPrivacyProductionMigration)
+    ($CurrentMigration -ceq $AssignmentInstructionsProductionMigration -and $TargetMigration -ceq $InstructionPrivacyProductionMigration) -or
+    ($CurrentMigration -ceq $InstructionPrivacyProductionMigration -and $TargetMigration -ceq $HouseholdIdentityImportProductionMigration) -or
+    ($CurrentMigration -ceq $HouseholdIdentityImportProductionMigration -and $TargetMigration -ceq $OvernightCalendarProductionMigration)
   )
 }
 

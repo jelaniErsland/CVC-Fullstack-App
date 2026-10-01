@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { CalendarMeal } from "@/lib/calendar/meals";
 import type { BulkAssignmentAction, BulkVolunteerOption } from "./BulkAssignmentPlanner";
 
@@ -41,8 +41,11 @@ export function MealForm({ date, view, item }: {
   </form>;
 }
 
-export function DuplicateItem({ item, date, view }: { item: { id: string; allDay?: boolean; startTimeValue?: string; endTimeValue?: string; meal?: CalendarMeal | null }; date: string; view: string }) {
+export function DuplicateItem({ item, date, view }: { item: { id: string; date: string; endDate?: string; allDay?: boolean; startTimeValue?: string; endTimeValue?: string; meal?: CalendarMeal | null }; date: string; view: string }) {
   const { readOnly, duplicateAction } = useCalendarOperations();
+  const [targetDate, setTargetDate] = useState(date);
+  const endDayOffset = item.endDate ? Math.round((Date.parse(`${item.endDate}T00:00:00Z`) - Date.parse(`${item.date}T00:00:00Z`)) / 86400000) : 0;
+  const targetEndDate = endDayOffset > 0 && targetDate ? new Date(Date.parse(`${targetDate}T00:00:00Z`) + endDayOffset * 86400000).toISOString().slice(0, 10) : null;
   if (readOnly || !duplicateAction) return null;
   return <details className="order-3 mt-4 border-t border-slate-200 pt-4">
     <summary className="min-h-11 cursor-pointer font-semibold text-[var(--pl-blue)]">Duplicate</summary>
@@ -51,7 +54,8 @@ export function DuplicateItem({ item, date, view }: { item: { id: string; allDay
       <input type="hidden" name="calendarItemId" value={item.id} />
       <input type="hidden" name="redirectView" value={view} />
       <input type="hidden" name="redirectDate" value={date} />
-      <label className="block text-sm font-semibold">Target date<input className={inputClass} name="targetDate" type="date" required defaultValue={date} /></label>
+      <label className="block text-sm font-semibold">Target date<input className={inputClass} name="targetDate" type="date" required value={targetDate} onChange={event => setTargetDate(event.target.value)} /></label>
+      {targetEndDate ? <p className="text-sm text-slate-600">This copy ends on {targetEndDate}.</p> : null}
       {!item.allDay ? <div className="grid grid-cols-2 gap-3">
         <label className="min-w-0 text-sm font-semibold">Start<input className={inputClass} name="startTime" type="time" required defaultValue={item.startTimeValue} /></label>
         <label className="min-w-0 text-sm font-semibold">End<input className={inputClass} name="endTime" type="time" required defaultValue={item.endTimeValue} /></label>

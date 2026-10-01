@@ -78,7 +78,7 @@ try {
   const saved=call(creation,ck,cp.fingerprint);
   assert.equal(saved.createdItemIds.length,3);
   assert.equal(saved.createdAssignmentCount,5);
-  assert.equal(scalar(`select count(*) from public.calendar_items where id=any(array[${saved.itemIds.map(q).join(',')}]::uuid[]) and publication_state='draft'`),'3');
+  assert.equal(scalar(`select count(*) from public.calendar_items where id=any(array[${saved.itemIds.map(q).join(',')}]::uuid[]) and publication_state='published'`),'3','Assigned work is published once.');
   assert.equal(scalar(`select count(*) from public.assignment_responses where workspace_id=${q(ws)}`),'9','Independent response row per assignment.');
   const responseId=saved.assignmentIds[0];
   const responseItem=scalar(`select calendar_item_id from public.calendar_assignments where id=${q(responseId)}`);

@@ -29,7 +29,7 @@ async function mutate(form: FormData, kind: "meal" | "duplicate") {
     params.set("date", date);
     const start = field(form, "startTime") || null;
     const end = field(form, "endTime") || null;
-    if (Boolean(start) !== Boolean(end) || (start && end && end <= start)) throw new Error("Invalid time");
+    if (Boolean(start) !== Boolean(end) || (kind === "meal" && start && end && end <= start)) throw new Error("Invalid time");
     const itemId = field(form, "calendarItemId");
     const totalText = field(form, "total");
     if (totalText && !/^\d{1,6}$/.test(totalText)) throw new Error("Invalid total");

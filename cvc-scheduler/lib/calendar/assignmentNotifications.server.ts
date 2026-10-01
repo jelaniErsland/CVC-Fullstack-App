@@ -41,6 +41,7 @@ type ClaimedInitialAssignmentNotification = Readonly<{
   taskTitle: string;
   taskType: string;
   scheduleDate: string;
+  scheduleEndDate: string | null;
   scheduleStartTime: string | null;
   scheduleEndTime: string | null;
   scheduleNotes: string | null;
@@ -142,6 +143,7 @@ function parseClaims(value: unknown): readonly ClaimedInitialAssignmentNotificat
     taskTitle: text(row.task_title) ?? "",
     taskType: text(row.task_type) ?? "general",
     scheduleDate: text(row.start_date) ?? "",
+    scheduleEndDate: nullableText(row.end_date),
     scheduleStartTime: nullableText(row.start_time),
     scheduleEndTime: nullableText(row.end_time),
     scheduleNotes: nullableText(row.schedule_notes),
@@ -344,6 +346,7 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
           taskTitle: claim.taskTitle,
           taskType: claim.taskType,
           scheduleDate: claim.scheduleDate,
+          scheduleEndDate: claim.scheduleEndDate,
           scheduleStartTime: claim.scheduleStartTime,
           scheduleEndTime: claim.scheduleEndTime,
           scheduleNotes: claim.scheduleNotes,

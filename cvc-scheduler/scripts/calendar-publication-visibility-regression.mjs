@@ -389,7 +389,6 @@ where id = ${sqlUuid(calendarItemId)}`,
     updateTimedItem(containerName, users.readOnly.client, calendarItemId, `${fixture.namespace} View Edit`),
   );
 
-  const assignmentId = await createAssignment(users.owner.client, calendarItemId);
   await expectFailure("same-workspace non-owner draft assignment", () =>
     users.editor.client.rpc("create_calendar_assignments_batch", {
       p_calendar_item_id: calendarItemId,
@@ -399,25 +398,18 @@ where id = ${sqlUuid(calendarItemId)}`,
       if (error) throw error;
     }),
   );
-
-  await expectFailure("draft response token issuance", () =>
-    users.owner.client.rpc("issue_assignment_response_token", {
-      p_assignment_id: assignmentId,
-      p_ttl_hours: 1,
-      p_internal_note: "draft blocked",
-    }).then(({ error }) => {
-      if (error) throw error;
-    }),
-  );
+  const assignmentId = await createAssignment(users.owner.client, calendarItemId);
+  assert.equal(queryJson(containerName, `select publication_state from public.calendar_items where id=${sqlUuid(calendarItemId)}`)[0].publication_state,
+    "published", "Saving an assignment publishes the creator's draft without email.");
 
   const ownerDetail = await users.owner.client.rpc("read_assignment_detail_context", {
     p_assignment_id: assignmentId,
   });
-  assert(!ownerDetail.error && ownerDetail.data?.length === 1, "Draft assignment detail should remain available to the draft owner.");
+  assert(!ownerDetail.error && ownerDetail.data?.length === 1, "Saved assignment detail remains available to the owner.");
   const editorDetail = await users.editor.client.rpc("read_assignment_detail_context", {
     p_assignment_id: assignmentId,
   });
-  assert(!editorDetail.error && editorDetail.data?.length === 0, "Draft assignment detail must not leak to a non-owner same-workspace contact.");
+  assert(!editorDetail.error && editorDetail.data?.length === 1, "Authorized contacts can see an assigned published item.");
 
   await expectFailure("role-only publish", () =>
     users.roleOnly.client.rpc("publish_calendar_item", { p_calendar_item_id: calendarItemId }).then(({ error }) => {

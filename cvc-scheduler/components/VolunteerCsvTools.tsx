@@ -43,7 +43,7 @@ export function VolunteerCsvTools({ canEdit, filteredIds }: { canEdit: boolean; 
         {privateExport && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm"><p>This download contains sensitive personal information. Store it securely and share only with authorized project contacts.</p><label className="mt-3 flex gap-2"><input required type="checkbox" name="privateWarningAccepted" value="yes" />I understand and need these private fields.</label></div>}
         <button className={control} type="submit">Download CSV</button>
       </form> : <div className="grid gap-4">
-        <p className="text-sm text-slate-600">Add new volunteers or review individual changes to matched profiles. Importing sends no email. Blank cells keep existing information.</p>
+        <p className="text-sm text-slate-600">Add new volunteers or review changes matched by a Project Local internal ID from an export. Spreadsheet-generated IDs and shared email or phone values do not identify an existing volunteer. Importing sends no email; blank cells keep existing information.</p>
         <form action="/admin/volunteers/csv" method="post"><input type="hidden" name="mode" value="template" /><button type="submit" className="text-sm font-semibold text-blue-700 underline">Download template</button></form>
         <label className="grid min-w-0 gap-2 text-sm font-medium">CSV file<input type="file" accept=".csv,text/csv,text/tab-separated-values" className={`${control} w-full`} disabled={busy} onChange={async e => {
           setState(null); setChoices({}); const file = e.target.files?.[0]; if (!file) return;

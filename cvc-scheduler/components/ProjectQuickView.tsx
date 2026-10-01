@@ -183,7 +183,7 @@ export function ProjectQuickView({
                   </div>
                   <p className="text-sm font-semibold text-[var(--pl-text)]">
                     {item.schedule.kind === "timed"
-                      ? `${getTimeLabel(item.schedule.startTime)}–${getTimeLabel(item.schedule.endTime)}`
+                      ? `${item.schedule.startDate} ${getTimeLabel(item.schedule.startTime)}–${item.schedule.endDate && item.schedule.endDate !== item.schedule.startDate ? `${item.schedule.endDate} ` : ""}${getTimeLabel(item.schedule.endTime)}`
                       : "Time not set"}
                   </p>
                 </li>

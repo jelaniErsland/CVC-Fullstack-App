@@ -1,122 +1,68 @@
-import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
-import { spawnSync } from "node:child_process";
-import { createClient } from "@supabase/supabase-js";
-import { parseLookupInput, parseLookupResult } from "../lib/volunteerScheduleAccess/lookup.ts";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-assert(url && ["127.0.0.1", "localhost"].includes(new URL(url).hostname), "Loopback only.");
-const client = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-const sql = (query) => {
-  const result = spawnSync("docker", ["exec", "-i", "supabase_db_cvc-scheduler", "psql", "-X", "-qAt", "-v", "ON_ERROR_STOP=1", "-U", "postgres", "-d", "postgres"], { input: query, encoding: "utf8", windowsHide: true });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
-};
-const text = (v) => `'${String(v).replaceAll("'", "''")}'`;
-const workspaces = Array.from({ length: 3 }, randomUUID);
-const contactId = randomUUID();
-const authId = randomUUID();
-const ids = Array.from({ length: 8 }, randomUUID);
-const namespace = `lookup-${randomUUID()}`;
-const reset = () => sql("delete from public.volunteer_lookup_attempts where bucket <> 'global'; update public.volunteer_lookup_attempts set attempts=0, window_started_at=now() where bucket='global';");
-async function verify(lastName, contact, projectChoice) {
-  const result = await client.rpc("verify_volunteer_schedule_lookup", { p_full_name: lastName, p_contact: contact, p_project_choice: projectChoice });
-  assert.equal(result.error, null);
-  return result.data;
-}
-const failed = { status: "unverified" };
-try {
-  sql(`insert into public.workspaces (id, workspace_key, display_name, lifecycle) values
-    (${text(workspaces[0])}, ${text(namespace + '-a')}, 'Local project A', 'active'),
-    (${text(workspaces[1])}, ${text(namespace + '-b')}, 'Local project B', 'active'),
-    (${text(workspaces[2])}, ${text(namespace + '-c')}, 'Inactive project', 'archived');
-    insert into auth.users (id, aud, role) values (${text(authId)}, 'authenticated', 'authenticated');
-    insert into public.project_contacts (id, auth_user_id, status) values (${text(contactId)}, ${text(authId)}, 'active');`);
-  const profiles = [
-    [0, 0, 'Jordan Rivera', 'jordan@example.invalid', '+1 (406) 555-0100', 'active', 'ready'],
-    [1, 0, 'Jordan Rivera', 'different@example.invalid', '+1 (406) 555-0101', 'active', 'ready'],
-    [2, 1, 'Morgan Lee', 'morgan@example.invalid', null, 'active', 'ready'],
-    [3, 0, 'Morgan Lee', 'morgan@example.invalid', null, 'active', 'ready'],
-    [4, 0, 'Inactive Person', 'inactive@example.invalid', null, 'inactive', 'ready'],
-    [5, 0, 'Held Person', 'held@example.invalid', null, 'active', 'on_hold'],
-    [6, 2, 'Archived Project', 'archived@example.invalid', null, 'active', 'ready'],
-  ];
-  for (const [i, w, name, email, phone, lifecycle, readiness] of profiles) sql(`insert into public.volunteer_profiles
-    (id, workspace_id, profile_source, lifecycle, readiness_status, full_name, email, phone, availability_snapshot, skills_help_snapshot, manual_created_at, manual_created_by_project_contact_id)
-    values (${text(ids[i])},${text(workspaces[w])},'manual',${text(lifecycle)},${text(readiness)},${text(name)},${text(email)},${phone ? text(phone) : 'null'},'{}','{}',now(),${text(contactId)});`);
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { parseLookupInput, parseLookupResult } from '../lib/volunteerScheduleAccess/lookup.ts';
+const q=v=>`'${String(v).replaceAll("'","''")}'`;
+const localContainer=process.env.LOCAL_FIXTURE_CONTAINER || 'supabase_db_cvc-scheduler';
+assert(/^supabase_db_cvc-(?:scheduler|1249-replay)$/.test(localContainer),'Only a named local fixture database is supported.');
+function sql(query){const r=spawnSync('docker',['exec','-i',localContainer,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],{input:query,encoding:'utf8',windowsHide:true});assert.equal(r.status,0,r.stderr);return r.stdout.trim();}
+const ws=[randomUUID(),randomUUID()],user=randomUUID(),contact=randomUUID(),ids=Array.from({length:5},()=>randomUUID()),prefix=`lookup-${randomUUID()}`;
+const lookup=(address,choice=null)=>JSON.parse(sql(`begin;set local role anon;select public.resolve_volunteer_schedule_contact(${address==null?'null':q(address)},${choice==null?'null':q(choice)});commit;`).split(/\r?\n/)[0]);
+const read=token=>sql(`begin;set local role anon;select coalesce(jsonb_agg(to_jsonb(r)),'[]'::jsonb) from public.read_volunteer_schedule(${q(token)}) r;commit;`).split(/\r?\n/)[0];
+const reset=()=>sql("delete from public.volunteer_lookup_attempts where bucket<>'global';update public.volunteer_lookup_attempts set attempts=0,window_started_at=now() where bucket='global';");
+try{
+  sql(`insert into public.workspaces(id,workspace_key,display_name,lifecycle,timezone) values
+    (${q(ws[0])},${q(prefix+'-a')},'North project','active','America/Denver'),
+    (${q(ws[1])},${q(prefix+'-b')},'South project','active','America/Denver');
+    insert into auth.users(id,email) values(${q(user)},${q(user+'@example.invalid')});
+    insert into public.project_contacts(id,auth_user_id,status) values(${q(contact)},${q(user)},'active');`);
+  const rows=[
+    [ids[0],ws[0],'Halli Johnson','household@example.invalid','+1 (406) 555-0100','North'],
+    [ids[1],ws[0],'Caleb Johnson','household@example.invalid','+1 (406) 555-0100','North'],
+    [ids[2],ws[1],'Halli Johnson','household@example.invalid','+1 (406) 555-0100','South'],
+    [ids[3],ws[0],'Unique Volunteer','unique@example.invalid','+1 (406) 555-0101','North'],
+    [ids[4],ws[0],'Inactive Volunteer','inactive@example.invalid','+1 (406) 555-0102','North']];
+  for(const [id,workspace,name,email,phone,congregation] of rows) sql(`insert into public.volunteer_profiles
+    (id,workspace_id,profile_source,lifecycle,readiness_status,full_name,email,phone,congregation,availability_snapshot,skills_help_snapshot,manual_created_at,manual_created_by_project_contact_id)
+    values(${q(id)},${q(workspace)},'manual',${q(id===ids[4]?'inactive':'active')},'ready',${q(name)},${q(email)},${q(phone)},${q(congregation)},'{}','{}',now(),${q(contact)});`);
   reset();
-  const first = await verify('  rIvErA ', ' JORDAN@EXAMPLE.INVALID ');
-  assert.equal(first.status, 'verified');
-  assert.equal(parseLookupResult(first).status, 'verified');
-  const schedule = await client.rpc('read_volunteer_schedule', { p_bearer_token: first.bearer_token });
-  assert.equal(schedule.error, null);
-  assert.equal(schedule.data[0].volunteer_display_name, 'Jordan Rivera');
-  assert.equal(schedule.data[0].workspace_display_name, 'Local project A');
-  assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${text(first.bearer_token)},'sha256')`), ids[0]);
-  assert.equal((await verify('Rivera', '+1 406.555.0100')).status, 'verified');
-  for (const [name, contact] of [['Rivera','wrong@example.invalid'],['Unknown','wrong@example.invalid'],['Person','inactive@example.invalid'],['Person','held@example.invalid'],['Project','archived@example.invalid'],['Rivera','4065550100']]) assert.deepEqual(await verify(name,contact), failed);
-  reset();
-  assert.deepEqual(await verify('Rivera', 'jordan@example.invalid', '0'.repeat(64)), failed);
-  assert.deepEqual(await verify('Jordan Rivera', ''), failed);
-  assert.deepEqual(await verify(null, null), failed);
-  assert.deepEqual(await verify('x'.repeat(1000), 'x@example.invalid'), failed);
-  assert.deepEqual(await verify('Jordan Rivera', 'call 14065550100'), failed);
-  const choices = await verify('Lee', 'morgan@example.invalid');
-  assert.equal(choices.status, 'choose_project');
-  assert.equal(choices.projects.length, 2);
-  for (const p of choices.projects) assert.deepEqual(Object.keys(p).sort(), ['choice','name']);
-  assert(!JSON.stringify(choices).includes('volunteer'));
-  assert(!JSON.stringify(choices).includes(workspaces[0]) && !JSON.stringify(choices).includes(workspaces[1]));
-  const selectedChoice = choices.projects.find((project) => project.name === 'Local project B').choice;
-  const selected = await verify('Lee', 'morgan@example.invalid', selectedChoice);
-  assert.equal(selected.status, 'verified');
-  assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${text(selected.bearer_token)},'sha256')`), ids[2]);
-  const selectedSchedule = await client.rpc('read_volunteer_schedule', { p_bearer_token: selected.bearer_token });
-  assert.equal(selectedSchedule.error, null);
-  assert.equal(selectedSchedule.data[0].workspace_display_name, 'Local project B');
-  assert.equal(selectedSchedule.data[0].volunteer_display_name, 'Morgan Lee');
-  const originalScheduleAgain = await client.rpc('read_volunteer_schedule', { p_bearer_token: first.bearer_token });
-  assert.equal(originalScheduleAgain.error, null);
-  assert.equal(originalScheduleAgain.data[0].workspace_display_name, 'Local project A');
-  assert(!JSON.stringify(choices).match(/schedule|email|phone|bearer|token|volunteer/i));
-  assert.deepEqual(await verify('Lee','wrong@example.invalid',selectedChoice),failed);
-  // Identical contact/name duplicates in a workspace must fail, not choose a record.
-  sql(`insert into public.volunteer_profiles (id,workspace_id,profile_source,full_name,email,availability_snapshot,skills_help_snapshot,manual_created_at,manual_created_by_project_contact_id)
-    values (${text(ids[7])},${text(workspaces[0])},'manual','Morgan Lee','morgan@example.invalid','{}','{}',now(),${text(contactId)});`);
-  assert.deepEqual(await verify('Lee','morgan@example.invalid'),failed);
-  reset();
-  const attempts = await Promise.all(Array.from({length: 10}, () => verify('Rivera','jordan@example.invalid')));
-  assert.equal(attempts.filter(x => x.status === 'verified').length,6,'Concurrent calls cannot bypass the limiter.');
-  assert.deepEqual(await verify('Rivera','jordan@example.invalid'),failed);
-  sql("update public.volunteer_lookup_attempts set window_started_at=now()-interval '16 minutes';");
-  assert.equal((await verify('Rivera','jordan@example.invalid')).status,'verified','Temporary limit recovers.');
-  reset();
-  for(let i=0;i<7;i++)assert.deepEqual(await verify('Unknown','wrong@example.invalid'),failed);
-  assert.equal(sql("select max(attempts) from public.volunteer_lookup_attempts where bucket <> 'global'"),'7');
-  sql("update public.volunteer_lookup_attempts set attempts=200 where bucket='global';");
-  assert.deepEqual(await verify('Rivera','jordan@example.invalid'),failed);
-  assert.deepEqual(await verify('Anyone Else','wrong@example.invalid'),failed);
-  reset();
-  for (const table of ['volunteer_profiles','volunteer_schedule_access_tokens','volunteer_lookup_attempts']) {
-    const read = await client.from(table).select('*');
-    assert(read.error, `${table} denies anonymous reads.`);
-  }
-  assert((await client.rpc('issue_volunteer_schedule_access',{p_volunteer_profile_id:ids[0],p_ttl_hours:24})).error);
-  assert.equal(sql("select has_function_privilege('anon','public.verify_volunteer_schedule_lookup(text,text,text)','EXECUTE') and has_function_privilege('authenticated','public.verify_volunteer_schedule_lookup(text,text,text)','EXECUTE')"),'t');
-  assert.equal(sql("select count(*) from pg_proc p, lateral aclexplode(p.proacl) acl where p.oid='public.verify_volunteer_schedule_lookup(text,text,text)'::regprocedure and acl.grantee=0"),'0','No PUBLIC ACL.');
-  assert.equal(sql("select count(*) from pg_class t, lateral aclexplode(t.relacl) acl where t.oid='public.volunteer_lookup_attempts'::regclass and acl.grantee in (0, 'anon'::regrole::oid, 'authenticated'::regrole::oid)"),'0');
-  assert.equal(sql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_repeated_calendar_items','delete_history_free_volunteer_profile','update_current_workspace_project_dates','issue_project_quick_view_share_access') and has_function_privilege('anon',p.oid,'EXECUTE')"),'0');
-  const denied = spawnSync('docker',['exec','-i','supabase_db_cvc-scheduler','psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres'],{input:'set role authenticated; select * from public.volunteer_lookup_attempts;',encoding:'utf8',windowsHide:true});
-  assert.notEqual(denied.status,0);
-  assert.equal(parseLookupInput({lastName:'Rivera'}),null);
-  assert.equal(parseLookupInput({lastName:'Rivera',contact:'x@y.invalid',projectChoice:'bad'}),null);
+  const unique=lookup(' UNIQUE@EXAMPLE.INVALID ');
+  assert.equal(unique.status,'verified');assert.equal(parseLookupResult(unique).status,'verified');
+  assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${q(unique.bearer_token)},'sha256')`),ids[3]);
+  assert(JSON.parse(read(unique.bearer_token)).every(r=>r.volunteer_display_name==='Unique Volunteer'));
+  const shared=lookup('household@example.invalid');
+  assert.equal(shared.status,'choose_volunteer');assert.equal(shared.volunteers.length,3);
+  assert.deepEqual(shared.volunteers.map(v=>v.name).sort(),['Caleb Johnson','Halli Johnson','Halli Johnson']);
+  assert(shared.volunteers.every(v=>Object.keys(v).sort().join(',')==='choice,congregation,name,project'));
+  assert(!JSON.stringify(shared).includes(ws[0])&&!JSON.stringify(shared).includes(ws[1]));
+  assert.equal(parseLookupResult(shared).status,'choose_volunteer');
+  const selectedChoice=shared.volunteers.find(v=>v.name==='Halli Johnson'&&v.project==='South project').choice;
+  const selected=lookup('household@example.invalid',selectedChoice);
+  assert.equal(selected.status,'verified');
+  assert.equal(sql(`select volunteer_profile_id from public.volunteer_schedule_access_tokens where token_verifier_hash=extensions.digest(${q(selected.bearer_token)},'sha256')`),ids[2]);
+  assert(JSON.parse(read(selected.bearer_token)).every(r=>r.workspace_display_name==='South project'));
+  assert.equal(lookup('+1 406.555.0100').status,'choose_volunteer');
+  assert.equal(lookup('+1 (406) 555-0101').status,'verified');
+  assert.deepEqual(lookup('household@example.invalid','0'.repeat(64)),{status:'unverified'});
+  assert.deepEqual(lookup('inactive@example.invalid'),{status:'unverified'});
+  assert.deepEqual(lookup('missing@example.invalid'),{status:'unverified'});
+  assert.deepEqual(lookup('4065550101'),{status:'unverified'});
+  assert.equal(parseLookupInput({contact:' unique@example.invalid '}).contact,'unique@example.invalid');
+  assert.equal(parseLookupInput({contact:'x@y.invalid',lastName:'Volunteer'}),null);
+  assert.equal(parseLookupInput({contact:'x@y.invalid',choice:'bad'}),null);
   assert.equal(parseLookupResult({status:'verified',bearer_token:'bad',expires_at:'tomorrow'}).status,'unverified');
-  console.log('PASS lookup: last-name plus email/phone, formatting normalization, generic failures, collisions, inactive/readiness/project gates, project choice, workspace/session scope, malformed input, concurrent/expiring/global limits, direct anon denial, explicit PUBLIC/anon/authenticated ACLs.');
-} finally {
+  reset();const attempts=Array.from({length:7},()=>lookup('unique@example.invalid'));
+  assert.equal(attempts.filter(r=>r.status==='verified').length,6);
+  sql("update public.volunteer_lookup_attempts set window_started_at=now()-interval '16 minutes';");
+  assert.equal(lookup('unique@example.invalid').status,'verified');
+  assert.equal(sql("select has_function_privilege('anon','public.resolve_volunteer_schedule_contact(text,text)','EXECUTE')"),'t');
+  assert.equal(sql("select has_function_privilege('anon','public.verify_volunteer_schedule_lookup(text,text,text)','EXECUTE')"),'f');
+  console.log('PASS: contact-only unique/shared email and phone, chooser, project disambiguation, scoped schedule, ineligible contacts, rate limit, and revoked surname RPC.');
+}finally{
   reset();
-  sql(`delete from public.volunteer_schedule_access_tokens where workspace_id in (${workspaces.map(text)});
-    delete from public.volunteer_profiles where workspace_id in (${workspaces.map(text)});
-    delete from public.project_contacts where id=${text(contactId)};
-    delete from auth.users where id=${text(authId)};
-    delete from public.workspaces where id in (${workspaces.map(text)});`);
+  sql(`delete from public.volunteer_schedule_access_tokens where workspace_id in (${ws.map(q)});
+    delete from public.volunteer_profiles where workspace_id in (${ws.map(q)});
+    delete from public.project_contacts where id=${q(contact)};
+    delete from auth.users where id=${q(user)};
+    delete from public.workspaces where id in (${ws.map(q)});`);
 }

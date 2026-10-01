@@ -19,6 +19,7 @@ export type NeedsAttentionSignal = Readonly<{
   title: string;
   problem: string;
   startDate: string;
+  endDate: string | null;
   startTime: string | null;
   endTime: string | null;
   timezone: string;
@@ -192,6 +193,7 @@ function signal(
     title: item.taskSourceLabel,
     problem,
     startDate: item.startDate,
+    endDate: item.endDate,
     startTime: item.startTime,
     endTime: item.endTime,
     timezone: workspaceTimezone,

@@ -21,6 +21,7 @@ export type CreateRepeatedCalendarItemsInput = Readonly<{
   source: CalendarTaskSource;
   startDate: string;
   endDate: string;
+  endDayOffset: number;
   weekdays: readonly number[];
   startTime: string;
   endTime: string;
@@ -34,6 +35,13 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function shiftedDate(value: unknown, days: number) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const result = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(result.getTime())) return undefined;
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0,10);
 }
 
 function normalizeWeekdays(value: unknown, issues: string[]) {
@@ -106,7 +114,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
   const issues: string[] = [];
   const allowed = new Set([
     "requestKey", "workspaceId", "source", "startDate", "endDate", "weekdays",
-    "startTime", "endTime", "neededCount", "notes", "customValues", "meal",
+    "startTime", "endTime", "endDayOffset", "neededCount", "notes", "customValues", "meal",
   ]);
   const unknown = Object.keys(input).filter((key) => !allowed.has(key));
   if (unknown.length) issues.push(`unsupported fields: ${unknown.sort().join(", ")}.`);
@@ -114,6 +122,9 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
     issues.push("requestKey is invalid.");
   }
   const weekdays = normalizeWeekdays(input.weekdays, issues);
+  const endDayOffset = input.endDayOffset === undefined ? 0 : input.endDayOffset;
+  if (!Number.isInteger(endDayOffset) || Number(endDayOffset) < 0 || Number(endDayOffset) > 7) issues.push("End day must be within seven days of each occurrence.");
+  const occurrenceEndDate = Number.isInteger(endDayOffset) ? shiftedDate(input.startDate,Number(endDayOffset)) : undefined;
   let normalizedBase: ReturnType<typeof validateCreateCalendarItemInput> | undefined;
   try {
     normalizedBase = validateCreateCalendarItemInput({
@@ -122,6 +133,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
       schedule: {
         kind: "timed",
         date: input.startDate,
+        endDate: occurrenceEndDate,
         startTime: input.startTime,
         endTime: input.endTime,
       },
@@ -138,7 +150,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
     validateCreateCalendarItemInput({
       workspaceId: input.workspaceId,
       source: input.source,
-      schedule: { kind: "timed", date: input.endDate, startTime: input.startTime, endTime: input.endTime },
+      schedule: { kind: "timed", date: input.endDate, endDate: occurrenceEndDate ? shiftedDate(input.endDate,Number(endDayOffset)) : undefined, startTime: input.startTime, endTime: input.endTime },
       neededCount: input.neededCount,
       notes: input.notes,
       customValues: input.customValues,
@@ -162,6 +174,7 @@ export function validateCreateRepeatedCalendarItemsInput(input: unknown): Create
     source: normalizedBase!.source,
     startDate,
     endDate,
+    endDayOffset: Number(endDayOffset),
     weekdays,
     startTime: (normalizedBase!.schedule as { startTime: string }).startTime,
     endTime: (normalizedBase!.schedule as { endTime: string }).endTime,
@@ -193,6 +206,7 @@ export function repeatedCalendarItemsInputFromFormData(formData: FormData, works
     source,
     startDate: formText(formData, "repeatStartDate"),
     endDate: formText(formData, "repeatEndDate"),
+    endDayOffset: Number(formText(formData, "endDayOffset") || "0"),
     weekdays: formData.getAll("repeatWeekdays").map((value) => Number(value)),
     startTime: formText(formData, "startTime"),
     endTime: formText(formData, "endTime"),

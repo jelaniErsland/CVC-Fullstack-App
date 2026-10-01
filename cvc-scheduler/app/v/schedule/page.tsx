@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Info } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
@@ -21,30 +20,10 @@ export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Your volunteer schedule | Project Local",
-  description: "Secure Project Local volunteer schedule access.",
+  description: "Your Project Local volunteer schedule.",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
-
-async function leaveScheduleAction() {
-  "use server";
-  const cookieStore = await cookies();
-  const requestHeaders = await headers();
-  const forwardedProtocol = requestHeaders
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    ?.trim()
-    .toLowerCase();
-  cookieStore.delete(volunteerScheduleAccessCookie.name);
-  cookieStore.set(volunteerScheduleAccessCookie.name, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: forwardedProtocol === "https",
-    path: volunteerScheduleAccessCookie.path,
-    maxAge: 0,
-  });
-  redirect("/v/schedule?left=1");
-}
 
 function PublicHeader() {
   return (
@@ -111,8 +90,8 @@ export default async function VolunteerSchedulePage({
         title={leftSchedule ? "You’ve left this schedule" : "This schedule link is unavailable"}
         message={
           leftSchedule
-            ? "Find your schedule using your name and registered email or phone."
-            : "Find your schedule below, or open your latest schedule link."
+            ? "Find your schedule using your registered email or phone."
+            : "Find your schedule using your registered email or phone."
         }
       />
     );
@@ -152,7 +131,10 @@ export default async function VolunteerSchedulePage({
         <PublicHeader />
         <div className="flex items-center justify-between gap-3 py-3 text-xs text-slate-600">
           <p>Times in {schedule.workspaceTimezone}</p>
-          <form action={leaveScheduleAction}><button className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600" aria-label="Not you? Leave this schedule">Not you?</button></form>
+          <div className="flex flex-wrap gap-3">
+            <form action="/v/leave" method="post"><button name="mode" value="switch" className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600">Switch volunteer or project</button></form>
+            <form action="/v/leave" method="post"><button name="mode" value="forget" className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600">Forget this device</button></form>
+          </div>
         </div>
         <div className="pb-10"><VolunteerHomeDashboard name={schedule.volunteerDisplayName} projectName={schedule.workspaceDisplayName} assignments={assignments} upcoming={schedule.upcomingAssignments} initialHome={home} today={today} /></div>
       </div>

@@ -10,7 +10,7 @@ export const anonymousFunctions = Object.freeze([
   "submit_assignment_response_by_token(text,text,text)",
   "submit_questionnaire_submission(text,jsonb,integer)",
   "submit_volunteer_schedule_assignment_response(text,uuid,text,text)",
-  "verify_volunteer_schedule_lookup(text,text,text)"
+  "resolve_volunteer_schedule_contact(text,text)"
 ]);
 export const authenticatedFunctions = Object.freeze([
   "read_authorized_calendar_items(uuid,date,date)",
@@ -37,6 +37,7 @@ export const authenticatedFunctions = Object.freeze([
   "create_calendar_assignments_batch(uuid,uuid[],text)",
   "create_calendar_item(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)",
   "create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
+  "create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,integer,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
   "create_manual_volunteer_profile(uuid,jsonb)",
   "create_task_preset(uuid,text,text,text,integer,boolean,jsonb,text)",
   "delete_history_free_volunteer_profile(uuid)",
@@ -60,13 +61,16 @@ export const authenticatedFunctions = Object.freeze([
   "set_current_project_day_expected_on_site(date,integer)",
   "update_assignment_response(uuid,text,text)",
   "update_calendar_item_one_off_timed(uuid,text,text,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_calendar_item_one_off_timed(uuid,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
   "update_task_preset_color(uuid,text,timestamp with time zone)",
   "update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_calendar_item_preset_timed(uuid,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
   "update_current_project_contact_volunteer_facing_details(uuid,text,text,text)",
   "update_current_workspace_project_dates(date,date)",
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "publish_draft_on_assignment()",
   "prepare_assignment_instruction_insert()",
   "track_assignment_instruction_update()",
   "audit_assignment_instruction_update()",
@@ -74,6 +78,7 @@ export const internalFunctions = Object.freeze([
   "communication_actor(uuid)",
   "communication_preview(uuid,jsonb)",
   "calendar_assignment_response_start_at(text,date,time without time zone,text)",
+  "calendar_local_time_is_unique(date,time without time zone,text)",
   "calendar_custom_values_are_valid(jsonb)",
   "enforce_calendar_item_workspace_timezone()",
   "response_link_reveal_metadata_is_valid(jsonb)",
@@ -84,19 +89,25 @@ export const internalFunctions = Object.freeze([
   "set_task_preset_updated_at()",
   "set_volunteer_profile_updated_at()",
   "set_workspace_updated_at()",
-  "task_custom_field_definitions_are_valid(jsonb)"
+  "task_custom_field_definitions_are_valid(jsonb)",
+  "validate_calendar_timed_interval()",
+  "verify_volunteer_schedule_lookup(text,text,text)"
 ]);
 // These exact trigger-only helpers need owner rights to maintain private history
 // and snapshot provenance. No application role can execute them directly.
 export const internalDefinerFunctions = Object.freeze([
+  "publish_draft_on_assignment()",
   "prepare_assignment_instruction_insert()",
   "track_assignment_instruction_update()",
   "audit_assignment_instruction_update()",
+  "validate_calendar_timed_interval()",
+  "verify_volunteer_schedule_lookup(text,text,text)",
 ]);
 export const migrationCreators = Object.freeze(["postgres"]);
 
-export function assertEffectiveFunctionPolicy(assert, rows) {
-  const expected = [...anonymousFunctions, ...authenticatedFunctions, ...internalFunctions].sort();
+export function assertEffectiveFunctionPolicy(assert, rows, { historicalExclusions = [] } = {}) {
+  const expected = [...anonymousFunctions, ...authenticatedFunctions, ...internalFunctions]
+    .filter(signature => !historicalExclusions.includes(signature)).sort();
   assert.deepEqual(rows.map(r => r.signature).sort(), expected, "Every public function must have an exact reviewed classification.");
   for (const row of rows) {
     assert.equal(row.owner, "postgres", row.signature + ": unreviewed creator/owner");

@@ -113,6 +113,14 @@
     "test:project-quick-view-privileges": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-privilege-regression.mjs",
     "test:project-quick-view-share-access:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/project-quick-view-share-access-browser-regression.mjs",
     "test:production-backup-task-details": "node scripts/production-backup-task-details-transition-regression.mjs",
+    "gate:12-49-migrations": "node scripts/12-49-migration-gate.mjs",
+    "gate:12-49-local-postflight": "node scripts/12-49-local-schema-postflight.mjs",
+    "test:12-49-migration-gate": "node scripts/12-49-migration-gate-regression.mjs",
+    "test:12-49-busy-calendar": "node scripts/12-49-busy-calendar-diagnostic.mjs",
+    "test:12-49-assignment-publication": "node scripts/12-49-assignment-publication-regression.mjs",
+    "test:12-49-volunteer-lookup": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/volunteer-lookup-regression.mjs",
+    "test:12-49-volunteer-lookup:browser": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-49-volunteer-lookup-browser.mjs",
+    "test:12-49-overnight": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-49-overnight-regression.mjs",
     "test:production-backup-task-details-recovery": "node scripts/production-backup-task-details-recovery-regression.mjs"
   },
   "dependencies": {

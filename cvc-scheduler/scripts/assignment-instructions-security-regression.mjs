@@ -1,7 +1,7 @@
 // Catalog and direct-access proof against the disposable local database only.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { assertEffectiveFunctionPolicy, effectiveFunctionQuery } from "./function-privilege-policy.mjs";
 
 const container = "supabase_db_cvc-scheduler";
@@ -14,7 +14,10 @@ function sql(query, success = true) {
 }
 const value = query => sql(query).stdout.trim();
 assertEffectiveFunctionPolicy(assert, value(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
-assert.equal(value("select max(version) from supabase_migrations.schema_migrations"), "20260927120000");
+const latestMigration = readdirSync(new URL("../supabase/migrations/", import.meta.url))
+  .filter(name => /^\d{14}_[a-z0-9_]+\.sql$/.test(name)).sort().at(-1).slice(0, 14);
+assert.equal(value("select max(version) from supabase_migrations.schema_migrations"), latestMigration);
+assert.equal(value("select count(*) from supabase_migrations.schema_migrations where version='20260927120000'"), "1");
 assert.equal(value("select relrowsecurity from pg_class where oid='public.assignment_instruction_revisions'::regclass"), "t");
 assert.equal(value("select count(*) from pg_policy where polrelid='public.assignment_instruction_revisions'::regclass"), "0");
 assert.equal(value(`select count(*) from pg_class c cross join lateral aclexplode(c.relacl) a
@@ -59,4 +62,4 @@ assert.equal(bearerBody(privacyMigration), bearerBody(deployedBearerMigration)
 assert.match(privacyMigration, /array\['calendar.view','calendar.edit'\]/);
 assert.match(privacyMigration, /array\['tasks.edit','calendar.edit'\]/);
 assert(!/insert into|update public|delete from|create table|alter default privileges|read_volunteer_schedule|claim_initial_assignment_notification_deliveries/i.test(privacyMigration.replace(bearerBody(privacyMigration), "")), "Privacy migration must not change product data, defaults, own-volunteer access or notifications.");
-console.log("Instruction security passed: exact 80-function policy, private RLS history and sequence, denied direct reads/writes, hardened table/function defaults, no new anonymous or bearer RPC.");
+console.log("Instruction security passed: exact classified function policy, private RLS history and sequence, denied direct reads/writes, hardened table/function defaults, no new anonymous or bearer RPC.");
