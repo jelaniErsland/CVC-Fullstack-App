@@ -995,6 +995,7 @@ export async function readCalendarMutationRouteContext() {
       supabase,
       workspace: workspaceSelection.workspace,
       projectContactId: workspaceSelection.projectContactId,
+      navigationDestinations: workspaceSelection.navigationDestinations,
     } as const;
   } catch {
     return null;
