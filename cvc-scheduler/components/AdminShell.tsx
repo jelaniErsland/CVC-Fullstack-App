@@ -446,9 +446,8 @@ export function AdminShell({
             </div>
           </aside>
 
-          <main id="main-content" tabIndex={-1} className="min-w-0 px-4 py-5 sm:px-6 lg:px-7 lg:py-6 xl:px-8">
+          <main id="main-content" tabIndex={-1} className="min-w-0 px-4 pt-5 pb-[calc(var(--admin-mobile-nav-height,80px)+24px)] sm:px-6 lg:px-7 lg:py-6 xl:px-8">
             {children}
-            <div aria-hidden="true" className="h-[calc(var(--admin-mobile-nav-height,80px)+24px)] lg:hidden" />
           </main>
       </div>
 
