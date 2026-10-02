@@ -15,6 +15,7 @@ import {
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { AppSupabaseClient, PublicRpcArgs } from "@/lib/supabase/types";
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
+import { recordAdminTiming } from "@/lib/observability/adminTiming.server";
 
 export type CalendarItemMutationResult = Readonly<{ calendarItemId: string }>;
 
@@ -87,13 +88,20 @@ export async function readCurrentContactCalendarItems(workspaceId: string) {
 export async function createCalendarItemWithClient(
   supabase: AppSupabaseClient,
   input: CreateCalendarItemInput | unknown,
+  saveAsDraft = false,
 ): Promise<CalendarItemMutationResult> {
+  const startedAt = performance.now();
+  let stage = "authorization";
+  let failure: "none" | "validation" | "authorization" | "persistence" = "none";
+  try {
   await requireAuthenticatedContact(supabase);
+  stage = "validation";
   const item = validateCreateCalendarItemInput(input);
   const presetSource = item.source.kind === "preset";
   const schedule = item.schedule;
+  stage = "save";
   const { data, error } = await supabase.rpc(
-    "create_calendar_item",
+    saveAsDraft ? "create_calendar_item_draft" : "create_calendar_item",
     {
       p_workspace_id: item.workspaceId,
       p_task_preset_id: presetSource ? item.source.taskPresetId : null,
@@ -111,9 +119,16 @@ export async function createCalendarItemWithClient(
     } as PublicRpcArgs<"create_calendar_item">,
   );
   if (error || typeof data !== "string") {
+    failure = "persistence";
     throw new Error("Calendar item could not be created.", { cause: error });
   }
   return { calendarItemId: normalizeWorkspaceReference({ id: data }).value };
+  } catch (error) {
+    if (failure === "none") failure = stage === "authorization" ? "authorization" : "validation";
+    throw error;
+  } finally {
+    recordAdminTiming({ action: "calendar.create", stage, startedAt, failure });
+  }
 }
 
 export async function createCalendarItem(input: CreateCalendarItemInput | unknown) {
@@ -197,9 +212,9 @@ export async function publishCalendarItemWithClient(
 ): Promise<CalendarItemMutationResult> {
   await requireAuthenticatedContact(supabase);
   const item = validatePublishCalendarItemInput(input);
-  const { data, error } = await supabase.rpc("publish_calendar_item", {
+  const { data, error } = await supabase.rpc("activate_calendar_item", {
     p_calendar_item_id: item.calendarItemId,
-  } as PublicRpcArgs<"publish_calendar_item">);
+  } as PublicRpcArgs<"activate_calendar_item">);
   if (error || typeof data !== "string") {
     throw new Error("Calendar item could not be published.", { cause: error });
   }

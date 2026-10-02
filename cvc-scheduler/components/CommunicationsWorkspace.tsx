@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Mail, CalendarDays, History } from "lucide-react";
 import { buildCommunicationMessage, type CommunicationPlan, type CommunicationHistory, type CommunicationActionState } from "@/lib/notifications/communications";
 import { finishConfirmedCommunication } from "@/lib/notifications/communicationBatches";
@@ -11,7 +11,7 @@ const exclusionMessage: Record<string,string> = {
   pending_or_unknown_delivery: "A previous delivery is pending or its outcome is unknown. Review delivery history before retrying.",
   already_welcomed: "The welcome message was already sent. Choose an intentional resend if another is needed.",
   email_changed_requires_resend_review: "The email changed after the welcome message. Review an intentional resend.",
-  no_eligible_assignments: "No upcoming published assignments are eligible in this date range. Check the item’s visibility, dates, and response status.",
+  no_eligible_assignments: "No upcoming active assignments are eligible in this date range. Check the item’s date, draft state, and response status.",
   already_delivered: "These assignments were already delivered. Choose an intentional resend if another message is needed.",
   existing_delivery_requires_review: "An earlier assignment delivery has an unresolved outcome. Review history before sending again.",
 };
@@ -29,30 +29,52 @@ export function CommunicationsWorkspace({ action, history: initialHistory, pendi
   const [history, setHistory] = useState(initialHistory);
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [pending, transition] = useTransition();
+  const busyRef = useRef(false);
+  const requestRef = useRef(0);
+  const currentPlanRef = useRef("");
+  const [uncertain, setUncertain] = useState(false);
   const [retryId, setRetryId] = useState<string | null>(null);
   const plan: CommunicationPlan = { kind, mode, volunteerIds: ids, ...(kind === "schedule" ? { startDate, endDate } : {}) };
   const serialized = JSON.stringify(plan);
+  useEffect(() => { currentPlanRef.current = serialized; }, [serialized]);
   const state = result?.plan === serialized ? result.state : null;
   const preview = state?.kind === "preview" ? state.preview : null;
   const previousPreview = result?.state.kind === "preview" && JSON.parse(result.plan).kind === kind && JSON.parse(result.plan).mode === mode ? result.state.preview : null;
   const selectionPreview = preview ?? previousPreview;
   const selectionEmpty = selectionTouched && ids.length === 0;
   function run(command: string, continueOperation?: string) {
+    if (busyRef.current || (uncertain && command === "send")) return;
+    busyRef.current = true;
+    const request = ++requestRef.current;
     const form = new FormData(); form.set("command",command); form.set("plan",serialized);
     if (command === "send" && preview) { form.set("operationId",operationId); form.set("fingerprint",preview.fingerprint); form.set("confirmedRecipients",String(preview.recipients.length)); }
     if (command === "retry" && retryId) { form.set("recipientId",retryId); form.set("confirmedRecipients","1"); }
     if (command === "continue" && continueOperation) { form.set("operationId",continueOperation); form.set("confirmedRecipients",String(history.filter(r=>r.operation_id===continueOperation && r.state==='ready').length)); }
     transition(async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        let next = await action(form);
-        const confirmedOperation = command === "send" ? operationId : command === "continue" ? continueOperation : undefined;
-        if (confirmedOperation) next = await finishConfirmedCommunication(next, confirmedOperation, action, current => {
-          if (current.kind === "results") setHistory(current.history);
-        });
-        setResult({plan:serialized,state:next}); setRetryId(null);
-        if(next.kind === "results") {setHistory(next.history);setOperationId(crypto.randomUUID());setActiveTab("history");}
+        const work = async () => {
+          let next = await action(form);
+          const confirmedOperation = command === "send" ? operationId : command === "continue" ? continueOperation : undefined;
+          if (confirmedOperation) next = await finishConfirmedCommunication(next, confirmedOperation, action, current => {
+            if (request === requestRef.current && current.kind === "results") setHistory(current.history);
+          }, () => request === requestRef.current);
+          return next;
+        };
+        const next = await Promise.race([work(), new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("timeout")), 120000);
+        })]);
+        if (request !== requestRef.current) return;
+        if (command !== "preview" || currentPlanRef.current === serialized) setResult({plan:serialized,state:next});
+        setRetryId(null);
+        if(next.kind === "results") {setHistory(next.history);setUncertain(false);setOperationId(crypto.randomUUID());setActiveTab("history");}
       } catch {
-        setResult({plan:serialized,state:{kind:"error",message:"Delivery progress is unavailable. Refresh history before continuing. Pending or unknown messages must not be retried."}});
+        requestRef.current++;
+        if (command === "send" || command === "continue" || command === "retry") setUncertain(true);
+        setResult({plan:serialized,state:{kind:"error",message:"The request timed out or failed. Refresh delivery history before continuing. Pending or unknown messages must not be retried."}});
+      } finally {
+        if (timer) clearTimeout(timer);
+        busyRef.current = false;
       }
     });
   }
@@ -68,20 +90,23 @@ export function CommunicationsWorkspace({ action, history: initialHistory, pendi
         {kind==='schedule' && <div className="grid grid-cols-2 gap-3"><label className="min-w-0 text-sm">From<input className={field} type="date" value={startDate} onChange={e=>setStart(e.target.value)} /></label><label className="min-w-0 text-sm">Through<input className={field} type="date" value={endDate} onChange={e=>setEnd(e.target.value)} /></label></div>}
         <label className="block text-sm">Recipients<select className={field} value={mode} onChange={e=>setMode(e.target.value as CommunicationPlan['mode'])}><option value="new">{kind==='welcome'?'Not yet welcomed':'Volunteers with new, unsent assignments'}</option>{kind==='schedule' && <option value="all">Complete upcoming schedule for all selected volunteers</option>}<option value="resend">Intentional resend to selected volunteers</option></select></label>
         {(ids.length>0 || selectionTouched) && <p className="text-sm text-slate-600">{ids.length} selected {mode!=='resend' && <button type="button" className="underline" onClick={()=>{setIds([]);setSelectionTouched(false);}}>Clear selection</button>}</p>}
-        <p className="text-xs leading-5 text-slate-600">{kind==='welcome' ? mode==='resend' ? 'Review this intentional resend. The earlier welcome delivery remains recorded.' : 'New volunteers appear here automatically. Nothing sends until you review and confirm.' : 'Only published upcoming work is included. Saving or assigning does not send email. Canceled and declined assignments are excluded; responses are preserved.'}</p>
+        <p className="text-xs leading-5 text-slate-600">{kind==='welcome' ? mode==='resend' ? 'Review this intentional resend. The earlier welcome delivery remains recorded.' : 'New volunteers appear here automatically. Nothing sends until you review and confirm.' : 'Only active upcoming work is included. Saving or assigning does not send email. Canceled and declined assignments are excluded; responses are preserved.'}</p>
         {state?.kind==='error' && <p role="alert" className="text-sm text-rose-700">{state.message}</p>}
         <button className={button} type="button" onClick={()=>run('preview')} disabled={pending || selectionEmpty}>{pending?'Working…':'Review recipients'}</button>
         {selectionPreview && <section aria-label="Delivery preview" className="space-y-4 border-t border-slate-200 pt-4">
-          <h3 className="font-semibold">Review {selectionPreview.recipients.length} recipients</h3>
-          <p className="text-sm">{kind === 'welcome' ? `${selectionPreview.recipients.length} volunteers awaiting this introduction` : `${selectionPreview.recipients.reduce((n,r)=>n+r.assignments.length,0)} assignments · ${selectionPreview.recipients.reduce((n,r)=>n+r.newAssignments,0)} new · ${selectionPreview.recipients.reduce((n,r)=>n+r.previousAssignments,0)} previously delivered`}</p>
+          <h3 className="font-semibold">{selectionPreview.recipients.length} will receive · {selectionPreview.exclusions.length} will not receive</h3>
+          <p className="text-xs text-slate-600">{selectionPreview.exclusions.filter(e => e.reason === 'already_delivered' || e.reason === 'already_welcomed').length} already received this communication. Delivery history shows each accepted send.</p>
+          <p className="text-sm">{kind === 'welcome' ? `${selectionPreview.recipients.length} volunteers selected for this introduction${mode==='resend'?' (intentional resend)':''}` : `${selectionPreview.recipients.reduce((n,r)=>n+r.assignments.length,0)} active assignments · ${selectionPreview.recipients.reduce((n,r)=>n+r.newAssignments,0)} not previously delivered · ${selectionPreview.recipients.reduce((n,r)=>n+r.previousAssignments,0)} previously delivered`}</p>
+          {kind === 'schedule' && <p className="text-xs text-slate-600">{selectionPreview.recipients.reduce((n,r)=>n+(r.changedSinceLastSend ?? 0),0)} added or edited since the last schedule send · {selectionPreview.recipients.reduce((n,r)=>n+(r.removedSinceLastSend ?? 0),0)} removed. First-time recipients have no previous schedule to compare.</p>}
           <div className="max-h-64 space-y-2 overflow-y-auto">{selectionPreview.recipients.map(r=><label key={r.volunteerId} className="flex min-h-12 gap-3 rounded-lg bg-slate-50 p-3 text-sm"><input type="checkbox" checked={!selectionTouched && ids.length===0 || ids.includes(r.volunteerId)} onChange={e=>{const current=!selectionTouched && ids.length===0?selectionPreview.recipients.map(p=>p.volunteerId):ids;setSelectionTouched(true);setIds(e.target.checked?[...new Set([...current,r.volunteerId])]:current.filter(id=>id!==r.volunteerId));}} /><span className="min-w-0 break-words">{r.name}<span className="block text-xs text-slate-600">{r.email}{kind === 'schedule' ? ` · ${r.assignments.length} assignments` : mode === 'resend' ? ' · Intentional welcome resend' : ' · Introduction pending'}{r.emailChanged?' · Changed email — explicit review required':''}{r.sharedContact?' · Shared contact':''}</span></span></label>)}</div>
-          {selectionPreview.recipients.length===0 && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">No eligible recipients. Review the reasons below before trying to send.</p>}
+          {selectionPreview.recipients.length===0 && <p role="status" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">No eligible recipients for this selection. {selectionPreview.exclusions.length ? 'Open the reasons below, then change the selection or choose an intentional resend where allowed.' : 'No active volunteers match the selection. Check the date range or recipient choice.'}</p>}
           {selectionPreview.exclusions.length>0 && <details open={selectionPreview.recipients.length===0}><summary className="cursor-pointer text-sm">{selectionPreview.exclusions.length} excluded volunteers / delivery warnings</summary><ul className="mt-2 space-y-2 text-sm text-slate-600">{selectionPreview.exclusions.map(e=><li key={e.volunteerId}>{e.name}: {exclusionMessage[e.reason] ?? 'This volunteer is currently ineligible. Review their profile and delivery history.'}{e.excludedAssignments?` · ${e.excludedAssignments} excluded assignments`:''}</li>)}</ul></details>}
           {previewMessage && <details open><summary className="cursor-pointer font-medium">Message preview</summary><div className="mt-3 rounded-xl border border-slate-200 p-4"><p className="font-semibold">{previewMessage.subject}</p><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-600">{previewMessage.text}</p></div></details>}
           {!transportEnabled && <p className="text-sm text-amber-800">Email transport is disabled. Preview only; no email will be sent.</p>}
           {!preview && <p className="text-sm text-blue-800">Selection changed. Review recipients again before confirming.</p>}
           {preview && <><p className="text-xs text-slate-600">One individual email per recipient. Eligibility is checked again before sending.</p>
-          <button type="button" className={`${button} bg-[var(--pl-blue)] text-white`} disabled={!transportEnabled || !preview.recipients.length || preview.recipients.length>200 || selectionEmpty || pending} onClick={()=>run('send')}>Confirm send to {preview.recipients.length} recipients</button></>}
+          <button type="button" className={`${button} bg-[var(--pl-blue)] text-white`} disabled={!transportEnabled || !preview.recipients.length || preview.recipients.length>200 || selectionEmpty || pending || uncertain} onClick={()=>run('send')}>{mode==='resend'?'Confirm intentional resend':'Confirm send'} to {preview.recipients.length} recipients</button></>}
+          {uncertain && <p role="alert" className="text-sm text-amber-900">Delivery outcome is uncertain. Refresh history before starting another send.</p>}
           {selectionPreview.recipients.length>200 && <p className="text-sm text-amber-800">Choose up to 200 recipients for this operation.</p>}
         </section>}
       </fieldset>

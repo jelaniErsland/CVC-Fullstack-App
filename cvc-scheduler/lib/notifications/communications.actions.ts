@@ -4,11 +4,18 @@ import { parseCommunicationPlan, type CommunicationActionState, type Communicati
 import { readCommunicationsContext, communicationHistory, dispatchCommunicationRecipients } from "./communications.server";
 import { readInitialAssignmentEmailConfiguration } from "./initialAssignmentEmail.server";
 import type { Json } from "../supabase/database.types";
+import { recordAdminTiming } from "../observability/adminTiming.server";
 
 export async function communicationsAction(form: FormData): Promise<CommunicationActionState> {
+  const startedAt = performance.now();
+  const rawCommand = form.get("command");
+  const commandName = typeof rawCommand === "string" && ["history", "continue", "retry", "preview", "send"].includes(rawCommand) ? rawCommand : "invalid";
+  let stage = "context";
+  let failure: "none" | "unexpected" = "none";
   try {
     const context = await readCommunicationsContext();
     if (!context) return { kind: "error", message: "Communications is unavailable for this account." };
+    stage = "review";
     const command = form.get("command");
     if (command === "history") return { kind: "results", history: await communicationHistory(context.supabase, context.workspace.id) };
     if (command === "continue") {
@@ -35,13 +42,18 @@ export async function communicationsAction(form: FormData): Promise<Communicatio
     const expected = form.get("fingerprint"), operationId = form.get("operationId");
     if (expected !== preview.fingerprint || form.get("confirmedRecipients") !== String(preview.recipients.length)) return { kind: "error", message: "Recipients changed. Review the latest preview before sending." };
     if (typeof operationId !== "string" || !/^[0-9a-f-]{36}$/i.test(operationId)) throw new Error("Invalid operation");
+    stage = "confirm";
     const saved = await context.supabase.rpc("confirm_communication_operation", { p_workspace_id: context.workspace.id, p_operation_id: operationId, p_plan: plan as Json, p_expected_preview: String(expected) });
     if (saved.error) return { kind: "error", message: "Recipients changed or another administrator started delivery. Refresh the preview and history." };
     const queued = (await communicationHistory(context.supabase, context.workspace.id)).filter(r => r.operation_id === operationId && r.state === "ready");
+    stage = "dispatch";
     const history = await dispatchCommunicationRecipients(context.supabase, context.workspace.id, queued.map(r => r.recipient_id), false);
     try { revalidatePath("/admin/announcements"); } catch { /* Delivery ledger remains the authority. */ }
     return { kind: "results", history };
   } catch {
+    failure = "unexpected";
     return { kind: "error", message: "The delivery result is unavailable. Refresh history before sending again; pending or unknown messages must not be retried." };
+  } finally {
+    recordAdminTiming({ action: "communications.action", stage: `${commandName}.${stage}`, startedAt, failure, repeated: commandName === "retry" || commandName === "continue" });
   }
 }

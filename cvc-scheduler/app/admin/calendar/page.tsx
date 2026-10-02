@@ -52,6 +52,7 @@ type CalendarPageProps = Readonly<{
 
 const supportedNoticeValues = new Set([
   "created",
+  "draft_created",
   "repeat_created",
   "meal_repeat_created",
   "updated",
@@ -85,6 +86,7 @@ function safeCalendarRedirect(
   notice: string,
   createdCalendarItemId?: string,
   preserveRequestedItem = true,
+  createdSection: "volunteers" | "visibility" = "volunteers",
 ) {
   const view = formData.get("redirectView");
   const date = formData.get("redirectDate");
@@ -102,7 +104,7 @@ function safeCalendarRedirect(
     ? createdCalendarItemId ?? formData.get("redirectItem")
     : undefined;
   const requestedSection = createdCalendarItemId
-    ? "volunteers"
+    ? createdSection
     : formData.get("redirectSection");
   if (typeof requestedItem === "string" && calendarItemIdPattern.test(requestedItem)) {
     params.set("item", requestedItem);
@@ -148,8 +150,16 @@ function observeMutationFailure(
 
 async function createCalendarItemAction(formData: FormData) {
   "use server";
+  return persistCalendarItemAction(formData, false);
+}
 
-  let notice: "unavailable" | "validation" | "error" | "created" = "error";
+async function createCalendarItemDraftAction(formData: FormData) {
+  "use server";
+  return persistCalendarItemAction(formData, true);
+}
+
+async function persistCalendarItemAction(formData: FormData, saveAsDraft: boolean) {
+  let notice: "unavailable" | "validation" | "error" | "created" | "draft_created" = "error";
   let createdCalendarItemId: string | undefined;
   try {
     const context = await readCalendarMutationRouteContext();
@@ -164,9 +174,11 @@ async function createCalendarItemAction(formData: FormData) {
               formData,
               context.workspace.id,
             );
-      const result = await createCalendarItemWithClient(context.supabase, input);
+      const result = await createCalendarItemWithClient(
+        context.supabase, input, saveAsDraft,
+      );
       createdCalendarItemId = result.calendarItemId;
-      notice = "created";
+      notice = saveAsDraft ? "draft_created" : "created";
     }
   } catch (error) {
     notice = error instanceof Error && error.message.toLowerCase().includes("invalid")
@@ -179,7 +191,7 @@ async function createCalendarItemAction(formData: FormData) {
   }
 
   revalidatePath("/admin/calendar");
-  redirect(safeCalendarRedirect(formData, notice, createdCalendarItemId));
+  redirect(safeCalendarRedirect(formData, notice, createdCalendarItemId, true, saveAsDraft ? "visibility" : "volunteers"));
 }
 
 async function createRepeatedCalendarItemsAction(formData: FormData) {
@@ -476,6 +488,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       archiveAction={archiveCalendarItemAction}
       cancelAssignmentAction={cancelCalendarAssignmentAction}
       createAction={createCalendarItemAction}
+      createDraftAction={createCalendarItemDraftAction}
       createRepeatedAction={createRepeatedCalendarItemsAction}
       initialInspectorItemId={requestedItem}
       initialInspectorSection={requestedSection}

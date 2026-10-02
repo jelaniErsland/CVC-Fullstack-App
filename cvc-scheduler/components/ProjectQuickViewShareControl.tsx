@@ -50,7 +50,7 @@ export function ProjectQuickViewShareControl({
             Share this Quick View
           </h2>
           <p className="mt-1 text-sm leading-5 text-[var(--pl-text)]">
-            Share only with trusted on-site personnel. Anyone with this link can read published work, assigned volunteer names and meal contacts until the project ends or access is disabled.
+            Share only with trusted on-site personnel. Anyone with this link can read active scheduled work, assigned volunteer names and meal contacts until the project ends or access is disabled.
           </p>
         </div>
 

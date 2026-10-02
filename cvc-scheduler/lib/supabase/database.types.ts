@@ -1705,6 +1705,11 @@ export type Database = {
         }
         Returns: string
       }
+      create_calendar_item_draft: {
+        Args: Database["public"]["Functions"]["create_calendar_item"]["Args"]
+        Returns: string
+      }
+      activate_calendar_item: { Args: { p_calendar_item_id: string }; Returns: string }
       create_current_workspace_repeated_calendar_items:
         | {
             Args: {

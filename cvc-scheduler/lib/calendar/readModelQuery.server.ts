@@ -388,14 +388,8 @@ export async function readCalendarReadModelWithClient(
   }
 
   const calendarItemRows = asRows(calendarItemsResult.data);
-  const visibleCalendarItemRows = calendarItemRows.filter((row) => {
-    const publicationState = normalizePublicationState(row.publication_state);
-    if (publicationState === "published") return true;
-    return (
-      publicationState === "draft" &&
-      asOptionalString(row.created_by_project_contact_id) === scope.actorContactId
-    );
-  });
+  // The authorized RPC and its RLS fallback decide draft visibility.
+  const visibleCalendarItemRows = calendarItemRows;
   const calendarItemIds = visibleCalendarItemRows
     .map((row) => asString(row.id))
     .filter((id): id is string => Boolean(id));

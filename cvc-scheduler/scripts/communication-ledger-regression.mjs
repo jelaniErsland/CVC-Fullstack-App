@@ -28,6 +28,7 @@ try {
   const plan={kind:'schedule',mode:'new',startDate:'2035-10-01',endDate:'2035-10-02',volunteerIds:[]};
   const p=preview(plan);
   assert.equal(p.recipients.length,2); assert.equal(p.exclusions.length,1);
+  assert(p.recipients.every(person=>person.lastSentAt===null && person.changedSinceLastSend===null));
   assert(p.recipients.every(person=>person.sharedContact===true),'Shared address produces distinct sanitized recipients.');
   assert.equal(p.recipients[0].assignments.length,2);assert.equal(p.recipients[0].newAssignments,2);
   assert(!JSON.stringify(p).includes('PRIVATE'));assert(!JSON.stringify(p).includes('1980-01-01'));
@@ -54,8 +55,10 @@ try {
   assert(after.exclusions.some(e=>e.reason==='pending_or_unknown_delivery'));
   assert.equal(val(`select count(*) from public.assignment_notification_deliveries where workspace_id=${q(ws)} and delivery_state='sent'`),'2');
   assert.equal(val(`select count(*) from public.assignment_notification_deliveries where workspace_id=${q(ws)} and sending_expires_at='infinity'::timestamptz`),'2');
+  sql(`update public.calendar_items set schedule_notes='Edited after first schedule send' where id=${q(item)};`);
   const resend={...plan,mode:'resend',volunteerIds:[r.volunteer_id]};
   const rp=preview(resend);assert.equal(rp.recipients.length,1);assert.equal(rp.recipients[0].previousAssignments,2);
+  assert.equal(rp.recipients[0].changedSinceLastSend,1,'Changed assignment version is visible during deliberate resend review.');
   const resendOp=randomUUID();sql(confirmSql(resendOp,resend,rp));
   const resendRow=history().find(x=>x.operation_id===resendOp);const rc=claim(resendRow.recipient_id);finalize(rc,'sent');
   assert.equal(val(`select count(*) from public.calendar_assignments where workspace_id=${q(ws)}`),'6','Resend preserves assignments.');

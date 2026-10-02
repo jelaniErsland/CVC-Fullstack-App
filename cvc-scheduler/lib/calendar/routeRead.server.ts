@@ -1,4 +1,5 @@
 import "server-only";
+import { recordAdminTiming } from "../observability/adminTiming.server.ts";
 import { adminDestinations } from "../adminNavigation.ts";
 import type { CalendarMeal } from "./meals.ts";
 
@@ -25,11 +26,6 @@ import {
   type CalendarAssignmentPickerAssignment,
   type CalendarAssignmentPickerVolunteer,
 } from "./assignmentPicker.server.ts";
-import {
-  readInitialAssignmentNotificationSummariesWithClient,
-  type InitialAssignmentNotificationSummary,
-} from "./assignmentNotifications.server.ts";
-import { readInitialAssignmentEmailConfiguration } from "../notifications/initialAssignmentEmail.server.ts";
 import type {
   CalendarReadModelItem,
   CalendarReadModelPeriodKind,
@@ -557,65 +553,6 @@ async function readAssignmentPickerState(input: {
   };
 }
 
-async function readInitialAssignmentNotificationState(input: {
-  supabase: AppSupabaseClient;
-  calendarItemIds: readonly string[];
-  canEditAssignments: boolean;
-}): Promise<
-  Readonly<{
-    kind: "ready" | "unavailable" | "error";
-    emailConfigured: boolean;
-    summaries: ReadonlyMap<string, InitialAssignmentNotificationSummary>;
-  }>
-> {
-  const emailConfigured = readInitialAssignmentEmailConfiguration().ok;
-  const result = await readInitialAssignmentNotificationSummariesWithClient({
-    supabase: input.supabase,
-    calendarItemIds: input.calendarItemIds,
-    canSendInitialAssignmentNotifications: input.canEditAssignments,
-  });
-
-  if (result.kind !== "ready") {
-    return {
-      kind: result.kind,
-      emailConfigured,
-      summaries: new Map<string, InitialAssignmentNotificationSummary>(),
-    };
-  }
-
-  return {
-    kind: "ready",
-    emailConfigured,
-    summaries: new Map(result.summaries.map((summary) => [summary.calendarItemId, summary])),
-  };
-}
-
-function mapNotificationSummaryToClient(input: {
-  summary: InitialAssignmentNotificationSummary | undefined;
-  stateKind: "ready" | "unavailable" | "error";
-  emailConfigured: boolean;
-}): CalendarClientInitialAssignmentNotification {
-  if (input.stateKind === "unavailable") {
-    return { kind: "unavailable", emailConfigured: input.emailConfigured };
-  }
-  if (input.stateKind === "error") {
-    return { kind: "error", emailConfigured: input.emailConfigured };
-  }
-
-  return {
-    kind: "ready",
-    emailConfigured: input.emailConfigured,
-    activeAssignmentCount: input.summary?.activeAssignmentCount ?? 0,
-    eligibleToSendCount: input.summary?.eligibleToSendCount ?? 0,
-    alreadySentCount: input.summary?.alreadySentCount ?? 0,
-    missingEmailCount: input.summary?.missingEmailCount ?? 0,
-    missingFollowUpContactCount: input.summary?.missingFollowUpContactCount ?? 0,
-    failedRetryableCount: input.summary?.failedRetryableCount ?? 0,
-    sendingCount: input.summary?.sendingCount ?? 0,
-    ineligibleCount: input.summary?.ineligibleCount ?? 0,
-  };
-}
-
 function mapAssignmentToClientAssignment(
   assignment: CalendarAssignmentPickerAssignment,
 ): CalendarClientAssignment {
@@ -722,7 +659,7 @@ export function mapPersistedItemToCalendarItem(
     neededCount: item.neededCount,
     status: mapCoverageToStatus(item.coverage.coverageState),
     publicationState: item.publicationState,
-    canPublish: canEdit && item.publicationState === "draft" && item.isOwnDraft,
+    canPublish: canEdit && item.publicationState === "draft",
     publishedAt: item.publishedAt ?? undefined,
     scheduleNotes: item.scheduleNotes ?? undefined,
     meal: item.meal ?? null,
@@ -848,22 +785,31 @@ export async function readCalendarRouteState(
   searchParams?: CalendarRouteSearchParams,
   options: { trustedReadOnly?: boolean; workspaceKey?: string } = {},
 ): Promise<CalendarClientState> {
+  const startedAt = performance.now();
+  let stage = "validation";
+  let failure: "none" | "validation" | "authorization" | "persistence" | "unexpected" = "none";
   const routeRequest = normalizeCalendarRouteSearchParams(searchParams);
-  if (!routeRequest.ok) return unavailableState("invalid_period_or_range");
+  if (!routeRequest.ok) {
+    recordAdminTiming({ action: "calendar.read", stage, startedAt, failure: "validation" });
+    return unavailableState("invalid_period_or_range");
+  }
   const rawProjectDayDate = firstSearchParam(searchParams?.day);
   const projectDayDate = rawProjectDayDate === undefined
     ? null
     : normalizeDate(rawProjectDayDate);
   if (rawProjectDayDate !== undefined && !projectDayDate) {
+    recordAdminTiming({ action: "calendar.read", stage, startedAt, failure: "validation" });
     return unavailableState("invalid_period_or_range");
   }
 
   try {
+    stage = "authorization";
     const { resolveVerifiedAdminContext } = await import(
       "../auth/verified-admin-context.server.ts"
     );
     const verifiedResult = await resolveVerifiedAdminContext();
     if (verifiedResult.kind !== "ready") {
+      failure = "authorization";
       return unavailableState(verifiedResult.kind);
     }
     const verified = verifiedResult.context;
@@ -873,16 +819,17 @@ export async function readCalendarRouteState(
       workspaces: options.workspaceKey ? verified.workspaces.filter(workspace => workspace.key === options.workspaceKey) : verified.workspaces,
     });
 
-    if (!workspaceSelection.ok) return unavailableState(workspaceSelection.reason);
-    if (options.trustedReadOnly && (!workspaceSelection.canViewVolunteers || !workspaceSelection.canViewTaskPresets)) return unavailableState("prerequisite_unavailable");
+    if (!workspaceSelection.ok) { failure = "authorization"; return unavailableState(workspaceSelection.reason); }
+    if (options.trustedReadOnly && (!workspaceSelection.canViewVolunteers || !workspaceSelection.canViewTaskPresets)) { failure = "authorization"; return unavailableState("prerequisite_unavailable"); }
 
     const range = deriveCalendarRouteReadRange({
       view: routeRequest.view,
       anchorDate: routeRequest.anchorDate,
       workspaceTimezone: workspaceSelection.workspace.timezone,
     });
-    if (!range) return unavailableState("invalid_period_or_range");
+    if (!range) { failure = "validation"; return unavailableState("invalid_period_or_range"); }
 
+    stage = "read_model";
     const [query, taskPresetSelector] = await Promise.all([
       readCalendarReadModelWithClient({
         client: verified.supabase as unknown as CalendarReadModelQueryClient,
@@ -902,6 +849,7 @@ export async function readCalendarRouteState(
     ]);
 
     if (!query.ok) {
+      failure = "persistence";
       return isUnavailableQueryFailure(query.reason)
         ? unavailableState("prerequisite_unavailable", range)
         : errorState("query_unavailable", range);
@@ -911,19 +859,12 @@ export async function readCalendarRouteState(
       readModelItemOverlapsRouteRange(item, range) && (!options.trustedReadOnly || item.publicationState === "published"),
     );
     const calendarItemIds = readModelItems.map((item) => item.calendarItemId);
-    const [assignmentPicker, notificationState] = await Promise.all([
-      readAssignmentPickerState({
-        supabase: verified.supabase,
-        workspaceId: workspaceSelection.workspace.id,
-        calendarItemIds,
-        canViewVolunteers: workspaceSelection.canViewVolunteers,
-      }),
-      readInitialAssignmentNotificationState({
-        supabase: verified.supabase,
-        calendarItemIds,
-        canEditAssignments: workspaceSelection.canEditAssignments,
-      }),
-    ]);
+    const assignmentPicker = await readAssignmentPickerState({
+      supabase: verified.supabase,
+      workspaceId: workspaceSelection.workspace.id,
+      calendarItemIds,
+      canViewVolunteers: workspaceSelection.canViewVolunteers,
+    });
     const assignmentsByItemId = new Map<string, CalendarClientAssignment[]>();
     if (assignmentPicker.kind === "ready") {
       for (const assignment of assignmentPicker.assignments) {
@@ -937,11 +878,7 @@ export async function readCalendarRouteState(
         item,
         assignmentsByItemId.get(item.calendarItemId) ?? [],
         workspaceSelection.canEdit,
-        mapNotificationSummaryToClient({
-          summary: notificationState.summaries.get(item.calendarItemId),
-          stateKind: notificationState.kind,
-          emailConfigured: notificationState.emailConfigured,
-        }),
+        { kind: "unavailable", emailConfigured: false },
         workspaceSelection.projectContactId,
       ),
     );
@@ -986,7 +923,10 @@ export async function readCalendarRouteState(
           queriedRange: range,
         };
   } catch {
+    failure = "unexpected";
     return errorState("safe_error");
+  } finally {
+    recordAdminTiming({ action: "calendar.read", stage, startedAt, failure });
   }
 }
 

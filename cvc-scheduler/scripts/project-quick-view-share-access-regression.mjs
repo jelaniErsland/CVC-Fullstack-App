@@ -248,7 +248,8 @@ try {
     const calendar = await actor.rpc("read_authorized_calendar_items", { p_workspace_id: workspaceIds[0] }).select("*");
     const presets = await actor.rpc("read_authorized_task_presets", { p_workspace_id: workspaceIds[0] }).select("*");
     assert(!calendar.error && !presets.error);
-    assert.equal(calendar.data.length, 3, "Operational publication rows must survive safe projection.");
+    assert.equal(calendar.data.length, administrative ? 4 : 3, "Editors can review ambiguous drafts; read-only contacts see operational items.");
+    assert.equal(calendar.data.some(item => item.id === itemIds[3]), administrative);
     assert.equal(presets.data.length >= 1, true);
     const item = calendar.data.find(item => item.id === itemIds[0]);
     const preset = presets.data.find(preset => preset.id === presetId);

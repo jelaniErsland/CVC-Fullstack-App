@@ -36,6 +36,8 @@ export const authenticatedFunctions = Object.freeze([
   "create_calendar_assignment(uuid,uuid,text)",
   "create_calendar_assignments_batch(uuid,uuid[],text)",
   "create_calendar_item(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)",
+  "create_calendar_item_draft(uuid,uuid,text,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb)",
+  "activate_calendar_item(uuid)",
   "create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
   "create_current_workspace_repeated_calendar_items(uuid,uuid,text,text,date,date,integer,smallint[],time without time zone,time without time zone,integer,text,jsonb,text,text,text,text,integer)",
   "create_manual_volunteer_profile(uuid,jsonb)",
@@ -70,6 +72,8 @@ export const authenticatedFunctions = Object.freeze([
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "calendar_item_operational_insert()",
+  "guard_explicit_draft_assignment()",
   "publish_draft_on_assignment()",
   "prepare_assignment_instruction_insert()",
   "track_assignment_instruction_update()",
@@ -96,6 +100,8 @@ export const internalFunctions = Object.freeze([
 // These exact trigger-only helpers need owner rights to maintain private history
 // and snapshot provenance. No application role can execute them directly.
 export const internalDefinerFunctions = Object.freeze([
+  "calendar_item_operational_insert()",
+  "guard_explicit_draft_assignment()",
   "publish_draft_on_assignment()",
   "prepare_assignment_instruction_insert()",
   "track_assignment_instruction_update()",

@@ -295,7 +295,7 @@ function getCalendarItemAccessibleLabel(item: CalendarItemWithPreset) {
   }
 
   return [
-    isDraftCalendarItem(item) ? "Private draft" : "Published",
+    ...(isDraftCalendarItem(item) ? ["Draft awaiting review"] : []),
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     getCalendarCompactDayLabel(item.date),
@@ -313,7 +313,7 @@ function getWeekBandItemAccessibleLabel(item: WeekBandCalendarItem) {
     : `no specific time ${startLabel}`;
 
   return [
-    isDraftCalendarItem(item) ? "Private draft" : "Published",
+    ...(isDraftCalendarItem(item) ? ["Draft awaiting review"] : []),
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     dateLabel,
@@ -330,7 +330,7 @@ function getProjectContextItemAccessibleLabel(item: WeekBandCalendarItem) {
     : `date-based project context ${startLabel}`;
 
   return [
-    isDraftCalendarItem(item) ? "Private draft" : "Published",
+    ...(isDraftCalendarItem(item) ? ["Draft awaiting review"] : []),
     getCalendarItemDisplayName(item),
     `${item.filledCount} of ${item.neededCount} volunteers`,
     dateLabel,
@@ -2083,6 +2083,7 @@ function MobileDayGroups({
 function CalendarCreatePanel({
   canEdit,
   createAction,
+  createDraftAction,
   createRepeatedAction,
   creationDraft,
   currentDate,
@@ -2094,6 +2095,7 @@ function CalendarCreatePanel({
 }: {
   canEdit: boolean;
   createAction?: CalendarMutationAction;
+  createDraftAction?: CalendarMutationAction;
   createRepeatedAction?: CalendarMutationAction;
   creationDraft?: CalendarCreationDraft;
   currentDate: string;
@@ -2200,6 +2202,7 @@ function CalendarCreatePanel({
             canEdit={canEdit}
             closeButtonRef={desktopCloseButtonRef}
             createAction={createAction}
+            createDraftAction={createDraftAction}
             createRepeatedAction={createRepeatedAction}
             creationDraft={creationDraft}
             currentDate={currentDate}
@@ -2232,6 +2235,7 @@ function CalendarCreatePanel({
             canEdit={canEdit}
             closeButtonRef={mobileCloseButtonRef}
             createAction={createAction}
+            createDraftAction={createDraftAction}
             createRepeatedAction={createRepeatedAction}
             creationDraft={creationDraft}
             currentDate={currentDate}
@@ -2254,6 +2258,7 @@ function CreatePanelContent({
   canEdit,
   closeButtonRef,
   createAction,
+  createDraftAction,
   createRepeatedAction,
   creationDraft,
   currentDate,
@@ -2269,6 +2274,7 @@ function CreatePanelContent({
   canEdit: boolean;
   closeButtonRef?: Ref<HTMLButtonElement>;
   createAction?: CalendarMutationAction;
+  createDraftAction?: CalendarMutationAction;
   createRepeatedAction?: CalendarMutationAction;
   creationDraft: CalendarCreationDraft;
   currentDate: string;
@@ -2358,7 +2364,7 @@ function CreatePanelContent({
     (presetMissing && "Choose an available task preset, or use a custom item.") ||
     (unsupportedAllDay && "No-specific-time items are still read-only; create a timed item for now.") ||
     (!canEdit && "Calendar editing is unavailable for this signed-in project contact.") ||
-    (isMealPreset ? (isRepeat ? "Each meal is visible when saved" : "Visible when saved") : "Private draft");
+    "Saving makes this item available. Email is a separate action.";
   const selectedCreateAction = isRepeat
     ? createRepeatedAction
     : isMealPreset
@@ -2377,7 +2383,7 @@ function CreatePanelContent({
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Schedule a task or one-time item as a private draft.
+        Schedule a task or one-time item. Saving sends no email.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -2962,6 +2968,16 @@ function CreatePanelContent({
             >
               {isRepeat ? `Create ${repeatDates.length || ""} items`.trim() : "Create item"}
             </button>
+            {!isRepeat && !isMealPreset && createDraftAction ? (
+              <button
+                className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
+                disabled={!canSubmitPersisted || bulkSelection}
+                formAction={createDraftAction}
+                type="submit"
+              >
+                Save as draft
+              </button>
+            ) : null}
             <button
               className={`min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 ${calmFocusRing}`}
               onClick={onClose}
@@ -3205,17 +3221,8 @@ function InspectorContent({
     Boolean(item.canPublish) &&
     item.publicationState === "draft";
   const canArchiveSelectedItem = canEdit && Boolean(archiveAction);
-  const archiveNeedsVolunteerWarning =
-    currentAssignments.length > 0 || item.publicationState === "published";
-  const initialNotification = item.initialAssignmentNotification;
+  const archiveNeedsVolunteerWarning = currentAssignments.length > 0;
   const followUpContactSelfEdit = item.followUpContactSelfEdit;
-  const canSubmitInitialEmails =
-    Boolean(sendInitialAssignmentNotificationsAction) &&
-    canEditAssignments &&
-    item.publicationState === "published" &&
-    initialNotification?.kind === "ready" &&
-    initialNotification.emailConfigured &&
-    initialNotification.eligibleToSendCount > 0;
   useEffect(() => {
     if (!editingContactDetails) return;
     const frame = window.requestAnimationFrame(() => contactNameInputRef.current?.focus());
@@ -3296,33 +3303,19 @@ function InspectorContent({
           >
             {getCalendarStatusLabel(item.status)}
           </span>}
-          <span
-            className={[
-              "inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-semibold",
-              item.publicationState === "draft"
-                ? "border-slate-300 bg-white/80 text-slate-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700",
-            ].join(" ")}
-          >
-            {item.publicationState === "draft" ? "Private draft" : "Published"}
-          </span>
+          {item.publicationState === "draft" ? <span className="inline-flex min-h-7 items-center rounded-full border border-slate-300 bg-white/80 px-2.5 text-[11px] font-semibold text-slate-700">
+            Draft · needs review
+          </span> : null}
         </div>
 
         {!readOnly ? <>
-        <div className="order-5 mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5" data-inspector-section="visibility">
+        {item.publicationState === "draft" ? <div className="order-5 mt-3 border-y border-[var(--pl-border)] bg-[var(--pl-surface-subtle)]/55 px-3 py-2.5" data-inspector-section="visibility">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Visibility
+            Draft review
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            {item.publicationState === "draft"
-              ? "Private planning item. Saving an assignment makes it visible to that volunteer automatically when the creator can publish. Email remains a separate action."
-              : "Visible to authorized project contacts and assigned volunteers. Email still requires a separate action."}
+            Activate this item when it is ready for assignments and volunteer schedules. Activation sends no email.
           </p>
-          {item.publishedAt ? (
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              Published {item.publishedAt.slice(0, 10)}
-            </p>
-          ) : null}
           {canPublishSelectedItem ? (
             <div className="mt-3">
               {confirmingPublish ? (
@@ -3333,7 +3326,7 @@ function InspectorContent({
                   <input name="redirectItem" type="hidden" value={item.id} />
                   <input name="redirectSection" type="hidden" value="visibility" />
                   <p className="text-sm font-semibold text-amber-950">
-                    Publish this Calendar item?
+                    Activate this draft?
                   </p>
                   <p className="mt-1 text-sm leading-6 text-amber-800">
                     Project contacts and assigned volunteers will be able to see it. No email is sent.
@@ -3343,7 +3336,7 @@ function InspectorContent({
                       className={`inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`}
                       type="submit"
                     >
-                      Publish item
+                      Activate draft
                     </button>
                     <button
                       className={`inline-flex min-h-10 items-center rounded-lg border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:bg-amber-50 ${calmFocusRing}`}
@@ -3360,12 +3353,12 @@ function InspectorContent({
                   onClick={() => setConfirmingPublish(true)}
                   type="button"
                 >
-                  Publish item
+                  Activate draft
                 </button>
               )}
             </div>
           ) : null}
-        </div>
+        </div> : null}
         </> : null}
 
         <div className="order-1 mt-3 border-b border-[var(--pl-border)] px-1 pb-3" data-inspector-section="details">
@@ -3389,7 +3382,9 @@ function InspectorContent({
             STEP 2 · VOLUNTEERS
           </p>
           <div className="mt-2">
-            <CalendarAssignmentPicker
+            {item.publicationState === "draft" ? (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Activate this draft before assigning volunteers. {currentAssignments.length > 0 ? `${currentAssignments.length} saved assignment records are preserved for review.` : ""}</p>
+            ) : <CalendarAssignmentPicker
               assignAction={assignAction}
               assignmentPicker={assignmentPicker}
               canEditAssignments={canEditAssignments}
@@ -3406,7 +3401,7 @@ function InspectorContent({
                 primaryItem={{ id: item.id, date: item.date, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }}
                 otherItems={assignmentItems.filter(candidate => candidate.id !== item.id)}
               /> : undefined}
-            />
+            />}
           </div>
         </div>
 
@@ -3416,8 +3411,7 @@ function InspectorContent({
             <Mail aria-hidden="true" className="h-3.5 w-3.5" />
             Communication
           </p>
-          {initialNotification?.kind === "ready" ? (
-            <div className="mt-3 space-y-3">
+          <div className="mt-3 space-y-3">
               <div>
                 <h3 className="text-base font-semibold text-slate-950">
                   Notify volunteers
@@ -3425,29 +3419,6 @@ function InspectorContent({
                 <p className="mt-1 text-sm leading-5 text-slate-600">
                   Saving and assigning do not send email. Review eligible recipients before delivery.
                 </p>
-              </div>
-              <div className="grid gap-2 text-xs font-semibold text-slate-600 sm:grid-cols-2">
-                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Ready to send: {initialNotification.eligibleToSendCount}
-                </span>
-                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Already sent: {initialNotification.alreadySentCount}
-                </span>
-                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Missing email: {initialNotification.missingEmailCount}
-                </span>
-                <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Needs Follow-up Contact: {initialNotification.missingFollowUpContactCount}
-                </span>
-                {initialNotification.failedRetryableCount > 0 && <span className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-                  Failed, needs review: {initialNotification.failedRetryableCount}
-                </span>}
-                {initialNotification.sendingCount > 0 && <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Sending or pending: {initialNotification.sendingCount}
-                </span>}
-                {initialNotification.ineligibleCount > 0 && <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  Not eligible: {initialNotification.ineligibleCount}
-                </span>}
               </div>
               {followUpContactSelfEdit?.kind === "current_contact" &&
               updateCurrentVolunteerFacingContactDetailsAction ? (
@@ -3532,64 +3503,24 @@ function InspectorContent({
                     </form>
                   ) : null}
                 </div>
-              ) : initialNotification.missingFollowUpContactCount > 0 ? (
-                <p className="rounded-xl border border-slate-200 bg-white/75 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
-                  The Follow-up Contact needs to add their contact details.
-                </p>
               ) : null}
-              {!initialNotification.emailConfigured ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">
-                  Email sending is off.
-                </p>
-              ) : null}
-              {item.publicationState !== "published" ? (
+              {item.publicationState === "draft" ? (
                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-600">
-                  This item is still a private draft. Publish it to make saved assignments visible to volunteers before sending email. Publishing sends no email.
-                </p>
-              ) : null}
-              {item.publicationState === "published" && initialNotification.eligibleToSendCount === 0 ? (
-                <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900">
-                  No first notices are eligible. Check missing email or contact details, shared addresses, pending or failed deliveries, and whether assignments were already sent. Communications can send a reviewed shared-address notice without a personal link or a deliberate resend.
+                  Activate this draft before notifying volunteers.
                 </p>
               ) : null}
               {canEditAssignments && sendInitialAssignmentNotificationsAction ? (
-                <form action={sendInitialAssignmentNotificationsAction}>
-                  <input name="calendarItemId" type="hidden" value={item.id} />
-                  <input name="redirectView" type="hidden" value={currentView} />
-                  <input name="redirectDate" type="hidden" value={currentDate} />
-                  <input name="redirectItem" type="hidden" value={item.id} />
-                  <input name="redirectSection" type="hidden" value="notification" />
-                  <button
-                    className={[
-                      "inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition",
-                      canSubmitInitialEmails
-                        ? "border-[var(--pl-blue)] bg-[var(--pl-blue)] text-white hover:bg-[var(--pl-blue-deep)]"
-                        : "cursor-not-allowed border-slate-200 bg-white/72 text-slate-500 opacity-75",
-                    ].join(" ")}
-                    disabled={!canSubmitInitialEmails}
-                    formAction={sendInitialAssignmentNotificationsAction}
-                    type="submit"
-                  >
+                <Link className={`inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)] ${calmFocusRing}`} href="/admin/announcements?kind=schedule">
                     <Send aria-hidden="true" className="h-4 w-4" />
-                    Review schedule delivery
-                  </button>
-                </form>
+                    Review recipients in Communications
+                </Link>
               ) : (
                 <p className="text-sm leading-6 text-slate-600">
                   This signed-in contact can review assignments but cannot send
                   initial assignment email from this Calendar.
                 </p>
               )}
-            </div>
-          ) : initialNotification?.kind === "error" ? (
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Initial email readiness could not be checked safely right now.
-            </p>
-          ) : (
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Initial assignment email is unavailable for this signed-in contact.
-            </p>
-          )}
+          </div>
         </div>
         </> : null}
 
@@ -3781,7 +3712,7 @@ function InspectorContent({
                   maxLength={4000}
                   name="notes"
                 />
-                <span className="mt-1 block text-xs leading-5 text-slate-500">This changes only this scheduled item. Its previous published wording is retained in instruction history; other occurrences keep their own wording. Saving does not send an email.</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">This changes only this scheduled item. Its previous wording is retained in instruction history; other occurrences keep their own wording. Saving does not send an email.</span>
               </label>
               <button
                 className="min-h-11 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)]"
@@ -3943,7 +3874,7 @@ function getProjectDayLongLabel(date: string) {
 }
 
 function ProjectDayEditor({ details }: { details: { date: string; publishedScheduleCount: number } }) {
-  return <div className="space-y-4"><p className="font-semibold">{getProjectDayLongLabel(details.date)}</p><p className="text-sm text-slate-600">{details.publishedScheduleCount} published Calendar items</p></div>;
+  return <div className="space-y-4"><p className="font-semibold">{getProjectDayLongLabel(details.date)}</p><p className="text-sm text-slate-600">{details.publishedScheduleCount} scheduled items</p></div>;
 }
 
 function ProjectDayDetailsSurface({
@@ -4018,12 +3949,16 @@ function CalendarNotice({ notice }: { notice?: string }) {
     duplicated: { title: "Item duplicated", message: "The independent copy has no assigned volunteers." },
     operation_unavailable: { title: "Item was not saved", message: "Check the date, paired times and meal total. Only one active Breakfast and Lunch may be scheduled per day." },
     created: {
-      title: "Calendar draft saved",
-      message: "The scheduled item was saved as a private draft.",
+      title: "Calendar item saved",
+      message: "The scheduled item is ready for assignments. No email was sent.",
+    },
+    draft_created: {
+      title: "Draft saved",
+      message: "Activate this item when it is ready for assignments. No email was sent.",
     },
     repeat_created: {
-      title: "Calendar drafts saved",
-      message: "Each scheduled item was saved as a separate private draft.",
+      title: "Calendar items saved",
+      message: "Each scheduled item is ready for assignments. No email was sent.",
     },
     meal_repeat_created: {
       title: "Meals saved",
@@ -4050,8 +3985,8 @@ function CalendarNotice({ notice }: { notice?: string }) {
       message: "It was removed from active project views. Existing records were preserved.",
     },
     published: {
-      title: "Calendar item published",
-      message: "Authorized project contacts can now see it. No email was sent until the explicit Initial email action is used.",
+      title: "Draft activated",
+      message: "The item is ready for assignments and volunteer schedules. No email was sent.",
     },
     assignment_email_sent: {
       title: "Initial assignment email sent",
@@ -4128,6 +4063,7 @@ export default function CalendarClient({
   archiveAction,
   cancelAssignmentAction,
   createAction,
+  createDraftAction,
   createRepeatedAction,
   initialInspectorItemId: initialItemId,
   initialInspectorSection: initialSection = "details",
@@ -4151,6 +4087,7 @@ export default function CalendarClient({
   archiveAction?: CalendarMutationAction;
   cancelAssignmentAction?: CalendarMutationAction;
   createAction?: CalendarMutationAction;
+  createDraftAction?: CalendarMutationAction;
   createRepeatedAction?: CalendarMutationAction;
   initialInspectorItemId?: string;
   initialInspectorSection?: CalendarInspectorSection;
@@ -4479,7 +4416,7 @@ export default function CalendarClient({
     >
       <PageHeader title={readOnly ? "Project Quick View" : "Calendar"} className={!readOnly ? "calendar-page-header" : undefined}
         context={routeBase === "/qv" && isReady ? ldcProjectName(state.workspaceName) : readOnly ? "Read-only project schedule" : undefined}
-        secondaryActions={!readOnly && isReady && state.canEditAssignments ? <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800 max-[240px]:w-full max-[240px]:justify-center max-[240px]:px-2 max-[240px]:text-xs"><Send className="size-[18px] shrink-0" aria-hidden="true" />Send schedules</Link> : undefined}
+        secondaryActions={!readOnly && isReady ? <div className="flex flex-wrap gap-2">{state.canEdit && <Link href="/admin/calendar/drafts" className="inline-flex min-h-11 items-center rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800">Review drafts</Link>}{state.canEditAssignments && <Link href={`/admin/announcements?kind=schedule&from=${scheduleRange.start}&through=${scheduleRange.end}`} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-blue-800 max-[240px]:w-full max-[240px]:justify-center max-[240px]:px-2 max-[240px]:text-xs"><Send className="size-[18px] shrink-0" aria-hidden="true" />Send schedules</Link>}</div> : undefined}
       />
       {projectControls && <div className="mt-4">{projectControls}</div>}
       <section className="mt-4">
@@ -4641,6 +4578,7 @@ export default function CalendarClient({
             <CalendarCreatePanel
               canEdit={state.canEdit}
               createAction={createAction}
+              createDraftAction={createDraftAction}
               createRepeatedAction={createRepeatedAction}
               creationDraft={creationDraft}
               currentDate={calendarAnchor}

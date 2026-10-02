@@ -166,7 +166,7 @@ export function ProjectQuickView({
 
         <div className="px-5 py-5 sm:px-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">Published schedule</h2>
+            <h2 className="text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]">Project schedule</h2>
             <span className="text-xs font-semibold text-[var(--pl-muted)]">
               {projection.publishedSchedule.length} item{projection.publishedSchedule.length === 1 ? "" : "s"}
             </span>
@@ -191,7 +191,7 @@ export function ProjectQuickView({
             </ul>
           ) : (
             <p className="mt-3 rounded-xl border border-dashed border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-5 text-sm leading-6 text-[var(--pl-muted)]">
-              No published project schedule for this day.
+              No scheduled work for this day.
             </p>
           )}
         </div>

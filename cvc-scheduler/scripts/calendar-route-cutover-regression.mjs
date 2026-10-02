@@ -103,8 +103,9 @@ assert.match(
 );
 assert.match(
   routeReadSource,
-  /const \[assignmentPicker, notificationState\] = await Promise\.all\(\[\s*readAssignmentPickerState\([\s\S]*?readInitialAssignmentNotificationState\(/,
+  /const assignmentPicker = await readAssignmentPickerState\(/,
 );
+assert.doesNotMatch(routeReadSource, /readInitialAssignmentNotificationState\(/);
 
 const queryHelper = describeCalendarReadModelQueryHelper();
 assert.equal(queryHelper.dependencyInjected, true);

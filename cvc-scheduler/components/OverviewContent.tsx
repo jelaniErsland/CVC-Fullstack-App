@@ -62,7 +62,7 @@ export function OverviewContent({ state, photo, canEditPhoto, attentionCount, at
           {calendar.upcomingItems.map(item => <Link key={item.id} href={item.href} className="block px-4 py-4 hover:bg-[var(--pl-surface-subtle)] sm:px-6">
             <div className="pl-metadata"><Timing item={item} /></div>
             <div className="mt-1 flex items-start justify-between gap-3"><p className="pl-row-title min-w-0 break-words">{item.title}{item.itemCount && item.itemCount > 1 ? ` · ${item.itemCount} items` : ""}</p><ArrowRight aria-hidden className="mt-1 size-4 shrink-0 text-[var(--pl-muted)]" /></div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2"><StatusBadge status={item.publicationState} /><span className="text-sm text-[var(--pl-text)]">{item.mealSummary ?? item.assignedFractionLabel}</span></div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">{item.publicationState === "draft" && <StatusBadge status="draft" />}<span className="text-sm text-[var(--pl-text)]">{item.mealSummary ?? item.assignedFractionLabel}</span></div>
           </Link>)}
         </div> : <p className="p-4 text-sm leading-6 text-[var(--pl-muted)] sm:p-6">No Calendar items are scheduled in the next seven days.</p>}
       </Panel>}

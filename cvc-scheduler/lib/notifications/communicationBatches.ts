@@ -7,10 +7,12 @@ export async function finishConfirmedCommunication(
   operationId: string,
   action: (form: FormData) => Promise<CommunicationActionState>,
   progress: (state: CommunicationActionState) => void,
+  isCurrent: () => boolean = () => true,
 ): Promise<CommunicationActionState> {
   let state = initial;
   let previousCount = 201;
   for (let batch = 0; batch < 40 && state.kind === "results"; batch++) {
+    if (!isCurrent()) return { kind: "error", message: "Delivery outcome is uncertain. Refresh history before continuing." };
     progress(state);
     const queued = state.history.filter(row => row.operation_id === operationId && row.state === "ready");
     if (!queued.length) return state;

@@ -17,4 +17,7 @@ assert.equal(stalled,1);assert.equal(stopped.kind,'error');
 let errors=0;
 const failed=await finishConfirmedCommunication(results(3),'approved',async()=>{errors++;return {kind:'error',message:'Revalidation failed'};},()=>{});
 assert.equal(errors,1);assert.equal(failed.kind,'error');
+let canceledCalls=0;
+const canceled=await finishConfirmedCommunication(results(3),'approved',async()=>{canceledCalls++;return results(2);},()=>{},()=>false);
+assert.equal(canceledCalls,0);assert.equal(canceled.kind,'error','Timed-out UI must not launch another delivery batch.');
 console.log('PASS: one explicit operation confirmation completes bounded batches; only same-operation queued recipients; no implicit failed/unknown retry; stop on error or stalled progress. No email.');

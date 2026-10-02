@@ -315,6 +315,7 @@ function seedData(containerName) {
     containerName,
     `begin;
 insert into public.volunteer_profiles (id, workspace_id, source_submission_id, profile_source, manual_created_by_project_contact_id, manual_created_at, lifecycle, readiness_status, full_name, email, phone, congregation, preferred_contact_method, availability_snapshot, skills_help_snapshot, profile_notes) values ${volunteerRows.join(",\n")};
+select set_config('project_local.save_explicit_draft','yes',true);
 insert into public.calendar_items (id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot, schedule_kind, start_date, end_date, start_time, end_time, timezone, needed_count, schedule_notes, custom_values, lifecycle, follow_up_project_contact_id, created_by_project_contact_id, publication_state, published_at, published_by_project_contact_id) values ${itemRows.join(",\n")};
 insert into public.calendar_assignments (id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id) values ${assignmentRows.join(",\n")};
 insert into public.assignment_responses (id, workspace_id, assignment_id, response_status, response_source, responded_at, created_at, updated_at) values ${responseRows.join(",\n")};
@@ -388,9 +389,7 @@ async function verifyPopulatedDesktop(browser) {
   await page.getByText("2 responses pending", { exact: true }).waitFor();
   assert.equal(await page.locator("[data-signal-row]").count(), 5);
   assert.equal(await page.getByText(/Draft Supply Check|Material Staging|Future Welcome Crew|Canceled Setup/).count(), 0);
-  const desktopNav = page.getByRole("navigation").filter({ hasText: "Overview" }).first();
-  const needsLink = desktopNav.getByRole("link", { name: "Needs Attention", exact: true });
-  assert.equal(await needsLink.getAttribute("aria-current"), "page");
+  assert.equal(new URL(page.url()).pathname, "/admin/needs-attention");
   await capture(page, "needs-attention-desktop-mixed-1440x1000.png");
 
   const coverageRow = page.locator('details[data-signal-kind="coverage"]').filter({ hasText: "Drywall Crew" });
@@ -485,7 +484,7 @@ async function verifyMobile(browser) {
   });
   await attentionTab.waitFor();
   assert.equal(await attentionTab.getAttribute("aria-current"), "page");
-  assert.equal(await primary.getByRole("link", { name: "Open Volunteers", exact: true }).count(), 0);
+  assert.equal(await primary.getByRole("link", { name: "Open Volunteers", exact: true }).count(), 1);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
   await capture(page, "needs-attention-mobile-populated-390x844.png");
 
@@ -514,9 +513,8 @@ async function verifyMobile(browser) {
   const more = navigationPage.getByRole("dialog", { name: "More admin navigation", exact: true });
   await more.waitFor();
   await more.getByRole("link", { name: "Project Quick View", exact: true }).waitFor();
-  await more.getByRole("link", { name: "Volunteers", exact: true }).waitFor();
+  await navigationPrimary.getByRole("link", { name: "Open Volunteers", exact: true }).waitFor();
   assert.equal(await navigationPrimary.getByRole("link", { name: "Open Overview", exact: true }).getAttribute("href"), "/admin/dashboard");
-  assert.equal(await navigationPrimary.getByRole("link", { name: "Open Tasks", exact: true }).getAttribute("href"), "/admin/tasks");
   assert.equal(await navigationPrimary.getByRole("link", { name: "Open Calendar", exact: true }).getAttribute("href"), "/admin/calendar");
   assert.equal(await navigationPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
   await capture(navigationPage, "needs-attention-mobile-more-volunteers-390x844.png");
@@ -578,7 +576,7 @@ try {
     console.log(`Needs Attention review screenshots written to ${screenshotDirectory}.`);
   }
 } catch (error) {
-  console.error(redact(error));
+  console.error(redact(error instanceof Error ? error.stack ?? error : error));
   process.exitCode = 1;
 } finally {
   if (containerName) {
