@@ -84,7 +84,7 @@
           </button>
           <a
             class="button button-primary"
-            href="https://projectlocal.app/admin/login"
+            href="https://projectlocal.app/"
             target="_blank"
             >Open the app <span aria-hidden="true">↗</span></a
           >
@@ -113,7 +113,7 @@
             ><span>01</span>Start here</a
           >
           <a class="nav-link" href="#sign-in"
-            ><span>02</span>Getting signed in</a
+            ><span>02</span>Accessing the app</a
           >
           <a class="nav-link" href="#overview"><span>03</span>Overview</a>
           <a class="nav-link" href="#calendar"
@@ -286,9 +286,9 @@
         </section>
         <div class="screenshots-notice">
           <strong>About the pictures</strong> These screenshots use fictional
-          review data from the Project Local 12.45–12.47 previews; they are
-          illustrations, not captures of your live project. The deployed
-          interface may differ slightly.
+          review data. The Calendar, Communications, Draft Review, and Quick
+          View pictures show the current workflow; no live volunteer contact
+          details or private instructions are shown.
         </div>
         <section
           aria-labelledby="sign-in-heading"
@@ -298,10 +298,10 @@
           <div class="section-heading">
             <div>
               <span class="eyebrow">02 · FIRST THINGS FIRST</span>
-              <h2 id="sign-in-heading">Getting signed in</h2>
+              <h2 id="sign-in-heading">Accessing the app</h2>
               <p>
-                As a project contact, you have your own secure sign-in. No
-                password to create or remember.
+                Project contacts and volunteers use different ways to get in.
+                Neither needs to create a password.
               </p>
             </div>
           </div>
@@ -317,8 +317,7 @@
                       href="https://projectlocal.app/admin/login"
                       target="_blank"
                       >projectlocal.app/admin/login</a
-                    >. This is different from the personalized schedule links
-                    volunteers receive.
+                    >. Volunteers start at the main Project Local page instead.
                   </p>
                 </div>
               </div>
@@ -369,6 +368,21 @@
                 Need access first? Ask Jelani to set up your account.
               </p>
             </aside>
+          </div>
+          <div class="important-card" style="margin-top: 28px">
+            <span class="important-icon">✓</span>
+            <div>
+              <strong>For volunteers</strong>
+              <p>
+                Open <a href="https://projectlocal.app/" target="_blank">projectlocal.app</a>
+                and enter the email address or phone number on your volunteer
+                profile. One match opens your schedule directly. If family
+                members share that contact, tap your name and project on the
+                <b>Who are you?</b> screen. No volunteer account or special
+                invitation is required. Your choice is remembered on
+                that device until you switch or forget it.
+              </p>
+            </div>
           </div>
         </section>
         <section
@@ -469,12 +483,13 @@
           <div class="important-card">
             <span class="important-icon">!</span>
             <div>
-              <strong>One important distinction</strong>
+              <strong>Saving and emailing are separate actions</strong>
               <p>
-                <b>Save → Publish → Send.</b> Saving an assignment doesn't
-                automatically email the volunteer. Ordinary new work begins as a
-                private draft; publish it when the schedule is ready, then use
-                Communications to email the volunteers.
+                <b>Normal Save makes the item operational.</b> Assigned volunteers
+                can see it on their schedules, but saving an item or assignment
+                sends no email. Use <b>Save as draft</b> only when you deliberately
+                want to hold an item for review. Send messages separately from
+                Communications when ready.
               </p>
             </div>
           </div>
@@ -482,22 +497,22 @@
           <div aria-label="Scheduling instructions" class="tabs" role="tablist">
             <button
               aria-controls="panel-single"
-              aria-selected="false"
+              aria-selected="true"
               data-tab="single"
               id="tab-single"
               role="tab"
-              tabindex="-1"
+              tabindex="0"
               type="button"
             >
               Create one day
             </button>
             <button
               aria-controls="panel-repeat"
-              aria-selected="true"
+              aria-selected="false"
               data-tab="repeat"
               id="tab-repeat"
               role="tab"
-              tabindex="0"
+              tabindex="-1"
               type="button"
             >
               Create several days
@@ -517,7 +532,6 @@
           <div
             aria-labelledby="tab-single"
             class="tab-panel"
-            hidden=""
             id="panel-single"
             role="tabpanel"
           >
@@ -535,13 +549,15 @@
                     needed volunteers.
                   </p>
                   <p>
-                    <span>03</span> Choose the volunteers, review the summary,
-                    and select <b>Create item</b>.
+                    <span>03</span> For work that crosses midnight, set
+                    <b>Ends on</b> to the next date. For example, Night Watch
+                    can run from 5:00 PM today to 5:00 AM tomorrow.
                   </p>
                   <p>
-                    <span>04</span> Publish the item when you're ready for
-                    volunteers to see it. Email them separately through
-                    Communications.
+                    <span>04</span> Choose volunteers if needed, check the
+                    summary, then select <b>Create item</b>. It is operational
+                    immediately; no email is sent. Open an item to edit its
+                    dates, times, or details later.
                   </p>
                 </div>
               </div>
@@ -549,18 +565,18 @@
                 <button
                   aria-label="Enlarge Calendar screenshot"
                   class="shot-button"
-                  data-caption="Calendar week view — choose Create item to begin."
-                  data-image="assets/calendar.webp"
+                  data-caption="Current Calendar create form, including Ends on and Save as draft."
+                  data-image="assets/calendar-create-1250.png"
                   type="button"
                 >
                   <img
-                    alt="Reviewed Calendar week view with the Create item action."
+                    alt="Calendar create form showing the end date, Create item, and Save as draft."
                     loading="lazy"
-                    src="assets/calendar-thumb.webp"
+                    src="assets/calendar-create-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge screenshot</span>
                 </button>
                 <figcaption>
-                  Calendar week view — choose Create item to begin.
+                  Create a Calendar item, including an overnight end date.
                 </figcaption>
               </figure>
             </div>
@@ -568,6 +584,7 @@
           <div
             aria-labelledby="tab-repeat"
             class="tab-panel"
+            hidden=""
             id="panel-repeat"
             role="tabpanel"
           >
@@ -592,8 +609,8 @@
                   </p>
                   <p>
                     <span>04</span> Check the live summary and choose
-                    <b>Create items</b> once. You can publish the new work after
-                    reviewing it.
+                    <b>Create items</b> once. The saved items are operational;
+                    sending email is a separate Communications action.
                   </p>
                 </div>
                 <div class="example-card">
@@ -604,45 +621,6 @@
                     other volunteers remain assigned to all five days.
                   </p>
                 </div>
-              </div>
-              <div class="screenshots-pair">
-                <figure class="shot mobile-shot">
-                  <button
-                    aria-label="Enlarge Repeat creation mobile screenshot"
-                    class="shot-button"
-                    data-caption="On a phone: choose volunteers and adjust their individual days."
-                    data-image="assets/repeat-mobile.webp"
-                    type="button"
-                  >
-                    <img
-                      alt="Repeat-item creation on a phone, with volunteer selection and day exceptions."
-                      loading="lazy"
-                      src="assets/repeat-mobile-thumb.webp"
-                    /><span class="zoom-hint">⌕ Enlarge</span>
-                  </button>
-                  <figcaption>
-                    On a phone: choose volunteers and adjust their individual
-                    days.
-                  </figcaption>
-                </figure>
-                <figure class="shot crop-shot">
-                  <button
-                    aria-label="Enlarge Repeat creation desktop screenshot"
-                    class="shot-button"
-                    data-caption="On desktop: review the summary before creating the items."
-                    data-image="assets/repeat-desktop.webp"
-                    type="button"
-                  >
-                    <img
-                      alt="Desktop Create item inspector, showing individual-day selection and summary."
-                      loading="lazy"
-                      src="assets/repeat-detail.webp"
-                    /><span class="zoom-hint">⌕ See full desktop</span>
-                  </button>
-                  <figcaption>
-                    On desktop: review the summary before creating the items.
-                  </figcaption>
-                </figure>
               </div>
             </div>
           </div>
@@ -678,61 +656,48 @@
                   </p>
                 </div>
               </div>
-              <div class="screenshots-pair">
-                <figure class="shot mobile-shot">
-                  <button
-                    aria-label="Enlarge existing-item mobile screenshot"
-                    class="shot-button"
-                    data-caption="Choose other existing dates deliberately; none are selected automatically."
-                    data-image="assets/existing-mobile.webp"
-                    type="button"
-                  >
-                    <img
-                      alt="Mobile assignment sheet showing additional date selection."
-                      loading="lazy"
-                      src="assets/existing-mobile-thumb.webp"
-                    /><span class="zoom-hint">⌕ Enlarge</span>
-                  </button>
-                  <figcaption>
-                    Choose other existing dates deliberately; none are selected
-                    automatically.
-                  </figcaption>
-                </figure>
-                <figure class="shot crop-shot">
-                  <button
-                    aria-label="Enlarge existing-item desktop screenshot"
-                    class="shot-button"
-                    data-caption="Review the selected dates before saving assignments."
-                    data-image="assets/existing-desktop.webp"
-                    type="button"
-                  >
-                    <img
-                      alt="Desktop assignment inspector for additional existing dates."
-                      loading="lazy"
-                      src="assets/existing-detail.webp"
-                    /><span class="zoom-hint">⌕ See full desktop</span>
-                  </button>
-                  <figcaption>
-                    Review the selected dates before saving assignments.
-                  </figcaption>
-                </figure>
-              </div>
             </div>
           </div>
+          <h3 class="subheading">Normal Save or an intentional draft?</h3>
+          <div class="instruction-layout">
+            <div class="numbered-list">
+              <p><span>01</span> Use the main <b>Create item</b> or <b>Save item changes</b> action for work that should be active now. You can open the item again to edit it; saving does not send email.</p>
+              <p><span>02</span> Choose the secondary <b>Save as draft</b> action only when the work should wait. Drafts stay out of volunteer schedules until an administrator activates them.</p>
+              <p><span>03</span> Open <b>Review drafts</b> from Calendar. Select a draft, check its details, then <b>Activate draft</b> or archive it. Activation makes it operational and sends no email.</p>
+            </div>
+            <figure class="shot">
+              <button aria-label="Enlarge Calendar edit screenshot" class="shot-button" data-caption="Edit an existing Calendar item and save its changes." data-image="assets/calendar-edit-1250.png" type="button">
+                <img alt="Calendar edit inspector with Save item changes." loading="lazy" src="assets/calendar-edit-1250.png" /><span class="zoom-hint">⌕ Enlarge screenshot</span>
+              </button>
+              <figcaption>Open an item to edit its schedule and details.</figcaption>
+            </figure>
+          </div>
+          <details class="companion-details">
+            <summary>See Save, Save as draft, and Draft Review</summary>
+            <div class="companion-preview">
+              <figure class="shot"><button aria-label="Enlarge normal Save screenshot" class="shot-button" data-caption="Normal Save creates operational work; no email is sent." data-image="assets/calendar-save-1250.png" type="button"><img alt="Calendar normal Save confirmation with operational item." loading="lazy" src="assets/calendar-save-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Normal Save.</figcaption></figure>
+              <figure class="shot"><button aria-label="Enlarge Save as draft screenshot" class="shot-button" data-caption="Save as draft is a separate action." data-image="assets/calendar-draft-1250.png" type="button"><img alt="Calendar form with the separate Save as draft action." loading="lazy" src="assets/calendar-draft-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Explicit Save as draft.</figcaption></figure>
+              <figure class="shot"><button aria-label="Enlarge Draft Review screenshot" class="shot-button" data-caption="Drafts to review inside the normal admin navigation." data-image="assets/draft-review-1250.png" type="button"><img alt="Draft Review page with a draft ready to review." loading="lazy" src="assets/draft-review-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Draft Review.</figcaption></figure>
+            </div>
+          </details>
+          <details class="companion-details">
+            <summary>See Draft Review on a phone</summary>
+            <div class="companion-preview"><figure class="shot mobile-shot"><button aria-label="Enlarge mobile Draft Review screenshot" class="shot-button" data-caption="Draft Review on a phone with the normal admin navigation." data-image="assets/draft-review-mobile-1250.png" type="button"><img alt="Mobile Draft Review page above the admin bottom navigation." loading="lazy" src="assets/draft-review-mobile-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Draft Review on a phone.</figcaption></figure></div>
+          </details>
           <div aria-label="The scheduling process" class="process-bar">
             <div>
               <span class="process-circle">1</span><strong>Save</strong
-              ><small>Prepare the work and assignments</small>
+              ><small>Make normal work operational</small>
             </div>
             <span aria-hidden="true" class="process-arrow">→</span>
             <div>
-              <span class="process-circle">2</span><strong>Publish</strong
-              ><small>Make ordinary work visible</small>
+              <span class="process-circle">2</span><strong>Review</strong
+              ><small>Check Communications recipients</small>
             </div>
             <span aria-hidden="true" class="process-arrow">→</span>
             <div>
               <span class="process-circle">3</span><strong>Send</strong
-              ><small>Review and email schedules</small>
+              ><small>Confirm the separate email action</small>
             </div>
           </div>
         </section>
@@ -917,9 +882,9 @@
               <span class="eyebrow">07 · KEEP EVERYONE INFORMED</span>
               <h2 id="communications-heading">Communications</h2>
               <p>
-                Once the schedule is ready, this is where we introduce
-                volunteers to the app and email them their assignments. Every
-                send requires recipient review and your explicit confirmation.
+                Saving work and assigning volunteers never sends email.
+                Communications is the separate place to preview recipients,
+                review the message, and deliberately confirm a send.
               </p>
             </div>
           </div>
@@ -937,13 +902,13 @@
                   aria-label="Enlarge Welcome emails screenshot"
                   class="shot-button"
                   data-caption="Review recipients before any welcome emails are sent."
-                  data-image="assets/welcome.webp"
+                  data-image="assets/communications-welcome-1250.png"
                   type="button"
                 >
                   <img
                     alt="Welcome email recipients ready for review; fixture names and addresses."
                     loading="lazy"
-                    src="assets/welcome-detail.webp"
+                    src="assets/communications-welcome-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
               </figure>
@@ -952,22 +917,27 @@
               <span class="card-index">02</span>
               <h3>Schedule emails</h3>
               <p>
-                Choose the date range and review volunteers with new, unsent,
-                published assignments. Each person can receive one email with
-                their own schedule for that period.
+                Choose a date range and <b>Review recipients</b>. The preview
+                separates <b>will receive</b> from <b>will not receive</b> and
+                explains exclusions or delivery warnings. It also shows what
+                was delivered before and which assignments were added, edited,
+                or removed since the last schedule email. Review the message
+                before confirming the selected recipients. If no one qualifies,
+                check the reasons and adjust the dates or selection; an empty
+                preview cannot be sent.
               </p>
               <figure class="shot">
                 <button
                   aria-label="Enlarge Schedule emails screenshot"
                   class="shot-button"
-                  data-caption="Choose your schedule period, then review recipients."
-                  data-image="assets/schedules.webp"
+                  data-caption="Review who will receive a schedule email and who will not."
+                  data-image="assets/communications-preview-1250.png"
                   type="button"
                 >
                   <img
-                    alt="Schedule delivery form showing date range and recipient-review control."
+                    alt="Communications recipient preview showing will receive, will not receive, and prior delivery counts."
                     loading="lazy"
-                    src="assets/schedule-detail.webp"
+                    src="assets/communications-preview-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
               </figure>
@@ -976,27 +946,43 @@
               <span class="card-index">03</span>
               <h3>Delivery history</h3>
               <p>
-                See what has been sent, review the outcome, and explicitly
-                resend when necessary. A known failed delivery can be retried;
-                an uncertain outcome needs investigation first.
+                See what was sent and whether delivery succeeded. For someone
+                already contacted, choose <b>Review resend</b> or the
+                intentional resend option, select the volunteer, review the
+                current preview, and confirm only if another message is needed.
+                The earlier send stays in history, and the resend follows the
+                normal preview, confirmation, and recorded delivery steps. A
+                known failed delivery can be retried; an
+                uncertain outcome needs investigation before another attempt.
               </p>
               <figure class="shot narrow-history">
                 <button
                   aria-label="Enlarge Delivery history screenshot"
                   class="shot-button"
-                  data-caption="Delivery history on a phone — inspect before resending."
-                  data-image="assets/history.webp"
+                  data-caption="Current delivery history — inspect before resending."
+                  data-image="assets/communications-history-1250.png"
                   type="button"
                 >
                   <img
-                    alt="Phone delivery history with example status and Review resend actions."
+                    alt="Delivery history with a sent schedule and Review resend action."
                     loading="lazy"
-                    src="assets/history-detail.webp"
+                    src="assets/communications-history-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
               </figure>
             </article>
           </div>
+          <details class="companion-details">
+            <summary>See exclusion reasons and changed assignments</summary>
+            <div class="companion-preview">
+              <figure class="shot"><button aria-label="Enlarge recipient reasons screenshot" class="shot-button" data-caption="The preview explains recipients and exclusions before sending." data-image="assets/communications-reasons-1250.png" type="button"><img alt="Communications preview expanded to show why a volunteer will not receive a message." loading="lazy" src="assets/communications-reasons-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Check who will not receive a message and why.</figcaption></figure>
+              <figure class="shot"><button aria-label="Enlarge changed assignment screenshot" class="shot-button" data-caption="Changed assignments are compared with the last delivered schedule." data-image="assets/communications-changed-1250.png" type="button"><img alt="Communications preview showing an assignment added or edited since a prior delivery." loading="lazy" src="assets/communications-changed-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Check changes since the last send.</figcaption></figure>
+            </div>
+          </details>
+          <details class="companion-details">
+            <summary>See intentional resend preview</summary>
+            <div class="companion-preview"><figure class="shot"><button aria-label="Enlarge intentional resend screenshot" class="shot-button" data-caption="Intentional resend shows the selected volunteer and prior delivery before confirmation." data-image="assets/communications-resend-1250.png" type="button"><img alt="Intentional resend preview for a previously delivered schedule." loading="lazy" src="assets/communications-resend-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button><figcaption>Review again before a deliberate resend.</figcaption></figure></div>
+          </details>
           <div class="tip wide-tip">
             <span aria-hidden="true">✦</span>
             <div>
@@ -1005,7 +991,7 @@
                 Schedule emails and introductory emails are separate. Please
                 coordinate any large initial email batches with Jelani, and
                 double-check volunteers who share an email address before
-                sending.
+                sending. Previewing recipients does not send anything.
               </p>
             </div>
           </div>
@@ -1121,7 +1107,7 @@
                 assignments.
               </p>
               <p class="subtle-note">
-                Volunteers can see published menu information without seeing
+                Volunteers can see available menu information without seeing
                 private Food-contact notes.
               </p>
             </div>
@@ -1164,32 +1150,36 @@
           <div class="instruction-layout">
             <div>
               <p>
-                It uses a read-only view of the project's published operational
-                Calendar. Where authorized, this includes assigned volunteers
-                and the relevant Food and Security details.
+                It shows active scheduled work in a read-only Calendar. It may
+                include assigned volunteer names and operational Food and
+                Security details for people with access. Detailed or private
+                assignment instructions are not shown in Quick View; each
+                volunteer sees their own instructions on their personal
+                schedule, and authorized editors can review them in Calendar.
               </p>
               <p>
                 When someone needs Quick View access, use the app's intended
-                sharing controls. Please don't share your own administrative
-                sign-in link or forward somebody else's private schedule link.
+                sharing controls. Share Quick View only with trusted on-site
+                people. Please don't share your own administrative sign-in or
+                another person's schedule access.
               </p>
             </div>
             <figure class="shot">
               <button
                 aria-label="Enlarge Quick View screenshot"
                 class="shot-button"
-                data-caption="Quick View — authorized, read-only weekly Calendar."
-                data-image="assets/quick-view.webp"
+                data-caption="Current Project Quick View — authorized, read-only Calendar."
+                data-image="assets/quick-view-1250.png"
                 type="button"
               >
                 <img
-                  alt="Read-only Project Quick View weekly Calendar."
+                  alt="Project Quick View month Calendar with staffing and meal headcounts but no private instructions."
                   loading="lazy"
-                  src="assets/quick-view-thumb.webp"
+                  src="assets/quick-view-1250.png"
                 /><span class="zoom-hint">⌕ Enlarge screenshot</span>
               </button>
               <figcaption>
-                Quick View — authorized, read-only weekly Calendar.
+                Project Quick View — authorized, read-only Calendar.
               </figcaption>
             </figure>
           </div>
@@ -1197,21 +1187,20 @@
             <summary>See Quick View on a phone</summary>
             <div class="companion-preview">
               <p>
-                Published work in the same read-only Calendar, adapted for a
-                smaller screen.
+                The same operational Calendar, adapted for a smaller screen.
               </p>
               <figure class="shot mobile-shot">
                 <button
                   aria-label="Enlarge mobile Quick View"
                   class="shot-button"
-                  data-caption="Quick View on a phone · reviewed preview"
-                  data-image="assets/quick-view-mobile.webp"
+                  data-caption="Current Quick View on a phone"
+                  data-image="assets/quick-view-mobile-1250.png"
                   type="button"
                 >
                   <img
-                    alt="Read-only Project Quick View weekly Calendar on a phone"
+                    alt="Read-only Project Quick View Calendar on a phone"
                     loading="lazy"
-                    src="assets/quick-view-mobile.webp"
+                    src="assets/quick-view-mobile-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
                 <figcaption>
@@ -1231,11 +1220,12 @@
               <span class="eyebrow">11 · FROM THE VOLUNTEER'S SIDE</span>
               <h2 id="volunteer-experience-heading">What volunteers see</h2>
               <p>
-                Volunteers don't need an administrative account. For the current
-                beta, they access their schedule using the personalized secure
-                link sent to their email. Don't direct volunteers to name or
-                contact-information lookup unless that feature has been enabled
-                and verified in the deployed app.
+                Volunteers do not create an account or use a password. At
+                <a href="https://projectlocal.app/" target="_blank">projectlocal.app</a>,
+                enter the email or phone number on the volunteer profile and
+                choose <b>Open schedule</b>. One match goes straight to the
+                schedule. A contact shared by a household opens a tappable
+                <b>Who are you?</b> list with each person's name and project.
               </p>
             </div>
           </div>
@@ -1244,15 +1234,40 @@
               <div>
                 <span class="bullet-icon">✓</span>
                 <p>
-                  <strong>Review assignments and respond.</strong> They can
-                  Confirm, choose Can't make it, or confirm several eligible
-                  assignments at once.
+                  <strong>See their scheduled work.</strong> Their schedule can
+                  include general help, Food, Security, and overnight Night
+                  Watch work. An overnight assignment shows its start date and
+                  end date, such as 5:00 PM today to 5:00 AM tomorrow.
+                </p>
+              </div>
+              <div>
+                <span class="bullet-icon">✓</span>
+                <p>
+                  <strong>Respond to assignments.</strong> Before the final
+                  48 hours, choose <b>Confirm</b> or <b>Can't make it</b>.
+                  During the final 48 hours, an unanswered or declined
+                  assignment can still be confirmed until it starts, but
+                  <b>Can't make it</b> is closed, including a change from
+                  Confirmed to Can't make it.
+                  Once work has started, responses are closed. Contact the
+                  listed Follow-up Contact promptly if plans change after
+                  the response is locked.
+                </p>
+              </div>
+              <div>
+                <span class="bullet-icon">↗</span>
+                <p>
+                  <strong>Return on this device.</strong> The selected volunteer
+                  and project are remembered. <b>Switch volunteer or project</b>
+                  returns to lookup so another person can choose their
+                  schedule. <b>Forget this device</b> clears the remembered
+                  choice; the next visit starts at lookup again.
                 </p>
               </div>
               <div>
                 <span class="bullet-icon">☷</span>
                 <p>
-                  <strong>See the lunch menu.</strong> Published weekly meal
+                  <strong>See the lunch menu.</strong> Available weekly meal
                   information is available even for days when they aren't
                   personally assigned.
                 </p>
@@ -1266,36 +1281,43 @@
                 </p>
               </div>
               <p class="tip">
-                <span aria-hidden="true">✦</span> If someone tells you they
-                can't make an assignment, encourage them to respond in the app
-                when possible so everyone can see the current response.
+                <span aria-hidden="true">✦</span> If a volunteer cannot change
+                a response in the app, ask them to contact their Follow-up
+                Contact. Recording an away date does not cancel an assignment.
               </p>
             </div>
             <div class="volunteer-shots">
               <figure class="shot mobile-shot">
+                <button aria-label="Enlarge volunteer lookup screenshot" class="shot-button" data-caption="Enter an email or phone number to open your schedule." data-image="assets/volunteer-lookup-1250.png" type="button"><img alt="Volunteer lookup with one email or phone field and Open schedule button." loading="lazy" src="assets/volunteer-lookup-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button>
+                <figcaption>Find your schedule with email or phone.</figcaption>
+              </figure>
+              <figure class="shot mobile-shot">
+                <button aria-label="Enlarge shared-contact chooser screenshot" class="shot-button" data-caption="If a contact is shared, choose your name and project." data-image="assets/volunteer-chooser-1250.png" type="button"><img alt="Who are you chooser with fictional volunteer names and projects." loading="lazy" src="assets/volunteer-chooser-1250.png" /><span class="zoom-hint">⌕ Enlarge</span></button>
+                <figcaption>Shared contact: tap your name and project.</figcaption>
+              </figure>
+              <figure class="shot mobile-shot">
                 <button
                   aria-label="Enlarge volunteer home screenshot"
                   class="shot-button"
-                  data-caption="Volunteer home on a phone — next assignment, lunch and availability."
-                  data-image="assets/volunteer-home.webp"
+                  data-caption="Current volunteer home on a phone — Night Watch, schedule, and device choices."
+                  data-image="assets/volunteer-night-watch-1250.png"
                   type="button"
                 >
                   <img
-                    alt="Volunteer home with the next assignment and compact Lunch and Availability modules."
+                    alt="Volunteer home with Night Watch crossing midnight, Switch volunteer or project, and Forget this device."
                     loading="lazy"
-                    src="assets/volunteer-home-thumb.webp"
+                    src="assets/volunteer-night-watch-1250.png"
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
                 <figcaption>
-                  Volunteer home on a phone — next assignment, lunch and
-                  availability.
+                  Current volunteer home with an overnight Night Watch.
                 </figcaption>
               </figure>
               <figure class="shot mobile-shot">
                 <button
                   aria-label="Enlarge weekly lunch menu screenshot"
                   class="shot-button"
-                  data-caption="A weekly menu showing published lunches."
+                  data-caption="A weekly menu showing available lunches."
                   data-image="assets/weekly-menu.webp"
                   type="button"
                 >
@@ -1306,7 +1328,7 @@
                   /><span class="zoom-hint">⌕ Enlarge</span>
                 </button>
                 <figcaption>
-                  A weekly menu showing published lunches.
+                  A weekly menu showing available lunches.
                 </figcaption>
               </figure>
               <figure class="shot mobile-shot">
@@ -1330,33 +1352,6 @@
               </figure>
             </div>
           </div>
-          <details class="companion-details desktop-companion">
-            <summary>See the volunteer home on desktop</summary>
-            <div class="companion-preview">
-              <p>
-                The desktop home groups the next assignment and upcoming
-                schedule beside compact Lunch and Availability panels.
-              </p>
-              <figure class="shot">
-                <button
-                  aria-label="Enlarge desktop volunteer home"
-                  class="shot-button"
-                  data-caption="Volunteer home on desktop · reviewed 12.47 example"
-                  data-image="assets/volunteer-home-desktop.webp"
-                  type="button"
-                >
-                  <img
-                    alt="Two-column desktop volunteer home with next assignment, upcoming schedule and Lunch and Availability panels"
-                    loading="lazy"
-                    src="assets/volunteer-home-desktop.webp"
-                  /><span class="zoom-hint">⌕ Enlarge</span>
-                </button>
-                <figcaption>
-                  12.47 desktop preview with fictional schedule information.
-                </figcaption>
-              </figure>
-            </div>
-          </details>
         </section>
         <section
           aria-labelledby="faq-heading"
@@ -1396,9 +1391,11 @@
             <details>
               <summary>What if someone says they can't make it?</summary>
               <p>
-                Encourage them to select Can't make it on their own schedule if
-                possible. You can then follow up and change their assignment if
-                needed. Check Needs Attention for relevant signals.
+                Ask them to select Can't make it on their schedule if the
+                assignment starts more than 48 hours from now. Closer to the
+                start, or after it starts, ask them to contact their listed
+                Follow-up Contact promptly. Check Needs Attention and adjust
+                the assignment as needed.
               </p>
             </details>
             <details>
@@ -1416,8 +1413,8 @@
               <p>
                 Contact Jelani to arrange their own project-contact account, or
                 use Quick View if they only need authorized read-only Calendar
-                access. Never share your personal sign-in or another volunteer's
-                schedule link.
+                access. Never share your personal sign-in or another
+                volunteer's schedule access.
               </p>
             </details>
           </div>
@@ -1439,8 +1436,8 @@
         <footer class="page-footer">
           <p>Project Local · Contact guide</p>
           <p>
-            Screenshots use fictional review data and may differ slightly from
-            the deployed app. Share only authorized project information.
+            Screenshots use fictional review data. Share only authorized
+            project information.
           </p>
           <a href="#top">Back to top ↑</a>
         </footer>
