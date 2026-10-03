@@ -1552,16 +1552,11 @@ async function runDesktop(browser) {
 
       const endInput = planner.getByLabel("End", { exact: true });
       await endInput.fill("12:00");
-      await page.waitForFunction(
-        () =>
-          Array.from(document.querySelectorAll('input[type="time"]')).some(
-            (input) =>
-              input.value === "12:00" &&
-              input.getAttribute("aria-invalid") === "true",
-          ),
-      );
+      await planner.getByText("12:00 PM · Next day").waitFor();
+      assert((await planner.locator('input[name="endDayOffset"]').inputValue()) === '1', 'An earlier end time should use the next-day offset');
+      await endInput.fill(await planner.getByLabel("Start", { exact: true }).inputValue());
       const errorDescriptionId = await endInput.getAttribute("aria-describedby");
-      assert(errorDescriptionId, "Invalid End should reference an error description");
+      assert(errorDescriptionId, "Equal start/end times should reference an error description");
       await planner.locator(`[id="${errorDescriptionId}"]`).waitFor();
       await endInput.fill("14:00");
 

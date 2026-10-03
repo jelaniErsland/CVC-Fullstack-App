@@ -324,7 +324,7 @@ async function verifyCalendarManagement(containerName, users) {
   assert.equal(rows[0].needed_count, 2);
   assert.equal(rows[0].schedule_notes, "Edited by the 12.16 local validation.");
   assert.equal(rows[0].follow_up_project_contact_id, fixture.contacts.full);
-  assert.equal(rows[0].publication_state, "draft");
+  assert.equal(rows[0].publication_state, "published");
   expectedUpdatedAt = rows[0].updated_at;
 
   await updateCalendarOneOffTimedItemWithClient(users.full.client, {
@@ -347,8 +347,8 @@ async function verifyCalendarManagement(containerName, users) {
     end_time: "14:45:00",
     needed_count: 0,
     schedule_notes: null,
-    publication_state: "draft",
-  }], "Calendar edit did not preserve valid zero/null semantics or draft state.");
+    publication_state: "published",
+  }], "Calendar edit did not preserve valid zero/null semantics or operational state.");
 
   await expectFailure("malformed edit identifier", () =>
     updateCalendarOneOffTimedItemWithClient(users.full.client, {

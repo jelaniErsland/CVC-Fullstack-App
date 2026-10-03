@@ -82,8 +82,10 @@ import type {
 } from "@/lib/mockData";
 import { customCalendarColorKey, taskPresetColor } from "@/lib/tasks/colors";
 import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } from "./CalendarMeals";
+import { CalendarTimedEndChoice } from "./CalendarTimedEndChoice";
 import { BulkAssignmentPlanner, type AssignmentComposerHandle, type AssignmentItemOption, type BulkAssignmentAction } from "./BulkAssignmentPlanner";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
+import { initialTimedEndState, updateTimedEndState, type TimedEndMode } from "@/lib/calendar/timedEndChoice";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
 
 type CalendarViewMode = "day" | "week" | "month" | "list";
@@ -115,6 +117,7 @@ type CalendarCreationDraft = {
   slot: CalendarCreationSlot;
   date: string;
   endDate: string;
+  endDayMode: TimedEndMode;
   allDay: boolean;
   startTime: string;
   endTime: string;
@@ -2219,7 +2222,13 @@ function CalendarCreatePanel({
         : "generalVolunteers";
 
   const updateDraft = (changes: Partial<CalendarCreationDraft>) => {
-    onDraftChange({ ...creationDraft, ...changes });
+    const next = { ...creationDraft, ...changes };
+    if (!next.allDay) {
+      const timing = updateTimedEndState(creationDraft, changes);
+      next.endDate = timing.endDate;
+      next.endDayMode = timing.endDayMode;
+    }
+    onDraftChange(next);
   };
 
   const handlePresetChange = (presetId: string) => {
@@ -2794,12 +2803,11 @@ function CreatePanelContent({
                     value={creationDraft.endTime}
                   />
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-semibold text-slate-700">Ends on</span>
-                  <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold" min={creationDraft.date} onChange={event => onUpdate({ endDate: event.target.value })} type="date" value={creationDraft.endDate} />
-                  <span className="mt-1 block text-xs text-slate-600">{creationDraft.endDate === creationDraft.date ? "Same day" : `Continues through ${creationDraft.endDate}`}</span>
-                </label>
-                {creationDraft.endDate === creationDraft.date && creationDraft.endTime < creationDraft.startTime && <button className="min-h-10 text-left text-xs font-semibold text-blue-700 underline sm:col-span-2" onClick={() => { const next = new Date(`${creationDraft.date}T00:00:00Z`); next.setUTCDate(next.getUTCDate()+1); onUpdate({ endDate: next.toISOString().slice(0,10) }); }} type="button">Use the following day for this end time</button>}
+                <CalendarTimedEndChoice
+                  value={creationDraft}
+                  onModeChange={(endDayMode) => onUpdate({ endDayMode })}
+                  onLaterDateChange={(endDate) => onUpdate({ endDate })}
+                />
               </>
             ) : null}
             {!isRepeat && dateValidationMessage ? (
@@ -3279,6 +3287,14 @@ function InspectorContent({
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [editingContactDetails, setEditingContactDetails] = useState(false);
+  const [editTiming, setEditTiming] = useState(() => initialTimedEndState({
+    date: item.date,
+    endDate: item.endDate,
+    startTime: item.startTimeValue ?? "",
+    endTime: item.endTimeValue ?? "",
+  }));
+  const editTimingInvalid = editTiming.endDate < editTiming.date ||
+    (editTiming.endDate === editTiming.date && editTiming.endTime <= editTiming.startTime);
   const contactNameInputRef = useRef<HTMLInputElement>(null);
   const inspectorScrollRef = useRef<HTMLDivElement>(null);
   const canPublishSelectedItem =
@@ -3711,17 +3727,14 @@ function InspectorContent({
                   <span className="text-sm font-semibold text-slate-700">Date</span>
                   <input
                     className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                    defaultValue={item.date}
+                    onChange={(event) => setEditTiming((current) => updateTimedEndState(current, { date: event.target.value }))}
+                    value={editTiming.date}
                     name="date"
                     required
                     type="date"
                   />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-semibold text-slate-700">Ends on</span>
-                  <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1" defaultValue={item.endDate ?? item.date} min={item.date} name="endDate" required type="date" />
-                  <span className="mt-1 block text-xs text-slate-600">Use the following day for an overnight shift.</span>
-                </label>
+                <input name="endDate" type="hidden" value={editTiming.endDate} />
                 {isOneOffItem ? (
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-700">Task type</span>
@@ -3741,7 +3754,8 @@ function InspectorContent({
                   <span className="text-sm font-semibold text-slate-700">Start</span>
                   <input
                     className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                    defaultValue={item.startTimeValue}
+                    onChange={(event) => setEditTiming((current) => updateTimedEndState(current, { startTime: event.target.value }))}
+                    value={editTiming.startTime}
                     name="startTime"
                     required
                     type="time"
@@ -3751,12 +3765,19 @@ function InspectorContent({
                   <span className="text-sm font-semibold text-slate-700">End</span>
                   <input
                     className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-slate-900/30 focus:ring-offset-1"
-                    defaultValue={item.endTimeValue}
+                    onChange={(event) => setEditTiming((current) => updateTimedEndState(current, { endTime: event.target.value }))}
+                    value={editTiming.endTime}
                     name="endTime"
                     required
                     type="time"
                   />
                 </label>
+                <CalendarTimedEndChoice
+                  value={editTiming}
+                  onModeChange={(endDayMode) => setEditTiming((current) => updateTimedEndState(current, { endDayMode }))}
+                  onLaterDateChange={(endDate) => setEditTiming((current) => updateTimedEndState(current, { endDate }))}
+                />
+                {editTimingInvalid ? <p className="text-xs font-semibold text-rose-600 sm:col-span-2">Choose a later end time or end day. Equal start and end times need an explicit later date.</p> : null}
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-semibold text-slate-700">Needed</span>
                   <input
@@ -3782,6 +3803,7 @@ function InspectorContent({
               </label>
               <button
                 className="min-h-11 rounded-lg border border-[var(--pl-blue)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--pl-blue-deep)]"
+                disabled={editTimingInvalid}
                 type="submit"
               >
                 Save item changes
@@ -4406,17 +4428,17 @@ export default function CalendarClient({
     rememberSurfaceTrigger();
     closeMobileNavigation();
     setSelectedId(undefined);
+    const startTime = slot.allDay ? "" : slot.suggestedStartTime ?? defaultTimedDay.start;
+    const endTime = slot.allDay ? "" : slot.suggestedEndTime ?? defaultTimedDay.end;
+    const timing = initialTimedEndState({ date: slot.date, startTime, endTime });
     setCreationDraft({
       slot,
       date: slot.date,
-      endDate: slot.date,
+      endDate: timing.endDate,
+      endDayMode: timing.endDayMode,
       allDay: slot.allDay ?? false,
-      startTime: slot.allDay
-        ? ""
-        : slot.suggestedStartTime ?? defaultTimedDay.start,
-      endTime: slot.allDay
-        ? ""
-        : slot.suggestedEndTime ?? defaultTimedDay.end,
+      startTime,
+      endTime,
       mode: defaultPreset ? "preset" : "oneOff",
       presetId: defaultPreset?.id ?? "",
       neededCount: defaultPreset?.neededCount ?? 2,

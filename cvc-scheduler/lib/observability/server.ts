@@ -56,6 +56,8 @@ const operationalEventDefinitions = {
     failureCodes: [
       "context_unavailable",
       "validation_failed",
+      "permission_denied",
+      "duplicate_identity",
       "persistence_failed",
     ],
   },

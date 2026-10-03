@@ -23,6 +23,7 @@ import {
 import { normalizeWorkspaceReference } from "@/lib/workspaces/identity";
 import { readVolunteerScheduleWithClient, type VolunteerScheduleResult } from "@/lib/volunteers/schedule.server";
 import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
+import { classifyVolunteerCreatePersistenceFailure } from "@/lib/volunteers/createFailure";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -84,27 +85,38 @@ async function deleteVolunteerProfileAction(formData: FormData) {
 async function createManualVolunteerAction(formData: FormData) {
   "use server";
 
-  let notice: "unavailable" | "validation" | "error" | "created" = "error";
+  let notice: "unavailable" | "permission" | "duplicate" | "validation" | "error" | "created" = "error";
   try {
     const routeContext = await readVolunteerManagementRouteContext();
     if (!routeContext || !routeContext.canEdit) {
       notice = "unavailable";
       observeVolunteerMutationFailure("volunteer.create_failure", "unavailable");
     } else {
-      const input = manualVolunteerInputFromFormData(formData);
-      await createManualVolunteerProfileWithClient(
-        routeContext.supabase,
-        routeContext.workspace.id,
-        input,
-      );
-      notice = "created";
+      let input: ReturnType<typeof manualVolunteerInputFromFormData> | undefined;
+      try {
+        input = manualVolunteerInputFromFormData(formData);
+      } catch {
+        notice = "validation";
+        observeVolunteerMutationFailure("volunteer.create_failure", "validation");
+      }
+      if (input) {
+        try {
+          await createManualVolunteerProfileWithClient(
+            routeContext.supabase,
+            routeContext.workspace.id,
+            input,
+          );
+          notice = "created";
+        } catch (error) {
+          const failure = classifyVolunteerCreatePersistenceFailure(error);
+          notice = failure.notice;
+          emitOperationalEvent({ event: "volunteer.create_failure", failureCode: failure.failureCode });
+        }
+      }
     }
-  } catch (error) {
-    notice = error instanceof Error && error.message.includes("invalid") ? "validation" : "error";
-    observeVolunteerMutationFailure(
-      "volunteer.create_failure",
-      notice === "validation" ? "validation" : "error",
-    );
+  } catch {
+    notice = "error";
+    observeVolunteerMutationFailure("volunteer.create_failure", "error");
   }
 
   revalidatePath("/admin/volunteers");
@@ -169,9 +181,17 @@ function Notice({ notice }: { notice: string | null }) {
       title: "Check the volunteer details",
       message: "Name and at least one contact method are required, and fields must stay within the supported format.",
     },
+    permission: {
+      title: "Volunteer editing is unavailable",
+      message: "Sign in again, then confirm your contact has permission to edit volunteers in this project.",
+    },
+    duplicate: {
+      title: "Volunteer may already exist",
+      message: "Search the volunteer directory before adding this person again.",
+    },
     unavailable: {
       title: "Volunteer editing is unavailable",
-      message: "This signed-in project contact cannot safely make volunteer profile changes right now.",
+      message: "Sign in again, then confirm your contact has permission to edit volunteers in this project.",
     },
     error: {
       title: "Volunteer change was not saved",

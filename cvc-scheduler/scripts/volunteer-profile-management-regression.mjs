@@ -381,6 +381,7 @@ async function run() {
   await applyManualVolunteerMigration(containerName);
 
   const full = await createAuthenticatedUser("full");
+  const secondEditor = await createAuthenticatedUser("second-editor");
   const viewOnly = await createAuthenticatedUser("view-only");
   const noView = await createAuthenticatedUser("no-view");
   const roleOnly = await createAuthenticatedUser("role-only");
@@ -399,6 +400,18 @@ async function run() {
           capabilities: bozemanBetaCapabilitySets.mainScheduler,
         }),
       ),
+    ),
+  );
+  runPsql(
+    containerName,
+    buildWorkspaceAccessProvisioningSql(
+      provisioningInput({
+        key: targetKey,
+        displayName: "QA 12.15 Target Workspace",
+        authUserId: secondEditor.userId,
+        capabilities: bozemanBetaCapabilitySets.mainScheduler,
+        role: "assistant_contact",
+      }),
     ),
   );
   runPsql(
@@ -538,6 +551,21 @@ async function run() {
   assert.equal(createdProfile.housingOption, "yes");
   assert.equal(createdProfile.dateOfBirth, "1994-06-10");
 
+  const secondProfileId = await createManualVolunteerProfileWithClient(
+    secondEditor.client,
+    workspaceResult.workspaceId,
+    normalizeManualVolunteerProfileInput({
+      fullName: `${fixture.namespace} Second Household Volunteer`,
+      email: `${fixture.namespace}-manual@example.invalid`,
+      phone: "406-555-0101",
+    }),
+  );
+  assert.notEqual(secondProfileId, createdProfileId, "shared household contact must not collapse distinct volunteers");
+  const secondProfile = (await readVolunteerProfilesWithClient(secondEditor.client, workspaceResult.workspaceId))
+    .find((profile) => profile.id === secondProfileId);
+  assert.equal(secondProfile?.manualCreatedByProjectContactId, (await readAccess(secondEditor.client)).contactId,
+    "a second authorized admin must be the recorded creator");
+
   await updateVolunteerProfileManualFieldsWithClient(
     full.client,
     createdProfileId,
@@ -582,7 +610,7 @@ async function run() {
     viewOnly.client,
     workspaceResult.workspaceId,
   );
-  assert.equal(viewOnlyProfiles.length, 1);
+  assert.equal(viewOnlyProfiles.length, 2);
   await expectRpcFailure(
     createManualVolunteerProfileWithClient(
       viewOnly.client,
@@ -617,6 +645,17 @@ async function run() {
     workspaceResult.workspaceId,
   );
   assert.deepEqual(otherProfiles, []);
+  await expectRpcFailure(
+    createManualVolunteerProfileWithClient(
+      other.client,
+      workspaceResult.workspaceId,
+      normalizeManualVolunteerProfileInput({
+        fullName: "Wrong Workspace Cannot Create",
+        email: "wrong-workspace-create@example.invalid",
+      }),
+    ),
+    "wrong-workspace create",
+  );
   await expectRpcFailure(
     updateVolunteerProfileManualFieldsWithClient(
       other.client,

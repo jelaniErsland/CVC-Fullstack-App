@@ -85,7 +85,7 @@ expectInvalid(
       endTime: "07:30",
     },
   }),
-  /schedule\.endTime must be later than startTime/,
+  /Choose a later end time or an explicit later end date/,
 );
 expectInvalid(validEdit({ neededCount: 100 }), /neededCount must be an integer from 0 to 99/);
 expectInvalid(validEdit({ calendarItemId: "not-an-id" }), /calendarItemId must be a UUID/);
