@@ -14,7 +14,7 @@ export type BulkAssignmentPlan = {
 };
 export type BulkAssignmentPreview = {
   saved: false; fingerprint: string;
-  items: { id: string | null; date: string; title: string; startTime: string | null; endTime: string | null; neededCount: number; assignedCount: number; publication: string }[];
+  items: { id: string | null; date: string; endDate?: string | null; title: string; startTime: string | null; endTime: string | null; neededCount: number; assignedCount: number; publication: string }[];
   volunteers: { id: string; name: string; version: string }[];
   existingAssignments: { itemId: string; volunteerId: string; assignmentId: string }[];
   sameDayWork: { volunteerId: string; date: string; title: string; assignmentId: string }[];

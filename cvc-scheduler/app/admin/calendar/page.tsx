@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import CalendarClient from "@/components/CalendarClient";
 import { planCalendarAssignmentsAction } from "@/lib/calendar/bulkAssignments.actions";
+import { readAssignmentPickerContextAction } from "@/lib/calendar/assignmentPickerContext.actions";
 import { saveCalendarMealAction, duplicateCalendarItemAction } from "@/lib/calendar/operations.actions";
 import {
   cancelAssignmentWithClient,
@@ -482,6 +483,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
     <CalendarClient
       projectKey={projectKey}
       bulkAssignmentAction={planCalendarAssignmentsAction}
+      assignmentContextAction={readAssignmentPickerContextAction}
       saveMealAction={saveCalendarMealAction}
       duplicateAction={duplicateCalendarItemAction}
       assignAction={createCalendarAssignmentsAction}

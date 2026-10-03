@@ -26,6 +26,7 @@ export const authenticatedFunctions = Object.freeze([
   "finalize_communication_recipient(uuid,uuid,text,text,text)",
   "read_communication_history(uuid)",
   "plan_calendar_assignments(uuid,uuid,jsonb,text)",
+  "read_assignment_picker_away_periods(uuid,uuid[],date,date)",
   "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone)",
   "duplicate_calendar_item(uuid,date,time without time zone,time without time zone)",
   "archive_calendar_item(uuid)",

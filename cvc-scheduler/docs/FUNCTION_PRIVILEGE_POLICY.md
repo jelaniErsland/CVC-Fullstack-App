@@ -1,5 +1,17 @@
 # Project Local function EXECUTE policy
 
+## 12.52 local addition
+
+`read_assignment_picker_away_periods(uuid,uuid[],date,date)` is a read-only,
+authenticated assignment-picker RPC. It requires a live project contact and
+workspace grant with Calendar, assignment, and volunteer view authority plus
+assignment edit authority. It rejects mixed-workspace, inactive, or unready
+volunteer IDs, caps the ID list and date range, and returns only scoped volunteer
+IDs and away dates. PUBLIC and anon EXECUTE are denied; authenticated and
+service_role EXECUTE are explicit. The function is postgres-owned SECURITY
+DEFINER with an empty pinned search path. The exact-signature policy and local
+cross-project regression cover this addition. No table policy or data changes.
+
 ## Task-instruction local review — September 27, 2026
 
 The pending 12.49 migration adds `publish_draft_on_assignment()` as an internal, postgres-owned SECURITY DEFINER trigger helper with pinned empty search path and no PUBLIC, anon, authenticated or service-role EXECUTE. Its only operation is to call the existing authorized publish RPC after a creator with both `calendar.edit` and `assignments.edit` saves an assignment; it leaves old drafts untouched. The 12.49 local inventory is **81 exact signatures: 10 anonymous, 52 authenticated, 19 internal**. The 12.49 migration is not deployed. Historical 12.47 and Task Details counts below describe their earlier stages.

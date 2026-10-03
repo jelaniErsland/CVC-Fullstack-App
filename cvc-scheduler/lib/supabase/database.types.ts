@@ -1904,6 +1904,19 @@ export type Database = {
           sending_expires_at: string
         }[]
       }
+      read_assignment_picker_away_periods: {
+        Args: {
+          p_workspace_id: string
+          p_volunteer_ids: string[]
+          p_from: string
+          p_through: string
+        }
+        Returns: {
+          volunteer_profile_id: string
+          starts_on: string
+          ends_on: string
+        }[]
+      }
       read_assignment_response_by_token: {
         Args: { p_bearer_token: string }
         Returns: {

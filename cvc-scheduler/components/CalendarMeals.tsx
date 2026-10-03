@@ -3,6 +3,7 @@
 import { createContext, useContext, useState } from "react";
 import type { CalendarMeal } from "@/lib/calendar/meals";
 import type { BulkAssignmentAction, BulkVolunteerOption } from "./BulkAssignmentPlanner";
+import type { PickerContextAction } from "@/lib/calendar/assignmentPickerContext";
 
 type Action = (formData: FormData) => void | Promise<void>;
 export const CalendarOperations = createContext<{
@@ -10,6 +11,7 @@ export const CalendarOperations = createContext<{
   saveMealAction?: Action;
   duplicateAction?: Action;
   bulkAssignmentAction?: BulkAssignmentAction;
+  assignmentContextAction?: PickerContextAction;
   bulkVolunteers?: readonly BulkVolunteerOption[];
 }>({ readOnly: false });
 export const useCalendarOperations = () => useContext(CalendarOperations);

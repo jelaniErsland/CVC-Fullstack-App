@@ -84,6 +84,7 @@ import { customCalendarColorKey, taskPresetColor } from "@/lib/tasks/colors";
 import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } from "./CalendarMeals";
 import { CalendarTimedEndChoice } from "./CalendarTimedEndChoice";
 import { BulkAssignmentPlanner, type AssignmentComposerHandle, type AssignmentItemOption, type BulkAssignmentAction } from "./BulkAssignmentPlanner";
+import type { PickerContextAction } from "@/lib/calendar/assignmentPickerContext";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
 import { initialTimedEndState, updateTimedEndState, type TimedEndMode } from "@/lib/calendar/timedEndChoice";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
@@ -2968,6 +2969,7 @@ function CreatePanelContent({
         {operations.bulkAssignmentAction && operations.bulkVolunteers && canSubmitPersisted && !creationDraft.allDay ? <BulkAssignmentPlanner
           ref={assignmentComposerRef}
           action={operations.bulkAssignmentAction}
+          contextAction={operations.assignmentContextAction}
           volunteers={operations.bulkVolunteers}
           onSelectionChange={setBulkSelection}
           onReadyChange={setBulkReady}
@@ -3479,8 +3481,9 @@ function InspectorContent({
               neededCount={item.neededCount}
               unifiedAssignment={operations.bulkAssignmentAction && operations.bulkVolunteers && assignmentPicker.kind === "ready" ? <BulkAssignmentPlanner
                 action={operations.bulkAssignmentAction}
+                contextAction={operations.assignmentContextAction}
                 volunteers={operations.bulkVolunteers}
-                primaryItem={{ id: item.id, date: item.date, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }}
+                primaryItem={{ id: item.id, date: item.date, endDate: item.endDate ?? null, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }}
                 otherItems={assignmentItems.filter(candidate => candidate.id !== item.id)}
               /> : undefined}
             />}
@@ -4140,6 +4143,7 @@ function getCalendarToday() {
 
 export default function CalendarClient({
   bulkAssignmentAction,
+  assignmentContextAction,
   readOnly = false,
   routeBase = "/admin/calendar",
   projectKey,
@@ -4164,6 +4168,7 @@ export default function CalendarClient({
   updateAction,
 }: Readonly<{
   bulkAssignmentAction?: BulkAssignmentAction;
+  assignmentContextAction?: PickerContextAction;
   readOnly?: boolean;
   routeBase?: CalendarRouteBase;
   projectKey?: string;
@@ -4500,7 +4505,7 @@ export default function CalendarClient({
   };
 
   return (
-    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
+    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={routeBase === "/qv"}
       active={routeBase === "/admin/quick-view" ? "quick-view" : "calendar"}
       destinations={isReady ? state.navigationDestinations : ["overview"]}
@@ -4635,7 +4640,7 @@ export default function CalendarClient({
               assignAction={assignAction}
               archiveAction={archiveAction}
               assignmentPicker={state.assignmentPicker}
-              assignmentItems={state.items.filter(item => item.id === selectedItem?.id || (item.taskPresetId && item.taskPresetId === selectedItem?.taskPresetId || !item.taskPresetId && !selectedItem?.taskPresetId && selectedItem && getCalendarItemDisplayName(item) === getCalendarItemDisplayName(selectedItem))).map(item => ({ id: item.id, date: item.date, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }))}
+              assignmentItems={state.items.filter(item => item.id === selectedItem?.id || (item.taskPresetId && item.taskPresetId === selectedItem?.taskPresetId || !item.taskPresetId && !selectedItem?.taskPresetId && selectedItem && getCalendarItemDisplayName(item) === getCalendarItemDisplayName(selectedItem))).map(item => ({ id: item.id, date: item.date, endDate: item.endDate ?? null, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }))}
               canEditAssignments={state.canEditAssignments}
               canEdit={state.canEdit}
               cancelAssignmentAction={cancelAssignmentAction}

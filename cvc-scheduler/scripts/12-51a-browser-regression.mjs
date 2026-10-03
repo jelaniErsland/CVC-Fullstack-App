@@ -152,7 +152,7 @@ try {
     await picker.getByRole('checkbox',{name:'Select Halli Johnson from North'}).check();
     await search.fill('avery');
     assert(await picker.getByText('Ready volunteers · 1 selected').isVisible());
-    assert(await picker.getByText('Selected: Halli Johnson · North').isVisible());
+    assert(await picker.getByText(/Selected \(1\): Halli Johnson.*hidden by current search or filters/).isVisible());
     await shot('selected-different-search');
     await picker.getByRole('checkbox',{name:'Select Avery Stone from West'}).check();
     await search.fill('jose');

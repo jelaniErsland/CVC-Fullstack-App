@@ -13,6 +13,7 @@ export type CalendarAssignmentPickerVolunteer = Readonly<{
   congregation: string | null;
   lifecycle: string;
   readinessStatus: string;
+  availableWorkDays?: readonly string[];
   emailAvailable: boolean;
   phoneAvailable: boolean;
   preferredContactMethod: string | null;
@@ -102,7 +103,7 @@ export async function readCalendarAssignmentPickerWithClient(input: {
     const volunteersQuery = input.client
       .from("volunteer_profiles")
       .select(
-        "id,full_name,email,phone,congregation,preferred_contact_method,profile_notes,lifecycle,readiness_status",
+        "id,full_name,email,phone,congregation,preferred_contact_method,profile_notes,lifecycle,readiness_status,available_work_days",
       )
       .eq("workspace_id", workspaceId)
       .order("full_name", { ascending: true })
@@ -139,6 +140,7 @@ export async function readCalendarAssignmentPickerWithClient(input: {
         profileNotes: safeText(row.profile_notes),
         lifecycle: row.lifecycle,
         readinessStatus: row.readiness_status,
+        availableWorkDays: Array.isArray(row.available_work_days) ? row.available_work_days.filter((day): day is string => typeof day === "string") : [],
       };
     });
     const volunteers = volunteerRows
@@ -157,6 +159,7 @@ export async function readCalendarAssignmentPickerWithClient(input: {
           preferredContactMethod,
           profileNotes,
           readinessStatus,
+          availableWorkDays,
         }) => ({
           congregation,
           displayName,
@@ -167,6 +170,7 @@ export async function readCalendarAssignmentPickerWithClient(input: {
           preferredContactMethod,
           profileNotes,
           readinessStatus,
+          availableWorkDays,
         }),
       );
 
