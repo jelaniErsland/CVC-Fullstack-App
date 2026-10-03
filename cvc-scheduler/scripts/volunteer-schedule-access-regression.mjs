@@ -315,10 +315,21 @@ values
   ${itemRow(fixture.items.publishedOneOff, fixture.workspaceId, null, `${fixture.namespace} Published One-Off`, "general", "2026-08-10", 2, "active", "published", fixture.contacts.issuer, "Bring gloves.")},
   ${itemRow(fixture.items.publishedPreset, fixture.workspaceId, fixture.taskPresetId, `${fixture.namespace} Published Preset`, "general", "2026-08-11", 1, "active", "published", fixture.contacts.issuer)},
   ${itemRow(fixture.items.publishedDeclined, fixture.workspaceId, null, `${fixture.namespace} Published Declined`, "general", "2026-08-12", 1, "active", "published", fixture.contacts.issuer)},
-  ${itemRow(fixture.items.draft, fixture.workspaceId, null, `${fixture.namespace} Draft Hidden`, "general", "2026-08-12", 1, "active", "draft", fixture.contacts.issuer)},
   ${itemRow(fixture.items.archived, fixture.workspaceId, null, `${fixture.namespace} Archived Hidden`, "general", "2026-08-13", 1, "archived", "published", fixture.contacts.issuer)},
   ${itemRow(fixture.items.canceled, fixture.workspaceId, null, `${fixture.namespace} Canceled Hidden`, "general", "2026-08-14", 1, "canceled", "published", fixture.contacts.issuer)},
   ${itemRow(fixture.items.informational, fixture.workspaceId, null, `${fixture.namespace} Informational Unassigned`, "general", "2026-08-15", 0, "active", "published", fixture.contacts.issuer)};
+
+-- Model the current Save as draft path: its transaction marker keeps this item
+-- intentionally private. An explicit draft cannot have an active assignment.
+begin;
+select set_config('project_local.save_explicit_draft', 'yes', true);
+insert into public.calendar_items (
+  id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot, schedule_kind,
+  start_date, end_date, start_time, end_time, timezone, needed_count, schedule_notes,
+  custom_values, lifecycle, follow_up_project_contact_id, created_by_project_contact_id,
+  publication_state, published_at, published_by_project_contact_id
+) values ${itemRow(fixture.items.draft, fixture.workspaceId, null, `${fixture.namespace} Draft Hidden`, "general", "2026-08-12", 1, "active", "draft", fixture.contacts.issuer)};
+commit;
 
 insert into public.calendar_assignments (
   id, workspace_id, calendar_item_id, volunteer_profile_id, lifecycle, assignment_note, created_by_auth_user_id
@@ -329,7 +340,6 @@ values
   ${assignmentRow(fixture.assignments.declined, fixture.items.publishedDeclined, fixture.volunteers.own)},
   ${assignmentRow(fixture.assignments.canceled, fixture.items.publishedPreset, fixture.volunteers.own, "canceled")},
   ${assignmentRow(fixture.assignments.otherVolunteer, fixture.items.publishedOneOff, fixture.volunteers.otherSameWorkspace)},
-  ${assignmentRow(fixture.assignments.draft, fixture.items.draft, fixture.volunteers.own)},
   ${assignmentRow(fixture.assignments.archivedItem, fixture.items.archived, fixture.volunteers.own)};
 
 insert into public.assignment_responses (
@@ -341,7 +351,6 @@ values
   ${responseRow(fixture.responses.declined, fixture.assignments.declined, "declined")},
   ${responseRow(fixture.responses.canceled, fixture.assignments.canceled, "confirmed")},
   ${responseRow(fixture.responses.otherVolunteer, fixture.assignments.otherVolunteer, "confirmed")},
-  ${responseRow(fixture.responses.draft, fixture.assignments.draft, "needs_response")},
   ${responseRow(fixture.responses.archivedItem, fixture.assignments.archivedItem, "needs_response")};`,
   );
 }

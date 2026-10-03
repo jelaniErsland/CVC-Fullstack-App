@@ -72,7 +72,7 @@ const affectedCalendarFlowCaptureNames = new Set([
   "07-create-save-and-continue.png",
   "08-after-save-inspector.png",
   "09-after-assignment-inspector.png",
-  "10-after-publish-notification.png",
+  "10-after-operational-save.png",
   "11-mobile-after-save-inspector.png",
   "12-mobile-post-assignment-inspector.png",
 ]);
@@ -124,13 +124,13 @@ const previousWeekLabel = "Jan 5 to Jan 11, 2026";
 const nextWeekLabel = "Jan 19 to Jan 25, 2026";
 // Accessible names are the deliberate interaction contract for the persisted 12.12 cutover fixtures.
 const weekItemLabel =
-  "Published, Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
+  "Gate attendant, 1 of 1 volunteers, Tue Jan 13, 7:30 AM - 10:30 AM";
 const listItemLabel =
   "Site support week, Project window · Mon Jan 12 through Sat Jan 17, 0 of 0 helpers, General Volunteers";
 const monthItemLabel =
-  "Published, Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
+  "Room signage labels, 1 of 2 volunteers, Thu Jan 15, 10:00 AM - 12:00 PM";
 const nextWeekItemLabel =
-  "Published, Follow-up supplies, 1 of 1 volunteers, Tue Jan 20, 9:00 AM - 10:00 AM";
+  "Follow-up supplies, 1 of 1 volunteers, Tue Jan 20, 9:00 AM - 10:00 AM";
 
 const secrets = new Set();
 const fixture = {
@@ -477,6 +477,9 @@ insert into public.task_presets (
 ) values
   ('${fixture.generalTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, ${sqlText(reviewGeneralPresetName)}, null, 'general', 1, true, false, '[]'::jsonb, 'active'),
   ('${fixture.foodTaskPresetId}'::uuid, '${fixture.workspaceId}'::uuid, 'QA 12.12 Food', null, 'food', 1, true, false, '[]'::jsonb, 'active');
+-- Preserve the intentional draft fixtures under the current operational-insert rule.
+-- Published fixture rows are unaffected by this transaction-local marker.
+select set_config('project_local.save_explicit_draft', 'yes', true);
 insert into public.calendar_items (
   id, workspace_id, task_preset_id, title_snapshot, task_type_snapshot,
   schedule_kind, start_date, end_date, start_time, end_time, timezone,
@@ -519,6 +522,7 @@ insert into public.calendar_items (
 ) values
   ('${fixture.calendarItemIds.quickViewSecurity}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Restricted security post alpha', 'security', 'timed', '2026-01-13', null, '11:00:00', '12:00:00', 'America/Denver', 2, 'Restricted security instructions', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'published', now(), '${fixture.fullContactId}'::uuid),
   ('${fixture.calendarItemIds.quickViewDraft}'::uuid, '${fixture.workspaceId}'::uuid, null, 'Private draft operations', 'general', 'timed', '2026-01-13', null, '12:00:00', '13:00:00', 'America/Denver', 9, 'Private draft note', '{}'::jsonb, 'active', '${fixture.fullContactId}'::uuid, '${fixture.fullContactId}'::uuid, 'draft', null, null);` : ""}
+select set_config('project_local.save_explicit_draft', '', true);
 commit;`);
 }
 
@@ -972,7 +976,7 @@ async function verifyBulkPlannerRoundTrip(page, inspector, selectedIndexes, labe
   const choices = planner.getByRole("checkbox", { name: /^Select / });
   assert(await choices.count() === 52, `${label}: exactly 52 active/ready project volunteers are selectable.`);
   for (const index of [52, 53, 54, 55]) {
-    assert(await planner.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true }).count() === 0, `${label}: ineligible volunteer leaked into planner.`);
+    assert(await planner.getByRole("checkbox", { name: new RegExp(`^Select ${reviewVolunteerNames[index]}(?: from |$)`) }).count() === 0, `${label}: ineligible volunteer leaked into planner.`);
   }
   const list = choices.first().locator("xpath=../..");
   assert(await list.evaluate(element => element.scrollHeight > element.clientHeight), `${label}: ready-volunteer list must scroll internally.`);
@@ -1003,7 +1007,7 @@ async function verifyBulkPlannerRoundTrip(page, inspector, selectedIndexes, labe
   // Already assigned people remain selectable in the CURRENT planner. Preview
   // explains deduplication; saving must preserve their actual response row.
   for (const index of [0, ...selectedIndexes]) {
-    const choice = planner.getByLabel(`Select ${reviewVolunteerNames[index]}`, { exact: true });
+    const choice = planner.getByRole("checkbox", { name: new RegExp(`^Select ${reviewVolunteerNames[index]}(?: from |$)`) });
     await choice.focus();
     await page.keyboard.press("Space");
     assert(await choice.isChecked(), `${label}: keyboard selection did not persist.`);
@@ -1385,7 +1389,7 @@ async function runDesktop(browser) {
         "Desktop filters",
       );
       assert(
-        filterDescription.includes("Filter by task, coverage, or category."),
+        filterDescription.includes("Filter by volunteer, task, coverage, or category."),
         "Desktop filters description lacks filter context",
       );
       assert(
@@ -1510,8 +1514,8 @@ async function runDesktop(browser) {
         "Desktop creation",
       );
       assert(
-        creationDescription.includes("Schedule a task or one-time item as a private draft."),
-        "Creation description lacks the source-selection context",
+        creationDescription.includes("Schedule a task or one-time item. Saving sends no email."),
+        "Creation description lacks the current save and email context",
       );
       assert(
         (await planner.getByLabel("Date", { exact: true }).inputValue()) === "2026-01-13",
@@ -1571,7 +1575,7 @@ async function runDesktop(browser) {
         "Create item should describe its persisted action state",
       );
       await planner
-        .getByText("Private draft", { exact: true })
+        .getByText("Saving makes this item available. Email is a separate action.", { exact: true })
         .waitFor();
       assert(
         (await planner.getByRole("button", { name: /after save/i }).count()) === 0,
@@ -1778,18 +1782,18 @@ async function runDesktop(browser) {
         page.waitForURL(/notice=created/),
         planner.getByRole("button", { name: "Create item", exact: true }).click(),
       ]);
-      await page.getByText("Calendar draft saved", { exact: true }).waitFor();
+      await page.getByText("Calendar item saved", { exact: true }).waitFor();
       const inspector = page.getByRole("dialog", {
         name: "Calendar item inspector",
         exact: true,
       });
       await inspector.waitFor();
-      await inspector.getByText("Private draft", { exact: true }).waitFor();
+      await inspector.getByText("Notify volunteers", { exact: true }).waitFor();
+      assert((await inspector.getByRole("button", { name: "Activate draft", exact: true }).count()) === 0, "Normal Save must be operational without draft activation");
       for (const stepLabel of [
         "STEP 1 · EVENT DETAILS",
         "STEP 2 · VOLUNTEERS",
-        "STEP 3 · VISIBILITY",
-        "STEP 4 · NOTIFICATION",
+        "Communication",
       ]) {
         await inspector.getByText(stepLabel, { exact: true }).waitFor();
       }
@@ -1827,20 +1831,11 @@ async function runDesktop(browser) {
         "Reload after edit still displayed the stale created title",
       );
       await inspector.waitFor();
-      await inspector.getByText("Private draft", { exact: true }).waitFor();
-      await inspector.getByRole("button", { name: "Publish item", exact: true }).click();
-      await inspector.getByText("Publish this Calendar item?", { exact: true }).waitFor();
-      await Promise.all([
-        page.waitForURL(/notice=published/),
-        inspector.getByRole("button", { name: "Publish item", exact: true }).last().click(),
-      ]);
-      await page.getByText("Calendar item published", { exact: true }).waitFor();
-      await inspector.waitFor();
-      await inspector.getByText("Published", { exact: true }).waitFor();
-      await writeCalendarFlowCapture(page, "10-after-publish-notification.png");
+      assert((await inspector.getByRole("button", { name: "Activate draft", exact: true }).count()) === 0, "Edited operational item must not require activation");
+      await writeCalendarFlowCapture(page, "10-after-operational-save.png");
       await page.reload();
       await inspector.waitFor();
-      await inspector.getByText("Published", { exact: true }).waitFor();
+      await inspector.getByText("Notify volunteers", { exact: true }).waitFor();
       await page
         .getByRole("button", { name: "Close calendar item inspector", exact: true })
         .first()
@@ -1864,7 +1859,7 @@ async function runDesktop(browser) {
         page.waitForURL(/notice=created/),
         planner.getByRole("button", { name: "Create item", exact: true }).click(),
       ]);
-      await page.getByText("Calendar draft saved", { exact: true }).waitFor();
+      await page.getByText("Calendar item saved", { exact: true }).waitFor();
       await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
 
       await page.reload();
@@ -1913,7 +1908,7 @@ async function runDesktop(browser) {
       const inspector = page.locator('aside[aria-label="Calendar item inspector"]').first();
       await inspector.waitFor();
       const composer = bulkPlanner(inspector);
-      const choice = composer.getByLabel(`Select ${reviewVolunteerNames[1]}`, { exact: true });
+      const choice = composer.getByRole("checkbox", { name: new RegExp(`^Select ${reviewVolunteerNames[1]}(?: from |$)`) });
       await choice.check();
       assert(await choice.isChecked(), "Selecting volunteer did not update planner state.");
       await composer.getByText(/1 volunteer · 1 new assignment · 0 already assigned/).waitFor();
@@ -2302,7 +2297,7 @@ async function runMobile(browser) {
       }
     });
 
-    await step("mobile save, assign, and publish preserve the inspector", async () => {
+    await step("mobile operational save and assign preserve the inspector", async () => {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
         waitUntil: "domcontentloaded",
       });
@@ -2325,7 +2320,7 @@ async function runMobile(browser) {
       ]);
       const inspector = page.locator('section[aria-label="Calendar item inspector"]');
       await inspector.waitFor();
-      await inspector.getByText("Private draft", { exact: true }).waitFor();
+      await inspector.getByText("Notify volunteers", { exact: true }).waitFor();
       const mobileClose = inspector.getByRole("button", {
         name: "Close calendar item inspector",
         exact: true,
@@ -2359,15 +2354,8 @@ async function runMobile(browser) {
       await page.evaluate(() => window.scrollTo(0, 0));
       await writeCalendarFlowCapture(page, "12-mobile-post-assignment-inspector.png");
 
-      await inspector.getByRole("button", { name: "Publish item", exact: true }).click();
-      await inspector.getByText("Publish this Calendar item?", { exact: true }).waitFor();
-      await Promise.all([
-        page.waitForURL(/notice=published/),
-        inspector.getByRole("button", { name: "Publish item", exact: true }).last().click(),
-      ]);
-      await inspector.waitFor();
-      await inspector.getByText("Published", { exact: true }).waitFor();
-      await assertNoHorizontalOverflow(page, "Mobile post-publish inspector");
+      assert((await inspector.getByRole("button", { name: "Activate draft", exact: true }).count()) === 0, "Mobile normal Save must be operational");
+      await assertNoHorizontalOverflow(page, "Mobile operational inspector");
       await mobileClose.click();
       assert(
         !new URL(page.url()).searchParams.has("item"),

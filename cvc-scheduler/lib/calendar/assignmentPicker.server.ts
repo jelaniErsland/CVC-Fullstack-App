@@ -56,7 +56,13 @@ function normalizeCalendarItemIds(calendarItemIds: readonly string[]) {
   const normalized = calendarItemIds
     .map(normalizeUuid)
     .filter((value): value is string => Boolean(value));
-  return [...new Set(normalized)].slice(0, maximumCalendarItemsPerPickerRead);
+  return [...new Set(normalized)];
+}
+
+function chunks<T>(values: readonly T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let start = 0; start < values.length; start += size) result.push(values.slice(start, start + size));
+  return result;
 }
 
 function safeText(value: unknown) {
@@ -102,23 +108,20 @@ export async function readCalendarAssignmentPickerWithClient(input: {
       .order("full_name", { ascending: true })
       .order("id", { ascending: true });
 
-    const assignmentsQuery =
-      calendarItemIds.length === 0
-        ? Promise.resolve({ data: [], error: null })
-        : input.client
+    const assignmentsQueries = chunks(calendarItemIds, maximumCalendarItemsPerPickerRead).map((itemIds) => input.client
             .from("calendar_assignments")
             .select("id,calendar_item_id,volunteer_profile_id,lifecycle")
             .eq("workspace_id", workspaceId)
-            .in("calendar_item_id", calendarItemIds)
+            .in("calendar_item_id", itemIds)
             .eq("lifecycle", "active")
-            .order("created_at", { ascending: true });
+            .order("created_at", { ascending: true }));
 
-    const [volunteersResult, assignmentsResult] = await Promise.all([
+    const [volunteersResult, assignmentsResults] = await Promise.all([
       volunteersQuery,
-      assignmentsQuery,
+      Promise.all(assignmentsQueries),
     ]);
 
-    if (volunteersResult.error || assignmentsResult.error) {
+    if (volunteersResult.error || assignmentsResults.some((result) => result.error)) {
       return { kind: "error", reason: "query_unavailable" };
     }
 
@@ -167,26 +170,23 @@ export async function readCalendarAssignmentPickerWithClient(input: {
         }),
       );
 
-    const assignmentRows = assignmentsResult.data ?? [];
+    const assignmentRows = assignmentsResults.flatMap((result) => result.data ?? []);
     const assignmentIds = assignmentRows
       .map((row) => normalizeUuid(row.id))
       .filter((value): value is string => Boolean(value));
-    const responsesResult =
-      assignmentIds.length === 0
-        ? { data: [], error: null }
-        : await input.client
+    const responsesResults = await Promise.all(chunks(assignmentIds, maximumCalendarItemsPerPickerRead).map((ids) => input.client
             .from("assignment_responses")
             .select("assignment_id,response_status,updated_at")
             .eq("workspace_id", workspaceId)
-            .in("assignment_id", assignmentIds)
-            .order("updated_at", { ascending: false });
+            .in("assignment_id", ids)
+            .order("updated_at", { ascending: false })));
 
-    if (responsesResult.error) {
+    if (responsesResults.some((result) => result.error)) {
       return { kind: "error", reason: "query_unavailable" };
     }
 
     const responseByAssignmentId = new Map<string, AssignmentResponseStatus>();
-    for (const response of responsesResult.data ?? []) {
+    for (const response of responsesResults.flatMap((result) => result.data ?? [])) {
       const assignmentId = normalizeUuid(response.assignment_id);
       if (!assignmentId || responseByAssignmentId.has(assignmentId)) continue;
       responseByAssignmentId.set(

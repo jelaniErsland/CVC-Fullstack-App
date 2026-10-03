@@ -16,6 +16,7 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
+import { volunteerNameMatches } from "@/lib/calendar/volunteerFilter";
 
 const calmFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-1";
@@ -261,19 +262,13 @@ export function CalendarAssignmentPicker({
     () => [...new Set(eligible.map((volunteer) => volunteer.congregation).filter((value): value is string => Boolean(value)))].sort(),
     [eligible],
   );
-  const normalizedSearch = search.trim().toLocaleLowerCase();
   const visibleVolunteers = useMemo(
     () =>
       eligible
         .filter((volunteer) => !congregation || volunteer.congregation === congregation)
-        .filter((volunteer) => {
-          if (!normalizedSearch) return true;
-          return `${volunteer.displayName} ${volunteer.congregation ?? ""}`
-            .toLocaleLowerCase()
-            .includes(normalizedSearch);
-        })
+        .filter((volunteer) => volunteerNameMatches(volunteer.displayName, search))
         .sort((first, second) => compareVolunteers(first, second, sort)),
-    [congregation, eligible, normalizedSearch, sort],
+    [congregation, eligible, search, sort],
   );
   const canAssign = Boolean(assignAction) && canEditAssignments && selectedEligibleIds.length > 0;
   const capacityWarning =
@@ -385,7 +380,7 @@ export function CalendarAssignmentPicker({
                 <label className="flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
                   <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
                   <span className="sr-only">Search ready volunteers</span>
-                  <input aria-label="Search ready volunteers" className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" onChange={(event) => setSearch(event.target.value)} placeholder="Name or congregation" type="search" value={search} />
+                  <input aria-label="Search ready volunteers" className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400" inputMode="search" onChange={(event) => setSearch(event.target.value)} placeholder="Search volunteers…" role="searchbox" type="text" value={search} />
                   {search ? <button aria-label="Clear volunteer search" className="text-xs font-semibold text-[var(--pl-blue)]" onClick={() => setSearch("")} type="button">Clear</button> : null}
                 </label>
               </div>
@@ -415,7 +410,7 @@ export function CalendarAssignmentPicker({
               {visibleVolunteers.length > 0 ? visibleVolunteers.map((volunteer) => (
                 <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-2.5 py-2" key={volunteer.id}>
                   <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                    <input aria-label={`Select ${volunteer.displayName}`} checked={selectedEligibleIds.includes(volunteer.id)} className="h-4 w-4 shrink-0 rounded border-slate-300 text-slate-950" onChange={() => toggleSelection(volunteer.id)} type="checkbox" />
+                    <input aria-label={`Select ${volunteer.displayName}${volunteer.congregation ? ` from ${volunteer.congregation}` : ""}`} checked={selectedEligibleIds.includes(volunteer.id)} className="h-4 w-4 shrink-0 rounded border-slate-300 text-slate-950" onChange={() => toggleSelection(volunteer.id)} type="checkbox" />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-slate-800">{volunteer.displayName}</span>
                       {volunteer.congregation ? <span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{volunteer.congregation}</span> : null}
@@ -427,7 +422,7 @@ export function CalendarAssignmentPicker({
                 </div>
               )) : (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-white/60 px-3 py-4 text-sm leading-6 text-slate-500">
-                  <p>{eligible.length === 0 ? "No ready unassigned volunteers are available for this workspace." : "No ready volunteers match the current search and filters."}</p>
+                  <p>{search.trim() ? "No volunteers match this search." : eligible.length === 0 ? "No ready unassigned volunteers are available for this workspace." : "No ready volunteers match the current filters."}</p>
                   {eligible.length > 0 ? <button className={`mt-2 text-sm font-semibold text-[var(--pl-blue)] ${calmFocusRing}`} onClick={() => { setSearch(""); setCongregation(""); }} type="button">Clear search and filters</button> : null}
                 </div>
               )}

@@ -33,6 +33,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
+import { calendarVolunteerDetail, calendarVolunteerFilterLabel, calendarVolunteerOptions, itemHasCalendarVolunteer, searchCalendarVolunteers, type CalendarVolunteerOption } from "@/lib/calendar/volunteerFilter";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { CalendarAssignedVolunteers, CalendarAssignmentLegend, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
@@ -734,7 +735,7 @@ function CalendarWorkspaceHeader({
   canCreate,
 }: {
   activeFilterCount: number;
-  activeFilterSummary: string;
+  activeFilterSummary: string | null;
   activeView: CalendarViewMode;
   filteredItemCount: number;
   onFilterOpen: () => void;
@@ -766,8 +767,8 @@ function CalendarWorkspaceHeader({
             </h2>
           </div>
           <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)] max-[240px]:overflow-visible max-[240px]:whitespace-normal">
-            {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"} ·{" "}
-            {activeFilterSummary}
+            {filteredItemCount} item{filteredItemCount === 1 ? "" : "s"}
+            {activeFilterSummary ? ` · ${activeFilterSummary}` : null}
           </p>
           </div>
 
@@ -893,14 +894,22 @@ function CalendarFilterPanel({
   onChange,
   onClear,
   onClose,
+  onSelectVolunteer,
+  selectedVolunteer,
+  volunteerOptions,
 }: {
   filters: CalendarFilterOptions;
   isOpen: boolean;
   onChange: (filters: CalendarFilterOptions) => void;
   onClear: () => void;
   onClose: () => void;
+  onSelectVolunteer: (volunteer: CalendarVolunteerOption) => void;
+  selectedVolunteer: CalendarVolunteerOption | null;
+  volunteerOptions: readonly CalendarVolunteerOption[];
 }) {
-  const activeFilterCount = getCalendarActiveFilterCount(filters);
+  const activeFilterCount = getCalendarActiveFilterCount(filters) + (selectedVolunteer ? 1 : 0);
+  const [volunteerQuery, setVolunteerQuery] = useState("");
+  const matchingVolunteers = useMemo(() => searchCalendarVolunteers(volunteerOptions, volunteerQuery), [volunteerOptions, volunteerQuery]);
   const desktopCloseButtonRef = useRef<HTMLButtonElement>(null);
   const desktopDialogRef = useRef<HTMLElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -983,8 +992,14 @@ function CalendarFilterPanel({
             descriptionId={`${descriptionId}-desktop`}
             filters={filters}
             onChange={onChange}
-            onClear={onClear}
+            onClear={() => { onClear(); setVolunteerQuery(""); }}
             onClose={onClose}
+            onSelectVolunteer={onSelectVolunteer}
+            selectedVolunteer={selectedVolunteer}
+            volunteerOptions={volunteerOptions}
+            volunteerQuery={volunteerQuery}
+            matchingVolunteers={matchingVolunteers}
+            onVolunteerQueryChange={setVolunteerQuery}
             toggleCoverage={toggleCoverage}
             toggleTaskType={toggleTaskType}
           />
@@ -1010,8 +1025,14 @@ function CalendarFilterPanel({
             descriptionId={`${descriptionId}-mobile`}
             filters={filters}
             onChange={onChange}
-            onClear={onClear}
+            onClear={() => { onClear(); setVolunteerQuery(""); }}
             onClose={onClose}
+            onSelectVolunteer={onSelectVolunteer}
+            selectedVolunteer={selectedVolunteer}
+            volunteerOptions={volunteerOptions}
+            volunteerQuery={volunteerQuery}
+            matchingVolunteers={matchingVolunteers}
+            onVolunteerQueryChange={setVolunteerQuery}
             toggleCoverage={toggleCoverage}
             toggleTaskType={toggleTaskType}
           />
@@ -1029,6 +1050,12 @@ function FilterPanelContent({
   onChange,
   onClear,
   onClose,
+  onSelectVolunteer,
+  selectedVolunteer,
+  volunteerOptions,
+  volunteerQuery,
+  matchingVolunteers,
+  onVolunteerQueryChange,
   toggleCoverage,
   toggleTaskType,
 }: {
@@ -1039,13 +1066,19 @@ function FilterPanelContent({
   onChange: (filters: CalendarFilterOptions) => void;
   onClear: () => void;
   onClose: () => void;
+  onSelectVolunteer: (volunteer: CalendarVolunteerOption) => void;
+  selectedVolunteer: CalendarVolunteerOption | null;
+  volunteerOptions: readonly CalendarVolunteerOption[];
+  volunteerQuery: string;
+  matchingVolunteers: readonly CalendarVolunteerOption[];
+  onVolunteerQueryChange: (query: string) => void;
   toggleCoverage: (state: CalendarCoverageFilterState) => void;
   toggleTaskType: (taskType: CalendarHighLevelTaskType) => void;
 }) {
   return (
     <>
       <p className="sr-only" id={descriptionId}>
-        Filter by task, coverage, or category.
+        Filter by volunteer, task, coverage, or category.
       </p>
       <div className="shrink-0 border-b border-slate-200/70 px-4 py-4 sm:px-5">
         <div className="mx-auto mb-2 h-1.5 w-11 rounded-full bg-slate-200 lg:hidden" />
@@ -1074,6 +1107,32 @@ function FilterPanelContent({
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
         data-overlay-scroll="calendar-filters"
       >
+        {volunteerOptions.length > 0 ? <div className="mb-5">
+          <label className="block text-sm font-semibold text-slate-700" htmlFor={`${descriptionId}-volunteer`}>Volunteer name</label>
+          <span className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/72 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
+            <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-400" />
+            <input
+              aria-controls={`${descriptionId}-results`}
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
+              id={`${descriptionId}-volunteer`}
+              onChange={(event) => onVolunteerQueryChange(event.target.value)}
+              placeholder="Search by name"
+              type="search"
+              value={volunteerQuery}
+            />
+          </span>
+          {selectedVolunteer ? <p className="mt-2 text-xs font-semibold text-[var(--pl-blue)]">Filtered by: {calendarVolunteerFilterLabel(selectedVolunteer, volunteerOptions)}</p> : null}
+          {volunteerQuery.trim() ? <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white" id={`${descriptionId}-results`}>
+            {matchingVolunteers.length ? matchingVolunteers.slice(0, 10).map((volunteer) => <button
+              className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 text-left text-sm last:border-0 hover:bg-[var(--pl-blue-soft)]"
+              key={volunteer.id}
+              onClick={() => { onSelectVolunteer(volunteer); onVolunteerQueryChange(""); onClose(); }}
+              type="button"
+            ><span className="min-w-0 truncate font-semibold text-slate-800">{volunteer.name}</span><span className="min-w-0 truncate text-xs text-slate-500">{calendarVolunteerDetail(volunteer, volunteerOptions)}</span></button>) : <p className="px-3 py-3 text-sm text-slate-500">No volunteers match that name in this project.</p>}
+            {matchingVolunteers.length > 10 ? <p className="px-3 py-2 text-xs text-slate-500">Showing 10 of {matchingVolunteers.length}. Type more of the name.</p> : null}
+          </div> : null}
+        </div> : null}
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Task name</span>
           <span className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white/72 px-3 focus-within:ring-2 focus-within:ring-slate-900/30 focus-within:ring-offset-1">
@@ -1150,28 +1209,35 @@ function FilterPanelContent({
 function ActiveFilterBar({
   filters,
   onClear,
+  onClearVolunteer,
+  selectedVolunteer,
+  selectedVolunteerLabel,
 }: {
   filters: CalendarFilterOptions;
   onClear: () => void;
+  onClearVolunteer: () => void;
+  selectedVolunteer: CalendarVolunteerOption | null;
+  selectedVolunteerLabel: string | null;
 }) {
-  const activeFilterCount = getCalendarActiveFilterCount(filters);
+  const activeFilterCount = getCalendarActiveFilterCount(filters) + (selectedVolunteer ? 1 : 0);
 
   if (activeFilterCount === 0) {
     return null;
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-white/72 bg-white/48 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm font-semibold text-slate-700">
-        {getCalendarActiveFilterSummary(filters)}
-      </p>
-      <button
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/72 bg-white/48 px-4 py-3">
+      <div className="min-w-0 space-y-1 text-sm font-semibold text-slate-700">
+        {selectedVolunteer ? <button aria-label={`Remove volunteer filter for ${selectedVolunteerLabel}`} className={`inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--pl-blue)] bg-[var(--pl-blue-soft)] px-3 py-1.5 text-[var(--pl-blue)] ${calmFocusRing}`} onClick={onClearVolunteer} type="button"><span className="truncate">Filtered by: {selectedVolunteerLabel}</span><X aria-hidden="true" className="size-4 shrink-0" /></button> : null}
+        {getCalendarActiveFilterCount(filters) > 0 ? <p>{getCalendarActiveFilterSummary(filters)}</p> : null}
+      </div>
+      {getCalendarActiveFilterCount(filters) > 0 ? <button
         className={`inline-flex min-h-10 items-center justify-center rounded-full border border-white/80 bg-white/72 px-4 text-sm font-semibold text-slate-600 transition hover:bg-white ${calmFocusRing}`}
         onClick={onClear}
         type="button"
       >
         Reset
-      </button>
+      </button> : null}
     </div>
   );
 }
@@ -4134,6 +4200,8 @@ export default function CalendarClient({
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
   const [filters, setFilters] = useState<CalendarFilterOptions>({});
+  const [volunteerSelection, setVolunteerSelection] = useState<{ projectKey: string | undefined; workspaceName: string; volunteer: CalendarVolunteerOption; label: string } | null>(null);
+  const selectedVolunteer = volunteerSelection && isReady && volunteerSelection.projectKey === projectKey && volunteerSelection.workspaceName === state.workspaceName ? volunteerSelection.volunteer : null;
   const initialProjectDayDate = isReady ? readCalendarRouteDay(searchParams.get("day")) : undefined;
   // Legacy initial props bootstrap callers; URL changes remain authoritative afterwards.
   const bootstrapItemId = initialInspectorItemId ?? initialItemId;
@@ -4165,10 +4233,17 @@ export default function CalendarClient({
       : activeSurface === "filter" || activeSurface === "more" || activeSurface === "create" ? activeSurface : "none");
   }
 
-  const filteredItems = useMemo(
-    () => filterCalendarItems(allItems, filters),
-    [allItems, filters],
-  );
+  const volunteerOptions = useMemo(() =>
+    routeBase === "/admin/calendar" && isReady && state.canViewVolunteers && state.assignmentPicker.kind === "ready"
+      ? calendarVolunteerOptions(state.assignmentPicker.volunteers, state.assignmentPicker.assignments)
+      : [], [routeBase, isReady, state]);
+  const volunteerAssignmentsAvailable = isReady && state.assignmentPicker.kind === "ready";
+  const selectedVolunteerLabel = selectedVolunteer ? volunteerSelection?.label ?? selectedVolunteer.name : null;
+  const filteredItems = useMemo(() => {
+    const matchingItems = filterCalendarItems(allItems, filters);
+    if (!selectedVolunteer) return matchingItems;
+    return volunteerAssignmentsAvailable ? matchingItems.filter((item) => itemHasCalendarVolunteer(item as CalendarClientDisplayItem, selectedVolunteer.id)) : [];
+  }, [allItems, filters, selectedVolunteer, volunteerAssignmentsAvailable]);
   const weekRange = deriveCalendarWeekRange(calendarAnchor);
   const visibleItems = useMemo(() => {
     if (activeView === "day") {
@@ -4188,8 +4263,10 @@ export default function CalendarClient({
     );
   }, [activeView, calendarAnchor, filteredItems, weekRange.end, weekRange.start]);
 
-  const activeFilterCount = getCalendarActiveFilterCount(filters);
-  const activeFilterSummary = getCalendarActiveFilterSummary(filters);
+  const activeFilterCount = getCalendarActiveFilterCount(filters) + (selectedVolunteer ? 1 : 0);
+  const activeFilterSummary = selectedVolunteer && getCalendarActiveFilterCount(filters) === 0
+    ? null
+    : getCalendarActiveFilterSummary(filters);
 
   const selectedItem = selectedId
     ? filteredItems.map(enrichCalendarClientItem).find((item) => item.id === selectedId)
@@ -4361,6 +4438,7 @@ export default function CalendarClient({
 
   const clearFilters = () => {
     setFilters({});
+    setVolunteerSelection(null);
   };
 
   const handleViewChange = (view: CalendarViewMode) => {
@@ -4453,7 +4531,7 @@ export default function CalendarClient({
 
             <CalendarNotice notice={notice} />
 
-            <ActiveFilterBar filters={filters} onClear={clearFilters} />
+            <ActiveFilterBar filters={filters} onClear={clearFilters} onClearVolunteer={() => setVolunteerSelection(null)} selectedVolunteer={selectedVolunteer} selectedVolunteerLabel={selectedVolunteerLabel} />
 
             <div className={
               selectedItem && activeSurface === "inspect"
@@ -4463,7 +4541,8 @@ export default function CalendarClient({
                   : "grid grid-cols-1"
             }>
             <div className="min-w-0 lg:max-h-[calc(100vh-176px)] lg:overflow-auto" id="calendar-view-content" ref={calendarViewRef}>
-              {isReadyEmpty && filteredItems.length === 0 ? (
+              {selectedVolunteer && visibleItems.length === 0 ? <p className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3 text-sm text-slate-600">{volunteerAssignmentsAvailable ? `No assignments for ${selectedVolunteer.name} in this ${activeView === "list" ? "week" : activeView}. Choose another date or clear the filter.` : "Volunteer assignments are unavailable for this range. Try again or clear the filter."}</p> : null}
+              {isReadyEmpty && !selectedVolunteer && filteredItems.length === 0 ? (
               <div className="border-b border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-4 py-3">
                 <p className="text-sm font-semibold text-slate-900">
                   No scheduled items in this range
@@ -4574,6 +4653,9 @@ export default function CalendarClient({
               onChange={setFilters}
               onClear={clearFilters}
               onClose={closeCalendarSurface}
+              onSelectVolunteer={(volunteer) => { if (isReady) setVolunteerSelection({ projectKey, workspaceName: state.workspaceName, volunteer, label: calendarVolunteerFilterLabel(volunteer, volunteerOptions) }); }}
+              selectedVolunteer={selectedVolunteer}
+              volunteerOptions={volunteerOptions}
             />
             <CalendarCreatePanel
               canEdit={state.canEdit}
