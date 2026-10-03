@@ -87,7 +87,7 @@ async function createManualVolunteerAction(formData: FormData) {
 
   let notice: "unavailable" | "permission" | "duplicate" | "validation" | "error" | "created" = "error";
   try {
-    const routeContext = await readVolunteerManagementRouteContext();
+    const routeContext = await readVolunteerManagementRouteContext().catch(() => null);
     if (!routeContext || !routeContext.canEdit) {
       notice = "unavailable";
       observeVolunteerMutationFailure("volunteer.create_failure", "unavailable");

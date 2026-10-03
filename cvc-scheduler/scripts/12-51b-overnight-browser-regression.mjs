@@ -38,35 +38,43 @@ try {
     const end = panel.getByLabel('End',{exact:true});
     const endDay = panel.getByRole('group',{name:'End day'});
     const endDate = panel.locator('input[name="endDate"]');
+    const assertEndState = async (mode, storedDate, summary) => {
+      const pressed = await endDay.getByRole('button').evaluateAll(buttons => buttons
+        .filter(button => button.getAttribute('aria-pressed') === 'true')
+        .map(button => button.textContent.trim()));
+      assert.deepEqual(pressed,[mode],`only ${mode} should be selected`);
+      assert.equal(await endDate.inputValue(),storedDate);
+      await panel.getByText(summary,{exact:true}).waitFor();
+    };
     const shot = async name => {
       await endDay.scrollIntoViewIfNeeded();
       await page.screenshot({path:path.join(output,`${label}-${name}.png`)});
     };
-    assert.equal(await endDate.inputValue(),'2026-10-05');
-    assert.equal(await endDay.getByRole('button',{name:'Same day'}).getAttribute('aria-pressed'),'true');
+    await assertEndState('Same day','2026-10-05','5:00 PM · Same day');
     await shot('same-day');
 
     await start.fill('19:00');
     await end.fill('05:00');
-    assert.equal(await endDate.inputValue(),'2026-10-06');
-    await panel.getByText('5:00 AM · Next day').waitFor();
+    await assertEndState('Next day','2026-10-06','5:00 AM · Next day');
     await shot('overnight-next-day');
 
     await endDay.getByRole('button',{name:'Next day'}).click();
-    assert.equal(await endDay.getByRole('button',{name:'Next day'}).getAttribute('aria-pressed'),'true');
+    await assertEndState('Next day','2026-10-06','5:00 AM · Next day');
     await shot('explicit-next-day');
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await endDay.getByRole('button',{name:'Same day'}).evaluate(button => button === document.activeElement),true,
+      'keyboard focus should move to the unselected neighboring control');
+    await assertEndState('Next day','2026-10-06','5:00 AM · Next day');
+    await shot('focused-neighbor');
 
     await endDay.getByRole('button',{name:'Later date'}).click();
     await panel.getByLabel('Specific end date').fill('2026-10-09');
-    assert.equal(await endDate.inputValue(),'2026-10-09');
-    assert.equal(await endDay.getByRole('button',{name:'Later date'}).getAttribute('aria-pressed'),'true');
+    await assertEndState('Later date','2026-10-09','5:00 AM · 2026-10-09');
     await shot('later-date');
 
     await endDay.getByRole('button',{name:'Next day'}).click();
     await end.fill('21:00');
-    assert.equal(await endDate.inputValue(),'2026-10-05','time change clears stale next-day end date');
-    assert.equal(await endDay.getByRole('button',{name:'Same day'}).getAttribute('aria-pressed'),'true');
-    await panel.getByText('9:00 PM · Same day').waitFor();
+    await assertEndState('Same day','2026-10-05','9:00 PM · Same day');
     await shot('back-to-same-day');
 
     await end.fill('19:00');

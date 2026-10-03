@@ -18,7 +18,17 @@ for (const [code, notice, failureCode] of categories) {
   }));
   assert.deepEqual(classified, { notice, failureCode });
   assert.equal(normalizeVolunteerManagementNotice(notice), notice);
-  assert(createOperationalEvent({ event: 'volunteer.create_failure', failureCode }));
+  const event = createOperationalEvent({ event: 'volunteer.create_failure', failureCode });
+  assert(event);
+  assert.equal(event.stage, 'create');
+  assert.equal(event.category, 'volunteer');
+  assert.equal(event.failureCode, failureCode);
+  assert.deepEqual(Object.keys(event).sort(),
+    ['schemaVersion','event','severity','category','stage','outcome','timestamp','failureCode'].sort(),
+    'the logged event contains only safe schema fields');
+  assert.equal(createOperationalEvent({ event: 'volunteer.create_failure', failureCode,
+    volunteerEmail: 'private@example.invalid', token: 'private-token' }), null,
+  'PII and secrets must not be accepted as event fields');
   assert(!JSON.stringify(classified).includes('Private database detail'));
 }
 

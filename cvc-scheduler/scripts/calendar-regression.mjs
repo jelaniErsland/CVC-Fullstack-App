@@ -715,6 +715,7 @@ async function loadCalendar(page, { expectControls = true } = {}) {
 
   assert(response?.ok(), `Calendar returned ${response?.status() ?? "no response"}`);
   await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+  await page.waitForLoadState("networkidle");
   if (expectControls) {
     await page.getByRole("button", { name: "Week", exact: true }).waitFor();
   }
@@ -1859,9 +1860,13 @@ async function runDesktop(browser) {
 
       await page.reload();
       await page.getByRole("heading", { name: reviewGeneralPresetName, exact: true }).first().waitFor();
+      await page.waitForLoadState("networkidle");
       await inspector.waitFor();
       await inspector.getByLabel("Start", { exact: true }).filter({ visible: true }).fill("16:30");
+      assert((await inspector.getByLabel("Start", { exact: true }).filter({ visible: true }).inputValue()) === "16:30", "Preset edit Start did not retain its new time after entry");
+      await inspector.getByLabel("Start", { exact: true }).filter({ visible: true }).press("Tab");
       await inspector.getByLabel("End", { exact: true }).filter({ visible: true }).fill("17:30");
+      assert((await inspector.getByLabel("Start", { exact: true }).filter({ visible: true }).inputValue()) === "16:30", "Preset edit Start reverted when End changed");
       await inspector.locator("textarea").first().fill("Browser regression persisted preset edit note.");
       await Promise.all([
         page.waitForURL(/notice=updated/),
@@ -1882,6 +1887,7 @@ async function runDesktop(browser) {
 
     await step("desktop Bulk Assignment Planner preview/save/deduplication/cancel", async () => {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ }).first().click();
       const inspector = page.getByRole("dialog", { name: "Calendar item inspector", exact: true });
       await inspector.waitFor();
@@ -1916,6 +1922,7 @@ async function runDesktop(browser) {
       await writeCalendarFlowCapture(page, "09-after-assignment-inspector.png");
 
       await page.reload();
+      await page.waitForLoadState("networkidle");
       await inspector.waitFor();
       await inspector.getByRole("link", { name: `View assignment for ${reviewVolunteerNames[1]}`, exact: true }).waitFor();
       await inspector.getByText("Needs response", { exact: true }).waitFor();
@@ -2252,6 +2259,7 @@ async function runMobile(browser) {
     await step("mobile Bulk Assignment Planner scroll/preview/save/cancel/focus", async () => {
       await page.setViewportSize(mobileViewport);
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ }).first().click();
       const inspector = page.locator('[role="dialog"][aria-label="Calendar item inspector"]:visible');
       await inspector.waitFor();
@@ -2270,6 +2278,7 @@ async function runMobile(browser) {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
         waitUntil: "domcontentloaded",
       });
+      await page.waitForLoadState("networkidle");
       const assignedItem = page
         .getByRole("button", { name: /Gate attendant.*7:30 AM - 10:30 AM/ })
         .first();
@@ -2296,6 +2305,7 @@ async function runMobile(browser) {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"), {
         waitUntil: "domcontentloaded",
       });
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: "Create", exact: true }).click();
       const planner = page.getByRole("dialog", { name: "Plan project work", exact: true });
       await planner.waitFor();
@@ -2367,6 +2377,7 @@ async function runMobile(browser) {
       await page.goto(createPreviewUrl(baseUrl, "/admin/calendar"), {
         waitUntil: "domcontentloaded",
       });
+      await page.waitForLoadState("networkidle");
       await page.getByRole("button", { name: "Month", exact: true }).waitFor();
       await assertNoHorizontalOverflow(page, "Narrow mobile Calendar");
 
