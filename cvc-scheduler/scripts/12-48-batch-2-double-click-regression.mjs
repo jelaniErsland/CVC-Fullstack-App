@@ -35,9 +35,9 @@ try {
   await page.keyboard.press('Escape');
   await planner().waitFor({ state: 'hidden' });
 
-  await page.locator('[data-calendar-month-cell="2026-10-05"]').getByRole('button', { name: /Food-service shift/ }).click();
+  await page.locator('[data-calendar-month-cell="2026-10-05"]').getByRole('button', { name: /Site preparation/ }).click();
   await inspector().waitFor();
-  assert.equal(routeState().item, '22222222-2222-4222-8222-000000000003');
+  assert.equal(routeState().item, '22222222-2222-4222-8222-000000000001');
   await page.waitForTimeout(360);
   assert.equal(await planner().count(), 0, 'Existing Month event opened creation');
   assert.equal(routeState().view, 'month', 'Existing Month event navigated to Day');
@@ -45,7 +45,7 @@ try {
   await go('/admin/calendar?view=month&date=2026-10-05');
   await page.evaluate(() => {
     document.querySelector('[data-calendar-month-cell="2026-10-08"] [data-calendar-arrow-target="month-date"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
-    document.querySelector('[data-calendar-month-cell="2026-10-05"] button[aria-label*="Food-service shift"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    document.querySelector('[data-calendar-month-cell="2026-10-05"] button[aria-label*="Site preparation"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
   });
   await inspector().waitFor();
   await page.waitForTimeout(360);

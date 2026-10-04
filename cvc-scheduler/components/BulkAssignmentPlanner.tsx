@@ -4,33 +4,44 @@ import { useRouter } from "next/navigation";
 import { assignmentPreviewCounts, type BulkAssignmentActionState, type BulkAssignmentPlan } from "@/lib/calendar/bulkAssignments";
 import { expandRepeatDates } from "@/lib/calendar/repeat";
 import type { PickerContextAction } from "@/lib/calendar/assignmentPickerContext";
+import type { MatchingAssignmentCursor, MatchingAssignmentItem, MatchingAssignmentItemsState } from "@/lib/calendar/matchingAssignmentItems.server";
 import { PickerVolunteerList } from "./PickerVolunteerList";
 
 export type BulkAssignmentAction = (form: FormData) => Promise<BulkAssignmentActionState>;
 export type BulkVolunteerOption = { id: string; displayName: string; congregation?: string | null; lifecycle: string; readinessStatus: string; availableWorkDays?: readonly string[] };
 export type AssignmentItemOption = { id: string; date: string; endDate?: string | null; title: string; startTime: string | null; endTime: string | null };
+export type MatchingAssignmentItemsAction = (form: FormData) => Promise<MatchingAssignmentItemsState>;
 export type AssignmentComposerHandle = { save: () => Promise<boolean> };
 const focus = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 function readableDate(date: string) {
   return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 }
+function readableMonth(month: string) {
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T12:00:00Z`));
+}
 
 export const BulkAssignmentPlanner = forwardRef<AssignmentComposerHandle, {
-  action: BulkAssignmentAction; contextAction?: PickerContextAction; volunteers: readonly BulkVolunteerOption[];
+  action: BulkAssignmentAction; contextAction?: PickerContextAction; matchingItemsAction?: MatchingAssignmentItemsAction; volunteers: readonly BulkVolunteerOption[];
   primaryItem?: AssignmentItemOption; otherItems?: readonly AssignmentItemOption[];
   create?: BulkAssignmentPlan["create"]; onSelectionChange?: (hasSelection: boolean) => void; onReadyChange?: (ready: boolean) => void;
-}>(function BulkAssignmentPlanner({ action, contextAction, volunteers, primaryItem, otherItems = [], create, onSelectionChange, onReadyChange }, ref) {
+}>(function BulkAssignmentPlanner({ action, contextAction, matchingItemsAction, volunteers, primaryItem, otherItems = [], create, onSelectionChange, onReadyChange }, ref) {
   const router = useRouter();
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [selectedOtherIds, setSelectedOtherIds] = useState<string[]>([]);
   const [showOtherDates, setShowOtherDates] = useState(false);
+  const [matchingGroups, setMatchingGroups] = useState<{ month: string; items: MatchingAssignmentItem[] }[]>([]);
+  const [matchingCursor, setMatchingCursor] = useState<MatchingAssignmentCursor | null>(primaryItem ? { month: primaryItem.date.slice(0, 7), offset: 0 } : null);
+  const [matchingLoaded, setMatchingLoaded] = useState(false);
+  const [matchingPending, setMatchingPending] = useState(false);
+  const [matchingError, setMatchingError] = useState(false);
   const [selected, setSelected] = useState<BulkAssignmentPlan["volunteers"]>([]);
   const [note, setNote] = useState("");
   const [result, setResult] = useState<{ plan: string; state: BulkAssignmentActionState } | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedNotice, setSavedNotice] = useState<number | null>(null);
-  const selectedItems = useMemo(() => primaryItem ? [primaryItem, ...otherItems.filter(item => selectedOtherIds.includes(item.id))] : [], [primaryItem, otherItems, selectedOtherIds]);
+  const matchingOtherItems = useMemo(() => matchingItemsAction ? matchingGroups.flatMap(group => group.items) : otherItems, [matchingItemsAction, matchingGroups, otherItems]);
+  const selectedItems = useMemo(() => primaryItem ? [primaryItem, ...matchingOtherItems.filter(item => selectedOtherIds.includes(item.id))] : [], [primaryItem, matchingOtherItems, selectedOtherIds]);
   const dates = useMemo(() => create ? expandRepeatDates(create.startDate, create.endDate, create.weekdays) : [...new Set(selectedItems.map(item => item.date))].sort(), [create, selectedItems]);
   const occurrences = useMemo(() => create ? dates.map(date => ({ date, endDate: create.endDayOffset ? new Date(Date.parse(`${date}T12:00:00Z`) + create.endDayOffset * 86400000).toISOString().slice(0, 10) : null, endTime: create.endTime })) : selectedItems.map(item => ({ date: item.date, endDate: item.endDate ?? null, endTime: item.endTime })), [create, dates, selectedItems]);
   const plan = useMemo((): BulkAssignmentPlan => ({ itemIds: create ? [] : selectedItems.map(item => item.id), volunteers: selected, note: note.trim() || null, ...(create ? { create } : {}) }), [create, selectedItems, selected, note]);
@@ -75,12 +86,42 @@ export const BulkAssignmentPlanner = forwardRef<AssignmentComposerHandle, {
       ? { ...volunteer, excludeDates: checked ? [...volunteer.excludeDates, date].sort() : volunteer.excludeDates.filter(value => value !== date) }
       : volunteer));
   }
+  async function loadMatchingDates() {
+    if (!matchingItemsAction || !primaryItem || !matchingCursor || matchingPending) return;
+    setMatchingPending(true);
+    setMatchingError(false);
+    const form = new FormData();
+    form.set("sourceId", primaryItem.id);
+    form.set("sourceDate", primaryItem.date);
+    form.set("month", matchingCursor.month);
+    form.set("offset", String(matchingCursor.offset));
+    try {
+      const state = await matchingItemsAction(form);
+      if (state.kind !== "ready" || state.month !== matchingCursor.month) { setMatchingError(true); return; }
+      setMatchingGroups(groups => {
+        const existing = groups.find(group => group.month === state.month);
+        if (!existing) return [...groups, { month: state.month, items: [...state.items] }];
+        const seen = new Set(existing.items.map(item => item.id));
+        return groups.map(group => group.month === state.month
+          ? { ...group, items: [...group.items, ...state.items.filter(item => !seen.has(item.id))] } : group);
+      });
+      setMatchingCursor(state.nextCursor);
+      setMatchingLoaded(true);
+    } catch { setMatchingError(true); }
+    finally { setMatchingPending(false); }
+  }
+  const displayGroups = matchingItemsAction ? matchingGroups : [...new Set(otherItems.map(item => item.date.slice(0, 7)))].sort().map(month => ({ month, items: otherItems.filter(item => item.date.startsWith(month)) }));
+  const canSelectMoreDates = selectedOtherIds.length < 99;
   return <section aria-label="Assign volunteers" className="mt-4 min-w-0 rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
     <h3 className="text-sm font-semibold text-slate-900">Assign volunteers</h3>
     <p className="mt-1 text-sm font-semibold text-slate-800">{create ? daySummary : `${selectedItems.length} selected ${selectedItems.length === 1 ? "item" : "items"} · ${daySummary}`}</p>
     {create && dates.length > 1 && <details className="mt-2 text-xs"><summary className="cursor-pointer font-semibold text-blue-700">View {dates.length} scheduled days</summary><div className="mt-2 flex flex-wrap gap-1">{dates.map(date => <span key={date} className="rounded-md bg-slate-100 px-2 py-1">{readableDate(date)}</span>)}</div></details>}
-    {!create && primaryItem && <div className="mt-3 space-y-2 text-sm"><p className="font-medium text-slate-800">This item · {readableDate(primaryItem.date)} · {primaryItem.title}</p><label className="flex min-h-10 items-center gap-2 font-medium text-blue-700"><input type="checkbox" checked={showOtherDates} onChange={event => { setShowOtherDates(event.target.checked); if (!event.target.checked) setSelectedOtherIds([]); }} />Also assign on other dates</label>
-      {showOtherDates && <div className="rounded-lg border border-slate-200 p-2"><p className="text-xs font-semibold text-slate-700">Matching Calendar items in this period</p><button type="button" className={`min-h-9 text-xs font-semibold text-blue-700 ${focus}`} onClick={() => setSelectedOtherIds(otherItems.map(item => item.id))}>Select all</button><div className="max-h-48 space-y-1 overflow-y-auto">{otherItems.length ? otherItems.map(item => <label key={item.id} className="flex min-h-10 items-center gap-2 rounded-md px-1 text-xs hover:bg-slate-50"><input type="checkbox" checked={selectedOtherIds.includes(item.id)} onChange={event => setSelectedOtherIds(event.target.checked ? [...selectedOtherIds, item.id] : selectedOtherIds.filter(id => id !== item.id))} /><span>{readableDate(item.date)} · {item.title} · {item.startTime?.slice(0,5) ?? "All day"}{item.endTime ? `–${item.endTime.slice(0,5)}` : ""}</span></label>) : <p className="py-2 text-xs text-slate-600">No matching items are loaded in this Calendar period.</p>}</div></div>}
+    {!create && primaryItem && <div className="mt-3 space-y-2 text-sm"><p className="font-medium text-slate-800">This item · {readableDate(primaryItem.date)} · {primaryItem.title}</p><label className="flex min-h-10 items-center gap-2 font-medium text-blue-700"><input type="checkbox" checked={showOtherDates} onChange={event => { setShowOtherDates(event.target.checked); if (event.target.checked && matchingItemsAction && !matchingLoaded) void loadMatchingDates(); if (!event.target.checked) setSelectedOtherIds([]); }} />Also assign on other dates</label>
+      {showOtherDates && <div className="min-w-0 rounded-lg border border-slate-200 p-2"><p className="text-xs font-semibold text-slate-700">Matching Calendar work · {selectedOtherIds.length} additional {selectedOtherIds.length === 1 ? "date" : "dates"} selected</p><p className="mt-0.5 text-xs text-slate-500">Choose up to 99 additional items per save. Existing assignments are skipped.</p><button type="button" className={`min-h-9 text-xs font-semibold text-blue-700 ${focus}`} disabled={!canSelectMoreDates} onClick={() => setSelectedOtherIds(ids => [...new Set([...ids, ...matchingOtherItems.map(item => item.id)])].slice(0, 99))}>Select all loaded dates</button><div className="max-h-64 min-w-0 space-y-3 overflow-y-auto">
+        {displayGroups.map(group => <section key={group.month}><h4 className="sticky top-0 z-10 bg-white py-1 text-xs font-semibold text-slate-700">{readableMonth(group.month)}</h4>{group.items.length ? <div className="space-y-1">{group.items.map(item => <label key={item.id} className="flex min-h-10 min-w-0 items-center gap-2 rounded-md px-1 text-xs hover:bg-slate-50"><input type="checkbox" checked={selectedOtherIds.includes(item.id)} disabled={!canSelectMoreDates && !selectedOtherIds.includes(item.id)} onChange={event => setSelectedOtherIds(ids => event.target.checked ? [...ids, item.id] : ids.filter(id => id !== item.id))} /><span className="min-w-0 break-words">{readableDate(item.date)} · {item.title} · {item.startTime?.slice(0,5) ?? "All day"}{item.endTime ? `–${item.endDate && item.endDate !== item.date ? `${readableDate(item.endDate)} ` : ""}${item.endTime.slice(0,5)}` : ""}</span></label>)}</div> : <p className="py-1 text-xs text-slate-500">No matching work this month.</p>}</section>)}
+        {!matchingItemsAction && !displayGroups.length ? <p className="py-2 text-xs text-slate-600">No matching items are loaded in this Calendar period.</p> : null}
+      </div>
+      {matchingItemsAction ? <div className="mt-2">{matchingCursor ? <button className={`min-h-9 text-xs font-semibold text-blue-700 disabled:text-slate-400 ${focus}`} disabled={matchingPending} onClick={() => void loadMatchingDates()} type="button">{matchingPending ? "Loading dates…" : matchingLoaded ? "Load more dates" : "Load matching dates"}</button> : null}{matchingError ? <p role="alert" className="text-xs text-rose-700">Matching dates are unavailable. Try again.</p> : null}{matchingLoaded && !matchingCursor ? <p className="text-xs text-slate-500">Reached the project end date.</p> : null}</div> : null}</div>}
     </div>}
     <PickerVolunteerList contextAction={contextAction} dates={dates} occurrences={occurrences} onToggle={toggleVolunteer} plan={plan} selected={selected} volunteers={volunteers} />
     {selected.length > 0 && dates.length > 1 && <details className="mt-3"><summary className="cursor-pointer text-xs font-semibold text-blue-700">Adjust individual days (optional)</summary><div className="mt-2 space-y-2">{selected.map(volunteer => <fieldset key={volunteer.id} className="rounded-lg border border-slate-200 p-2"><legend className="px-1 text-xs font-semibold">{readyVolunteers.find(value => value.id === volunteer.id)?.displayName}</legend><div className="flex flex-wrap gap-2">{dates.map(date => <label key={date} className="flex min-h-9 items-center gap-1 text-xs"><input type="checkbox" checked={volunteer.excludeDates.includes(date)} onChange={event => toggleException(volunteer.id, date, event.target.checked)} />Skip {readableDate(date)}</label>)}</div></fieldset>)}</div></details>}

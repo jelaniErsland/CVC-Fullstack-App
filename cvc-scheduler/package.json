@@ -135,6 +135,8 @@
     "test:12-52-picker-context": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-52-picker-context-regression.mjs",
     "test:12-52-away-context": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-52-away-context-regression.mjs",
     "test:12-52-picker-browser": "node scripts/12-52-picker-browser-regression.mjs",
+    "test:12-52-matching-range": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-52-matching-range-regression.mjs",
+    "test:12-52-matching-range:browser": "node scripts/12-52-matching-range-browser.mjs",
     "test:production-backup-task-details-recovery": "node scripts/production-backup-task-details-recovery-regression.mjs"
   },
   "dependencies": {

@@ -85,6 +85,7 @@ import { CalendarOperations, MealForm, DuplicateItem, useCalendarOperations } fr
 import { CalendarTimedEndChoice } from "./CalendarTimedEndChoice";
 import { BulkAssignmentPlanner, type AssignmentComposerHandle, type AssignmentItemOption, type BulkAssignmentAction } from "./BulkAssignmentPlanner";
 import type { PickerContextAction } from "@/lib/calendar/assignmentPickerContext";
+import type { MatchingAssignmentItemsState } from "@/lib/calendar/matchingAssignmentItems.server";
 import { CALENDAR_REPEAT_MAX_ITEMS, expandRepeatDates } from "@/lib/calendar/repeat";
 import { initialTimedEndState, updateTimedEndState, type TimedEndMode } from "@/lib/calendar/timedEndChoice";
 import type { ProjectDatesMutationState } from "@/lib/operations/projectDates";
@@ -268,6 +269,12 @@ function getCalendarEventStyle() {
 function getCalendarEventColorStyle(item: CalendarItem) {
   const color = taskPresetColor(item.colorKey ?? customCalendarColorKey);
   return { backgroundColor: color.background, borderColor: color.border, color: color.text, outlineColor: color.focus };
+}
+
+function getMonthCalendarEventColorStyle(item: CalendarItem) {
+  if (item.meal) return { backgroundColor: "#eef2f3", color: "#334155" };
+  const color = taskPresetColor(item.colorKey ?? customCalendarColorKey);
+  return { backgroundColor: `color-mix(in srgb, ${color.background} 78%, white)`, color: color.text };
 }
 
 function enrichCalendarClientItem(item: CalendarItem): CalendarClientDisplayItem {
@@ -1726,7 +1733,7 @@ function deriveCalendarMonthDates(referenceDate: string) {
   });
 }
 
-const monthDesktopVisibleItemLimit = 6;
+const monthDesktopVisibleItemLimit = 2;
 
 function MonthView({
   items,
@@ -1816,9 +1823,9 @@ function MonthView({
           <p className="mt-0.5 text-xs text-[var(--pl-muted)]">{selectedDayItems.length} scheduled item{selectedDayItems.length === 1 ? "" : "s"} · Select an item for details</p>
           {hasVisibleAssignmentResponses(selectedDayItems, assignmentVisibility) ? <div className="-mx-3 mt-2"><CalendarAssignmentLegend /></div> : null}
           {selectedDayItems.length ? <div className="mt-2 space-y-2">
-            {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] border-l-[3px] bg-white" data-calendar-month-agenda-item={item.id} key={item.id} style={{ borderLeftColor: getCalendarEventColorStyle(item).borderColor }}>
+            {selectedDayItems.map(item => <article className="overflow-hidden rounded-lg border border-[var(--pl-border)] bg-white" data-calendar-month-agenda-item={item.id} key={item.id}>
               <button aria-label={`${getCalendarItemDisplayName(item)}, ${getCalendarItemScheduleDisplay(item).label}, ${getCalendarOperationalCount(item)}`} className={`grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 px-3 py-2 text-left max-[360px]:grid-cols-1 max-[360px]:px-2 ${calmFocusRing}`} onClick={() => onSelect(item)} type="button">
-                <span className="min-w-0 break-words text-sm font-semibold text-[var(--pl-ink)]">{getCalendarItemDisplayName(item)}</span>
+                <span className="flex min-w-0 items-start gap-2 break-words text-sm font-semibold text-[var(--pl-ink)]"><span aria-hidden="true" className="mt-1 size-2 shrink-0 rounded-full" style={{ backgroundColor: item.meal ? "#64748b" : taskPresetColor(item.colorKey ?? customCalendarColorKey).border }} />{getCalendarItemDisplayName(item)}{isDraftCalendarItem(item) ? <span className="text-xs font-medium text-[var(--pl-muted)]">Draft</span> : null}</span>
                 <span className="whitespace-nowrap text-[11px] font-semibold text-[var(--pl-text)] max-[360px]:row-start-2">{item.meal ? item.meal.total === null ? "Not set" : item.meal.total : getCalendarFilledLabel(item)}</span>
                 <span className="col-span-2 mt-0.5 text-xs text-[var(--pl-muted)] max-[360px]:col-span-1">{getCalendarItemScheduleDisplay(item).label}</span>
               </button>
@@ -1841,7 +1848,10 @@ function MonthView({
         {dates.map((date, dateIndex) => {
           const dateItems = items
             .filter((item) => doesCalendarItemOccurOnDate(item, date))
-            .map(enrichCalendarClientItem);
+            .map(enrichCalendarClientItem)
+            .sort((first, second) => getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second)
+              || getCalendarItemDisplayName(first).localeCompare(getCalendarItemDisplayName(second))
+              || first.id.localeCompare(second.id));
           const desktopOverflowCount = Math.max(
             dateItems.length - monthDesktopVisibleItemLimit,
             0,
@@ -1885,30 +1895,23 @@ function MonthView({
                 >
                   {Number(date.slice(-2))}
                 </button>
-                <div className="mt-1 space-y-0.5">
+                <div className="mt-1 space-y-1">
                   {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item) => (
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        `pointer-events-auto h-4 w-full min-w-0 overflow-hidden rounded px-1 text-left text-[10px] font-semibold leading-3 transition ${calmFocusRing}`,
-                        readOnly && item.meal ? "sm:h-5 sm:text-[11px] sm:leading-4" : "",
-                        getCalendarEventClasses(item),
+                        "pointer-events-auto grid h-[42px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5 overflow-hidden rounded-[5px] px-1 py-0.5 text-left transition hover:brightness-[0.96] focus-visible:relative focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-700 xl:h-9 xl:gap-1 xl:px-1.5",
                         selectedId === item.id
-                          ? "ring-2 ring-slate-900/30 ring-offset-1"
+                          ? "ring-2 ring-inset ring-blue-700"
                           : "",
                       ].join(" ")}
                       key={item.id}
                       onClick={() => { cancelPendingClick(); onSelect(item); }}
-                      style={getCalendarEventColorStyle(item)}
+                      style={getMonthCalendarEventColorStyle(item)}
                       type="button"
                     >
-                      <span className="block truncate sm:hidden">{item.meal ? `${item.meal.kind === "breakfast" ? "B" : "L"}${item.meal.total === null ? "—" : item.meal.total}` : getCalendarItemDisplayName(item)}</span>
-                      <span className="hidden min-w-0 items-center gap-1 sm:flex">
-                        {readOnly && item.meal ? <span className="min-w-0 truncate">{item.meal.kind === "breakfast" ? "Breakfast" : "Lunch"} · {item.meal.total === null ? "—" : item.meal.total}</span> : <>
-                          <span className="hidden shrink-0 opacity-70 sm:inline">{getCalendarOperationalCount(item)}</span>
-                          <span className="min-w-0 truncate">{getCalendarItemDisplayName(item)}</span>
-                        </>}
-                      </span>
+                      <span className="min-w-0 line-clamp-3 break-words text-[11px] font-semibold leading-[13px] xl:line-clamp-2 xl:text-xs xl:leading-[14px]" data-calendar-month-title={item.id}>{getCalendarItemDisplayName(item)}{isDraftCalendarItem(item) ? <span className="font-medium opacity-70"> · Draft</span> : null}</span>
+                      <span aria-hidden="true" className="shrink-0 whitespace-nowrap text-[9px] font-medium tabular-nums opacity-90 xl:text-[10px]">{item.meal ? item.meal.total === null ? "—" : item.meal.total : getCalendarFilledLabel(item)}</span>
                     </button>
                   ))}
                   {desktopOverflowCount > 0 ? (
@@ -1918,7 +1921,7 @@ function MonthView({
                       onClick={() => { cancelPendingClick(); onFocusDate(date); }}
                       type="button"
                     >
-                      +{desktopOverflowCount}
+                      +{desktopOverflowCount} more
                     </button>
                   ) : null}
                 </div>
@@ -3482,6 +3485,7 @@ function InspectorContent({
               unifiedAssignment={operations.bulkAssignmentAction && operations.bulkVolunteers && assignmentPicker.kind === "ready" ? <BulkAssignmentPlanner
                 action={operations.bulkAssignmentAction}
                 contextAction={operations.assignmentContextAction}
+                matchingItemsAction={operations.matchingAssignmentItemsAction}
                 volunteers={operations.bulkVolunteers}
                 primaryItem={{ id: item.id, date: item.date, endDate: item.endDate ?? null, title: getCalendarItemDisplayName(item), startTime: item.startTimeValue ?? null, endTime: item.endTimeValue ?? null }}
                 otherItems={assignmentItems.filter(candidate => candidate.id !== item.id)}
@@ -4144,6 +4148,7 @@ function getCalendarToday() {
 export default function CalendarClient({
   bulkAssignmentAction,
   assignmentContextAction,
+  matchingAssignmentItemsAction,
   readOnly = false,
   routeBase = "/admin/calendar",
   projectKey,
@@ -4169,6 +4174,7 @@ export default function CalendarClient({
 }: Readonly<{
   bulkAssignmentAction?: BulkAssignmentAction;
   assignmentContextAction?: PickerContextAction;
+  matchingAssignmentItemsAction?: (form: FormData) => Promise<MatchingAssignmentItemsState>;
   readOnly?: boolean;
   routeBase?: CalendarRouteBase;
   projectKey?: string;
@@ -4505,7 +4511,7 @@ export default function CalendarClient({
   };
 
   return (
-    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
+    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, matchingAssignmentItemsAction: !readOnly && isReady && state.canEditAssignments ? matchingAssignmentItemsAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={routeBase === "/qv"}
       active={routeBase === "/admin/quick-view" ? "quick-view" : "calendar"}
       destinations={isReady ? state.navigationDestinations : ["overview"]}

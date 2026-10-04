@@ -31,10 +31,10 @@ try {
     assert.equal(routeState().view, 'month');
     assert.equal(routeState().date, '2026-10-05');
 
-    const mealCell = page.locator('[data-calendar-month-cell="2026-10-05"]');
-    await mealCell.getByRole('button', { name: /Food-service shift/ }).click();
+    const workCell = page.locator('[data-calendar-month-cell="2026-10-05"]');
+    await workCell.getByRole('button', { name: /Site preparation/ }).click();
     await page.getByRole('dialog', { name: 'Calendar item inspector' }).waitFor();
-    assert.equal(routeState().item, '22222222-2222-4222-8222-000000000003');
+    assert.equal(routeState().item, '22222222-2222-4222-8222-000000000001');
     assert.equal(routeState().pathname, base);
     await page.getByRole('dialog', { name: 'Calendar item inspector' }).getByRole('button', { name: 'Close calendar item inspector', exact: true }).click();
 

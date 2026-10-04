@@ -986,6 +986,9 @@ async function verifyBulkPlannerRoundTrip(page, inspector, selectedIndexes, labe
   await assertNoHorizontalOverflow(page, `${label} bulk planner`);
   await writeAssignmentPickerCapture(page, `${label.toLowerCase()}-bulk-assignment-planner.png`);
   await assertDialogFocusContainment(page, inspector, `${label} bulk planner`, await page.evaluate(() => window.innerWidth < 640));
+  await planner.getByRole("checkbox", { name: "Also assign on other dates" }).check();
+  await planner.getByRole("heading", { name: "January 2026" }).waitFor();
+  await planner.getByRole("checkbox", { name: "Also assign on other dates" }).uncheck();
   const itemId = fixture.calendarItemIds.gate;
   const activeCount = () => runPsql(container, `select count(*) from public.calendar_assignments where calendar_item_id='${itemId}' and lifecycle='active';`);
   const existingResponse = () => runPsql(container, `select to_jsonb(r) from public.assignment_responses r where assignment_id='${fixture.assignmentIds.gate}';`);
