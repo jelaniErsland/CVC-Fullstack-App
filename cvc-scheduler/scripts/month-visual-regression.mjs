@@ -56,14 +56,19 @@ const denseMonthItems = [
     ['2026-10-20','Electrical Demo','violet',3,4],
     ['2026-10-20','Gate Attendant','blue',3,3],
     ['2026-10-22','Window Framing','teal',2,4],
+    ['2026-10-23','Community Materials Intake and Safety Check','slate',1,3],
+    ['2026-10-23','Gate Attendant','blue',2,3],
+    ['2026-10-23','General Help','emerald',3,5],
+    ['2026-10-23','Night Watch','indigo',1,2],
+    ['2026-10-23','Materials Sorting','yellow',2,3],
     ['2026-10-26','Site Safety Briefing','slate',4,4],
     ['2026-10-29','Kitchen Attendant AM','orange',2,3],
   ] as const).map(([date,title,colorKey,filledCount,neededCount],index)=>({
     ...items[2],id:'77777777-7777-4777-8777-'+String(index+1).padStart(12,'0'),
     date,displayName:title,colorKey,filledCount,neededCount,
     oneOffTask:{...items[2].oneOffTask,name:title,neededCount},
-    startTimeValue:index%3===0?'07:30':index%3===1?'09:00':'13:00',
-    startTime:index%3===0?'7:30 AM':index%3===1?'9:00 AM':'1:00 PM',
+    startTimeValue:title.startsWith('Community Materials')?'06:00':index%3===0?'07:30':index%3===1?'09:00':'13:00',
+    startTime:title.startsWith('Community Materials')?'6:00 AM':index%3===0?'7:30 AM':index%3===1?'9:00 AM':'1:00 PM',
     endTimeValue:index%3===0?'11:30':index%3===1?'12:00':'17:00',
     endTime:index%3===0?'11:30 AM':index%3===1?'12:00 PM':'5:00 PM',
     publicationState:index===21?'draft':'published',
@@ -89,7 +94,7 @@ async function waitForServer() { for (let n = 0; n < 90; n++) { try { if ((await
 const browser = await chromium.launch({ headless: true, executablePath: resolvePreviewBrowserExecutable() });
 try {
   await waitForServer();
-  for (const width of [1440, 1024]) {
+  for (const width of [1440, 1024, 1920]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
     const page = await context.newPage();
     const errors = [];
@@ -116,7 +121,16 @@ try {
     await rowShot('2026-10-05', 'overflow');
     if (phase === 'after') {
       const buttons = cell('2026-10-05').getByRole('button', { name: /volunteers|Headcount|Draft awaiting review/ });
-      assert((await buttons.count()) <= 2, 'dense days show only two readable event rows');
+      const expectedCapacity = width === 1024 ? 2 : width === 1440 ? 3 : 4;
+      assert.equal(Number(await cell('2026-10-05').getAttribute('data-calendar-month-capacity')), expectedCapacity, `${width}px Month capacity`);
+      assert.equal(await buttons.count(), expectedCapacity, `${width}px dense day shows its readable event capacity`);
+      const cellHeight = (await cell('2026-10-05').boundingBox()).height;
+      assert(cellHeight <= 145, `${width}px Month cell keeps its existing height (measured ${cellHeight}px)`);
+      assert.equal(Number(await cell('2026-10-23').getAttribute('data-calendar-month-capacity')), width === 1920 ? 3 : 2, `${width}px long title reduces capacity rather than truncating`);
+      if (width !== 1024) {
+        const longTitle = await cell('2026-10-23').getByRole('button', { name: /Community Materials Intake and Safety Check/ }).locator('[data-calendar-month-title]').evaluate(element => ({ height: element.scrollHeight, visibleHeight: element.clientHeight }));
+        assert(longTitle.height <= longTitle.visibleHeight + 1, `${width}px long title remains readable`);
+      }
       for (const [date, name] of [['2026-10-05', 'Kitchen Attendant AM'], ['2026-10-05', 'General Help'], ['2026-10-07', 'Kitchen Attendant PM'], ['2026-10-08', 'Electrical Demo'], ['2026-10-09', 'Gate Attendant']]) {
         const title = await cell(date).getByRole('button', { name: new RegExp(name) }).locator('[data-calendar-month-title]').evaluate(element => ({ width: element.scrollWidth, client: element.clientWidth, height: element.scrollHeight, visibleHeight: element.clientHeight }));
         assert(title.width <= title.client + 1 && title.height <= title.visibleHeight + 1, `${name} is fully readable at ${width}px`);

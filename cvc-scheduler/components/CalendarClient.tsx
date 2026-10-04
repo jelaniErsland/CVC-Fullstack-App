@@ -1733,7 +1733,16 @@ function deriveCalendarMonthDates(referenceDate: string) {
   });
 }
 
-const monthDesktopVisibleItemLimit = 2;
+function getMonthVisibleItemLimit(cellWidth: number, items: CalendarItemWithPreset[]) {
+  if (cellWidth < 160) return 2;
+  const availableTitleWidth = cellWidth - 36;
+  const titlesFit = (count: number, lines: number) => items.slice(0, count).every(item =>
+    `${getCalendarItemDisplayName(item)}${isDraftCalendarItem(item) ? " · Draft" : ""}`.length * 7 <= availableTitleWidth * lines,
+  );
+  // Reserve room for staffing counts. Four rows use one line each; three use two.
+  if (cellWidth >= 230 && titlesFit(4, 1)) return 4;
+  return titlesFit(3, 2) ? 3 : 2;
+}
 
 function MonthView({
   items,
@@ -1763,7 +1772,18 @@ function MonthView({
   const dates = deriveCalendarMonthDates(referenceDate);
   const reference = new Date(`${referenceDate}T00:00:00Z`);
   const agendaRef = useRef<HTMLElement>(null);
+  const monthGridRef = useRef<HTMLDivElement>(null);
+  const [monthCellWidth, setMonthCellWidth] = useState(0);
   const agendaHeadingId = useId();
+  useEffect(() => {
+    const grid = monthGridRef.current;
+    if (!grid) return;
+    const updateWidth = () => setMonthCellWidth(Math.floor(grid.getBoundingClientRect().width / 7));
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, []);
   const selectedDayItems = items.filter(item => doesCalendarItemOccurOnDate(item, referenceDate))
     .map(enrichCalendarClientItem)
     .sort((first, second) => {
@@ -1844,7 +1864,7 @@ function MonthView({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7" data-calendar-arrow-group="month-dates">
+      <div className="grid grid-cols-7" data-calendar-arrow-group="month-dates" ref={monthGridRef}>
         {dates.map((date, dateIndex) => {
           const dateItems = items
             .filter((item) => doesCalendarItemOccurOnDate(item, date))
@@ -1852,10 +1872,8 @@ function MonthView({
             .sort((first, second) => getCalendarItemStartMinutes(first) - getCalendarItemStartMinutes(second)
               || getCalendarItemDisplayName(first).localeCompare(getCalendarItemDisplayName(second))
               || first.id.localeCompare(second.id));
-          const desktopOverflowCount = Math.max(
-            dateItems.length - monthDesktopVisibleItemLimit,
-            0,
-          );
+          const visibleItemLimit = getMonthVisibleItemLimit(monthCellWidth, dateItems);
+          const desktopOverflowCount = Math.max(dateItems.length - visibleItemLimit, 0);
           const inMonth =
             new Date(`${date}T00:00:00Z`).getUTCMonth() === reference.getUTCMonth();
 
@@ -1866,6 +1884,7 @@ function MonthView({
                 inMonth ? "bg-white/24" : "bg-slate-50/42 opacity-45",
               ].join(" ")}
               data-calendar-month-cell={date}
+              data-calendar-month-capacity={visibleItemLimit}
               key={date}
             >
               {!readOnly ? <button
@@ -1885,22 +1904,23 @@ function MonthView({
                 }
                 type="button"
               /> : null}
-              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36 sm:p-1.5">
+              <div className="pointer-events-none relative z-10 flex min-h-24 flex-col p-1 sm:min-h-36">
                 <button
                   aria-label={getCalendarDayViewActionLabel(date)}
-                  className={`pointer-events-auto inline-flex size-6 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
+                  className={`pointer-events-auto inline-flex size-5 items-center justify-center self-start rounded-md text-[10px] font-semibold leading-3 text-slate-500 transition hover:bg-blue-50 hover:text-[var(--pl-blue)] hover:underline focus-visible:underline sm:text-xs sm:leading-4 ${calmFocusRing}`}
                   onClick={() => { cancelPendingClick(); onFocusDate(date); }}
                   title="Open Day view"
                   type="button"
                 >
                   {Number(date.slice(-2))}
                 </button>
-                <div className="mt-1 space-y-1">
-                  {dateItems.slice(0, monthDesktopVisibleItemLimit).map((item) => (
+                <div className="mt-0.5 space-y-0.5">
+                  {dateItems.slice(0, visibleItemLimit).map((item) => (
                     <button
                       aria-label={getCalendarItemAccessibleLabel(item)}
                       className={[
-                        "pointer-events-auto grid h-[42px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5 overflow-hidden rounded-[5px] px-1 py-0.5 text-left transition hover:brightness-[0.96] focus-visible:relative focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-700 xl:h-9 xl:gap-1 xl:px-1.5",
+                        "pointer-events-auto grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-0.5 overflow-hidden rounded-[5px] px-1 text-left transition hover:brightness-[0.96] focus-visible:relative focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-700",
+                        visibleItemLimit === 4 ? "h-5" : visibleItemLimit === 3 ? "h-[28px]" : "h-[42px]",
                         selectedId === item.id
                           ? "ring-2 ring-inset ring-blue-700"
                           : "",
@@ -1910,14 +1930,14 @@ function MonthView({
                       style={getMonthCalendarEventColorStyle(item)}
                       type="button"
                     >
-                      <span className="min-w-0 line-clamp-3 break-words text-[11px] font-semibold leading-[13px] xl:line-clamp-2 xl:text-xs xl:leading-[14px]" data-calendar-month-title={item.id}>{getCalendarItemDisplayName(item)}{isDraftCalendarItem(item) ? <span className="font-medium opacity-70"> · Draft</span> : null}</span>
-                      <span aria-hidden="true" className="shrink-0 whitespace-nowrap text-[9px] font-medium tabular-nums opacity-90 xl:text-[10px]">{item.meal ? item.meal.total === null ? "—" : item.meal.total : getCalendarFilledLabel(item)}</span>
+                      <span className={`min-w-0 break-words font-semibold ${visibleItemLimit === 4 ? "line-clamp-1 text-xs leading-[14px]" : visibleItemLimit === 3 ? "line-clamp-2 text-xs leading-[14px]" : "line-clamp-3 text-[11px] leading-[13px]"}`} data-calendar-month-title={item.id}>{getCalendarItemDisplayName(item)}{isDraftCalendarItem(item) ? <span className="font-medium opacity-70"> · Draft</span> : null}</span>
+                      <span aria-hidden="true" className="shrink-0 whitespace-nowrap text-[9px] font-medium tabular-nums opacity-90">{item.meal ? item.meal.total === null ? "—" : item.meal.total : getCalendarFilledLabel(item)}</span>
                     </button>
                   ))}
                   {desktopOverflowCount > 0 ? (
                     <button
                       aria-label={`Switch to Day view for ${getCalendarCompactDayLabel(date)} to show ${desktopOverflowCount} more calendar item${desktopOverflowCount === 1 ? "" : "s"}`}
-                      className={`pointer-events-auto hidden text-[11px] font-semibold text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
+                      className={`pointer-events-auto hidden text-[11px] font-semibold leading-[14px] text-slate-400 transition hover:text-slate-700 sm:inline-flex ${calmFocusRing}`}
                       onClick={() => { cancelPendingClick(); onFocusDate(date); }}
                       type="button"
                     >
