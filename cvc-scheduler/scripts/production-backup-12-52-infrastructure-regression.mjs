@@ -35,6 +35,11 @@ for (const scenario of ['WrongCurrent', 'Duplicate', 'Enabled', 'Running', 'Queu
 assert.match(fixture('HardenConsoleLaunch', current, current), /mutation_performed=false/);
 fixture('HardenConsoleLaunch', current, current, false, 'WrongCurrent');
 fixture('HardenConsoleLaunch', current, current, false, 'Running');
+assert.match(fixture('ConfigureExecutionContext', current, current), /source=Interactive target=S4U.*mutation_performed=false/);
+for (const scenario of ['WrongCurrent', 'Running', 'Queued', 'UnexpectedTaskIdentity']) {
+  fixture('ConfigureExecutionContext', current, current, false, scenario);
+}
+fixture('ConfigureExecutionContext', '20260930130000', '20260930130000', false);
 
 const source = readFileSync(backup, 'utf8');
 const progress = spawnSync('powershell', [
@@ -43,7 +48,7 @@ const progress = spawnSync('powershell', [
 ], { encoding: 'utf8', windowsHide: true });
 assert.equal(progress.status, 0, `${progress.stdout}\n${progress.stderr}`);
 assert.match(progress.stdout, /fixture_safe_progress_journal_ok/);
-for (const marker of ['psql_preflight', 'dump_$Label', 'packaging', 'encryption', 'partialLocalArtifactExists', 'partialEncryptedArtifactExists', 'elapsedSeconds', 'exitCode']) {
+for (const marker of ['psql_preflight', 'dump_$Label', 'packaging', 'encryption', 'partialLocalArtifactExists', 'partialEncryptedArtifactExists', 'elapsedSeconds', 'exitCode', 'sessionId', 'userInteractive']) {
   assert.ok(source.includes(marker), `Missing safe backup progress marker: ${marker}`);
 }
-console.log('PASS 12.52 infrastructure: exact 48 -> 49 only, wrong/skip/unknown/current-state rejection, safe console hardening fixture, stage diagnostics.');
+console.log('PASS 12.52 infrastructure: exact 48 -> 49 only, S4U context fixture and refusal cases, safe console hardening fixture, stage diagnostics.');

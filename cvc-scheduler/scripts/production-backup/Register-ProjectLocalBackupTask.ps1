@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "ValidateExpectedMigrationTransition", "UpdateExpectedMigration", "HardenConsoleLaunch")]
+  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "ValidateExpectedMigrationTransition", "UpdateExpectedMigration", "HardenConsoleLaunch", "ConfigureExecutionContext")]
   [string]$Action = "Inspect",
   [switch]$ConfirmTaskAction,
   [switch]$FixtureMode,
@@ -131,13 +131,27 @@ function Get-HardenedConsoleArguments {
 function Test-ManagedTaskContract {
   param(
     [Parameter(Mandatory = $true)]$Task,
-    [string]$ExpectedMigrationLock = $ExpectedMigration
+    [string]$ExpectedMigrationLock = $ExpectedMigration,
+    [ValidateSet('Current', 'LegacyInteractive')][string]$ExpectedContext = 'Current'
   )
   $actions = @($Task.Actions)
   $triggers = @($Task.Triggers)
   if ($actions.Count -ne 1) { return $false }
   $arguments = [string]$actions[0].Arguments
   $migrationLocks = @(Get-ExpectedMigrationArgumentValues -Arguments $arguments)
+  $contextMatches = if ($ExpectedContext -ceq 'LegacyInteractive') {
+    [string]$Task.Principal.LogonType -ceq 'Interactive' -and
+    -not [bool]$Task.Settings.WakeToRun -and
+    [string]::IsNullOrWhiteSpace([string]$actions[0].WorkingDirectory)
+  } else {
+    [string]$Task.Principal.LogonType -ceq 'S4U' -and
+    [bool]$Task.Settings.WakeToRun -and
+    -not [bool]$Task.Settings.DisallowStartIfOnBatteries -and
+    -not [bool]$Task.Settings.StopIfGoingOnBatteries -and
+    -not [bool]$Task.Settings.RunOnlyIfIdle -and
+    -not [string]::IsNullOrWhiteSpace([string]$actions[0].WorkingDirectory) -and
+    [IO.Path]::GetFullPath([string]$actions[0].WorkingDirectory).Equals($RepositoryRoot, [StringComparison]::OrdinalIgnoreCase)
+  }
   return (
     [System.IO.Path]::GetFileName([string]$actions[0].Execute) -ieq "powershell.exe" -and
     $arguments -like "*Invoke-ProjectLocalProductionBackup.ps1*" -and
@@ -153,7 +167,7 @@ function Test-ManagedTaskContract {
     $triggers[0].CimClass.CimClassName -eq "MSFT_TaskDailyTrigger" -and
     ([datetime]$triggers[0].StartBoundary).ToString("HH:mm") -eq "03:15" -and
     [bool]$Task.Settings.StartWhenAvailable -and
-    [string]$Task.Principal.LogonType -eq "Interactive" -and
+    $contextMatches -and
     [string]$Task.Principal.RunLevel -eq "Limited" -and
     (Test-IsCurrentOperatorIdentity -Candidate ([string]$Task.Principal.UserId))
   )
@@ -250,6 +264,13 @@ function Get-SafeTaskMetadata {
     TriggerLocalTime = if ($triggers.Count -eq 1) { ([datetime]$triggers[0].StartBoundary).ToString("HH:mm") } else { $null }
     NextRunTime = $taskInfo.NextRunTime
     StartWhenAvailable = [bool]$Task.Settings.StartWhenAvailable
+    WakeToRun = [bool]$Task.Settings.WakeToRun
+    DisallowStartIfOnBatteries = [bool]$Task.Settings.DisallowStartIfOnBatteries
+    StopIfGoingOnBatteries = [bool]$Task.Settings.StopIfGoingOnBatteries
+    RunOnlyIfIdle = [bool]$Task.Settings.RunOnlyIfIdle
+    ExecutionTimeLimit = [string]$Task.Settings.ExecutionTimeLimit
+    MultipleInstances = [string]$Task.Settings.MultipleInstances
+    ActionWorkingDirectory = if ($actions.Count -eq 1) { [string]$actions[0].WorkingDirectory } else { $null }
     LogonType = [string]$Task.Principal.LogonType
     RunAsIdentityClassification = if (Test-IsCurrentOperatorIdentity -Candidate ([string]$Task.Principal.UserId)) { "current_operator" } else { "unexpected" }
     ExecutableIdentity = if ($actions.Count -eq 1 -and [System.IO.Path]::GetFileName([string]$actions[0].Execute) -ieq "powershell.exe") { "powershell.exe" } else { "unexpected" }
@@ -266,6 +287,20 @@ if ($env:OS -ne 'Windows_NT') {
 }
 
 if ($FixtureMode) {
+  if ($Action -ceq 'ConfigureExecutionContext') {
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+    if ($CurrentExpectedMigration -cne '20261001120000') {
+      throw 'Execution-context change is restricted to the reviewed migration-48 lock.'
+    }
+    if ($FixtureScenario -ceq 'Running' -or $FixtureScenario -ceq 'Queued') {
+      throw 'Execution-context change requires the enabled, idle production backup task.'
+    }
+    if ($FixtureScenario -ceq 'WrongCurrent' -or $FixtureScenario -ceq 'UnexpectedTaskIdentity') {
+      throw 'Execution-context change requires the exact migration-48 production task.'
+    }
+    Write-Host 'fixture_backup_execution_context_ok source=Interactive target=S4U lock=20261001120000 mutation_performed=false'
+    return
+  }
   if ($Action -ceq "HardenConsoleLaunch") {
     $fixtureArguments = "-NoProfile -ExecutionPolicy Bypass -File `"Synthetic-Invoke-ProjectLocalProductionBackup.ps1`" -ExpectedMigration `"$CurrentExpectedMigration`""
     if ($FixtureScenario -ceq 'WrongCurrent') { $fixtureArguments = $fixtureArguments.Replace($CurrentExpectedMigration, '20260930130000') }
@@ -359,6 +394,44 @@ if ($Action -eq "ValidateExpectedMigrationTransition") {
 Assert-ExplicitAction
 
 switch ($Action) {
+  'ConfigureExecutionContext' {
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+    if ($CurrentExpectedMigration -cne '20261001120000') {
+      throw 'Execution-context change is restricted to the reviewed migration-48 lock.'
+    }
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ([string]$task.State -ne 'Ready' -or -not [bool]$task.Settings.Enabled) {
+      throw 'Execution-context change requires the enabled, idle production backup task.'
+    }
+    if (-not (Test-ManagedTaskContract -Task $task -ExpectedMigrationLock $CurrentExpectedMigration -ExpectedContext LegacyInteractive)) {
+      throw 'Refusing to change an unexpected scheduled task.'
+    }
+    $oldPrincipal = $task.Principal
+    $oldSettings = $task.Settings
+    $oldAction = @($task.Actions)[0]
+    $newPrincipal = New-ScheduledTaskPrincipal -UserId ([string]$oldPrincipal.UserId) -LogonType S4U -RunLevel Limited
+    $newSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+    $newAction = New-ScheduledTaskAction -Execute ([string]$oldAction.Execute) -Argument ([string]$oldAction.Arguments) -WorkingDirectory $RepositoryRoot
+    $changed = $false
+    try {
+      Set-ScheduledTask -TaskName $TaskName -Principal $newPrincipal -Settings $newSettings -Action $newAction | Out-Null
+      $changed = $true
+      $verified = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+      if (-not (Test-ManagedTaskContract -Task $verified -ExpectedMigrationLock $CurrentExpectedMigration) -or
+          [string]$verified.State -ne 'Ready' -or -not [bool]$verified.Settings.Enabled -or
+          [string]@($verified.Actions)[0].Execute -cne [string]$oldAction.Execute -or
+          [string]@($verified.Actions)[0].Arguments -cne [string]$oldAction.Arguments -or
+          [string]$verified.Settings.ExecutionTimeLimit -cne [string]$oldSettings.ExecutionTimeLimit -or
+          [string]$verified.Settings.MultipleInstances -cne [string]$oldSettings.MultipleInstances) {
+        throw 'Execution-context change did not retain the reviewed task contract.'
+      }
+    } catch {
+      if ($changed) {
+        Set-ScheduledTask -TaskName $TaskName -Principal $oldPrincipal -Settings $oldSettings -Action $oldAction | Out-Null
+      }
+      throw
+    }
+  }
   "HardenConsoleLaunch" {
     Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
@@ -388,10 +461,10 @@ switch ($Action) {
     }
     Assert-RegistrationContract
     $trigger = New-ScheduledTaskTrigger -Daily -At $DailyTime
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2)
-    $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument (Get-TaskActionArgument)
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -WakeToRun -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -DontStopOnIdleEnd -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+    $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument (Get-TaskActionArgument) -WorkingDirectory $RepositoryRoot
     $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
+    $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType S4U -RunLevel Limited
     Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Description "Project Local encrypted production backup. No database credential or age private identity is embedded in arguments." | Out-Null
   }
   "Enable" {

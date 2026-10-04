@@ -14,6 +14,7 @@ param(
   [string]$ExpectedMigration,
   [string]$AgeRecipient,
   [string]$DestinationRoot,
+  [string]$DiagnosticDirectory,
   [string]$SecretPath,
   [string]$RetentionRoot,
   [int]$DailyRetention = 14,
@@ -78,6 +79,13 @@ function Assert-SafeTarget {
     if ($ExecuteProductionBackup) {
       Assert-ProjectLocalBackupRunnableMigration -Migration $ExpectedMigration
     }
+  }
+  if (-not [string]::IsNullOrWhiteSpace($DiagnosticDirectory)) {
+    if (-not $ExecuteProductionBackup -or $NotifyOnFailure -or [string]::IsNullOrWhiteSpace($DestinationRoot) -or
+        -not (Test-IsSubPath -Child $DiagnosticDirectory -Parent $DestinationRoot)) {
+      throw 'A separate diagnostic directory requires an explicit no-notification backup destination.'
+    }
+    Assert-NotRepositoryPath -Path $DiagnosticDirectory -Label 'diagnostic directory'
   }
 }
 
@@ -165,6 +173,8 @@ function Write-SafeProgress {
     elapsedSeconds = [Math]::Round($script:BackupStopwatch.Elapsed.TotalSeconds, 2)
     partialLocalArtifactExists = $localArtifactExists
     partialEncryptedArtifactExists = $partialExists
+    sessionId = [System.Diagnostics.Process]::GetCurrentProcess().SessionId
+    userInteractive = [Environment]::UserInteractive
   }
   New-Item -ItemType Directory -Path $script:BackupProgressDirectory -Force | Out-Null
   $path = Join-Path $script:BackupProgressDirectory 'latest-progress.json'
@@ -1727,7 +1737,7 @@ if ($ExecuteProductionPreflight) {
 
 Assert-AgeRecipient -Recipient $AgeRecipient
 
-$script:BackupProgressDirectory = Join-Path $env:LOCALAPPDATA 'ProjectLocal\ProductionBackup\diagnostics'
+$script:BackupProgressDirectory = if ($DiagnosticDirectory) { [System.IO.Path]::GetFullPath($DiagnosticDirectory) } else { Join-Path $env:LOCALAPPDATA 'ProjectLocal\ProductionBackup\diagnostics' }
 Assert-NotRepositoryPath -Path $script:BackupProgressDirectory -Label 'diagnostic directory'
 $script:BackupStopwatch.Start()
 Write-SafeProgress -Stage 'starting'
