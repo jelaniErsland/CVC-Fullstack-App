@@ -151,7 +151,7 @@ The repository does not register the task automatically. Use explicit operator a
   -DestinationRoot "$env:OneDrive\Project Local Backups\production"
 ```
 
-The reviewed task runs daily at `03:15` local time under the current Windows operator using an Interactive, limited principal with `StartWhenAvailable`. The operator must be logged in. If the PC is asleep, powered off, or logged out at `03:15`, the task waits until Task Scheduler next has an awake/available interactive session after wake or login. If the PC is awake/logged in but offline, the task starts and its connection preflight fails safely/notifies; reconnecting does not itself retry that failed run. Do not embed database credentials, decrypted secrets, or private age identities in task arguments.
+The reviewed task runs daily at `03:15` local time under the current Windows operator using an Interactive, limited principal with `StartWhenAvailable`. It launches PowerShell with a hidden, noninteractive console. The operator must be logged in. The task currently has `WakeToRun=false`, so it cannot wake the PC. If the start is missed because the PC is asleep, powered off, or logged out, Task Scheduler may start it after wake or login; the October 2 and 3 history confirms this catch-up behavior, but a catch-up is not a successful backup. A logged-out session cannot run this Interactive task. If the PC is awake/logged in but offline, the connection preflight fails safely; reconnecting does not itself retry that failed run. Do not embed database credentials, decrypted secrets, or private age identities in task arguments.
 
 ## Retention
 
@@ -165,6 +165,8 @@ Retention deletes only recognized Project Local encrypted backup artifacts. It m
 ## Status and failure review
 
 The backup script writes a credential-free `latest-status.json` outside the repository. It may include success/failure, UTC timestamp, encrypted filename, encrypted byte size, SHA-256 checksum, and safe failure code.
+
+It also writes a credential-free `latest-progress.json` under the current operator's `%LOCALAPPDATA%\ProjectLocal\ProductionBackup\diagnostics`. This records the last stage, child-process label and exit code when available, elapsed seconds, and booleans indicating partial local or encrypted artifacts. If Windows terminates PowerShell before its failure handler runs, inspect this progress file alongside Task Scheduler history; the last recorded stage is evidence of where execution stopped, not proof that a completed backup exists.
 
 It must not include raw exception text, SQL, connection values, credentials, local usernames, full sensitive paths, or database contents.
 

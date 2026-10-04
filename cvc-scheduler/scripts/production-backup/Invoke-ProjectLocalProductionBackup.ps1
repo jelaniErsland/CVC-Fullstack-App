@@ -2,7 +2,7 @@ param(
   [switch]$ExecuteProductionBackup,
   [switch]$ExecuteProductionPreflight,
   [switch]$FixtureMode,
-  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightMealSystemPresetExpected", "MigrationPreflightConcurrentAdminSafetyExpected", "MigrationPreflightVolunteerProfileExpansionExpected", "MigrationPreflightVolunteerExperiencePolishExpected", "MigrationPreflight1247Sequence", "MigrationPreflightTaskDetailsSequence", "TaskDetailsRecoveryPackage", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightMealSystemPresetTransitionPending", "MigrationPreflightConcurrentAdminSafetyTransitionPending", "MigrationPreflightVolunteerProfileExpansionTransitionPending", "MigrationPreflightVolunteerExperiencePolishTransitionPending", "MigrationPreflightMealSystemPresetWrongOldLock", "MigrationPreflightMealSystemPresetLockAhead", "MigrationPreflightMealSystemPresetSkipped", "MigrationPreflightMealSystemPresetArbitraryFuture", "MigrationPreflightMealSystemPresetMalformed", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
+  [ValidateSet("GuardMissingOptIn", "GuardStagingRef", "GuardProductionMigrationContract", "GuardRepoDestination", "GuardMissingRecipient", "GuardMissingSecret", "GuardMalformedSecret", "ValidateConnectionUrl", "Retention", "CleanupAfterFailure", "StatusRedaction", "SafeProgressJournal", "SafeInjectedFailure", "MigrationPreflightExpected", "MigrationPreflightFutureExpected", "MigrationPreflightPrivilegeHardeningExpected", "MigrationPreflightOperationalUsabilityExpected", "MigrationPreflightOperationalUsabilityPrivilegeHardeningExpected", "MigrationPreflightVolunteerLookupExpected", "MigrationPreflightSystemicFunctionPrivilegeExpected", "MigrationPreflightOnSiteFoodExpected", "MigrationPreflightMealSystemPresetExpected", "MigrationPreflightConcurrentAdminSafetyExpected", "MigrationPreflightVolunteerProfileExpansionExpected", "MigrationPreflightVolunteerExperiencePolishExpected", "MigrationPreflight1247Sequence", "MigrationPreflightTaskDetailsSequence", "TaskDetailsRecoveryPackage", "MigrationPreflightTransitionPending", "MigrationPreflightPrivilegeHardeningTransitionPending", "MigrationPreflightOperationalUsabilityTransitionPending", "MigrationPreflightOperationalUsabilityPrivilegeHardeningTransitionPending", "MigrationPreflightVolunteerLookupTransitionPending", "MigrationPreflightSystemicFunctionPrivilegeTransitionPending", "MigrationPreflightOnSiteFoodTransitionPending", "MigrationPreflightMealSystemPresetTransitionPending", "MigrationPreflightConcurrentAdminSafetyTransitionPending", "MigrationPreflightVolunteerProfileExpansionTransitionPending", "MigrationPreflightVolunteerExperiencePolishTransitionPending", "MigrationPreflightMealSystemPresetWrongOldLock", "MigrationPreflightMealSystemPresetLockAhead", "MigrationPreflightMealSystemPresetSkipped", "MigrationPreflightMealSystemPresetArbitraryFuture", "MigrationPreflightMealSystemPresetMalformed", "MigrationPreflightPartialProjectDay", "MigrationPreflightPartialAnonRevoke", "MigrationPreflightWrong", "MigrationPreflightMissing", "MigrationPreflightMalformed", "MigrationPreflightQueryFailure", "MigrationPreflightLoopback", "NativeDumpPackageLoopback", "NativeDumpConnectionFailure", "NativeDumpAuthenticationFailure", "NativeDumpLaunchFailure")]
   [string]$FixtureScenario,
   [string]$FixtureConnectionUrl,
   [string]$FixturePgDumpPath,
@@ -34,6 +34,12 @@ $ExpectedProjectName = "project-local-production"
 $ExpectedProjectRef = "wdlaauzknfggoqldolmx"
 $ForbiddenStagingRef = "kfuujcfxoayukywvtaeh"
 $BackupFormatVersion = "project-local.logical-backup.v1"
+$script:BackupProgressDirectory = $null
+$script:BackupPartialPath = $null
+$script:BackupWorkRoot = $null
+$script:BackupChildProcess = ''
+$script:BackupChildExitCode = $null
+$script:BackupStopwatch = [System.Diagnostics.Stopwatch]::new()
 . (Join-Path $ScriptRoot "ProjectLocalProductionMigrationContract.ps1")
 . (Join-Path $ScriptRoot "ProjectLocalProductionConnection.ps1")
 
@@ -130,6 +136,45 @@ function Write-SafeStatus {
     }
   }
   return $statusPath
+}
+
+function Write-SafeProgress {
+  param(
+    [Parameter(Mandatory = $true)][ValidatePattern('^[a-z0-9_]+$')][string]$Stage,
+    [string]$ChildProcess = '',
+    [Nullable[int]]$ExitCode = $null
+  )
+  if (-not $script:BackupProgressDirectory) { return }
+  if ($Stage -ceq 'child_running') {
+    $script:BackupChildProcess = $ChildProcess
+    $script:BackupChildExitCode = $null
+  } elseif ($Stage -ceq 'child_exited') {
+    $script:BackupChildProcess = $ChildProcess
+    $script:BackupChildExitCode = $ExitCode
+  }
+  $partialExists = [bool]($script:BackupPartialPath -and (Test-Path -LiteralPath $script:BackupPartialPath))
+  $localArtifactExists = [bool]($script:BackupWorkRoot -and (
+    (Test-Path -LiteralPath (Join-Path $script:BackupWorkRoot 'dump')) -or
+    @(Get-ChildItem -LiteralPath $script:BackupWorkRoot -Filter '*.zip' -File -ErrorAction SilentlyContinue).Count -gt 0
+  ))
+  $payload = [ordered]@{
+    utcTimestamp = (Get-Date).ToUniversalTime().ToString('o')
+    stage = $Stage
+    childProcess = $script:BackupChildProcess
+    exitCode = $script:BackupChildExitCode
+    elapsedSeconds = [Math]::Round($script:BackupStopwatch.Elapsed.TotalSeconds, 2)
+    partialLocalArtifactExists = $localArtifactExists
+    partialEncryptedArtifactExists = $partialExists
+  }
+  New-Item -ItemType Directory -Path $script:BackupProgressDirectory -Force | Out-Null
+  $path = Join-Path $script:BackupProgressDirectory 'latest-progress.json'
+  $temporary = "$path.$PID.tmp"
+  try {
+    [System.IO.File]::WriteAllText($temporary, ($payload | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
+    Move-Item -LiteralPath $temporary -Destination $path -Force
+  } finally {
+    if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
+  }
 }
 
 function Write-SafeNotificationStatus {
@@ -249,10 +294,12 @@ function Invoke-CheckedProcess {
   $process.StartInfo.RedirectStandardOutput = $true
   $process.StartInfo.RedirectStandardError = $true
   $process.StartInfo.UseShellExecute = $false
+  Write-SafeProgress -Stage 'child_running' -ChildProcess $SafeFailureCode
   [void]$process.Start()
   $out = $process.StandardOutput.ReadToEnd()
   $err = $process.StandardError.ReadToEnd()
   $process.WaitForExit()
+  Write-SafeProgress -Stage 'child_exited' -ChildProcess $SafeFailureCode -ExitCode $process.ExitCode
   Set-Content -LiteralPath $stdout -Value $out -Encoding UTF8
   Set-Content -LiteralPath $stderr -Value $err -Encoding UTF8
   if ($process.ExitCode -ne 0) {
@@ -472,11 +519,13 @@ ROLLBACK;
     $process.StartInfo.EnvironmentVariables["PGPASSWORD"] = $password
     $process.StartInfo.EnvironmentVariables["PGSSLMODE"] = if ($AllowLoopbackFixture) { "disable" } else { "require" }
     $process.StartInfo.EnvironmentVariables["PGOPTIONS"] = "-c default_transaction_read_only=on"
+    Write-SafeProgress -Stage 'child_running' -ChildProcess 'psql_preflight'
     try {
       [void]$process.Start()
       $output = $process.StandardOutput.ReadToEnd()
       [void]$process.StandardError.ReadToEnd()
       $process.WaitForExit()
+      Write-SafeProgress -Stage 'child_exited' -ChildProcess 'psql_preflight' -ExitCode $process.ExitCode
       Assert-MigrationPreflightProcessResult `
         -ExitCode $process.ExitCode `
         -Output $output `
@@ -656,6 +705,7 @@ function Invoke-ProjectLocalNativeDumpProcess {
       -ArgumentList $ArgumentList `
       -StartInfo $process.StartInfo `
       -Password $Connection.Password
+    Write-SafeProgress -Stage 'child_running' -ChildProcess "dump_$Label"
     try {
       [void]$process.Start()
     } catch {
@@ -664,6 +714,7 @@ function Invoke-ProjectLocalNativeDumpProcess {
     $stdout = $process.StandardOutput.ReadToEnd()
     $stderr = $process.StandardError.ReadToEnd()
     $process.WaitForExit()
+    Write-SafeProgress -Stage 'child_exited' -ChildProcess "dump_$Label" -ExitCode $process.ExitCode
     if ($process.ExitCode -ne 0) {
       if ($stderr -match '(?i)(password authentication failed|authentication failed|no password supplied|connection to server .* failed|could not connect|connection refused|connection timed out|timeout expired|could not translate host name|server closed the connection unexpectedly)') {
         throw "dump_connection_or_authentication_failed_$Label"
@@ -977,6 +1028,24 @@ function Invoke-FixtureScenario {
         $text = Get-Content -LiteralPath $path -Raw
         if ($text -match "postgres://|password|service_role|eyJ|supabase.co") { throw "status_not_redacted" }
         "fixture_status_ok"
+        return
+      }
+      "SafeProgressJournal" {
+        $script:BackupProgressDirectory = Join-Path $tempRoot 'diagnostics'
+        $script:BackupWorkRoot = Join-Path $tempRoot 'work'
+        $script:BackupPartialPath = Join-Path $tempRoot 'partial.age'
+        $script:BackupStopwatch.Start()
+        New-Item -ItemType Directory -Path (Join-Path $script:BackupWorkRoot 'dump') -Force | Out-Null
+        Set-Content -LiteralPath $script:BackupPartialPath -Value 'FICTIONAL-PARTIAL' -Encoding UTF8
+        Write-SafeProgress -Stage 'child_running' -ChildProcess 'dump_roles'
+        Write-SafeProgress -Stage 'child_exited' -ChildProcess 'dump_roles' -ExitCode 130
+        $progress = Get-Content -LiteralPath (Join-Path $script:BackupProgressDirectory 'latest-progress.json') -Raw | ConvertFrom-Json
+        if ($progress.stage -cne 'child_exited' -or $progress.childProcess -cne 'dump_roles' -or
+            $progress.exitCode -ne 130 -or -not $progress.partialLocalArtifactExists -or
+            -not $progress.partialEncryptedArtifactExists -or $progress.elapsedSeconds -lt 0) {
+          throw 'safe_progress_fixture_failed'
+        }
+        'fixture_safe_progress_journal_ok'
         return
       }
       "SafeInjectedFailure" {
@@ -1658,6 +1727,11 @@ if ($ExecuteProductionPreflight) {
 
 Assert-AgeRecipient -Recipient $AgeRecipient
 
+$script:BackupProgressDirectory = Join-Path $env:LOCALAPPDATA 'ProjectLocal\ProductionBackup\diagnostics'
+Assert-NotRepositoryPath -Path $script:BackupProgressDirectory -Label 'diagnostic directory'
+$script:BackupStopwatch.Start()
+Write-SafeProgress -Stage 'starting'
+
 $destination = Resolve-DefaultDestinationRoot
 $dailyDestination = Join-Path $destination "daily"
 $weeklyDestination = Join-Path $destination "weekly"
@@ -1672,12 +1746,14 @@ $pgDump = $null
 $pgDumpAll = $null
 $dbUrl = $null
 $workRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("project-local-production-backup-" + [guid]::NewGuid().ToString("N"))
+$script:BackupWorkRoot = $workRoot
 $partialPath = $null
 $archivePath = $null
 $safeFailureCode = "backup_failed"
 
 try {
   New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
+  Write-SafeProgress -Stage 'dependency_preflight'
   $safeFailureCode = "dependency_preflight_failed"
   $age = Get-Command "age" -ErrorAction Stop
   $psql = Get-Command "psql" -ErrorAction Stop
@@ -1685,8 +1761,10 @@ try {
   try { $pgDumpAll = Get-Command "pg_dumpall" -ErrorAction Stop } catch { throw "dump_executable_unavailable_pg_dumpall" }
 
   $safeFailureCode = "secret_validation_failed"
+  Write-SafeProgress -Stage 'secret_validation'
   $dbUrl = Read-SecretUrl
   $safeFailureCode = "migration_preflight_failed"
+  Write-SafeProgress -Stage 'migration_preflight'
   Invoke-ProjectLocalMigrationPreflight `
     -PsqlPath $psql.Source `
     -ConnectionUrl $dbUrl `
@@ -1694,6 +1772,7 @@ try {
     -ExpectedMigrationVersion $ExpectedMigration
   $dumpDir = Join-Path $workRoot "dump"
   $safeFailureCode = "logical_dump_failed"
+  Write-SafeProgress -Stage 'logical_dump'
   Invoke-ProjectLocalNativeDumpPackage `
     -PgDumpPath $pgDump.Source `
     -PgDumpAllPath $pgDumpAll.Source `
@@ -1709,6 +1788,7 @@ try {
     -ManifestMigration $ExpectedMigration `
     -MigrationPreflightStatus "passed" `
     -AgeVersion (& $age.Source --version 2>$null)
+  Write-SafeProgress -Stage 'packaging'
 
   $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
   $nonce = [guid]::NewGuid().ToString("N").Substring(0, 8)
@@ -1723,9 +1803,11 @@ try {
 
   $finalPath = Join-Path $dailyDestination "$baseName.age"
   $partialPath = "$finalPath.partial"
+  $script:BackupPartialPath = $partialPath
   if (Test-Path -LiteralPath $partialPath) { Remove-Item -LiteralPath $partialPath -Force }
 
   $safeFailureCode = "encryption_failed"
+  Write-SafeProgress -Stage 'encryption'
   Invoke-CheckedProcess -FilePath $age.Source -WorkingDirectory $workRoot -SafeFailureCode "age_encrypt" -ArgumentList @("-r", $AgeRecipient, "-o", $partialPath, $archivePath)
   $header = Get-Content -LiteralPath $partialPath -TotalCount 1
   if ($header -notlike "age-encryption.org/v1*") { throw "encrypted_artifact_not_age" }
@@ -1734,6 +1816,8 @@ try {
   $hash = Get-Sha256Hex -Path $partialPath
   Move-Item -LiteralPath $partialPath -Destination $finalPath -Force
   $partialPath = $null
+  $script:BackupPartialPath = $null
+  Write-SafeProgress -Stage 'encrypted_artifact_complete'
 
   if ((Get-Date).DayOfWeek.ToString() -eq $WeeklyPromotionDay) {
     Copy-Item -LiteralPath $finalPath -Destination (Join-Path $weeklyDestination (Split-Path -Leaf $finalPath)) -Force
@@ -1749,8 +1833,10 @@ try {
     sha256 = $hash
     safeFailureCode = $null
   })
+  Write-SafeProgress -Stage 'success'
   exit 0
 } catch {
+  Write-SafeProgress -Stage $safeFailureCode
   if ($_.Exception.Message -match "^migration_preflight_(?:query_failed|output_invalid|history_missing|history_invalid|mismatch|target_invalid)$") {
     $safeFailureCode = $_.Exception.Message
   } elseif ($_.Exception.Message -match "^dump_(?:target_invalid|fixture_target_invalid|argument_audit_fixture_only|argument_secret_detected_[a-z0-9_]+|executable_unavailable_[a-z0-9_]+|process_launch_failed_[a-z0-9_]+|connection_or_authentication_failed_[a-z0-9_]+|process_failed_[a-z0-9_]+|output_missing_[a-z0-9_]+|output_empty_[a-z0-9_]+|package_construction_failed_[a-z0-9_]+)$") {

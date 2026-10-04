@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "ValidateExpectedMigrationTransition", "UpdateExpectedMigration")]
+  [ValidateSet("Register", "Inspect", "Enable", "Disable", "Unregister", "ValidateExpectedMigrationTransition", "UpdateExpectedMigration", "HardenConsoleLaunch")]
   [string]$Action = "Inspect",
   [switch]$ConfirmTaskAction,
   [switch]$FixtureMode,
@@ -39,6 +39,8 @@ function Assert-ExplicitAction {
 function Get-TaskActionArgument {
   $arguments = @(
     "-NoProfile",
+    "-NonInteractive",
+    "-WindowStyle", "Hidden",
     "-ExecutionPolicy", "Bypass",
     "-File", "`"$BackupScript`"",
     "-ExecuteProductionBackup",
@@ -113,6 +115,17 @@ function Get-ExpectedMigrationArgumentValues {
       else { $_.Groups[3].Value }
     }
   )
+}
+
+function Get-HardenedConsoleArguments {
+  param([Parameter(Mandatory = $true)][string]$Arguments, [Parameter(Mandatory = $true)][string]$Migration)
+  $locks = @(Get-ExpectedMigrationArgumentValues -Arguments $Arguments)
+  if ($locks.Count -ne 1 -or $locks[0] -cne $Migration -or
+      -not $Arguments.StartsWith('-NoProfile -ExecutionPolicy Bypass -File ', [System.StringComparison]::Ordinal) -or
+      $Arguments -match '(?i)-WindowStyle|-NonInteractive') {
+    throw 'Console hardening requires one exact current lock and the reviewed unhardened action.'
+  }
+  return $Arguments.Replace('-NoProfile -ExecutionPolicy', '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy')
 }
 
 function Test-ManagedTaskContract {
@@ -253,6 +266,15 @@ if ($env:OS -ne 'Windows_NT') {
 }
 
 if ($FixtureMode) {
+  if ($Action -ceq "HardenConsoleLaunch") {
+    $fixtureArguments = "-NoProfile -ExecutionPolicy Bypass -File `"Synthetic-Invoke-ProjectLocalProductionBackup.ps1`" -ExpectedMigration `"$CurrentExpectedMigration`""
+    if ($FixtureScenario -ceq 'WrongCurrent') { $fixtureArguments = $fixtureArguments.Replace($CurrentExpectedMigration, '20260930130000') }
+    if ($FixtureScenario -ceq 'Running') { throw 'The production backup task must be idle before console hardening.' }
+    $updated = Get-HardenedConsoleArguments -Arguments $fixtureArguments -Migration $CurrentExpectedMigration
+    if ($updated -notmatch '-NonInteractive -WindowStyle Hidden') { throw 'Console hardening fixture failed.' }
+    Write-Host 'fixture_backup_console_hardening_ok mutation_performed=false'
+    return
+  }
   if ($Action -ceq "Enable") {
     $fixtureTaskName = if ($FixtureScenario -ceq "UnexpectedTaskIdentity") { "Unexpected Production Backup Task" } else { $TaskName }
     Assert-TransitionTaskIdentity -CandidateTaskName $fixtureTaskName
@@ -337,6 +359,28 @@ if ($Action -eq "ValidateExpectedMigrationTransition") {
 Assert-ExplicitAction
 
 switch ($Action) {
+  "HardenConsoleLaunch" {
+    Assert-TransitionTaskIdentity -CandidateTaskName $TaskName
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if ([string]$task.State -ne 'Ready' -or -not [bool]$task.Settings.Enabled) {
+      throw 'Console hardening requires the enabled, idle production backup task.'
+    }
+    if (-not (Test-ManagedTaskContract -Task $task -ExpectedMigrationLock $CurrentExpectedMigration)) {
+      throw 'Refusing to harden an unexpected scheduled task.'
+    }
+    $currentTaskAction = @($task.Actions)[0]
+    $updatedArguments = Get-HardenedConsoleArguments -Arguments ([string]$currentTaskAction.Arguments) -Migration $CurrentExpectedMigration
+    $parameters = @{ Execute = [string]$currentTaskAction.Execute; Argument = $updatedArguments }
+    if ($currentTaskAction.WorkingDirectory) { $parameters.WorkingDirectory = [string]$currentTaskAction.WorkingDirectory }
+    $updatedAction = New-ScheduledTaskAction @parameters
+    Set-ScheduledTask -TaskName $TaskName -Action $updatedAction | Out-Null
+    $verified = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    if (-not (Test-ManagedTaskContract -Task $verified -ExpectedMigrationLock $CurrentExpectedMigration) -or
+        ([string]@($verified.Actions)[0].Arguments -cne $updatedArguments)) {
+      Set-ScheduledTask -TaskName $TaskName -Action $currentTaskAction | Out-Null
+      throw 'Console hardening verification failed; original action restored.'
+    }
+  }
   "Register" {
     $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($existing) {
