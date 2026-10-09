@@ -6,15 +6,16 @@ import {
   readCalendarReadModelWithClient,
   type CalendarReadModelQueryClient,
 } from "../calendar/readModelQuery.server.ts";
+import type { CalendarReadModelItem } from "../calendar/readModel.server.ts";
 import { dateInWorkspaceTimezone, selectOverviewWorkspaceContext } from "../overview/routeRead.server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
 import {
   addNeedsAttentionDays,
   deriveNeedsAttentionSignals,
-  NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS,
   type NeedsAttentionSummary,
 } from "./derive.server.ts";
+import { groupAttentionIssues, type AttentionIssue } from "./issues.ts";
 
 type NeedsAttentionSeenReader = {
   from: (table: "needs_attention_seen_states") => {
@@ -25,6 +26,31 @@ type NeedsAttentionSeenReader = {
     };
   };
 };
+function chunks<T>(values: readonly T[], size: number) { const result: T[][] = []; for (let start = 0; start < values.length; start += size) result.push(values.slice(start, start + size)); return result; }
+async function readIssueVolunteerSearch(client: AppSupabaseClient, workspaceId: string, itemIds: readonly string[], allowed: boolean) {
+  const searchByItem = new Map<string, string>();
+  const peopleByAssignment = new Map<string, { name: string; congregation: string | null }>();
+  if (!allowed || itemIds.length === 0) return { searchByItem, peopleByAssignment, available: allowed };
+  try {
+    const assignmentResults = await Promise.all(chunks(itemIds, 100).map(ids => client.from("calendar_assignments")
+      .select("id,calendar_item_id,volunteer_profile_id")
+      .eq("workspace_id", workspaceId).eq("lifecycle", "active").in("calendar_item_id", ids)));
+    if (assignmentResults.some(result => result.error)) return { searchByItem, peopleByAssignment, available: false };
+    const assignments = assignmentResults.flatMap(result => result.data ?? []);
+    const volunteerIds = [...new Set(assignments.map(row => row.volunteer_profile_id).filter((id): id is string => typeof id === "string"))];
+    const volunteerResults = await Promise.all(chunks(volunteerIds, 100).map(ids => client.from("volunteer_profiles")
+      .select("id,full_name,congregation").eq("workspace_id", workspaceId).in("id", ids)));
+    if (volunteerResults.some(result => result.error)) return { searchByItem, peopleByAssignment, available: false };
+    const volunteers = new Map(volunteerResults.flatMap(result => result.data ?? []).map(row => [row.id, { name: row.full_name, congregation: row.congregation }]));
+    for (const row of assignments) {
+      const person = volunteers.get(row.volunteer_profile_id);
+      if (!person || typeof person.name !== "string") continue;
+      peopleByAssignment.set(row.id, { name: person.name, congregation: typeof person.congregation === "string" ? person.congregation : null });
+      searchByItem.set(row.calendar_item_id, `${searchByItem.get(row.calendar_item_id) ?? ""} ${person.name} ${person.congregation ?? ""}`);
+    }
+  } catch { return { searchByItem, peopleByAssignment, available: false }; }
+  return { searchByItem, peopleByAssignment, available: true };
+}
 
 export const NEEDS_ATTENTION_PERSISTED_CUTOVER_IMPLEMENTED = true;
 export const NEEDS_ATTENTION_MOCK_FALLBACK_ALLOWED = false;
@@ -46,8 +72,14 @@ export type NeedsAttentionReadyRouteState = Readonly<{
   today: string;
   summary: NeedsAttentionSummary;
   workspaceId: string;
+  projectContactId: string;
+  workspaceEndsOn: string | null;
   unseenSignalIds: readonly string[];
   unseenSignalCount: number;
+  reviewedSignalIds: readonly string[];
+  issues: readonly AttentionIssue[];
+  issueCount: number;
+  canSearchVolunteers: boolean;
 }>;
 
 export type NeedsAttentionRouteState =
@@ -105,20 +137,30 @@ async function readNeedsAttentionCalendar(
   rangeStart: string,
   rangeEnd: string,
 ) {
-  return readCalendarReadModelWithClient({
-    client: client as unknown as CalendarReadModelQueryClient,
-    workspaceId: workspace.id,
-    actorContactId: projectContactId,
-    workspaceTimezone: workspace.timezone,
-    rangeStart,
-    rangeEnd,
-    periodKind: "list",
-    capabilities: ["calendar.view", "assignments.view"],
-  });
+  // The Calendar read model accepts at most 93 days per request. Read the
+  // project's future in bounded windows and deduplicate overnight overlaps.
+  const items = new Map<string, CalendarReadModelItem>();
+  for (let start = rangeStart; start < rangeEnd; start = addNeedsAttentionDays(start, 90)) {
+    const end = [addNeedsAttentionDays(start, 90), rangeEnd].sort()[0];
+    const page = await readCalendarReadModelWithClient({
+      client: client as unknown as CalendarReadModelQueryClient,
+      workspaceId: workspace.id,
+      actorContactId: projectContactId,
+      workspaceTimezone: workspace.timezone,
+      rangeStart: start,
+      rangeEnd: end,
+      periodKind: "list",
+      capabilities: ["calendar.view", "assignments.view"],
+    });
+    if (!page.ok) return page;
+    for (const item of page.items) items.set(item.calendarItemId, item);
+  }
+  return { ok: true as const, items: [...items.values()] };
 }
 
 export async function readNeedsAttentionRouteState(
   at = new Date(),
+  options: Readonly<{ includeVolunteerSearch?: boolean; horizonDays?: 14 }> = {},
 ): Promise<NeedsAttentionRouteState> {
   try {
     const context = await readNeedsAttentionRouteContext(at);
@@ -131,7 +173,12 @@ export async function readNeedsAttentionRouteState(
     }
 
     const today = dateInWorkspaceTimezone(at, context.workspace.timezone);
-    const rangeEnd = addNeedsAttentionDays(today, NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS);
+    const projectRangeEnd = context.workspace.endsOn && context.workspace.endsOn >= today
+      ? addNeedsAttentionDays(context.workspace.endsOn, 1)
+      : addNeedsAttentionDays(today, 90);
+    const rangeEnd = options.horizonDays === 14
+      ? [projectRangeEnd, addNeedsAttentionDays(today, 15)].sort()[0]
+      : projectRangeEnd;
     const calendar = await readNeedsAttentionCalendar(
       context.supabase,
       context.workspace,
@@ -150,24 +197,39 @@ export async function readNeedsAttentionRouteState(
     const summary = deriveNeedsAttentionSignals(calendar.items, {
       at,
       workspaceTimezone: context.workspace.timezone,
+      coverageWindowDays: Math.max(0, Math.ceil((Date.parse(`${rangeEnd}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)),
+      responseWindowDays: Math.max(0, Math.ceil((Date.parse(`${rangeEnd}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)),
     });
     const seenResult = await (context.supabase as unknown as NeedsAttentionSeenReader)
       .from("needs_attention_seen_states")
       .select("signal_id")
       .eq("workspace_id", context.workspace.id)
       .eq("project_contact_id", context.projectContactId);
-    const seen = new Set<string>((seenResult.data ?? []).map((row: { signal_id: string }) => row.signal_id));
-    const unseenSignalIds = summary.signals.filter((signal) => !seen.has(signal.id)).map((signal) => signal.id);
+    // Earlier releases automatically wrote bare signal IDs when the inbox was
+    // opened. Only explicitly reviewed IDs may remove an issue from Active.
+    const reviewed = new Set<string>((seenResult.data ?? [])
+      .map((row: { signal_id: string }) => row.signal_id)
+      .filter(id => id.startsWith("reviewed:"))
+      .map(id => id.slice("reviewed:".length)));
+    const unseenSignalIds = summary.signals.filter((signal) => !reviewed.has(signal.id)).map((signal) => signal.id);
+    const volunteerSearch = await readIssueVolunteerSearch(context.supabase, context.workspace.id, [...new Set(summary.signals.map(signal => signal.calendarItemId))], options.includeVolunteerSearch !== false && context.capabilities.includes("volunteers.view"));
+    const issues = groupAttentionIssues(summary.signals, reviewed, volunteerSearch.searchByItem, volunteerSearch.peopleByAssignment);
     return {
       kind: "ready",
       workspaceName: context.workspace.displayName,
       navigationDestinations: adminDestinations(context.capabilities),
       workspaceId: context.workspace.id,
+      projectContactId: context.projectContactId,
+      workspaceEndsOn: context.workspace.endsOn,
       workspaceTimezone: context.workspace.timezone,
       today,
       summary,
       unseenSignalIds,
       unseenSignalCount: unseenSignalIds.length,
+      reviewedSignalIds: [...reviewed],
+      issues,
+      issueCount: issues.length,
+      canSearchVolunteers: volunteerSearch.available,
     };
   } catch {
     return {
@@ -187,6 +249,6 @@ export function describeNeedsAttentionCutover() {
     getMutationAvailable: NEEDS_ATTENTION_GET_MUTATION_AVAILABLE,
     persistenceAvailable: NEEDS_ATTENTION_PERSISTENCE_AVAILABLE,
     requiredCapabilities: NEEDS_ATTENTION_REQUIRED_CAPABILITIES,
-    responseWindowDays: NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS,
+    responseWindowDays: 90,
   };
 }

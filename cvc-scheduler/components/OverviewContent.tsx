@@ -1,71 +1,45 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, CircleAlert } from "lucide-react";
-import { Button } from "./Button";
+import { ArrowRight, CalendarDays, ClipboardList, Mail, UserPlus, UsersRound } from "lucide-react";
 import { PageHeader } from "./PageHeader";
-import { Panel, SectionHeader } from "./Panel";
-import { EmptyState } from "./EmptyState";
+import { Panel } from "./Panel";
 import { ProjectPhotoEditor } from "./ProjectPhotoEditor";
-import { StatusBadge } from "./StatusBadge";
 import { ldcProjectName } from "@/lib/projectIdentity";
 import type { ProjectPhoto } from "@/lib/projectPhoto/photo";
 import type { OverviewReadyRouteState, OverviewUpcomingItem } from "@/lib/overview/routeRead.server";
 
-function displayDate(date: string, timezone: string) {
-  return new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short", month: "short", day: "numeric" }).format(new Date(`${date}T12:00:00.000Z`));
-}
-function time(time: string | null) {
-  if (!time) return "All day";
-  const [h, m] = time.split(":"); const hour = Number(h);
-  return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
-}
-function Timing({ item }: { item: Pick<OverviewUpcomingItem, "startDate" | "endDate" | "startTime" | "endTime" | "timezone"> }) {
-  return <span className="flex flex-wrap gap-x-2 gap-y-0.5">
-    <span>{displayDate(item.startDate, item.timezone)}{item.endDate && item.endDate !== item.startDate ? ` – ${displayDate(item.endDate, item.timezone)}` : ""}</span>
-    <span>{time(item.startTime)}{item.startTime && item.endTime ? ` – ${time(item.endTime)}` : ""}</span>
-  </span>;
-}
-const sectionLink = "inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[var(--pl-blue)] hover:underline";
+const support = ["general", "food", "security"] as const;
+const supportLabel = { general: "General", food: "Food", security: "Security" };
+const focus = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pl-blue)] focus-visible:ring-offset-2";
+function dateLabel(date: string, timezone: string) { return new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short", month: "short", day: "numeric" }).format(new Date(`${date}T12:00:00Z`)); }
+function timeLabel(time: string | null) { if (!time) return "All day"; const [h, m] = time.split(":"); const hour = Number(h); return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`; }
+function itemTiming(item: OverviewUpcomingItem) { return `${dateLabel(item.startDate, item.timezone)} · ${timeLabel(item.startTime)}${item.startTime && item.endTime ? `–${timeLabel(item.endTime)}` : ""}${item.endDate && item.endDate !== item.startDate ? ` · through ${dateLabel(item.endDate, item.timezone)}` : ""}`; }
+function countLine(count: number, singular: string, plural = `${singular}s`) { return count ? `${count} ${count === 1 ? singular : plural}` : null; }
 
-export function OverviewContent({ state, photo, canEditPhoto, attentionCount, attentionTruncated }: {
-  state: OverviewReadyRouteState; photo: ProjectPhoto; canEditPhoto: boolean; attentionCount?: number; attentionTruncated?: boolean;
-}) {
+export function OverviewContent({ state, photo, canEditPhoto }: { state: OverviewReadyRouteState; photo: ProjectPhoto; canEditPhoto: boolean }) {
   const calendar = state.calendar?.kind === "ready" ? state.calendar.value : null;
-  const dates = [state.workspaceStartsOn, state.workspaceEndsOn].filter((d): d is string => !!d);
-  const range = dates.map(d => displayDate(d, state.workspaceTimezone)).join(" – ");
-  return <div className="mx-auto max-w-[1280px] space-y-4 sm:space-y-6">
-    <PageHeader title="Overview" context={range ? <span>Project dates · {range}</span> : undefined} primaryAction={state.createTask ? <Button href="/admin/tasks?create=1">New task</Button> : undefined} />
-    {photo.asset_id && <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit={canEditPhoto} compact />}
-    {!photo.asset_id && <section aria-label="Project identity" className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3"><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-[var(--pl-muted)]">Current project</p><h2 className="break-words text-base font-semibold text-[var(--pl-ink)] sm:text-lg">{ldcProjectName(state.workspaceName)}</h2></div>{canEditPhoto && <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit compact />}</section>}
-    {state.isEmpty && state.calendar?.kind !== "unavailable" && state.tasks?.kind !== "unavailable" && state.volunteers?.kind !== "unavailable" ? <EmptyState title="No project work to show yet" message="Use the task library and Calendar to plan the next work." /> : null}
-    <div className="grid items-start gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr))]">
-      {state.calendar && <Panel aria-label="Review summary">
-        <SectionHeader title="To review" description="Next seven days" action={<Link className={sectionLink} href={`/admin/calendar?view=week&date=${state.today}`}>Review week<ArrowRight aria-hidden className="size-4" /></Link>} />
-        {!!attentionCount && <Link className="flex min-h-14 items-center justify-between gap-3 border-b border-blue-100 bg-blue-50/60 px-4 py-3 text-sm font-semibold text-blue-800 sm:px-6" href="/admin/needs-attention">
-          <span>{attentionTruncated ? "Follow-ups need review" : `${attentionCount} ${attentionCount === 1 ? "follow-up needs" : "follow-ups need"} review`}</span><ArrowRight aria-hidden className="size-4 shrink-0" />
-        </Link>}
-        {!calendar ? <p className="p-4 text-sm leading-6 text-[var(--pl-muted)] sm:p-6">Review information is temporarily unavailable. Try refreshing the page.</p> : calendar.reviewSignals.length ? <div className="divide-y divide-[var(--pl-border)]">
-          {calendar.reviewSignals.map((signal, index) => <Link key={signal.id} href={signal.href} className={`${index >= 2 ? "hidden sm:flex" : "flex"} items-start gap-3 px-4 py-3 hover:bg-[var(--pl-surface-subtle)] sm:px-6 sm:py-4`}>
-            <span className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg ${signal.kind === "denied" ? "bg-red-50 text-red-800" : signal.kind === "unfilled" ? "bg-amber-50 text-amber-900" : "bg-blue-50 text-blue-800"}`}>
-              {signal.kind === "denied" ? <CircleAlert aria-hidden className="size-[18px]" /> : <Clock3 aria-hidden className="size-[18px]" />}
-            </span>
-            <span className="min-w-0 flex-1"><span className="pl-row-title block break-words">{signal.title}</span>
-              {signal.startDate && <span className="pl-metadata mt-1 block"><Timing item={{ startDate: signal.startDate, endDate: signal.endDate ?? null, startTime: signal.startTime ?? null, endTime: signal.endTime ?? null, timezone: signal.timezone ?? state.workspaceTimezone }} /></span>}
-              <span className="mt-1 block text-sm text-[var(--pl-text)]">{signal.message}{signal.itemCount && signal.itemCount > 1 ? ` · ${signal.itemCount} matching items` : ""}</span>
-            </span><ArrowRight aria-hidden className="mt-1 size-4 shrink-0 text-[var(--pl-muted)]" />
-          </Link>)}
-        </div> : <p className="p-4 text-sm leading-6 text-[var(--pl-muted)] sm:p-6">No schedule review items in the next seven days.</p>}
-        {calendar && calendar.reviewSignals.length > 2 && <Link href="/admin/needs-attention" className="flex min-h-11 items-center gap-1.5 border-t border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-blue)] sm:hidden">View all follow-ups<ArrowRight aria-hidden className="size-4" /></Link>}
-      </Panel>}
-      {state.calendar && <Panel aria-label="Upcoming work">
-        <SectionHeader title="Next up" description="Next seven days" action={<Link href={`/admin/calendar?view=week&date=${state.today}`} className={sectionLink}>Open Calendar<ArrowRight aria-hidden className="size-4" /></Link>} />
-        {!calendar ? <p className="p-4 text-sm leading-6 text-[var(--pl-muted)] sm:p-6">Calendar details are temporarily unavailable. Try refreshing the page.</p> : calendar.upcomingItems.length ? <div className="divide-y divide-[var(--pl-border)]">
-          {calendar.upcomingItems.map(item => <Link key={item.id} href={item.href} className="block px-4 py-4 hover:bg-[var(--pl-surface-subtle)] sm:px-6">
-            <div className="pl-metadata"><Timing item={item} /></div>
-            <div className="mt-1 flex items-start justify-between gap-3"><p className="pl-row-title min-w-0 break-words">{item.title}{item.itemCount && item.itemCount > 1 ? ` · ${item.itemCount} items` : ""}</p><ArrowRight aria-hidden className="mt-1 size-4 shrink-0 text-[var(--pl-muted)]" /></div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">{item.publicationState === "draft" && <StatusBadge status="draft" />}<span className="text-sm text-[var(--pl-text)]">{item.mealSummary ?? item.assignedFractionLabel}</span></div>
-          </Link>)}
-        </div> : <p className="p-4 text-sm leading-6 text-[var(--pl-muted)] sm:p-6">No Calendar items are scheduled in the next seven days.</p>}
-      </Panel>}
+  const range = [state.workspaceStartsOn, state.workspaceEndsOn].filter((date): date is string => Boolean(date)).map(date => dateLabel(date, state.workspaceTimezone)).join(" – ");
+  const todayWork = calendar?.upcomingItems.filter(item => item.startDate === state.today) ?? [];
+  const nextWork = calendar?.upcomingItems.filter(item => item.startDate !== state.today) ?? [];
+  const kinds = calendar?.attentionKinds;
+  const summary = kinds ? [countLine(kinds.declined, "decline"), countLine(kinds.staffing, "understaffed item"), countLine(kinds.awaiting, "item awaiting response")].filter(Boolean).join(" · ") : "";
+  const nextSingleItem = calendar?.upcomingItems.find(item => !item.itemCount || item.itemCount === 1);
+  const quickActions = [
+    state.canEditCalendar ? { href: `/admin/calendar?view=week&date=${state.today}&create=1`, label: "Create Calendar item", icon: CalendarDays } : null,
+    state.canEditAssignments ? { href: nextSingleItem ? `/admin/calendar?view=day&date=${nextSingleItem.startDate}&item=${nextSingleItem.id}&section=volunteers` : `/admin/calendar?view=week&date=${state.today}`, label: "Assign volunteers", icon: UsersRound } : null,
+    state.canEditVolunteers ? { href: "/admin/volunteers", label: "Add volunteer", icon: UserPlus } : null,
+    state.canSendSchedules ? { href: "/admin/announcements?kind=schedule", label: "Send schedules", icon: Mail } : null,
+    { href: "/admin/needs-attention", label: "Needs Attention", icon: ClipboardList },
+  ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  return <div className="mx-auto max-w-[1180px] space-y-4 pb-6 sm:space-y-5">
+    <PageHeader title="Overview" context={range ? <span>Project dates · {range}</span> : undefined} />
+    {photo.asset_id ? <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit={canEditPhoto} compact /> : <section aria-label="Project identity" className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3"><div className="min-w-0"><p className="text-xs font-semibold text-[var(--pl-muted)]">Current project</p><h2 className="break-words text-base font-semibold text-[var(--pl-ink)]">{ldcProjectName(state.workspaceName)}</h2></div>{canEditPhoto && <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit compact />}</section>}
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,1fr)]">
+      <Panel aria-label="Today and next up" className="p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[var(--pl-blue)]">Today / Next up</p><h2 className="mt-1 text-lg font-semibold text-[var(--pl-ink)]">{calendar?.todayScheduledCount ? `${calendar.todayScheduledCount} ${calendar.todayScheduledCount === 1 ? "item" : "items"} today` : nextWork.length ? "Next scheduled work" : "No work in the next 7 days"}</h2></div><Link className={`shrink-0 text-xs font-semibold text-[var(--pl-blue)] hover:underline ${focus}`} href={`/admin/calendar?view=week&date=${state.today}`}>Calendar <ArrowRight aria-hidden className="inline size-3.5" /></Link></div>
+        {calendar ? <div className="mt-3 divide-y divide-[var(--pl-border)]">{[...todayWork, ...nextWork].slice(0, 3).map(item => <Link className={`block py-2.5 hover:bg-[var(--pl-surface-subtle)] ${focus}`} href={item.href} key={item.id}><p className="text-sm font-semibold text-[var(--pl-ink)]">{item.title}{item.itemCount && item.itemCount > 1 ? ` · ${item.itemCount} items` : ""}</p><p className="mt-0.5 text-xs text-[var(--pl-muted)]">{itemTiming(item)} · {item.mealSummary ?? item.assignedFractionLabel}{item.publicationState === "draft" ? " · Draft" : ""}</p></Link>)}{calendar.upcomingItems.length === 0 && <p className="py-3 text-sm text-[var(--pl-muted)]">Open Calendar to plan the next work.</p>}</div> : <p className="mt-3 text-sm text-[var(--pl-muted)]">Calendar activity is temporarily unavailable.</p>}</Panel>
+      <Panel aria-label="Needs Attention summary" className="p-4 sm:p-5"><p className="text-xs font-bold uppercase tracking-wide text-[var(--pl-blue)]">Needs Attention · next 7 days</p><h2 className="mt-1 text-2xl font-bold text-[var(--pl-ink)]">{calendar ? calendar.attentionIssueCount : "—"} <span className="text-base font-semibold">{calendar?.attentionIssueCount === 1 ? "issue" : "issues"}</span></h2><p className="mt-2 min-h-10 text-sm leading-5 text-[var(--pl-text)]">{summary || (calendar ? "No staffing or response follow-ups in the next week." : "Follow-ups are temporarily unavailable.")}</p><Link className={`mt-3 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[var(--pl-blue)] hover:underline ${focus}`} href="/admin/needs-attention?horizon=7">Open inbox <ArrowRight aria-hidden className="size-4" /></Link></Panel>
     </div>
+    <section aria-label="Support status"><div className="flex items-center justify-between gap-2"><h2 className="text-base font-semibold text-[var(--pl-ink)]">Support status</h2><p className="text-xs text-[var(--pl-muted)]">Next 7 days</p></div><div className="mt-2 grid gap-2 sm:grid-cols-3">{support.map(type => { const status = calendar?.supportStatus[type]; const lines = status ? [countLine(status.declined, "decline"), countLine(status.staffing, "understaffed item"), countLine(status.awaiting, "item awaiting response")].filter(Boolean) : []; return <Link className={`min-w-0 rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3 hover:border-blue-200 hover:bg-blue-50/40 ${focus}`} href={`/admin/needs-attention?support=${type}&horizon=7`} key={type}><span className="text-sm font-semibold text-[var(--pl-ink)]">{supportLabel[type]}</span><p className="mt-1 text-xs leading-5 text-[var(--pl-muted)]">{lines.length ? lines.join(" · ") : calendar ? "No follow-ups this week" : "Unavailable"}</p></Link>; })}</div></section>
+    <section aria-label="Quick actions"><h2 className="text-base font-semibold text-[var(--pl-ink)]">Quick actions</h2><div className="mt-2 flex flex-wrap gap-2">{quickActions.map(action => { const Icon = action.icon; return <Link className={`inline-flex min-h-10 items-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-3 text-sm font-semibold text-[var(--pl-text)] hover:bg-[var(--pl-surface-subtle)] ${focus}`} href={action.href} key={action.label}><Icon aria-hidden className="size-4 text-[var(--pl-blue)]" />{action.label}</Link>; })}</div></section>
+    {calendar && calendar.upcomingItems.length > 3 && <section aria-label="Upcoming work"><h2 className="text-base font-semibold text-[var(--pl-ink)]">Later this week</h2><div className="mt-2 grid gap-2 sm:grid-cols-3">{calendar.upcomingItems.slice(3, 6).map(item => <Link className={`rounded-xl border border-[var(--pl-border)] bg-white p-3 text-sm hover:bg-[var(--pl-surface-subtle)] ${focus}`} href={item.href} key={item.id}><p className="font-semibold text-[var(--pl-ink)]">{item.title}</p><p className="mt-1 text-xs text-[var(--pl-muted)]">{itemTiming(item)}</p></Link>)}</div></section>}
   </div>;
 }

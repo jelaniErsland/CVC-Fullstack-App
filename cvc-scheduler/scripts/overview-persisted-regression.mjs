@@ -223,6 +223,9 @@ assert.deepEqual(summary.upcomingItems.map((row) => row.title), [
   "Denied crew",
 ]);
 assert.equal(summary.scheduledCount, 4);
+assert.equal(summary.todayScheduledCount, 1);
+assert.equal(summary.attentionIssueCount, 3);
+assert.deepEqual(summary.attentionKinds, { declined: 1, staffing: 1, awaiting: 1 });
 assert.equal(summary.pendingResponseCount, 1);
 assert(summary.reviewSignals.every(signal => signal.startDate && signal.startTime && signal.timezone));
 const mealSummary = summarizeOverviewCalendar([item("meal", "Lunch", "2026-08-17", {
@@ -281,8 +284,7 @@ assert.match(pageSource, /readOverviewRouteState/);
 assert.match(routeSource, /readVerifiedAdminContext/);
 assert.doesNotMatch(routeSource, /auth\.getUser\(\)|loadProjectContactGrantsWithClient|readAuthenticatedProjectContactIdWithClient/);
 assert.match(routeSource, /readCalendarReadModelWithClient/);
-assert.match(routeSource, /readTaskPresetsWithClient/);
-assert.match(routeSource, /readVolunteerProfilesWithClient/);
+assert.doesNotMatch(routeSource, /readTaskPresetsWithClient|readVolunteerProfilesWithClient/, "Overview only needs the bounded Calendar projection.");
 assert.doesNotMatch(`${pageSource}\n${routeSource}`, /mockData|mock Calendar|mock Needs Attention/i);
 assert.doesNotMatch(`${pageSource}\n${routeSource}`, /SUPABASE_SERVICE_ROLE_KEY|createServiceRole/i);
 assert.doesNotMatch(routeSource, /\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.rpc\(/i);

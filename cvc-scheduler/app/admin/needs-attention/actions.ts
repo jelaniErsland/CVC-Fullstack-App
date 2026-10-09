@@ -1,6 +1,8 @@
 "use server";
 
 import { readNeedsAttentionRouteState } from "@/lib/needsAttention/routeRead.server";
+import { defaultAdminViews } from "@/lib/adminViews/preferences";
+import { filterAttentionIssues } from "@/lib/needsAttention/issues";
 
 type NeedsAttentionSeenWriter = {
   rpc: (
@@ -10,12 +12,12 @@ type NeedsAttentionSeenWriter = {
 };
 
 export async function getNeedsAttentionUnseenCountAction() {
-  const state = await readNeedsAttentionRouteState();
-  return state.kind === "ready" ? state.unseenSignalCount : 0;
+  const state = await readNeedsAttentionRouteState(new Date(), { includeVolunteerSearch: false, horizonDays: 14 });
+  return state.kind === "ready" ? filterAttentionIssues(state.issues, defaultAdminViews.attention, state.today).length : 0;
 }
 
 export async function markNeedsAttentionSignalsSeenAction(workspaceId: string, signalIds: readonly string[]) {
-  if (!/^[0-9a-f-]{36}$/i.test(workspaceId) || signalIds.length > 100) return false;
+  if (!/^[0-9a-f-]{36}$/i.test(workspaceId) || signalIds.length > 100 || signalIds.some(id => !/^[0-9a-f-]{36}:(coverage|pending|denied)$/i.test(id))) return false;
   const { readVerifiedAdminContext } = await import("@/lib/auth/verified-admin-context.server");
   const context = await readVerifiedAdminContext();
   if (!context) return false;
@@ -24,7 +26,7 @@ export async function markNeedsAttentionSignalsSeenAction(workspaceId: string, s
     signalIds.map((signalId) =>
       supabase.rpc("mark_needs_attention_signal_seen", {
         p_workspace_id: workspaceId,
-        p_signal_id: signalId,
+        p_signal_id: `reviewed:${signalId}`,
       }),
     ),
   );

@@ -275,7 +275,7 @@ assert.equal(
 );
 
 const bounded = deriveNeedsAttentionSignals(
-  Array.from({ length: 120 }, (_, index) =>
+  Array.from({ length: 420 }, (_, index) =>
     item(
       `00000000-0000-4000-8${String(index).padStart(3, "0")}-000000000000`,
       `Bounded ${index}`,
@@ -290,10 +290,10 @@ const bounded = deriveNeedsAttentionSignals(
   { at, workspaceTimezone: "America/Denver" },
 );
 assert.equal(bounded.signals.length, NEEDS_ATTENTION_SIGNAL_LIMIT);
-assert.equal(bounded.totalCandidateCount, 120);
+assert.equal(bounded.totalCandidateCount, 420);
 assert.equal(bounded.truncated, true);
 
-const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource, packageSource, migrationSource, actionSource, trackerSource] =
+const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource, packageSource, migrationSource, actionSource] =
   await Promise.all([
     readFile(path.join(root, "app", "admin", "needs-attention", "page.tsx"), "utf8"),
     readFile(path.join(root, "lib", "needsAttention", "routeRead.server.ts"), "utf8"),
@@ -304,7 +304,6 @@ const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource
     readFile(path.join(root, "package.json"), "utf8"),
     readFile(path.join(root, "supabase", "migrations", "20260908130000_volunteer_lookup_last_name_and_attention_seen.sql"), "utf8"),
     readFile(path.join(root, "app", "admin", "needs-attention", "actions.ts"), "utf8"),
-    readFile(path.join(root, "components", "NeedsAttentionSeenTracker.tsx"), "utf8"),
   ]);
 const productSource = `${pageSource}\n${routeSource}\n${deriveSource}`;
 assert.match(pageSource, /export const dynamic = "force-dynamic"/);
@@ -318,11 +317,12 @@ assert.doesNotMatch(productSource, /SUPABASE_SERVICE_ROLE_KEY|createServiceRole/
 assert.doesNotMatch(productSource, /\.insert\(|\.update\(|\.delete\(|\.upsert\(/i);
 assert.doesNotMatch(productSource, /needs_attention_(items?|issues?)\b/i);
 assert.doesNotMatch(pageSource, /needs-attention\/\[itemId\]|\/admin\/needs-attention\/\$\{/i);
-assert.match(pageSource, /NeedsAttentionSeenTracker/);
-assert.match(pageSource, /unseenSignalIds\.has\(signal\.id\)/);
+assert.match(pageSource, /NeedsAttentionInbox/);
+assert.doesNotMatch(pageSource, /NeedsAttentionSeenTracker/);
 assert.match(actionSource, /mark_needs_attention_signal_seen/);
+assert.match(actionSource, /`reviewed:\$\{signalId\}`/, "Only explicit review writes should suppress an active issue.");
+assert.match(routeSource, /startsWith\("reviewed:"\)/, "Legacy auto-seen rows must remain distinct from reviewed issues.");
 assert.match(actionSource, /results\.every\(\(result\) => result\.error === null\)/);
-assert.match(trackerSource, /project-local:needs-attention-seen/);
 assert.match(migrationSource, /create policy needs_attention_seen_states_select_own/);
 assert.match(migrationSource, /contact\.auth_user_id = auth\.uid\(\)/);
 assert.match(migrationSource, /grant_row\.capabilities @> array\['workspace\.read','calendar\.view','assignments\.view'\]::text\[\]/);

@@ -6,7 +6,7 @@ export const NEEDS_ATTENTION_COVERAGE_WINDOW_DAYS = 14;
 export const NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS = 21;
 export const NEEDS_ATTENTION_SOON_WINDOW_DAYS = 7;
 export const NEEDS_ATTENTION_NEAR_WINDOW_HOURS = 48;
-export const NEEDS_ATTENTION_SIGNAL_LIMIT = 100;
+export const NEEDS_ATTENTION_SIGNAL_LIMIT = 400;
 
 export type NeedsAttentionSignalKind = "coverage" | "pending" | "denied";
 export type NeedsAttentionSignalGroup = "staffing" | "responses";
@@ -14,6 +14,8 @@ export type NeedsAttentionUrgency = "near" | "soon" | "upcoming";
 
 export type NeedsAttentionSignal = Readonly<{
   id: string;
+  calendarItemId: string;
+  supportType: "general" | "food" | "security";
   kind: NeedsAttentionSignalKind;
   group: NeedsAttentionSignalGroup;
   title: string;
@@ -149,8 +151,8 @@ function urgencyFor(startsAt: number, at: number): NeedsAttentionUrgency {
   return "upcoming";
 }
 
-function calendarHref(startDate: string) {
-  const params = new URLSearchParams({ view: "day", date: startDate });
+function calendarHref(startDate: string, itemId: string) {
+  const params = new URLSearchParams({ view: "day", date: startDate, item: itemId, section: "volunteers" });
   return `/admin/calendar?${params.toString()}`;
 }
 
@@ -188,6 +190,8 @@ function signal(
 
   return {
     id: `${item.calendarItemId}:${kind}`,
+    calendarItemId: item.calendarItemId,
+    supportType: item.displayType === "food" || item.displayType === "security" ? item.displayType : "general",
     kind,
     group: kind === "coverage" ? "staffing" : "responses",
     title: item.taskSourceLabel,
@@ -204,7 +208,7 @@ function signal(
     assignedCount: item.coverage.assignedCount,
     assignedFractionLabel: item.assignedFractionLabel,
     affectedAssignments,
-    href: calendarHref(item.startDate),
+    href: calendarHref(item.startDate, item.calendarItemId),
   };
 }
 
@@ -218,6 +222,8 @@ export function deriveNeedsAttentionSignals(
     at: Date;
     workspaceTimezone: string;
     limit?: number;
+    coverageWindowDays?: number;
+    responseWindowDays?: number;
   }>,
 ): NeedsAttentionSummary {
   const at = input.at.getTime();
@@ -251,7 +257,7 @@ export function deriveNeedsAttentionSignals(
     const remaining = startsAt - at;
 
     if (
-      remaining <= NEEDS_ATTENTION_COVERAGE_WINDOW_DAYS * dayMs &&
+      remaining <= (input.coverageWindowDays ?? NEEDS_ATTENTION_COVERAGE_WINDOW_DAYS) * dayMs &&
       item.neededCount > 0 &&
       item.coverage.unassignedCount > 0
     ) {
@@ -267,7 +273,7 @@ export function deriveNeedsAttentionSignals(
       );
     }
     if (
-      remaining <= NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS * dayMs &&
+      remaining <= (input.responseWindowDays ?? NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS) * dayMs &&
       item.coverage.waitingOnConfirmationCount > 0
     ) {
       candidates.push(
@@ -282,7 +288,7 @@ export function deriveNeedsAttentionSignals(
       );
     }
     if (
-      remaining <= NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS * dayMs &&
+      remaining <= (input.responseWindowDays ?? NEEDS_ATTENTION_RESPONSE_WINDOW_DAYS) * dayMs &&
       item.coverage.deniedCount > 0
     ) {
       candidates.push(

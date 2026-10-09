@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffectEvent, useLayoutEffect, useRef } from "react";
 
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
@@ -31,38 +31,43 @@ export function MobileOverlaySheet({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const restoreFrameRef = useRef<number | null>(null);
+  const closeFromEffect = useEffectEvent(onClose);
 
   useBodyScrollLock(open, "(max-width: 639px)");
   useFocusContainment(open, dialogRef);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       return;
     }
 
-    returnFocusRef.current =
+    // A development effect replay must not restore focus behind the still-open sheet.
+    if (restoreFrameRef.current !== null) window.cancelAnimationFrame(restoreFrameRef.current);
+    restoreFrameRef.current = null;
+    returnFocusRef.current ??=
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const frame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && window.matchMedia("(max-width: 639px)").matches) {
         event.preventDefault();
-        onClose();
+        closeFromEffect();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", handleKeyDown);
       const trigger = returnFocusRef.current;
-      window.requestAnimationFrame(() => {
+      restoreFrameRef.current = window.requestAnimationFrame(() => {
         if (trigger?.isConnected) {
           trigger.focus();
         }
+        restoreFrameRef.current = null;
       });
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;

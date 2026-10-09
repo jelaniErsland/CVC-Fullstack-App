@@ -26,12 +26,15 @@ import {
   type ReactNode,
   useActionState,
   useEffect,
+  useEffectEvent,
   useId,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAdminViewScope } from "@/lib/adminViews/scopeContext";
+import { useRememberedView } from "@/lib/adminViews/useRememberedView";
 import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
 import { calendarVolunteerDetail, calendarVolunteerFilterLabel, calendarVolunteerOptions, itemHasCalendarVolunteer, searchCalendarVolunteers, type CalendarVolunteerOption } from "@/lib/calendar/volunteerFilter";
 import Link from "next/link";
@@ -4252,9 +4255,14 @@ export default function CalendarClient({
   }, [state]);
   const activeView = state.view;
   const calendarAnchor = state.anchorDate;
-  const [filters, setFilters] = useState<CalendarFilterOptions>({});
+  const viewScope = useAdminViewScope();
+  const [rememberedView, setRememberedView, , viewHydrated] = useRememberedView("calendar", routeBase === "/admin/calendar" ? viewScope : null);
+  const scopeKey = viewScope ? `${viewScope.contactId}:${viewScope.workspaceId}` : null;
+  const openedCreateLink = useRef(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const filters = useMemo<CalendarFilterOptions>(() => ({ search: filterSearch, taskTypes: rememberedView.taskTypes, coverageStates: rememberedView.coverageStates }), [filterSearch, rememberedView.taskTypes, rememberedView.coverageStates]);
+  const setFilters = (next: CalendarFilterOptions) => { setFilterSearch(next.search ?? ""); setRememberedView(current => ({ ...current, taskTypes: next.taskTypes ?? [], coverageStates: next.coverageStates ?? [] })); };
   const [volunteerSelection, setVolunteerSelection] = useState<{ projectKey: string | undefined; workspaceName: string; volunteer: CalendarVolunteerOption; label: string } | null>(null);
-  const selectedVolunteer = volunteerSelection && isReady && volunteerSelection.projectKey === projectKey && volunteerSelection.workspaceName === state.workspaceName ? volunteerSelection.volunteer : null;
   const initialProjectDayDate = isReady ? readCalendarRouteDay(searchParams.get("day")) : undefined;
   // Legacy initial props bootstrap callers; URL changes remain authoritative afterwards.
   const bootstrapItemId = initialInspectorItemId ?? initialItemId;
@@ -4290,8 +4298,14 @@ export default function CalendarClient({
     routeBase === "/admin/calendar" && isReady && state.canViewVolunteers && state.assignmentPicker.kind === "ready"
       ? calendarVolunteerOptions(state.assignmentPicker.volunteers, state.assignmentPicker.assignments)
       : [], [routeBase, isReady, state]);
+  const selectedVolunteer = volunteerSelection && isReady && volunteerSelection.projectKey === projectKey && volunteerSelection.workspaceName === state.workspaceName
+    ? volunteerSelection.volunteer : volunteerOptions.find(option => option.id === rememberedView.volunteerId) ?? null;
+  useEffect(() => {
+    if (!viewHydrated || !isReady || !scopeKey || !rememberedView.view || rememberedView.view === activeView || searchParams.has("view") || searchParams.has("item") || searchParams.has("day")) return;
+    router.replace(calendarRouteHref({ routeBase, projectKey }, { view: rememberedView.view, date: calendarAnchor }));
+  }, [viewHydrated, isReady, scopeKey, rememberedView.view, activeView, searchParams, router, calendarAnchor, routeBase, projectKey]);
   const volunteerAssignmentsAvailable = isReady && state.assignmentPicker.kind === "ready";
-  const selectedVolunteerLabel = selectedVolunteer ? volunteerSelection?.label ?? selectedVolunteer.name : null;
+  const selectedVolunteerLabel = selectedVolunteer ? volunteerSelection?.label ?? calendarVolunteerFilterLabel(selectedVolunteer, volunteerOptions) : null;
   const filteredItems = useMemo(() => {
     const matchingItems = filterCalendarItems(allItems, filters);
     if (!selectedVolunteer) return matchingItems;
@@ -4490,12 +4504,14 @@ export default function CalendarClient({
   };
 
   const clearFilters = () => {
-    setFilters({});
+    setFilterSearch("");
     setVolunteerSelection(null);
+    setRememberedView(current => ({ ...current, taskTypes: [], coverageStates: [], volunteerId: null }));
   };
 
   const handleViewChange = (view: CalendarViewMode) => {
     closeCalendarSurface();
+    if (scopeKey) setRememberedView(current => ({ ...current, view }));
     navigate(buildCalendarRouteHref(view, calendarAnchor));
   };
 
@@ -4529,6 +4545,13 @@ export default function CalendarClient({
     closeCalendarSurface();
     router.replace(buildCalendarRouteHref("month", date), { scroll: false });
   };
+
+  const openOverviewCreate = useEffectEvent(() => handleCreateFromSlot({ date: calendarAnchor, label: getCalendarCompactDayLabel(calendarAnchor), contextLabel: "Started from Overview" }));
+  useEffect(() => {
+    if (openedCreateLink.current || routeBase !== "/admin/calendar" || searchParams.get("create") !== "1" || !isReady || !state.canEdit) return;
+    openedCreateLink.current = true;
+    openOverviewCreate();
+  }, [routeBase, searchParams, isReady, state]);
 
   return (
     <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, matchingAssignmentItemsAction: !readOnly && isReady && state.canEditAssignments ? matchingAssignmentItemsAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
@@ -4584,7 +4607,7 @@ export default function CalendarClient({
 
             <CalendarNotice notice={notice} />
 
-            <ActiveFilterBar filters={filters} onClear={clearFilters} onClearVolunteer={() => setVolunteerSelection(null)} selectedVolunteer={selectedVolunteer} selectedVolunteerLabel={selectedVolunteerLabel} />
+            <ActiveFilterBar filters={filters} onClear={clearFilters} onClearVolunteer={() => { setVolunteerSelection(null); setRememberedView(current => ({ ...current, volunteerId: null })); }} selectedVolunteer={selectedVolunteer} selectedVolunteerLabel={selectedVolunteerLabel} />
 
             <div className={
               selectedItem && activeSurface === "inspect"
@@ -4706,7 +4729,7 @@ export default function CalendarClient({
               onChange={setFilters}
               onClear={clearFilters}
               onClose={closeCalendarSurface}
-              onSelectVolunteer={(volunteer) => { if (isReady) setVolunteerSelection({ projectKey, workspaceName: state.workspaceName, volunteer, label: calendarVolunteerFilterLabel(volunteer, volunteerOptions) }); }}
+              onSelectVolunteer={(volunteer) => { if (isReady) { setVolunteerSelection({ projectKey, workspaceName: state.workspaceName, volunteer, label: calendarVolunteerFilterLabel(volunteer, volunteerOptions) }); setRememberedView(current => ({ ...current, volunteerId: volunteer.id })); } }}
               selectedVolunteer={selectedVolunteer}
               volunteerOptions={volunteerOptions}
             />

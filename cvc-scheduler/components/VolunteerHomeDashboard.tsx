@@ -64,7 +64,7 @@ export function VolunteerHomeDashboard({ name, projectName, assignments, upcomin
       </section>
       <aside className="grid min-w-0 gap-4 sm:grid-cols-2">
         <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4" aria-label="Lunch and weekly menu">
-          <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-emerald-800 text-white"><Utensils aria-hidden className="size-5" /></span><div><h2 className="font-semibold text-emerald-950">Lunch</h2><p className="text-xs text-emerald-800">{nextLunch ? dateLabel(nextLunch.date) : "Posted project meals"}</p></div></div>
+          <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-emerald-800 text-white"><Utensils aria-hidden className="size-5" /></span><div><h2 className="font-semibold text-emerald-950">Weekly lunch menu</h2><p className="text-xs text-emerald-800">{nextLunch ? dateLabel(nextLunch.date) : "Posted project meals"}</p></div></div>
           <p className="mt-3 whitespace-pre-wrap break-words text-sm font-medium text-emerald-950">{nextLunch ? nextLunch.menu || "Menu not posted yet." : "No upcoming lunch posted for this week."}</p>
           {nextLunch?.startTime && <p className="mt-2 text-xs text-emerald-900">{formatScheduleClockRange(nextLunch.startTime, nextLunch.endTime)}</p>}
           {nextLunch?.provider && <p className="mt-1 break-words text-xs text-emerald-900">{nextLunch.provider}</p>}

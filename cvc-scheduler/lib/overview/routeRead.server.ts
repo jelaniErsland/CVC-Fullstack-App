@@ -11,8 +11,6 @@ import {
 } from "../calendar/readModelQuery.server.ts";
 import type { CalendarReadModelItem } from "../calendar/readModel.server.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
-import { readTaskPresetsWithClient } from "../tasks/server.ts";
-import { readVolunteerProfilesWithClient } from "../volunteers/server.ts";
 import type { WorkspaceIdentity } from "../workspaces/identity.ts";
 
 export const OVERVIEW_PERSISTED_CUTOVER_IMPLEMENTED = true;
@@ -69,7 +67,11 @@ export type OverviewCalendarSummary = Readonly<{
   upcomingItems: readonly OverviewUpcomingItem[];
   reviewSignals: readonly OverviewReviewSignal[];
   scheduledCount: number;
+  todayScheduledCount: number;
   pendingResponseCount: number;
+  attentionIssueCount: number;
+  attentionKinds: Readonly<{ declined: number; staffing: number; awaiting: number }>;
+  supportStatus: Readonly<Record<"general" | "food" | "security", Readonly<{ declined: number; staffing: number; awaiting: number }>>>;
 }>;
 
 export type OverviewReadyRouteState = Readonly<{
@@ -81,11 +83,10 @@ export type OverviewReadyRouteState = Readonly<{
   workspaceEndsOn: string | null;
   today: string;
   calendar: OverviewModuleState<OverviewCalendarSummary>;
-  tasks: OverviewModuleState<Readonly<{ activeCount: number }>>;
-  volunteers: OverviewModuleState<Readonly<{ readyActiveCount: number }>>;
-  actions: readonly OverviewQuickAction[];
-  createTask?: boolean;
-  isEmpty: boolean;
+  canEditCalendar: boolean;
+  canEditAssignments: boolean;
+  canEditVolunteers: boolean;
+  canSendSchedules: boolean;
 }>;
 
 export type OverviewRouteState =
@@ -275,14 +276,38 @@ export function summarizeOverviewCalendar(
   }
   const reviewSignals = [...reviewGroups.values()].slice(0, OVERVIEW_REVIEW_SIGNAL_LIMIT);
 
+  const supportStatus = {
+    general: { declined: 0, staffing: 0, awaiting: 0 },
+    food: { declined: 0, staffing: 0, awaiting: 0 },
+    security: { declined: 0, staffing: 0, awaiting: 0 },
+  };
+  let attentionIssueCount = 0;
+  const attentionKinds = { declined: 0, staffing: 0, awaiting: 0 };
+  for (const item of relevant) {
+    if (item.publicationState !== "published" || item.lifecycle !== "active") continue;
+    const type = item.displayType === "food" || item.displayType === "security" ? item.displayType : "general";
+    const status = supportStatus[type];
+    const declined = item.coverage.deniedCount > 0;
+    const staffing = item.neededCount > 0 && item.coverage.unassignedCount > 0;
+    const awaiting = item.coverage.waitingOnConfirmationCount > 0;
+    if (declined || staffing || awaiting) attentionIssueCount += 1;
+    if (declined) { status.declined += 1; attentionKinds.declined += 1; }
+    if (staffing) { status.staffing += 1; attentionKinds.staffing += 1; }
+    if (awaiting) { status.awaiting += 1; attentionKinds.awaiting += 1; }
+  }
+
   return {
     upcomingItems,
     reviewSignals,
     scheduledCount: relevant.length,
+    todayScheduledCount: relevant.filter(item => item.publicationState === "published" && item.lifecycle === "active" && item.startDate <= rangeStart && (item.endDate ?? item.startDate) >= rangeStart).length,
     pendingResponseCount: relevant.reduce(
       (count, item) => count + item.coverage.waitingOnConfirmationCount,
       0,
     ),
+    attentionIssueCount,
+    attentionKinds,
+    supportStatus,
   };
 }
 
@@ -380,40 +405,6 @@ async function readOptionalCalendar(
   }
 }
 
-async function readOptionalTasks(
-  client: AppSupabaseClient,
-  workspaceId: string,
-  capabilities: ReadonlySet<string>,
-): Promise<OverviewReadyRouteState["tasks"]> {
-  if (!capabilities.has("tasks.view")) return null;
-  try {
-    const presets = await readTaskPresetsWithClient(client, workspaceId);
-    return {
-      kind: "ready",
-      value: summarizeOverviewTasks(presets),
-    };
-  } catch {
-    return { kind: "unavailable" };
-  }
-}
-
-async function readOptionalVolunteers(
-  client: AppSupabaseClient,
-  workspaceId: string,
-  capabilities: ReadonlySet<string>,
-): Promise<OverviewReadyRouteState["volunteers"]> {
-  if (!capabilities.has("volunteers.view")) return null;
-  try {
-    const profiles = await readVolunteerProfilesWithClient(client, workspaceId);
-    return {
-      kind: "ready",
-      value: summarizeOverviewVolunteers(profiles),
-    };
-  } catch {
-    return { kind: "unavailable" };
-  }
-}
-
 export async function readOverviewRouteState(at = new Date()): Promise<OverviewRouteState> {
   try {
     const context = await readOverviewRouteContext();
@@ -428,21 +419,14 @@ export async function readOverviewRouteState(at = new Date()): Promise<OverviewR
     const today = dateInWorkspaceTimezone(at, context.workspace.timezone);
     const rangeEnd = addDays(today, OVERVIEW_RANGE_DAYS);
     const capabilities = new Set(context.capabilities);
-    const [calendar, tasks, volunteers] = await Promise.all([
-      readOptionalCalendar(
-        context.supabase,
-        context.workspace,
-        context.projectContactId,
-        capabilities,
-        today,
-        rangeEnd,
-      ),
-      readOptionalTasks(context.supabase, context.workspace.id, capabilities),
-      readOptionalVolunteers(context.supabase, context.workspace.id, capabilities),
-    ]);
-    const calendarCount = calendar?.kind === "ready" ? calendar.value.scheduledCount : 0;
-    const taskCount = tasks?.kind === "ready" ? tasks.value.activeCount : 0;
-    const volunteerCount = volunteers?.kind === "ready" ? volunteers.value.readyActiveCount : 0;
+    const calendar = await readOptionalCalendar(
+      context.supabase,
+      context.workspace,
+      context.projectContactId,
+      capabilities,
+      today,
+      rangeEnd,
+    );
 
     return {
       kind: "ready",
@@ -453,11 +437,10 @@ export async function readOverviewRouteState(at = new Date()): Promise<OverviewR
       workspaceEndsOn: context.workspace.endsOn,
       today,
       calendar,
-      tasks,
-      volunteers,
-      actions: buildOverviewQuickActions(context.capabilities, today),
-      createTask: capabilities.has("tasks.edit"),
-      isEmpty: calendarCount === 0 && taskCount === 0 && volunteerCount === 0,
+      canEditCalendar: capabilities.has("calendar.edit"),
+      canEditAssignments: capabilities.has("assignments.edit"),
+      canEditVolunteers: capabilities.has("volunteers.edit"),
+      canSendSchedules: ["volunteers.view", "volunteers.edit", "calendar.view", "assignments.view", "assignments.edit"].every(capability => capabilities.has(capability)),
     };
   } catch {
     return {

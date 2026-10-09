@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import CalendarClient from "@/components/CalendarClient";
+import { AdminViewScopeProvider } from "@/lib/adminViews/scopeContext";
 import { planCalendarAssignmentsAction } from "@/lib/calendar/bulkAssignments.actions";
 import { readAssignmentPickerContextAction } from "@/lib/calendar/assignmentPickerContext.actions";
 import { readMatchingAssignmentItemsAction } from "@/lib/calendar/matchingAssignmentItems.actions";
@@ -481,6 +482,7 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       : undefined;
 
   return (
+    <AdminViewScopeProvider scope={(state.kind === "ready_with_items" || state.kind === "ready_empty") && state.projectContactId && state.workspaceId ? { contactId: state.projectContactId, workspaceId: state.workspaceId } : null}>
     <CalendarClient
       projectKey={projectKey}
       bulkAssignmentAction={planCalendarAssignmentsAction}
@@ -506,5 +508,6 @@ export default async function AdminCalendarPage({ searchParams }: CalendarPagePr
       updateProjectDatesAction={updateProjectDatesAction}
       updateAction={updateCalendarItemAction}
     />
+    </AdminViewScopeProvider>
   );
 }

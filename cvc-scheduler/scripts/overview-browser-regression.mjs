@@ -23,7 +23,7 @@ const browserExecutable = resolvePreviewBrowserExecutable();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 const writeScreenshots = process.env.WRITE_OVERVIEW_REVIEW_SCREENSHOTS === "1";
-const screenshotDirectory = path.join(root, "docs", "previews", "iteration-12-38-overview-review");
+const screenshotDirectory = path.join(root, "docs", "previews", "12-53-admin-workspace");
 const namespace = `qa-12-38-overview-${randomUUID()}`;
 const cookieSets = new Map();
 const userIds = new Map();
@@ -193,9 +193,9 @@ function seedData(containerName) {
     }
   }
 
-  const makeItem = (label, title, day, time, needed) => {
+  const makeItem = (label, title, day, time, needed, type = "general") => {
     const id = randomUUID();
-    itemRows.push(`('${id}'::uuid, ${workspaceIdSql(label)}, null, ${sqlText(title)}, 'general', 'timed', '${addDays(today, day)}', null, '${time}:00', '${String(Number(time.slice(0, 2)) + 2).padStart(2, "0")}${time.slice(2)}:00', 'America/Denver', ${needed}, null, '{}'::jsonb, 'active', ${contactIdSql(label)}, ${contactIdSql(label)}, 'published', now(), ${contactIdSql(label)})`);
+    itemRows.push(`('${id}'::uuid, ${workspaceIdSql(label)}, null, ${sqlText(title)}, ${sqlText(type)}, 'timed', '${addDays(today, day)}', null, '${time}:00', '${String(Number(time.slice(0, 2)) + 2).padStart(2, "0")}${time.slice(2)}:00', 'America/Denver', ${needed}, null, '{}'::jsonb, 'active', ${contactIdSql(label)}, ${contactIdSql(label)}, 'published', now(), ${contactIdSql(label)})`);
     return id;
   };
   const volunteerIdSql = (label, offset) => `(select id from public.volunteer_profiles where workspace_id = ${workspaceIdSql(label)} order by full_name offset ${offset} limit 1)`;
@@ -209,19 +209,25 @@ function seedData(containerName) {
     makeItem("populated", "Gate Attendant", 1, "08:00", 1),
     makeItem("populated", "Drywall Crew", 2, "09:00", 1),
     makeItem("populated", "Material Staging", 3, "07:30", 1),
-    makeItem("populated", "Lunch Support", 4, "11:30", 1),
+    makeItem("populated", "Lunch Support", 4, "11:30", 1, "food"),
   ];
   populatedItems.forEach((id, index) => assign("populated", id, index, "confirmed"));
+  const night = makeItem("populated", "Night Watch", 5, "19:00", 1, "security");
+  assign("populated", night, 0, "needs_response");
 
   const covered = makeItem("review", "Morning Check-in", 1, "07:30", 1);
   const unfilled = makeItem("review", "Drywall Crew", 2, "09:00", 3);
   const waiting = makeItem("review", "Material Staging", 3, "08:00", 1);
   const denied = makeItem("review", "Site Cleanup", 4, "15:00", 1);
+  const food = makeItem("review", "Kitchen Attendant", 5, "11:00", 2, "food");
+  const security = makeItem("review", "Night Watch", 6, "19:00", 1, "security");
   assign("review", covered, 0, "confirmed");
   assign("review", unfilled, 1, "confirmed");
   assign("review", waiting, 2, "needs_response");
   assign("review", denied, 3, "declined");
   assign("review", denied, 0, "confirmed");
+  assign("review", food, 0, "confirmed");
+  assign("review", security, 1, "needs_response");
 
   const partialItem = makeItem("partial", "Volunteer Orientation", 1, "10:00", 1);
   // No assignment is intentional: it proves Calendar appears while optional modules stay hidden.
@@ -265,7 +271,7 @@ async function openOverview(browser, label, viewport) {
   const response = await page.goto(createPreviewUrl(baseUrl, "/admin/dashboard"), { waitUntil: "networkidle", timeout: 30_000 });
   assert(response?.ok(), `Overview returned ${response?.status() ?? "no response"}.`);
   await page.getByRole("heading", { name: "Overview", exact: true }).waitFor();
-  assert.equal(await page.getByText(workspaceNames[label], { exact: true }).count() > 0, true);
+  assert(await page.getByText(new RegExp(workspaceNames[label])).count() > 0, "The current project should remain identifiable.");
   return { context, page, failures };
 }
 
@@ -278,44 +284,64 @@ async function capture(page, filename) {
 async function verifyDesktop(browser) {
   const populated = await openOverview(browser, "populated", { width: 1440, height: 1000 });
   await populated.page.getByText("Gate Attendant", { exact: true }).waitFor();
-  await populated.page.getByText("Schedule looks ready", { exact: true }).waitFor();
-  await populated.page.getByText("4 active reusable tasks", { exact: true }).waitFor();
-  await populated.page.getByText("4 ready volunteers", { exact: true }).waitFor();
-  await capture(populated.page, "overview-desktop-populated-1440x1000.png");
+  await populated.page.getByRole("region", { name: "Today and next up" }).waitFor();
+  await populated.page.getByRole("region", { name: "Needs Attention summary" }).waitFor();
+  await populated.page.getByRole("region", { name: "Support status" }).waitFor();
+  await populated.page.getByRole("link", { name: /Create Calendar item/ }).waitFor();
+  await capture(populated.page, "12-53-overview-active-desktop.png");
   const targetDate = addDays(workspaceToday(), 1);
   const rowLink = populated.page.getByText("Gate Attendant", { exact: true }).locator("xpath=ancestor::a");
-  assert.equal(await rowLink.getAttribute("href"), `/admin/calendar?view=day&date=${targetDate}`);
-  const navigation = await populated.page.goto(createPreviewUrl(baseUrl, `/admin/calendar?view=day&date=${targetDate}`), { waitUntil: "domcontentloaded", timeout: 30_000 });
+  const rowUrl = new URL(await rowLink.getAttribute("href"), baseUrl);
+  assert.equal(rowUrl.searchParams.get("date"), targetDate);
+  assert(rowUrl.searchParams.get("item"), "Single upcoming work should open its Calendar item.");
+  const navigation = await populated.page.goto(rowUrl.toString(), { waitUntil: "networkidle", timeout: 30_000 });
   assert(navigation?.ok(), `Calendar row target returned ${navigation?.status() ?? "no response"}.`);
   await populated.page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+  await populated.page.getByRole("button", { name: "Open calendar filters" }).click();
+  const filters = populated.page.getByRole("dialog", { name: "Calendar filters" }).filter({ visible: true });
+  await filters.waitFor();
+  await filters.getByRole("searchbox", { name: "Volunteer name" }).fill("alex");
+  await filters.getByRole("button", { name: /Alex Rivera/ }).click();
+  await populated.page.getByRole("button", { name: /Remove volunteer filter for Alex Rivera/ }).waitFor();
+  await capture(populated.page, "12-53-calendar-remembered-filter-desktop.png");
+  await populated.page.reload({ waitUntil: "networkidle" });
+  await populated.page.getByRole("button", { name: /Remove volunteer filter for Alex Rivera/ }).waitFor();
+  await populated.page.getByRole("button", { name: /Remove volunteer filter for Alex Rivera/ }).click();
+  assert.equal(await populated.page.getByText(/Filtered by: Alex Rivera/).count(), 0);
+  await populated.page.goto(createPreviewUrl(baseUrl, `/admin/calendar?view=week&date=${workspaceToday()}&create=1`), { waitUntil: "networkidle" });
+  await populated.page.getByRole("dialog", { name: "Plan project work" }).waitFor();
   assert.deepEqual(populated.failures, []);
   await populated.context.close();
 
   const review = await openOverview(browser, "review", { width: 1440, height: 1000 });
-  await review.page.getByText("1 volunteer can’t make it", { exact: true }).waitFor();
-  await review.page.getByText("2 volunteers still needed", { exact: true }).waitFor();
-  await review.page.getByText("1 response pending", { exact: true }).waitFor();
-  await capture(review.page, "overview-desktop-review-signals-1440x1000.png");
+  await review.page.getByText(/understaffed item/).first().waitFor();
+  await review.page.getByRole("region", { name: "Support status" }).getByRole("link", { name: /Food/ }).waitFor();
+  const foodLink = review.page.getByRole("region", { name: "Support status" }).getByRole("link", { name: /Food/ });
+  assert.equal(new URL(await foodLink.getAttribute("href"), baseUrl).searchParams.get("support"), "food");
+  await capture(review.page, "12-53-overview-attention-and-support.png");
+  await foodLink.click();
+  await review.page.waitForURL(/\/admin\/needs-attention\?support=food/);
+  await review.page.getByText("Food", { exact: true }).first().waitFor();
   assert.deepEqual(review.failures, []);
   await review.context.close();
 
   const empty = await openOverview(browser, "empty", { width: 1440, height: 1000 });
-  await empty.page.getByText("Your project is ready", { exact: true }).waitFor();
+  await empty.page.getByText("No work in the next 7 days", { exact: true }).waitFor();
   assert.equal(await empty.page.getByText(/0 (items|tasks|volunteers)/i).count(), 0);
-  await capture(empty.page, "overview-desktop-ready-empty-1440x1000.png");
+  await capture(empty.page, "12-53-overview-quiet-desktop.png");
   assert.deepEqual(empty.failures, []);
   await empty.context.close();
 }
 
 async function verifyMobile(browser) {
   for (const [label, filename] of [
-    ["populated", "overview-mobile-populated-390x844.png"],
-    ["review", "overview-mobile-review-signals-390x844.png"],
+    ["populated", "12-53-overview-mobile-active.png"],
+    ["review", "12-53-overview-mobile-attention.png"],
   ]) {
     const result = await openOverview(browser, label, { width: 390, height: 844 });
     assert.equal(await result.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false, `390px ${label} Overview has horizontal overflow.`);
     if (label === "review") {
-      await result.page.getByRole("heading", { name: "To review", exact: true }).scrollIntoViewIfNeeded();
+      await result.page.getByRole("region", { name: "Needs Attention summary" }).scrollIntoViewIfNeeded();
     }
     await capture(result.page, filename);
     assert.deepEqual(result.failures, []);
@@ -325,7 +351,7 @@ async function verifyMobile(browser) {
   const partial = await openOverview(browser, "partial", { width: 390, height: 844 });
   await partial.page.getByText("Volunteer Orientation", { exact: true }).first().waitFor();
   assert.equal(await partial.page.getByText(/active reusable tasks|ready volunteers/i).count(), 0);
-  assert.equal(await partial.page.getByRole("link", { name: /New task|Add volunteer/ }).count(), 0);
+  assert.equal(await partial.page.getByRole("link", { name: /Add volunteer/ }).count(), 0);
   assert.equal(await partial.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
   assert.deepEqual(partial.failures, []);
   await partial.context.close();

@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
 import { chromium } from 'playwright';
 import { fixture, q, value } from './12-47-local-fixtures.mjs';
 import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
 
 const base = process.env.PREVIEW_BASE_URL || 'http://127.0.0.1:3100';
-assert.equal(new URL(base).hostname, '127.0.0.1');
+assert(['127.0.0.1','localhost'].includes(new URL(base).hostname));
 const f = await fixture(true);
 let browser;
 try {
   browser = await chromium.launch({ headless: true, executablePath: resolvePreviewBrowserExecutable() });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.route('**/*', route => ['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
-  await context.addCookies([...f.admin.jar.values()].map(c => ({ name: c.name, value: c.value, domain: '127.0.0.1', path: '/', sameSite: 'Lax' })));
+  await context.addCookies([...f.admin.jar.values()].map(c => ({ name: c.name, value: c.value, domain: new URL(base).hostname, path: '/', sameSite: 'Lax' })));
   const page = await context.newPage();
   const errors=[];
   page.on('pageerror', e => errors.push(e.message));
@@ -54,6 +56,31 @@ try {
   await page.goto(`${base}/admin/announcements?kind=schedule`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Review recipients' }).click();
   await page.getByText(/will receive · .*will not receive/).waitFor();
+  await page.getByRole('tab', { name: /Delivery history/ }).click();
+  await page.locator('[aria-label="Delivery history filters"]').getByLabel('Type').selectOption('schedule');
+  await page.locator('[aria-label="Delivery history filters"]').getByLabel('Delivery').selectOption('failed');
+  await page.getByText(/Showing: Schedule · failed/).waitFor();
+  const captures = path.join(process.cwd(), 'docs', 'previews', '12-53-admin-workspace');
+  await mkdir(captures, { recursive: true });
+  await page.screenshot({ path: path.join(captures, '12-53-communications-mobile-filtered.png') });
+  await page.goto(`${base}/admin/announcements`, { waitUntil: 'networkidle' });
+  await page.getByText(/Showing: Schedule · failed/).waitFor();
+  await page.getByRole('tab', { name: /Schedule deliveries/ }).click();
+  await page.getByLabel('Recipients').selectOption('resend');
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.getByRole('tab', { name: /Schedule deliveries/ }).click();
+  assert.equal(await page.getByLabel('Recipients').inputValue(), 'new', 'Intentional resend must never be restored.');
+  const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await desktop.addCookies([...f.admin.jar.values()].map(c => ({ name: c.name, value: c.value, domain: new URL(base).hostname, path: '/', sameSite: 'Lax' })));
+  const desktopPage = await desktop.newPage();
+  await desktopPage.goto(`${base}/admin/announcements`, { waitUntil: 'networkidle' });
+  await desktopPage.getByRole('tab', { name: /Delivery history/ }).click();
+  await desktopPage.locator('[aria-label="Delivery history filters"]').getByLabel('Type').selectOption('schedule');
+  await desktopPage.locator('[aria-label="Delivery history filters"]').getByLabel('Delivery').selectOption('failed');
+  await desktopPage.getByText(/Showing: Schedule · failed/).waitFor();
+  await desktopPage.screenshot({ path: path.join(captures, '12-53-communications-desktop-filtered.png') });
+  assert.equal(await desktopPage.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  await desktop.close();
   assert.deepEqual(errors, []);
   console.log('PASS browser: mobile Calendar operational save, explicit draft review/activation, Communications recipient counts, no email operation.');
 } finally {

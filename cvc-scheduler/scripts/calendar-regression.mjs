@@ -927,6 +927,9 @@ async function assertDialogKeyboardCycle(page, dialog, label) {
   const firstFocusable = focusable.first();
   const lastFocusable = focusable.last();
 
+  // The nested mobile sheet may mount on the same frame as its trigger click.
+  // Wait for its focus effect, then assert the actual keyboard starting point.
+  await page.waitForFunction((element) => document.activeElement === element, await firstFocusable.elementHandle(), { timeout: 1500 });
   assert(
     await firstFocusable.evaluate((element) => element === document.activeElement),
     `${label} initial focus is not on its first control`,

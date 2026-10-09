@@ -8,7 +8,7 @@ import { resolvePreviewBrowserExecutable } from './preview-config.mjs';
 
 const root=process.cwd();
 const fixture=path.join(os.tmpdir(),'project-local-12-48-fixture');
-const output=path.resolve('..','previews','12.52-smarter-picker');
+const output=path.resolve('docs','previews','12-53-admin-workspace');
 fs.mkdirSync(output,{recursive:true});
 execFileSync(process.execPath,['scripts/12-48-preview.mjs'],{cwd:root,stdio:'inherit'});
 const route=path.join(fixture,'app','admin','picker-1252','page.tsx');
@@ -16,6 +16,7 @@ fs.mkdirSync(path.dirname(route),{recursive:true});
 fs.writeFileSync(route,`
 import { AdminShell } from '@/components/AdminShell';
 import { BulkAssignmentPlanner } from '@/components/BulkAssignmentPlanner';
+import { AdminViewScopeProvider } from '@/lib/adminViews/scopeContext';
 import { destinations } from '@/fixture';
 import { expandRepeatDates } from '@/lib/calendar/repeat';
 const id=(n:number)=>'55555555-5555-4555-8555-'+String(n).padStart(12,'0');
@@ -43,7 +44,7 @@ async function context(form:FormData){
 export default async function Page({searchParams}:{searchParams:Promise<{mode?:string}>}){
   const {mode}=await searchParams;
   const create=mode==='existing'?undefined:{presetId:null,title:'Night Watch',taskType:'general',startDate:'2026-10-05',endDate:mode==='repeat'?'2026-10-09':'2026-10-05',endDayOffset:1,weekdays:mode==='repeat'?[1,2,3,4,5]:[1],startTime:'17:00',endTime:'05:00',neededCount:6,notes:null,customValues:{},meal:null};
-  return <AdminShell active="calendar" destinations={await destinations()} workspaceName="Community remodel · Fixture"><main className="mx-auto max-w-2xl px-3 py-5 sm:px-6"><h1 className="text-2xl font-bold">Assignment picker preview</h1><p className="mt-1 text-sm text-slate-600">Synthetic roster. Nothing is saved or sent.</p><BulkAssignmentPlanner action={preview} contextAction={context} volunteers={people} create={create} primaryItem={mode==='existing'?{id:id(10),date:'2026-10-05',title:'Night Watch',startTime:'17:00',endTime:'05:00'}:undefined} otherItems={mode==='existing'?[{id:id(11),date:'2026-10-06',title:'Night Watch',startTime:'17:00',endTime:'05:00'}]:[]}/></main></AdminShell>;
+  return <AdminViewScopeProvider scope={{contactId:id(900),workspaceId:id(901)}}><AdminShell active="calendar" destinations={await destinations()} workspaceName="Community remodel · Fixture"><main className="mx-auto max-w-2xl px-3 py-5 sm:px-6"><h1 className="text-2xl font-bold">Assignment picker preview</h1><p className="mt-1 text-sm text-slate-600">Synthetic roster. Nothing is saved or sent.</p><BulkAssignmentPlanner action={preview} contextAction={context} volunteers={people} create={create} primaryItem={mode==='existing'?{id:id(10),date:'2026-10-05',title:'Night Watch',startTime:'17:00',endTime:'05:00'}:undefined} otherItems={mode==='existing'?[{id:id(11),date:'2026-10-06',title:'Night Watch',startTime:'17:00',endTime:'05:00'}]:[]}/></main></AdminShell></AdminViewScopeProvider>;
 }
 `);
 const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>!/(SUPABASE|RESEND|EMAIL|TRANSPORT|TOKEN|SECRET)/i.test(key)));
@@ -60,7 +61,7 @@ try{
     await page.goto(base+'/admin/picker-1252',{waitUntil:'networkidle'});
     const picker=page.getByRole('region',{name:'Assign volunteers'});
     const search=picker.getByRole('searchbox',{name:'Search volunteers to assign'});
-    const shot=async name=>page.screenshot({path:path.join(output,`${label}-${name}.png`)});
+    const shot=async name=>page.screenshot({path:path.join(output,`12-53-picker-${label}-${name}.png`)});
     await picker.getByText('Available · No known conflicts').first().waitFor();
     assert.equal(await picker.getByRole('checkbox',{name:/Select /}).count(),160,'ready roster only');
     await shot('normal');
@@ -68,13 +69,18 @@ try{
     assert.equal(await picker.getByRole('checkbox',{name:/Select /}).count(),2,'partial search and similar names');
     await shot('search-results');
     await search.fill('');
-    await picker.getByText('Filters',{exact:true}).click();
+    await picker.getByText(/^Filters/).click();
     await picker.getByRole('combobox',{name:'Availability filter'}).selectOption('available');
     assert.equal(await picker.getByRole('checkbox',{name:/Select /}).count(),158,'available excludes conflict and away');
     await shot('available-filter');
     await picker.getByRole('combobox',{name:'Congregation filter'}).selectOption('Belgrade');
     assert(await picker.getByText('Filtered by: Available · Belgrade').isVisible());
     await shot('congregation-filter');
+    await page.reload({waitUntil:'networkidle'});
+    assert(await picker.getByText('Filtered by: Available · Belgrade').isVisible(),'safe filters survive reload');
+    assert(await picker.getByText('0 selected').isVisible(),'volunteer selections never return on a new operation');
+    await shot('restored-safe-filters-zero-selected');
+    await picker.getByText(/^Filters/).click();
     await picker.getByRole('combobox',{name:'Availability filter'}).selectOption('conflict');
     assert.equal(await picker.getByRole('checkbox',{name:/Select /}).count(),0,'combined filter has precise empty state');
     await picker.getByText('No volunteers match these filters.').waitFor();

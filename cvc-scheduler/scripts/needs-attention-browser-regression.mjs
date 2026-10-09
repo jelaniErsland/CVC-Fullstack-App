@@ -33,7 +33,7 @@ const screenshotDirectory = path.join(
   "previews",
   writeAssignmentDetailReviewScreenshots
     ? "iteration-12-40-assignment-detail-review"
-    : "iteration-12-39-needs-attention-review",
+    : "12-53-admin-workspace",
 );
 const namespace = `qa-12-39-needs-attention-${randomUUID()}`;
 const labels = ["populated", "empty", "under-capability", "inactive-contact"];
@@ -240,13 +240,14 @@ function seedData(containerName) {
     day,
     time,
     needed,
+    type = "general",
     publication = "published",
     lifecycle = "active",
   }) => {
     const id = randomUUID();
     const endHour = String((Number(time.slice(0, 2)) + 2) % 24).padStart(2, "0");
     itemRows.push(
-      `('${id}'::uuid, ${workspaceIdSql(label)}, null, ${sqlText(title)}, 'general', 'timed', '${addDays(today, day)}', null, '${time}:00', '${endHour}${time.slice(2)}:00', 'America/Denver', ${needed}, null, '{}'::jsonb, '${lifecycle}', ${contactIdSql(label)}, ${contactIdSql(label)}, '${publication}', ${publication === "published" ? "now()" : "null"}, ${publication === "published" ? contactIdSql(label) : "null"})`,
+      `('${id}'::uuid, ${workspaceIdSql(label)}, null, ${sqlText(title)}, ${sqlText(type)}, 'timed', '${addDays(today, day)}', null, '${time}:00', '${endHour}${time.slice(2)}:00', 'America/Denver', ${needed}, null, '{}'::jsonb, '${lifecycle}', ${contactIdSql(label)}, ${contactIdSql(label)}, '${publication}', ${publication === "published" ? "now()" : "null"}, ${publication === "published" ? contactIdSql(label) : "null"})`,
     );
     return id;
   };
@@ -279,6 +280,11 @@ function seedData(containerName) {
   const deniedOnly = makeItem({ title: "Site Cleanup", day: 10, time: "15:00", needed: 1 });
   assign(deniedOnly, 5, "declined");
   assign(deniedOnly, 0, "confirmed");
+
+  const food = makeItem({ title: "Kitchen Attendant", day: 2, time: "11:00", needed: 2, type: "food" });
+  assign(food, 1, "confirmed");
+  const security = makeItem({ title: "Night Watch", day: 5, time: "19:00", needed: 1, type: "security" });
+  assign(security, 2, "needs_response");
 
   makeItem({ title: "Material Staging", day: 15, time: "07:30", needed: 3 });
   const outsideResponse = makeItem({
@@ -378,67 +384,69 @@ async function capture(page, filename) {
 async function verifyPopulatedDesktop(browser) {
   const result = await openInbox(browser, "populated", { width: 1440, height: 1000 });
   const { page } = result;
-  await page
-    .getByText(workspaceNames.populated, { exact: true })
-    .filter({ visible: true })
-    .first()
-    .waitFor();
-  await page.getByRole("heading", { name: "Staffing", exact: true }).waitFor();
-  await page.getByRole("heading", { name: "Responses", exact: true }).waitFor();
-  await page.getByText("2 volunteers still needed", { exact: true }).waitFor();
-  await page.getByText("2 responses pending", { exact: true }).waitFor();
-  assert.equal(await page.locator("[data-signal-row]").count(), 5);
+  await page.getByRole("heading", { name: "Drywall Crew" }).waitFor();
+  await page.getByRole("heading", { name: "Kitchen Attendant" }).waitFor();
+  assert.equal(await page.locator("[data-issue-id]").count(), 5, "Related staffing and response signals should be grouped by Calendar item.");
   assert.equal(await page.getByText(/Draft Supply Check|Material Staging|Future Welcome Crew|Canceled Setup/).count(), 0);
-  assert.equal(new URL(page.url()).pathname, "/admin/needs-attention");
-  await capture(page, "needs-attention-desktop-mixed-1440x1000.png");
+  await capture(page, "12-53-attention-default-desktop.png");
 
-  const coverageRow = page.locator('details[data-signal-kind="coverage"]').filter({ hasText: "Drywall Crew" });
-  await coverageRow.locator("summary").click();
-  assert.equal(await coverageRow.getAttribute("open"), "");
-  await coverageRow.getByText("2/4 assigned", { exact: true }).waitFor();
-  const calendarLink = coverageRow.getByRole("link", { name: "Open in Calendar", exact: true });
-  const expectedDate = addDays(workspaceToday(), 1);
-  assert.equal(await calendarLink.getAttribute("href"), `/admin/calendar?view=day&date=${expectedDate}`);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await capture(page, "needs-attention-desktop-expanded-1440x1000.png");
+  const drywall = page.locator("[data-issue-id]").filter({ hasText: "Drywall Crew" });
+  await drywall.getByText(/volunteers? still needed/).first().waitFor();
+  await drywall.getByText(/can’t make it/).first().waitFor();
+  const replacement = drywall.getByRole("link", { name: /Find replacement/ });
+  const replacementUrl = new URL(await replacement.getAttribute("href"), baseUrl);
+  assert.equal(replacementUrl.searchParams.get("section"), "volunteers");
+  assert(replacementUrl.searchParams.get("item"));
+  await drywall.getByText("Details", { exact: true }).click();
+  await drywall.getByRole("link", { name: /View assignment/ }).first().waitFor();
+  await capture(page, "12-53-attention-expanded-grouped.png");
 
-  const pendingRow = page
-    .locator('details[data-signal-kind="pending"]')
-    .filter({ hasText: "Gate Attendant" });
-  await pendingRow.locator("summary").click();
-  const pendingLinks = pendingRow.getByRole("link", { name: /View affected assignment/ });
-  assert.equal(await pendingLinks.count(), 2);
-  await capture(page, "needs-attention-pending-drill-down-desktop-1440x1000.png");
-  await pendingLinks.first().click();
-  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
-  await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
-  await page.getByText("Gate Attendant", { exact: true }).waitFor();
-  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
-    waitUntil: "networkidle",
-  });
+  const filterState = await page.evaluate(() => ({ open: document.querySelector('section[aria-label="Attention filters"] details')?.open, match: matchMedia('(min-width: 640px)').matches, width: innerWidth, buttons: document.querySelectorAll('section[aria-label="Attention filters"] button').length }));
+  assert.equal(filterState.open, true, `Desktop filters must remain open: ${JSON.stringify(filterState)} ${JSON.stringify(result.failures)}`);
+  const support = name => page.getByRole("button", { name, exact: true });
+  await support("General").click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 3);
+  await capture(page, "12-53-attention-general.png");
+  await support("Food").click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 4, "Multiple support types should combine.");
+  await support("General").click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 1);
+  await capture(page, "12-53-attention-food.png");
+  await support("Food").click();
+  await support("Security").click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 1);
+  await capture(page, "12-53-attention-security.png");
+  await page.getByRole("button", { name: "Reset view" }).first().click();
 
-  const deniedRow = page
-    .locator('details[data-signal-kind="denied"]')
-    .filter({ hasText: "Site Cleanup" });
-  await deniedRow.locator("summary").click();
-  const deniedLink = deniedRow.getByRole("link", {
-    name: "View assignment for Site Cleanup",
-    exact: true,
-  });
-  assert.equal(await deniedLink.count(), 1);
-  await deniedLink.click();
-  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
-  await page.getByText("Site Cleanup", { exact: true }).waitFor();
-  await page.getByText("Can’t make it", { exact: true }).first().waitFor();
-  await page.goto(createPreviewUrl(baseUrl, "/admin/needs-attention"), {
-    waitUntil: "domcontentloaded",
-  });
+  await page.getByRole("button", { name: "Declined", exact: true }).click();
+  await page.getByRole("button", { name: "Needs staffing", exact: true }).click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 3);
+  await capture(page, "12-53-attention-declines-staffing.png");
+  await page.getByRole("button", { name: "Reset view" }).first().click();
+  await page.getByLabel("When").selectOption("14");
+  await capture(page, "12-53-attention-next-14.png");
+  await page.getByLabel("When").selectOption("project");
+  assert.equal(await page.locator("[data-issue-id]").count(), 7);
+  await page.getByRole("button", { name: "Reset view" }).first().click();
 
-  const calendarResponse = await page.goto(
-    createPreviewUrl(baseUrl, `/admin/calendar?view=day&date=${expectedDate}`),
-    { waitUntil: "domcontentloaded", timeout: 30_000 },
-  );
-  assert(calendarResponse?.ok(), "Contextual Calendar destination did not load.");
+  await page.getByLabel("Search attention issues").fill("Bozeman Congregation");
+  assert.equal(await page.locator("[data-issue-id]").count() > 0, true);
+  await page.getByLabel("Search attention issues").fill("nothing matches this");
+  await page.getByRole("heading", { name: "No issues in this view" }).waitFor();
+  await capture(page, "12-53-attention-no-results.png");
+  await page.getByRole("button", { name: "Reset view" }).first().click();
+
+  await drywall.getByRole("button", { name: "Mark reviewed" }).click();
+  await page.getByLabel("Status").selectOption("reviewed");
+  await page.getByRole("heading", { name: "Drywall Crew" }).waitFor();
+  assert.equal(await page.locator("[data-issue-id]").count(), 1);
+  await capture(page, "12-53-attention-reviewed.png");
+  await page.reload({ waitUntil: "networkidle" });
+  assert.equal(await page.locator("[data-issue-id]").count(), 1, "Reviewed view should survive reload for this contact and project.");
+  await page.getByRole("button", { name: "Reset view" }).first().click();
+  await page.getByLabel("Status").selectOption("all");
+  await replacement.click();
+  await page.waitForURL(/\/admin\/calendar\?.*item=/);
   await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
   assert.deepEqual(result.failures, []);
   await result.context.close();
@@ -446,27 +454,22 @@ async function verifyPopulatedDesktop(browser) {
 
 async function verifyEmptyAndUnavailable(browser) {
   const empty = await openInbox(browser, "empty", { width: 1440, height: 1000 });
-  await empty.page
-    .getByText(workspaceNames.empty, { exact: true })
-    .filter({ visible: true })
-    .first()
-    .waitFor();
-  await empty.page.getByRole("heading", { name: "You're all caught up", exact: true }).waitFor();
-  assert.equal(await empty.page.locator("[data-signal-row]").count(), 0);
-  await capture(empty.page, "needs-attention-desktop-all-caught-up-1440x1000.png");
+  await empty.page.getByRole("heading", { name: "No issues in this view" }).waitFor();
+  assert.equal(await empty.page.locator("[data-issue-id]").count(), 0);
+  await capture(empty.page, "12-53-attention-empty-project.png");
   assert.deepEqual(empty.failures, []);
   await empty.context.close();
 
   const unavailable = await openInbox(browser, "under-capability", { width: 1440, height: 1000 });
   await unavailable.page.getByText("Needs Attention is unavailable", { exact: true }).waitFor();
   assert.equal(await unavailable.page.getByText(workspaceNames.populated, { exact: true }).count(), 0);
-  assert.equal(await unavailable.page.locator("[data-signal-row]").count(), 0);
+  assert.equal(await unavailable.page.locator("[data-issue-id]").count(), 0);
   assert.deepEqual(unavailable.failures, []);
   await unavailable.context.close();
 
   const inactive = await openInbox(browser, "inactive-contact", { width: 1440, height: 1000 });
   await inactive.page.getByText("Needs Attention is unavailable", { exact: true }).waitFor();
-  assert.equal(await inactive.page.locator("[data-signal-row]").count(), 0);
+  assert.equal(await inactive.page.locator("[data-issue-id]").count(), 0);
   assert.deepEqual(inactive.failures, []);
   await inactive.context.close();
 }
@@ -486,20 +489,15 @@ async function verifyMobile(browser) {
   assert.equal(await attentionTab.getAttribute("aria-current"), "page");
   assert.equal(await primary.getByRole("link", { name: "Open Volunteers", exact: true }).count(), 1);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-  await capture(page, "needs-attention-mobile-populated-390x844.png");
-
-  const pendingRow = page.locator('details[data-signal-kind="pending"]').filter({ hasText: "Gate Attendant" });
-  await pendingRow.locator("summary").click();
-  await pendingRow.scrollIntoViewIfNeeded();
-  const mobileAssignmentLink = pendingRow.getByRole("link", {
-    name: /View affected assignment 1/,
-  });
-  await mobileAssignmentLink.waitFor();
+  await capture(page, "12-53-attention-mobile-active.png");
+  await page.getByText("Filters", { exact: true }).click();
+  await page.getByRole("button", { name: "Security", exact: true }).click();
+  assert.equal(await page.locator("[data-issue-id]").count(), 1);
+  await capture(page, "12-53-attention-mobile-filters-open.png");
+  await page.getByText("Filters", { exact: true }).click();
+  await page.getByText("Showing:", { exact: true }).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-  await capture(page, "needs-attention-assignment-drill-down-mobile-390x844.png");
-  await mobileAssignmentLink.click();
-  await page.waitForURL(/\/admin\/assignments\/[0-9a-f-]+$/);
-  await page.getByRole("heading", { name: "Assignment", exact: true }).waitFor();
+  await capture(page, "12-53-attention-mobile-filtered.png");
   assert.deepEqual(populated.failures, []);
   await populated.context.close();
 
@@ -517,7 +515,7 @@ async function verifyMobile(browser) {
   assert.equal(await navigationPrimary.getByRole("link", { name: "Open Overview", exact: true }).getAttribute("href"), "/admin/dashboard");
   assert.equal(await navigationPrimary.getByRole("link", { name: "Open Calendar", exact: true }).getAttribute("href"), "/admin/calendar");
   assert.equal(await navigationPage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-  await capture(navigationPage, "needs-attention-mobile-more-volunteers-390x844.png");
+  await capture(navigationPage, "12-53-attention-mobile-navigation.png");
   assert.deepEqual(navigation.failures, []);
   await navigation.context.close();
 }
