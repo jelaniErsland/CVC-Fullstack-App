@@ -12,6 +12,11 @@ export const anonymousFunctions = Object.freeze([
   "submit_volunteer_schedule_assignment_response(text,uuid,text,text)",
   "resolve_volunteer_schedule_contact(text,text)"
 ]);
+// Shared Quick View contact details require a live bearer and one visible assignment.
+// The server action uses the anon role; no signed-in or service-role caller needs EXECUTE.
+export const anonymousOnlyFunctions = Object.freeze([
+  "read_project_quick_view_assigned_contact(text,uuid,date)"
+]);
 export const authenticatedFunctions = Object.freeze([
   "read_authorized_calendar_items(uuid,date,date)",
   "read_authorized_task_presets(uuid)",
@@ -113,15 +118,15 @@ export const internalDefinerFunctions = Object.freeze([
 export const migrationCreators = Object.freeze(["postgres"]);
 
 export function assertEffectiveFunctionPolicy(assert, rows, { historicalExclusions = [] } = {}) {
-  const expected = [...anonymousFunctions, ...authenticatedFunctions, ...internalFunctions]
+  const expected = [...anonymousFunctions, ...anonymousOnlyFunctions, ...authenticatedFunctions, ...internalFunctions]
     .filter(signature => !historicalExclusions.includes(signature)).sort();
   assert.deepEqual(rows.map(r => r.signature).sort(), expected, "Every public function must have an exact reviewed classification.");
   for (const row of rows) {
     assert.equal(row.owner, "postgres", row.signature + ": unreviewed creator/owner");
     assert.equal(row.public, false, row.signature + ": PUBLIC EXECUTE");
-    assert.equal(row.anon, anonymousFunctions.includes(row.signature), row.signature + ": anon EXECUTE");
-    assert.equal(row.authenticated, !internalFunctions.includes(row.signature), row.signature + ": authenticated EXECUTE");
-    assert.equal(row.service_role, !internalFunctions.includes(row.signature), row.signature + ": service_role EXECUTE");
+    assert.equal(row.anon, anonymousFunctions.includes(row.signature) || anonymousOnlyFunctions.includes(row.signature), row.signature + ": anon EXECUTE");
+    assert.equal(row.authenticated, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature), row.signature + ": authenticated EXECUTE");
+    assert.equal(row.service_role, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature), row.signature + ": service_role EXECUTE");
     assert.equal(row.definer, !internalFunctions.includes(row.signature) || internalDefinerFunctions.includes(row.signature), row.signature + ": execution context changed");
     assert.deepEqual(row.config, ['search_path=""'], row.signature + ": unsafe search_path");
   }

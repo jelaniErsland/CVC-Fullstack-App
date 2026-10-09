@@ -190,6 +190,7 @@ try {
       values (${sqlUuid(workspaceIds[0])},${sqlUuid(assignmentIds[index])},${sqlText(response)},${response==='needs_response'?'null':'now()'});
     `);
   }
+  runPsql(`update public.volunteer_profiles set phone='+1 555 120 1100',congregation='Synthetic Congregation',profile_notes='private profile marker' where id=${sqlUuid(volunteerIds[0])};`);
   const anon = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } });
   await expectError("unauthenticated creation", () => anon.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[0] }));
   await expectError("wrong workspace creation", () => owner.client.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[1] }));
@@ -203,6 +204,27 @@ try {
   const issued = parseIssuedProjectQuickViewAccess(issuedResult.data);
   secrets.add(issued.token);
   assert.equal(issued.token.length, 43);
+  const contactRead = (token, assignmentId, date = "2026-09-02") => anon.rpc("read_project_quick_view_assigned_contact", {
+    p_bearer_token: token,
+    p_assignment_id: assignmentId,
+    p_project_date: date,
+  });
+  const contact = await contactRead(issued.token, assignmentIds[0]);
+  assert(!contact.error);
+  assert.deepEqual(contact.data, [{ contact_name: "Synthetic Volunteer 0", phone: "+1 555 120 1100", email: "synthetic@example.invalid", congregation: "Synthetic Congregation" }]);
+  assert(!JSON.stringify(contact.data).includes("private profile marker"));
+  assert(!JSON.stringify(contact.data).includes("private setup note"));
+  for (const [label, token, id, date] of [
+    ["unknown bearer", "A".repeat(43), assignmentIds[0], "2026-09-02"],
+    ["unknown assignment", issued.token, randomUUID(), "2026-09-02"],
+    ["outside visible dates", issued.token, assignmentIds[0], "2028-09-02"],
+  ]) {
+    const denied = await contactRead(token, id, date);
+    assert(!denied.error && denied.data.length === 0, `${label} returned contact data.`);
+  }
+  const contactPrivilege = runPsql(`select has_function_privilege('anon','public.read_project_quick_view_assigned_contact(text,uuid,date)','execute')::text || '|' || has_function_privilege('authenticated','public.read_project_quick_view_assigned_contact(text,uuid,date)','execute')::text || '|' || (exists(select 1 from aclexplode(p.proacl) acl where acl.grantee=0 and acl.privilege_type='EXECUTE'))::text from pg_proc p where p.oid='public.read_project_quick_view_assigned_contact(text,uuid,date)'::regprocedure;`);
+  assert.equal(contactPrivilege, "true|false|false", "Contact RPC execute privilege must be anon only.");
+  await expectError("anonymous profile table read", () => anon.from("volunteer_profiles").select("phone,email").eq("id", volunteerIds[0]));
   const stored = runPsql(`select octet_length(token_verifier_hash)::text || '|' || (encode(token_verifier_hash, 'hex') = ${sqlText(createHash("sha256").update(issued.token).digest("hex"))})::text || '|' || (encode(token_verifier_hash, 'escape') = ${sqlText(issued.token)})::text from public.project_quick_view_access_tokens where id = ${sqlUuid(issued.tokenId)};`);
   assert.equal(stored, "32|true|false", "Only a unique SHA-256 verifier may persist.");
 
@@ -293,6 +315,8 @@ try {
   const otherIssuedResult = await otherOwner.client.rpc("issue_project_quick_view_access", { p_workspace_id: workspaceIds[1] });
   assert(!otherIssuedResult.error);
   const otherIssued = parseIssuedProjectQuickViewAccess(otherIssuedResult.data); secrets.add(otherIssued.token);
+  const crossProjectContact = await contactRead(otherIssued.token, assignmentIds[0]);
+  assert(!crossProjectContact.error && crossProjectContact.data.length === 0, "Other project's bearer returned contact data.");
   const otherView = await rpcRead(anon, otherIssued.token);
   assert.equal(otherView.kind, "ready");
   assert.equal(otherView.workspaceDisplayName, "Shared Quick View Two");
@@ -308,10 +332,16 @@ try {
   `);
   assert.equal((await rpcRead(anon, expiredBearer)).kind, "unavailable");
   assert.equal((await rpcRead(anon, endedBearer)).kind, "unavailable");
+  for (const bearer of [expiredBearer, endedBearer]) {
+    const denied = await contactRead(bearer, assignmentIds[0]);
+    assert(!denied.error && denied.data.length === 0, "Expired or ended project's bearer returned contact data.");
+  }
 
   const revoke = await owner.client.rpc("revoke_project_quick_view_access", { p_workspace_id: workspaceIds[0] });
   assert(!revoke.error && revoke.data >= 1);
   assert.equal((await rpcRead(anon, issued.token)).kind, "unavailable", "Revocation must invalidate established-session bearer reads.");
+  const revokedContact = await contactRead(issued.token, assignmentIds[0]);
+  assert(!revokedContact.error && revokedContact.data.length === 0, "Revoked bearer returned contact data.");
   const state = await owner.client.rpc("read_project_quick_view_share_state", { p_workspace_id: workspaceIds[0] });
   assert(!state.error && state.data[0].shared_access_enabled === false && state.data[0].active_link_count === 0);
 

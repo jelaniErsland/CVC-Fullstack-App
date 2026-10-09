@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { readdirSync } from "node:fs";
 import {
-  anonymousFunctions, authenticatedFunctions, internalFunctions,
+  anonymousFunctions, anonymousOnlyFunctions, authenticatedFunctions, internalFunctions,
   migrationCreators, assertEffectiveFunctionPolicy, effectiveFunctionQuery,
 } from "./function-privilege-policy.mjs";
 
@@ -26,6 +26,9 @@ for (const [signature, key, value] of [
   [authenticatedFunctions[0], "anon", true],
   [internalFunctions[0], "authenticated", true],
   [anonymousFunctions[0], "anon", false],
+  [anonymousOnlyFunctions[0], "anon", false],
+  [anonymousOnlyFunctions[0], "authenticated", true],
+  [anonymousOnlyFunctions[0], "service_role", true],
   [authenticatedFunctions[0], "authenticated", false],
   [anonymousFunctions[0], "public", true],
 ]) {
@@ -114,4 +117,4 @@ try {
 }
 assert.equal(snapshot(), beforeFixture, "Zero disposable fixture residue.");
 assertEffectiveFunctionPolicy(assert, output(effectiveFunctionQuery).split(/\r?\n/).map(JSON.parse));
-console.log(`PASS systemic ACL: ${rows.length} exact functions; ${anonymousFunctions.length} anonymous, ${authenticatedFunctions.length} authenticated, ${internalFunctions.length} internal; PUBLIC 0; defaults denied; future postgres function denied; direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.`);
+console.log(`PASS systemic ACL: ${rows.length} exact functions; ${anonymousFunctions.length} shared anonymous, ${anonymousOnlyFunctions.length} anonymous-only, ${authenticatedFunctions.length} authenticated, ${internalFunctions.length} internal; PUBLIC 0; defaults denied; future postgres function denied; direct anon mutations denied before execution; target changes 0; triggers preserved; residue 0.`);

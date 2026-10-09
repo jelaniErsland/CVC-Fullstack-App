@@ -25,6 +25,7 @@ import {
   type Ref,
   type ReactNode,
   useActionState,
+  useCallback,
   useEffect,
   useEffectEvent,
   useId,
@@ -40,6 +41,7 @@ import { calendarVolunteerDetail, calendarVolunteerFilterLabel, calendarVoluntee
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { CalendarAssignedVolunteers, CalendarAssignmentLegend, type AssignmentVisibility } from "@/components/CalendarAssignedVolunteers";
+import { AssignedContactSurface } from "@/components/AssignedContactSurface";
 import { ldcProjectName } from "@/lib/projectIdentity";
 import { AdminShell } from "@/components/AdminShell";
 import { MobileOverlaySheet } from "@/components/MobileOverlaySheet";
@@ -3104,6 +3106,7 @@ function CalendarInspector({
   cancelAssignmentAction,
   item,
   isOpen,
+  contactOpen,
   onClose,
   publishAction,
   sendInitialAssignmentNotificationsAction,
@@ -3123,6 +3126,7 @@ function CalendarInspector({
   cancelAssignmentAction?: CalendarMutationAction;
   item?: CalendarClientDisplayItem;
   isOpen: boolean;
+  contactOpen: boolean;
   onClose: () => void;
   publishAction?: CalendarMutationAction;
   sendInitialAssignmentNotificationsAction?: CalendarMutationAction;
@@ -3139,11 +3143,11 @@ function CalendarInspector({
   const mobileDialogRef = useRef<HTMLElement>(null);
   const descriptionId = useId();
 
-  useFocusContainment(isOpen, desktopDialogRef, mobileDialogRef);
+  useFocusContainment(isOpen && !contactOpen, desktopDialogRef, mobileDialogRef);
   useBodyScrollLock(isOpen, "(max-width: 1023px)");
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || contactOpen) {
       return;
     }
 
@@ -3156,7 +3160,7 @@ function CalendarInspector({
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [isOpen]);
+  }, [isOpen, contactOpen]);
 
   if (!item) {
     return null;
@@ -3171,6 +3175,7 @@ function CalendarInspector({
         aria-label="Calendar item inspector"
         aria-modal="false"
         className={isOpen ? "hidden h-[calc(100vh-176px)] min-h-[560px] min-w-0 border-l border-[var(--pl-border)] bg-white lg:block" : "hidden"}
+        inert={contactOpen}
         role="dialog"
         ref={desktopDialogRef}
         tabIndex={-1}
@@ -3220,6 +3225,7 @@ function CalendarInspector({
           aria-label="Calendar item inspector"
           aria-modal="true"
           className="absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col overflow-hidden rounded-t-2xl border border-[var(--pl-border)] border-t-4 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-20px_70px_rgba(15,23,42,0.20)]"
+          inert={contactOpen}
           style={{ borderTopColor: taskPresetColor(item.colorKey ?? item.taskPreset?.colorKey ?? customCalendarColorKey).focus }}
           role="dialog"
           ref={mobileDialogRef}
@@ -3855,6 +3861,7 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       workspaceName: string;
+      workspaceId?: string;
       navigationDestinations?: readonly string[];
       projectStartsOn: string | null;
       projectEndsOn: string | null;
@@ -4263,6 +4270,20 @@ export default function CalendarClient({
   const filters = useMemo<CalendarFilterOptions>(() => ({ search: filterSearch, taskTypes: rememberedView.taskTypes, coverageStates: rememberedView.coverageStates }), [filterSearch, rememberedView.taskTypes, rememberedView.coverageStates]);
   const setFilters = (next: CalendarFilterOptions) => { setFilterSearch(next.search ?? ""); setRememberedView(current => ({ ...current, taskTypes: next.taskTypes ?? [], coverageStates: next.coverageStates ?? [] })); };
   const [volunteerSelection, setVolunteerSelection] = useState<{ projectKey: string | undefined; workspaceName: string; volunteer: CalendarVolunteerOption; label: string } | null>(null);
+  const [contactAssignment, setContactAssignment] = useState<{ assignmentId: string; projectReference?: string; projectDate: string } | null>(null);
+  const contactProjectReference = projectKey ?? (isReady ? state.workspaceId : undefined);
+  const contactTriggerRef = useRef<HTMLElement | null>(null);
+  const openAssignedContact = useCallback((assignmentId: string) => {
+    if (routeBase !== "/qv" && !contactProjectReference) return;
+    contactTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setContactAssignment({ assignmentId, projectReference: contactProjectReference, projectDate: state.anchorDate });
+  }, [contactProjectReference, routeBase, state.anchorDate]);
+  const closeAssignedContact = useCallback(() => {
+    setContactAssignment(null);
+    const trigger = contactTriggerRef.current;
+    contactTriggerRef.current = null;
+    window.requestAnimationFrame(() => { if (trigger?.isConnected) trigger.focus(); });
+  }, []);
   const initialProjectDayDate = isReady ? readCalendarRouteDay(searchParams.get("day")) : undefined;
   // Legacy initial props bootstrap callers; URL changes remain authoritative afterwards.
   const bootstrapItemId = initialInspectorItemId ?? initialItemId;
@@ -4395,7 +4416,8 @@ export default function CalendarClient({
       if (
         event.key === "Escape" &&
         activeSurface !== "none" &&
-        activeSurface !== "more"
+        activeSurface !== "more" &&
+        !contactAssignment
       ) {
         const trigger = surfaceTriggerRef.current;
 
@@ -4422,7 +4444,7 @@ export default function CalendarClient({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeSurface, activeView, calendarAnchor, routeBase, projectKey]);
+  }, [activeSurface, activeView, calendarAnchor, routeBase, projectKey, contactAssignment]);
 
   useEffect(() => {
     if (!calendarViewRef.current) return;
@@ -4554,7 +4576,7 @@ export default function CalendarClient({
   }, [routeBase, searchParams, isReady, state]);
 
   return (
-    <CalendarOperations.Provider value={{ readOnly, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, matchingAssignmentItemsAction: !readOnly && isReady && state.canEditAssignments ? matchingAssignmentItemsAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
+    <CalendarOperations.Provider value={{ readOnly, openAssignedContact: isReady && (contactProjectReference || routeBase === "/qv") && state.canViewVolunteers ? openAssignedContact : undefined, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, matchingAssignmentItemsAction: !readOnly && isReady && state.canEditAssignments ? matchingAssignmentItemsAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={routeBase === "/qv"}
       active={routeBase === "/admin/quick-view" ? "quick-view" : "calendar"}
       destinations={isReady ? state.navigationDestinations : ["overview"]}
@@ -4698,6 +4720,7 @@ export default function CalendarClient({
               focusSection={inspectorSection}
               focusSignal={notice}
               isOpen={activeSurface === "inspect"}
+              contactOpen={Boolean(contactAssignment)}
               item={selectedItem}
               onClose={closeSelectedInspector}
               publishAction={publishAction}
@@ -4756,6 +4779,7 @@ export default function CalendarClient({
       </section>
       {footer && <div className="mt-6">{footer}</div>}
     </CalendarFrame>
+    {contactAssignment ? <AssignedContactSurface assignmentId={contactAssignment.assignmentId} projectReference={contactAssignment.projectReference} projectDate={contactAssignment.projectDate} mode={routeBase === "/qv" ? "shared" : routeBase === "/admin/calendar" ? "calendar" : "quickView"} onClose={closeAssignedContact} /> : null}
     </CalendarOperations.Provider>
   );
 }

@@ -9,6 +9,7 @@ import type { MatchingAssignmentItemsState } from "@/lib/calendar/matchingAssign
 type Action = (formData: FormData) => void | Promise<void>;
 export const CalendarOperations = createContext<{
   readOnly: boolean;
+  openAssignedContact?: (assignmentId: string) => void;
   saveMealAction?: Action;
   duplicateAction?: Action;
   bulkAssignmentAction?: BulkAssignmentAction;

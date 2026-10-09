@@ -2020,6 +2020,19 @@ export type Database = {
           sending_count: number
         }[]
       }
+      read_project_quick_view_assigned_contact: {
+        Args: {
+          p_assignment_id: string
+          p_bearer_token: string
+          p_project_date?: string
+        }
+        Returns: {
+          congregation: string
+          contact_name: string
+          email: string
+          phone: string
+        }[]
+      }
       read_project_quick_view_by_token: {
         Args: { p_bearer_token: string; p_project_date?: string }
         Returns: {

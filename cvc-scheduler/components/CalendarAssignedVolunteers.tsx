@@ -1,4 +1,7 @@
+"use client";
+
 import { DisclosureSection } from "./DisclosureSection";
+import { useCalendarOperations } from "./CalendarMeals";
 import { CircleCheck, CircleX, Clock3 } from "lucide-react";
 
 export type AssignmentVisibility = "hidden" | "unavailable" | "available";
@@ -37,13 +40,14 @@ export function CalendarAssignedVolunteers({ itemId, assignments, visibility }: 
   assignments?: readonly CalendarVisibleAssignment[];
   visibility: AssignmentVisibility;
 }) {
+  const { openAssignedContact } = useCalendarOperations();
   if (visibility === "hidden") return null;
   if (visibility === "unavailable") return <p className="text-sm text-[var(--pl-muted)]">Assignment details unavailable</p>;
   const people = (assignments ?? []).filter(person => person.calendarItemId === itemId);
   if (!people.length) return <p className="text-sm text-[var(--pl-muted)]">No volunteers assigned</p>;
   const rows = (list: readonly CalendarVisibleAssignment[]) => <ul className="flex min-w-0 flex-wrap gap-x-4 gap-y-1.5" aria-label="Assigned volunteers">
     {list.map(person => <li key={person.assignmentId} className="inline-flex min-w-0 max-w-full items-center gap-1 text-sm leading-5">
-      <span className="min-w-0 max-w-full break-words font-medium text-[var(--pl-text)]">{person.volunteerDisplayName}</span>
+      {openAssignedContact ? <button aria-label={`Contact ${person.volunteerDisplayName}`} className="min-w-0 max-w-full break-words text-left font-medium text-[var(--pl-blue)] underline-offset-2 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={() => openAssignedContact(person.assignmentId)} type="button">{person.volunteerDisplayName}</button> : <span className="min-w-0 max-w-full break-words font-medium text-[var(--pl-text)]">{person.volunteerDisplayName}</span>}
       <AssignmentResponseIcon status={person.responseStatus} />
     </li>)}
   </ul>;

@@ -164,7 +164,7 @@ assert.match(projectDayServer, /setProjectDayExpectedOnSiteWithVerifiedContext/)
 assert.match(projectDayServer, /requiredCapability: "calendar\.edit"/);
 assert.match(projectDayServer, /set_current_project_day_expected_on_site/);
 assert.doesNotMatch(calendarPage, /formData\.get\(["']workspace/i);
-assert.match(calendarClient, /publishedScheduleCount\} published Calendar items/);
+assert.match(calendarClient, /publishedScheduleCount\} scheduled items/);
 assert.doesNotMatch(calendarClient, /Save expected count|Daily total\. Leave blank to clear\./);
 assert.match(calendarClient, /MobileOverlaySheet/);
 assert.match(calendarClient, /buildCalendarProjectDayHref/);

@@ -235,7 +235,7 @@ export function CalendarAssignmentPicker({
   neededCount: number;
   unifiedAssignment?: ReactNode;
 }) {
-  const { readOnly } = useCalendarOperations();
+  const { readOnly, openAssignedContact } = useCalendarOperations();
   const [search, setSearch] = useState("");
   const [congregation, setCongregation] = useState("");
   const [sort, setSort] = useState<PickerSort>("name-asc");
@@ -320,7 +320,7 @@ export function CalendarAssignmentPicker({
               <div className="bg-white px-3 py-2.5" key={assignment.assignmentId}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">{assignment.volunteerDisplayName}</p>
+                    {openAssignedContact ? <button aria-label={`Contact ${assignment.volunteerDisplayName}`} className="truncate text-left text-sm font-semibold text-[var(--pl-blue)] underline-offset-2 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={() => openAssignedContact(assignment.assignmentId)} type="button">{assignment.volunteerDisplayName}</button> : <p className="truncate text-sm font-semibold text-slate-900">{assignment.volunteerDisplayName}</p>}
                     {assignment.volunteerCongregation ? <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{assignment.volunteerCongregation}</p> : null}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">

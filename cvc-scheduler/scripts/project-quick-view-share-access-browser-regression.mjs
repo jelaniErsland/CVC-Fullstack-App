@@ -23,6 +23,7 @@ const baseUrl = resolvePreviewBaseUrl();
 const browserExecutable = resolvePreviewBrowserExecutable();
 const captureDir = path.resolve(root, "..", "previews", "beta-review", "iteration-12-44e3-shared-quick-view");
 const writeCaptures = process.env.WRITE_ITERATION_12_44E3_CAPTURES === "1";
+const assignedContactMode = process.env.SHARED_ASSIGNED_CONTACT_ONLY === "1";
 const refreshedAdminCaptures = new Set([
   "01-desktop-admin-share-control.png",
   "02-desktop-admin-created-link.png",
@@ -36,6 +37,8 @@ const grantId = randomUUID();
 const itemIds = [randomUUID(), randomUUID(), randomUUID()];
 const presetId = randomUUID();
 const dayIds = [randomUUID(), randomUUID()];
+const assignedVolunteerId = randomUUID();
+const assignedAssignmentId = randomUUID();
 const authUserIds = [];
 const authCookies = new Map();
 const secrets = new Set();
@@ -150,6 +153,8 @@ async function cleanup() {
   if (!containerName) return;
   runPsql(`
     delete from public.project_quick_view_access_tokens where workspace_id = '${workspaceId}'::uuid;
+    delete from public.calendar_assignments where workspace_id = '${workspaceId}'::uuid;
+    delete from public.volunteer_profiles where workspace_id = '${workspaceId}'::uuid;
     delete from public.project_days where workspace_id = '${workspaceId}'::uuid;
     delete from public.calendar_items where workspace_id = '${workspaceId}'::uuid;
     delete from public.task_presets where workspace_id = '${workspaceId}'::uuid;
@@ -192,6 +197,12 @@ async function main() {
   `);
 
   runPsql(`update public.calendar_items set meal_kind='lunch',meal_provider='Synthetic meal team',meal_contact='Synthetic meal contact',meal_menu='Vegetable soup',meal_total=47 where id='${itemIds[1]}'::uuid;`);
+  if (assignedContactMode) runPsql(`
+    insert into public.volunteer_profiles (id,workspace_id,full_name,email,phone,congregation,profile_notes,profile_source,manual_created_by_project_contact_id,manual_created_at,availability_snapshot,skills_help_snapshot)
+    values ('${assignedVolunteerId}'::uuid,'${workspaceId}'::uuid,'Synthetic Contact Volunteer','quick-view-fixture@example.invalid','+1 555 120 1100','Synthetic Congregation','private profile marker','manual','${contactId}'::uuid,now(),'{}','{}');
+    insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id)
+    values ('${assignedAssignmentId}'::uuid,'${workspaceId}'::uuid,'${itemIds[0]}'::uuid,'${assignedVolunteerId}'::uuid);
+  `);
   const browser = await chromium.launch(browserExecutable ? { executablePath: browserExecutable } : {});
   try {
     const admin = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ["clipboard-read", "clipboard-write"] });
@@ -352,7 +363,8 @@ async function main() {
     for (const operational of ['Gallatin Valley Build', 'General Help', '2026-09-02', '07:30', '17:00', 'Lunch', 'Synthetic meal contact', 'Synthetic meal team', 'Vegetable soup']) {
       assert(dayRscBody.includes(operational), `Completed bearer RSC body omitted operational ${operational}.`);
     }
-    assert(dayRscBody.includes('"neededCount":4') && dayRscBody.includes('"filledCount":0'), 'Completed bearer RSC body omitted staffing data.');
+    assert(dayRscBody.includes('"neededCount":4') && dayRscBody.includes(`"filledCount":${assignedContactMode ? 1 : 0}`), 'Completed bearer RSC body omitted staffing data.');
+    if (assignedContactMode) assert(!dayRscBody.includes('quick-view-fixture@example.invalid') && !dayRscBody.includes('+1 555 120 1100'), 'Contact details loaded before opening the card.');
     assert(dayRscBody.includes('"total":47'), 'Completed bearer RSC body omitted the meal headcount.');
     assert(dayRscBody.includes(itemIds[0]) && dayRscBody.includes(itemIds[1])
       && dayRscBody.includes('"publicationState":"published"'), 'Completed bearer RSC body omitted the actual published fixture records.');
@@ -370,6 +382,17 @@ async function main() {
     const serializedPage = await recipientPage.content();
     assert(!/private note|private lunch note|restricted location|Current synthetic preset instructions|Synthetic entrance/.test(serializedPage), "Bearer serialized HTML/RSC payload leaked private instructions.");
     assert.equal(await inspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
+    if (assignedContactMode) {
+      await inspector.getByRole('button',{name:'Contact Synthetic Contact Volunteer'}).click();
+      const contactCard = recipientPage.getByRole('dialog',{name:'Assigned volunteer contact'});
+      await contactCard.getByText('quick-view-fixture@example.invalid',{exact:true}).waitFor();
+      await contactCard.getByText('+1 555 120 1100',{exact:true}).waitFor();
+      await contactCard.getByText('Synthetic Congregation',{exact:true}).waitFor();
+      assert(!/private profile marker|private note|Emergency|Response to this assignment|Other assignments/.test(await contactCard.innerText()), 'Shared contact card exposed private or admin-only fields.');
+      assert(await contactCard.getByRole('link',{name:'Call'}).count()===1 && await contactCard.getByRole('link',{name:'Text'}).count()===1 && await contactCard.getByRole('link',{name:'Email'}).count()===1);
+      await contactCard.getByRole('button',{name:'Close volunteer contact'}).click();
+      await inspector.getByRole('button',{name:'Contact Synthetic Contact Volunteer'}).waitFor();
+    }
     await recipientPage.keyboard.press('Escape');await inspector.waitFor({state:'hidden'});
     await recipientPage.getByRole('button',{name:/Lunch/}).first().click();
     await inspector.getByText('Daily headcount',{exact:true}).waitFor();
@@ -401,6 +424,14 @@ async function main() {
     assert(!/private note|Current synthetic preset instructions|Synthetic entrance/.test(await recipientPage.content()), 'Mobile deep link leaked instructions.');
 
     assert.equal(await mobileInspector.getByRole('button',{name:/^(Assign|Publish|Send|Remove|Save)/}).count(),0);
+    if (assignedContactMode) {
+      await mobileInspector.getByRole('button',{name:'Contact Synthetic Contact Volunteer'}).click();
+      const mobileCard=recipientPage.getByRole('dialog',{name:'Assigned volunteer contact'});
+      await mobileCard.getByText('quick-view-fixture@example.invalid',{exact:true}).waitFor();
+      assert(!/private profile marker|private note|Emergency|Response to this assignment/.test(await mobileCard.innerText()),'Mobile shared contact card exposed private fields.');
+      await noOverflow(recipientPage,'Mobile shared contact card');
+      await mobileCard.getByRole('button',{name:'Close Assigned volunteer contact'}).click();
+    }
     await noOverflow(recipientPage, 'Mobile bearer inspector');
     await privacyCapture(recipientPage,'privacy-bearer-mobile.png');
     await recipientPage.keyboard.press('Escape');

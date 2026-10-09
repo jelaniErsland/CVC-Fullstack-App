@@ -1,5 +1,17 @@
 # Project Local function EXECUTE policy
 
+## 12.53 assigned contact card
+
+`read_project_quick_view_assigned_contact(text,uuid,date)` is a read-only,
+postgres-owned SECURITY DEFINER function with a pinned empty search path. It
+requires a live, unrevoked project Quick View bearer and one active assignment
+on a published item in that same active project and visible date window. It
+returns only name, phone, email, and congregation for that assignment. Only
+`anon` receives EXECUTE; PUBLIC, authenticated, and service_role do not. The
+shared-link server action uses an anonymous read client and does not use a
+service-role credential. Exact-signature policy and local cross-project,
+expiry, and private-field regressions cover the boundary.
+
 ## 12.52 local addition
 
 `read_assignment_picker_away_periods(uuid,uuid[],date,date)` is a read-only,

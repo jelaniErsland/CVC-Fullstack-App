@@ -39,6 +39,7 @@ const writeAssignmentPickerReviewScreenshots =
   process.env.WRITE_ITERATION_12_44D2B_CAPTURES === "1";
 const projectDayQuickViewOnly =
   process.env.PROJECT_DAY_QUICK_VIEW_ONLY === "1";
+const assignedContactOnly = process.env.ASSIGNED_CONTACT_ONLY === "1";
 const archiveUiBrowserOnly =
   process.env.ARCHIVE_UI_BROWSER_ONLY === "1";
 const operationalUsabilityBrowserOnly =
@@ -2760,6 +2761,84 @@ async function writeOperationalUsabilityCapture(page, filename, locator) {
   });
 }
 
+async function runAssignedContactBrowser(browser, containerName) {
+  const extraAssignmentId = randomUUID();
+  runPsql(containerName, `insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id,lifecycle,created_by_auth_user_id)
+    values ('${extraAssignmentId}'::uuid,'${fixture.workspaceId}'::uuid,'${fixture.calendarItemIds.gate}'::uuid,'${fixture.volunteerIds[1]}'::uuid,'active','${authUserIds[0]}'::uuid);
+    insert into public.assignment_responses (workspace_id,assignment_id,response_status,response_source)
+    values ('${fixture.workspaceId}'::uuid,'${extraAssignmentId}'::uuid,'needs_response','project_contact');`);
+  const dataFingerprint = () => runPsql(containerName, `select md5(jsonb_build_array(
+    (select jsonb_agg(to_jsonb(a) order by a.id) from public.calendar_assignments a where a.workspace_id='${fixture.workspaceId}'::uuid),
+    (select jsonb_agg(to_jsonb(v) order by v.id) from public.volunteer_profiles v where v.workspace_id='${fixture.workspaceId}'::uuid)
+  )::text);`);
+  const before = dataFingerprint();
+  const desktopContext = await browser.newContext({ viewport: desktopViewport });
+  const mobileContext = await browser.newContext({ viewport: mobileViewport });
+  await applyAuthCookies(desktopContext, "full");
+  await applyAuthCookies(mobileContext, "full");
+  const desktop = await desktopContext.newPage();
+  const mobile = await mobileContext.newPage();
+  const errors = [...watchPageErrors(desktop), ...watchPageErrors(mobile)];
+  const name1 = reviewVolunteerNames[0];
+  const name2 = reviewVolunteerNames[1];
+  const target = `[data-calendar-task-item="${fixture.calendarItemIds.gate}"]`;
+  const assertContact = async (page, name, quickView = false) => {
+    const dialog = page.getByRole("dialog", { name: "Assigned volunteer contact" });
+    await dialog.getByText(name, { exact: true }).waitFor();
+    assert((await dialog.innerText()).includes("qa-12-12-volunteer-"), "Contact email was absent.");
+    assert(!(await dialog.innerText()).includes("QA Private Emergency"), "Private emergency contact was visible.");
+    assert(!(await dialog.innerText()).includes("Safe scheduling context"), "Private profile note was visible.");
+    assert(await dialog.getByRole("link", { name: "Email" }).count() === 1, "Email action was absent.");
+    if (name === name1) {
+      assert(await dialog.getByRole("link", { name: "Call" }).count() === 1, "Call action was absent.");
+      assert(await dialog.getByRole("link", { name: "Text" }).count() === 1, "Text action was absent.");
+    }
+    if (quickView) {
+      assert(!(await dialog.innerText()).includes("Response to this assignment"), "Quick View exposed assignment response in contact card.");
+      assert(await dialog.getByRole("button", { name: /Edit|Remove|Save/ }).count() === 0, "Quick View contact card exposed editing.");
+    } else {
+      assert((await dialog.innerText()).includes("Response to this assignment"), "Calendar contact card omitted assignment response.");
+    }
+    await dialog.getByRole("button", { name: /Close (Assigned )?volunteer contact/i }).click();
+    await dialog.waitFor({ state: "hidden" });
+  };
+  try {
+    await desktop.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"));
+    await desktop.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    const gate = desktop.locator(target);
+    await gate.getByRole("button", { name: `Contact ${name1}` }).click();
+    await assertContact(desktop, name1);
+    await gate.getByRole("button", { name: `Contact ${name2}` }).click();
+    await assertContact(desktop, name2);
+    await desktop.getByRole("button", { name: "List", exact: true }).click();
+    await desktop.locator('[data-testid="calendar-list-view"]').waitFor();
+    await desktop.locator(target).getByRole("button", { name: `Contact ${name1}` }).click();
+    await assertContact(desktop, name1);
+    await desktop.goto(`${quickViewUrl()}&view=day&item=${fixture.calendarItemIds.gate}`);
+    const inspector = desktop.getByRole("dialog", { name: "Calendar item inspector" });
+    await inspector.getByRole("button", { name: `Contact ${name1}` }).click();
+    await assertContact(desktop, name1, true);
+    await inspector.getByRole("button", { name: `Contact ${name2}` }).click();
+    await desktop.getByRole("dialog", { name: "Assigned volunteer contact" }).getByText(name2, { exact: true }).waitFor();
+    await desktop.keyboard.press("Escape");
+    await desktop.getByRole("dialog", { name: "Assigned volunteer contact" }).waitFor({ state: "hidden" });
+    await inspector.getByRole("button", { name: `Contact ${name1}` }).waitFor();
+    await mobile.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"));
+    await mobile.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    await mobile.locator(target).getByRole("button", { name: `Contact ${name1}` }).click();
+    await assertContact(mobile, name1);
+    await mobile.goto(`${quickViewUrl()}&view=day&item=${fixture.calendarItemIds.gate}`);
+    await mobile.getByRole("dialog", { name: "Calendar item inspector" }).getByRole("button", { name: `Contact ${name1}` }).click();
+    await assertContact(mobile, name1, true);
+    assert(await mobile.evaluate(() => document.body.scrollWidth <= document.documentElement.clientWidth), "Mobile contact sheet overflowed horizontally.");
+    assert(dataFingerprint() === before, "Opening contact cards changed assignments or volunteer profiles.");
+    assert(errors.length === 0, `Contact browser console errors: ${errors.join(" | ")}`);
+  } finally {
+    await desktopContext.close();
+    await mobileContext.close();
+  }
+}
+
 async function runOperationalUsabilityBrowser(browser, containerName) {
   const desktopContext = await browser.newContext({ viewport: desktopViewport });
   const mobileContext = await browser.newContext({ viewport: mobileViewport });
@@ -2983,6 +3062,8 @@ async function main() {
     if (finalProductReview) {
       const { runFinalProductReview } = await import("./final-product-readiness-browser.mjs");
       await runFinalProductReview({ browser, fixture, applyAuthCookies, sql: (query) => runPsql(containerName, query), baseUrl });
+    } else if (assignedContactOnly) {
+      await runAssignedContactBrowser(browser, containerName);
     } else if (operationalUsabilityBrowserOnly) {
       await runOperationalUsabilityBrowser(browser, containerName);
     } else if (archiveUiBrowserOnly) {
@@ -3013,7 +3094,9 @@ async function main() {
   assert(cleanupCompleted, "Calendar route browser fixture cleanup did not complete.");
 
   console.log(
-    operationalUsabilityBrowserOnly
+    assignedContactOnly
+      ? "Assigned volunteer contact browser regression passed."
+      : operationalUsabilityBrowserOnly
       ? "Operational usability browser regression passed."
       : archiveUiBrowserOnly
       ? "Dedicated Calendar Archive UI browser regression passed."
