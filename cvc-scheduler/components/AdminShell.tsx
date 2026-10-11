@@ -22,7 +22,7 @@ import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPen
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
-import { NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
+import { NeedsAttentionBadgeProvider, NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { ldcProjectName } from "@/lib/projectIdentity";
@@ -420,6 +420,7 @@ export function AdminShell({
   }, [closeMobileMore, isMoreOpen]);
 
   return (
+    <NeedsAttentionBadgeProvider enabled={destinations.includes("needs-attention")}>
     <PageShell as="div" className="bg-[var(--pl-canvas)]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="sticky top-0 z-30 border-b border-[var(--pl-border)] bg-white/96 px-4 py-2.5  lg:hidden">
@@ -470,5 +471,6 @@ export function AdminShell({
         onClose={closeMobileMore}
       />
     </PageShell>
+    </NeedsAttentionBadgeProvider>
   );
 }

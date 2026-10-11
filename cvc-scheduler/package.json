@@ -138,7 +138,14 @@
     "test:12-52-picker-browser": "node scripts/12-52-picker-browser-regression.mjs",
     "test:12-52-matching-range": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-52-matching-range-regression.mjs",
     "test:12-52-matching-range:browser": "node scripts/12-52-matching-range-browser.mjs",
-    "test:production-backup-task-details-recovery": "node scripts/production-backup-task-details-recovery-regression.mjs"
+    "test:production-backup-task-details-recovery": "node scripts/production-backup-task-details-recovery-regression.mjs",
+    "test:12-54b-performance": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-54b-performance.mjs --verify",
+    "test:12-54b-range": "node scripts/12-54b-calendar-range.mjs",
+    "test:12-54b-range-read-model": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-54b-range-read-model.mjs",
+    "test:12-54b-reliability": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/12-54b-reliability-regression.mjs",
+    "test:12-54b-communications-performance": "node --no-warnings --experimental-strip-types scripts/12-54b-communications-performance.mjs",
+    "test:12-54b-surfaces:browser": "node scripts/12-54b-surfaces-browser.mjs",
+    "test:12-54b-browser-comparison": "node scripts/12-54b-browser.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

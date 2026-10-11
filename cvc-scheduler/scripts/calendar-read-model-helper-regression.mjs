@@ -441,8 +441,8 @@ assert.deepEqual(
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
 assert.deepEqual(assignmentDetailLinks.sort(), [
-  "app/admin/needs-attention/page.tsx",
   "components/CalendarAssignmentPicker.tsx",
+  "components/NeedsAttentionInbox.tsx",
 ]);
 assert.deepEqual(serviceRoleMarkers, []);
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);

@@ -191,8 +191,8 @@ assert.deepEqual(dryRunImporters, []);
 assert.deepEqual(finalPreflightImporters, []);
 assert.deepEqual(directCalendarTableMarkers, []);
 assert.deepEqual(assignmentDetailLinks, [
-  "app/admin/needs-attention/page.tsx",
   "components/CalendarAssignmentPicker.tsx",
+  "components/NeedsAttentionInbox.tsx",
 ]);
 
 const activationCheckpoint = describeResponseLinkProductActionActivationCheckpoint();

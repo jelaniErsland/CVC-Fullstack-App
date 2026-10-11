@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
+import { withReadTimeout } from "@/lib/readTimeout";
 import type { BulkAssignmentPlan } from "@/lib/calendar/bulkAssignments";
 import { awayOccurrences, pickerAvailability, pickerContextPlan, type PickerContextAction, type PickerContextState, type PickerOccurrence, type PickerVolunteerContext } from "@/lib/calendar/assignmentPickerContext";
 import { calendarVolunteerFilterLabel, volunteerNameMatches } from "@/lib/calendar/volunteerFilter";
@@ -32,6 +33,7 @@ export function PickerVolunteerList({ volunteers, selected, dates, occurrences, 
   const [remembered, setRemembered, resetRemembered, preferenceHydrated] = useRememberedView("assignment-picker", scope);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<{ key: string; state: PickerContextState } | null>(null);
+  const [retry, setRetry] = useState(0);
   const closeRef = useRef<HTMLButtonElement>(null);
   const previewReturnRef = useRef<HTMLElement | null>(null);
   const readyVolunteers = useMemo(() => volunteers.filter(volunteer => volunteer.lifecycle === "active" && volunteer.readinessStatus === "ready"), [volunteers]);
@@ -48,19 +50,19 @@ export function PickerVolunteerList({ volunteers, selected, dates, occurrences, 
   useEffect(() => {
     if (!contextAction || !dates.length || !candidateIds.length) return;
     let active = true;
-    const timer = window.setTimeout(async () => {
+    void (async () => {
       const form = new FormData();
       form.set("plan", contextPlan);
       form.set("volunteerIds", JSON.stringify(candidateIds));
       try {
-        const state = await contextAction(form);
+        const state = await withReadTimeout(contextAction(form));
         if (active) setLoaded({ key: contextKey, state });
       } catch {
         if (active) setLoaded({ key: contextKey, state: { kind: "unavailable" } });
       }
-    }, 350);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [candidateIds, contextAction, contextKey, contextPlan, dates.length]);
+    })();
+    return () => { active = false; };
+  }, [candidateIds, contextAction, contextKey, contextPlan, dates.length, retry]);
   useLayoutEffect(() => {
     if (!previewId) { previewReturnRef.current?.focus(); previewReturnRef.current = null; return; }
     closeRef.current?.focus();
@@ -75,7 +77,7 @@ export function PickerVolunteerList({ volunteers, selected, dates, occurrences, 
   const filtered = readyVolunteers.filter(volunteer => {
     if (!volunteerNameMatches(volunteer.displayName, search)) return false;
     if (congregation && volunteer.congregation !== congregation) return false;
-    if (availability !== "all") {
+    if (availability !== "all" && context) {
       const state = pickerAvailability(contextById.get(volunteer.id), dates, volunteer.availableWorkDays, occurrences);
       if (availability === "available" && state.kind !== "available") return false;
       if (availability === "conflict" && !contextById.get(volunteer.id)?.conflicts.length) return false;
@@ -86,7 +88,7 @@ export function PickerVolunteerList({ volunteers, selected, dates, occurrences, 
   });
   const visibleIds = new Set(filtered.map(volunteer => volunteer.id));
   const hiddenSelected = selected.filter(person => !visibleIds.has(person.id)).length;
-  const filterCount = Number(Boolean(congregation)) + Number(availability !== "all");
+  const filterCount = Number(Boolean(congregation)) + Number(availability !== "all" && Boolean(context));
   const previewVolunteer = readyVolunteers.find(volunteer => volunteer.id === previewId);
   const previewContext: PickerVolunteerContext | undefined = previewId ? contextById.get(previewId) : undefined;
   const labels = readyVolunteers.map(volunteer => ({ id: volunteer.id, name: volunteer.displayName, congregation: volunteer.congregation ?? null }));
@@ -118,8 +120,9 @@ export function PickerVolunteerList({ volunteers, selected, dates, occurrences, 
         <button className={`min-h-9 justify-self-start text-xs font-semibold text-[var(--pl-blue)] ${focus}`} onClick={clearFilters} type="button">Clear all filters</button>
       </div>
     </details>
-    {filterCount ? <p className="mt-1 text-xs font-medium text-blue-800">Filtered by: {[availability !== "all" ? ({ available: "Available", conflict: "Has conflict", away: "Away", limited: "Outside usual days" } as Record<string, string>)[availability] : null, congregation].filter(Boolean).join(" · ")}</p> : null}
-    {loaded?.key === contextKey && loaded.state.kind === "unavailable" ? <p className="mt-1 text-xs text-amber-800">Availability details are unavailable. You can still assign volunteers.</p> : !context && contextAction ? <p className="mt-1 text-xs text-slate-500">Checking availability for this schedule…</p> : null}
+    {filterCount ? <p className="mt-1 text-xs font-medium text-blue-800">Filtered by: {[availability !== "all" && context ? ({ available: "Available", conflict: "Has conflict", away: "Away", limited: "Outside usual days" } as Record<string, string>)[availability] : null, congregation].filter(Boolean).join(" · ")}</p> : null}
+    {availability !== "all" && !context ? <p className="mt-1 text-xs text-slate-600">Your availability filter will apply when details are ready. Showing all availability for now.</p> : null}
+    {loaded?.key === contextKey && loaded.state.kind === "unavailable" ? <p role="status" className="mt-1 text-xs text-amber-800">Availability details are unavailable. You can still assign volunteers. <button type="button" className={`underline ${focus}`} onClick={() => { setLoaded(null); setRetry(value => value + 1); }}>Retry availability</button></p> : !context && contextAction && dates.length > 0 && candidateIds.length > 0 ? <p role="status" className="mt-1 text-xs text-slate-500">Checking availability for this schedule…</p> : null}
     <div className="mt-2 max-h-56 space-y-1 overflow-y-auto" data-picker-scroll="bulk-volunteer-candidates">
       {filtered.length ? filtered.map(volunteer => {
         const status = pickerAvailability(contextById.get(volunteer.id), dates, volunteer.availableWorkDays, occurrences);

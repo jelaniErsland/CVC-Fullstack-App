@@ -3,6 +3,7 @@
 import { readNeedsAttentionRouteState } from "@/lib/needsAttention/routeRead.server";
 import { defaultAdminViews } from "@/lib/adminViews/preferences";
 import { filterAttentionIssues } from "@/lib/needsAttention/issues";
+import { withReadTimeout } from "@/lib/readTimeout";
 
 type NeedsAttentionSeenWriter = {
   rpc: (
@@ -12,8 +13,8 @@ type NeedsAttentionSeenWriter = {
 };
 
 export async function getNeedsAttentionUnseenCountAction() {
-  const state = await readNeedsAttentionRouteState(new Date(), { includeVolunteerSearch: false, horizonDays: 14 });
-  return state.kind === "ready" ? filterAttentionIssues(state.issues, defaultAdminViews.attention, state.today).length : 0;
+  const state = await withReadTimeout(readNeedsAttentionRouteState(new Date(), { includeVolunteerSearch: false, horizonDays: 14 }), 15_000).catch(() => null);
+  return state?.kind === "ready" ? filterAttentionIssues(state.issues, defaultAdminViews.attention, state.today).length : null;
 }
 
 export async function markNeedsAttentionSignalsSeenAction(workspaceId: string, signalIds: readonly string[]) {

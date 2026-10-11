@@ -4774,6 +4774,7 @@ export default function CalendarClient({
           <EmptyState
             title={state.title}
             message={state.message}
+            action={!readOnly && state.kind === "error" ? <a className="text-sm font-semibold underline" href={buildCalendarRouteHref(state.view, state.anchorDate)}>Retry Calendar</a> : undefined}
           />
         ) : null}
       </section>

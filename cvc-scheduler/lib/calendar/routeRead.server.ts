@@ -1,4 +1,5 @@
 import "server-only";
+import { withReadTimeout } from "../readTimeout.ts";
 import { recordAdminTiming } from "../observability/adminTiming.server.ts";
 import { adminDestinations } from "../adminNavigation.ts";
 import type { CalendarMeal } from "./meals.ts";
@@ -784,6 +785,19 @@ export function selectCalendarRouteWorkspaceContext(input: {
 }
 
 export async function readCalendarRouteState(
+  searchParams?: CalendarRouteSearchParams,
+  options: { trustedReadOnly?: boolean; workspaceKey?: string } = {},
+): Promise<CalendarClientState> {
+  return withReadTimeout(readCalendarRouteStateWithinDeadline(searchParams, options)).catch(() => {
+    const request = normalizeCalendarRouteSearchParams(searchParams);
+    const range = request.ok ? deriveCalendarRouteReadRange({
+      view: request.view, anchorDate: request.anchorDate, workspaceTimezone: calendarDefaultTimezone,
+    }) : null;
+    return errorState("query_unavailable", range ?? fallbackRange);
+  });
+}
+
+async function readCalendarRouteStateWithinDeadline(
   searchParams?: CalendarRouteSearchParams,
   options: { trustedReadOnly?: boolean; workspaceKey?: string } = {},
 ): Promise<CalendarClientState> {

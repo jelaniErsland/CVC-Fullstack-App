@@ -18,6 +18,10 @@ write('next.config.mjs',`export default { devIndicators: false, experimental: { 
 write('app/globals.css',fs.readFileSync('app/globals.css','utf8')+'\n@source "../components";\n@source "../app";\n@source "../lib";\n');
 write('app/layout.tsx',fs.readFileSync('app/layout.tsx','utf8'));
 write('app/admin/needs-attention/actions.ts',`"use server"; export async function getNeedsAttentionUnseenCountAction(){return 0;}`);
+// Calendar now imports the on-demand contact actions. Keep this frontend-only
+// fixture disconnected from contact data and real authorization/mutations.
+write('app/admin/calendar/assigned-contact-actions.ts',`"use server"; export async function readAssignedContactAction(){return {kind:"unavailable" as const};}`);
+write('app/qv/assigned-contact-actions.ts',`"use server"; export async function readSharedAssignedContactAction(){return {kind:"unavailable" as const};}`);
 write('fixture.ts',`
 import { cookies } from 'next/headers';
 import { summarizeOverviewCalendar, buildOverviewQuickActions } from './lib/overview/routeRead.server';

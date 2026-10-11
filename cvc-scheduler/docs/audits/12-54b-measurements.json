@@ -1,0 +1,387 @@
+{
+  "baselineSha": "43229f52b938c198baaf65fdfb24e1222be846e4",
+  "scope": "Local synthetic fixtures only; no production speedup or p95 claim",
+  "calendarRange": {
+    "selectedBefore": 289,
+    "source": "12-54b-calendar-range.mjs local run on 2026-10-10",
+    "nullEndFixtureRows": 289,
+    "rangeStart": "2031-02-01",
+    "rangeEndInclusive": "2031-03-01",
+    "selectedAfter": 0
+  },
+  "helpersBefore": {
+    "picker": [
+      {
+        "count": 100,
+        "calls": 5,
+        "peak": 1,
+        "elapsedMs": 295,
+        "latencyMs": 50
+      },
+      {
+        "count": 300,
+        "calls": 13,
+        "peak": 1,
+        "elapsedMs": 806,
+        "latencyMs": 50
+      },
+      {
+        "count": 500,
+        "calls": 21,
+        "peak": 1,
+        "elapsedMs": 1313,
+        "latencyMs": 50
+      },
+      {
+        "count": 1000,
+        "calls": 41,
+        "peak": 1,
+        "elapsedMs": 2544,
+        "latencyMs": 50
+      }
+    ],
+    "calendar": {
+      "calls": 8,
+      "elapsedMs": 1585,
+      "latencyMs": 250,
+      "trace": [
+        {
+          "table": "calendar_items",
+          "at": 13
+        },
+        {
+          "table": "task_presets",
+          "at": 13
+        },
+        {
+          "table": "task_presets",
+          "at": 264
+        },
+        {
+          "table": "calendar_assignments",
+          "at": 529
+        },
+        {
+          "table": "assignment_responses",
+          "at": 794
+        },
+        {
+          "table": "calendar_assignments",
+          "at": 1055
+        },
+        {
+          "table": "volunteer_profiles",
+          "at": 1055
+        },
+        {
+          "table": "assignment_responses",
+          "at": 1320
+        }
+      ],
+      "scope": "authorized data helpers; excludes auth and browser"
+    }
+  },
+  "helpersAfter": {
+    "picker": [
+      {
+        "count": 100,
+        "calls": 5,
+        "peak": 4,
+        "elapsedMs": 120,
+        "latencyMs": 50
+      },
+      {
+        "count": 300,
+        "calls": 13,
+        "peak": 4,
+        "elapsedMs": 251,
+        "latencyMs": 50
+      },
+      {
+        "count": 500,
+        "calls": 21,
+        "peak": 4,
+        "elapsedMs": 378,
+        "latencyMs": 50
+      },
+      {
+        "count": 1000,
+        "calls": 41,
+        "peak": 4,
+        "elapsedMs": 692,
+        "latencyMs": 50
+      }
+    ],
+    "calendar": {
+      "calls": 8,
+      "elapsedMs": 1300,
+      "latencyMs": 250,
+      "trace": [
+        {
+          "table": "calendar_items",
+          "at": 26
+        },
+        {
+          "table": "task_presets",
+          "at": 26
+        },
+        {
+          "table": "task_presets",
+          "at": 284
+        },
+        {
+          "table": "calendar_assignments",
+          "at": 284
+        },
+        {
+          "table": "assignment_responses",
+          "at": 534
+        },
+        {
+          "table": "calendar_assignments",
+          "at": 799
+        },
+        {
+          "table": "volunteer_profiles",
+          "at": 799
+        },
+        {
+          "table": "assignment_responses",
+          "at": 1049
+        }
+      ],
+      "scope": "authorized data helpers; excludes auth and browser"
+    }
+  },
+  "communications": [
+    {
+      "variant": "before",
+      "initialRenderMs": [
+        569,
+        548,
+        558
+      ],
+      "initialReviews": 3,
+      "historyReads": 3,
+      "onDemandReviewMs": 544,
+      "simulatedReviewMs": 543,
+      "simulatedHistoryMs": 30
+    },
+    {
+      "variant": "after",
+      "initialRenderMs": [
+        38,
+        31,
+        31
+      ],
+      "initialReviews": 0,
+      "historyReads": 3,
+      "onDemandReviewMs": 545,
+      "simulatedReviewMs": 543,
+      "simulatedHistoryMs": 30
+    }
+  ],
+  "navigationBrowser": [
+    {
+      "variant": "before",
+      "samples": [
+        {
+          "communicationsMs": 234,
+          "reviewMs": 308,
+          "calendarMs": 347,
+          "communicationBadgePosts": 1,
+          "calendarBadgePosts": 2
+        },
+        {
+          "communicationsMs": 220,
+          "reviewMs": 833,
+          "calendarMs": 326,
+          "communicationBadgePosts": 1,
+          "calendarBadgePosts": 1
+        },
+        {
+          "communicationsMs": 217,
+          "reviewMs": 815,
+          "calendarMs": 262,
+          "communicationBadgePosts": 1,
+          "calendarBadgePosts": 1
+        }
+      ]
+    },
+    {
+      "variant": "after",
+      "samples": [
+        {
+          "communicationsMs": 220,
+          "reviewMs": 215,
+          "calendarMs": 242,
+          "communicationBadgePosts": 1,
+          "calendarBadgePosts": 1
+        },
+        {
+          "communicationsMs": 218,
+          "reviewMs": 216,
+          "calendarMs": 340,
+          "communicationBadgePosts": 2,
+          "calendarBadgePosts": 1
+        },
+        {
+          "communicationsMs": 218,
+          "reviewMs": 217,
+          "calendarMs": 225,
+          "communicationBadgePosts": 2,
+          "calendarBadgePosts": 1
+        }
+      ]
+    }
+  ],
+  "surfacesBrowser": {
+    "badge": [
+      {
+        "variant": "before",
+        "calls": 2
+      },
+      {
+        "variant": "after",
+        "calls": 1
+      }
+    ],
+    "picker": [
+      {
+        "variant": "before",
+        "count": 100,
+        "firstUsefulMs": 55,
+        "availabilityReadyMs": 733,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 300,
+        "firstUsefulMs": 105,
+        "availabilityReadyMs": 1292,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 500,
+        "firstUsefulMs": 94,
+        "availabilityReadyMs": 1805,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 1000,
+        "firstUsefulMs": 164,
+        "availabilityReadyMs": 3132,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 100,
+        "firstUsefulMs": 55,
+        "availabilityReadyMs": 329,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 300,
+        "firstUsefulMs": 80,
+        "availabilityReadyMs": 628,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 500,
+        "firstUsefulMs": 105,
+        "availabilityReadyMs": 896,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 1000,
+        "firstUsefulMs": 158,
+        "availabilityReadyMs": 1642,
+        "latencyMs": 50
+      }
+    ]
+  },
+  "surfacesRecoveryBrowser": {
+    "badge": [
+      {
+        "variant": "before",
+        "calls": 2
+      },
+      {
+        "variant": "after",
+        "calls": 1
+      }
+    ],
+    "picker": [
+      {
+        "variant": "before",
+        "count": 100,
+        "firstUsefulMs": 54,
+        "availabilityReadyMs": 742,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 300,
+        "firstUsefulMs": 94,
+        "availabilityReadyMs": 1288,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 500,
+        "firstUsefulMs": 149,
+        "availabilityReadyMs": 1864,
+        "latencyMs": 50
+      },
+      {
+        "variant": "before",
+        "count": 1000,
+        "firstUsefulMs": 147,
+        "availabilityReadyMs": 3156,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 100,
+        "firstUsefulMs": 65,
+        "availabilityReadyMs": 326,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 300,
+        "firstUsefulMs": 102,
+        "availabilityReadyMs": 626,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 500,
+        "firstUsefulMs": 99,
+        "availabilityReadyMs": 911,
+        "latencyMs": 50
+      },
+      {
+        "variant": "after",
+        "count": 1000,
+        "firstUsefulMs": 144,
+        "availabilityReadyMs": 1600,
+        "latencyMs": 50
+      }
+    ],
+    "recovery": "PASS picker request failure/retry and badge late-result protection"
+  },
+  "limitations": [
+    "Before and after real browser variants both used corrected local SQL.",
+    "Navigation POST counts are not reliable badge-only attribution.",
+    "One sample per picker size and variant per surfaces run.",
+    "Three warm local navigation samples; tiny synthetic project.",
+    "Dedicated assigned-contact browser test blocked by Docker engine startup failure.",
+    "Broader authenticated browser suite stopped at photo upload timeout."
+  ]
+}

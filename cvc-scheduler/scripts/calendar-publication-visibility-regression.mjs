@@ -267,7 +267,7 @@ async function expectFailure(label, operation) {
 }
 
 async function createTimedItem(client, title) {
-  const { data, error } = await client.rpc("create_calendar_item", {
+  const { data, error } = await client.rpc("create_calendar_item_draft", {
     p_workspace_id: fixture.workspaceId,
     p_task_preset_id: null,
     p_one_off_title: title,
@@ -378,7 +378,7 @@ where id = ${sqlUuid(calendarItemId)}`,
   assert.equal(createdRows[0].published_by_project_contact_id, null);
 
   await assertReadModelContains(users.owner.client, fixture.contacts.owner, calendarItemId, "draft");
-  await assertReadModelOmits(users.editor.client, fixture.contacts.editor, calendarItemId);
+  await assertReadModelContains(users.editor.client, fixture.contacts.editor, calendarItemId, "draft");
   await assertReadModelOmits(users.readOnly.client, fixture.contacts.readOnly, calendarItemId);
 
   await updateTimedItem(containerName, users.owner.client, calendarItemId);
@@ -398,9 +398,11 @@ where id = ${sqlUuid(calendarItemId)}`,
       if (error) throw error;
     }),
   );
+  await expectFailure("explicit draft assignment before activation", () => createAssignment(users.owner.client, calendarItemId));
+  await publishItem(users.owner.client, calendarItemId);
   const assignmentId = await createAssignment(users.owner.client, calendarItemId);
   assert.equal(queryJson(containerName, `select publication_state from public.calendar_items where id=${sqlUuid(calendarItemId)}`)[0].publication_state,
-    "published", "Saving an assignment publishes the creator's draft without email.");
+    "published", "Explicit activation precedes assignment creation without email.");
 
   const ownerDetail = await users.owner.client.rpc("read_assignment_detail_context", {
     p_assignment_id: assignmentId,
@@ -527,7 +529,7 @@ async function main() {
   }
 
   console.log(
-    "Confirmed Calendar publication visibility: draft owner-only reads, publish, published cross-contact visibility, assignment/token gating, direct-write denial, and zero-residue cleanup.",
+    "Confirmed Calendar publication visibility: explicit draft editor review, view-only draft privacy, activation before assignment, published cross-contact visibility, assignment/token gating, direct-write denial, and zero-residue cleanup.",
   );
 }
 

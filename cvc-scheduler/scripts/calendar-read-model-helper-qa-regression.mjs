@@ -201,8 +201,8 @@ assert.deepEqual(
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
 assert.deepEqual(assignmentDetailLinks.sort(), [
-  "app/admin/needs-attention/page.tsx",
   "components/CalendarAssignmentPicker.tsx",
+  "components/NeedsAttentionInbox.tsx",
 ]);
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(
@@ -487,6 +487,7 @@ assert.deepEqual(Object.keys(mapped).sort(), [
   "assignments",
   "calendarItemId",
   "coverage",
+  "customValues",
   "displayType",
   "endDate",
   "endTime",
@@ -494,6 +495,7 @@ assert.deepEqual(Object.keys(mapped).sort(), [
   "followUpProjectContactId",
   "isOwnDraft",
   "lifecycle",
+  "meal",
   "neededCount",
   "oneOffTaskLabel",
   "oneOffTaskType",
@@ -504,11 +506,14 @@ assert.deepEqual(Object.keys(mapped).sort(), [
   "stableDisplayReference",
   "startDate",
   "startTime",
+  "taskDescription",
+  "taskPresetColorKey",
   "taskPresetId",
   "taskPresetLabel",
   "taskPresetType",
   "taskSourceLabel",
   "timezone",
+  "updatedAt",
 ]);
 assert.equal(mapped.calendarItemId, calendarItemId);
 assert.equal(mapped.stableDisplayReference, `calendar-item:${calendarItemId}`);
@@ -706,7 +711,7 @@ assert.match(
   packageSource,
   /"test:calendar-read-model-helper:qa": "node --conditions=react-server --no-warnings --experimental-strip-types scripts\/calendar-read-model-helper-qa-regression\.mjs"/,
 );
-assert.match(currentStateSource, /Iteration 12\.4/);
+assert.match(currentStateSource, /PROJECT_HISTORY\.md/);
 assert.match(roadmapSource, /12\.5 Route-Unused Calendar Read Model Disposable Local Data Validation/);
 assert.match(calendarReadinessSource, /12\.4 Route-Unused Calendar Read Model Helper QA Harness/);
 assert.match(authReadinessSource, /12\.4 route-unused Calendar read model helper QA harness/i);

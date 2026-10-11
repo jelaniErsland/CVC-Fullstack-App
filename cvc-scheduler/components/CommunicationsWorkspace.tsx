@@ -19,7 +19,7 @@ const exclusionMessage: Record<string,string> = {
   existing_delivery_requires_review: "An earlier assignment delivery has an unresolved outcome. Review history before sending again.",
 };
 export function CommunicationsWorkspace({ action, history: initialHistory, pendingWelcomeCount, transportEnabled, initialVolunteerId, initialKind = "welcome", initialStartDate, initialEndDate, today, preferenceScope, explicitKind = false }: {
-  action: (form: FormData) => Promise<CommunicationActionState>; history: CommunicationHistory[]; pendingWelcomeCount: number;
+  action: (form: FormData) => Promise<CommunicationActionState>; history: CommunicationHistory[]; pendingWelcomeCount?: number;
   transportEnabled: boolean; initialVolunteerId?: string; initialKind?: "welcome" | "schedule"; initialStartDate?: string; initialEndDate?: string; today: string; preferenceScope?: AdminViewScope; explicitKind?: boolean;
 }) {
   const [remembered, setRemembered, resetRemembered, preferenceHydrated] = useRememberedView("communications", preferenceScope ?? null);
@@ -93,7 +93,7 @@ export function CommunicationsWorkspace({ action, history: initialHistory, pendi
   const previewMessage = preview?.recipients[0] ? buildCommunicationMessage({ kind, workspaceName:preview.workspaceName, name:preview.recipients[0].name, assignments:preview.recipients[0].assignments, url:kind === "welcome" ? "https://projectlocal.app" : "[Private schedule link for this volunteer]" }) : null;
   return <div className="mt-6 space-y-5">
     <div className="grid gap-2 sm:grid-cols-3" role="tablist" aria-label="Communications sections">
-      <button type="button" role="tab" aria-selected={activeTab==='welcome'} className={`${button} flex items-center gap-2 text-left ${activeTab==='welcome'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('welcome');setKind('welcome');setMode('new');setIds([]);setSelectionTouched(false);}}><Mail className="size-4 text-blue-600" /><span>Welcome emails<span className="block text-xs font-normal text-slate-600">{pendingWelcomeCount} awaiting introduction</span></span></button>
+      <button type="button" role="tab" aria-selected={activeTab==='welcome'} className={`${button} flex items-center gap-2 text-left ${activeTab==='welcome'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('welcome');setKind('welcome');setMode('new');setIds([]);setSelectionTouched(false);}}><Mail className="size-4 text-blue-600" /><span>Welcome emails<span className="block text-xs font-normal text-slate-600">{pendingWelcomeCount === undefined ? "Review new volunteers when ready" : `${pendingWelcomeCount} awaiting introduction`}</span></span></button>
       <button type="button" role="tab" aria-selected={activeTab==='schedule'} className={`${button} flex items-center gap-2 text-left ${activeTab==='schedule'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('schedule');setKind('schedule');setMode('new');setIds([]);setSelectionTouched(false);}}><CalendarDays className="size-4 text-blue-600" /><span>Schedule deliveries</span></button>
       <button type="button" role="tab" aria-selected={activeTab==='history'} className={`${button} flex items-center gap-2 text-left ${activeTab==='history'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>setActiveTab('history')}><History className="size-4 text-blue-600" />Delivery history</button>
     </div>

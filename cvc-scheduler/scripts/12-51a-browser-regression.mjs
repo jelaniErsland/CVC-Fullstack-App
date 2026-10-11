@@ -73,9 +73,10 @@ export default async function Page({searchParams}:{searchParams:Promise<{mode?:s
 
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/(SUPABASE|RESEND|EMAIL|TRANSPORT|TOKEN|SECRET)/i.test(key)));
 Object.assign(env, { NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:1', NEXT_PUBLIC_SUPABASE_ANON_KEY:'fixture-only', ADMIN_AUTH_MODE:'enforced', ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT:'' });
-const server = spawn(process.execPath, [path.join(root,'node_modules/next/dist/bin/next'),'dev','--webpack','--hostname','127.0.0.1','--port','3151'], { cwd:fixture, env, stdio:'ignore', windowsHide:true });
+const server = spawn(process.execPath, [path.join(root,'node_modules/next/dist/bin/next'),'dev','--webpack','--hostname','127.0.0.1','--port','3151'], { cwd:fixture, env, stdio:['ignore','pipe','pipe'], windowsHide:true });
+let fixtureLog='';server.stdout.on('data', chunk=>fixtureLog+=chunk);server.stderr.on('data', chunk=>fixtureLog+=chunk);
 const base='http://127.0.0.1:3151';
-async function waitForServer(){ for(let n=0;n<90;n++){try{const r=await fetch(base+'/admin/calendar?view=month&date=2026-10-05');if(r.ok)return;}catch{} await new Promise(resolve=>setTimeout(resolve,1000));}throw new Error('Fixture server did not start'); }
+async function waitForServer(){ for(let n=0;n<90;n++){try{const r=await fetch(base+'/admin/calendar?view=month&date=2026-10-05');if(r.ok)return;if(r.status===500)throw new Error('Fixture compile failed: '+fixtureLog.slice(0,7000));}catch(error){if(error.message.startsWith('Fixture compile failed:'))throw error;} await new Promise(resolve=>setTimeout(resolve,1000));}throw new Error('Fixture server did not start: '+fixtureLog.slice(-5000)); }
 const browser=await chromium.launch({headless:true,executablePath:resolvePreviewBrowserExecutable()});
 try {
   await waitForServer();

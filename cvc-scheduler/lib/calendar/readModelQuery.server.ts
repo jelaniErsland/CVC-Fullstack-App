@@ -1,4 +1,5 @@
 import "server-only";
+import { withReadTimeout } from "../readTimeout.ts";
 import { parseCalendarMeal } from "./meals.ts";
 
 import {
@@ -227,7 +228,7 @@ async function runSafeQuery(
   builder: SupabaseLikeQueryBuilder,
 ): Promise<SupabaseQueryResult | null> {
   try {
-    return await builder;
+    return await withReadTimeout(builder);
   } catch {
     return null;
   }
@@ -376,7 +377,7 @@ export async function readCalendarReadModelWithClient(
       .eq("workspace_id", scope.workspaceId)
       .eq("lifecycle", "active")
       .lte("start_date", scope.rangeEnd)
-      .or(`end_date.is.null,end_date.gte.${scope.rangeStart}`)
+      .or(`and(end_date.is.null,start_date.gte.${scope.rangeStart}),end_date.gte.${scope.rangeStart}`)
       .order("start_date", { ascending: true })
       .order("schedule_kind", { ascending: true })
       .order("start_time", { ascending: true })
@@ -401,20 +402,14 @@ export async function readCalendarReadModelWithClient(
     ),
   ];
 
-  let taskPresetRows: readonly AnyRow[] = [];
-  if (taskPresetIds.length > 0) {
-    const taskPresetsResult = await runSafeQuery(
+  // Preset labels and assignment coverage both depend only on item IDs.
+  const taskPresetsWork = taskPresetIds.length > 0 ? runSafeQuery(
       input.client
         .rpc("read_authorized_task_presets", { p_workspace_id: scope.workspaceId })
         .select(CALENDAR_READ_MODEL_QUERY_SELECTORS.taskPresets)
         .eq("workspace_id", scope.workspaceId)
         .in("id", taskPresetIds),
-    );
-    if (!taskPresetsResult || taskPresetsResult.error) {
-      return safeFailure("task_presets_unavailable");
-    }
-    taskPresetRows = asRows(taskPresetsResult.data);
-  }
+    ) : Promise.resolve({ data: [], error: null });
 
   let assignmentRows: readonly AnyRow[] = [];
   let responseRows: readonly AnyRow[] = [];
@@ -449,6 +444,9 @@ export async function readCalendarReadModelWithClient(
     }
   }
 
+  const taskPresetsResult = await taskPresetsWork;
+  if (!taskPresetsResult || taskPresetsResult.error) return safeFailure("task_presets_unavailable");
+  const taskPresetRows = asRows(taskPresetsResult.data);
   const taskPresetById = new Map(
     taskPresetRows
       .map((row) => {
