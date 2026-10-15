@@ -228,7 +228,7 @@ export default async function AdminTasksPage({ searchParams }: AdminTasksPagePro
   }
 
   return (
-    <AdminShell active="tasks" workspaceName={state.workspaceName} destinations={state.navigationDestinations}>
+    <AdminShell active="tasks" workspaceName={state.workspaceName} destinations={state.navigationDestinations} calendarWorkspaceKey={state.workspaceKey}>
       <TaskPresetManagement
         archiveAction={archiveTaskPresetAction}
         canEdit={state.canEdit}

@@ -26,6 +26,7 @@ import { NeedsAttentionBadgeProvider, NeedsAttentionUnseenBadge } from "@/compon
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { ldcProjectName } from "@/lib/projectIdentity";
+import { useCalendarReturnHref } from "@/lib/adminViews/calendarReturn";
 
 type AdminShellProps = {
   active: AdminNavActive;
@@ -35,6 +36,7 @@ type AdminShellProps = {
   projectId?: string;
   workspaceName?: string;
   destinations?: readonly string[];
+  calendarWorkspaceKey?: string | null;
 };
 
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
@@ -109,6 +111,7 @@ function MobileBottomNav({
   destinations,
   compact,
   onLayoutChange,
+  calendarHref,
 }: {
   active: AdminNavActive;
   isMoreOpen: boolean;
@@ -117,6 +120,7 @@ function MobileBottomNav({
   destinations?: readonly string[];
   compact: boolean;
   onLayoutChange: () => void;
+  calendarHref: string;
 }) {
   const isMoreActive = !primaryMobileTabIds.has(active) || (compact && (active === "volunteers" || active === "needs-attention"));
   const navRef = useRef<HTMLElement>(null);
@@ -138,7 +142,7 @@ function MobileBottomNav({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--pl-border)] bg-white px-2 pb-[calc(env(safe-area-inset-bottom)+5px)] pt-1.5   lg:hidden"
     >
       <div className={`mx-auto grid max-w-md items-center gap-0.5 ${compact ? "grid-cols-3" : "grid-cols-[repeat(auto-fit,minmax(3.6rem,1fr))]"}`}>
-        {primaryMobileTabs.filter(tab => !compact || tab.id === "overview" || tab.id === "calendar").map(tab => !destinations || destinations.includes(tab.id) ? <MobileTabLink active={active === tab.id} compact={compact} key={tab.id} tab={tab} /> : <span key={tab.id} />)}
+        {primaryMobileTabs.filter(tab => !compact || tab.id === "overview" || tab.id === "calendar").map(tab => !destinations || destinations.includes(tab.id) ? <MobileTabLink active={active === tab.id} compact={compact} key={tab.id} tab={tab} href={tab.id === "calendar" ? calendarHref : tab.href} /> : <span key={tab.id} />)}
         <button
           aria-controls="mobile-more-navigation"
           aria-expanded={isMoreOpen}
@@ -169,10 +173,12 @@ function MobileTabLink({
   active,
   compact,
   tab,
+  href,
 }: {
   active: boolean;
   compact: boolean;
   tab: PrimaryMobileTab;
+  href: string;
 }) {
   const Icon = tab.icon;
 
@@ -186,7 +192,7 @@ function MobileTabLink({
           ? "text-[var(--pl-blue)]"
           : "text-[var(--pl-muted)] hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
       ].join(" ")}
-      href={tab.href}
+      href={href}
     >
       <span className={active ? "flex size-7 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)]" : "flex size-7 items-center justify-center"}>
         <Icon aria-hidden="true" className="h-[19px] w-[19px]" />
@@ -339,7 +345,9 @@ export function AdminShell({
   onMobileMoreOpen,
   workspaceName,
   destinations = ["overview"],
+  calendarWorkspaceKey = null,
 }: AdminShellProps) {
+  const calendarHref = useCalendarReturnHref(calendarWorkspaceKey);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMoreCloseButtonRef = useRef<HTMLButtonElement>(null);
@@ -443,7 +451,7 @@ export function AdminShell({
           <aside className="hidden border-r border-[var(--pl-border)] bg-white lg:block">
             <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-4 py-6">
               <AdminBrand />
-              <AdminNav active={active} workspaceName={visibleWorkspaceName} destinations={destinations} />
+              <AdminNav active={active} workspaceName={visibleWorkspaceName} destinations={destinations} calendarHref={calendarHref} />
             </div>
           </aside>
 
@@ -453,6 +461,7 @@ export function AdminShell({
       </div>
 
       <MobileBottomNav
+        calendarHref={calendarHref}
         destinations={destinations}
         compact={compactMobileNav}
         onLayoutChange={measureCompactMobileNav}

@@ -39,6 +39,7 @@ type AdminNavProps = {
   workspaceName?: string;
   onNavigate?: () => void;
   destinations?: readonly string[];
+  calendarHref?: string;
 };
 
 const navItems: Array<{
@@ -61,6 +62,7 @@ export function AdminNav({
   workspaceName,
   onNavigate,
   destinations,
+  calendarHref = "/admin/calendar",
 }: AdminNavProps) {
   const visibleWorkspaceName = ldcProjectName(workspaceName);
 
@@ -97,7 +99,7 @@ export function AdminNav({
                   ? "border-blue-100 bg-[var(--pl-blue-soft)] font-semibold text-[var(--pl-blue)]"
                   : "hover:bg-[var(--pl-surface-subtle)] hover:text-[var(--pl-ink)]",
               ].join(" ")}
-              href={item.href}
+              href={item.id === "calendar" ? calendarHref : item.href}
               onClick={onNavigate}
             >
               <span className={[

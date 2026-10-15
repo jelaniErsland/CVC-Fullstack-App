@@ -279,7 +279,7 @@ export default async function AdminVolunteersPage({
         ];
 
   return (
-    <AdminShell active="volunteers" workspaceName={isReadyState ? state.workspaceName : undefined} destinations={isReadyState ? state.navigationDestinations : ["overview"]}>
+    <AdminShell active="volunteers" workspaceName={isReadyState ? state.workspaceName : undefined} destinations={isReadyState ? state.navigationDestinations : ["overview"]} calendarWorkspaceKey={isReadyState ? state.workspaceKey : null}>
       <PageHeader title="Volunteers" secondaryActions={<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--pl-muted)]">
           {stats.map((stat) => (
             <span key={stat.label}>

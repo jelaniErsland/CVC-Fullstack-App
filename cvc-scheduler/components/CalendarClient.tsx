@@ -32,10 +32,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useTransition,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminViewScope } from "@/lib/adminViews/scopeContext";
 import { useRememberedView } from "@/lib/adminViews/useRememberedView";
+import { writeCalendarReturn } from "@/lib/adminViews/calendarReturn";
 import { calendarRouteHref, readCalendarRouteDay, readInspectorSection, type CalendarRouteBase } from "@/lib/calendar/routeHref";
 import { calendarVolunteerDetail, calendarVolunteerFilterLabel, calendarVolunteerOptions, itemHasCalendarVolunteer, searchCalendarVolunteers, type CalendarVolunteerOption } from "@/lib/calendar/volunteerFilter";
 import Link from "next/link";
@@ -3861,6 +3863,7 @@ export type CalendarClientState =
   | Readonly<{
       kind: "ready_with_items" | "ready_empty";
       workspaceName: string;
+      workspaceKey?: string;
       workspaceId?: string;
       navigationDestinations?: readonly string[];
       projectStartsOn: string | null;
@@ -4229,6 +4232,7 @@ export default function CalendarClient({
   updateAction?: CalendarMutationAction;
 }>) {
   const router = useRouter();
+  const [calendarPending, startCalendarTransition] = useTransition();
   const searchParams = useSearchParams();
   const initialInspectorItemId = searchParams.get("item") ?? undefined;
   const initialInspectorSection = readInspectorSection(searchParams.get("section"));
@@ -4241,7 +4245,7 @@ export default function CalendarClient({
   function buildCalendarInspectorHref(view: CalendarViewMode, date: string, item: string, section: CalendarInspectorSection) {
     return calendarRouteHref({ routeBase, projectKey }, { view, date, item, section });
   }
-  function navigate(href: string) { router.push(href); }
+  function navigate(href: string) { startCalendarTransition(() => router.push(href)); }
   const isReady = state.kind === "ready_with_items" || state.kind === "ready_empty";
   const isReadyEmpty = state.kind === "ready_empty";
   const projectCalendarAnchor = isReady ? state.projectStartsOn : null;
@@ -4265,6 +4269,18 @@ export default function CalendarClient({
   const viewScope = useAdminViewScope();
   const [rememberedView, setRememberedView, , viewHydrated] = useRememberedView("calendar", routeBase === "/admin/calendar" ? viewScope : null);
   const scopeKey = viewScope ? `${viewScope.contactId}:${viewScope.workspaceId}` : null;
+  const returnWorkspaceKey = isReady ? state.workspaceKey : null;
+  const rememberReturn = (view: CalendarViewMode, date: string) => {
+    if (routeBase !== "/admin/calendar" || !returnWorkspaceKey) return;
+    try { writeCalendarReturn(window.localStorage, returnWorkspaceKey, { view, date }); }
+    catch { /* Browser storage is optional; Calendar navigation still works. */ }
+  };
+  useEffect(() => {
+    if (routeBase === "/admin/calendar" && isReady && returnWorkspaceKey) {
+      try { writeCalendarReturn(window.localStorage, returnWorkspaceKey, { view: activeView, date: calendarAnchor }); }
+      catch { /* A blocked storage API must not interrupt the schedule. */ }
+    }
+  }, [routeBase, isReady, returnWorkspaceKey, activeView, calendarAnchor]);
   const openedCreateLink = useRef(false);
   const [filterSearch, setFilterSearch] = useState("");
   const filters = useMemo<CalendarFilterOptions>(() => ({ search: filterSearch, taskTypes: rememberedView.taskTypes, coverageStates: rememberedView.coverageStates }), [filterSearch, rememberedView.taskTypes, rememberedView.coverageStates]);
@@ -4534,37 +4550,47 @@ export default function CalendarClient({
   const handleViewChange = (view: CalendarViewMode) => {
     closeCalendarSurface();
     if (scopeKey) setRememberedView(current => ({ ...current, view }));
+    rememberReturn(view, calendarAnchor);
     navigate(buildCalendarRouteHref(view, calendarAnchor));
   };
 
   const handleNavigateCalendar = (amount: number) => {
     closeCalendarSurface();
+    const date = shiftCalendarAnchor(calendarAnchor, amount, activeView);
+    rememberReturn(activeView, date);
     navigate(
       buildCalendarRouteHref(
         activeView,
-        shiftCalendarAnchor(calendarAnchor, amount, activeView),
+        date,
       ),
     );
   };
 
   const handleResetCalendar = () => {
     closeCalendarSurface();
-    if (projectCalendarAnchor) navigate(buildCalendarRouteHref(activeView, projectCalendarAnchor));
+    if (projectCalendarAnchor) {
+      rememberReturn(activeView, projectCalendarAnchor);
+      navigate(buildCalendarRouteHref(activeView, projectCalendarAnchor));
+    }
   };
 
   const handleTodayCalendar = () => {
     closeCalendarSurface();
-    navigate(buildCalendarRouteHref(activeView, getCalendarToday()));
+    const date = getCalendarToday();
+    rememberReturn(activeView, date);
+    navigate(buildCalendarRouteHref(activeView, date));
   };
 
   const handleFocusCalendarDate = (date: string) => {
     closeCalendarSurface();
+    rememberReturn("day", date);
     navigate(buildCalendarRouteHref("day", date));
   };
 
   const handleSelectMonthDate = (date: string) => {
     if (date === calendarAnchor) return;
     closeCalendarSurface();
+    rememberReturn("month", date);
     router.replace(buildCalendarRouteHref("month", date), { scroll: false });
   };
 
@@ -4579,6 +4605,7 @@ export default function CalendarClient({
     <CalendarOperations.Provider value={{ readOnly, openAssignedContact: isReady && (contactProjectReference || routeBase === "/qv") && state.canViewVolunteers ? openAssignedContact : undefined, saveMealAction: !readOnly && isReady && state.canEdit ? saveMealAction : undefined, duplicateAction: !readOnly && isReady && state.canEdit ? duplicateAction : undefined, bulkAssignmentAction: !readOnly && isReady && state.canEditAssignments ? bulkAssignmentAction : undefined, assignmentContextAction: !readOnly && isReady && state.canEditAssignments ? assignmentContextAction : undefined, matchingAssignmentItemsAction: !readOnly && isReady && state.canEditAssignments ? matchingAssignmentItemsAction : undefined, bulkVolunteers: !readOnly && isReady && state.assignmentPicker.kind === "ready" ? state.assignmentPicker.volunteers : undefined }}>
     <CalendarFrame readOnly={routeBase === "/qv"}
       active={routeBase === "/admin/quick-view" ? "quick-view" : "calendar"}
+      calendarWorkspaceKey={routeBase === "/qv" ? null : returnWorkspaceKey}
       destinations={isReady ? state.navigationDestinations : ["overview"]}
       workspaceName={isReady ? state.workspaceName : undefined}
       onMobileMoreClose={closeCalendarSurface}
@@ -4626,6 +4653,7 @@ export default function CalendarClient({
               periodLabel={getCalendarPeriodLabel(calendarAnchor, activeView)}
               projectDisabled={!projectCalendarAnchor || calendarAnchor === projectCalendarAnchor}
             />
+            {calendarPending ? <p className="border-b border-[var(--pl-border)] bg-[var(--pl-blue-soft)] px-4 py-1 text-xs font-semibold text-[var(--pl-blue)]" role="status">Updating Calendar…</p> : null}
 
             <CalendarNotice notice={notice} />
 

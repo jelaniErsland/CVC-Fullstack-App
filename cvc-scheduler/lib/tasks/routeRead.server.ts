@@ -37,6 +37,7 @@ export type TaskManagementNotice =
 
 export type TaskManagementReadyRouteState = Readonly<{
   kind: "ready_with_presets" | "ready_empty";
+  workspaceKey: string;
   workspaceName: string;
   navigationDestinations?: readonly string[];
   canEdit: boolean;
@@ -220,6 +221,7 @@ export async function readTaskManagementRouteState(
 
     return {
       kind: presets.length > 0 ? "ready_with_presets" : "ready_empty",
+      workspaceKey: context.workspace.key,
       workspaceName: context.workspace.displayName,
       navigationDestinations: adminDestinations(context.capabilities),
       canEdit: context.canEdit,

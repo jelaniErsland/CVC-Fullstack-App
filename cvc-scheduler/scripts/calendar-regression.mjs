@@ -1122,6 +1122,50 @@ async function runDesktop(browser) {
       await page.getByTestId("calendar-list-view").waitFor();
     });
 
+    await step("desktop Calendar return skips transient Month", async () => {
+      const navigation = page.getByRole("navigation", { name: "Workspace navigation" });
+      await navigation.getByRole("link", { name: "Overview", exact: true }).click();
+      await page.waitForURL("**/admin/dashboard");
+      const returnLink = navigation.getByRole("link", { name: "Calendar", exact: true });
+      await page.waitForFunction(() => {
+        const link = document.querySelector('nav[aria-label="Workspace navigation"] a[href^="/admin/calendar"]');
+        return link?.getAttribute("href")?.includes("view=list");
+      });
+      const href = await returnLink.getAttribute("href");
+      assert(href && new URL(href, baseUrl).searchParams.get("date") === "2026-01-13", "Calendar return lost the remembered date.");
+      await returnLink.click();
+      await page.waitForURL(url => url.pathname === "/admin/calendar" && url.searchParams.get("view") === "list");
+      await page.getByTestId("calendar-list-view").waitFor();
+      assert(await page.getByRole("button", { name: "Month", exact: true }).getAttribute("aria-pressed") === "false", "Calendar briefly restored Month.");
+      const storedRoute = await page.evaluate(() => Object.entries(localStorage).find(([key]) => key.startsWith("project-local:calendar-return:v1:")));
+      assert(storedRoute && Object.keys(JSON.parse(storedRoute[1])).sort().join(",") === "date,view", "Calendar return storage contains more than presentation-only route data.");
+    });
+
+    await step("desktop Calendar acknowledges a delayed date read", async () => {
+      await selectView(page, "Day");
+      const handler = async route => {
+        const url = new URL(route.request().url());
+        if (url.pathname === "/admin/calendar" && url.searchParams.get("date") === "2026-01-14" && url.searchParams.has("_rsc")) {
+          await new Promise(resolve => setTimeout(resolve, 700));
+        }
+        await route.continue();
+      };
+      await page.route("**/admin/calendar?**", handler);
+      try {
+        const started = performance.now();
+        await page.getByRole("button", { name: "Next day", exact: true }).click({ noWaitAfter: true });
+        await page.getByRole("status").getByText("Updating Calendar…").waitFor();
+        const acknowledgementMs = Math.round(performance.now() - started);
+        assert(acknowledgementMs < 700, "Calendar waited for the delayed server read before acknowledging the click.");
+        console.log(`Calendar delayed-read acknowledgement: ${acknowledgementMs}ms before the 700ms simulated response delay.`);
+        assert(await page.getByRole("heading", { name: "Calendar", exact: true }).isVisible(), "Calendar shell disappeared during the date read.");
+        await page.waitForURL(url => url.pathname === "/admin/calendar" && url.searchParams.get("date") === "2026-01-14");
+      } finally {
+        await page.unroute("**/admin/calendar?**", handler);
+      }
+      await loadCalendar(page);
+    });
+
     await step("Week/List navigation and compact Today/Project controls", async () => {
       for (const view of ["List", "Week"]) {
         await selectView(page, view);
@@ -2110,6 +2154,22 @@ async function runMobile(browser) {
       assert((await page.getByRole("button", { name: "Day", exact: true }).getAttribute("aria-pressed")) === "true", "Mobile Open Day must preserve the selected date.");
       await selectView(page, "Week");
       await assertNoHorizontalOverflow(page, "Mobile view controls");
+    });
+
+    await step("mobile Calendar return keeps the saved view and date", async () => {
+      const navigation = page.getByRole("navigation", { name: "Primary admin navigation" });
+      await navigation.getByRole("link", { name: "Open Overview", exact: true }).click();
+      await page.waitForURL("**/admin/dashboard");
+      const returnLink = navigation.getByRole("link", { name: "Open Calendar", exact: true });
+      await page.waitForFunction(() => {
+        const link = document.querySelector('nav[aria-label="Primary admin navigation"] a[aria-label="Open Calendar"]');
+        return link?.getAttribute("href")?.includes("view=week");
+      });
+      const href = await returnLink.getAttribute("href");
+      assert(href && new URL(href, baseUrl).searchParams.get("date") === "2026-01-14", "Mobile Calendar return lost the remembered date.");
+      await returnLink.click();
+      await page.waitForURL(url => url.pathname === "/admin/calendar" && url.searchParams.get("view") === "week");
+      assert(await page.getByRole("button", { name: "Week", exact: true }).getAttribute("aria-pressed") === "true");
     });
 
     await step("mobile More keyboard focus, Escape, and exclusivity", async () => {

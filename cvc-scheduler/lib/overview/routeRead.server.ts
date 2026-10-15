@@ -76,6 +76,7 @@ export type OverviewCalendarSummary = Readonly<{
 
 export type OverviewReadyRouteState = Readonly<{
   kind: "ready";
+  workspaceKey: string;
   workspaceName: string;
   navigationDestinations?: readonly string[];
   workspaceTimezone: string;
@@ -430,6 +431,7 @@ export async function readOverviewRouteState(at = new Date()): Promise<OverviewR
 
     return {
       kind: "ready",
+      workspaceKey: context.workspace.key,
       workspaceName: context.workspace.displayName,
       navigationDestinations: adminDestinations(context.capabilities),
       workspaceTimezone: context.workspace.timezone,

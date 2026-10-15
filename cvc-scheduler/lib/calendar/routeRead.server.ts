@@ -184,6 +184,7 @@ export type CalendarClientState =
       Readonly<{
         kind: "ready_with_items" | "ready_empty";
         workspaceName: string;
+        workspaceKey?: string;
         workspaceId?: string;
         projectContactId?: string;
         navigationDestinations?: readonly string[];
@@ -905,6 +906,7 @@ async function readCalendarRouteStateWithinDeadline(
       ? {
           kind: "ready_with_items",
           workspaceName: workspaceSelection.workspace.displayName,
+          workspaceKey: workspaceSelection.workspace.key,
           workspaceId: workspaceSelection.workspace.id,
           projectContactId: workspaceSelection.projectContactId,
           navigationDestinations: workspaceSelection.navigationDestinations,
@@ -925,6 +927,7 @@ async function readCalendarRouteStateWithinDeadline(
       : {
           kind: "ready_empty",
           workspaceName: workspaceSelection.workspace.displayName,
+          workspaceKey: workspaceSelection.workspace.key,
           workspaceId: workspaceSelection.workspace.id,
           projectContactId: workspaceSelection.projectContactId,
           navigationDestinations: workspaceSelection.navigationDestinations,

@@ -13,7 +13,7 @@ export default async function AdminNeedsAttentionPage({ searchParams }: { search
     <h1 className="text-3xl font-bold text-[var(--pl-ink)]">Needs Attention</h1>
     <GlassCard className="mt-5 p-5"><h2 className="font-semibold">{state.title}</h2><p className="mt-2 text-sm">{state.message}</p></GlassCard>
   </AdminShell>;
-  return <AdminShell active="needs-attention" workspaceName={state.workspaceName} destinations={state.navigationDestinations}>
+  return <AdminShell active="needs-attention" workspaceName={state.workspaceName} destinations={state.navigationDestinations} calendarWorkspaceKey={state.workspaceKey}>
     <NeedsAttentionInbox state={state} initialFilters={{
       support: typeof params.support === "string" ? params.support : undefined,
       category: typeof params.category === "string" ? params.category : undefined,

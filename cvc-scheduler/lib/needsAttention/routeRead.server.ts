@@ -67,6 +67,7 @@ export const NEEDS_ATTENTION_REQUIRED_CAPABILITIES = [
 export type NeedsAttentionReadyRouteState = Readonly<{
   kind: "ready";
   workspaceName: string;
+  workspaceKey: string;
   navigationDestinations?: readonly string[];
   workspaceTimezone: string;
   today: string;
@@ -217,6 +218,7 @@ export async function readNeedsAttentionRouteState(
     return {
       kind: "ready",
       workspaceName: context.workspace.displayName,
+      workspaceKey: context.workspace.key,
       navigationDestinations: adminDestinations(context.capabilities),
       workspaceId: context.workspace.id,
       projectContactId: context.projectContactId,

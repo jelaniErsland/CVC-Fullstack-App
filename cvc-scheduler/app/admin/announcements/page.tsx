@@ -20,9 +20,9 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
   const history = await withReadTimeout(communicationHistory(context.supabase, context.workspace.id)).catch(() => null);
   // Reload the failed route instead of reusing a cached navigation result.
   // eslint-disable-next-line @next/next/no-html-link-for-pages
-  if (!history) return <AdminShell active="announcements" workspaceName={context.workspace.displayName} destinations={destinations}><h1 className="text-3xl font-bold">Communications</h1><p className="mt-4 text-slate-600">Delivery history is temporarily unavailable. Refresh before sending anything.</p><a className="mt-3 inline-block underline" href="/admin/announcements">Retry Communications</a></AdminShell>;
+  if (!history) return <AdminShell active="announcements" workspaceName={context.workspace.displayName} destinations={destinations} calendarWorkspaceKey={context.workspace.key}><h1 className="text-3xl font-bold">Communications</h1><p className="mt-4 text-slate-600">Delivery history is temporarily unavailable. Refresh before sending anything.</p><a className="mt-3 inline-block underline" href="/admin/announcements">Retry Communications</a></AdminShell>;
     const today = new Intl.DateTimeFormat("en-CA",{timeZone:context.workspace.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-    return <AdminShell active="announcements" workspaceName={context.workspace.displayName} destinations={destinations}>
+    return <AdminShell active="announcements" workspaceName={context.workspace.displayName} destinations={destinations} calendarWorkspaceKey={context.workspace.key}>
       <PageHeader title="Communications" />
       <CommunicationsWorkspace action={communicationsAction} history={history} transportEnabled={readInitialAssignmentEmailConfiguration().ok} today={today} preferenceScope={{ contactId: context.projectContactId, workspaceId: context.workspace.id }} explicitKind={params.kind === "schedule"} initialKind={params.kind === "schedule" ? "schedule" : "welcome"} initialStartDate={from && through && from <= through ? from : undefined} initialEndDate={from && through && from <= through ? through : undefined} initialVolunteerId={typeof params.volunteer === "string" && /^[0-9a-f-]{36}$/i.test(params.volunteer) ? params.volunteer : undefined} />
     </AdminShell>;
