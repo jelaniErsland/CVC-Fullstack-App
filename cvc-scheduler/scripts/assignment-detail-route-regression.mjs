@@ -425,8 +425,14 @@ const trackedSecretFindings = [];
 for (const relative of trackedTextFiles) {
   if (relative === "scripts/production-independent-backup-regression.mjs") continue;
   const source = await readFile(path.join(root, relative), "utf8");
+  // This literal interpolates a generated local fixture password. Keep the
+  // scanner active for every other URL, including this file's other content.
+  const syntheticFixtureUrl = "postgresql://postgres:" + "${secret}" + "@127.0.0.1:" + "${port}/postgres";
+  const scanSource = relative === "scripts/production-backup-task-details-recovery-regression.mjs"
+    ? source.replace(syntheticFixtureUrl, "[local-fixture-url]")
+    : source;
   for (const { name, pattern } of actualLookingSecretPatterns) {
-    if (pattern.test(source)) trackedSecretFindings.push(`${relative}:${name}`);
+    if (pattern.test(scanSource)) trackedSecretFindings.push(`${relative}:${name}`);
   }
 }
 assert.deepEqual(trackedSecretFindings, []);
@@ -1771,8 +1777,8 @@ for (const file of appAndComponentFiles) {
 
 assert.deepEqual(contextImporters, [routeRelativePath]);
 assert.deepEqual(inboundLinks.sort(), [
-  "app/admin/needs-attention/page.tsx",
   "components/CalendarAssignmentPicker.tsx",
+  "components/NeedsAttentionInbox.tsx",
 ]);
 assert.deepEqual(routeEntryPolicyImporters, []);
 assert.deepEqual(enablementChecklistImporters, []);
@@ -1788,7 +1794,7 @@ assert.deepEqual(
   unsafeCurrentRouteOrComponentUi.filter(
     (relative) =>
       relative !== routeRelativePath &&
-      relative !== "app/admin/needs-attention/page.tsx" &&
+      relative !== "app/admin/(workspace)/needs-attention/page.tsx" &&
       relative !== "components/CalendarAssignmentPicker.tsx" &&
       relative !== "components/ProjectQuickViewShareControl.tsx" &&
       !relative.startsWith("app/v/schedule/") &&

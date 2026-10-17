@@ -39,7 +39,7 @@ const queryHelperPath = path.join(root, "lib", "calendar", "readModelQuery.serve
 const readinessSource = await readFile(readinessPath, "utf8");
 const queryHelperSource = await readFile(queryHelperPath, "utf8");
 const calendarRouteSource = await readFile(
-  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
   "utf8",
 );
 const packageSource = await readFile(path.join(root, "package.json"), "utf8");
@@ -277,7 +277,7 @@ assert.deepEqual(readinessImporters, []);
 assert.deepEqual(queryHelperImporters, []);
 assert.deepEqual(
   persistedCalendarRouteImporters,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
 assert.deepEqual(assignmentDetailLinks, []);

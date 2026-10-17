@@ -2074,6 +2074,7 @@ export type Database = {
           follow_up_contact_display_name: string
           follow_up_contact_email: string
           follow_up_contact_phone: string
+          fellow_worker_names: string[]
           meal_details: Json
           needed_count: number
           response_lock_reason: string

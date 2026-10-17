@@ -246,7 +246,9 @@ function responseRow(id, assignmentId, status) {
 function insertFixtures(containerName, userId) {
   runPsql(
     containerName,
-    `insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
+    `begin;
+select set_config('project_local.save_explicit_draft', 'yes', true);
+insert into public.workspaces (id, workspace_key, display_name, lifecycle, timezone, starts_on, ends_on, public_intake_enabled)
 values
   (${sqlUuid(fixture.workspaceId)}, ${sqlText(`${fixture.namespace}-workspace`)}, 'QA 12.20 Browser Workspace', 'active', 'America/Denver', current_date - 30, current_date + 365, false),
   (${sqlUuid(fixture.otherWorkspaceId)}, ${sqlText(`${fixture.namespace}-other`)}, 'QA 12.20 Browser Other', 'active', 'America/Denver', current_date - 30, current_date + 365, false);
@@ -282,7 +284,6 @@ values
   ${assignmentRow(fixture.assignments.needs, fixture.items.needs, fixture.volunteers.own)},
   ${assignmentRow(fixture.assignments.confirmed, fixture.items.confirmed, fixture.volunteers.own)},
   ${assignmentRow(fixture.assignments.declined, fixture.items.declined, fixture.volunteers.own)},
-  ${assignmentRow(fixture.assignments.draft, fixture.items.draft, fixture.volunteers.own)},
   ${assignmentRow(fixture.assignments.canceled, fixture.items.confirmed, fixture.volunteers.own, "canceled")},
   ${assignmentRow(fixture.assignments.other, fixture.items.needs, fixture.volunteers.other)};
 insert into public.assignment_responses (
@@ -292,9 +293,9 @@ values
   ${responseRow(fixture.responses.needs, fixture.assignments.needs, "needs_response")},
   ${responseRow(fixture.responses.confirmed, fixture.assignments.confirmed, "confirmed")},
   ${responseRow(fixture.responses.declined, fixture.assignments.declined, "declined")},
-  ${responseRow(fixture.responses.draft, fixture.assignments.draft, "needs_response")},
   ${responseRow(fixture.responses.canceled, fixture.assignments.canceled, "confirmed")},
-  ${responseRow(fixture.responses.other, fixture.assignments.other, "confirmed")};`,
+  ${responseRow(fixture.responses.other, fixture.assignments.other, "confirmed")};
+commit;`,
   );
 }
 
@@ -337,20 +338,20 @@ async function runBrowserProof(token, emptyToken) {
     const earlyCookies = await context.cookies(createPreviewUrl(baseUrl, "/v/schedule"));
     const earlyScheduleCookie = earlyCookies.find((cookie) => cookie.name === "pl-volunteer-schedule");
     assert.equal(earlyScheduleCookie?.value === token, true, "schedule cookie did not preserve bearer value");
-    await page.getByRole("heading", { name: "Here’s your schedule" }).waitFor();
-    await page.getByText(`${fixture.namespace} Browser Volunteer`).waitFor();
+    await page.getByRole("heading", { name: /^Welcome,/ }).waitFor();
     assert.equal(
       await page.getByRole("link", { name: "Special access for project contacts" }).count(),
       0,
       "Volunteer schedule must not expose the project-contact shortcut.",
     );
-    await page.getByText("QA 12.20 Browser Workspace", { exact: true }).waitFor();
+    await page.getByText("LDC QA 12.20 Browser Workspace", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
+    await page.getByRole("button", { name: "View full schedule" }).click();
     await page.getByText(`${fixture.namespace} Confirmed`).waitFor();
     await page.getByText(`${fixture.namespace} Declined`).waitFor();
-    assert.equal(await page.getByText(`${fixture.namespace} Draft Hidden`).count(), 0);
-    assert.equal(await page.getByText(`${fixture.namespace} Canceled Hidden`).count(), 0);
-    assert.equal(await page.getByText(`${fixture.namespace} Other Volunteer`).count(), 0);
+    assert.equal(await page.getByText(`${fixture.namespace} Draft Hidden`).count(), 0, "draft item leaked");
+    assert.equal(await page.getByText(`${fixture.namespace} Canceled Hidden`).count(), 0, "canceled item leaked");
+    assert.equal(await page.getByText(`${fixture.namespace} Other Volunteer`).count(), 0, "coworker appeared outside assignment details");
     await page.getByText("Needs reply").first().waitFor();
     await page.getByText("Confirmed").first().waitFor();
     await page.getByText("Can’t make it").first().waitFor();
@@ -376,8 +377,12 @@ async function runBrowserProof(token, emptyToken) {
     const detailButton = page.getByRole("button", { name: /Needs Reply/ }).first();
     await detailButton.click();
     await page.getByRole("dialog", { name: /Needs Reply/ }).waitFor();
+    await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
     await page.getByText("Safe schedule note.").waitFor();
     await page.getByText("Ask the project team for the best contact.").waitFor();
+    const fellows = page.getByRole("dialog").getByRole("region", { name: "Fellow worker", exact: true });
+    assert.deepEqual(await fellows.locator("li").allInnerTexts(), [`${fixture.namespace} Other Volunteer`]);
+    assert.equal(await fellows.locator("a").count(), 0, "Fellow worker must not link to a profile");
     assert.equal(await page.getByRole("button", { name: /^Confirm$/ }).count(), 1);
     assert((await page.getByRole("button", { name: /make it/ }).count()) >= 1);
     await page.keyboard.press("Escape");
@@ -394,11 +399,9 @@ async function runBrowserProof(token, emptyToken) {
     }
 
     await Promise.all([
-      page.waitForURL(/\/v\/schedule\?left=1$/),
-      page.getByRole("button", { name: /Not you\? Leave this schedule/ }).first().click(),
+      page.waitForURL((url) => url.pathname === "/" && url.searchParams.get("forgot") === "1"),
+      page.getByRole("button", { name: "Forget this device", exact: true }).click(),
     ]);
-    await page.getByRole("heading", { name: "You’ve left this schedule" }).waitFor();
-    await page.getByRole("link", { name: "Find your schedule", exact: true }).waitFor();
     if (writeIterationReviewScreenshots) {
       await page.screenshot({
         path: path.join(iterationReviewDir, "volunteer-not-you-signed-out.png"),
@@ -431,12 +434,8 @@ async function runBrowserProof(token, emptyToken) {
     await emptyPage.goto(createPreviewUrl(baseUrl, `/v/access/${emptyToken}`), {
       waitUntil: "domcontentloaded",
     });
-    await emptyPage.getByRole("heading", { name: "No assignments yet", exact: true }).waitFor();
-    assert.equal(
-      await emptyPage.getByText(`${fixture.namespace} Browser Volunteer`).count(),
-      0,
-      "Opening another volunteer link retained the previous volunteer identity.",
-    );
+    await emptyPage.getByText("No upcoming assignments yet.", { exact: false }).waitFor();
+    assert.equal(await emptyPage.getByText(`${fixture.namespace} Needs Reply`).count(), 0, "Opening another volunteer link retained the previous assignment.");
     const overflow = await emptyPage.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
     );

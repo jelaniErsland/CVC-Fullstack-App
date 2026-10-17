@@ -295,7 +295,7 @@ assert.equal(bounded.truncated, true);
 
 const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource, packageSource, migrationSource, actionSource] =
   await Promise.all([
-    readFile(path.join(root, "app", "admin", "needs-attention", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "needs-attention", "page.tsx"), "utf8"),
     readFile(path.join(root, "lib", "needsAttention", "routeRead.server.ts"), "utf8"),
     readFile(path.join(root, "lib", "needsAttention", "derive.server.ts"), "utf8"),
     readFile(path.join(root, "components", "AdminNav.tsx"), "utf8"),
@@ -303,7 +303,7 @@ const [pageSource, routeSource, deriveSource, navSource, shellSource, authSource
     readFile(path.join(root, "lib", "auth", "project-contact-grants.ts"), "utf8"),
     readFile(path.join(root, "package.json"), "utf8"),
     readFile(path.join(root, "supabase", "migrations", "20260908130000_volunteer_lookup_last_name_and_attention_seen.sql"), "utf8"),
-    readFile(path.join(root, "app", "admin", "needs-attention", "actions.ts"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "needs-attention", "actions.ts"), "utf8"),
   ]);
 const productSource = `${pageSource}\n${routeSource}\n${deriveSource}`;
 assert.match(pageSource, /export const dynamic = "force-dynamic"/);

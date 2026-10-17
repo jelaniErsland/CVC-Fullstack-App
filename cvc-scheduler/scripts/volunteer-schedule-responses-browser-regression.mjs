@@ -751,6 +751,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(redact(error));
+  console.error(redact(error?.stack ?? error));
   process.exit(1);
 });

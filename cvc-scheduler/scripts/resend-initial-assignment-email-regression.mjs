@@ -448,12 +448,12 @@ async function main() {
     await rm(tempDirectory, { recursive: true, force: true });
   }
 
-  const [providerSource, calendarRouteRead, calendarClient, migration] = await Promise.all([
+  const [providerSource, communicationsPage, calendarClient, migration] = await Promise.all([
     readFile(
       path.join(root, "lib", "notifications", "initialAssignmentEmail.server.ts"),
       "utf8",
     ),
-    readFile(path.join(root, "lib", "calendar", "routeRead.server.ts"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "announcements", "page.tsx"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(
       path.join(
@@ -468,11 +468,8 @@ async function main() {
   assert(providerSource.startsWith('import "server-only";'));
   assert(!providerSource.includes("console."));
   assert(!providerSource.includes("NEXT_PUBLIC_RESEND"));
-  assert.match(
-    calendarRouteRead,
-    /const emailConfigured = readInitialAssignmentEmailConfiguration\(\)\.ok;/,
-  );
-  assert(calendarClient.includes("initialNotification.emailConfigured"));
+  assert(communicationsPage.includes("transportEnabled={readInitialAssignmentEmailConfiguration().ok}"));
+  assert(calendarClient.includes("Review recipients in Communications"));
   assert(!calendarClient.includes("RESEND_API_KEY"));
   const deliveryLedgerDefinition = migration.slice(
     migration.indexOf("create table public.assignment_notification_deliveries"),
@@ -482,7 +479,7 @@ async function main() {
   assert(!deliveryLedgerDefinition.includes("bearer_token"));
 
   console.log(
-    "Validated narrow bare/display-name sender parsing, Calendar readiness integration, disabled/recording/Resend transports, fake-network request mapping, deterministic provider idempotency, bounded failures, and credential-safe output.",
+    "Validated narrow bare/display-name sender parsing, Communications readiness integration, disabled/recording/Resend transports, fake-network request mapping, deterministic provider idempotency, bounded failures, and credential-safe output.",
   );
 }
 

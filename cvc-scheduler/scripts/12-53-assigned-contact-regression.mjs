@@ -74,7 +74,7 @@ assert(!JSON.stringify(calendarResult).includes("private"));
 const picker = await readFile("components/CalendarAssignmentPicker.tsx", "utf8");
 const rowsUi = await readFile("components/CalendarAssignedVolunteers.tsx", "utf8");
 const surface = await readFile("components/AssignedContactSurface.tsx", "utf8");
-const action = await readFile("app/admin/calendar/assigned-contact-actions.ts", "utf8");
+const action = await readFile("app/admin/(workspace)/calendar/assigned-contact-actions.ts", "utf8");
 assert.match(picker, /openAssignedContact\(assignment\.assignmentId\)/);
 assert.match(rowsUi, /openAssignedContact\(person\.assignmentId\)/);
 assert.match(surface, /MobileOverlaySheet/);

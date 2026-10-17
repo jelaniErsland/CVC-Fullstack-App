@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { getNeedsAttentionUnseenCountAction } from "@/app/admin/needs-attention/actions";
+import { getNeedsAttentionUnseenCountAction } from "@/app/admin/(workspace)/needs-attention/actions";
 import { withReadTimeout } from "@/lib/readTimeout";
 
 const BadgeContext = createContext<number | null>(0);

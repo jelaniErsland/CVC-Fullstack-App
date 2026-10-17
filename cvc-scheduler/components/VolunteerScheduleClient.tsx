@@ -397,6 +397,15 @@ export function VolunteerScheduleClient({
                 </DisclosureSection>
               ) : null}
 
+              {selected.fellowWorkerNames.length > 0 ? (
+                <section className="mt-4 rounded-xl border border-[var(--pl-border)] p-3" aria-label={selected.fellowWorkerNames.length === 1 ? "Fellow worker" : "Fellow workers"}>
+                  <h3 className="text-sm font-semibold text-slate-950">{selected.fellowWorkerNames.length === 1 ? "Fellow worker" : "Fellow workers"}</h3>
+                  <ul className="mt-2 space-y-1 text-sm leading-6 text-slate-700">
+                    {selected.fellowWorkerNames.map((name, index) => <li key={`${name}-${index}`} className="break-words">{name}</li>)}
+                  </ul>
+                </section>
+              ) : null}
+
               {selected.responseNote ? (
                 <section className="mt-4 border-l-2 border-violet-200 bg-violet-50/45 px-3 py-2.5">
                   <h3 className="text-sm font-semibold text-slate-950">Your note</h3>

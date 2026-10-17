@@ -41,7 +41,7 @@ const preflightPath = path.join(root, "lib", "calendar", "routeCutoverFinalPrefl
 const dryRunPath = path.join(root, "lib", "calendar", "routeCutoverDryRun.server.ts");
 const readinessPath = path.join(root, "lib", "calendar", "routeCutoverReadiness.server.ts");
 const queryHelperPath = path.join(root, "lib", "calendar", "readModelQuery.server.ts");
-const calendarRoutePath = path.join(root, "app", "admin", "calendar", "page.tsx");
+const calendarRoutePath = path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx");
 
 const preflightSource = await readFile(preflightPath, "utf8");
 const dryRunSource = await readFile(dryRunPath, "utf8");
@@ -365,7 +365,7 @@ assert.deepEqual(readinessImporters, []);
 assert.deepEqual(queryHelperImporters, []);
 assert.deepEqual(
   persistedCalendarRouteImporters,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
 assert.deepEqual(assignmentDetailLinks, []);

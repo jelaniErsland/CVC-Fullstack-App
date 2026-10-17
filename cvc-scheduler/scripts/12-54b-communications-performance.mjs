@@ -7,7 +7,7 @@ import { withReadTimeout } from '../lib/readTimeout.ts';
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const report=[];
 for(const variant of ['before','after']) {
- const source=variant==='before'?execFileSync('git',['show','43229f5:cvc-scheduler/app/admin/announcements/page.tsx'],{encoding:'utf8'}):fs.readFileSync('app/admin/announcements/page.tsx','utf8');
+ const source=variant==='before'?execFileSync('git',['show','43229f5:cvc-scheduler/app/admin/announcements/page.tsx'],{encoding:'utf8'}):fs.readFileSync('app/admin/(workspace)/announcements/page.tsx','utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
  let reviews=0,history=0;
  const context={workspace:{id:'fixture',displayName:'Synthetic',timezone:'America/Denver'},projectContactId:'fixture',supabase:{async rpc(name){assert.equal(name,'review_communications');reviews++;await delay(543);return {data:{recipients:[]},error:null};}}};

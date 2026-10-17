@@ -8,7 +8,7 @@ import { describeCalendarRouteCutoverStatePrototype } from "../lib/calendar/rout
 import { describeResponseLinkProductActionActivationCheckpoint } from "../lib/responseTokens/productActionActivationCheckpoint.server.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const calendarRoutePath = path.join(root, "app", "admin", "calendar", "page.tsx");
+const calendarRoutePath = path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx");
 const calendarClientPath = path.join(root, "components", "CalendarClient.tsx");
 const calendarAssignmentPickerPath = path.join(root, "components", "CalendarAssignmentPicker.tsx");
 const routeReadPath = path.join(root, "lib", "calendar", "routeRead.server.ts");

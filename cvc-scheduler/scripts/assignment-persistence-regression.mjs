@@ -397,7 +397,7 @@ for (const file of routeFiles) {
 }
 assert.deepEqual(
   routeImports,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the approved persisted Calendar route may import assignment mutation helpers.",
 );
 

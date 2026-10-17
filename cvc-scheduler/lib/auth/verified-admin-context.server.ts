@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import type { User } from "@supabase/supabase-js";
 
@@ -118,10 +119,14 @@ export async function readVerifiedAdminContextWithClient(
   return result.kind === "ready" ? result.context : null;
 }
 
-export async function resolveVerifiedAdminContext() {
+const resolveRequestVerifiedAdminContext = cache(async () => {
   const { createServerSupabaseClient } = await import("../supabase/server.ts");
   const supabase = await createServerSupabaseClient();
   return resolveVerifiedAdminContextWithClient(supabase);
+});
+
+export async function resolveVerifiedAdminContext() {
+  return resolveRequestVerifiedAdminContext();
 }
 
 export async function readVerifiedAdminContext() {

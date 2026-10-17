@@ -160,7 +160,7 @@ async function verifyPreflight() {
 
 async function verifyStaticRouteBoundary() {
   const [route, routeRead, component, server, packageSource] = await Promise.all([
-    readFile(path.join(root, "app", "admin", "tasks", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "tasks", "page.tsx"), "utf8"),
     readFile(path.join(root, "lib", "tasks", "routeRead.server.ts"), "utf8"),
     readFile(path.join(root, "components", "TaskPresetManagement.tsx"), "utf8"),
     readFile(path.join(root, "lib", "tasks", "server.ts"), "utf8"),

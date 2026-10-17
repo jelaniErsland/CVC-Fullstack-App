@@ -261,11 +261,11 @@ for (const file of appAndComponentFiles) {
   ) {
     if (
       !(
-        relative === "app/admin/calendar/page.tsx" &&
+        relative === "app/admin/(workspace)/calendar/page.tsx" &&
         source.includes("@/lib/calendar/routeRead.server")
       ) &&
       !(
-        relative === "app/admin/volunteers/page.tsx" &&
+        relative === "app/admin/(workspace)/volunteers/page.tsx" &&
         source.includes("@/lib/volunteers/routeRead.server")
       ) &&
       !(
@@ -288,9 +288,9 @@ assert.deepEqual(persistedCutoverImporters, []);
 assert.deepEqual(serviceRoleMarkers, []);
 
 for (const [relative, requiredMarker] of [
-  ["app/admin/tasks/page.tsx", "@/lib/mockData"],
-  ["app/admin/announcements/page.tsx", "@/lib/mockData"],
-  ["app/admin/announcements/templates/page.tsx", "@/lib/mockData"],
+  ["app/admin/(workspace)/tasks/page.tsx", "@/lib/mockData"],
+  ["app/admin/(workspace)/announcements/page.tsx", "@/lib/mockData"],
+  ["app/admin/(workspace)/announcements/templates/page.tsx", "@/lib/mockData"],
   ["app/v/demo/page.tsx", "@/lib/volunteerPreview"],
   ["app/v/demo/assignments/[assignmentId]/page.tsx", "@/lib/volunteerPreview"],
   ["app/v/demo/reminder/[assignmentId]/page.tsx", "@/lib/volunteerPreview"],
@@ -303,14 +303,14 @@ for (const [relative, requiredMarker] of [
 }
 
 const calendarRouteSource = await readFile(
-  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
   "utf8",
 );
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(calendarRouteSource, /@\/lib\/mockData|getCalendarItemsByWeek/);
 
 const volunteersRouteSource = await readFile(
-  path.join(root, "app", "admin", "volunteers", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "volunteers", "page.tsx"),
   "utf8",
 );
 assert.match(volunteersRouteSource, /@\/lib\/volunteers\/routeRead\.server/);

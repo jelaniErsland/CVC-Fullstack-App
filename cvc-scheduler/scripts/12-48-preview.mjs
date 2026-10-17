@@ -17,10 +17,10 @@ for(const name of ['package.json','tsconfig.json','postcss.config.mjs']) fs.copy
 write('next.config.mjs',`export default { devIndicators: false, experimental: { externalDir: true } };`);
 write('app/globals.css',fs.readFileSync('app/globals.css','utf8')+'\n@source "../components";\n@source "../app";\n@source "../lib";\n');
 write('app/layout.tsx',fs.readFileSync('app/layout.tsx','utf8'));
-write('app/admin/needs-attention/actions.ts',`"use server"; export async function getNeedsAttentionUnseenCountAction(){return 0;}`);
+write('app/admin/(workspace)/needs-attention/actions.ts',`"use server"; export async function getNeedsAttentionUnseenCountAction(){return 0;}`);
 // Calendar now imports the on-demand contact actions. Keep this frontend-only
 // fixture disconnected from contact data and real authorization/mutations.
-write('app/admin/calendar/assigned-contact-actions.ts',`"use server"; export async function readAssignedContactAction(){return {kind:"unavailable" as const};}`);
+write('app/admin/(workspace)/calendar/assigned-contact-actions.ts',`"use server"; export async function readAssignedContactAction(){return {kind:"unavailable" as const};}`);
 write('app/qv/assigned-contact-actions.ts',`"use server"; export async function readSharedAssignedContactAction(){return {kind:"unavailable" as const};}`);
 write('fixture.ts',`
 import { cookies } from 'next/headers';
@@ -66,11 +66,11 @@ export function assignedCalendar(params:any,readOnly:boolean,visibility:string){
   return {...calendar(params,readOnly),items:[...items.filter(i=>i.meal),...work],canViewVolunteers:visibility!=='hidden',assignmentPicker:visibility==='unavailable'?{kind:'error',reason:'query_unavailable'}:{kind:'ready',volunteers:[],assignments:[]}};
 }
 `);
-let dashboard=fs.readFileSync('app/admin/dashboard/page.tsx','utf8');
+let dashboard=fs.readFileSync('app/admin/(workspace)/dashboard/page.tsx','utf8');
 dashboard=dashboard.replace(/import \{ readAdminProjectPhoto \} from [^;]+;/,'import { photo as readAdminProjectPhoto } from "@/fixture";')
  .replace(/import \{ readNeedsAttentionRouteState \} from [^;]+;/,'import { attention as readNeedsAttentionRouteState } from "@/fixture";')
  .replace(/import \{ readOverviewRouteState \} from [^;]+;/,'import { overview as readOverviewRouteState } from "@/fixture";');
-write('app/admin/dashboard/page.tsx',dashboard);
+write('app/admin/(workspace)/dashboard/page.tsx',dashboard);
 write('app/v/project-photo/[asset]/[size]/route.ts',`import {readFileSync} from 'node:fs';import {join} from 'node:path';
 export async function GET(_request:Request,{params}: {params:Promise<{asset:string;size:string}>}){const p=await params;if(p.asset!=='22222222-2222-4222-8222-222222222222'||!['desktop','mobile'].includes(p.size))return new Response('Not found',{status:404});return new Response(readFileSync(join(process.cwd(),'public','fixture-project-photo.webp')),{headers:{'Content-Type':'image/webp','Cache-Control':'no-store'}});}`);
 for(const route of ['/admin/calendar','/admin/quick-view','/qv']) write('app'+route+'/page.tsx',`
@@ -78,7 +78,7 @@ import CalendarClient from '@/components/CalendarClient';import {calendar,assign
 export const dynamic='force-dynamic';
 export default async function Page({searchParams}:any){const p=await searchParams;const c=await cookies();const role=c.get('fixture-role')?.value;const readOnly=${route!='/admin/calendar'} || role==='on-site';const state=c.get('fixture-assignments')?.value==='1'?assignedCalendar(p,readOnly,c.get('fixture-assignment-visibility')?.value??'available'):calendar(p,readOnly);return <CalendarClient routeBase="${route}" readOnly={${route!='/admin/calendar'}} projectKey={${route==='/admin/quick-view'?'"fixture-project"':'undefined'}} state={{...state,navigationDestinations:await destinations()} as any}/>;}`);
 for(const [route,title] of [['tasks','Task library'],['volunteers','Volunteers'],['needs-attention','Attention'],['announcements','Communications']]) write('app/admin/'+route+'/page.tsx',`import {AdminShell} from '@/components/AdminShell';import {destinations} from '@/fixture';export default async function Page(){return <AdminShell active="${route}" destinations={await destinations()} workspaceName="Community remodel · Fixture"><h1>${title}</h1><p>Navigation destination fixture. Workflow not simulated.</p></AdminShell>}`);
-write('app/admin/tasks/page.tsx',`import {TaskPresetManagement} from '@/components/TaskPresetManagement';import {AdminShell} from '@/components/AdminShell';import {destinations} from '@/fixture';import {cookies} from 'next/headers';
+write('app/admin/(workspace)/tasks/page.tsx',`import {TaskPresetManagement} from '@/components/TaskPresetManagement';import {AdminShell} from '@/components/AdminShell';import {destinations} from '@/fixture';import {cookies} from 'next/headers';
 async function fixtureAction(_data:FormData){'use server';}
 export default async function Page({searchParams}: {searchParams:Promise<{create?:string}>}){const p=await searchParams;const canEdit=(await cookies()).get('fixture-role')?.value!=='on-site';return <AdminShell active="tasks" destinations={await destinations()} workspaceName="Community remodel · Fixture"><TaskPresetManagement presets={[]} workspaceName="Community remodel · Fixture" canEdit={canEdit} initialCreateOpen={canEdit&&p.create==='1'} notice={null} createAction={fixtureAction} archiveAction={fixtureAction} updateColorAction={fixtureAction}/></AdminShell>;}`);
 write('app/guide/page.tsx',`export default function Page(){return <h1>Contact Guide destination fixture</h1>}`);

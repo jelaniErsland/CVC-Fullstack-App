@@ -357,6 +357,91 @@ async function verifyMobile(browser) {
   await partial.context.close();
 }
 
+async function benchmarkNavigation(browser) {
+  const { context, page, failures } = await openOverview(browser, "populated", { width: 1440, height: 1000 });
+  const routeSteps = [
+    ["Overview → Calendar", "/admin/calendar", "Calendar"],
+    ["Calendar → Needs Attention", "/admin/needs-attention", "Needs Attention"],
+    ["Needs Attention → Communications", "/admin/announcements", "Communications"],
+    ["Communications → Volunteers", "/admin/volunteers", "Volunteers"],
+    ["Volunteers → Calendar", "/admin/calendar", "Calendar"],
+    ["Calendar → Task library", "/admin/tasks", "Tasks"],
+    ["Task library → Overview", "/admin/dashboard", "Overview"],
+  ];
+  const records = [];
+  for (const [label, path, heading] of routeSteps) {
+    const shell = await page.locator("aside").first().elementHandle();
+    const link = page.locator(`nav[aria-label="Workspace navigation"] a[href^="${path}"]`).first();
+    const started = performance.now();
+    await link.click({ noWaitAfter: true });
+    const acknowledgedMs = Math.round(performance.now() - started);
+    await page.waitForURL((url) => url.pathname === path, { timeout: 30_000 });
+    const urlMs = Math.round(performance.now() - started);
+    await page.locator("main h1").filter({ hasText: heading }).first().waitFor({ timeout: 30_000 });
+    const usefulMs = Math.round(performance.now() - started);
+    await page.waitForLoadState("networkidle", { timeout: 30_000 });
+    const settledMs = Math.round(performance.now() - started);
+    records.push({ label, acknowledgedMs, urlMs, usefulMs, settledMs, shellRetained: await shell.evaluate((element) => element.isConnected) });
+  }
+  if (process.env.EXPECT_PERSISTENT_ADMIN_SHELL === "1") {
+    assert(records.every((record) => record.shellRetained), "Primary admin navigation remounted its shell.");
+    await page.goBack();
+    await page.waitForURL((url) => url.pathname === "/admin/tasks");
+    await page.goForward();
+    await page.waitForURL((url) => url.pathname === "/admin/dashboard");
+    await page.getByRole("heading", { name: "Overview", exact: true }).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false, "Mobile admin shell overflowed.");
+    const mobileShell = await page.locator("main#main-content").elementHandle();
+    await page.getByRole("link", { name: "Open Calendar", exact: true }).click();
+    await page.waitForURL((url) => url.pathname === "/admin/calendar");
+    await page.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    assert(await mobileShell.evaluate((element) => element.isConnected), "Mobile admin navigation remounted its shell.");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false, "Mobile Calendar overflowed.");
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const rapidShell = await page.locator("aside").first().elementHandle();
+    await page.locator('nav[aria-label="Workspace navigation"] a[href^="/admin/tasks"]').first().click({ noWaitAfter: true });
+    await page.locator('nav[aria-label="Workspace navigation"] a[href^="/admin/dashboard"]').first().click({ noWaitAfter: true });
+    await page.waitForURL((url) => url.pathname === "/admin/dashboard");
+    await page.getByRole("heading", { name: "Overview", exact: true }).waitFor();
+    assert(await rapidShell.evaluate((element) => element.isConnected), "Rapid admin navigation remounted its shell.");
+  }
+  assert.deepEqual(failures, []);
+  await context.close();
+  console.log(JSON.stringify({ schema: "project-local.admin-navigation-browser.v1", records }));
+}
+
+async function verifyAuthenticatedPendingNavigation(browser) {
+  const { context, page, failures } = await openOverview(browser, "populated", { width: 1440, height: 1000 });
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let intercepted = false;
+  try {
+    await page.route("**/admin/tasks**", async (route) => {
+      const request = route.request();
+      if (!intercepted && (new URL(request.url()).searchParams.has("_rsc") || request.headers().rsc)) {
+        intercepted = true;
+        await held;
+      }
+      await route.continue();
+    });
+    const shell = await page.locator("aside").first().elementHandle();
+    await page.locator('nav[aria-label="Workspace navigation"] a[href^="/admin/tasks"]').first().click({ noWaitAfter: true });
+    await page.locator('[data-navigation-pending="true"]').waitFor({ state: "visible", timeout: 5_000 });
+    assert.equal(await page.getByRole("heading", { name: "Overview", exact: true }).isVisible(), true, "The current route disappeared while the destination was pending.");
+    assert(await shell.evaluate((element) => element.isConnected), "The shell remounted during pending navigation.");
+    assert(intercepted, "Expected an authenticated Task library RSC request.");
+    release();
+    await page.waitForURL((url) => url.pathname === "/admin/tasks");
+    await page.getByRole("heading", { name: "Tasks", exact: true }).waitFor();
+    assert.equal(await page.locator('[data-navigation-pending="true"]').count(), 0);
+    assert.deepEqual(failures, []);
+  } finally {
+    release?.();
+    await context.close();
+  }
+}
+
 function cleanup(containerName) {
   const scope = labels.map((label) => workspaceIdSql(label)).join(", ");
   const authIds = [...userIds.values()].map((id) => `'${id}'::uuid`).join(", ");
@@ -391,13 +476,22 @@ try {
   seedData(containerName);
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    await verifyDesktop(browser);
-    await verifyMobile(browser);
+    if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") await verifyAuthenticatedPendingNavigation(browser);
+    else if (process.env.MEASURE_ADMIN_NAVIGATION === "1") await benchmarkNavigation(browser);
+    else {
+      await verifyDesktop(browser);
+      await verifyMobile(browser);
+    }
   } finally {
     await browser.close();
   }
-  console.log("Overview browser validation passed.");
-  console.log("Confirmed real persisted desktop/mobile states, Calendar row navigation, capability-hidden sections, ready-empty behavior, and 390px width.");
+  if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") {
+    console.log("Authenticated admin pending-navigation browser validation passed.");
+    console.log("Confirmed immediate pending feedback, previous route visibility, persistent shell, destination content, and zero fixture residue.");
+  } else {
+    console.log("Overview browser validation passed.");
+    console.log("Confirmed real persisted desktop/mobile states, Calendar row navigation, capability-hidden sections, ready-empty behavior, and 390px width.");
+  }
   if (writeScreenshots) console.log(`Overview review screenshots written to ${screenshotDirectory}.`);
 } catch (error) {
   console.error(redact(error));

@@ -451,7 +451,7 @@ async function verifyStaticBoundaries() {
     readFile(path.join(root, "supabase", "migrations", `${expectedEmailValidationMigration}_initial_assignment_notification_email_validation.sql`), "utf8"),
     readFile(path.join(root, "supabase", "migrations", `${expectedRecipientSnapshotMigration}_initial_assignment_notification_recipient_snapshot.sql`), "utf8"),
     readFile(path.join(root, "supabase", "migrations", expectedMigrationFile), "utf8"),
-    readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(path.join(root, "lib", "calendar", "assignmentNotifications.server.ts"), "utf8"),
     readFile(path.join(root, "lib", "notifications", "initialAssignmentEmail.server.ts"), "utf8"),

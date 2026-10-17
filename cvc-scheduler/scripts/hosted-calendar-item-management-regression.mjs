@@ -245,7 +245,7 @@ async function verifyStaticBoundaries() {
     readFile(path.join(root, "supabase", "migrations", expectedMigrationFile), "utf8"),
     readFile(path.join(root, "lib", "calendar", "server.ts"), "utf8"),
     readFile(path.join(root, "lib", "calendar", "routeRead.server.ts"), "utf8"),
-    readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8"),
   ]);
   assert(migration.includes("follow_up_project_contact_id"), "Calendar follow-up contact migration is missing.");
   assert(migration.includes("create or replace function public.create_calendar_item"), "Calendar create RPC replacement is missing.");

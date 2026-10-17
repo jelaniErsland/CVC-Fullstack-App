@@ -274,7 +274,7 @@ assert.equal(
 assert.equal(dateInWorkspaceTimezone(new Date("2026-08-18T05:30:00Z"), "America/Denver"), "2026-08-17");
 
 const [pageSource, routeSource, packageSource] = await Promise.all([
-  readFile(path.join(root, "app", "admin", "dashboard", "page.tsx"), "utf8"),
+  readFile(path.join(root, "app", "admin", "(workspace)", "dashboard", "page.tsx"), "utf8"),
   readFile(path.join(root, "lib", "overview", "routeRead.server.ts"), "utf8"),
   readFile(path.join(root, "package.json"), "utf8"),
 ]);

@@ -263,8 +263,8 @@ async function main() {
   assertIncludes(runbook, "production-backup-task-details-recovery-regression.mjs", "local recovery proof command");
 
   const routeFiles = [
-    "app/admin/calendar/page.tsx",
-    "app/admin/volunteers/page.tsx",
+    "app/admin/(workspace)/calendar/page.tsx",
+    "app/admin/(workspace)/volunteers/page.tsx",
     "app/v/access/[token]/route.ts",
     "app/v/schedule/page.tsx",
     "components/CalendarClient.tsx",

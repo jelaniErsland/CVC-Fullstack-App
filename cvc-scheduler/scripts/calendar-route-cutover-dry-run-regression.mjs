@@ -31,7 +31,7 @@ const dryRunSource = await readFile(dryRunPath, "utf8");
 const readinessSource = await readFile(readinessPath, "utf8");
 const queryHelperSource = await readFile(queryHelperPath, "utf8");
 const calendarRouteSource = await readFile(
-  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
   "utf8",
 );
 const packageSource = await readFile(path.join(root, "package.json"), "utf8");
@@ -605,10 +605,10 @@ assert.deepEqual(readinessImporters, []);
 assert.deepEqual(queryHelperImporters, []);
 assert.deepEqual(
   persistedCalendarRouteImporters,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
-assert.deepEqual(assignmentDetailLinks.sort(), ["app/admin/needs-attention/page.tsx", "components/CalendarAssignmentPicker.tsx"], "Only established assignment-detail consumers may link to that route.");
+assert.deepEqual(assignmentDetailLinks.sort(), ["app/admin/(workspace)/needs-attention/page.tsx", "components/CalendarAssignmentPicker.tsx"], "Only established assignment-detail consumers may link to that route.");
 
 assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);
 assert.doesNotMatch(

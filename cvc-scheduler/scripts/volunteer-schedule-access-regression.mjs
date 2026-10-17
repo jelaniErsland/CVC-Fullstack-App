@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { parseVolunteerScheduleRows } from "../lib/volunteerScheduleAccess/token.ts";
 
 const { loadEnvConfig } = nextEnv;
 loadEnvConfig(process.cwd());
@@ -434,6 +435,25 @@ async function run() {
 
   const containerName = await resolveLocalDatabaseContainer();
   await applyRequiredMigrations(containerName);
+  const functionBeforeRollback = queryJson(containerName, `select
+    md5(pg_get_functiondef('public.read_volunteer_schedule(text)'::regprocedure)) as definition_hash,
+    has_function_privilege('anon', 'public.read_volunteer_schedule(text)', 'EXECUTE') as anon_execute,
+    has_function_privilege('authenticated', 'public.read_volunteer_schedule(text)', 'EXECUTE') as authenticated_execute,
+    has_function_privilege('service_role', 'public.read_volunteer_schedule(text)', 'EXECUTE') as service_execute`)[0];
+  let failedTransactionRolledBack = false;
+  try {
+    runPsql(containerName, `begin;
+      revoke execute on function public.read_volunteer_schedule(text) from anon;
+      select 1 / 0;`);
+  } catch (error) {
+    failedTransactionRolledBack = String(error).includes("division by zero");
+  }
+  assert(failedTransactionRolledBack, "The local forced-failure transaction did not fail as expected.");
+  assert.deepEqual(queryJson(containerName, `select
+    md5(pg_get_functiondef('public.read_volunteer_schedule(text)'::regprocedure)) as definition_hash,
+    has_function_privilege('anon', 'public.read_volunteer_schedule(text)', 'EXECUTE') as anon_execute,
+    has_function_privilege('authenticated', 'public.read_volunteer_schedule(text)', 'EXECUTE') as authenticated_execute,
+    has_function_privilege('service_role', 'public.read_volunteer_schedule(text)', 'EXECUTE') as service_execute`)[0], functionBeforeRollback, "A failed migration transaction changed function definition or grants.");
 
   const users = {
     issuer: await createAuthenticatedUser("issuer"),
@@ -476,6 +496,13 @@ async function run() {
 
   const schedule = await readSchedule(anonClient, issued.token);
   assert.equal(schedule.kind, "ready");
+  const previousProjection = parseVolunteerScheduleRows(schedule.raw.map((row) => {
+    const priorRow = { ...row };
+    delete priorRow.fellow_worker_names;
+    return priorRow;
+  }));
+  assert.equal(previousProjection.kind, "ready", "App rollback compatibility must accept the prior schedule projection.");
+  assert([...previousProjection.upcomingAssignments, ...previousProjection.pastAssignments].every((assignment) => assignment.fellowWorkerNames.length === 0));
   assert.equal(schedule.workspaceDisplayName, "QA 12.20 Schedule Workspace");
   assert.equal(schedule.volunteerDisplayName, `${fixture.namespace} Own Volunteer`);
   const allAssignments = schedule.assignments;
@@ -488,6 +515,82 @@ async function run() {
   assert.equal(presetAssignment?.schedule_notes, "Preset fixture", "Volunteer access should receive only the stored occurrence snapshot.");
   const oneOffAssignment = schedule.raw.find((assignment) => assignment.task_title.includes("Published One-Off"));
   assert.equal(oneOffAssignment?.schedule_notes, "Bring gloves.");
+  assert.deepEqual(oneOffAssignment?.fellow_worker_names, [`${fixture.namespace} Other Volunteer`], "same-item coworker should be names only");
+  assert.deepEqual(presetAssignment?.fellow_worker_names, [], "only volunteer on an item should have no fellow workers");
+  assert.deepEqual(schedule.raw.find((assignment) => assignment.task_title.includes("Published Declined"))?.fellow_worker_names, [], "declined requester should not see coworker names");
+  const coworkerFields = Object.keys(oneOffAssignment ?? {}).filter((key) => key.includes("fellow"));
+  assert.deepEqual(coworkerFields, ["fellow_worker_names"], "new projection must expose only names");
+
+  runPsql(containerName, `update public.assignment_responses set response_status='declined',responded_at=now() where id=${sqlUuid(fixture.responses.otherVolunteer)};`);
+  assert.deepEqual((await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, [], "declined coworker must be excluded");
+  runPsql(containerName, `update public.assignment_responses set response_status='needs_response',responded_at=null where id=${sqlUuid(fixture.responses.otherVolunteer)};`);
+  assert.deepEqual((await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, [`${fixture.namespace} Other Volunteer`], "awaiting-response coworker must be included");
+  runPsql(containerName, `update public.volunteer_profiles set lifecycle='inactive' where id=${sqlUuid(fixture.volunteers.otherSameWorkspace)};`);
+  assert.deepEqual((await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, [], "inactive coworker profile must be excluded");
+  runPsql(containerName, `update public.volunteer_profiles set lifecycle='active' where id=${sqlUuid(fixture.volunteers.otherSameWorkspace)}; update public.calendar_assignments set lifecycle='canceled' where id=${sqlUuid(fixture.assignments.otherVolunteer)};`);
+  assert.deepEqual((await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, [], "canceled coworker assignment must be excluded");
+  runPsql(containerName, `update public.calendar_assignments set lifecycle='active' where id=${sqlUuid(fixture.assignments.otherVolunteer)};`);
+
+  const additionalNames = ["Zoe Worker", "Alex Lee", "Alex Lee", "Alec Lee"];
+  const additional = additionalNames.map((name) => ({ name, volunteerId: randomUUID(), assignmentId: randomUUID(), responseId: randomUUID() }));
+  runPsql(containerName, `insert into public.volunteer_profiles (id,workspace_id,source_submission_id,profile_source,manual_created_by_project_contact_id,manual_created_at,lifecycle,readiness_status,full_name,email,phone,congregation,preferred_contact_method,availability_snapshot,skills_help_snapshot,profile_notes) values ${additional.map((row) => volunteerRow(row.volunteerId, fixture.workspaceId, row.name, fixture.contacts.issuer)).join(",")};
+insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id,lifecycle,assignment_note,created_by_auth_user_id) values ${additional.map((row) => assignmentRow(row.assignmentId, fixture.items.publishedOneOff, row.volunteerId)).join(",")};
+insert into public.assignment_responses (id,workspace_id,assignment_id,response_status,response_source,response_note,responded_at,updated_by_auth_user_id) values ${additional.map((row) => responseRow(row.responseId, row.assignmentId, "confirmed")).join(",")};`);
+  const manyNames = (await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names;
+  assert.deepEqual(manyNames, ["Alec Lee", "Alex Lee", "Alex Lee", `${fixture.namespace} Other Volunteer`, "Zoe Worker"], "names must sort alphabetically while preserving duplicate people");
+  runPsql(containerName, `update public.volunteer_profiles set email=(select email from public.volunteer_profiles where id=${sqlUuid(fixture.volunteers.own)}) where id=${sqlUuid(additional[0].volunteerId)};`);
+  assert.deepEqual((await readSchedule(anonClient, issued.token)).raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, manyNames, "shared household email must not change identity matching");
+  const adjacentItemId = randomUUID();
+  const adjacentAssignmentId = randomUUID();
+  const adjacentResponseId = randomUUID();
+  const sameTimeItemId = randomUUID();
+  const sameTimeOwnAssignmentId = randomUUID();
+  const sameTimeOtherAssignmentId = randomUUID();
+  const sameTimeOtherId = randomUUID();
+  const otherWorkspaceItemId = randomUUID();
+  const otherWorkspaceAssignmentId = randomUUID();
+  runPsql(containerName, `update public.calendar_items set start_time='22:00',end_time='02:00',end_date='2026-08-11' where id=${sqlUuid(fixture.items.publishedOneOff)};
+insert into public.calendar_items (id,workspace_id,task_preset_id,title_snapshot,task_type_snapshot,schedule_kind,start_date,end_date,start_time,end_time,timezone,needed_count,schedule_notes,custom_values,lifecycle,follow_up_project_contact_id,created_by_project_contact_id,publication_state,published_at,published_by_project_contact_id)
+values ${itemRow(adjacentItemId, fixture.workspaceId, null, `${fixture.namespace} Adjacent Night Watch`, "general", "2026-08-11", 2, "active", "published", fixture.contacts.issuer)},
+${itemRow(sameTimeItemId, fixture.workspaceId, null, `${fixture.namespace} Other Same-Time Item`, "general", "2026-08-10", 2, "active", "published", fixture.contacts.issuer)},
+${itemRow(otherWorkspaceItemId, fixture.otherWorkspaceId, null, `${fixture.namespace} Other Project Item`, "general", "2026-08-10", 2, "active", "published", fixture.contacts.other)};
+update public.calendar_items set start_time='02:00',end_time='04:00' where id=${sqlUuid(adjacentItemId)};
+update public.calendar_items set start_time='22:00',end_time='02:00',end_date='2026-08-11' where id=${sqlUuid(sameTimeItemId)};
+insert into public.volunteer_profiles (id,workspace_id,source_submission_id,profile_source,manual_created_by_project_contact_id,manual_created_at,lifecycle,readiness_status,full_name,email,phone,congregation,preferred_contact_method,availability_snapshot,skills_help_snapshot,profile_notes)
+values ${volunteerRow(sameTimeOtherId, fixture.workspaceId, 'Only Other Item', fixture.contacts.issuer)};
+insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id,lifecycle,assignment_note,created_by_auth_user_id)
+values ${assignmentRow(adjacentAssignmentId, adjacentItemId, additional[0].volunteerId)},
+${assignmentRow(sameTimeOwnAssignmentId, sameTimeItemId, fixture.volunteers.own)},
+${assignmentRow(sameTimeOtherAssignmentId, sameTimeItemId, sameTimeOtherId)},
+(${sqlUuid(otherWorkspaceAssignmentId)},${sqlUuid(fixture.otherWorkspaceId)},${sqlUuid(otherWorkspaceItemId)},${sqlUuid(fixture.volunteers.wrongWorkspace)},'active',null,null);
+insert into public.assignment_responses (id,workspace_id,assignment_id,response_status,response_source,response_note,responded_at,updated_by_auth_user_id)
+values ${responseRow(adjacentResponseId, adjacentAssignmentId, "confirmed")},
+${responseRow(randomUUID(), sameTimeOwnAssignmentId, "confirmed")},
+${responseRow(randomUUID(), sameTimeOtherAssignmentId, "needs_response")},
+(${sqlUuid(randomUUID())},${sqlUuid(fixture.otherWorkspaceId)},${sqlUuid(otherWorkspaceAssignmentId)},'confirmed','project_contact',null,now(),null);`);
+  const separateItems = (await readSchedule(anonClient, issued.token)).raw;
+  assert.deepEqual(separateItems.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names, manyNames, "same-time and adjacent overnight items must not add names to this shift");
+  assert.deepEqual(separateItems.find((row) => row.assignment_reference === sameTimeOwnAssignmentId)?.fellow_worker_names, ['Only Other Item'], "second assignment on same day must show only its own item coworkers");
+  assert(!JSON.stringify(separateItems).includes(`${fixture.namespace} Wrong Workspace Volunteer`), "cross-project profile leaked into schedule");
+
+  runPsql(containerName, `with added_profiles as (
+  insert into public.volunteer_profiles (id,workspace_id,source_submission_id,profile_source,manual_created_by_project_contact_id,manual_created_at,lifecycle,readiness_status,full_name,email,phone,congregation,preferred_contact_method,availability_snapshot,skills_help_snapshot,profile_notes)
+  select gen_random_uuid(),${sqlUuid(fixture.workspaceId)},null,'manual',${sqlUuid(fixture.contacts.issuer)},now(),'active','ready','Dense Worker '||lpad(n::text,3,'0'),'dense-'||n||'@example.invalid',null,null,null,'{}'::jsonb,'{}'::jsonb,'' from generate_series(1,100) as n
+  returning id
+), added_assignments as (
+  insert into public.calendar_assignments (id,workspace_id,calendar_item_id,volunteer_profile_id,lifecycle,assignment_note,created_by_auth_user_id)
+  select gen_random_uuid(),${sqlUuid(fixture.workspaceId)},${sqlUuid(fixture.items.publishedOneOff)},id,'active',null,null from added_profiles returning id
+)
+insert into public.assignment_responses (id,workspace_id,assignment_id,response_status,response_source,response_note,responded_at,updated_by_auth_user_id)
+select gen_random_uuid(),${sqlUuid(fixture.workspaceId)},id,'confirmed','project_contact',null,now(),null from added_assignments;`);
+  const denseStarted = performance.now();
+  const denseSchedule = await readSchedule(anonClient, issued.token);
+  const denseElapsedMs = Math.round(performance.now() - denseStarted);
+  assert.equal(denseSchedule.raw.find((row) => row.assignment_reference === fixture.assignments.needs)?.fellow_worker_names.length, 105, "dense item must return all active fellow names in one schedule RPC");
+  console.log(`Fellow workers dense local read: 105 names, one RPC, ${denseElapsedMs} ms`);
+  runPsql(containerName, `update public.calendar_assignments set lifecycle='canceled' where id=${sqlUuid(fixture.assignments.needs)};`);
+  assert(!((await readSchedule(anonClient, issued.token)).raw.some((row) => row.assignment_reference === fixture.assignments.needs)), "removed requester assignment must disappear from the schedule despite a valid token");
+  runPsql(containerName, `update public.calendar_assignments set lifecycle='active' where id=${sqlUuid(fixture.assignments.needs)};`);
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Draft")));
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Archived")));
   assert(!allAssignments.some((assignment) => assignment.taskTitle.includes("Other Volunteer")));

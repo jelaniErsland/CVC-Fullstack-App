@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 export default async function AdminDashboardPage() {
-  const state = await readOverviewRouteState();
-  const photo = await readAdminProjectPhoto().catch(() => null);
+  const [state, photo] = await Promise.all([
+    readOverviewRouteState(),
+    readAdminProjectPhoto().catch(() => null),
+  ]);
   if (state.kind !== "ready") return <AdminShell active="overview" destinations={["overview"]}><PageHeader title="Overview" /><div className="mt-6"><EmptyState title={state.title} message={state.message} kind={state.kind === "error" ? "error" : "unavailable"} /></div></AdminShell>;
   return <AdminShell active="overview" workspaceName={state.workspaceName} destinations={state.navigationDestinations} calendarWorkspaceKey={state.workspaceKey}>
     <OverviewContent state={state} photo={photo?.photo ?? defaultPhoto} canEditPhoto={photo?.canEdit ?? false} />

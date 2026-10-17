@@ -27,7 +27,7 @@ const [calendarSource, assignmentPickerSource, needsAttentionSource, detailSourc
   await Promise.all([
     source("components/CalendarClient.tsx"),
     source("components/CalendarAssignmentPicker.tsx"),
-    source("app/admin/needs-attention/page.tsx"),
+    source("app/admin/(workspace)/needs-attention/page.tsx"),
     source("app/admin/assignments/[assignmentId]/page.tsx"),
     source("lib/needsAttention/routeRead.server.ts"),
   ]);

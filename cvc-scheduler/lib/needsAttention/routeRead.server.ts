@@ -180,13 +180,20 @@ export async function readNeedsAttentionRouteState(
     const rangeEnd = options.horizonDays === 14
       ? [projectRangeEnd, addNeedsAttentionDays(today, 15)].sort()[0]
       : projectRangeEnd;
-    const calendar = await readNeedsAttentionCalendar(
-      context.supabase,
-      context.workspace,
-      context.projectContactId,
-      today,
-      rangeEnd,
-    );
+    const [calendar, seenResult] = await Promise.all([
+      readNeedsAttentionCalendar(
+        context.supabase,
+        context.workspace,
+        context.projectContactId,
+        today,
+        rangeEnd,
+      ),
+      (context.supabase as unknown as NeedsAttentionSeenReader)
+        .from("needs_attention_seen_states")
+        .select("signal_id")
+        .eq("workspace_id", context.workspace.id)
+        .eq("project_contact_id", context.projectContactId),
+    ]);
     if (!calendar.ok) {
       return {
         kind: "error",
@@ -201,11 +208,6 @@ export async function readNeedsAttentionRouteState(
       coverageWindowDays: Math.max(0, Math.ceil((Date.parse(`${rangeEnd}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)),
       responseWindowDays: Math.max(0, Math.ceil((Date.parse(`${rangeEnd}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)),
     });
-    const seenResult = await (context.supabase as unknown as NeedsAttentionSeenReader)
-      .from("needs_attention_seen_states")
-      .select("signal_id")
-      .eq("workspace_id", context.workspace.id)
-      .eq("project_contact_id", context.projectContactId);
     // Earlier releases automatically wrote bare signal IDs when the inbox was
     // opened. Only explicitly reviewed IDs may remove an issue from Active.
     const reviewed = new Set<string>((seenResult.data ?? [])

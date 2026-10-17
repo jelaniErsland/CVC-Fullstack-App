@@ -9,6 +9,15 @@ export function parseVolunteerMeals(value: unknown): readonly VolunteerMeal[] {
   });
 }
 
+function parseFellowWorkerNames(value: unknown, issues: string[]): readonly string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || !value.every((name) => typeof name === "string" && name.trim().length > 0)) {
+    issues.push("fellow_worker_names is invalid.");
+    return [];
+  }
+  return value;
+}
+
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const bearerPattern = /^[A-Za-z0-9_-]{43}$/;
@@ -76,6 +85,7 @@ export type VolunteerScheduleAssignment = Readonly<{
   endTime: string | null;
   neededCount: number;
   scheduleNotes: string | null;
+  fellowWorkerNames: readonly string[];
   meals?: readonly VolunteerMeal[];
   currentResponseStatus: VolunteerScheduleAssignmentResponseStatus;
   responseNote: string | null;
@@ -399,6 +409,7 @@ export function parseVolunteerScheduleRows(value: unknown): VolunteerSchedule {
       endTime: nullableText(rowValue, "end_time", issues),
       neededCount: numberValue(rowValue, "needed_count", issues),
       scheduleNotes: nullableText(rowValue, "schedule_notes", issues),
+      fellowWorkerNames: parseFellowWorkerNames(rowValue.fellow_worker_names, issues),
       meals: parseVolunteerMeals(rowValue.meal_details),
       currentResponseStatus: responseStatus as VolunteerScheduleAssignmentResponseStatus,
       responseNote: nullableText(rowValue, "response_note", issues),

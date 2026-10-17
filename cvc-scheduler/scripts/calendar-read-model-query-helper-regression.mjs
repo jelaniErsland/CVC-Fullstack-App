@@ -35,7 +35,7 @@ const queryHelperSource = await readFile(queryHelperPath, "utf8");
 const helperSource = await readFile(helperPath, "utf8");
 const contractSource = await readFile(contractPath, "utf8");
 const calendarRouteSource = await readFile(
-  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
   "utf8",
 );
 const packageSource = await readFile(path.join(root, "package.json"), "utf8");

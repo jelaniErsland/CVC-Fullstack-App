@@ -31,7 +31,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contractPath = path.join(root, "lib", "calendar", "readModelContract.server.ts");
 const contractSource = await readFile(contractPath, "utf8");
 const calendarRouteSource = await readFile(
-  path.join(root, "app", "admin", "calendar", "page.tsx"),
+  path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
   "utf8",
 );
 const packageSource = await readFile(path.join(root, "package.json"), "utf8");
@@ -356,7 +356,7 @@ for (const file of appAndComponentFiles) {
 assert.deepEqual(contractImporters, []);
 assert.deepEqual(
   persistedCalendarRouteImporters,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
 );
 assert.deepEqual(assignmentDetailLinks, [

@@ -31,11 +31,11 @@ assert.match(shellSource, /<AdminNavigationPendingIndicator compact disabled=\{a
 assert.match(shellSource, /<AdminNavigationPendingIndicator (?:compact )?disabled=\{isActive\} \/>/);
 
 for (const route of [
-  "app/admin/dashboard/page.tsx",
-  "app/admin/tasks/page.tsx",
-  "app/admin/calendar/page.tsx",
-  "app/admin/volunteers/page.tsx",
-  "app/admin/needs-attention/page.tsx",
+  "app/admin/(workspace)/dashboard/page.tsx",
+  "app/admin/(workspace)/tasks/page.tsx",
+  "app/admin/(workspace)/calendar/page.tsx",
+  "app/admin/(workspace)/volunteers/page.tsx",
+  "app/admin/(workspace)/needs-attention/page.tsx",
 ]) {
   const source = await read(route);
   assert.match(source, /export const dynamic = "force-dynamic"/);

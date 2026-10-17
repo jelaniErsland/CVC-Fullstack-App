@@ -38,7 +38,7 @@ const [
   authReadinessSource,
 ] = await Promise.all([
   read("lib", "tasks", "readModelContract.server.ts"),
-  read("app", "admin", "tasks", "page.tsx"),
+  read("app", "admin", "(workspace)", "tasks", "page.tsx"),
   read("lib", "tasks", "routeRead.server.ts"),
   read("components", "TaskPresetManagement.tsx"),
   read("lib", "tasks", "server.ts"),

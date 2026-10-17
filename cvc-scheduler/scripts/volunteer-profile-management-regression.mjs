@@ -202,7 +202,7 @@ async function verifyStaticBoundaries() {
     path.join(root, "supabase", "migrations", "20260714121500_manual_volunteer_profiles.sql"),
     "utf8",
   );
-  const route = await readFile(path.join(root, "app", "admin", "volunteers", "page.tsx"), "utf8");
+  const route = await readFile(path.join(root, "app", "admin", "(workspace)", "volunteers", "page.tsx"), "utf8");
   const routeRead = await readFile(
     path.join(root, "lib", "volunteers", "routeRead.server.ts"),
     "utf8",
@@ -245,9 +245,9 @@ async function verifyStaticBoundaries() {
   assert.match(packageSource, /"test:volunteer-profile-management"/);
 
   const permittedRouteReadImports = new Map([
-    ["app/admin/volunteers/page.tsx", "readVolunteerManagementRouteContext"],
-    ["app/admin/volunteers/csv/route.ts", "readVolunteerManagementRouteContext"],
-    ["app/admin/announcements/page.tsx", "selectVolunteerManagementWorkspaceContext"],
+    ["app/admin/(workspace)/volunteers/page.tsx", "readVolunteerManagementRouteContext"],
+    ["app/admin/(workspace)/volunteers/csv/route.ts", "readVolunteerManagementRouteContext"],
+    ["app/admin/(workspace)/announcements/page.tsx", "selectVolunteerManagementWorkspaceContext"],
   ]);
   const importedProductFiles = [];
   const appAndComponentFiles = (await collectFiles(path.join(root, "app")))

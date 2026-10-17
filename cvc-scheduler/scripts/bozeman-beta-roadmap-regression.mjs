@@ -58,8 +58,8 @@ const authDoc = await readFile(
   "utf8",
 );
 const betaDoc = await readFile(path.join(root, "docs", "BOZEMAN_BETA_ROADMAP.md"), "utf8");
-const calendarRoute = await readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8");
-const tasksRoute = await readFile(path.join(root, "app", "admin", "tasks", "page.tsx"), "utf8");
+const calendarRoute = await readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8");
+const tasksRoute = await readFile(path.join(root, "app", "admin", "(workspace)", "tasks", "page.tsx"), "utf8");
 
 assert.equal(BOZEMAN_BETA_ROADMAP_REBASELINE_AVAILABLE, true);
 assert.equal(BELGRADE_REMAINS_SHEETS_FALLBACK, true);

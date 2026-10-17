@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode, Ref } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
@@ -37,7 +38,11 @@ type AdminShellProps = {
   workspaceName?: string;
   destinations?: readonly string[];
   calendarWorkspaceKey?: string | null;
+  deriveActiveFromPathname?: boolean;
 };
+
+type PersistentShellCallbacks = Pick<AdminShellProps, "onMobileMoreOpen" | "onMobileMoreClose">;
+const PersistentAdminShellContext = createContext<((callbacks: PersistentShellCallbacks | null) => void) | null>(null);
 
 const closeMobileNavigationEvent = "cvc:close-admin-mobile-navigation";
 
@@ -338,7 +343,7 @@ function getActiveIdForMoreHref(href: string): AdminNavActive | undefined {
   return hrefToActive[href];
 }
 
-export function AdminShell({
+function AdminShellFrame({
   active,
   children,
   onMobileMoreClose,
@@ -346,7 +351,17 @@ export function AdminShell({
   workspaceName,
   destinations = ["overview"],
   calendarWorkspaceKey = null,
+  deriveActiveFromPathname = false,
 }: AdminShellProps) {
+  const pathname = usePathname();
+  const visibleActive: AdminNavActive = deriveActiveFromPathname
+    ? pathname.startsWith("/admin/calendar") ? "calendar"
+      : pathname.startsWith("/admin/needs-attention") ? "needs-attention"
+      : pathname.startsWith("/admin/announcements") ? "announcements"
+      : pathname.startsWith("/admin/volunteers") ? "volunteers"
+      : pathname.startsWith("/admin/tasks") ? "tasks"
+      : "overview"
+    : active;
   const calendarHref = useCalendarReturnHref(calendarWorkspaceKey);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -451,7 +466,7 @@ export function AdminShell({
           <aside className="hidden border-r border-[var(--pl-border)] bg-white lg:block">
             <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-4 py-6">
               <AdminBrand />
-              <AdminNav active={active} workspaceName={visibleWorkspaceName} destinations={destinations} calendarHref={calendarHref} />
+              <AdminNav active={visibleActive} workspaceName={visibleWorkspaceName} destinations={destinations} calendarHref={calendarHref} />
             </div>
           </aside>
 
@@ -465,7 +480,7 @@ export function AdminShell({
         destinations={destinations}
         compact={compactMobileNav}
         onLayoutChange={measureCompactMobileNav}
-        active={active}
+        active={visibleActive}
         isMoreOpen={isMoreOpen}
         moreButtonRef={mobileMoreButtonRef}
         onMoreClick={toggleMobileMore}
@@ -473,7 +488,7 @@ export function AdminShell({
       <MobileMoreSheet
         destinations={destinations}
         compact={compactMobileNav}
-        active={active}
+        active={visibleActive}
         closeButtonRef={mobileMoreCloseButtonRef}
         dialogRef={mobileMoreDialogRef}
         isOpen={isMoreOpen}
@@ -481,5 +496,32 @@ export function AdminShell({
       />
     </PageShell>
     </NeedsAttentionBadgeProvider>
+  );
+}
+
+export function AdminShell(props: AdminShellProps) {
+  const registerCallbacks = useContext(PersistentAdminShellContext);
+  useEffect(() => {
+    if (!registerCallbacks) return;
+    registerCallbacks({ onMobileMoreOpen: props.onMobileMoreOpen, onMobileMoreClose: props.onMobileMoreClose });
+    return () => registerCallbacks(null);
+  }, [registerCallbacks, props.onMobileMoreOpen, props.onMobileMoreClose]);
+  return registerCallbacks ? <>{props.children}</> : <AdminShellFrame {...props} />;
+}
+
+export function PersistentAdminShell(props: Omit<AdminShellProps, "deriveActiveFromPathname">) {
+  const routeCallbacks = useRef<PersistentShellCallbacks | null>(null);
+  const registerCallbacks = useCallback((callbacks: PersistentShellCallbacks | null) => {
+    routeCallbacks.current = callbacks;
+  }, []);
+  return (
+    <AdminShellFrame
+      {...props}
+      deriveActiveFromPathname
+      onMobileMoreOpen={() => routeCallbacks.current?.onMobileMoreOpen?.()}
+      onMobileMoreClose={() => routeCallbacks.current?.onMobileMoreClose?.()}
+    >
+      <PersistentAdminShellContext.Provider value={registerCallbacks}>{props.children}</PersistentAdminShellContext.Provider>
+    </AdminShellFrame>
   );
 }

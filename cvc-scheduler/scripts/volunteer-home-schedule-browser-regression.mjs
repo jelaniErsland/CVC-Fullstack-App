@@ -34,7 +34,7 @@ try {
   write('app/page.tsx',`
 import {VolunteerHomeDashboard} from '@/components/VolunteerHomeDashboard';
 import {defaultPhoto} from '@/lib/projectPhoto/photo';
-const item=(id:string,title:string,date:string,status:string)=>({assignmentReference:id,taskTitle:title,taskType:'general',scheduleKind:'timed',startDate:date,endDate:null,startTime:'07:30',endTime:'12:00',neededCount:2,scheduleNotes:'Instructions for '+id+'.\\n\\nBring your usual work clothing.',currentResponseStatus:status,responseNote:null,canConfirm:status!=='confirmed',canDecline:true,responseLocked:false,responseLockReason:null,activeAssignedCount:2,confirmedCount:1,declinedCount:0,followUpContact:{displayName:null,email:null,phone:null}});
+const item=(id:string,title:string,date:string,status:string)=>({assignmentReference:id,taskTitle:title,taskType:'general',scheduleKind:'timed',startDate:date,endDate:null,startTime:'07:30',endTime:'12:00',neededCount:2,scheduleNotes:'Instructions for '+id+'.\\n\\nBring your usual work clothing.',fellowWorkerNames:id==='assignment-one'?['Maria Garcia']:id==='assignment-two'?['John Smith','Maria Garcia']:[],currentResponseStatus:status,responseNote:null,canConfirm:status!=='confirmed',canDecline:true,responseLocked:false,responseLockReason:null,activeAssignedCount:2,confirmedCount:1,declinedCount:0,followUpContact:{displayName:null,email:null,phone:null}});
 export default async function Page({searchParams}:{searchParams:Promise<{state?:string}>}){
 const {state='one'}=await searchParams;
 const one=item('assignment-one','Gate welcome','2026-10-06','confirmed');
@@ -104,6 +104,17 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
       await details.focus();await page.keyboard.press('Enter');
       const dialog=page.getByRole('dialog');await dialog.waitFor();
       assert.equal(await dialog.getByRole('heading',{level:2}).innerText(),title);
+      if(!before&&title==='Gate welcome'){
+        const coworkers=dialog.getByRole('region',{name:'Fellow worker',exact:true});
+        assert(await coworkers.isVisible(),'One coworker should use the singular label inside details');
+        assert.equal(await coworkers.getByText('Maria Garcia',{exact:true}).count(),1);
+        assert.equal(await dialog.getByRole('link',{name:'Maria Garcia'}).count(),0,'Coworker names must not be profile links');
+      }
+      if(!before&&title.startsWith('Material staging')){
+        const coworkers=dialog.getByRole('region',{name:'Fellow workers',exact:true});
+        assert(await coworkers.isVisible(),'Multiple coworkers should use the plural label');
+        assert.deepEqual(await coworkers.locator('li').allInnerTexts(),['John Smith','Maria Garcia']);
+      }
       const close=dialog.getByRole('button',{name:'Close assignment details',exact:true});
       const closeBox=await close.boundingBox();assert(closeBox.x>=0&&closeBox.x+closeBox.width<=width);
       await close.focus();for(let tab=0;tab<6;tab++){await page.keyboard.press('Tab');assert(await dialog.evaluate(el=>el.contains(document.activeElement)));}
@@ -143,6 +154,8 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
         const card=cards.nth(i);assert((await card.boundingBox()).height>=44);
         assert(await card.evaluate(el=>getComputedStyle(el).borderRadius!=='0px'&&!!el.querySelector('svg')),'Compact assignments should be cards with the shared calendar icon');
         await card.click();await dialog.waitFor();
+        if(ids[i]==='assignment-two') assert.deepEqual(await dialog.getByRole('region',{name:'Fellow workers',exact:true}).locator('li').allInnerTexts(),['John Smith','Maria Garcia']);
+        if(ids[i]==='assignment-three') assert.equal(await dialog.getByRole('region',{name:/^Fellow workers?$/}).count(),0,'Empty coworker section must be omitted');
         await dialog.locator('summary').filter({hasText:'Assignment details'}).click();
         assert(await dialog.getByText('Instructions for '+ids[i]+'.',{exact:false}).isVisible(),'Incorrect assignment identity: '+ids[i]);
         await closeSheet();assert(await card.evaluate(el=>el===document.activeElement),'Compact card focus was not restored');

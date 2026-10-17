@@ -14,7 +14,7 @@ import { setProjectDayExpectedOnSiteWithVerifiedContext } from "../lib/operation
 const root = process.cwd();
 const readSource = (...parts) => readFile(path.join(root, ...parts), "utf8");
 const [calendarPage, calendarClient, projectDayServer, quickViewPage, quickViewClient, quickViewRoute, quickViewServer, adminNav, adminShell] = await Promise.all([
-  readSource("app", "admin", "calendar", "page.tsx"),
+  readSource("app", "admin", "(workspace)", "calendar", "page.tsx"),
   readSource("components", "CalendarClient.tsx"),
   readSource("lib", "operations", "projectDay.server.ts"),
   readSource("app", "admin", "quick-view", "page.tsx"),

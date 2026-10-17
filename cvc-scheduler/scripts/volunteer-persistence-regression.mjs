@@ -138,13 +138,14 @@ assert.deepEqual(
     "convert_questionnaire_submission_to_volunteer_profile",
     "create_manual_volunteer_profile",
     "update_volunteer_profile_manual_fields",
+    "delete_history_free_volunteer_profile",
   ],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
-  ["volunteer_profiles"],
+  ["volunteer_profiles", "volunteer_profiles"],
 );
-assert.doesNotMatch(serverBoundary, /emergency|SUPABASE_SERVICE_ROLE_KEY|serviceRole/i);
+assert.doesNotMatch(serverBoundary, /SUPABASE_SERVICE_ROLE_KEY|serviceRole/i);
 assert.match(hostedValidation, /expectedName = "project-local-staging"/);
 assert.match(hostedValidation, /expectedRef = "kfuujcfxoayukywvtaeh"/);
 assert.match(hostedValidation, /expectedMigration = "20260714121500"/);
@@ -179,12 +180,23 @@ const parsedProfile = parseVolunteerProfile({
   availability_snapshot: { weekdays: ["Monday"] },
   skills_help_snapshot: { skillsExperience: { categories: ["Painting"] } },
   profile_notes: "",
+  date_of_birth: null,
+  emergency_contact_name: null,
+  emergency_contact_phone: null,
+  emergency_contact_relationship: null,
+  housing_option: "unknown",
+  after_hours_security_availability: "unknown",
+  builder_assistant_communication: "unknown",
+  available_work_days: [],
+  available_two_plus_days: "unknown",
+  skills_experience: null,
+  other_support: null,
   created_at: "2026-07-01T12:00:00.000Z",
   updated_at: "2026-07-01T12:00:00.000Z",
 });
 assert.equal(parsedProfile.fullName, "Alex Rivera");
 assert.equal(parsedProfile.profileSource, "questionnaire");
-assert.equal("emergencyContact" in parsedProfile, false);
+assert.equal(parsedProfile.emergencyContactName, null);
 assert.throws(() =>
   parseVolunteerProfile({
     ...parsedProfile,
@@ -303,9 +315,9 @@ for (const file of routeFiles) {
 }
 assert.deepEqual(
   routeImports,
-  ["app/admin/volunteers/page.tsx"],
-  "Only the approved 12.15 persisted volunteer-management route may import persisted volunteer boundaries",
+  ["app/admin/(workspace)/volunteers/csv/route.ts", "app/admin/(workspace)/volunteers/page.tsx"],
+  "Only approved volunteer-management routes may import persisted volunteer boundaries",
 );
 
 console.log("Volunteer profile persistence and authorization checks passed.");
-console.log("Confirmed explicit conversion, manual provenance, scoped reads, sensitive separation, and the approved 12.15 route cutover boundary.");
+console.log("Confirmed explicit conversion, manual provenance, scoped reads, sensitive separation, and approved volunteer route boundaries.");

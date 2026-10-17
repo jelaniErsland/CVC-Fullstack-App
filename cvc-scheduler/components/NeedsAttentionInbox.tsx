@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Check, ChevronDown, Search } from "lucide-react";
-import { markNeedsAttentionSignalsSeenAction } from "@/app/admin/needs-attention/actions";
+import { markNeedsAttentionSignalsSeenAction } from "@/app/admin/(workspace)/needs-attention/actions";
 import { defaultAdminViews, type AttentionCategory, type AttentionView, type SupportType } from "@/lib/adminViews/preferences";
 import { useRememberedView } from "@/lib/adminViews/useRememberedView";
 import { filterAttentionIssues, type AttentionIssue } from "@/lib/needsAttention/issues";

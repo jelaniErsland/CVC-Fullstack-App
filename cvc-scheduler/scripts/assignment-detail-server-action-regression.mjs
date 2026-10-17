@@ -204,7 +204,7 @@ for (const file of appAndComponentFiles) {
 }
 assert.deepEqual(serverActionImporters, ["app/admin/assignments/[assignmentId]/page.tsx"]);
 assert.deepEqual(assignmentDetailInboundLinks.sort(), [
-  "app/admin/needs-attention/page.tsx",
+  "app/admin/(workspace)/needs-attention/page.tsx",
   "components/CalendarClient.tsx",
 ]);
 

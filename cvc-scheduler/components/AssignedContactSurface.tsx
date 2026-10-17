@@ -2,7 +2,7 @@
 
 import { Mail, MessageSquare, Phone, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { readAssignedContactAction } from "@/app/admin/calendar/assigned-contact-actions";
+import { readAssignedContactAction } from "@/app/admin/(workspace)/calendar/assigned-contact-actions";
 import { readSharedAssignedContactAction } from "@/app/qv/assigned-contact-actions";
 import type { AssignedContactResult } from "@/lib/calendar/assignedContact.server";
 import { useFocusContainment } from "@/hooks/useFocusContainment";

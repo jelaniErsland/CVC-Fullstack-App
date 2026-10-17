@@ -296,7 +296,7 @@ async function verifyStaticBoundaries() {
     readFile(path.join(root, "supabase", "migrations", "20260714121500_manual_volunteer_profiles.sql"), "utf8"),
     readFile(path.join(root, "lib", "volunteers", "server.ts"), "utf8"),
     readFile(path.join(root, "lib", "volunteers", "routeRead.server.ts"), "utf8"),
-    readFile(path.join(root, "app", "admin", "volunteers", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "volunteers", "page.tsx"), "utf8"),
   ]);
   assert(migration.includes("create_manual_volunteer_profile"), "Manual create RPC migration is missing.");
   assert(migration.includes("update_volunteer_profile_manual_fields"), "Manual update RPC migration is missing.");

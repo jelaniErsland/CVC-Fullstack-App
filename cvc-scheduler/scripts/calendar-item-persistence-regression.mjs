@@ -419,7 +419,7 @@ if (source.includes("lib/calendar/server")) {
 }
 assert.deepEqual(
   routeImports,
-  ["app/admin/calendar/page.tsx"],
+  ["app/admin/(workspace)/calendar/page.tsx"],
   "Only the reviewed Calendar route may import the server Calendar mutation boundary",
 );
 

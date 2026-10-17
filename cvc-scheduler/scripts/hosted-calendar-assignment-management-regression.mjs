@@ -280,7 +280,7 @@ async function verifyStaticBoundaries() {
     readFile(path.join(root, "supabase", "migrations", expectedMigrationFile), "utf8"),
     readFile(path.join(root, "lib", "calendar", "assignmentPicker.server.ts"), "utf8"),
     readFile(path.join(root, "lib", "calendar", "routeRead.server.ts"), "utf8"),
-    readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(path.join(root, "lib", "assignments", "server.ts"), "utf8"),
     readFile(path.join(root, "package.json"), "utf8"),

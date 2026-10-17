@@ -187,7 +187,7 @@ async function verifyStaticBoundaries() {
     "utf8",
   );
   const calendarRouteSource = await readFile(
-    path.join(root, "app", "admin", "calendar", "page.tsx"),
+    path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"),
     "utf8",
   );
   const packageSource = await readFile(path.join(root, "package.json"), "utf8");
@@ -279,11 +279,11 @@ async function verifyStaticBoundaries() {
   assert.deepEqual(validationImporters, []);
   assert.deepEqual(
     persistedCalendarRouteImporters,
-    ["app/admin/calendar/page.tsx"],
+    ["app/admin/(workspace)/calendar/page.tsx"],
     "Only the reviewed Calendar route may import the narrow Calendar mutation boundary",
   );
   assert.deepEqual(assignmentDetailLinks.sort(), [
-    "app/admin/needs-attention/page.tsx",
+    "app/admin/(workspace)/needs-attention/page.tsx",
     "components/CalendarAssignmentPicker.tsx",
   ]);
   assert.match(calendarRouteSource, /@\/lib\/calendar\/routeRead\.server/);

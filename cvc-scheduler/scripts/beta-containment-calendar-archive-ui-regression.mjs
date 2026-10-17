@@ -12,7 +12,7 @@ const [nav, shell, proxy, unavailable, calendar, calendarPage, volunteerCard, st
     read("proxy.ts"),
     read("app/admin/beta-unavailable/page.tsx"),
     read("components/CalendarClient.tsx"),
-    read("app/admin/calendar/page.tsx"),
+    read("app/admin/(workspace)/calendar/page.tsx"),
     read("components/VolunteerCard.tsx"),
     read("components/StatusPill.tsx"),
   ]);

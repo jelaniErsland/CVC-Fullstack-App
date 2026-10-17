@@ -111,11 +111,11 @@ assert.match(serverBoundary, /^import "server-only";/);
 assert.match(serverBoundary, /supabase\.auth\.getUser\(\)/);
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.rpc\(\s*"([^"]+)"/g)].map((match) => match[1]),
-  ["create_task_preset", "update_task_preset_color", "archive_task_preset"],
+  ["read_authorized_task_presets", "create_task_preset", "update_task_preset_color", "update_task_preset_description", "read_authorized_calendar_items", "apply_task_preset_instructions", "archive_task_preset"],
 );
 assert.deepEqual(
   [...serverBoundary.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]),
-  ["task_presets"],
+  [],
 );
 assert.doesNotMatch(serverBoundary, /SUPABASE_SERVICE_ROLE_KEY|serviceRole/i);
 assert.match(environmentExample, /^ADMIN_AUTH_MODE=review$/m);
@@ -250,7 +250,7 @@ for (const file of routeFiles) {
     routeImports.push(path.relative(root, file).replaceAll("\\", "/"));
   }
 }
-assert.deepEqual(routeImports, ["app/admin/tasks/page.tsx"]);
+assert.deepEqual(routeImports, ["app/admin/(workspace)/tasks/page.tsx"]);
 
 console.log("Task preset persistence and authorization checks passed.");
 console.log("Confirmed reusable definitions, scoped reads/writes, and the persisted Tasks route boundary.");

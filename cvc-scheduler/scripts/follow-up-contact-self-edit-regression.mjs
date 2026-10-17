@@ -217,7 +217,7 @@ async function verifyStaticBoundaries() {
   const [migration, helper, page, client, types, privileges] = await Promise.all([
     readFile(migrationPath, "utf8"),
     readFile(path.join(root, "lib", "projectContacts", "volunteerFacingDetails.server.ts"), "utf8"),
-    readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(path.join(root, "lib", "supabase", "database.types.ts"), "utf8"),
     readFile(path.join(root, "lib", "security", "projectLocalTablePrivileges.contract.json"), "utf8"),

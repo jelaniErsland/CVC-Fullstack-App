@@ -208,8 +208,8 @@ async function main() {
   assertIncludes(goNoGo, "product-owner approved", "go/no-go report");
 
   const routeFiles = [
-    "app/admin/calendar/page.tsx",
-    "app/admin/volunteers/page.tsx",
+    "app/admin/(workspace)/calendar/page.tsx",
+    "app/admin/(workspace)/volunteers/page.tsx",
     "app/v/schedule/page.tsx",
     "components/CalendarClient.tsx",
     "components/VolunteerDirectory.tsx",

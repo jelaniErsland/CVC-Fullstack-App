@@ -170,7 +170,7 @@ async function verifyPreflight() {
 
 async function verifyStaticContract() {
   const [page, client, serverHelper, provider, migration, envExample] = await Promise.all([
-    readFile(path.join(root, "app", "admin", "calendar", "page.tsx"), "utf8"),
+    readFile(path.join(root, "app", "admin", "(workspace)", "calendar", "page.tsx"), "utf8"),
     readFile(path.join(root, "components", "CalendarClient.tsx"), "utf8"),
     readFile(path.join(root, "lib", "calendar", "assignmentNotifications.server.ts"), "utf8"),
     readFile(path.join(root, "lib", "notifications", "initialAssignmentEmail.server.ts"), "utf8"),
@@ -179,8 +179,8 @@ async function verifyStaticContract() {
   ]);
 
   assert(page.includes("sendInitialAssignmentNotificationsAction"), "Calendar route action is not wired.");
-  assert(client.includes("Review schedule delivery"), "Calendar inspector delivery review control is missing.");
-  assert(client.includes("formAction={sendInitialAssignmentNotificationsAction}"), "Calendar inspector delivery review must use the authorized action.");
+  assert(client.includes("Review recipients in Communications"), "Calendar inspector recipient-review navigation is missing.");
+  assert(client.includes('href="/admin/announcements?kind=schedule"'), "Calendar inspector review must lead to Communications.");
   assert(serverHelper.includes("claim_initial_assignment_notification_deliveries"), "Notification helper must claim through the reviewed RPC.");
   assert(serverHelper.includes("finalize_initial_assignment_notification_delivery"), "Notification helper must finalize through the reviewed RPC.");
   assert(serverHelper.includes("issue_volunteer_schedule_access"), "Notification helper must use schedule access issuance.");
