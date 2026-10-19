@@ -1,11 +1,11 @@
 import type { CSSProperties, ReactNode } from "react";
 import { projectPhotoUrl, type ProjectPhoto } from "@/lib/projectPhoto/photo";
 import { ldcProjectName } from "@/lib/projectIdentity";
-export function ProjectHero({ photo, title, projectName, children, previewUrl, previewSize, compact = false }: { compact?: boolean; photo: ProjectPhoto; title: string; projectName: string; children?: ReactNode; previewUrl?: string; previewSize?: "desktop" | "mobile" }) {
+export function ProjectHero({ photo, title, projectName, children, previewUrl, previewSize, compact = false, volunteerHome = false }: { compact?: boolean; volunteerHome?: boolean; photo: ProjectPhoto; title: string; projectName: string; children?: ReactNode; previewUrl?: string; previewSize?: "desktop" | "mobile" }) {
   const Heading = compact ? "h2" : "h1";
   const hasPhoto = !!(previewUrl || photo.asset_id);
   const style = { "--hero-desktop": `${photo.desktop_x}% ${photo.desktop_y}%`, "--hero-mobile": `${photo.mobile_x}% ${photo.mobile_y}%` } as CSSProperties;
-  return <section aria-label={compact ? "Project identity" : "Project hero"} style={style} className={`relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900 via-blue-800 to-teal-700 text-white ${previewSize ? `${previewSize === "desktop" ? "aspect-[4.6/1]" : "aspect-[2.5/1]"} p-3` : compact ? "h-[110px] p-4 sm:h-[150px] sm:p-5" : "min-h-36 p-5 sm:min-h-44 sm:p-6"}`}>
+  return <section aria-label={compact ? "Project identity" : "Project hero"} style={style} className={`relative isolate flex flex-col justify-end overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900 via-blue-800 to-teal-700 text-white ${previewSize ? `${previewSize === "desktop" ? "aspect-[4.6/1]" : "aspect-[2.5/1]"} p-3` : compact ? "h-[110px] p-4 sm:h-[150px] sm:p-5" : volunteerHome ? "min-h-24 p-4 sm:min-h-40 sm:p-6" : "min-h-36 p-5 sm:min-h-44 sm:p-6"}`}>
     {hasPhoto ? <picture className="absolute inset-0 -z-20">
       {!previewUrl && photo.asset_id && <source media="(max-width: 639px)" srcSet={projectPhotoUrl(photo.asset_id, "mobile")} />}
       {/* Protected, already-sized WebP derivatives must retain the session cookie. */}

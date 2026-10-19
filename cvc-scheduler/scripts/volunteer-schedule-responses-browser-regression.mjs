@@ -314,7 +314,7 @@ function fullSchedule(page) {
 async function openFullSchedule(page) {
   const schedule = fullSchedule(page);
   await schedule.waitFor();
-  const toggle = schedule.getByRole("button", { name: "Show full schedule", exact: true });
+  const toggle = schedule.getByRole("button", { name: "Show all", exact: true });
   if (await toggle.count()) await toggle.click();
   await page.waitForLoadState("networkidle");
   return schedule;
@@ -331,7 +331,7 @@ async function verifyMaximumInstructions(page) {
       const trigger = fullSchedule(page).getByRole("button", { name: title, exact: false });
       await trigger.click();
       const dialog = page.getByRole("dialog");
-      const disclosure = dialog.locator("details").filter({ hasText: "Assignment details" });
+      const disclosure = dialog.locator("details").filter({ hasText: "Instructions" });
       const summary = disclosure.locator("summary");
       assert.equal(await disclosure.evaluate((element) => element.open), false);
       if (writeInstructionScreenshots && length === 4000) {
@@ -409,7 +409,7 @@ async function runBrowserProof(token) {
         await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).first().click();
         const dialog = page.getByRole("dialog");
         await dialog.waitFor();
-        const disclosure = dialog.locator("details").filter({ hasText: "Assignment details" });
+        const disclosure = dialog.locator("details").filter({ hasText: "Instructions" });
         assert.equal(await disclosure.count(), 1);
         assert.equal(await disclosure.evaluate((node) => node.hasAttribute("open")), false);
         await disclosure.locator("summary").click();
@@ -468,7 +468,7 @@ async function runBrowserProof(token) {
         fullPage: true,
       });
       await fullSchedule(page).getByRole("button", { name: reviewValues.titles.confirm, exact: false }).click();
-      await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
+      await page.getByRole("dialog").locator("summary").filter({ hasText: "Instructions" }).click();
       await page.screenshot({
         path: path.join(iterationReviewDir, "assignment-detail-mobile.png"),
       });
@@ -550,8 +550,10 @@ async function runBrowserProof(token) {
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await fullSchedule(page).getByRole("button", { name: reviewValues.titles.decline, exact: false }).click();
+    assert.equal(await page.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
+    await page.getByRole("button", { name: "Can’t make it", exact: true }).click();
     await page.getByPlaceholder("Add a brief note if you can’t make it").fill("Browser note");
-    await page.getByRole("button", { name: "Can’t make it" }).last().click();
+    await page.getByRole("button", { name: "Save Can’t make it" }).click();
     await page.getByText("Your response is now Can’t make it.").waitFor();
     if (write1246CScreenshots) {
       await mkdir(review1246CDir, { recursive: true });
@@ -574,7 +576,7 @@ async function runBrowserProof(token) {
     await page.getByRole("button", { name: "Close assignment details", exact: true }).click();
 
     await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
-    await page.getByText(/Changes are closed this close to the assignment/).waitFor();
+    await page.getByText(/Response changes are closed this close to the assignment/).waitFor();
     const finalLockedDialog = page.getByRole("dialog");
     assert.equal(await finalLockedDialog.getByPlaceholder("Add a brief note if you can’t make it").count(), 0);
     assert.equal(await finalLockedDialog.getByRole("button", { name: /^Confirm$/ }).count(), 0);
@@ -608,7 +610,7 @@ async function runBrowserProof(token) {
       await page.screenshot({ path: path.join(review1246CDir, "11-declined-schedule-mobile-390.png"), fullPage: true });
     }
     await fullSchedule(page).getByRole("button", { name: reviewValues.titles.inside48, exact: false }).click();
-    await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
+    await page.getByRole("dialog").locator("summary").filter({ hasText: "Instructions" }).click();
     const mobileDetailScroll = page.getByTestId("volunteer-assignment-detail-scroll");
     await mobileDetailScroll.evaluate((element) => {
       element.scrollTop = element.scrollHeight;

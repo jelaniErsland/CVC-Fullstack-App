@@ -34,11 +34,12 @@ try{
   await page.getByRole('button',{name:/Alex Morgan/}).click();
   await page.waitForURL('**/v/schedule');
   await page.getByText('Welcome, Alex.').waitFor();
-  await page.getByRole('button',{name:'View full schedule'}).click();
+  await page.getByRole('region',{name:'Upcoming schedule'}).getByRole('heading',{name:'Your schedule'}).waitFor();
   await page.getByText('Night Watch').first().waitFor();
   await page.goto(base);
   await page.waitForURL('**/v/schedule');
   await page.getByText('Welcome, Alex.').waitFor();
+  await page.locator('summary[aria-label="Volunteer options"]').click();
   const [switchResponse]=await Promise.all([page.waitForResponse(response=>response.url().includes('/v/leave')),page.getByRole('button',{name:'Switch volunteer or project'}).click()]);
   assert.equal(switchResponse.status(),303,'Switch submission failed.');
   await page.waitForURL('**/?switch=1');
@@ -47,6 +48,7 @@ try{
   await page.getByRole('button',{name:/Casey Jordan/}).click();
   await page.waitForURL('**/v/schedule');
   await page.getByText('Welcome, Casey.').waitFor();
+  await page.locator('summary[aria-label="Volunteer options"]').click();
   await page.getByRole('button',{name:'Forget this device'}).click();
   await page.waitForURL('**/?forgot=1');
   const cookiesBeforeReload=await context.cookies(base);

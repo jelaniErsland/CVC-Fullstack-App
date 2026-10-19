@@ -543,7 +543,7 @@ async function runStaticGuards() {
     "eligible close-to-start state lacks contextual confirm guidance",
   );
   assert(
-    client.includes("Changes are closed this close to the assignment"),
+    client.includes("Response changes are closed this close to the assignment"),
     "locked response state lacks contextual change guidance",
   );
   assert(!client.includes("read-only for 12.20"), "stale read-only copy remains");

@@ -346,7 +346,7 @@ async function runBrowserProof(token, emptyToken) {
     );
     await page.getByText("LDC QA 12.20 Browser Workspace", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Show full schedule" }).count(), 0, "Three assignments must already be visible");
+    assert.equal(await page.getByRole("button", { name: "Show all" }).count(), 0, "Three assignments must already be visible");
     await page.getByText(`${fixture.namespace} Confirmed`).waitFor();
     await page.getByText(`${fixture.namespace} Declined`).waitFor();
     assert.equal(await page.getByText(`${fixture.namespace} Draft Hidden`).count(), 0, "draft item leaked");
@@ -378,9 +378,9 @@ async function runBrowserProof(token, emptyToken) {
     const detailButton = page.getByRole("button", { name: /Needs Reply/ }).first();
     await detailButton.click();
     await page.getByRole("dialog", { name: /Needs Reply/ }).waitFor();
-    await page.getByRole("dialog").locator("summary").filter({ hasText: "Assignment details" }).click();
+    await page.getByRole("dialog").locator("summary").filter({ hasText: "Instructions" }).click();
     await page.getByText("Safe schedule note.").waitFor();
-    await page.getByText("Ask the project team for the best contact.").waitFor();
+    assert.equal(await page.getByText("Ask the project team for the best contact.").count(), 0, "Unavailable contact placeholder should be omitted.");
     const fellows = page.getByRole("dialog").getByRole("region", { name: "Fellow worker", exact: true });
     assert.deepEqual(await fellows.locator("li").allInnerTexts(), [`${fixture.namespace} Other Volunteer`]);
     assert.equal(await fellows.locator("a").count(), 0, "Fellow worker must not link to a profile");

@@ -10,14 +10,17 @@ import {chromium} from 'playwright';
 import {resolvePreviewBrowserExecutable} from './preview-config.mjs';
 
 const before=process.argv.includes('--before');
-const baseline='0efa0427e8cc0290ab87d70ecbafb759afdcbf7a';
+const measureOnly=process.argv.includes('--measure-only');
+const visualSplit=process.argv.includes('--visual-split');
+const baseline='0333942939cdd43b6ca9328847d20be9fc391938';
 const root=process.cwd(), temporary=mkdtempSync(path.join(os.tmpdir(),'project-local-home-polish-'));
 assert(path.resolve(temporary).startsWith(path.resolve(os.tmpdir())+path.sep));
-const gallery=path.join(root,'docs/previews/volunteer-home-schedule');
+const gallery=process.env.VOLUNTEER_SCREENSHOT_DIR ? path.resolve(process.env.VOLUNTEER_SCREENSHOT_DIR) : path.join(temporary,'screenshots');
 mkdirSync(gallery,{recursive:true});
 const write=(name,text)=>{const target=path.join(temporary,name);mkdirSync(path.dirname(target),{recursive:true});writeFileSync(target,text);};
 let server,browser;
-const errors=[],posted=[];
+const errors=[],posted=[],secondaryReads=[];
+const measurements=[];
 try {
   for(const name of ['components','lib','hooks'])cpSync(path.join(root,name),path.join(temporary,name),{recursive:true});
   for(const name of ['package.json','tsconfig.json','postcss.config.mjs'])cpSync(path.join(root,name),path.join(temporary,name));
@@ -45,13 +48,16 @@ if(state==='three') upcoming=[one,rest[0],rest[1]];
 if(state==='many') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},...rest,...Array.from({length:6},(_,i)=>item('assignment-extra-'+i,'Additional work '+(i+1),'2026-10-'+(11+i),'confirmed'))];
 if(state==='dense') upcoming=[{...one,fellowWorkerNames:Array.from({length:30},(_,i)=>'Fellow Worker '+String(i+1).padStart(2,'0'))},...rest];
 if(state==='multiple') upcoming=upcoming.map(a=>({...a,currentResponseStatus:a.assignmentReference==='assignment-one'?'needs_response':a.currentResponseStatus,canConfirm:a.assignmentReference==='assignment-one'||a.canConfirm}));
-if(state==='same-day') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},{...rest[0],taskTitle:one.taskTitle,startDate:one.startDate},...rest.slice(1)];
+if(state==='same-day') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},{...rest[0],taskTitle:one.taskTitle,startDate:one.startDate,startTime:'12:00',endTime:'17:00'},...rest.slice(1)];
+if(state==='split-day') upcoming=[one,...rest.slice(0,3).map((a,i)=>({...a,startDate:one.startDate,startTime:i===0?'12:00':'18:00',endTime:i===0?'17:00':'21:00'})),rest[3]];
+if(state==='overnight') upcoming=[{...one,startTime:'22:00',endTime:'06:00',endDate:'2026-10-07'},rest[0],...rest.slice(1)];
+if(state==='menu-empty') upcoming=[one,...rest];
 if(state==='long-additional')upcoming=[one,{...rest[0],taskTitle:'AccessibleVolunteerEntranceEquipmentPreparationAndSafetyCheckWithAnUnusuallyLongTaskName',currentResponseStatus:'confirmed'}];
 if(state==='long')upcoming=[{...one,taskTitle:'AccessibleVolunteerEntranceEquipmentPreparationAndSafetyCheckWithAnUnusuallyLongTaskName'}];
 if(state==='duplicate')upcoming=[one,{...one}];
 const assignments=state==='past'?[item('assignment-past','Earlier completed work','2026-09-20','confirmed')]:state==='duplicate'?[one]:upcoming;
-const home={week:'2026-10-05',photo:defaultPhoto,away:[],meals:[{kind:'lunch',date:'2026-10-06',startTime:'12:00',endTime:'13:00',menu:'Vegetable soup and fresh bread',provider:'Sample meal team'}]};
-return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header className="mb-5 border-b border-slate-200 pb-3 text-sm font-semibold">Project Local</header><VolunteerHomeDashboard name="Alex Rivera" projectName="LDC Sample Remodel" assignments={assignments as any} upcoming={upcoming as any} initialHome={home as any} today="2026-10-05"/></main>;}
+const home={week:'2026-10-05',photo:defaultPhoto,away:[],meals:state==='menu-empty'?Array.from({length:5},(_,i)=>({kind:'lunch',date:'2026-10-'+String(6+i).padStart(2,'0'),startTime:'12:00',endTime:'13:00',menu:null,provider:null})):[{kind:'lunch',date:'2026-10-06',startTime:'12:00',endTime:'13:00',menu:'Vegetable soup and fresh bread',provider:'Sample meal team'}]};
+return <main className="mx-auto max-w-3xl px-5 py-5 sm:px-8 sm:py-8"><header className="mb-5 border-b border-slate-200 pb-3 text-sm font-semibold">Project Local</header><VolunteerHomeDashboard name="Alex Rivera" projectName="LDC Sample Remodel" assignments={assignments as any} upcoming={upcoming as any} initialHome={home as any} today="2026-10-05"/></main>;}
 `);
   const port=await new Promise(resolve=>{const socket=net.createServer();socket.listen(0,'127.0.0.1',()=>{const p=socket.address().port;socket.close(()=>resolve(p));});});
   const base=`http://127.0.0.1:${port}`;
@@ -63,16 +69,22 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
   assert(ready,'Isolated fixture failed to start: '+serverOutput.slice(-1500));
   browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
   const context=await browser.newContext();
-  await context.route('**/*',route=>{const request=route.request();const url=new URL(request.url());if(request.method()!=='GET')posted.push(request.method()+' '+url.pathname);return url.origin===base?route.continue():route.abort();});
+  await context.route('**/*',route=>{const request=route.request();const url=new URL(request.url());if(request.method()!=='GET')posted.push(request.method()+' '+url.pathname);if(request.method()==='GET'&&request.resourceType()==='fetch')secondaryReads.push(url.pathname);return url.origin===base?route.continue():route.abort();});
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   const go=state=>page.goto(base+'/?state='+state,{waitUntil:'networkidle'});
   const schedule=()=>page.getByRole('region',{name:'Upcoming schedule',exact:true});
   const noOverflow=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Horizontal overflow');
-  for(const width of [320,390,430,768,1440]){
+  for(const width of before||measureOnly?[390]:visualSplit?[390,1440]:[320,390,430,768,1440]){
     await page.setViewportSize({width,height:width<768?844:1000});
-    for(const state of ['one','two','three','multiple','many','dense','none','past','long','long-additional','duplicate','priority','same-day']){
+    for(const state of before||measureOnly?['one','many']:visualSplit?['split-day']:['one','two','three','multiple','many','dense','none','past','long','long-additional','duplicate','priority','same-day','split-day','overnight','menu-empty']){
       await page.emulateMedia({reducedMotion:state==='two'?'reduce':'no-preference'});
       await go(state);await noOverflow();
+      const readCount=secondaryReads.length;
+      if(width===390&&['one','many'].includes(state)){
+        const card=page.getByRole('region',{name:'Upcoming schedule'}).getByRole('button',{name:/View assignment details/}).first();
+        const box=await card.boundingBox();
+        measurements.push({candidate:before?'12.55 production':'12.55A',state,width,firstCardTopPx:Math.round(box.y)});
+      }
       if(before){
         if(['one','multiple'].includes(state)&&[390,1440].includes(width))await page.screenshot({path:path.join(gallery,'before-'+state+'-'+width+'.png'),fullPage:true,animations:'disabled'});
         continue;
@@ -80,11 +92,12 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
       assert(await page.getByRole('navigation',{name:'Volunteer shortcuts'}).isVisible());
       assert(await page.getByRole('button',{name:'Lunch',exact:true}).isVisible());
       assert(await page.getByRole('button',{name:'Away',exact:true}).isVisible());
-      assert(await page.getByRole('button',{name:/Map, coming soon/}).isDisabled());
+      assert.equal(await page.getByRole('button',{name:/Map, coming soon/}).count(),0);
+      assert(await schedule().getByRole('heading',{name:'Your schedule'}).isVisible());
       const cards=schedule().getByRole('button',{name:/View assignment details/});
       const expected=state==='none'||state==='past'?0:state==='one'||state==='long'||state==='duplicate'?1:state==='two'||state==='long-additional'?2:state==='three'?3:state==='many'?11:5;
       assert.equal(await cards.count(),expected,'All upcoming cards must be visible by default: '+state+' at '+width);
-      const toggle=schedule().getByRole('button',{name:'Collapse schedule',exact:true});
+      const toggle=schedule().getByRole('button',{name:'Show less',exact:true});
       assert.equal(await toggle.count(),expected>3?1:0);
       if(expected===0)assert(await schedule().getByText('No upcoming assignments yet.',{exact:false}).isVisible());
       if(expected>0){
@@ -94,6 +107,18 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
         await cards.first().focus();await page.keyboard.press('Enter');
         const dialog=page.getByRole('dialog');await dialog.waitFor();
         assert(await dialog.getByRole('region',{name:state==='dense'?'Fellow workers':'Fellow worker',exact:true}).isVisible());
+        if(width===390&&state==='one')await page.screenshot({path:path.join(gallery,'detail-one-390.png'),animations:'disabled'});
+        assert.equal(await dialog.getByRole('textbox',{name:/Note/}).count(),0,'Decline note stays hidden until selected');
+        if(state==='one'){
+          assert.equal(await dialog.getByRole('button',{name:'Confirmed',exact:true}).count(),0,'No disabled Confirmed action');
+          await dialog.getByRole('button',{name:'Can’t make it',exact:true}).click();
+          assert(await dialog.getByRole('textbox',{name:/Note/}).isVisible());
+          if(width===390)await page.screenshot({path:path.join(gallery,'decline-one-390.png'),animations:'disabled'});
+          assert(await dialog.getByRole('textbox',{name:/Note/}).evaluate(element=>document.activeElement===element),'Decline note receives focus.');
+          await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+          assert.equal(await dialog.getByRole('textbox',{name:/Note/}).count(),0);
+          assert(await dialog.getByRole('button',{name:'Can’t make it',exact:true}).evaluate(element=>document.activeElement===element),'Cancel returns focus to decline action.');
+        }
         await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
         assert(await cards.first().evaluate(el=>el===document.activeElement));
       }
@@ -101,24 +126,37 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
       if(expected>3){
         assert.equal(await toggle.getAttribute('aria-expanded'),'true');
         await toggle.click();
-        const show=schedule().getByRole('button',{name:'Show full schedule',exact:true});
+        const show=schedule().getByRole('button',{name:'Show all',exact:true});
         assert.equal(await show.getAttribute('aria-expanded'),'false');
         assert.equal(await schedule().locator('#volunteer-inline-schedule').getAttribute('aria-hidden'),'true');
         assert(await cards.nth(2).isVisible());
         assert.equal(await cards.nth(3).isVisible(),false);
         await show.click();assert(await cards.nth(3).isVisible());
       }
-      if(['one','multiple','many'].includes(state)&&[390,430,1440].includes(width))await page.screenshot({path:path.join(gallery,'after-'+state+'-'+width+'.png'),fullPage:true,animations:'disabled'});
+      if(state==='same-day'){
+        assert.equal(await schedule().getByRole('heading',{name:'Tuesday, October 6, 2026'}).count(),1);
+        assert((await cards.nth(0).innerText()).includes('Morning ·'));
+        assert((await cards.nth(1).innerText()).includes('Afternoon ·'));
+      }
+      if(state==='split-day')assert.equal(await schedule().getByRole('heading',{name:'Tuesday, October 6, 2026',exact:true}).count(),1,'Split first-three day must have one heading');
+      if(state==='overnight')assert((await cards.first().innerText()).includes('ends Wednesday, October 7, 2026'));
+      if(['one','multiple','many','split-day'].includes(state)&&[390,430,1440].includes(width))await page.screenshot({path:path.join(gallery,'after-'+state+'-'+width+'.png'),fullPage:true,animations:'disabled'});
       await page.getByRole('button',{name:'Lunch',exact:true}).click();
       assert(await page.getByRole('dialog').getByRole('heading',{name:'Weekly menu'}).isVisible());
+      if(state==='menu-empty'){
+        assert.equal(await page.getByText('The menu for this week hasn’t been posted yet.').count(),1);
+        assert.equal(await page.getByText('Menu not posted yet.').count(),0);
+      }
       await page.getByRole('button',{name:'Close weekly menu'}).click();
       await page.getByRole('button',{name:'Away',exact:true}).click();
       assert(await page.getByRole('dialog').getByRole('heading',{name:'Availability'}).isVisible());
       await page.getByRole('button',{name:'Close availability'}).click();
+      assert.equal(secondaryReads.length,readCount,'Opening details and local schedule controls must not fetch per card.');
       await noOverflow();
     }
   }
   assert.deepEqual(errors,[]);assert.deepEqual(posted,[],'Opening details/schedule must not submit any request');
+  console.log(JSON.stringify(measurements));
   console.log(before?`Before screenshots captured from ${baseline} with synthetic data; no provider/mutation requests.`:'Volunteer home browser regression passed: 0/1/2/3/5/11 assignments, dense coworkers, 320/390/430/768/1440px, visible schedule, collapse, details, shortcuts, keyboard/focus, no overflow, and zero mutation/provider requests.');
 }finally{
   await browser?.close();

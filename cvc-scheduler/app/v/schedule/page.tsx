@@ -135,7 +135,7 @@ export default async function VolunteerSchedulePage({
   const home = await readVolunteerHome(schedule.upcomingAssignments[0]?.startDate ?? today);
   return (
     <PageShell className="bg-[var(--pl-canvas)] px-4 py-4 sm:px-7 lg:px-10">
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-3xl">
         <PublicHeader timezone={schedule.workspaceTimezone} />
         <div className="pt-3 pb-10"><VolunteerHomeDashboard name={schedule.volunteerDisplayName} projectName={schedule.workspaceDisplayName} assignments={assignments} upcoming={schedule.upcomingAssignments} initialHome={home} today={today} /></div>
       </div>

@@ -4,7 +4,8 @@ import {
   ArrowRight,
   CalendarDays,
   Check,
-  Clock3,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   X,
 } from "lucide-react";
@@ -16,10 +17,11 @@ import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { formatScheduleClockRange } from "@/lib/scheduleFormatting";
 import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/token";
+import { groupScheduleByStartDate, sameDayShiftLabel } from "@/lib/volunteerSchedulePresentation";
 
 type VolunteerScheduleClientProps = Readonly<{
   showMeals?: boolean;
-  presentation?: "default" | "next" | "compact";
+  presentation?: "default" | "next" | "compact" | "home";
   showConfirmAll?: boolean;
   confirmAllAssignments?: readonly VolunteerScheduleAssignment[];
   assignments: readonly VolunteerScheduleAssignment[];
@@ -87,6 +89,46 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
   );
 }
 
+function HomeDayGroups({ assignments, allAssignments, featured, suppressFirstHeading, onSelect }: Readonly<{
+  assignments: readonly VolunteerScheduleAssignment[];
+  allAssignments: readonly VolunteerScheduleAssignment[];
+  featured: boolean;
+  suppressFirstHeading?: boolean;
+  onSelect: (assignment: VolunteerScheduleAssignment, button: HTMLButtonElement) => void;
+}>) {
+  const groups = groupScheduleByStartDate(assignments);
+  const dayCounts = new Map<string, number>();
+  for (const assignment of allAssignments) dayCounts.set(assignment.startDate, (dayCounts.get(assignment.startDate) ?? 0) + 1);
+  return <div className="space-y-4">
+    {groups.map((group, groupIndex) => {
+      const headingId = `volunteer-day-${featured ? "featured" : "later"}-${group.date}`;
+      const sameDayCount = dayCounts.get(group.date) ?? 0;
+      const continuedDay = suppressFirstHeading && groupIndex === 0;
+      return <section key={group.date} aria-labelledby={continuedDay ? undefined : headingId} aria-label={continuedDay ? `${formatDate(group.date)} continued` : undefined}>
+        {!continuedDay && <h3 id={headingId} className="mb-1 text-sm font-semibold tracking-[-0.01em] text-[var(--pl-ink)]">{formatDate(group.date)}</h3>}
+        <div className="grid gap-2">
+          {group.assignments.map(assignment => {
+            const shift = sameDayShiftLabel(assignment, sameDayCount);
+            const time = formatScheduleClockRange(assignment.startTime, assignment.endTime) ?? "No specific time";
+            const spansDates = Boolean(assignment.endDate && assignment.endDate !== assignment.startDate);
+            return <button key={assignment.assignmentReference} type="button" onClick={event => onSelect(assignment, event.currentTarget)}
+              className={`group w-full min-w-0 rounded-xl border border-[var(--pl-border)] px-4 py-3 text-left transition hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${featured ? "bg-[linear-gradient(115deg,rgba(234,242,255,.75),rgba(255,255,255,1)_68%)] shadow-[var(--pl-shadow-card)]" : "bg-white/80"}`}>
+              <span className="sr-only">{formatDate(assignment.startDate)}. </span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className={`min-w-0 break-words font-semibold text-[var(--pl-ink)] ${featured ? "text-base" : "text-sm"}`}>{assignment.taskTitle}</span>
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}>{responseLabels[assignment.currentResponseStatus]}</span>
+              </span>
+              <span className="mt-1 block text-sm leading-5 text-[var(--pl-text)]">{shift && <span className="mr-2 font-medium text-[var(--pl-blue)]">{shift} ·</span>}{time}{spansDates ? ` · ends ${formatDate(assignment.endDate!)}` : ""}</span>
+              {assignment.fellowWorkerNames.length > 0 && <span className="mt-1 block break-words text-xs leading-5 text-[var(--pl-text)]">{assignment.fellowWorkerNames.length === 1 ? "Fellow worker" : "Fellow workers"} · {assignment.fellowWorkerNames.join(", ")}</span>}
+              <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--pl-blue)]">View assignment details <ArrowRight aria-hidden className="size-3.5" /></span>
+            </button>;
+          })}
+        </div>
+      </section>;
+    })}
+  </div>;
+}
+
 export function VolunteerScheduleClient({
   showMeals = true,
   presentation = "default",
@@ -97,6 +139,7 @@ export function VolunteerScheduleClient({
   submitResponseAction,
 }: VolunteerScheduleClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [scheduleExpanded, setScheduleExpanded] = useState(true);
   const [actionNotice, setActionNotice] =
     useState<VolunteerScheduleActionResult | null>(null);
   const [pendingAssignmentId, setPendingAssignmentId] = useState<string | null>(null);
@@ -175,7 +218,21 @@ export function VolunteerScheduleClient({
 
   return (
     <>
-      <div className={presentation === "compact" ? "space-y-3" : "mt-3 space-y-3"}>
+      {presentation === "home" ? <div>
+        <div className="mb-1 flex min-h-9 items-center justify-between gap-3">
+          <h2 className="text-base font-semibold tracking-[-0.02em] text-[var(--pl-ink)]">Your schedule</h2>
+          {assignments.length > 3 && <button type="button" aria-expanded={scheduleExpanded} aria-controls="volunteer-inline-schedule" onClick={() => setScheduleExpanded(value => !value)} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-2 focus-visible:outline-blue-600">{scheduleExpanded ? "Show less" : "Show all"}{scheduleExpanded ? <ChevronUp aria-hidden className="size-4" /> : <ChevronDown aria-hidden className="size-4" />}</button>}
+        </div>
+        {confirmAllCount > 1 && <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2"><p className="text-sm text-emerald-900">{confirmAllCount} assignments need your response.</p><button type="button" aria-label="Confirm all pending" disabled={isConfirmAllPending} onClick={confirmAll} className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-700 disabled:opacity-50">{isConfirmAllPending && <Loader2 aria-hidden className="size-4 animate-spin" />}{isConfirmAllPending ? "Confirming…" : "Confirm all"}</button></div>}
+        {actionNotice && <p aria-live="polite" className={`mb-3 rounded-xl border px-3 py-2 text-sm ${actionNotice.ok ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{actionNotice.message}</p>}
+        {assignments.length ? <>
+          <HomeDayGroups assignments={assignments.slice(0, 3)} allAssignments={assignments} featured onSelect={(assignment, button) => { returnFocusRef.current = button; setSelectedId(assignment.assignmentReference); }} />
+          {assignments.length > 3 && <div id="volunteer-inline-schedule" className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${scheduleExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`} aria-hidden={!scheduleExpanded} inert={!scheduleExpanded}>
+            <div className="min-h-0 overflow-hidden"><div className="pt-4"><HomeDayGroups assignments={assignments.slice(3)} allAssignments={assignments} featured={false} suppressFirstHeading={assignments[2].startDate === assignments[3].startDate} onSelect={(assignment, button) => { returnFocusRef.current = button; setSelectedId(assignment.assignmentReference); }} /></div></div>
+          </div>}
+        </> : <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No upcoming assignments yet. Your published work will appear here.</p>}
+      </div> : null}
+      {presentation !== "home" ? <div className={presentation === "compact" ? "space-y-3" : "mt-3 space-y-3"}>
         {showMeals && assignments.filter((assignment, index) => assignment.meals?.length && assignments.findIndex(other => other.startDate === assignment.startDate) === index).map(assignment => (
           <section key={assignment.startDate} aria-label={`Meals for ${assignment.startDate}`} className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
             <h2 className="text-sm font-bold">Meals · {formatDate(assignment.startDate)}</h2>
@@ -307,7 +364,7 @@ export function VolunteerScheduleClient({
           );
         })}
         </div>
-      </div>
+      </div> : null}
 
       {selected ? (
         <div
@@ -338,6 +395,8 @@ export function VolunteerScheduleClient({
                 >
                   {selected.taskTitle}
                 </h2>
+                <p className="mt-1 text-sm leading-5 text-[var(--pl-muted)]">{dateTimeLabel(selected)}</p>
+                <span className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${responseStyles[selected.currentResponseStatus]}`}>{responseLabels[selected.currentResponseStatus]}</span>
               </div>
               <button
                 ref={closeButtonRef}
@@ -354,68 +413,17 @@ export function VolunteerScheduleClient({
               data-testid="volunteer-assignment-detail-scroll"
               className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-6"
             >
-              <dl className="grid overflow-hidden rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] sm:grid-cols-2">
-                <div className="border-b border-[var(--pl-border)] p-3 sm:border-r">
-                  <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    <Clock3 aria-hidden="true" className="size-4" />
-                    Date and time
-                  </dt>
-                  <dd className="mt-2 text-sm leading-6 text-slate-800">
-                    {dateTimeLabel(selected)}
-                  </dd>
+              {hasFollowUpContact(selected) && <div className="rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-3 text-sm leading-6 text-slate-800">
+                <h3 className="font-semibold text-[var(--pl-ink)]">Follow-up Contact</h3>
+                <p>{selected.followUpContact.displayName ?? "Project contact"}</p>
+                <div className="flex gap-4">
+                  {selected.followUpContact.email && <a className="font-semibold text-sky-700" href={`mailto:${selected.followUpContact.email}`}>Email</a>}
+                  {selected.followUpContact.phone && <a className="font-semibold text-sky-700" href={`sms:${selected.followUpContact.phone}`}>Text</a>}
                 </div>
-                <div className="border-b border-[var(--pl-border)] p-3">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Current response
-                  </dt>
-                  <dd className="mt-2">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${responseStyles[selected.currentResponseStatus]}`}
-                    >
-                      {responseLabels[selected.currentResponseStatus]}
-                    </span>
-                  </dd>
-                </div>
-                <div className="p-3 sm:col-span-2">
-                  <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                    Follow-up Contact
-                  </dt>
-                  <dd className="mt-2 text-sm leading-6 text-slate-800">
-                    {hasFollowUpContact(selected) ? (
-                      <>
-                        {selected.followUpContact.displayName ?? "Project contact"}
-                        {selected.followUpContact.email ? (
-                          <>
-                            <br />
-                            <a
-                              className="font-semibold text-sky-700"
-                              href={`mailto:${selected.followUpContact.email}`}
-                            >
-                              Email
-                            </a>
-                          </>
-                        ) : null}
-                        {selected.followUpContact.phone ? (
-                          <>
-                            <br />
-                            <a
-                              className="font-semibold text-sky-700"
-                              href={`sms:${selected.followUpContact.phone}`}
-                            >
-                              Text
-                            </a>
-                          </>
-                        ) : null}
-                      </>
-                    ) : (
-                      "Ask the project team for the best contact."
-                    )}
-                  </dd>
-                </div>
-              </dl>
+              </div>}
 
               {selected.scheduleNotes?.trim() ? (
-                <DisclosureSection className="mt-4" summary="Assignment details">
+                <DisclosureSection className="mt-4" summary="Instructions">
                   <p className="whitespace-pre-wrap break-words">{selected.scheduleNotes}</p>
                 </DisclosureSection>
               ) : null}
@@ -439,6 +447,7 @@ export function VolunteerScheduleClient({
               ) : null}
 
               <ResponseActions
+                key={selected.assignmentReference}
                 assignment={selected}
                 isPending={
                   isResponsePending && pendingAssignmentId === selected.assignmentReference
@@ -467,18 +476,26 @@ function ResponseActions({
   ) => void;
 }>) {
   const [declineNote, setDeclineNote] = useState("");
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const declineTriggerRef = useRef<HTMLButtonElement>(null);
+  const declineNoteRef = useRef<HTMLTextAreaElement>(null);
+  const restoreDeclineFocusRef = useRef(false);
+  useEffect(() => { if (declineOpen) declineNoteRef.current?.focus(); }, [declineOpen]);
+  useEffect(() => { if (!declineOpen && restoreDeclineFocusRef.current) { restoreDeclineFocusRef.current = false; declineTriggerRef.current?.focus(); } }, [declineOpen]);
   const canSubmitConfirm =
     assignment.canConfirm && assignment.currentResponseStatus !== "confirmed";
   const canSubmitDecline =
     assignment.canDecline && assignment.currentResponseStatus !== "declined";
   const isStarted = assignment.responseLockReason === "started";
   const isCloseToStart = assignment.responseLockReason === "inside_48_hours";
+  const hasContact = hasFollowUpContact(assignment);
+  const contactHelp = hasContact ? " Contact your Follow-up Contact." : "";
   const lockCopy = isStarted
     ? "This assignment has already started, so responses are locked."
     : isCloseToStart && canSubmitConfirm
-      ? "A response is still needed. You can still confirm. If you can’t make it, contact your Follow-up Contact."
+      ? hasContact ? "A response is still needed. You can still confirm. If you can’t make it, contact your Follow-up Contact." : "A response is still needed. You can still confirm. Declining is unavailable this close to the assignment."
       : isCloseToStart
-        ? "Need to change your response? Changes are closed this close to the assignment. Contact your Follow-up Contact."
+        ? `Response changes are closed this close to the assignment.${contactHelp}`
         : null;
 
   return (
@@ -498,68 +515,21 @@ function ResponseActions({
         </p>
       ) : null}
 
-      {isStarted || (isCloseToStart && !canSubmitConfirm) ? null : isCloseToStart ? (
-        <button
-          type="button"
-          onClick={() => onSubmit(assignment, "confirmed")}
-          disabled={isPending}
-          className="mt-4 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200 sm:w-auto"
-        >
-          {isPending ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Check aria-hidden="true" className="size-4" />
-          )}
-          Confirm
-        </button>
-      ) : (
-        <>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => onSubmit(assignment, "confirmed")}
-              disabled={!canSubmitConfirm || isPending}
-              className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-200"
-            >
-              {isPending && canSubmitConfirm ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <Check aria-hidden="true" className="size-4" />
-              )}
-              {assignment.currentResponseStatus === "confirmed" ? "Confirmed" : "Confirm"}
-            </button>
-            {canSubmitDecline || assignment.currentResponseStatus === "declined" ? (
-              <button
-                type="button"
-                onClick={() => onSubmit(assignment, "declined", declineNote)}
-                disabled={!canSubmitDecline || isPending}
-                className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)] shadow-sm transition hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                <X aria-hidden="true" className="size-4" />
-                Can’t make it
-              </button>
-            ) : (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-                Need to change? Contact your Follow-up Contact.
-              </p>
-            )}
-          </div>
-
-          {canSubmitDecline ? (
-            <label className="mt-4 block text-sm font-semibold text-slate-700">
-              Notes <span className="font-normal text-slate-400">(optional)</span>
-              <textarea
-                value={declineNote}
-                onChange={(event) => setDeclineNote(event.target.value)}
-                maxLength={1000}
-                rows={3}
-                className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                placeholder="Add a brief note if you can’t make it"
-              />
-            </label>
-          ) : null}
-        </>
-      )}
+      {!isStarted && <div className="mt-3 flex flex-wrap gap-2">
+        {canSubmitConfirm && <button type="button" onClick={() => onSubmit(assignment, "confirmed")} disabled={isPending} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-emerald-600 disabled:opacity-50 sm:flex-none">
+          {isPending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : <Check aria-hidden className="size-4" />}Confirm
+        </button>}
+        {canSubmitDecline && !isCloseToStart && !declineOpen && <button ref={declineTriggerRef} type="button" onClick={() => setDeclineOpen(true)} disabled={isPending} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--pl-border)] bg-white px-4 text-sm font-semibold text-[var(--pl-text)] shadow-sm hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 sm:flex-none"><X aria-hidden className="size-4" />Can’t make it</button>}
+      </div>}
+      {declineOpen && canSubmitDecline && !isStarted && !isCloseToStart && <div className="mt-3 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-3">
+        <label className="block text-sm font-semibold text-slate-700">Note <span className="font-normal text-slate-500">(optional)</span>
+          <textarea ref={declineNoteRef} value={declineNote} onChange={event => setDeclineNote(event.target.value)} maxLength={1000} rows={3} className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-normal text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100" placeholder="Add a brief note if you can’t make it" />
+        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" onClick={() => onSubmit(assignment, "declined", declineNote)} disabled={isPending} className="min-h-11 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50">{isPending ? "Saving…" : "Save Can’t make it"}</button>
+          <button type="button" onClick={() => { restoreDeclineFocusRef.current = true; setDeclineOpen(false); }} disabled={isPending} className="min-h-11 rounded-lg px-4 text-sm font-semibold text-[var(--pl-text)] hover:bg-white focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50">Cancel</button>
+        </div>
+      </div>}
     </section>
   );
 }
