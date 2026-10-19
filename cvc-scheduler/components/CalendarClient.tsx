@@ -1198,7 +1198,7 @@ function FilterPanelContent({
         </div>
 
         <p className="mt-5 text-xs leading-5 text-slate-400">
-          Filters reset when you leave the Calendar.
+          Your Calendar filters are remembered for this project on this device.
         </p>
       </div>
 

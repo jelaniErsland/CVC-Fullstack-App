@@ -86,5 +86,7 @@ assert.doesNotMatch(picker, /setRemembered\(.*selected/);
 assert.match(communications, /useRememberedView\("communications"/);
 assert.doesNotMatch(communications, /setRemembered\(.*volunteerIds|setRemembered\(.*resend/);
 assert.match(calendar, /useRememberedView\("calendar"/);
-assert.match(volunteer, /Weekly lunch menu/);
+assert.match(volunteer, /Lunch<\/button>/);
+assert.match(volunteer, /Weekly menu/);
+assert.match(volunteer, /Away<\/button>/);
 console.log("12.53 admin workspace preference and issue regression passed.");

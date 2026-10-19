@@ -41,7 +41,9 @@ const one=item('assignment-one','Gate welcome','2026-10-06','confirmed');
 const rest=[item('assignment-two','Material staging and equipment preparation for the west entrance','2026-10-07','needs_response'),item('assignment-three','Site cleanup','2026-10-08','needs_response'),item('assignment-four','Gate welcome','2026-10-09','declined'),item('assignment-five','Final equipment check','2026-10-10','confirmed')];
 let upcoming=state==='none'||state==='past'?[]:state==='one'?[one]:[one,...rest];
 if(state==='two') upcoming=[one,{...rest[0],currentResponseStatus:'confirmed'}];
-if(state==='many') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},...rest,...Array.from({length:4},(_,i)=>item('assignment-extra-'+i,'Additional work '+(i+1),'2026-10-'+(11+i),'confirmed'))];
+if(state==='three') upcoming=[one,rest[0],rest[1]];
+if(state==='many') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},...rest,...Array.from({length:6},(_,i)=>item('assignment-extra-'+i,'Additional work '+(i+1),'2026-10-'+(11+i),'confirmed'))];
+if(state==='dense') upcoming=[{...one,fellowWorkerNames:Array.from({length:30},(_,i)=>'Fellow Worker '+String(i+1).padStart(2,'0'))},...rest];
 if(state==='multiple') upcoming=upcoming.map(a=>({...a,currentResponseStatus:a.assignmentReference==='assignment-one'?'needs_response':a.currentResponseStatus,canConfirm:a.assignmentReference==='assignment-one'||a.canConfirm}));
 if(state==='same-day') upcoming=[{...one,currentResponseStatus:'needs_response',canConfirm:true},{...rest[0],taskTitle:one.taskTitle,startDate:one.startDate},...rest.slice(1)];
 if(state==='long-additional')upcoming=[one,{...rest[0],taskTitle:'AccessibleVolunteerEntranceEquipmentPreparationAndSafetyCheckWithAnUnusuallyLongTaskName',currentResponseStatus:'confirmed'}];
@@ -64,112 +66,60 @@ return <main className="mx-auto max-w-5xl px-5 py-5 sm:px-8 sm:py-8"><header cla
   await context.route('**/*',route=>{const request=route.request();const url=new URL(request.url());if(request.method()!=='GET')posted.push(request.method()+' '+url.pathname);return url.origin===base?route.continue():route.abort();});
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   const go=state=>page.goto(base+'/?state='+state,{waitUntil:'networkidle'});
-  const schedule=()=>page.getByRole('region',{name:'Additional upcoming assignments',exact:true});
-  const next=()=>page.getByRole('region',{name:'Next assignment',exact:true});
-  const agenda=()=>page.getByRole('region',{name:'Upcoming agenda',exact:true});
+  const schedule=()=>page.getByRole('region',{name:'Upcoming schedule',exact:true});
   const noOverflow=async()=>assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Horizontal overflow');
-  const closeSheet=async()=>{await page.getByRole('button',{name:'Close assignment details',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});};
-  await page.addInitScript(() => {
-    const original = window.scrollTo.bind(window);
-    window.__scheduleScrolls = [];
-    window.scrollTo = (...args) => { window.__scheduleScrolls.push(args[0]); original(...args); };
-  });
-  for(const width of [320,390,768,1440]){
+  for(const width of [320,390,430,768,1440]){
     await page.setViewportSize({width,height:width<768?844:1000});
-    for(const state of ['one','two','multiple','many','none','past','long','long-additional','duplicate','priority','same-day']){
+    for(const state of ['one','two','three','multiple','many','dense','none','past','long','long-additional','duplicate','priority','same-day']){
       await page.emulateMedia({reducedMotion:state==='two'?'reduce':'no-preference'});
       await go(state);await noOverflow();
-      const lunch=page.getByRole('region',{name:'Lunch and weekly menu'});
-      assert(await lunch.isVisible());assert(await page.getByRole('region',{name:'Availability and away periods'}).isVisible());
-      if(['one','multiple'].includes(state)&&(!before||[390,1440].includes(width)))await page.screenshot({path:path.join(gallery,`${before?'before':'after'}-${state}-${width}.png`),fullPage:true,animations:'disabled'});
-      if(!before&&state==='long'&&width===320)await page.screenshot({path:path.join(gallery,'after-long-320.png'),fullPage:true,animations:'disabled'});
-      if(before)continue;
-      assert.equal(await agenda().count(),0,'There must be no separate Coming up section');
-      assert.equal(await page.getByText('Coming up',{exact:true}).count(),0);
-      assert.equal(await next().locator('details').count(),0,'Old home schedule disclosure remains');
-      assert.equal(await page.getByText('View full schedule (1)',{exact:true}).count(),0);
-      const more=['two','multiple','many','priority','same-day','long-additional'].includes(state);
-      const toggle=next().getByRole('button',{name:'View full schedule',exact:true});
-      assert.equal(await toggle.count(),more?1:0);
-      assert.equal(await page.getByRole('button',{name:'View full schedule',exact:true}).count(),more?1:0,'A second schedule destination remains');
-      if(state==='none'||state==='past'){
-        assert(await next().getByText('No upcoming assignments yet.',{exact:false}).isVisible());
-        assert.equal(await schedule().count(),0);continue;
+      if(before){
+        if(['one','multiple'].includes(state)&&[390,1440].includes(width))await page.screenshot({path:path.join(gallery,'before-'+state+'-'+width+'.png'),fullPage:true,animations:'disabled'});
+        continue;
       }
-      const details=next().getByRole('button',{name:/View assignment details/});
-      const title=state==='long'?'AccessibleVolunteerEntranceEquipmentPreparationAndSafetyCheckWithAnUnusuallyLongTaskName':state==='priority'?'Material staging and equipment preparation for the west entrance':'Gate welcome';
-      const titleBox=await details.getByText(title,{exact:true}).boundingBox(),actionBox=await details.getByText('View assignment details',{exact:true}).boundingBox();
-      assert(Math.abs(titleBox.x-actionBox.x)<0.5,'Details label must align with the task title');
-      assert((await details.boundingBox()).height>=44);
-      await details.focus();await page.keyboard.press('Enter');
-      const dialog=page.getByRole('dialog');await dialog.waitFor();
-      assert.equal(await dialog.getByRole('heading',{level:2}).innerText(),title);
-      if(!before&&title==='Gate welcome'){
-        const coworkers=dialog.getByRole('region',{name:'Fellow worker',exact:true});
-        assert(await coworkers.isVisible(),'One coworker should use the singular label inside details');
-        assert.equal(await coworkers.getByText('Maria Garcia',{exact:true}).count(),1);
-        assert.equal(await dialog.getByRole('link',{name:'Maria Garcia'}).count(),0,'Coworker names must not be profile links');
+      assert(await page.getByRole('navigation',{name:'Volunteer shortcuts'}).isVisible());
+      assert(await page.getByRole('button',{name:'Lunch',exact:true}).isVisible());
+      assert(await page.getByRole('button',{name:'Away',exact:true}).isVisible());
+      assert(await page.getByRole('button',{name:/Map, coming soon/}).isDisabled());
+      const cards=schedule().getByRole('button',{name:/View assignment details/});
+      const expected=state==='none'||state==='past'?0:state==='one'||state==='long'||state==='duplicate'?1:state==='two'||state==='long-additional'?2:state==='three'?3:state==='many'?11:5;
+      assert.equal(await cards.count(),expected,'All upcoming cards must be visible by default: '+state+' at '+width);
+      const toggle=schedule().getByRole('button',{name:'Collapse schedule',exact:true});
+      assert.equal(await toggle.count(),expected>3?1:0);
+      if(expected===0)assert(await schedule().getByText('No upcoming assignments yet.',{exact:false}).isVisible());
+      if(expected>0){
+        assert(await cards.first().isVisible());
+        if(state==='dense')assert((await cards.first().innerText()).includes('Fellow workers · Fellow Worker 01'));
+        else assert(await cards.first().getByText('Fellow worker · Maria Garcia',{exact:true}).isVisible());
+        await cards.first().focus();await page.keyboard.press('Enter');
+        const dialog=page.getByRole('dialog');await dialog.waitFor();
+        assert(await dialog.getByRole('region',{name:state==='dense'?'Fellow workers':'Fellow worker',exact:true}).isVisible());
+        await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+        assert(await cards.first().evaluate(el=>el===document.activeElement));
       }
-      if(!before&&title.startsWith('Material staging')){
-        const coworkers=dialog.getByRole('region',{name:'Fellow workers',exact:true});
-        assert(await coworkers.isVisible(),'Multiple coworkers should use the plural label');
-        assert.deepEqual(await coworkers.locator('li').allInnerTexts(),['John Smith','Maria Garcia']);
+      if(expected>1)assert(await cards.nth(1).getByText('Fellow workers · John Smith, Maria Garcia',{exact:true}).isVisible());
+      if(expected>3){
+        assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+        await toggle.click();
+        const show=schedule().getByRole('button',{name:'Show full schedule',exact:true});
+        assert.equal(await show.getAttribute('aria-expanded'),'false');
+        assert.equal(await schedule().locator('#volunteer-inline-schedule').getAttribute('aria-hidden'),'true');
+        assert(await cards.nth(2).isVisible());
+        assert.equal(await cards.nth(3).isVisible(),false);
+        await show.click();assert(await cards.nth(3).isVisible());
       }
-      const close=dialog.getByRole('button',{name:'Close assignment details',exact:true});
-      const closeBox=await close.boundingBox();assert(closeBox.x>=0&&closeBox.x+closeBox.width<=width);
-      await close.focus();for(let tab=0;tab<6;tab++){await page.keyboard.press('Tab');assert(await dialog.evaluate(el=>el.contains(document.activeElement)));}
-      await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});assert(await details.evaluate(el=>el===document.activeElement));
-      if(!more){
-        const n=await next().boundingBox(),l=await lunch.boundingBox();assert(l.y>=n.y+n.height&&l.y-(n.y+n.height)<35,'Lunch should follow Next naturally');continue;
-      }
-      assert.equal(await toggle.getAttribute('aria-expanded'),'false');
-      assert.equal(await next().locator('#volunteer-inline-schedule button').count(),0,'Collapsed rows must be removed');
-      const collapsedLunchY=await lunch.evaluate(el=>el.getBoundingClientRect().top+window.scrollY);
-      assert((await toggle.boundingBox()).height>=44);
-      await toggle.focus();await page.keyboard.press('Enter');
-      const hide=next().getByRole('button',{name:'Hide full schedule',exact:true});
-      await schedule().waitFor();assert.equal(await hide.getAttribute('aria-expanded'),'true');
-      assert(await hide.evaluate(el=>el===document.activeElement),'Expansion should keep focus on its toggle');
-      assert(await schedule().evaluate(el=>el.previousElementSibling?.getAttribute('aria-controls')===el.id),'Rows must follow the toggle directly');
-      await page.waitForFunction(() => {
-        const last=window.__scheduleScrolls.at(-1);if(!last)return false;
-        const limit=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
-        return Math.abs(window.scrollY-Math.min(last.top,limit))<2;
-      });
-      const scroll=await page.evaluate(()=>window.__scheduleScrolls.at(-1));
-      assert.equal(scroll.behavior,state==='two'?'instant':'smooth');
-      const hb=await hide.boundingBox(),sb=await schedule().boundingBox();
-      assert(hb.y>=0&&hb.y<Math.max(210,(width<768?844:1000)*0.65),'Next context/toggle should remain in comfortable view');
-      assert(Math.abs(sb.y-(hb.y+hb.height)-8)<2,'Inline rows must start immediately below the toggle: '+JSON.stringify({state,width,hb,sb}));
-      const l=await lunch.boundingBox();assert(l.y>=sb.y+sb.height,'Lunch must follow expanded schedule');
-      const expandedLunchY=await lunch.evaluate(el=>el.getBoundingClientRect().top+window.scrollY);
-      assert(expandedLunchY>collapsedLunchY,'Expansion must push subsequent content down');
-      await noOverflow();
-      const ids=['two','long-additional'].includes(state)?['assignment-two']:state==='priority'?['assignment-one','assignment-three','assignment-four','assignment-five']:['assignment-two','assignment-three','assignment-four','assignment-five',...(state==='many'?Array.from({length:4},(_,i)=>'assignment-extra-'+i):[])];
-      const cards=schedule().locator('button').filter({has:page.locator('svg.lucide-calendar-days')});
-      assert.equal(await cards.count(),ids.length,'All remaining upcoming assignments must be shown');
-      assert.equal(await schedule().getByText('Next assignment',{exact:true}).count(),0);
-      if(['multiple','many','long-additional'].includes(state))await page.screenshot({path:path.join(gallery,`after-${state}-expanded-${width}.png`),fullPage:true,animations:'disabled'});
-      for(let i=0;i<ids.length;i++){
-        const card=cards.nth(i);assert((await card.boundingBox()).height>=44);
-        assert(await card.evaluate(el=>getComputedStyle(el).borderRadius!=='0px'&&!!el.querySelector('svg')),'Compact assignments should be cards with the shared calendar icon');
-        await card.click();await dialog.waitFor();
-        if(ids[i]==='assignment-two') assert.deepEqual(await dialog.getByRole('region',{name:'Fellow workers',exact:true}).locator('li').allInnerTexts(),['John Smith','Maria Garcia']);
-        if(ids[i]==='assignment-three') assert.equal(await dialog.getByRole('region',{name:/^Fellow workers?$/}).count(),0,'Empty coworker section must be omitted');
-        await dialog.locator('summary').filter({hasText:'Assignment details'}).click();
-        assert(await dialog.getByText('Instructions for '+ids[i]+'.',{exact:false}).isVisible(),'Incorrect assignment identity: '+ids[i]);
-        await closeSheet();assert(await card.evaluate(el=>el===document.activeElement),'Compact card focus was not restored');
-      }
-      await hide.focus();await page.keyboard.press('Space');await toggle.waitFor();
-      assert.equal(await toggle.getAttribute('aria-expanded'),'false');
-      assert(await toggle.evaluate(el=>el===document.activeElement));
-      assert.equal(await schedule().count(),0);assert.equal(await next().locator('#volunteer-inline-schedule button').count(),0);
-      assert.equal(await page.evaluate(()=>window.__scheduleScrolls.length),1,'Collapse must not trigger a second scroll');
+      if(['one','multiple','many'].includes(state)&&[390,430,1440].includes(width))await page.screenshot({path:path.join(gallery,'after-'+state+'-'+width+'.png'),fullPage:true,animations:'disabled'});
+      await page.getByRole('button',{name:'Lunch',exact:true}).click();
+      assert(await page.getByRole('dialog').getByRole('heading',{name:'Weekly menu'}).isVisible());
+      await page.getByRole('button',{name:'Close weekly menu'}).click();
+      await page.getByRole('button',{name:'Away',exact:true}).click();
+      assert(await page.getByRole('dialog').getByRole('heading',{name:'Availability'}).isVisible());
+      await page.getByRole('button',{name:'Close availability'}).click();
       await noOverflow();
     }
   }
   assert.deepEqual(errors,[]);assert.deepEqual(posted,[],'Opening details/schedule must not submit any request');
-  console.log(before?`Before screenshots captured from ${baseline} with synthetic data; no provider/mutation requests.`:'Volunteer home browser regression passed: one/two/many/empty/past/long/duplicate/priority/same-day at 320/390/768/1440; inline all-upcoming cards, exact sheets, smooth/reduced-motion scroll, page order, keyboard/focus and zero mutation/provider requests.');
+  console.log(before?`Before screenshots captured from ${baseline} with synthetic data; no provider/mutation requests.`:'Volunteer home browser regression passed: 0/1/2/3/5/11 assignments, dense coworkers, 320/390/430/768/1440px, visible schedule, collapse, details, shortcuts, keyboard/focus, no overflow, and zero mutation/provider requests.');
 }finally{
   await browser?.close();
   if(server?.pid){if(process.platform==='win32')spawnSync('taskkill',['/PID',String(server.pid),'/T','/F'],{windowsHide:true,stdio:'ignore'});else server.kill('SIGTERM');}

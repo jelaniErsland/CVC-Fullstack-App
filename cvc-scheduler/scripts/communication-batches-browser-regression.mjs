@@ -62,6 +62,11 @@ try {
   assert.equal(await page.getByRole('button', { name: /^Confirm intentional resend to \d+ recipients?$/ }).isDisabled(), true);
   assert.equal(await preview.getByText('0 already received this communication').count(), 0);
   assert.notEqual(sql(f.auth(`select public.review_communications(${q(f.ws)},${q(JSON.stringify(plan('resend')))}::jsonb)`), true).status, 0);
+  await page.getByLabel('Recipients').selectOption('new');
+  await page.getByRole('button', { name: 'Clear selection' }).click();
+  await page.getByLabel('Recipients').selectOption('resend');
+  await page.getByText('Choose a previous delivery in Delivery history and select Review resend.', { exact: false }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Review recipients', exact: true }).isDisabled(), true, 'Empty resend must not reach server review');
   assert.equal(operations(), 0);
   assert.equal(recipients(), 0);
   assert.deepEqual(errors, []);

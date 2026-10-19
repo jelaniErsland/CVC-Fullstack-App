@@ -306,15 +306,15 @@ async function watchPage(page) {
   return failures;
 }
 
-// The home schedule is now inline: Next plus all additional upcoming cards.
+// The complete upcoming schedule is visible by default.
 function fullSchedule(page) {
-  return page.getByRole("region", { name: "Next assignment", exact: true });
+  return page.getByRole("region", { name: "Upcoming schedule", exact: true });
 }
 
 async function openFullSchedule(page) {
   const schedule = fullSchedule(page);
   await schedule.waitFor();
-  const toggle = schedule.getByRole("button", { name: "View full schedule", exact: true });
+  const toggle = schedule.getByRole("button", { name: "Show full schedule", exact: true });
   if (await toggle.count()) await toggle.click();
   await page.waitForLoadState("networkidle");
   return schedule;

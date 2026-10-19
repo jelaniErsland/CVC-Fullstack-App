@@ -20,6 +20,7 @@ import type { VolunteerScheduleAssignment } from "@/lib/volunteerScheduleAccess/
 type VolunteerScheduleClientProps = Readonly<{
   showMeals?: boolean;
   presentation?: "default" | "next" | "compact";
+  showConfirmAll?: boolean;
   confirmAllAssignments?: readonly VolunteerScheduleAssignment[];
   assignments: readonly VolunteerScheduleAssignment[];
   confirmAllAction: () => Promise<VolunteerScheduleActionResult>;
@@ -68,6 +69,16 @@ function dateTimeLabel(assignment: VolunteerScheduleAssignment) {
   return `${dateLabel} · ${timeLabel ?? "No specific time"}`;
 }
 
+function cardDateTimeLabel(assignment: VolunteerScheduleAssignment) {
+  const shortDate = (value: string) => new Intl.DateTimeFormat("en-US", {
+    weekday: "short", month: "short", day: "numeric", timeZone: "UTC",
+  }).format(new Date(`${value}T12:00:00Z`));
+  const date = assignment.endDate && assignment.endDate !== assignment.startDate
+    ? `${shortDate(assignment.startDate)} – ${shortDate(assignment.endDate)}`
+    : shortDate(assignment.startDate);
+  return `${date} · ${formatScheduleClockRange(assignment.startTime, assignment.endTime) ?? "No specific time"}`;
+}
+
 function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
   return Boolean(
     assignment.followUpContact.displayName ||
@@ -79,6 +90,7 @@ function hasFollowUpContact(assignment: VolunteerScheduleAssignment) {
 export function VolunteerScheduleClient({
   showMeals = true,
   presentation = "default",
+  showConfirmAll = true,
   assignments,
   confirmAllAssignments = assignments,
   confirmAllAction,
@@ -116,20 +128,26 @@ export function VolunteerScheduleClient({
     formData.set("status", status);
     if (note) formData.set("note", note);
     startResponseTransition(async () => {
-      const result = await submitResponseAction(formData);
-      setActionNotice(result);
-      if (result.ok && status === "declined") {
-        setSelectedId(null);
+      try {
+        const result = await submitResponseAction(formData);
+        setActionNotice(result);
+        if (result.ok && status === "declined") setSelectedId(null);
+      } catch {
+        setActionNotice({ ok: false, code: "error", message: "Could not save your response. Please try again." });
+      } finally {
+        setPendingAssignmentId(null);
       }
-      setPendingAssignmentId(null);
     });
   }
 
   function confirmAll() {
     setActionNotice(null);
     startConfirmAllTransition(async () => {
-      const result = await confirmAllAction();
-      setActionNotice(result);
+      try {
+        setActionNotice(await confirmAllAction());
+      } catch {
+        setActionNotice({ ok: false, code: "error", message: "Could not confirm assignments. Please try again." });
+      }
     });
   }
 
@@ -171,7 +189,7 @@ export function VolunteerScheduleClient({
             </div>
           </section>
         ))}
-        {confirmAllCount > 1 ? (
+        {showConfirmAll && confirmAllCount > 1 ? (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-2.5">
             <p className="text-xs font-medium leading-5 text-emerald-900 sm:text-sm">
               {confirmAllCount} assignments need your response.
@@ -204,7 +222,7 @@ export function VolunteerScheduleClient({
             {actionNotice.message}
           </div>
         ) : null}
-        <div className={presentation === "compact" ? "grid gap-2" : "overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]"}>
+        <div className={presentation === "compact" || presentation === "next" ? "grid gap-2" : "overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]"}>
         {assignments.map((assignment) => {
           if (presentation === "compact") return (
             <button
@@ -222,11 +240,13 @@ export function VolunteerScheduleClient({
                   <span className="min-w-0 max-w-full break-words text-sm font-semibold text-[var(--pl-ink)]">{assignment.taskTitle}</span>
                   <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}>{responseLabels[assignment.currentResponseStatus]}</span>
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-[var(--pl-muted)]">{dateTimeLabel(assignment)}</span>
+                <span className="mt-1 block text-xs leading-5 text-[var(--pl-muted)]">{cardDateTimeLabel(assignment)}</span>
+                {assignment.fellowWorkerNames.length > 0 && <span className="mt-1 block break-words text-xs leading-5 text-[var(--pl-text)]">{assignment.fellowWorkerNames.length === 1 ? "Fellow worker" : "Fellow workers"} · {assignment.fellowWorkerNames.join(", ")}</span>}
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[var(--pl-blue)]">View assignment details <ArrowRight aria-hidden className="size-3.5" /></span>
               </span>
             </button>
           );
-          const isNext = assignment.currentResponseStatus !== "declined" && !assignments.some(
+          const isNext = presentation !== "next" && assignment.currentResponseStatus !== "declined" && !assignments.some(
             (other) => other.currentResponseStatus !== "declined" && other.assignmentReference !== assignment.assignmentReference && other.startDate < assignment.startDate,
           );
           return (
@@ -245,7 +265,9 @@ export function VolunteerScheduleClient({
             className={[
               "group grid w-full min-w-0 grid-cols-[44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-[var(--pl-border)] text-left transition first:border-t-0 hover:bg-[var(--pl-surface-subtle)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
               presentation === "next" ? "sm:grid" : "sm:flex sm:gap-3",
-              isNext
+              presentation === "next"
+                ? "rounded-xl border border-[var(--pl-border)] bg-[linear-gradient(115deg,rgba(234,242,255,.75),rgba(255,255,255,1)_68%)] px-4 py-3 shadow-[var(--pl-shadow-card)] first:border-t sm:px-5"
+                : isNext
                 ? "bg-[linear-gradient(115deg,rgba(234,242,255,.95),rgba(255,255,255,1)_64%,rgba(242,237,255,.7))] p-4 sm:p-5"
                 : "px-3.5 py-3 sm:px-4",
             ].join(" ")}
@@ -258,17 +280,18 @@ export function VolunteerScheduleClient({
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--pl-blue)]">Next assignment</span>
               ) : null}
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className={isNext ? "min-w-0 max-w-full break-words text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : "min-w-0 max-w-full break-words text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
+                <span className={isNext ? "min-w-0 max-w-full break-words text-lg font-bold tracking-[-0.02em] text-[var(--pl-ink)]" : presentation === "next" ? "min-w-0 max-w-full break-words text-base font-semibold text-[var(--pl-ink)]" : "min-w-0 max-w-full break-words text-sm font-semibold text-[var(--pl-ink)]"}>{assignment.taskTitle}</span>
                 <span
                   className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${responseStyles[assignment.currentResponseStatus]}`}
                 >
                   {responseLabels[assignment.currentResponseStatus]}
                 </span>
               </span>
-              <span className={isNext ? "mt-1.5 block text-sm font-medium leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
-                {dateTimeLabel(assignment)}
+              <span className={isNext || presentation === "next" ? "mt-1 block text-sm leading-5 text-[var(--pl-text)]" : "mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]"}>
+                {cardDateTimeLabel(assignment)}
               </span>
-              {presentation !== "next" || hasFollowUpContact(assignment) ? <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
+              {assignment.fellowWorkerNames.length > 0 && <span className="mt-1 block break-words text-xs leading-5 text-[var(--pl-text)]">{assignment.fellowWorkerNames.length === 1 ? "Fellow worker" : "Fellow workers"} · {assignment.fellowWorkerNames.join(", ")}</span>}
+              {presentation !== "next" && (hasFollowUpContact(assignment) || presentation === "default") ? <span className="mt-0.5 block text-xs leading-5 text-[var(--pl-muted)]">
                 {hasFollowUpContact(assignment)
                   ? `Follow-up: ${assignment.followUpContact.displayName ?? "Project contact"}`
                   : "Open for assignment details"}

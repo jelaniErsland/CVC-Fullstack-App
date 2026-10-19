@@ -54,6 +54,7 @@ export function CommunicationsWorkspace({ action, history: initialHistory, pendi
   const selectionPreview = preview ?? previousPreview;
   const alreadyReceivedCount = selectionPreview?.exclusions.filter(e => e.reason === "already_delivered" || e.reason === "already_welcomed").length ?? 0;
   const selectionEmpty = selectionTouched && ids.length === 0;
+  const resendNeedsSelection = mode === "resend" && ids.length === 0;
   function run(command: string, continueOperation?: string) {
     if (busyRef.current || (uncertain && command === "send")) return;
     busyRef.current = true;
@@ -103,8 +104,10 @@ export function CommunicationsWorkspace({ action, history: initialHistory, pendi
         <label className="block text-sm">Recipients<select className={field} value={mode} onChange={e=>setMode(e.target.value as CommunicationPlan['mode'])}><option value="new">{kind==='welcome'?'Not yet welcomed':'Volunteers with new, unsent assignments'}</option>{kind==='schedule' && <option value="all">Complete upcoming schedule for all selected volunteers</option>}<option value="resend">Intentional resend to selected volunteers</option></select></label>
         {(ids.length>0 || selectionTouched) && <p className="text-sm text-slate-600">{ids.length} selected {mode!=='resend' && <button type="button" className="underline" onClick={()=>{setIds([]);setSelectionTouched(false);}}>Clear selection</button>}</p>}
         <p className="text-xs leading-5 text-slate-600">{kind==='welcome' ? mode==='resend' ? 'Review this intentional resend. The earlier welcome delivery remains recorded.' : 'New volunteers appear here automatically. Nothing sends until you review and confirm.' : 'Only active upcoming work is included. Saving or assigning does not send email. Canceled and declined assignments are excluded; responses are preserved.'}</p>
+        {resendNeedsSelection && <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">Choose a previous delivery in Delivery history and select Review resend. An intentional resend needs at least one volunteer.</p>}
+        {selectionEmpty && mode !== "resend" && <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">No volunteers are selected. Select at least one from the recipient preview, or clear the selection to review everyone eligible.</p>}
         {state?.kind==='error' && <p role="alert" className="text-sm text-rose-700">{state.message}</p>}
-        <button className={button} type="button" onClick={()=>run('preview')} disabled={pending || selectionEmpty}>{pending?'Working…':'Review recipients'}</button>
+        <button className={button} type="button" onClick={()=>run('preview')} disabled={pending || selectionEmpty || resendNeedsSelection}>{pending?'Working…':'Review recipients'}</button>
         {selectionPreview && <section aria-label="Delivery preview" className="space-y-4 border-t border-slate-200 pt-4">
           <h3 className="font-semibold">{selectionPreview.recipients.length} will receive · {selectionPreview.exclusions.length} will not receive</h3>
           {mode !== 'resend' && <p className="text-xs text-slate-600"><span className="mr-1">{alreadyReceivedCount}</span>{" "}already received this communication. Delivery history shows each accepted send.</p>}

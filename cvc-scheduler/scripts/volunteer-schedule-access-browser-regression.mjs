@@ -346,12 +346,13 @@ async function runBrowserProof(token, emptyToken) {
     );
     await page.getByText("LDC QA 12.20 Browser Workspace", { exact: true }).waitFor();
     await page.getByText(`${fixture.namespace} Needs Reply`).waitFor();
-    await page.getByRole("button", { name: "View full schedule" }).click();
+    assert.equal(await page.getByRole("button", { name: "Show full schedule" }).count(), 0, "Three assignments must already be visible");
     await page.getByText(`${fixture.namespace} Confirmed`).waitFor();
     await page.getByText(`${fixture.namespace} Declined`).waitFor();
     assert.equal(await page.getByText(`${fixture.namespace} Draft Hidden`).count(), 0, "draft item leaked");
     assert.equal(await page.getByText(`${fixture.namespace} Canceled Hidden`).count(), 0, "canceled item leaked");
-    assert.equal(await page.getByText(`${fixture.namespace} Other Volunteer`).count(), 0, "coworker appeared outside assignment details");
+    await page.getByRole("region", { name: "Upcoming schedule" }).getByText(`Fellow worker · ${fixture.namespace} Other Volunteer`, { exact: true }).waitFor();
+    assert.equal(await page.getByRole("region", { name: "Upcoming schedule" }).getByRole("link", { name: `${fixture.namespace} Other Volunteer` }).count(), 0, "coworker name became a profile link");
     await page.getByText("Needs reply").first().waitFor();
     await page.getByText("Confirmed").first().waitFor();
     await page.getByText("Can’t make it").first().waitFor();
@@ -398,6 +399,7 @@ async function runBrowserProof(token, emptyToken) {
       });
     }
 
+    await page.getByLabel("Volunteer options").click();
     await Promise.all([
       page.waitForURL((url) => url.pathname === "/" && url.searchParams.get("forgot") === "1"),
       page.getByRole("button", { name: "Forget this device", exact: true }).click(),

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { Info } from "lucide-react";
+import { Info, Menu } from "lucide-react";
 
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 
-function PublicHeader() {
+function PublicHeader({ timezone }: { timezone: string }) {
   return (
-    <header className="flex items-center border-b border-[var(--pl-border)] pb-3">
+    <header className="flex items-center justify-between gap-3 border-b border-[var(--pl-border)] pb-2">
       <Link
         href="/"
         aria-label="Project Local home"
@@ -35,6 +35,14 @@ function PublicHeader() {
       >
         <ProjectLocalBrand />
       </Link>
+      <details className="group relative shrink-0">
+        <summary aria-label="Volunteer options" className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-[var(--pl-border)] bg-white text-[var(--pl-ink)] marker:hidden hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden"><Menu aria-hidden className="size-5" /></summary>
+        <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-[var(--pl-border)] bg-white p-2 shadow-[var(--pl-shadow-raised)]">
+          <p className="px-3 py-2 text-xs text-[var(--pl-muted)]">Times in {timezone}</p>
+          <form action="/v/leave" method="post"><button name="mode" value="switch" className="min-h-11 w-full rounded-lg px-3 text-left text-sm font-medium hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-blue-600">Switch volunteer or project</button></form>
+          <form action="/v/leave" method="post"><button name="mode" value="forget" className="min-h-11 w-full rounded-lg px-3 text-left text-sm font-medium hover:bg-[var(--pl-surface-subtle)] focus-visible:outline-2 focus-visible:outline-blue-600">Forget this device</button></form>
+        </div>
+      </details>
     </header>
   );
 }
@@ -128,15 +136,8 @@ export default async function VolunteerSchedulePage({
   return (
     <PageShell className="bg-[var(--pl-canvas)] px-4 py-4 sm:px-7 lg:px-10">
       <div className="mx-auto w-full max-w-6xl">
-        <PublicHeader />
-        <div className="flex items-center justify-between gap-3 py-3 text-xs text-slate-600">
-          <p>Times in {schedule.workspaceTimezone}</p>
-          <div className="flex flex-wrap gap-3">
-            <form action="/v/leave" method="post"><button name="mode" value="switch" className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600">Switch volunteer or project</button></form>
-            <form action="/v/leave" method="post"><button name="mode" value="forget" className="min-h-10 rounded-lg px-2 font-medium focus-visible:outline-2 focus-visible:outline-blue-600">Forget this device</button></form>
-          </div>
-        </div>
-        <div className="pb-10"><VolunteerHomeDashboard name={schedule.volunteerDisplayName} projectName={schedule.workspaceDisplayName} assignments={assignments} upcoming={schedule.upcomingAssignments} initialHome={home} today={today} /></div>
+        <PublicHeader timezone={schedule.workspaceTimezone} />
+        <div className="pt-3 pb-10"><VolunteerHomeDashboard name={schedule.volunteerDisplayName} projectName={schedule.workspaceDisplayName} assignments={assignments} upcoming={schedule.upcomingAssignments} initialHome={home} today={today} /></div>
       </div>
     </PageShell>
   );
