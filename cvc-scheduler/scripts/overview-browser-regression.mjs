@@ -281,12 +281,32 @@ async function capture(page, filename) {
   await page.screenshot({ animations: "disabled", fullPage: false, path: path.join(screenshotDirectory, filename) });
 }
 
+async function verifyIntegratedAttention(page) {
+  const summary = page.getByRole("region", { name: "Needs Attention summary" });
+  await summary.waitFor();
+  assert.equal(await page.getByRole("region", { name: "Support status" }).count(), 0, "The duplicate Support status panel should be absent.");
+  for (const [label, support] of [["General", "general"], ["Food", "food"], ["Security", "security"]]) {
+    const link = summary.getByRole("link", { name: new RegExp(`^${label} · \\d+ follow-ups?$`) });
+    await link.waitFor();
+    const target = new URL(await link.getAttribute("href"), baseUrl);
+    assert.equal(target.pathname, "/admin/needs-attention");
+    assert.equal(target.searchParams.get("support"), support);
+    assert.equal(target.searchParams.get("horizon"), "7");
+  }
+  const inbox = summary.getByRole("link", { name: "Open inbox" });
+  await inbox.waitFor();
+  assert.equal(new URL(await inbox.getAttribute("href"), baseUrl).pathname, "/admin/needs-attention");
+  return summary;
+}
+
 async function verifyDesktop(browser) {
   const populated = await openOverview(browser, "populated", { width: 1440, height: 1000 });
   await populated.page.getByText("Gate Attendant", { exact: true }).waitFor();
-  await populated.page.getByRole("region", { name: "Today and next up" }).waitFor();
-  await populated.page.getByRole("region", { name: "Needs Attention summary" }).waitFor();
-  await populated.page.getByRole("region", { name: "Support status" }).waitFor();
+  const today = populated.page.getByRole("region", { name: "Today and next up" });
+  await today.waitFor();
+  await today.getByText("Gate Attendant", { exact: true }).waitFor();
+  await today.getByRole("link", { name: "Calendar" }).waitFor();
+  await verifyIntegratedAttention(populated.page);
   await populated.page.getByRole("link", { name: /Create Calendar item/ }).waitFor();
   await capture(populated.page, "12-53-overview-active-desktop.png");
   const targetDate = addDays(workspaceToday(), 1);
@@ -315,8 +335,8 @@ async function verifyDesktop(browser) {
 
   const review = await openOverview(browser, "review", { width: 1440, height: 1000 });
   await review.page.getByText(/understaffed item/).first().waitFor();
-  await review.page.getByRole("region", { name: "Support status" }).getByRole("link", { name: /Food/ }).waitFor();
-  const foodLink = review.page.getByRole("region", { name: "Support status" }).getByRole("link", { name: /Food/ });
+  const reviewSummary = await verifyIntegratedAttention(review.page);
+  const foodLink = reviewSummary.getByRole("link", { name: /^Food · \d+ follow-ups?$/ });
   assert.equal(new URL(await foodLink.getAttribute("href"), baseUrl).searchParams.get("support"), "food");
   await capture(review.page, "12-53-overview-attention-and-support.png");
   await foodLink.click();
@@ -340,8 +360,10 @@ async function verifyMobile(browser) {
   ]) {
     const result = await openOverview(browser, label, { width: 390, height: 844 });
     assert.equal(await result.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false, `390px ${label} Overview has horizontal overflow.`);
+    await result.page.getByRole("region", { name: "Today and next up" }).waitFor();
+    const summary = await verifyIntegratedAttention(result.page);
     if (label === "review") {
-      await result.page.getByRole("region", { name: "Needs Attention summary" }).scrollIntoViewIfNeeded();
+      await summary.scrollIntoViewIfNeeded();
     }
     await capture(result.page, filename);
     assert.deepEqual(result.failures, []);
