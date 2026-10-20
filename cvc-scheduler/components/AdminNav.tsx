@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
+import { AdminNavigationLink } from "@/components/AdminRouteHandoff";
 import { NeedsAttentionUnseenBadge } from "@/components/NeedsAttentionUnseenBadge";
 import { ldcProjectName } from "@/lib/projectIdentity";
 
@@ -90,7 +91,7 @@ export function AdminNav({
           const Icon = item.icon;
 
           return (
-            <Link
+            <AdminNavigationLink
               aria-current={active === item.id ? "page" : undefined}
               key={item.id}
               className={[
@@ -111,7 +112,7 @@ export function AdminNav({
               <span className="min-w-0 flex-1 break-words">{item.label}</span>
               {item.id === "needs-attention" ? <NeedsAttentionUnseenBadge /> : null}
               <AdminNavigationPendingIndicator disabled={active === item.id} />
-            </Link>
+            </AdminNavigationLink>
           );
         })}
       </nav>

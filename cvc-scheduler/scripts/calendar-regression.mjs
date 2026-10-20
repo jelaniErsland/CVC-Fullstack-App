@@ -672,6 +672,7 @@ async function collectPageDiagnostics(page) {
 
 function createStepRunner(scope, page) {
   return async function step(label, action) {
+    if (process.env.CALENDAR_ASSIGNMENT_FLOW_ONLY === "1" && !["desktop Bulk Assignment Planner preview/save/deduplication/cancel", "desktop persisted assignment create/cancel round trip"].includes(label)) return;
     const startedAt = performance.now();
 
     try {
@@ -1045,14 +1046,22 @@ async function verifyBulkPlannerRoundTrip(page, inspector, selectedIndexes, labe
   await inspector.waitFor();
   assert(activeCount() === "4", `${label}: assignments did not persist after reload.`);
   for (const index of selectedIndexes) {
+    const assignmentId = runPsql(container, `select id from public.calendar_assignments where calendar_item_id='${itemId}' and volunteer_profile_id='${fixture.volunteerIds[index]}' and lifecycle='active';`);
+    // The notice URL already matches after the first cancellation, and a
+    // streaming loading frame can temporarily hide every row. Neither proves
+    // that this specific cancellation has completed on the server.
+    const cancellation = page.waitForResponse(response => response.request().method() === "POST" && Boolean(response.request().headers()["next-action"]) && response.request().postData()?.includes(assignmentId));
     await Promise.all([
+      cancellation,
       page.waitForURL(/notice=assignment_canceled/),
       inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).click(),
     ]);
+    assert((await cancellation).status() < 400, `${label}: cancellation server action did not succeed.`);
+    await page.getByRole("group", { name: "Calendar view", exact: true }).waitFor();
     await inspector.waitFor();
     await inspector.getByRole("button", { name: `Remove assignment for ${reviewVolunteerNames[index]}`, exact: true }).waitFor({ state: "hidden" });
     assert(new URL(page.url()).searchParams.get("item") === itemId, `${label}: cancel lost item context.`);
-    assert(runPsql(container, `select count(*) from public.calendar_assignments where calendar_item_id='${itemId}' and volunteer_profile_id='${fixture.volunteerIds[index]}' and lifecycle='active';`) === "0");
+    assert(runPsql(container, `select count(*) from public.calendar_assignments where calendar_item_id='${itemId}' and volunteer_profile_id='${fixture.volunteerIds[index]}' and lifecycle='active';`) === "0", `${label}: server-confirmed cancellation did not remove the selected active assignment.`);
   }
   assert(activeCount() === "1" && existingResponse() === responseBefore && deliveries() === "0" && foreignItems() === foreignBefore);
 }
@@ -3129,6 +3138,8 @@ async function main() {
     if (finalProductReview) {
       const { runFinalProductReview } = await import("./final-product-readiness-browser.mjs");
       await runFinalProductReview({ browser, fixture, applyAuthCookies, sql: (query) => runPsql(containerName, query), baseUrl });
+    } else if (process.env.CALENDAR_ASSIGNMENT_FLOW_ONLY === "1") {
+      await runDesktop(browser);
     } else if (assignedContactOnly) {
       await runAssignedContactBrowser(browser, containerName);
     } else if (operationalUsabilityBrowserOnly) {

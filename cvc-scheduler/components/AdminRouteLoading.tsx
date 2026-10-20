@@ -8,7 +8,7 @@ const titles: Record<Route, string> = { overview: "Overview", calendar: "Calenda
  * Next can prefetch this frame while the destination still authorizes its read.
  * Calendar deliberately has no selected view/date until its real state arrives.
  */
-export function AdminRouteLoading({ route }: { route: Route }) {
+export function AdminRouteLoading({ route, announce = true }: { route: Route; announce?: boolean }) {
   const title = titles[route];
   const controls = route === "calendar" ? ["Day", "Week", "Month", "List"]
     : route === "announcements" ? ["Welcome emails", "Schedule deliveries", "Delivery history"]
@@ -24,7 +24,7 @@ export function AdminRouteLoading({ route }: { route: Route }) {
         {route === "volunteers" ? "Search volunteers" : route === "tasks" ? "Search tasks" : "Search attention issues"}
       </div>}
       <div className="rounded-xl border border-[var(--pl-border)] bg-white p-5">
-        <p role="status" className="text-sm text-[var(--pl-muted)]">Loading {title === "Needs Attention" ? "follow-ups" : title.toLowerCase()}…</p>
+        <p role={announce ? "status" : undefined} className="text-sm text-[var(--pl-muted)]">Loading {title === "Needs Attention" ? "follow-ups" : title.toLowerCase()}…</p>
         <div aria-hidden="true" className="mt-5 space-y-4">
           {[0, 1, 2].map(row => <div key={row} className="space-y-2">
             <div className="h-3 w-1/3 max-w-64 rounded bg-[var(--pl-surface-subtle)]" />

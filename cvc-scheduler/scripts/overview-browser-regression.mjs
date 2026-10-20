@@ -7,6 +7,8 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 import { measureAdminNavigation } from "./admin-navigation-browser-measurement.mjs";
+import { measureRouteHandoff } from "./admin-route-handoff-browser-measurement.mjs";
+import { verifyClientHandoff } from "./admin-route-handoff-browser-regression.mjs";
 
 import {
   createPreviewUrl,
@@ -386,6 +388,12 @@ async function verifyMobile(browser) {
 
 async function benchmarkNavigation(browser) {
   const { context, page, failures } = await openOverview(browser, "populated", { width: 1440, height: 1000 });
+  if (process.env.MEASURE_ADMIN_NAVIGATION === "3") {
+    try { console.log(JSON.stringify(await measureRouteHandoff(page))); }
+    finally { await context.close(); }
+    assert.deepEqual(failures, []);
+    return;
+  }
   const routeSteps = [
     ["Overview → Calendar", "/admin/calendar", "Calendar"],
     ["Calendar → Needs Attention", "/admin/needs-attention", "Needs Attention"],
@@ -624,7 +632,7 @@ async function verifyStreamingFailure(browser) {
       await page.getByRole("button",{name:"Retry delivery history",exact:true}).click();
       await page.waitForFunction(()=>document.querySelector('[data-communication-history-state="ready"]'));
     }else{
-      await page.getByRole("heading",{name:"This page could not be loaded",exact:true}).waitFor({timeout:25000});
+      await page.getByRole("alert").getByText("This page could not be loaded.",{exact:true}).waitFor({timeout:25000});
       await page.getByRole("button",{name:"Try again",exact:true}).click();
       await page.getByPlaceholder("Search volunteers",{exact:true}).waitFor();
     }
@@ -667,10 +675,17 @@ try {
   seedData(containerName);
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    if (process.env.VERIFY_ADMIN_STREAMING_FAILURE) await verifyStreamingFailure(browser);
+    if (process.env.VERIFY_ADMIN_CLIENT_HANDOFF === "1") {
+      for (const mobile of [false,true]) {
+        const result=await openOverview(browser,"populated",mobile?{width:390,height:844}:{width:1440,height:1000});
+        try { await verifyClientHandoff(result.page,{mobile}); assert.deepEqual(result.failures,[]); }
+        finally { await result.context.close(); }
+      }
+    }
+    else if (process.env.VERIFY_ADMIN_STREAMING_FAILURE) await verifyStreamingFailure(browser);
     else if (process.env.VERIFY_ADMIN_STREAMING_NAVIGATION === "1") await verifyStreamingNavigation(browser, containerName);
     else if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") await verifyAuthenticatedPendingNavigation(browser);
-    else if (["1", "2"].includes(process.env.MEASURE_ADMIN_NAVIGATION)) await benchmarkNavigation(browser);
+    else if (["1", "2", "3"].includes(process.env.MEASURE_ADMIN_NAVIGATION)) await benchmarkNavigation(browser);
     else {
       await verifyDesktop(browser);
       await verifyMobile(browser);

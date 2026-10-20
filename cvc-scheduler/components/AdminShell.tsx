@@ -20,6 +20,8 @@ import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
+import { AdminNavigationLink, AdminRouteHandoffContext, useAdminRouteHandoff } from "@/components/AdminRouteHandoff";
+import { AdminRouteLoading } from "@/components/AdminRouteLoading";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
 import { ProjectLocalBrand } from "@/components/ProjectLocalBrand";
@@ -188,7 +190,7 @@ function MobileTabLink({
   const Icon = tab.icon;
 
   return (
-    <Link
+    <AdminNavigationLink
       aria-label={tab.ariaLabel ?? `Open ${tab.label}`}
       aria-current={active ? "page" : undefined}
       className={[
@@ -205,7 +207,7 @@ function MobileTabLink({
       <span className="pl-nav-label text-xs font-semibold leading-none" style={compact ? {fontSize:"0.625rem"} : undefined}>{tab.label}</span>
       {tab.id === "needs-attention" ? <span className="absolute right-1.5 top-1"><NeedsAttentionUnseenBadge /></span> : null}
       <AdminNavigationPendingIndicator compact disabled={active} />
-    </Link>
+    </AdminNavigationLink>
   );
 }
 
@@ -294,7 +296,7 @@ function MobileMoreSheet({
                         link.href === "/admin/announcements");
 
                     return (
-                      <Link
+                      <AdminNavigationLink
                         aria-current={isActive ? "page" : undefined}
                         className={[
                           "relative flex min-h-12 min-w-0 items-center gap-2 rounded-xl border px-[12px] py-2 text-sm font-semibold transition",
@@ -317,7 +319,7 @@ function MobileMoreSheet({
                             {link.note}
                           </span>
                         ) : null}
-                      </Link>
+                      </AdminNavigationLink>
                     );
                   })}
                 </div>
@@ -354,7 +356,8 @@ function AdminShellFrame({
   deriveActiveFromPathname = false,
 }: AdminShellProps) {
   const pathname = usePathname();
-  const visibleActive: AdminNavActive = deriveActiveFromPathname
+  const handoff = useAdminRouteHandoff(deriveActiveFromPathname);
+  const committedActive: AdminNavActive = deriveActiveFromPathname
     ? pathname.startsWith("/admin/calendar") ? "calendar"
       : pathname.startsWith("/admin/needs-attention") ? "needs-attention"
       : pathname.startsWith("/admin/announcements") ? "announcements"
@@ -362,6 +365,7 @@ function AdminShellFrame({
       : pathname.startsWith("/admin/tasks") ? "tasks"
       : "overview"
     : active;
+  const visibleActive = handoff.visible && !handoff.visible.failed ? handoff.visible.destination.route : committedActive;
   const calendarHref = useCalendarReturnHref(calendarWorkspaceKey);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const mobileMoreButtonRef = useRef<HTMLButtonElement>(null);
@@ -443,6 +447,7 @@ function AdminShellFrame({
   }, [closeMobileMore, isMoreOpen]);
 
   return (
+    <AdminRouteHandoffContext.Provider value={deriveActiveFromPathname ? handoff.begin : null}>
     <NeedsAttentionBadgeProvider enabled={destinations.includes("needs-attention")}>
     <PageShell as="div" className="bg-[var(--pl-canvas)]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -471,7 +476,17 @@ function AdminShellFrame({
           </aside>
 
           <main id="main-content" tabIndex={-1} className="min-w-0 px-4 pt-5 pb-[calc(var(--admin-mobile-nav-height,80px)+24px)] sm:px-6 lg:px-7 lg:py-6 xl:px-8">
-            {children}
+            <p role="status" aria-atomic="true" className="sr-only">{handoff.visible ? `${handoff.visible.failed ? "Could not open" : "Opening"} ${handoff.visible.destination.title}…` : ""}</p>
+            {handoff.visible && <div data-admin-client-handoff={handoff.visible.destination.route}>
+              {handoff.visible.failed ? <section role="alert" className="rounded-xl border border-[var(--pl-border)] bg-white p-5">
+                <h1 className="pl-page-title">{handoff.visible.destination.title}</h1>
+                <p className="mt-3 text-sm text-[var(--pl-muted)]">This page is taking too long to open. Please try again or choose another page.</p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button type="button" onClick={handoff.retry} className="min-h-11 rounded-lg border border-[var(--pl-border)] px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">Retry navigation</button>
+                </div>
+              </section> : <AdminRouteLoading route={handoff.visible.destination.route} announce={false} />}
+            </div>}
+            <div data-admin-route-content hidden={Boolean(handoff.visible)} inert={Boolean(handoff.visible)} aria-hidden={handoff.visible ? true : undefined}>{children}</div>
           </main>
       </div>
 
@@ -496,6 +511,7 @@ function AdminShellFrame({
       />
     </PageShell>
     </NeedsAttentionBadgeProvider>
+    </AdminRouteHandoffContext.Provider>
   );
 }
 
