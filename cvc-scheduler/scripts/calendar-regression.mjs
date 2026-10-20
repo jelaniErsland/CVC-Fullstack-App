@@ -2844,7 +2844,8 @@ async function runAssignedContactBrowser(browser, containerName) {
   const target = `[data-calendar-task-item="${fixture.calendarItemIds.gate}"]`;
   const assertContact = async (page, name, quickView = false) => {
     const dialog = page.getByRole("dialog", { name: "Assigned volunteer contact" });
-    await dialog.getByText(name, { exact: true }).waitFor();
+    try { await dialog.getByText(name, { exact: true }).waitFor(); }
+    catch(error) {console.error(JSON.stringify({assignedContactState:await dialog.isVisible()?await dialog.innerText():"Contact dialog did not open",consoleErrors:errors}));throw error;}
     assert((await dialog.innerText()).includes("qa-12-12-volunteer-"), "Contact email was absent.");
     assert(!(await dialog.innerText()).includes("QA Private Emergency"), "Private emergency contact was visible.");
     assert(!(await dialog.innerText()).includes("Safe scheduling context"), "Private profile note was visible.");
@@ -2865,6 +2866,10 @@ async function runAssignedContactBrowser(browser, containerName) {
   try {
     await desktop.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"));
     await desktop.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    // The heading can now be the streamed route frame. Contact interactions
+    // exercise the authorized, hydrated schedule rather than that early frame.
+    await desktop.locator('[data-admin-route-loading]:visible').waitFor({state:"hidden"});
+    await desktop.waitForLoadState("networkidle");
     const gate = desktop.locator(target);
     await gate.getByRole("button", { name: `Contact ${name1}` }).click();
     await assertContact(desktop, name1);
@@ -2885,6 +2890,8 @@ async function runAssignedContactBrowser(browser, containerName) {
     await inspector.getByRole("button", { name: `Contact ${name1}` }).waitFor();
     await mobile.goto(createPreviewUrl(baseUrl, "/admin/calendar?view=day&date=2026-01-13"));
     await mobile.getByRole("heading", { name: "Calendar", exact: true }).waitFor();
+    await mobile.locator('[data-admin-route-loading]:visible').waitFor({state:"hidden"});
+    await mobile.waitForLoadState("networkidle");
     await mobile.locator(target).getByRole("button", { name: `Contact ${name1}` }).click();
     await assertContact(mobile, name1);
     await mobile.goto(`${quickViewUrl()}&view=day&item=${fixture.calendarItemIds.gate}`);

@@ -541,12 +541,14 @@ async function readAssignmentPickerState(input: {
   workspaceId: string;
   calendarItemIds: readonly string[];
   canViewVolunteers: boolean;
+  responseSnapshot?: readonly import("./readModel.server.ts").CalendarAssignmentCoverageRow[];
 }): Promise<CalendarAssignmentPickerClientState> {
   const picker = await readCalendarAssignmentPickerWithClient({
     client: input.supabase,
     workspaceId: input.workspaceId,
     calendarItemIds: input.calendarItemIds,
     canViewVolunteers: input.canViewVolunteers,
+    responseSnapshot: input.responseSnapshot,
   });
 
   if (picker.kind !== "ready") return picker;
@@ -881,6 +883,7 @@ async function readCalendarRouteStateWithinDeadline(
       workspaceId: workspaceSelection.workspace.id,
       calendarItemIds,
       canViewVolunteers: workspaceSelection.canViewVolunteers,
+      responseSnapshot: readModelItems.flatMap(item => item.assignments),
     });
     const assignmentsByItemId = new Map<string, CalendarClientAssignment[]>();
     if (assignmentPicker.kind === "ready") {

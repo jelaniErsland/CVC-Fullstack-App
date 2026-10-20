@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { withReadTimeout } from "@/lib/readTimeout";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AdminShell } from "@/components/AdminShell";
@@ -255,7 +256,7 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
 export default async function AdminVolunteersPage({
   searchParams,
 }: AdminVolunteersPageProps) {
-  const state = await readVolunteerManagementRouteState(await searchParams);
+  const state = await withReadTimeout(readVolunteerManagementRouteState(await searchParams));
   const isReadyState = isReadyVolunteerState(state);
 
   const stats =

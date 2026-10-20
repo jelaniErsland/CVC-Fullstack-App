@@ -399,6 +399,10 @@ async function verifyAssignments(containerName, users) {
     capabilities: ["calendar.view", "assignments.view"],
   });
   assert(readModel.ok, "Calendar read model should see assignment-derived coverage.");
+  const pickerInput = {client: users.full.client, workspaceId: fixture.workspaceId, calendarItemIds: [item.calendarItemId], canViewVolunteers: true};
+  const freshPicker = await readCalendarAssignmentPickerWithClient(pickerInput);
+  const reusedPicker = await readCalendarAssignmentPickerWithClient({...pickerInput, responseSnapshot:readModel.items.flatMap(row=>row.assignments)});
+  assert.deepEqual(reusedPicker, freshPicker, "Same-request response reuse must preserve real authorized picker data.");
   let readItem = readModel.items.find((candidate) => candidate.calendarItemId === item.calendarItemId);
   assert(readItem);
   assert.equal(readItem.assignedFractionLabel, "2/1 assigned");

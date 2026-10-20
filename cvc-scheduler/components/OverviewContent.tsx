@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ArrowRight, CalendarDays, Mail, UserPlus, UsersRound } from "lucide-react";
 import { PageHeader } from "./PageHeader";
 import { Panel } from "./Panel";
@@ -15,7 +16,11 @@ function timeLabel(time: string | null) { if (!time) return "All day"; const [h,
 function itemTiming(item: OverviewUpcomingItem) { return `${dateLabel(item.startDate, item.timezone)} · ${timeLabel(item.startTime)}${item.startTime && item.endTime ? `–${timeLabel(item.endTime)}` : ""}${item.endDate && item.endDate !== item.startDate ? ` · through ${dateLabel(item.endDate, item.timezone)}` : ""}`; }
 function countLine(count: number, singular: string, plural = `${singular}s`) { return count ? `${count} ${count === 1 ? singular : plural}` : null; }
 
-export function OverviewContent({ state, photo, canEditPhoto }: { state: OverviewReadyRouteState; photo: ProjectPhoto; canEditPhoto: boolean }) {
+export function OverviewProjectIdentity({ workspaceName, photo, canEditPhoto }: { workspaceName: string; photo: ProjectPhoto; canEditPhoto: boolean }) {
+  return photo.asset_id ? <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={workspaceName} canEdit={canEditPhoto} compact /> : <section aria-label="Project identity" className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3"><div className="min-w-0"><p className="text-xs font-semibold text-[var(--pl-muted)]">Current project</p><h2 className="break-words text-base font-semibold text-[var(--pl-ink)]">{ldcProjectName(workspaceName)}</h2></div>{canEditPhoto && <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={workspaceName} canEdit compact />}</section>;
+}
+
+export function OverviewContent({ state, projectIdentity }: { state: OverviewReadyRouteState; projectIdentity: ReactNode }) {
   const calendar = state.calendar?.kind === "ready" ? state.calendar.value : null;
   const range = [state.workspaceStartsOn, state.workspaceEndsOn].filter((date): date is string => Boolean(date)).map(date => dateLabel(date, state.workspaceTimezone)).join(" – ");
   const todayWork = calendar?.upcomingItems.filter(item => item.startDate === state.today) ?? [];
@@ -31,7 +36,7 @@ export function OverviewContent({ state, photo, canEditPhoto }: { state: Overvie
   ].filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   return <div className="mx-auto max-w-[1180px] space-y-4 pb-6 sm:space-y-5">
     <PageHeader title="Overview" context={range ? <span>Project dates · {range}</span> : undefined} />
-    {photo.asset_id ? <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit={canEditPhoto} compact /> : <section aria-label="Project identity" className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--pl-border)] bg-white px-4 py-3"><div className="min-w-0"><p className="text-xs font-semibold text-[var(--pl-muted)]">Current project</p><h2 className="break-words text-base font-semibold text-[var(--pl-ink)]">{ldcProjectName(state.workspaceName)}</h2></div>{canEditPhoto && <ProjectPhotoEditor key={photo.version} initialPhoto={photo} projectName={state.workspaceName} canEdit compact />}</section>}
+    {projectIdentity}
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,1fr)]">
       <Panel aria-label="Today and next up" className="p-4 sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[var(--pl-blue)]">Today / Next up</p><h2 className="mt-1 text-lg font-semibold text-[var(--pl-ink)]">{calendar?.todayScheduledCount ? `${calendar.todayScheduledCount} ${calendar.todayScheduledCount === 1 ? "item" : "items"} today` : nextWork.length ? "Next scheduled work" : "No work in the next 7 days"}</h2></div><Link className={`shrink-0 text-xs font-semibold text-[var(--pl-blue)] hover:underline ${focus}`} href={`/admin/calendar?view=week&date=${state.today}`}>Calendar <ArrowRight aria-hidden className="inline size-3.5" /></Link></div>
         {calendar ? <div className="mt-3 divide-y divide-[var(--pl-border)]">{[...todayWork, ...nextWork].slice(0, 3).map(item => <Link className={`block py-2.5 hover:bg-[var(--pl-surface-subtle)] ${focus}`} href={item.href} key={item.id}><p className="text-sm font-semibold text-[var(--pl-ink)]">{item.title}{item.itemCount && item.itemCount > 1 ? ` · ${item.itemCount} items` : ""}</p><p className="mt-0.5 text-xs text-[var(--pl-muted)]">{itemTiming(item)} · {item.mealSummary ?? item.assignedFractionLabel}{item.publicationState === "draft" ? " · Draft" : ""}</p></Link>)}{calendar.upcomingItems.length === 0 && <p className="py-3 text-sm text-[var(--pl-muted)]">Open Calendar to plan the next work.</p>}</div> : <p className="mt-3 text-sm text-[var(--pl-muted)]">Calendar activity is temporarily unavailable.</p>}</Panel>

@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { withReadTimeout } from "@/lib/readTimeout";
 import { AdminShell } from "@/components/AdminShell";
 import { GlassCard } from "@/components/GlassCard";
 import { TaskPresetManagement } from "@/components/TaskPresetManagement";
@@ -182,7 +183,7 @@ function isReadyState(
 
 export default async function AdminTasksPage({ searchParams }: AdminTasksPageProps) {
   const resolvedSearchParams = await searchParams;
-  const state = await readTaskManagementRouteState(resolvedSearchParams);
+  const state = await withReadTimeout(readTaskManagementRouteState(resolvedSearchParams));
 
   if (!isReadyState(state)) {
     return (

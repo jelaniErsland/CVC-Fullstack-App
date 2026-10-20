@@ -5,6 +5,7 @@ import {
   type AssignmentResponseStatus,
 } from "../assignments/assignment.ts";
 import type { AppSupabaseClient } from "../supabase/types.ts";
+import type { CalendarAssignmentCoverageRow } from "./readModel.server.ts";
 import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
 
 export type CalendarAssignmentPickerVolunteer = Readonly<{
@@ -85,6 +86,8 @@ export async function readCalendarAssignmentPickerWithClient(input: {
   workspaceId: string;
   calendarItemIds: readonly string[];
   canViewVolunteers: boolean;
+  /** Same-request authorized coverage only; never accepted from a browser. */
+  responseSnapshot?: readonly CalendarAssignmentCoverageRow[];
 }): Promise<CalendarAssignmentPickerState> {
   if (!input.canViewVolunteers) {
     return { kind: "unavailable", reason: "missing_volunteers_view" };
@@ -178,7 +181,19 @@ export async function readCalendarAssignmentPickerWithClient(input: {
     const assignmentIds = assignmentRows
       .map((row) => normalizeUuid(row.id))
       .filter((value): value is string => Boolean(value));
-    const responsesResults = await Promise.all(chunks(assignmentIds, maximumCalendarItemsPerPickerRead).map((ids) => input.client
+    const assignmentById = new Map(assignmentRows.map(row => [row.id, row]));
+    const responseByAssignmentId = new Map<string, AssignmentResponseStatus>();
+    for (const response of input.responseSnapshot ?? []) {
+      const row = assignmentById.get(response.assignmentId);
+      if (row && response.workspaceId === workspaceId && response.calendarItemId === row.calendar_item_id &&
+          calendarItemIds.includes(row.calendar_item_id) && response.assignmentLifecycle === "active" && isResponseStatus(response.currentResponseStatus)) {
+        responseByAssignmentId.set(response.assignmentId, response.currentResponseStatus);
+      }
+    }
+    // Assignments added after the coverage read still receive a fresh response
+    // read. Missing/mismatched snapshot rows never become assumed confirmations.
+    const missingResponseIds = assignmentIds.filter(id => !responseByAssignmentId.has(id));
+    const responsesResults = await Promise.all(chunks(missingResponseIds, maximumCalendarItemsPerPickerRead).map((ids) => input.client
             .from("assignment_responses")
             .select("assignment_id,response_status,updated_at")
             .eq("workspace_id", workspaceId)
@@ -189,7 +204,6 @@ export async function readCalendarAssignmentPickerWithClient(input: {
       return { kind: "error", reason: "query_unavailable" };
     }
 
-    const responseByAssignmentId = new Map<string, AssignmentResponseStatus>();
     for (const response of responsesResults.flatMap((result) => result.data ?? [])) {
       const assignmentId = normalizeUuid(response.assignment_id);
       if (!assignmentId || responseByAssignmentId.has(assignmentId)) continue;

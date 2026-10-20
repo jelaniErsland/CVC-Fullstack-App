@@ -69,7 +69,9 @@ assert.doesNotMatch(
 
 assert.match(calendarClientSource, /useRouter/);
 assert.match(calendarClientSource, /buildCalendarRouteHref/);
-assert.match(calendarClientSource, /function navigate\(href: string\) \{ router\.push\(href\); \}/);
+assert.match(calendarClientSource, /function navigate\(href: string\) \{ startCalendarTransition\(\(\) => router\.push\(href\)\); \}/);
+assert.match(calendarClientSource, /\[calendarPending, startCalendarTransition\] = useTransition\(\)/);
+assert.match(calendarClientSource, /Updating Calendar…/);
 assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\(view, calendarAnchor\)\)/);
 assert.match(calendarClientSource, /shiftCalendarAnchor\(calendarAnchor, amount, activeView\)/);
 assert.match(calendarClientSource, /navigate\(buildCalendarRouteHref\("day", date\)\)/);

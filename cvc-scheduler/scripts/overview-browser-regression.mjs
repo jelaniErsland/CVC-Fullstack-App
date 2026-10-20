@@ -6,6 +6,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
+import { measureAdminNavigation } from "./admin-navigation-browser-measurement.mjs";
 
 import {
   createPreviewUrl,
@@ -257,14 +258,18 @@ async function applyCookies(context, label) {
   })));
 }
 
-async function openOverview(browser, label, viewport) {
+async function openOverview(browser, label, viewport, beforeNavigate) {
   const context = await browser.newContext({ viewport });
   await applyCookies(context, label);
   const page = await context.newPage();
+  if (process.env.NAVIGATION_DISABLE_PREFETCH === "1") await page.route("**/*", route => route.request().headers()["next-router-prefetch"] || route.request().headers()["next-router-segment-prefetch"] ? route.abort() : route.continue());
+  if (beforeNavigate) await beforeNavigate(page);
   const failures = [];
   page.on("console", (message) => {
     if (message.type() !== "error") return;
     if (message.text().includes("/_next/webpack-hmr")) return;
+    // This measurement deliberately aborts only prefetch requests above.
+    if (process.env.NAVIGATION_DISABLE_PREFETCH === "1" && message.text() === "Failed to load resource: net::ERR_FAILED") return;
     failures.push(message.text());
   });
   page.on("pageerror", (error) => failures.push(error.message));
@@ -391,6 +396,13 @@ async function benchmarkNavigation(browser) {
     ["Task library → Overview", "/admin/dashboard", "Overview"],
   ];
   const records = [];
+  if (process.env.MEASURE_ADMIN_NAVIGATION === "2") {
+    try { console.log(JSON.stringify(await measureAdminNavigation(page, routeSteps))); }
+    catch(error) { console.error(JSON.stringify({failures,visibleMain:await page.locator("main").innerText()})); throw error; }
+    assert.deepEqual(failures, []);
+    await context.close();
+    return;
+  }
   for (const [label, path, heading] of routeSteps) {
     const shell = await page.locator("aside").first().elementHandle();
     const link = page.locator(`nav[aria-label="Workspace navigation"] a[href^="${path}"]`).first();
@@ -400,6 +412,7 @@ async function benchmarkNavigation(browser) {
     await page.waitForURL((url) => url.pathname === path, { timeout: 30_000 });
     const urlMs = Math.round(performance.now() - started);
     await page.locator("main h1").filter({ hasText: heading }).first().waitFor({ timeout: 30_000 });
+    await page.locator('[data-admin-route-loading]:visible').waitFor({state:"hidden"});
     const usefulMs = Math.round(performance.now() - started);
     await page.waitForLoadState("networkidle", { timeout: 30_000 });
     const settledMs = Math.round(performance.now() - started);
@@ -441,7 +454,7 @@ async function verifyAuthenticatedPendingNavigation(browser) {
   try {
     await page.route("**/admin/tasks**", async (route) => {
       const request = route.request();
-      if (!intercepted && (new URL(request.url()).searchParams.has("_rsc") || request.headers().rsc)) {
+      if (!intercepted && !request.headers()["next-router-prefetch"] && !request.headers()["next-router-segment-prefetch"] && (new URL(request.url()).searchParams.has("_rsc") || request.headers().rsc)) {
         intercepted = true;
         await held;
       }
@@ -449,19 +462,175 @@ async function verifyAuthenticatedPendingNavigation(browser) {
     });
     const shell = await page.locator("aside").first().elementHandle();
     await page.locator('nav[aria-label="Workspace navigation"] a[href^="/admin/tasks"]').first().click({ noWaitAfter: true });
-    await page.locator('[data-navigation-pending="true"]').waitFor({ state: "visible", timeout: 5_000 });
-    assert.equal(await page.getByRole("heading", { name: "Overview", exact: true }).isVisible(), true, "The current route disappeared while the destination was pending.");
+    await page.locator('[data-admin-route-loading="tasks"]').waitFor({ state: "visible", timeout: 5_000 });
+    assert.equal(await page.getByRole("heading", { name: "Tasks", exact: true }).isVisible(), true, "The destination frame must identify the pending route.");
+    assert.equal(await page.locator('[data-admin-route-loading="tasks"]').getAttribute("aria-busy"), "true");
+    assert.equal(await page.getByRole("heading", { name: "Overview", exact: true }).isVisible(), false, "Previous private content must not appear as the new destination.");
+    if(process.env.ADMIN_NAVIGATION_EVIDENCE_DIR){
+      await mkdir(process.env.ADMIN_NAVIGATION_EVIDENCE_DIR,{recursive:true});
+      await page.screenshot({path:path.join(process.env.ADMIN_NAVIGATION_EVIDENCE_DIR,"destination-frame-desktop.png")});
+      await page.setViewportSize({width:390,height:844});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      await page.screenshot({path:path.join(process.env.ADMIN_NAVIGATION_EVIDENCE_DIR,"destination-frame-mobile.png")});
+    }
     assert(await shell.evaluate((element) => element.isConnected), "The shell remounted during pending navigation.");
     assert(intercepted, "Expected an authenticated Task library RSC request.");
     release();
     await page.waitForURL((url) => url.pathname === "/admin/tasks");
     await page.getByRole("heading", { name: "Tasks", exact: true }).waitFor();
+    await page.locator('[data-admin-route-loading="tasks"]').waitFor({ state: "hidden" });
     assert.equal(await page.locator('[data-navigation-pending="true"]').count(), 0);
     assert.deepEqual(failures, []);
   } finally {
     release?.();
     await context.close();
   }
+}
+
+async function verifyStreamingNavigation(browser, containerName) {
+  const prefetches = [];
+  const loaded = await openOverview(browser, "populated", { width: 1440, height: 1000 }, page => {
+    return page.route("**/admin/**", async route => {
+      const request = route.request();
+      if ((request.headers()["next-router-prefetch"] || request.headers()["next-router-segment-prefetch"]) && ["/admin/dashboard","/admin/calendar","/admin/needs-attention","/admin/announcements","/admin/volunteers","/admin/tasks"].includes(new URL(request.url()).pathname)) {
+        // Complete the actual prefetched response through Playwright's network
+        // API so Chromium's speculative cancellation cannot discard the proof.
+        const response=await route.fetch();
+        prefetches.push({path:new URL(request.url()).pathname,body:await response.text()});
+        await route.fulfill({response});
+      } else {
+        await route.continue();
+      }
+    });
+  });
+  const {page, context, failures} = loaded;
+  try {
+    await page.locator('nav[aria-label="Workspace navigation"] a[href="/admin/volunteers"]').hover();
+    // Give Next's idle/intent prefetch scheduler one bounded turn; this is a
+    // privacy gate, separate from the click-timing measurements.
+    await page.waitForTimeout(1000);
+    // A prefetched frame is presentation only; it must not retain roster data
+    // or bypass a changed grant when the destination is actually requested.
+    const payloads = prefetches;
+    assert(payloads.length > 0, `Expected primary-route frame prefetch (${prefetches.length} responses observed).`);
+    for (const payload of payloads) assert(!["Alex Rivera","populated-0@example.invalid","Gate Attendant","Night Watch"].some(value=>payload.body.includes(value)), `Private route data appeared in a ${payload.path} prefetch.`);
+    runPsql(containerName, `update public.workspace_contact_grants set status = 'revoked', revoked_at = now() where workspace_id = ${workspaceIdSql("populated")};`);
+    try {
+      await page.locator('nav[aria-label="Workspace navigation"] a[href="/admin/volunteers"]').click();
+      await page.getByText("Volunteer profiles are unavailable", {exact:true}).waitFor();
+      assert.equal(await page.getByText("Alex Rivera", {exact:true}).count(), 0, "Prefetched navigation bypassed revoked access.");
+    } finally {
+      runPsql(containerName, `update public.workspace_contact_grants set status = 'active', revoked_at = null where workspace_id = ${workspaceIdSql("populated")};`);
+    }
+    await page.reload({waitUntil:"networkidle"});
+    await page.getByPlaceholder("Search volunteers", {exact:true}).waitFor();
+    assert(await page.getByText("Alex Rivera", {exact:true}).count() > 0);
+    const impatientShell=await page.locator("aside").elementHandle();
+    for(const target of ["/admin/dashboard","/admin/calendar","/admin/volunteers","/admin/needs-attention","/admin/calendar","/admin/announcements","/admin/dashboard"]){
+      await page.locator(`nav[aria-label="Workspace navigation"] a[href^="${target}"]`).first().click({noWaitAfter:true});
+    }
+    await page.getByRole("heading",{name:"Overview",exact:true}).waitFor();
+    await page.locator('[data-admin-route-loading]:visible').waitFor({state:"hidden"});
+    await page.waitForLoadState("networkidle");
+    assert(await impatientShell.evaluate(element=>element.isConnected));
+    assert.equal(new URL(page.url()).pathname,"/admin/dashboard");
+    assert.equal(await page.locator("main h1:visible").count(),1,"Rapid navigation must have one clear route identity.");
+
+    // A late response for an interrupted route must never replace a later one.
+    let release;
+    let heldRequest = false;
+    const held = new Promise(resolve => {release = resolve;});
+    await page.route("**/admin/tasks**", async route => {
+      if (route.request().headers().rsc && !route.request().headers()["next-router-prefetch"] && !route.request().headers()["next-router-segment-prefetch"]) {
+        heldRequest = true;
+        await held;
+      }
+      await route.continue();
+    });
+    const shell = await page.locator("aside").elementHandle();
+    try {
+      const requested=page.waitForRequest(request=>new URL(request.url()).pathname==="/admin/tasks" && request.headers().rsc && !request.headers()["next-router-prefetch"]);
+      await page.locator('nav[aria-label="Workspace navigation"] a[href="/admin/tasks"]').click();
+      await requested;
+      await page.locator('nav[aria-label="Workspace navigation"] a[href^="/admin/calendar"]').click();
+      await page.locator('[data-admin-route-loading="calendar"]').waitFor({state:"hidden"});
+      await page.getByRole("heading", {name:"Calendar", exact:true}).waitFor();
+      release();
+      await page.waitForLoadState("networkidle");
+      assert(heldRequest, "Expected a held Task library data response.");
+      assert.equal(new URL(page.url()).pathname, "/admin/calendar");
+      assert.equal(await page.getByRole("heading", {name:"Tasks", exact:true}).isVisible(), false);
+      assert(await shell.evaluate(element => element.isConnected));
+    } finally {release();await page.unroute("**/admin/tasks**");}
+
+    await page.goBack();
+    await page.goForward();
+    await page.getByRole("heading", {name:"Calendar", exact:true}).waitFor();
+    await page.setViewportSize({width:390,height:844});
+    const main = await page.locator("main#main-content").elementHandle();
+    await page.getByRole("link", {name:"Open Volunteers", exact:true}).click();
+    await page.getByPlaceholder("Search volunteers", {exact:true}).waitFor();
+    await page.getByRole("link", {name:"Open Needs Attention", exact:true}).click();
+    await page.getByText("Filters",{exact:true}).click();
+    await page.getByRole("searchbox", {name:"Search attention issues"}).waitFor();
+    assert(await main.evaluate(element => element.isConnected));
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.getByRole("button", {name:"Open more admin navigation",exact:true}).click();
+    await page.getByRole("link", {name:"Communications",exact:true}).last().click();
+    await page.getByRole("tab", {name:/Schedule deliveries/}).waitFor();
+    await page.getByRole("button", {name:"Review recipients",exact:true}).waitFor();
+    await page.waitForFunction(() => document.querySelector('[data-communication-history-state="ready"]'));
+    assert.equal(await page.getByRole("button", {name:"Review recipients",exact:true}).isEnabled(), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+
+    // Changing the authenticated context and refreshing must rebuild project UI.
+    await applyCookies(context, "review");
+    await page.goto(createPreviewUrl(baseUrl,"/admin/dashboard"),{waitUntil:"networkidle"});
+    await page.getByText(new RegExp(workspaceNames.review)).first().waitFor();
+    assert.equal(await page.getByText(new RegExp(workspaceNames.populated)).count(),0);
+    assert.deepEqual(failures, []);
+    console.log(`Streaming navigation passed: ${payloads.length} safe prefetched frames; revoked grant, fresh account/project, interruption, back/forward, and mobile isolation.`);
+  } catch(error) {console.error(JSON.stringify({streamingFailures:failures,visibleMain:await page.locator("main").innerText()}));throw error;}
+  finally {await context.close();}
+}
+
+async function verifyStreamingFailure(browser) {
+  if(process.env.VERIFY_ADMIN_STREAMING_FAILURE === "photo"){
+    const context=await browser.newContext({viewport:{width:1440,height:1000}});
+    try{
+      await applyCookies(context,"populated");
+      const page=await context.newPage();
+      const started=performance.now();
+      await page.goto(createPreviewUrl(baseUrl,"/admin/dashboard"),{waitUntil:"commit"});
+      await page.getByRole("region",{name:"Today and next up"}).waitFor();
+      const usefulMs=Math.round(performance.now()-started);
+      assert(usefulMs<1500,"Operational Overview must not await the deliberately stalled project photo.");
+      assert.equal(await page.getByRole("region",{name:"Needs Attention summary"}).isVisible(),true);
+      console.log(JSON.stringify({test:"stalled optional project photo",usefulOverviewMs:usefulMs,photoRead:"still pending",productionLatencyClaimed:false}));
+    }finally{await context.close();}
+    return;
+  }
+  const {page,context}=await openOverview(browser,"populated",{width:1440,height:1000});
+  try {
+    const shell=await page.locator("aside").elementHandle();
+    const communications=process.env.VERIFY_ADMIN_STREAMING_FAILURE === "communications";
+    const path=communications?"/admin/announcements":"/admin/volunteers";
+    await page.locator(`nav[aria-label="Workspace navigation"] a[href="${path}"]`).click();
+    if(communications){
+      await page.getByRole("tab",{name:/Schedule deliveries/}).click();
+      assert.equal(await page.getByRole("button",{name:"Review recipients",exact:true}).isDisabled(),true);
+      await page.getByRole("button",{name:"Retry delivery history",exact:true}).waitFor({timeout:25000});
+      assert.equal(await page.getByText("No deliveries yet.",{exact:true}).count(),0,"Failed history must not masquerade as empty history.");
+      await page.getByRole("button",{name:"Retry delivery history",exact:true}).click();
+      await page.waitForFunction(()=>document.querySelector('[data-communication-history-state="ready"]'));
+    }else{
+      await page.getByRole("heading",{name:"This page could not be loaded",exact:true}).waitFor({timeout:25000});
+      await page.getByRole("button",{name:"Try again",exact:true}).click();
+      await page.getByPlaceholder("Search volunteers",{exact:true}).waitFor();
+    }
+    assert(await shell.evaluate(element=>element.isConnected),"Read failure/retry must retain the shell.");
+    console.log(`Finite ${communications?"Communications history":"Volunteers route"} loading, honest failure, and successful fresh retry passed.`);
+  }finally{await context.close();}
 }
 
 function cleanup(containerName) {
@@ -498,8 +667,10 @@ try {
   seedData(containerName);
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") await verifyAuthenticatedPendingNavigation(browser);
-    else if (process.env.MEASURE_ADMIN_NAVIGATION === "1") await benchmarkNavigation(browser);
+    if (process.env.VERIFY_ADMIN_STREAMING_FAILURE) await verifyStreamingFailure(browser);
+    else if (process.env.VERIFY_ADMIN_STREAMING_NAVIGATION === "1") await verifyStreamingNavigation(browser, containerName);
+    else if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") await verifyAuthenticatedPendingNavigation(browser);
+    else if (["1", "2"].includes(process.env.MEASURE_ADMIN_NAVIGATION)) await benchmarkNavigation(browser);
     else {
       await verifyDesktop(browser);
       await verifyMobile(browser);
@@ -509,7 +680,7 @@ try {
   }
   if (process.env.VERIFY_ADMIN_PENDING_NAVIGATION === "1") {
     console.log("Authenticated admin pending-navigation browser validation passed.");
-    console.log("Confirmed immediate pending feedback, previous route visibility, persistent shell, destination content, and zero fixture residue.");
+    console.log("Confirmed immediate destination frame, honest loading state, persistent shell, destination content, and zero fixture residue.");
   } else {
     console.log("Overview browser validation passed.");
     console.log("Confirmed real persisted desktop/mobile states, Calendar row navigation, capability-hidden sections, ready-empty behavior, and 390px width.");

@@ -2,13 +2,14 @@ import { AdminShell } from "@/components/AdminShell";
 import { NeedsAttentionInbox } from "@/components/NeedsAttentionInbox";
 import { GlassCard } from "@/components/GlassCard";
 import { readNeedsAttentionRouteState } from "@/lib/needsAttention/routeRead.server";
+import { withReadTimeout } from "@/lib/readTimeout";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 export default async function AdminNeedsAttentionPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const [state, params] = await Promise.all([readNeedsAttentionRouteState(), searchParams]);
+  const [state, params] = await Promise.all([withReadTimeout(readNeedsAttentionRouteState()), searchParams]);
   if (state.kind !== "ready") return <AdminShell active="needs-attention">
     <h1 className="text-3xl font-bold text-[var(--pl-ink)]">Needs Attention</h1>
     <GlassCard className="mt-5 p-5"><h2 className="font-semibold">{state.title}</h2><p className="mt-2 text-sm">{state.message}</p></GlassCard>
