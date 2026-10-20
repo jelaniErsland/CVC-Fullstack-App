@@ -20,7 +20,7 @@ import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
-import { AdminNavigationLink, AdminRouteHandoffContext, useAdminRouteHandoff } from "@/components/AdminRouteHandoff";
+import { AdminNavigationLink, AdminRouteCommit, AdminRouteCommitContext, AdminRouteHandoffContext, useAdminRouteHandoff } from "@/components/AdminRouteHandoff";
 import { AdminRouteLoading } from "@/components/AdminRouteLoading";
 import { GlassCard } from "@/components/GlassCard";
 import { PageShell } from "@/components/PageShell";
@@ -447,6 +447,7 @@ function AdminShellFrame({
   }, [closeMobileMore, isMoreOpen]);
 
   return (
+    <AdminRouteCommitContext.Provider value={handoff.commit}>
     <AdminRouteHandoffContext.Provider value={deriveActiveFromPathname ? handoff.begin : null}>
     <NeedsAttentionBadgeProvider enabled={destinations.includes("needs-attention")}>
     <PageShell as="div" className="bg-[var(--pl-canvas)]">
@@ -512,6 +513,7 @@ function AdminShellFrame({
     </PageShell>
     </NeedsAttentionBadgeProvider>
     </AdminRouteHandoffContext.Provider>
+    </AdminRouteCommitContext.Provider>
   );
 }
 
@@ -522,7 +524,7 @@ export function AdminShell(props: AdminShellProps) {
     registerCallbacks({ onMobileMoreOpen: props.onMobileMoreOpen, onMobileMoreClose: props.onMobileMoreClose });
     return () => registerCallbacks(null);
   }, [registerCallbacks, props.onMobileMoreOpen, props.onMobileMoreClose]);
-  return registerCallbacks ? <>{props.children}</> : <AdminShellFrame {...props} />;
+  return registerCallbacks ? <><AdminRouteCommit route={props.active ?? "overview"} />{props.children}</> : <AdminShellFrame {...props} />;
 }
 
 export function PersistentAdminShell(props: Omit<AdminShellProps, "deriveActiveFromPathname">) {

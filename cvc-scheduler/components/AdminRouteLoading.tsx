@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
+import { AdminRouteCommit } from "@/components/AdminRouteHandoff";
 
 type Route = "overview" | "calendar" | "needs-attention" | "announcements" | "volunteers" | "tasks";
 const titles: Record<Route, string> = { overview: "Overview", calendar: "Calendar", "needs-attention": "Needs Attention", announcements: "Communications", volunteers: "Volunteers", tasks: "Tasks" };
@@ -16,6 +17,7 @@ export function AdminRouteLoading({ route, announce = true }: { route: Route; an
     : [];
   return (
     <section aria-busy="true" aria-label={`${title} loading`} data-admin-route-loading={route} className="min-w-0 space-y-5">
+      {announce && <AdminRouteCommit route={route} />}
       <PageHeader title={title} />
       {controls.length > 0 && <div aria-hidden="true" className="flex flex-wrap gap-2">
         {controls.map(label => <span key={label} className="inline-flex min-h-10 items-center rounded-lg border border-[var(--pl-border)] bg-white px-3 text-sm text-[var(--pl-muted)]">{label}</span>)}

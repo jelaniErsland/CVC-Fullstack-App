@@ -19,9 +19,15 @@ function holdNext(page, pathname) {
 
 async function loaded(page,title) {
   const routes={Overview:'/admin/dashboard',Calendar:'/admin/calendar',Volunteers:'/admin/volunteers','Needs Attention':'/admin/needs-attention',Communications:'/admin/announcements',Tasks:'/admin/tasks'};
+  console.log(`Waiting for committed ${title}.`);
+  try {
   await page.waitForURL(url=>url.pathname===routes[title]);
   await page.getByRole('heading',{name:title,exact:true}).waitFor();
   await page.waitForFunction(()=>![...document.querySelectorAll('[data-admin-client-handoff], [data-admin-route-loading]')].some(n=>n.getClientRects().length),null,{timeout:30000});
+  } catch(error) {
+    console.error(JSON.stringify({expected:title,...await page.evaluate(()=>({path:location.pathname,headings:[...document.querySelectorAll('main h1')].filter(n=>n.getClientRects().length).map(n=>n.textContent),handoff:document.querySelector('[data-admin-client-handoff]')?.getAttribute('data-admin-client-handoff')}))}));
+    throw error;
+  }
 }
 
 async function assertFrame(page,route,title,previousTitle) {

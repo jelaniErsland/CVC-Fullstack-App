@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 import { measureAdminNavigation } from "./admin-navigation-browser-measurement.mjs";
 import { measureRouteHandoff } from "./admin-route-handoff-browser-measurement.mjs";
 import { verifyClientHandoff } from "./admin-route-handoff-browser-regression.mjs";
+import { verifyRouteOwnership } from "./admin-route-ownership-browser-regression.mjs";
 
 import {
   createPreviewUrl,
@@ -264,6 +265,8 @@ async function openOverview(browser, label, viewport, beforeNavigate) {
   const context = await browser.newContext({ viewport });
   await applyCookies(context, label);
   const page = await context.newPage();
+  page.setDefaultTimeout(30_000);
+  page.setDefaultNavigationTimeout(30_000);
   if (process.env.NAVIGATION_DISABLE_PREFETCH === "1") await page.route("**/*", route => route.request().headers()["next-router-prefetch"] || route.request().headers()["next-router-segment-prefetch"] ? route.abort() : route.continue());
   if (beforeNavigate) await beforeNavigate(page);
   const failures = [];
@@ -675,7 +678,15 @@ try {
   seedData(containerName);
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    if (process.env.VERIFY_ADMIN_CLIENT_HANDOFF === "1") {
+    if (process.env.VERIFY_ADMIN_ROUTE_OWNERSHIP === "1") {
+      for (const mobile of [false,true]) {
+        const result=await openOverview(browser,"populated",mobile?{width:390,height:844}:{width:1440,height:1000});
+        try { await verifyRouteOwnership(result.page,{mobile}); assert.deepEqual(result.failures,[]); }
+        catch(error) { console.error(redact(JSON.stringify({ownershipBrowserErrors:result.failures,mobile}))); throw error; }
+        finally { await result.context.close(); }
+      }
+    }
+    else if (process.env.VERIFY_ADMIN_CLIENT_HANDOFF === "1") {
       for (const mobile of [false,true]) {
         const result=await openOverview(browser,"populated",mobile?{width:390,height:844}:{width:1440,height:1000});
         try { await verifyClientHandoff(result.page,{mobile}); assert.deepEqual(result.failures,[]); }
