@@ -30,6 +30,7 @@ try {
   const panel=page.locator('details').filter({has:page.locator('summary').filter({hasText:'Automatic reminders'})});
   assert((await panel.innerText()).includes('Hypothetical planning'));
   assert((await panel.innerText()).includes('Would enroll'));
+  assert((await panel.innerText()).includes('Starts '));
   assert((await panel.innerText()).includes('***@'));
   await panel.locator('summary').filter({hasText:'Excluded'}).click();
   assert((await panel.innerText()).includes('Volunteer declined'));

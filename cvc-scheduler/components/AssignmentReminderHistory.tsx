@@ -50,6 +50,7 @@ export function AssignmentReminderHistory() {
           <summary className="cursor-pointer py-1 font-semibold">{label} · {rows.length}</summary>
           <ul className="mt-3 space-y-3">{rows.map(row => <li key={row.assignment_id} className="break-words border-t border-slate-200 pt-3">
             <p><strong>{row.volunteer}</strong> · {row.assignment}</p>
+            {row.start_at && <p className="mt-1 text-slate-600">Starts <time dateTime={row.start_at}>{when(row.start_at, report.prospective.timezone)}</time></p>}
             <p className="mt-1 text-slate-600">{responseLabel(row.response)} · {row.destination}</p>
             <p className="mt-1 text-slate-600">{row.reason}</p>
             <ul className="mt-2 space-y-1">{row.reminders.map(reminder => <li key={reminder.occurrence_key}>
