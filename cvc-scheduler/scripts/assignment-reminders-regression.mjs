@@ -9,7 +9,7 @@ const migration=fs.readFileSync(new URL('../supabase/migrations/20261021120000_a
 const version='20261021120000';
 if(process.argv.includes('--replay')) sql(fs.readFileSync(new URL('../supabase/rollback/20261021120000_assignment_reminders_phase_a.sql',import.meta.url),'utf8'));
 const catalogue=()=>value(`select md5(string_agg(pg_get_functiondef(p.oid)||p.proowner::text||coalesce(p.proacl::text,''),'|' order by p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'`);
-const dataFingerprint=()=>value(`select string_agg(tablename||':'||(xpath('/row/hash/text()',query_to_xml(format('select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,''[]'')) hash from public.%I t',tablename),false,true,'')))[1]::text,'|' order by tablename) from pg_tables where schemaname='public'`);
+const dataFingerprint=()=>value(`select string_agg(tablename||':'||(xpath('/row/hash/text()',query_to_xml(format('select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,''[]'')) hash from public.%I t',tablename),false,true,'')))[1]::text,'|' order by tablename) from pg_tables where schemaname='public' and tablename not like 'assignment_reminder_%'`);
 const securityFingerprint=()=>value(`select md5(jsonb_build_array(
  (select jsonb_agg(jsonb_build_array(c.relname,c.relowner,c.relacl,c.relrowsecurity,c.relforcerowsecurity) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public'),
  (select jsonb_agg(to_jsonb(p) order by tablename,policyname) from pg_policies p where schemaname='public'),
@@ -25,6 +25,7 @@ if(value(`select exists(select 1 from supabase_migrations.schema_migrations wher
   assert.equal(value(`select to_regclass('public.assignment_reminder_activation') is null`),'t');
   assert.equal(value(`select count(*) from supabase_migrations.schema_migrations`),'52');
   sql(migration.replace(/commit;\s*$/,`insert into supabase_migrations.schema_migrations(version,name,statements) values('${version}','assignment_reminders_phase_a','{}');commit;`));
+  assert.equal(dataFingerprint(),oldData,'Clean migration preserves all existing public data');
   assert.equal(value(`select count(*)||'|'||max(version) from supabase_migrations.schema_migrations`),'53|'+version);
   console.log('PASS atomic migration and forced-failure rollback');
 }
@@ -43,9 +44,15 @@ const claim=(id,clock)=>JSON.parse(value(`select coalesce(public.claim_assignmen
 const revalidate=(c,clock)=>JSON.parse(value(`select coalesce(public.assignment_reminder_dispatch_context(${q(c.recipientId)},${q(c.claimId)},${q(clock)}),'null')`));
 const finalize=(c,outcome,clock)=>value(`select public.finalize_assignment_reminder(${q(c.recipientId)},${q(c.claimId)},${q(outcome)},${outcome==='sent'?q('mock-provider'): 'null'},${q(clock)})`);
 const wipe=()=>sql(`delete from public.assignment_reminder_events where workspace_id=${q(f.ws)};delete from public.assignment_reminder_occurrences where workspace_id=${q(f.ws)};delete from public.assignment_reminder_enrollments where workspace_id=${q(f.ws)};delete from public.communication_recipients where workspace_id=${q(f.ws)};delete from public.communication_operations where workspace_id=${q(f.ws)};`);
-const configure=(status='needs_response',date='2031-02-15',activation=baseline)=>{wipe();sql(`update public.assignment_reminder_activation set delivery_enabled=true,baseline_at=${q(activation)};update public.calendar_items set start_date=${q(date)},start_time='08:00',end_time='11:00',end_date=null where id=${q(f.items[0])};update public.assignment_responses set response_status=${q(status)},responded_at=${status==='needs_response'?'null':q(activation)} where assignment_id=${q(assignment)};`);};
+const configure=(status='needs_response',date='2031-02-15',activation=baseline)=>{wipe();sql(`update public.assignment_reminder_activation set delivery_enabled=true,baseline_at=${q(activation)};update public.calendar_assignments set created_at='2030-12-01T15:00:00Z' where id=${q(assignment)};update public.calendar_items set start_date=${q(date)},start_time='08:00',end_time='11:00',end_date=null where id=${q(f.items[0])};update public.assignment_responses set response_status=${q(status)},responded_at=${status==='needs_response'?'null':q(activation)} where assignment_id=${q(assignment)};`);};
 try {
  configure();sync();let pending=occurrences();assert.equal(pending[0].due,'2031-01-04T15:00:00+00:00');
+ const enrolledCatalogue=catalogue(),enrolledData=dataFingerprint();
+ const refusedRollback=sql(fs.readFileSync(new URL('../supabase/rollback/20261021120000_assignment_reminders_phase_a.sql',import.meta.url),'utf8'),true);
+ assert.notEqual(refusedRollback.status,0);assert.match(refusedRollback.stderr,/destructive rollback refused/);
+ assert.equal(catalogue(),enrolledCatalogue);assert.equal(dataFingerprint(),enrolledData);assert.deepEqual(occurrences(),pending);
+ assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'53');
+ console.log('PASS history-bearing rollback refuses destruction and preserves ledger/data/functions');
  assert.equal(claim(pending[0].id,'2031-01-04T14:59:59Z'),null);
  sql('update public.assignment_reminder_activation set delivery_enabled=false');assert.equal(claim(pending[0].id,'2031-01-04T15:00:00Z'),null);sql('update public.assignment_reminder_activation set delivery_enabled=true');
  let c=claim(pending[0].id,'2031-01-04T15:00:00Z');assert(c);assert(revalidate(c,'2031-01-04T15:00:01Z'));finalize(c,'sent','2031-01-04T15:00:02Z');assert.equal(claim(pending[0].id,'2031-01-04T15:01:00Z'),null);
@@ -78,6 +85,8 @@ try {
  console.log('PASS response/cancel/edit during processing; reschedule preserves sent identity');
  assert.equal(value(`select public.assignment_reminder_local_offset('2031-03-10 08:00 America/Denver','America/Denver',-3)`),'2031-03-07 15:00:00+00');
  assert.equal(value(`select public.assignment_reminder_local_offset('2031-11-02 17:00 America/Denver','America/Denver',-1)`),'2031-11-01 23:00:00+00');
+ assert.equal(value(`select public.assignment_reminder_local_offset('2031-03-12 02:30 America/Denver','America/Denver',-3)`),'2031-03-09 09:30:00+00');
+ assert.equal(value(`select public.assignment_reminder_local_offset('2031-11-03 01:30 America/Denver','America/Denver',-1)`),'2031-11-02 08:30:00+00');
  console.log('PASS project-local spring/fall DST arithmetic (not UTC-day subtraction)');
  configure();sync();const beforePreview=value(`select count(*) from public.communication_recipients where workspace_id=${q(f.ws)}`);
  const preview=JSON.parse(value(f.auth(`select public.read_assignment_reminders(${q(f.ws)})`)));assert.equal(preview.rows[0].destination.includes('***@'),true);assert.equal(value(`select count(*) from public.communication_recipients where workspace_id=${q(f.ws)}`),beforePreview);
@@ -131,8 +140,11 @@ try {
  fs.writeFileSync(new URL('../docs/audits/12-57-evidence/discovery-explain.json',import.meta.url),JSON.stringify(plan,null,2)+'\n');
  const duePlan=JSON.parse(value(`explain(analyze,format json) select id from public.assignment_reminder_occurrences where workspace_id=${q(f.ws)} and scheduling_state='active' and due_at between '2031-01-04T14:45Z' and '2031-01-04T15:00Z' order by due_at,id limit 20`));
  fs.writeFileSync(new URL('../docs/audits/12-57-evidence/due-explain.json',import.meta.url),JSON.stringify(duePlan,null,2)+'\n');
+ const claimPlan=JSON.parse(value(`explain(analyze,format json) select public.claim_assignment_reminder(${q(occurrences()[0].id)},'2031-01-04T15:00Z')`));
+ fs.writeFileSync(new URL('../docs/audits/12-57-evidence/claim-explain.json',import.meta.url),JSON.stringify(claimPlan,null,2)+'\n');
+ assert.equal(value(`select count(*) from public.assignment_reminder_events where workspace_id=${q(f.ws)} and event='claimed'`),'1');
  assert(plan[0].Plan['Actual Rows']<=200);assert(JSON.stringify(plan).includes('Index'));
- console.log(JSON.stringify({historicalAssignments:10000,discoveryMs:plan[0]['Execution Time'],dueMs:duePlan[0]['Execution Time'],actualRows:plan[0].Plan['Actual Rows']}));
+ console.log(JSON.stringify({historicalAssignments:10000,discoveryMs:plan[0]['Execution Time'],dueMs:duePlan[0]['Execution Time'],claimMs:claimPlan[0]['Execution Time'],actualRows:plan[0].Plan['Actual Rows']}));
 } finally {
  wipe();sql(`update public.assignment_reminder_activation set delivery_enabled=false,baseline_at=null`);await f.cleanup();
 }

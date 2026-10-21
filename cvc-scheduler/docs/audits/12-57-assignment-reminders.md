@@ -56,4 +56,6 @@ Migration `20261021120000_assignment_reminders_phase_a.sql` is local-only. Empty
 
 ## Verification
 
-Results and exact final SHA are reported after local gates. No production deployment, setup, secrets, cron, operational mutation or real provider calls are part of this phase.
+Completed local results, test boundaries, changed files and release limitations are recorded in [12-57-phase-a-verification.md](12-57-phase-a-verification.md). The final candidate is the Git commit containing that report. No production deployment, setup, secrets, cron, operational mutation or real provider calls are part of this phase.
+
+The restricted JWT role contract follows PostgREST's documented role impersonation model: https://docs.postgrest.org/en/stable/references/auth.html. No worker JWT was provisioned in production during implementation.

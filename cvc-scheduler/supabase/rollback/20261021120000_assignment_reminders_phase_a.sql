@@ -20,6 +20,7 @@ do $$ declare definition text; original text; begin
  if original=definition then raise exception 'History rollback target missing.';end if;
  execute definition;
 end $$;
+drop index if exists public.assignment_reminder_coverage_anchor;
 drop function public.run_assignment_reminder_worker(text,jsonb);
 drop function public.read_assignment_reminders(uuid);
 drop function public.assignment_reminder_report(uuid,timestamptz);

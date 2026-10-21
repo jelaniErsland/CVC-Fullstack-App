@@ -4,12 +4,12 @@
       "Node Type": "Limit",
       "Parallel Aware": false,
       "Async Capable": false,
-      "Startup Cost": 28451.67,
-      "Total Cost": 28452.17,
+      "Startup Cost": 28455.65,
+      "Total Cost": 28456.15,
       "Plan Rows": 200,
       "Plan Width": 16,
-      "Actual Startup Time": 0.216,
-      "Actual Total Time": 0.218,
+      "Actual Startup Time": 0.145,
+      "Actual Total Time": 0.146,
       "Actual Rows": 2,
       "Actual Loops": 1,
       "Plans": [
@@ -21,15 +21,15 @@
           "Async Capable": false,
           "Relation Name": "calendar_items",
           "Alias": "calendar_items",
-          "Startup Cost": 71.91,
-          "Total Cost": 460.29,
+          "Startup Cost": 75.89,
+          "Total Cost": 464.26,
           "Plan Rows": 3335,
           "Plan Width": 16,
-          "Actual Startup Time": 0.184,
-          "Actual Total Time": 0.184,
+          "Actual Startup Time": 0.113,
+          "Actual Total Time": 0.114,
           "Actual Rows": 1,
           "Actual Loops": 1,
-          "Recheck Cond": "((workspace_id = '764414e2-7eee-4255-a60d-5afd037fd2ed'::uuid) AND (start_date >= (('2031-01-01 15:00:00+00'::timestamp with time zone AT TIME ZONE (InitPlan 1).col1))::date) AND (lifecycle = 'active'::text))",
+          "Recheck Cond": "((workspace_id = 'b84e16a2-32dd-4ec2-8d04-579f038e7b0d'::uuid) AND (start_date >= (('2031-01-01 15:00:00+00'::timestamp with time zone AT TIME ZONE (InitPlan 1).col1))::date) AND (lifecycle = 'active'::text))",
           "Rows Removed by Index Recheck": 0,
           "Filter": "(publication_state = 'published'::text)",
           "Rows Removed by Filter": 0,
@@ -45,14 +45,14 @@
               "Relation Name": "workspaces",
               "Alias": "workspaces",
               "Startup Cost": 0,
-              "Total Cost": 1.1,
+              "Total Cost": 1.07,
               "Plan Rows": 1,
               "Plan Width": 15,
-              "Actual Startup Time": 0.006,
-              "Actual Total Time": 0.007,
+              "Actual Startup Time": 0.005,
+              "Actual Total Time": 0.005,
               "Actual Rows": 1,
               "Actual Loops": 1,
-              "Filter": "(id = '764414e2-7eee-4255-a60d-5afd037fd2ed'::uuid)",
+              "Filter": "(id = 'b84e16a2-32dd-4ec2-8d04-579f038e7b0d'::uuid)",
               "Rows Removed by Filter": 3
             },
             {
@@ -62,14 +62,14 @@
               "Async Capable": false,
               "Index Name": "calendar_items_workspace_start_idx",
               "Startup Cost": 0,
-              "Total Cost": 69.98,
+              "Total Cost": 73.98,
               "Plan Rows": 3335,
               "Plan Width": 0,
-              "Actual Startup Time": 0.177,
-              "Actual Total Time": 0.177,
+              "Actual Startup Time": 0.109,
+              "Actual Total Time": 0.109,
               "Actual Rows": 12,
               "Actual Loops": 1,
-              "Index Cond": "((workspace_id = '764414e2-7eee-4255-a60d-5afd037fd2ed'::uuid) AND (start_date >= (('2031-01-01 15:00:00+00'::timestamp with time zone AT TIME ZONE (InitPlan 1).col1))::date) AND (lifecycle = 'active'::text))"
+              "Index Cond": "((workspace_id = 'b84e16a2-32dd-4ec2-8d04-579f038e7b0d'::uuid) AND (start_date >= (('2031-01-01 15:00:00+00'::timestamp with time zone AT TIME ZONE (InitPlan 1).col1))::date) AND (lifecycle = 'active'::text))"
             }
           ]
         },
@@ -82,8 +82,8 @@
           "Total Cost": 27999.72,
           "Plan Rows": 3335,
           "Plan Width": 16,
-          "Actual Startup Time": 0.216,
-          "Actual Total Time": 0.216,
+          "Actual Startup Time": 0.144,
+          "Actual Total Time": 0.145,
           "Actual Rows": 2,
           "Actual Loops": 1,
           "Sort Key": [
@@ -103,8 +103,8 @@
               "Total Cost": 27847.25,
               "Plan Rows": 3335,
               "Plan Width": 16,
-              "Actual Startup Time": 0.203,
-              "Actual Total Time": 0.205,
+              "Actual Startup Time": 0.13,
+              "Actual Total Time": 0.131,
               "Actual Rows": 2,
               "Actual Loops": 1,
               "Inner Unique": false,
@@ -120,8 +120,8 @@
                   "Total Cost": 66.7,
                   "Plan Rows": 3335,
                   "Plan Width": 16,
-                  "Actual Startup Time": 0.185,
-                  "Actual Total Time": 0.185,
+                  "Actual Startup Time": 0.114,
+                  "Actual Total Time": 0.115,
                   "Actual Rows": 1,
                   "Actual Loops": 1
                 },
@@ -134,8 +134,8 @@
                   "Total Cost": 8.32,
                   "Plan Rows": 1,
                   "Plan Width": 16,
-                  "Actual Startup Time": 0.017,
-                  "Actual Total Time": 0.017,
+                  "Actual Startup Time": 0.014,
+                  "Actual Total Time": 0.015,
                   "Actual Rows": 2,
                   "Actual Loops": 1,
                   "Plans": [
@@ -148,8 +148,8 @@
                       "Total Cost": 8.32,
                       "Plan Rows": 1,
                       "Plan Width": 16,
-                      "Actual Startup Time": 0.016,
-                      "Actual Total Time": 0.017,
+                      "Actual Startup Time": 0.014,
+                      "Actual Total Time": 0.014,
                       "Actual Rows": 2,
                       "Actual Loops": 1,
                       "Sort Key": [
@@ -173,12 +173,12 @@
                           "Plan Rows": 1,
                           "Plan Width": 16,
                           "Actual Startup Time": 0.009,
-                          "Actual Total Time": 0.009,
+                          "Actual Total Time": 0.01,
                           "Actual Rows": 2,
                           "Actual Loops": 1,
                           "Index Cond": "(calendar_item_id = i.id)",
                           "Rows Removed by Index Recheck": 0,
-                          "Filter": "(workspace_id = '764414e2-7eee-4255-a60d-5afd037fd2ed'::uuid)",
+                          "Filter": "(workspace_id = 'b84e16a2-32dd-4ec2-8d04-579f038e7b0d'::uuid)",
                           "Rows Removed by Filter": 0
                         }
                       ]
@@ -191,8 +191,8 @@
         }
       ]
     },
-    "Planning Time": 0.63,
+    "Planning Time": 0.578,
     "Triggers": [],
-    "Execution Time": 0.271
+    "Execution Time": 0.196
   }
 ]

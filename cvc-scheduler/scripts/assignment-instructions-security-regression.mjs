@@ -52,9 +52,18 @@ assert(!/create\s+policy|alter\s+policy|read_volunteer_schedule|read_project_qui
 assert.match(migration, /calendar_item_instruction_version_check/);
 assert.match(migration, /using errcode = '40001', detail = 'calendar_item_edit_conflict'/);
 assert.match(migration, /using errcode = '40001', detail = 'task_preset_edit_conflict'/);
-const privacyMigration = readFileSync(new URL("../supabase/migrations/20260927120000_instruction_privacy.sql", import.meta.url), "utf8");
+// Normalize both operands before subtracting the extracted function body. Git
+// blobs can themselves contain CRLF; export alone does not guarantee LF here.
+const privacyMigration = readFileSync(new URL("../supabase/migrations/20260927120000_instruction_privacy.sql", import.meta.url), "utf8").replaceAll("\r", "");
 const deployedBearerMigration = readFileSync(new URL("../supabase/migrations/20260906130000_breakfast_lunch_system_presets.sql", import.meta.url), "utf8");
-const bearerBody = source => source.slice(source.indexOf("create or replace function public.read_project_quick_view_by_token"), source.indexOf("$;", source.indexOf("create or replace function public.read_project_quick_view_by_token")) + 3).replaceAll("\r", "");
+const bearerBody = source => {
+  const normalized = source.replaceAll("\r", "");
+  const start = normalized.indexOf("create or replace function public.read_project_quick_view_by_token");
+  const end = normalized.indexOf("$$;", start);
+  assert(start >= 0 && end > start, "Expected complete bearer function definition");
+  return normalized.slice(start, end + 3);
+};
+assert.equal(bearerBody(privacyMigration), bearerBody(privacyMigration.replaceAll("\n", "\r\n")), "Line endings must not change the extracted function contract");
 assert.equal(bearerBody(privacyMigration), bearerBody(deployedBearerMigration)
   .replace("'schedule_notes',item.schedule_notes", "'schedule_notes',null")
   .replace("'task_description',preset.description", "'task_description',null")

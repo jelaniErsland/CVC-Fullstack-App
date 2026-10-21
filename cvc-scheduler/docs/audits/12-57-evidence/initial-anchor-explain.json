@@ -1,0 +1,169 @@
+{
+  "historicalCoverage": 10000,
+  "before": [
+    {
+      "Plan": {
+        "Node Type": "Aggregate",
+        "Strategy": "Plain",
+        "Partial Mode": "Simple",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 237.31,
+        "Total Cost": 237.32,
+        "Plan Rows": 1,
+        "Plan Width": 8,
+        "Actual Startup Time": 0.33,
+        "Actual Total Time": 0.331,
+        "Actual Rows": 1,
+        "Actual Loops": 1,
+        "Plans": [
+          {
+            "Node Type": "Nested Loop",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Join Type": "Inner",
+            "Startup Cost": 0.29,
+            "Total Cost": 237.31,
+            "Plan Rows": 1,
+            "Plan Width": 8,
+            "Actual Startup Time": 0.329,
+            "Actual Total Time": 0.329,
+            "Actual Rows": 0,
+            "Actual Loops": 1,
+            "Inner Unique": true,
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "communication_assignment_coverage",
+                "Alias": "ac",
+                "Startup Cost": 0,
+                "Total Cost": 229,
+                "Plan Rows": 1,
+                "Plan Width": 16,
+                "Actual Startup Time": 0.329,
+                "Actual Total Time": 0.329,
+                "Actual Rows": 0,
+                "Actual Loops": 1,
+                "Filter": "(initially_unsent AND (assignment_id = 'a492b5aa-3d24-4cc5-af2a-354fdedbb146'::uuid))",
+                "Rows Removed by Filter": 10000
+              },
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "communication_recipients_pkey",
+                "Relation Name": "communication_recipients",
+                "Alias": "r",
+                "Startup Cost": 0.29,
+                "Total Cost": 8.3,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Actual Startup Time": 0,
+                "Actual Total Time": 0,
+                "Actual Rows": 0,
+                "Actual Loops": 0,
+                "Index Cond": "(id = ac.recipient_id)",
+                "Rows Removed by Index Recheck": 0,
+                "Filter": "(state = 'sent'::text)",
+                "Rows Removed by Filter": 0
+              }
+            ]
+          }
+        ]
+      },
+      "Planning Time": 0.219,
+      "Triggers": [],
+      "Execution Time": 0.346
+    }
+  ],
+  "after": [
+    {
+      "Plan": {
+        "Node Type": "Aggregate",
+        "Strategy": "Plain",
+        "Partial Mode": "Simple",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 12.61,
+        "Total Cost": 12.62,
+        "Plan Rows": 1,
+        "Plan Width": 8,
+        "Actual Startup Time": 0.01,
+        "Actual Total Time": 0.01,
+        "Actual Rows": 1,
+        "Actual Loops": 1,
+        "Plans": [
+          {
+            "Node Type": "Nested Loop",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Join Type": "Inner",
+            "Startup Cost": 0.57,
+            "Total Cost": 12.61,
+            "Plan Rows": 1,
+            "Plan Width": 8,
+            "Actual Startup Time": 0.009,
+            "Actual Total Time": 0.009,
+            "Actual Rows": 0,
+            "Actual Loops": 1,
+            "Inner Unique": true,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "assignment_reminder_coverage_anchor",
+                "Relation Name": "communication_assignment_coverage",
+                "Alias": "ac",
+                "Startup Cost": 0.29,
+                "Total Cost": 4.3,
+                "Plan Rows": 1,
+                "Plan Width": 16,
+                "Actual Startup Time": 0.009,
+                "Actual Total Time": 0.009,
+                "Actual Rows": 0,
+                "Actual Loops": 1,
+                "Index Cond": "(assignment_id = 'a492b5aa-3d24-4cc5-af2a-354fdedbb146'::uuid)",
+                "Rows Removed by Index Recheck": 0
+              },
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "communication_recipients_pkey",
+                "Relation Name": "communication_recipients",
+                "Alias": "r",
+                "Startup Cost": 0.29,
+                "Total Cost": 8.3,
+                "Plan Rows": 1,
+                "Plan Width": 24,
+                "Actual Startup Time": 0,
+                "Actual Total Time": 0,
+                "Actual Rows": 0,
+                "Actual Loops": 0,
+                "Index Cond": "(id = ac.recipient_id)",
+                "Rows Removed by Index Recheck": 0,
+                "Filter": "(state = 'sent'::text)",
+                "Rows Removed by Filter": 0
+              }
+            ]
+          }
+        ]
+      },
+      "Planning Time": 0.137,
+      "Triggers": [],
+      "Execution Time": 0.023
+    }
+  ]
+}

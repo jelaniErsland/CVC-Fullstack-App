@@ -1,5 +1,27 @@
 # Project Local function EXECUTE policy
 
+## 12.57 reminder-only system boundary (Phase A, local candidate)
+
+`run_assignment_reminder_worker(text,jsonb)` is the sole system-only signature.
+Only the non-login, non-inheriting, non-bypass-RLS role
+`project_local_reminder_worker` receives EXECUTE. `authenticator` may assume that
+role for a separately provisioned, signed, expiring server-held JWT, following
+PostgREST role impersonation. No JWT or production secret is created by migration.
+The role has no direct table access or ordinary admin RPC authority. It cannot
+activate delivery or mutate assignments/responses. PUBLIC/anon/authenticated/
+service_role cannot execute the worker entry. It is postgres-owned SECURITY
+DEFINER with empty search_path. Seven scheduling/context/claim/outcome helpers
+are owner-only SECURITY INVOKER functions. `read_assignment_reminders(uuid)` is
+an authenticated capability-checked read-only Communications projection.
+
+The exact inventory is 102: 10 shared anonymous, 1 anonymous-only,
+59 authenticated, 31 internal and 1 system-only. Every signature is explicitly
+classified, including worker EXECUTE; PUBLIC remains zero. The existing admin
+claim/finalize RPCs explicitly reject system reminder recipients. New reminder
+tables use RLS and FORCE RLS with no application-role policies/direct grants.
+Phase A's hosted worker has no provider adapter, in addition to the disabled
+database activation default.
+
 ## 12.53 assigned contact card
 
 `read_project_quick_view_assigned_contact(text,uuid,date)` is a read-only,

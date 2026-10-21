@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readdirSync } from "node:fs";
 import {
   anonymousFunctions, anonymousOnlyFunctions, authenticatedFunctions, internalFunctions,
-  migrationCreators, assertEffectiveFunctionPolicy, effectiveFunctionQuery,
+  migrationCreators, assertEffectiveFunctionPolicy, effectiveFunctionQuery, systemOnlyFunctions,
 } from "./function-privilege-policy.mjs";
 
 function sql(query, expectSuccess = true) {
@@ -23,6 +23,10 @@ assert.equal(output("select max(version) from supabase_migrations.schema_migrati
 assertEffectiveFunctionPolicy(assert, rows);
 // Prove that the invariant catches current privilege drift and missing grants.
 for (const [signature, key, value] of [
+  [systemOnlyFunctions[0], "authenticated", true],
+  [systemOnlyFunctions[0], "service_role", true],
+  [systemOnlyFunctions[0], "worker", false],
+  [authenticatedFunctions[0], "worker", true],
   [authenticatedFunctions[0], "anon", true],
   [internalFunctions[0], "authenticated", true],
   [anonymousFunctions[0], "anon", false],
