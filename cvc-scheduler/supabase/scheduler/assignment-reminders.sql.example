@@ -1,0 +1,16 @@
+-- REVIEW TEMPLATE ONLY. Not a migration; never run in Phase A production.
+-- Phase B requires owner-approved setup of pg_cron + pg_net, a private worker
+-- secret in Vault, and a short-lived narrowly scoped database JWT on the worker.
+-- Official contract: https://supabase.com/docs/guides/functions/schedule-functions
+-- Worker URL must be the reviewed canonical origin, HTTPS, /internal/reminders.
+-- Vault secrets are provisioned outside source control. Never log decrypted values.
+select cron.schedule('project-local-assignment-reminders','*/5 * * * *', $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name='project_local_reminder_worker_url'),
+    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ' ||
+      (select decrypted_secret from vault.decrypted_secrets where name='project_local_reminder_worker_secret')),
+    body := '{}'::jsonb, timeout_milliseconds := 10000
+  );
+$$);
+-- Review pg_net response/cron run status separately. A queued HTTP request alone
+-- does not prove a successful worker sweep. Duplicate jobs remain claim-safe.

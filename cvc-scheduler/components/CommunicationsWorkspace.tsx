@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Mail, CalendarDays, History } from "lucide-react";
 import { buildCommunicationMessage, type CommunicationPlan, type CommunicationHistory, type CommunicationActionState } from "@/lib/notifications/communications";
 import { finishConfirmedCommunication } from "@/lib/notifications/communicationBatches";
+import { AssignmentReminderHistory } from "@/components/AssignmentReminderHistory";
 import { useRememberedView } from "@/lib/adminViews/useRememberedView";
 import type { AdminViewScope, CommunicationsView } from "@/lib/adminViews/preferences";
 const field = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm";
@@ -110,6 +111,7 @@ export function CommunicationsWorkspace({ action, history: initialHistory, histo
   }
   const previewMessage = preview?.recipients[0] ? buildCommunicationMessage({ kind, workspaceName:preview.workspaceName, name:preview.recipients[0].name, assignments:preview.recipients[0].assignments, url:kind === "welcome" ? "https://projectlocal.app" : "[Private schedule link for this volunteer]" }) : null;
   return <div className="mt-6 space-y-5" data-communication-history-state={historyStatus}>
+    <AssignmentReminderHistory />
     <div className="grid gap-2 sm:grid-cols-3" role="tablist" aria-label="Communications sections">
       <button type="button" role="tab" aria-selected={activeTab==='welcome'} className={`${button} flex items-center gap-2 text-left ${activeTab==='welcome'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('welcome');setKind('welcome');setMode('new');setIds([]);setSelectionTouched(false);}}><Mail className="size-4 text-blue-600" /><span>Welcome emails<span className="block text-xs font-normal text-slate-600">{pendingWelcomeCount === undefined ? "Review new volunteers when ready" : `${pendingWelcomeCount} awaiting introduction`}</span></span></button>
       <button type="button" role="tab" aria-selected={activeTab==='schedule'} className={`${button} flex items-center gap-2 text-left ${activeTab==='schedule'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('schedule');setKind('schedule');setMode('new');setIds([]);setSelectionTouched(false);}}><CalendarDays className="size-4 text-blue-600" /><span>Schedule deliveries</span></button>

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:assignment-reminders": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-reminders-regression.mjs",
     "dev": "next dev --webpack",
     "build": "next build",
     "preview": "next start",

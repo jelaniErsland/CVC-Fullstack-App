@@ -18,6 +18,7 @@ export const anonymousOnlyFunctions = Object.freeze([
   "read_project_quick_view_assigned_contact(text,uuid,date)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "read_assignment_reminders(uuid)",
   "read_authorized_calendar_items(uuid,date,date)",
   "read_authorized_task_presets(uuid)",
   "can_view_calendar_item_operations(uuid,uuid)",
@@ -78,6 +79,13 @@ export const authenticatedFunctions = Object.freeze([
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "assignment_reminder_context(uuid,timestamp with time zone)",
+  "assignment_reminder_local_offset(timestamp with time zone,text,integer)",
+  "sync_assignment_reminder(uuid,timestamp with time zone)",
+  "claim_assignment_reminder(uuid,timestamp with time zone)",
+  "assignment_reminder_dispatch_context(uuid,uuid,timestamp with time zone)",
+  "finalize_assignment_reminder(uuid,uuid,text,text,timestamp with time zone)",
+  "assignment_reminder_report(uuid,timestamp with time zone)",
   "calendar_item_operational_insert()",
   "guard_explicit_draft_assignment()",
   "publish_draft_on_assignment()",
@@ -116,17 +124,19 @@ export const internalDefinerFunctions = Object.freeze([
   "verify_volunteer_schedule_lookup(text,text,text)",
 ]);
 export const migrationCreators = Object.freeze(["postgres"]);
+export const systemOnlyFunctions = Object.freeze(["run_assignment_reminder_worker(text,jsonb)"]);
 
 export function assertEffectiveFunctionPolicy(assert, rows, { historicalExclusions = [] } = {}) {
-  const expected = [...anonymousFunctions, ...anonymousOnlyFunctions, ...authenticatedFunctions, ...internalFunctions]
+  const expected = [...anonymousFunctions, ...anonymousOnlyFunctions, ...authenticatedFunctions, ...internalFunctions, ...systemOnlyFunctions]
     .filter(signature => !historicalExclusions.includes(signature)).sort();
   assert.deepEqual(rows.map(r => r.signature).sort(), expected, "Every public function must have an exact reviewed classification.");
   for (const row of rows) {
     assert.equal(row.owner, "postgres", row.signature + ": unreviewed creator/owner");
     assert.equal(row.public, false, row.signature + ": PUBLIC EXECUTE");
     assert.equal(row.anon, anonymousFunctions.includes(row.signature) || anonymousOnlyFunctions.includes(row.signature), row.signature + ": anon EXECUTE");
-    assert.equal(row.authenticated, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature), row.signature + ": authenticated EXECUTE");
-    assert.equal(row.service_role, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature), row.signature + ": service_role EXECUTE");
+    assert.equal(row.authenticated, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature) && !systemOnlyFunctions.includes(row.signature), row.signature + ": authenticated EXECUTE");
+    assert.equal(row.service_role, !internalFunctions.includes(row.signature) && !anonymousOnlyFunctions.includes(row.signature) && !systemOnlyFunctions.includes(row.signature), row.signature + ": service_role EXECUTE");
+    assert.equal(row.worker, systemOnlyFunctions.includes(row.signature), row.signature + ": reminder worker EXECUTE");
     assert.equal(row.definer, !internalFunctions.includes(row.signature) || internalDefinerFunctions.includes(row.signature), row.signature + ": execution context changed");
     assert.deepEqual(row.config, ['search_path=""'], row.signature + ": unsafe search_path");
   }
@@ -139,7 +149,8 @@ select jsonb_build_object(
  'public',exists(select 1 from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where a.grantee=0 and a.privilege_type='EXECUTE'),
  'anon',has_function_privilege('anon',p.oid,'EXECUTE'),
  'authenticated',has_function_privilege('authenticated',p.oid,'EXECUTE'),
- 'service_role',has_function_privilege('service_role',p.oid,'EXECUTE'))
+ 'service_role',has_function_privilege('service_role',p.oid,'EXECUTE'),
+ 'worker',has_function_privilege('project_local_reminder_worker',p.oid,'EXECUTE'))
 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
 where n.nspname='public' order by p.oid::regprocedure::text;
 `;

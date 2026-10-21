@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { authorizeReminderWorker, createReminderWorkerRpc } from '../lib/notifications/reminderWorker.server.ts';
+import { sendSingleRecipientMessage } from '../lib/notifications/singleRecipientTransport.server.ts';
+const secret='local-simulated-request-key-000000000000';
+assert(!authorizeReminderWorker(null,secret));assert(!authorizeReminderWorker('Bearer '+secret,undefined));assert(authorizeReminderWorker('Bearer '+secret,secret));assert(!authorizeReminderWorker('Bearer '+secret+'x',secret));
+let requests=0;const fakeFetch=async()=>{requests++;return new Response('{}');};
+const environment={NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'local-placeholder'};
+for(const role of ['anon','authenticated','service_role'])assert.throws(()=>createReminderWorkerRpc({...environment,REMINDER_DATABASE_JWT:'e30.'+Buffer.from(JSON.stringify({role,exp:9999999999})).toString('base64url')+'.fake'},fakeFetch));
+assert.equal(requests,0);
+const config={ok:true,transport:'resend',origin:'https://projectlocal.app',from:'Local test <test@example.invalid>',apiKey:'re_local_simulation_only'};
+const message={operationId:'11111111-1111-4111-8111-111111111111',recipientId:'22222222-2222-4222-8222-222222222222',attempt:1,email:'recipient@example.invalid',subject:'Simulated reminder',text:'Local fixture only',html:'<p>Local fixture only</p>'};
+let observedKey;
+const accepted=await sendSingleRecipientMessage(config,message,{fetch:async(_,options)=>{observedKey=options.headers['Idempotency-Key'];return new Response(JSON.stringify({id:'mock-accepted'}),{status:200});}});assert.equal(accepted.status,'accepted');assert(observedKey.includes(message.recipientId));
+for(const code of [400,422,429]) assert.equal((await sendSingleRecipientMessage(config,message,{fetch:async()=>new Response('',{status:code})})).status,'rejected');
+for(const scenario of [async()=>{throw new Error('simulated timeout');},async()=>new Response('',{status:500}),async()=>new Response('{}',{status:200})])assert.equal((await sendSingleRecipientMessage(config,message,{fetch:scenario})).status,'unknown');
+console.log('PASS constant-time worker authorization, wrong-role/expired configuration rejection, existing provider idempotency/outcome abstraction; network mocked only');
