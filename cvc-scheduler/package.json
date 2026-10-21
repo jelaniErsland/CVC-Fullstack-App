@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test:assignment-reminders": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-reminders-regression.mjs",
+    "test:assignment-reminders-preview": "node --no-warnings --experimental-strip-types scripts/assignment-reminders-preview-regression.mjs",
     "dev": "next dev --webpack",
     "build": "next build",
     "preview": "next start",

@@ -16,7 +16,21 @@ export type ReminderRow = {
   failure_code: string | null; eligible: boolean; reason: string;
   events: { id: number; event: string; happened_at: string; due_at: string; attempt: number }[];
 };
-export type ReminderReport = { enabled: boolean; baselineAt: string | null; rows: ReminderRow[] };
+export type ProspectiveReminder = {
+  id: string | null; source: 'hypothetical' | 'existing'; occurrence_key: string;
+  due_at: string; state: string; scheduling_state?: string;
+  attempt?: number | null; claimed_at?: string | null; finalized_at?: string | null; failure_code?: string | null;
+  events?: ReminderRow['events'];
+};
+export type ProspectiveAssignment = {
+  assignment_id: string; volunteer: string; assignment: string; response: string | null;
+  start_at: string | null; destination: string; classification: 'would_enroll' | 'existing' | 'excluded';
+  reason: string; reminders: ProspectiveReminder[];
+};
+export type ReminderReport = {
+  enabled: boolean; baselineAt: string | null; rows: ReminderRow[];
+  prospective: { at: string; timezone: string; scope: string; inspected: number; limit: number; nextAfter: string | null; rows: ProspectiveAssignment[] };
+};
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export function buildReminderMessage(c: ReminderContext, origin: string) {

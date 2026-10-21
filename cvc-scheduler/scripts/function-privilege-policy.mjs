@@ -18,7 +18,7 @@ export const anonymousOnlyFunctions = Object.freeze([
   "read_project_quick_view_assigned_contact(text,uuid,date)"
 ]);
 export const authenticatedFunctions = Object.freeze([
-  "read_assignment_reminders(uuid)",
+  "read_assignment_reminders(uuid,uuid)",
   "read_authorized_calendar_items(uuid,date,date)",
   "read_authorized_task_presets(uuid)",
   "can_view_calendar_item_operations(uuid,uuid)",
@@ -85,7 +85,7 @@ export const internalFunctions = Object.freeze([
   "claim_assignment_reminder(uuid,timestamp with time zone)",
   "assignment_reminder_dispatch_context(uuid,uuid,timestamp with time zone)",
   "finalize_assignment_reminder(uuid,uuid,text,text,timestamp with time zone)",
-  "assignment_reminder_report(uuid,timestamp with time zone)",
+  "assignment_reminder_report(uuid,timestamp with time zone,uuid)",
   "calendar_item_operational_insert()",
   "guard_explicit_draft_assignment()",
   "publish_draft_on_assignment()",

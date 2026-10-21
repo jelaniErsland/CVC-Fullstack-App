@@ -22,8 +22,8 @@ do $$ declare definition text; original text; begin
 end $$;
 drop index if exists public.assignment_reminder_coverage_anchor;
 drop function public.run_assignment_reminder_worker(text,jsonb);
-drop function public.read_assignment_reminders(uuid);
-drop function public.assignment_reminder_report(uuid,timestamptz);
+drop function public.read_assignment_reminders(uuid,uuid);
+drop function public.assignment_reminder_report(uuid,timestamptz,uuid);
 drop function public.finalize_assignment_reminder(uuid,uuid,text,text,timestamptz);
 drop function public.assignment_reminder_dispatch_context(uuid,uuid,timestamptz);
 drop function public.claim_assignment_reminder(uuid,timestamptz);

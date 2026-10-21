@@ -74,6 +74,9 @@ create table public.assignment_reminder_events (
 -- Due queue access, independent of historical deliveries. Plan verified in local regression.
 create index assignment_reminder_due on public.assignment_reminder_occurrences(workspace_id,due_at,id) where scheduling_state='active';
 create index assignment_reminder_events_history on public.assignment_reminder_events(occurrence_id,id desc);
+-- Bounded recent history is a separate access path from the active due queue.
+-- Historical-heavy preview regression retains EXPLAIN evidence for this index.
+create index assignment_reminder_history on public.assignment_reminder_occurrences(workspace_id,due_at desc,id);
 -- Measured on 10,000 historical coverage rows: 0.346ms sequential probe ->
 -- 0.023ms indexed probe. Avoid repeating a history scan for new enrollments.
 create index assignment_reminder_coverage_anchor on public.communication_assignment_coverage(assignment_id) where initially_unsent;
@@ -251,11 +254,96 @@ begin
  return p_outcome;
 end $$;
 
-create function public.assignment_reminder_report(p_workspace uuid,p_now timestamptz) returns jsonb
-language sql stable security invoker set search_path='' as $$
-select jsonb_build_object('enabled',(select delivery_enabled from public.assignment_reminder_activation where singleton),
- 'baselineAt',(select baseline_at from public.assignment_reminder_activation where singleton),
- 'rows',coalesce((select jsonb_agg(to_jsonb(t) order by t.eligible desc nulls last,t.due_at desc,t.id) from (
+-- SELECT-only planning contract. Only internal owner tests can inject p_now;
+-- the authorized UI wrapper always supplies statement_timestamp().
+create function public.assignment_reminder_report(p_workspace uuid,p_now timestamptz,p_after uuid default null) returns jsonb
+language plpgsql stable security invoker set search_path='' as $$
+declare candidate record; e public.assignment_reminder_enrollments%rowtype; prior record;
+ start_instant timestamptz; due timestamptz; anchor timestamptz; reason text; k text; d integer; n integer;
+ inspected integer:=0; last_id uuid; more boolean:=false; would_enroll boolean; zone text;
+ planning jsonb:='[]'; reminders jsonb; history jsonb; included uuid[]:='{}';
+begin
+ select timezone into zone from public.workspaces where id=p_workspace;
+ -- Start-date scope: today and future, including excluded assignments on those
+ -- items. No historical assignment walk. Read 100 assignments plus one sentinel.
+ for candidate in with future_items as materialized (
+   select id from public.calendar_items where workspace_id=p_workspace
+    and start_date>=(p_now at time zone zone)::date
+ ) select ca.id,ca.volunteer_profile_id,ca.lifecycle assignment_lifecycle,
+   v.full_name,v.email,v.lifecycle volunteer_lifecycle,v.readiness_status,
+   i.title_snapshot,i.lifecycle item_lifecycle,i.publication_state,i.schedule_kind,i.meal_kind,i.start_date,i.start_time,
+   r.response_status,w.lifecycle workspace_lifecycle
+ from future_items fi cross join lateral (
+   select id,workspace_id,calendar_item_id,volunteer_profile_id,lifecycle from public.calendar_assignments
+   where workspace_id=p_workspace and calendar_item_id=fi.id and (p_after is null or id>p_after) order by id limit 101
+ ) ca
+ join public.calendar_items i on i.id=ca.calendar_item_id and i.workspace_id=ca.workspace_id
+ join public.volunteer_profiles v on v.id=ca.volunteer_profile_id and v.workspace_id=ca.workspace_id
+ join public.workspaces w on w.id=ca.workspace_id
+ left join public.assignment_responses r on r.assignment_id=ca.id and r.workspace_id=ca.workspace_id
+ order by ca.id limit 101 loop
+   if inspected=100 then more:=true;exit;end if;
+   inspected:=inspected+1;last_id:=candidate.id;reminders:='[]';would_enroll:=false;
+   start_instant:=public.calendar_assignment_response_start_at(candidate.schedule_kind,candidate.start_date,candidate.start_time,zone);
+   reason:=case
+     when candidate.workspace_lifecycle<>'active' then 'Project is inactive'
+     when candidate.assignment_lifecycle<>'active' then 'Assignment is canceled or inactive'
+     when candidate.item_lifecycle<>'active' then 'Calendar item is inactive'
+     when candidate.publication_state<>'published' then 'Calendar item is unpublished'
+     when candidate.meal_kind is not null or candidate.schedule_kind not in ('timed','date_based') then 'Meal or information-only item'
+     when candidate.volunteer_lifecycle<>'active' or candidate.readiness_status<>'ready' then 'Volunteer is inactive or not ready'
+     when candidate.response_status='declined' then 'Volunteer declined'
+     when candidate.response_status is null or candidate.response_status not in ('confirmed','needs_response') then 'No actionable response state'
+     when start_instant is null or start_instant<=p_now then 'Assignment has already started'
+     when candidate.email is null or btrim(candidate.email) !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(btrim(candidate.email))>254 then 'No valid delivery destination'
+   end;
+   if reason is null then
+     select * into e from public.assignment_reminder_enrollments where workspace_id=p_workspace and assignment_id=candidate.id;
+     for d in select unnest(case when candidate.response_status='confirmed' then array[30,14,7,3,1] else array[0] end) loop
+       if candidate.response_status='confirmed' then
+         k:='shift:'||d;due:=public.assignment_reminder_local_offset(start_instant,zone,-d);
+       else
+         -- Existing enrollment retains its real anchor. Without enrollment this
+         -- is hypothetical activation NOW, never historical notification catch-up.
+         anchor:=coalesce(e.pending_anchor,p_now);
+         n:=greatest(1,((p_now at time zone zone)::date-(anchor at time zone zone)::date)/3);
+         due:=public.assignment_reminder_local_offset(anchor,zone,n*3);
+         if due<=p_now then n:=n+1;due:=public.assignment_reminder_local_offset(anchor,zone,n*3);end if;
+         k:='pending:'||n;
+       end if;
+       if due<=p_now or due>=start_instant then continue;end if;
+       select o.id,o.due_at,o.scheduling_state,r.state,r.attempt,r.claimed_at,r.finalized_at,r.failure_code into prior from public.assignment_reminder_occurrences o
+         left join public.communication_recipients r on r.id=o.recipient_id and r.workspace_id=o.workspace_id
+         where o.workspace_id=p_workspace and o.assignment_id=candidate.id and o.volunteer_id=candidate.volunteer_profile_id
+           and o.kind=case when candidate.response_status='confirmed' then 'shift' else 'response' end and o.occurrence_key=k;
+       if prior.id is not null then
+         included:=array_append(included,prior.id);
+         reminders:=reminders||jsonb_build_array(jsonb_build_object('id',prior.id,'source','existing','occurrence_key',k,'due_at',prior.due_at,
+           'state',coalesce(prior.state,prior.scheduling_state),'scheduling_state',prior.scheduling_state,
+           'attempt',prior.attempt,'claimed_at',prior.claimed_at,'finalized_at',prior.finalized_at,'failure_code',prior.failure_code,
+           'events',coalesce((select jsonb_agg(to_jsonb(h) order by h.id) from
+             (select ev.id,ev.event,ev.happened_at,ev.due_at,ev.attempt from public.assignment_reminder_events ev where ev.occurrence_id=prior.id order by ev.id desc limit 25) h),'[]')));
+       else
+         would_enroll:=true;
+         reminders:=reminders||jsonb_build_array(jsonb_build_object('id',null,'source','hypothetical','occurrence_key',k,'due_at',due,'state','Would enroll'));
+       end if;
+     end loop;
+     reason:=case when jsonb_array_length(reminders)=0 then
+       case when candidate.response_status='confirmed' then 'No remaining future confirmed threshold' else 'No future pending reminder before assignment start' end
+       when would_enroll then case when candidate.response_status='confirmed' then 'Future thresholds only; no catch-up' else 'Every 3 project-local days until start' end
+       else 'Existing occurrence identities; no duplicate enrollment' end;
+   end if;
+   planning:=planning||jsonb_build_array(jsonb_build_object('assignment_id',candidate.id,'volunteer',candidate.full_name,'assignment',candidate.title_snapshot,
+     'response',candidate.response_status,'start_at',start_instant,'destination',case when candidate.email is null then 'No email' else left(btrim(candidate.email),1)||'***@'||split_part(btrim(candidate.email),'@',2) end,
+     'classification',case when would_enroll then 'would_enroll' when jsonb_array_length(reminders)>0 then 'existing' else 'excluded' end,
+     'reason',reason,'reminders',reminders));
+ end loop;
+ -- Limit history BEFORE live context/audit calculation; the index avoids scanning
+ -- all historical deliveries. Existing identities on this planning page appear once.
+ with recent as materialized (
+   select * from public.assignment_reminder_occurrences where workspace_id=p_workspace order by due_at desc,id limit 200
+ )
+ select coalesce(jsonb_agg(to_jsonb(t) order by t.eligible desc nulls last,t.due_at desc,t.id),'[]') into history from (
  select o.id,o.assignment_id,o.kind,o.occurrence_key,o.due_at,o.scheduling_state,
    coalesce(c->>'name',v.full_name) volunteer,coalesce(c->>'title',i.title_snapshot) assignment,
    ar.response_status response,case when v.email is null then 'No email' else left(v.email,1)||'***@'||split_part(v.email,'@',2) end destination,
@@ -271,21 +359,27 @@ select jsonb_build_object('enabled',(select delivery_enabled from public.assignm
     when r.state='failed' and r.attempt>=3 then 'Retry limit reached'
     when o.due_at>p_now then 'Future occurrence' else 'Enrolled occurrence in dispatch window' end reason,
    coalesce((select jsonb_agg(to_jsonb(h) order by h.id) from (select ev.id,ev.event,ev.happened_at,ev.due_at,ev.attempt from public.assignment_reminder_events ev where ev.occurrence_id=o.id order by ev.id desc limit 25) h),'[]') events
- from public.assignment_reminder_occurrences o
+ from recent o
  join public.volunteer_profiles v on v.id=o.volunteer_id and v.workspace_id=o.workspace_id
  join public.calendar_assignments a on a.id=o.assignment_id and a.workspace_id=o.workspace_id
  join public.calendar_items i on i.id=a.calendar_item_id and i.workspace_id=o.workspace_id
  join public.assignment_responses ar on ar.assignment_id=a.id
  left join public.communication_recipients r on r.id=o.recipient_id
  left join lateral (select public.assignment_reminder_context(o.assignment_id,p_now) c) ctx on true
- where o.workspace_id=p_workspace order by eligible desc nulls last,o.due_at desc,o.id limit 200) t),'[]'))
-$$;
+ where not(o.id=any(included))) t;
+ return jsonb_build_object('enabled',(select delivery_enabled from public.assignment_reminder_activation where singleton),
+ 'baselineAt',(select baseline_at from public.assignment_reminder_activation where singleton),
+ 'prospective',jsonb_build_object('at',p_now,'timezone',zone,'scope','Assignments starting today or later in the project timezone',
+   'inspected',inspected,'limit',100,'nextAfter',case when more then last_id end,'rows',planning),
+ 'rows',history);
+end $$;
 
-create function public.read_assignment_reminders(p_workspace_id uuid) returns jsonb
-language plpgsql security definer set search_path='' as $$
+
+create function public.read_assignment_reminders(p_workspace_id uuid,p_after uuid default null) returns jsonb
+language plpgsql stable security definer set search_path='' as $$
 begin
  perform public.communication_actor(p_workspace_id);
- return public.assignment_reminder_report(p_workspace_id,statement_timestamp());
+ return public.assignment_reminder_report(p_workspace_id,statement_timestamp(),p_after);
 end $$;
 
 -- One RPC capability for a non-login system role. No access to ordinary admin RPCs
@@ -315,8 +409,6 @@ begin
    end loop;
    update public.assignment_reminder_activation set scan_cursors=case when count_value=200 then jsonb_set(scan_cursors,array[w::text],to_jsonb(cursor_id)) else scan_cursors-w::text end where singleton;
    return jsonb_build_object('evaluated',count_value,'after',case when count_value=200 then cursor_id end);
- elsif p_command='preview' then
-   return public.assignment_reminder_report((p_payload->>'workspaceId')::uuid,clock_at);
  elsif p_command='due' then
    select coalesce(jsonb_agg(id),'[]') into ids from (select o.id from public.assignment_reminder_occurrences o
     left join public.communication_recipients r on r.id=o.recipient_id where o.workspace_id=(p_payload->>'workspaceId')::uuid and o.scheduling_state='active'
@@ -353,12 +445,12 @@ do $$ declare s text; begin
  foreach s in array array['assignment_reminder_context(uuid,timestamp with time zone)',
  'assignment_reminder_local_offset(timestamp with time zone,text,integer)','sync_assignment_reminder(uuid,timestamp with time zone)',
  'claim_assignment_reminder(uuid,timestamp with time zone)','assignment_reminder_dispatch_context(uuid,uuid,timestamp with time zone)',
- 'finalize_assignment_reminder(uuid,uuid,text,text,timestamp with time zone)','assignment_reminder_report(uuid,timestamp with time zone)',
- 'read_assignment_reminders(uuid)','run_assignment_reminder_worker(text,jsonb)'] loop
+ 'finalize_assignment_reminder(uuid,uuid,text,text,timestamp with time zone)','assignment_reminder_report(uuid,timestamp with time zone,uuid)',
+ 'read_assignment_reminders(uuid,uuid)','run_assignment_reminder_worker(text,jsonb)'] loop
    execute 'alter function public.'||s||' owner to postgres';
    execute 'revoke all on function public.'||s||' from public,anon,authenticated,service_role,project_local_reminder_worker';
  end loop;
 end $$;
-grant execute on function public.read_assignment_reminders(uuid) to authenticated,service_role;
+grant execute on function public.read_assignment_reminders(uuid,uuid) to authenticated,service_role;
 grant execute on function public.run_assignment_reminder_worker(text,jsonb) to project_local_reminder_worker;
 commit;

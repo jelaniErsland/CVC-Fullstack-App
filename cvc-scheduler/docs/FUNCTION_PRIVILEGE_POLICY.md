@@ -11,7 +11,7 @@ The role has no direct table access or ordinary admin RPC authority. It cannot
 activate delivery or mutate assignments/responses. PUBLIC/anon/authenticated/
 service_role cannot execute the worker entry. It is postgres-owned SECURITY
 DEFINER with empty search_path. Seven scheduling/context/claim/outcome helpers
-are owner-only SECURITY INVOKER functions. `read_assignment_reminders(uuid)` is
+are owner-only SECURITY INVOKER functions. `read_assignment_reminders(uuid,uuid)` is
 an authenticated capability-checked read-only Communications projection.
 
 The exact inventory is 102: 10 shared anonymous, 1 anonymous-only,
