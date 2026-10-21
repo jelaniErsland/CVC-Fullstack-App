@@ -7,6 +7,7 @@ let requests=0;const fakeFetch=async()=>{requests++;return new Response('{}');};
 const environment={NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'local-placeholder'};
 for(const role of ['anon','authenticated','service_role'])assert.throws(()=>createReminderWorkerRpc({...environment,REMINDER_DATABASE_JWT:'e30.'+Buffer.from(JSON.stringify({role,exp:9999999999})).toString('base64url')+'.fake'},fakeFetch));
 assert.equal(requests,0);
+assert.throws(()=>createReminderWorkerRpc({...environment,REMINDER_DATABASE_JWT:'e30.'+Buffer.from(JSON.stringify({role:'project_local_reminder_worker',exp:1})).toString('base64url')+'.fake'},fakeFetch));
 const config={ok:true,transport:'resend',origin:'https://projectlocal.app',from:'Local test <test@example.invalid>',apiKey:'re_local_simulation_only'};
 const message={operationId:'11111111-1111-4111-8111-111111111111',recipientId:'22222222-2222-4222-8222-222222222222',attempt:1,email:'recipient@example.invalid',subject:'Simulated reminder',text:'Local fixture only',html:'<p>Local fixture only</p>'};
 let observedKey;

@@ -9,11 +9,19 @@ const migration=fs.readFileSync(new URL('../supabase/migrations/20261021120000_a
 const version='20261021120000';
 if(process.argv.includes('--replay')) sql(fs.readFileSync(new URL('../supabase/rollback/20261021120000_assignment_reminders_phase_a.sql',import.meta.url),'utf8'));
 const catalogue=()=>value(`select md5(string_agg(pg_get_functiondef(p.oid)||p.proowner::text||coalesce(p.proacl::text,''),'|' order by p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'`);
+const dataFingerprint=()=>value(`select string_agg(tablename||':'||(xpath('/row/hash/text()',query_to_xml(format('select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,''[]'')) hash from public.%I t',tablename),false,true,'')))[1]::text,'|' order by tablename) from pg_tables where schemaname='public'`);
+const securityFingerprint=()=>value(`select md5(jsonb_build_array(
+ (select jsonb_agg(jsonb_build_array(c.relname,c.relowner,c.relacl,c.relrowsecurity,c.relforcerowsecurity) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public'),
+ (select jsonb_agg(to_jsonb(p) order by tablename,policyname) from pg_policies p where schemaname='public'),
+ (select jsonb_agg(jsonb_build_array(conrelid::regclass::text,conname,pg_get_constraintdef(oid)) order by oid) from pg_constraint where connamespace='public'::regnamespace),
+ (select jsonb_agg(to_jsonb(a) order by oid) from pg_default_acl a)
+ )::text)`);
 if(value(`select exists(select 1 from supabase_migrations.schema_migrations where version='${version}')`)==='f') {
   assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'52');
-  const old=catalogue();
+  const old=catalogue(),oldData=dataFingerprint(),oldSecurity=securityFingerprint();
   const failed=sql(migration.replace(/commit;\s*$/,`insert into supabase_migrations.schema_migrations(version) values('${version}'); select 1/0; commit;`),true);
   assert.notEqual(failed.status,0);assert.equal(catalogue(),old);
+  assert.equal(dataFingerprint(),oldData);assert.equal(securityFingerprint(),oldSecurity);
   assert.equal(value(`select to_regclass('public.assignment_reminder_activation') is null`),'t');
   assert.equal(value(`select count(*) from supabase_migrations.schema_migrations`),'52');
   sql(migration.replace(/commit;\s*$/,`insert into supabase_migrations.schema_migrations(version,name,statements) values('${version}','assignment_reminders_phase_a','{}');commit;`));

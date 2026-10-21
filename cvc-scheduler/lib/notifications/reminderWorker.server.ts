@@ -16,9 +16,9 @@ export function createReminderWorkerRpc(environment: NodeJS.ProcessEnv = process
   // this local check additionally catches wrong provisioning before making any request.
   let claims: { role?: string; exp?: number };
   try { claims = JSON.parse(Buffer.from(credential.split('.')[1], 'base64url').toString()); } catch { throw new Error('Invalid reminder worker credential'); }
-  if (claims.role !== 'project_local_reminder_worker' || !claims.exp || claims.exp * 1000 <= Date.now()) throw new Error('Wrong reminder worker credential');
+  if (claims.role !== 'project_local_reminder_worker' || !Number.isFinite(claims.exp) || !claims.exp || claims.exp * 1000 <= Date.now()) throw new Error('Wrong reminder worker credential');
   const url = new URL('/rest/v1/rpc/run_assignment_reminder_worker', root);
-  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname))) throw new Error('Invalid worker database origin');
+  if (url.username || url.password || (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname)))) throw new Error('Invalid worker database origin');
   return async (command, payload = {}) => {
     const response = await request(url, { method: 'POST', headers: { apikey: apiKey, Authorization: `Bearer ${credential}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_command: command, p_payload: payload }), signal: AbortSignal.timeout(10000), cache: 'no-store', redirect: 'error' });
     if (!response.ok) throw new Error('Reminder database operation unavailable');
