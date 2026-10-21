@@ -18,6 +18,7 @@ export default async function WorkspaceAdminLayout({ children }: { children: Rea
       active="overview"
       workspaceName={ready?.workspace.displayName}
       destinations={ready ? adminDestinations(ready.capabilities) : ["overview"]}
+      commandCapabilities={ready?.capabilities ?? []}
       calendarWorkspaceKey={ready?.workspace.key ?? null}
     >
       {children}

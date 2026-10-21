@@ -18,6 +18,7 @@ import type { ReactNode, Ref } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
+import { AdminCommands, AdminCommandTrigger } from "@/components/AdminCommands";
 import type { AdminNavActive } from "@/components/AdminNav";
 import { AdminNavigationPendingIndicator } from "@/components/AdminNavigationPendingIndicator";
 import { AdminNavigationLink, AdminRouteCommit, AdminRouteCommitContext, AdminRouteHandoffContext, useAdminRouteHandoff } from "@/components/AdminRouteHandoff";
@@ -39,6 +40,7 @@ type AdminShellProps = {
   projectId?: string;
   workspaceName?: string;
   destinations?: readonly string[];
+  commandCapabilities?: readonly string[];
   calendarWorkspaceKey?: string | null;
   deriveActiveFromPathname?: boolean;
 };
@@ -352,6 +354,7 @@ function AdminShellFrame({
   onMobileMoreOpen,
   workspaceName,
   destinations = ["overview"],
+  commandCapabilities = [],
   calendarWorkspaceKey = null,
   deriveActiveFromPathname = false,
 }: AdminShellProps) {
@@ -449,6 +452,7 @@ function AdminShellFrame({
   return (
     <AdminRouteCommitContext.Provider value={handoff.commit}>
     <AdminRouteHandoffContext.Provider value={deriveActiveFromPathname ? handoff.begin : null}>
+    <AdminCommands destinations={destinations} capabilities={commandCapabilities} calendarHref={calendarHref}>
     <NeedsAttentionBadgeProvider enabled={destinations.includes("needs-attention")}>
     <PageShell as="div" className="bg-[var(--pl-canvas)]">
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -465,6 +469,7 @@ function AdminShellFrame({
               </p>
             </div>
             </div>
+            <AdminCommandTrigger compact />
           </div>
       </div>
 
@@ -472,6 +477,7 @@ function AdminShellFrame({
           <aside className="hidden border-r border-[var(--pl-border)] bg-white lg:block">
             <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-4 py-6">
               <AdminBrand />
+              <AdminCommandTrigger />
               <AdminNav active={visibleActive} workspaceName={visibleWorkspaceName} destinations={destinations} calendarHref={calendarHref} />
             </div>
           </aside>
@@ -512,6 +518,7 @@ function AdminShellFrame({
       />
     </PageShell>
     </NeedsAttentionBadgeProvider>
+    </AdminCommands>
     </AdminRouteHandoffContext.Provider>
     </AdminRouteCommitContext.Provider>
   );

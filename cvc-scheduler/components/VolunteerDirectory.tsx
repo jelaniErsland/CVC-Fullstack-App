@@ -220,6 +220,7 @@ export function VolunteerDirectory({
             className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search volunteers"
+            data-admin-shortcut="search"
             type="search"
             value={query}
           />
@@ -228,6 +229,7 @@ export function VolunteerDirectory({
         <label className="block">
           <span className="sr-only">Congregation</span>
           <select
+            data-admin-shortcut="filters"
             className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-medium text-[var(--pl-text)] outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
             onChange={(event) => setCongregation(event.target.value)}
             value={congregation}

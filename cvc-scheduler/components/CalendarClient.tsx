@@ -802,6 +802,7 @@ function CalendarWorkspaceHeader({
             </button>
             <button
               aria-label="Go to today"
+              data-admin-shortcut="today"
               className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border-x border-[var(--pl-border)] px-2.5 text-xs font-semibold text-[var(--pl-text)] transition hover:bg-[var(--pl-surface-subtle)] max-[240px]:min-h-7 max-[240px]:px-1.5 ${calmFocusRing}`}
               onClick={onNavigateToday}
               title="Go to today"
@@ -849,6 +850,7 @@ function CalendarWorkspaceHeader({
           </div>
           <button
             aria-label="Open calendar filters"
+            data-admin-shortcut="search filters"
             className={[
               `inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold transition ${calmFocusRing}`,
               activeFilterCount > 0
@@ -864,6 +866,7 @@ function CalendarWorkspaceHeader({
           </button>
           {canCreate ? (
             <button
+              data-admin-command-open="create"
               className={`inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[var(--pl-blue)] px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-[var(--pl-blue-deep)] max-[240px]:col-span-2 ${calmFocusRing}`}
               onClick={onCreate}
               type="button"
@@ -1159,6 +1162,7 @@ function FilterPanelContent({
               className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-800 outline-none placeholder:text-slate-400"
               onChange={(event) => onChange({ ...filters, search: event.target.value })}
               placeholder="Search Lunch, drywall, night watch..."
+              data-admin-opened-search
               type="search"
               value={filters.search ?? ""}
             />

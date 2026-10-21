@@ -730,6 +730,7 @@ export function TaskPresetManagement({
                   className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] pl-10 pr-3 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search tasks"
+                  data-admin-shortcut="search"
                   type="search"
                   value={query}
                 />
@@ -741,6 +742,7 @@ export function TaskPresetManagement({
                   className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--pl-muted)]"
                 />
                 <select
+                  data-admin-shortcut="filters"
                   className="min-h-[42px] w-full appearance-none rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white pl-9 pr-3 text-sm font-medium text-[var(--pl-text)] outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   onChange={(event) =>
                     setCategory(event.target.value as TaskManagementPreset["taskType"] | "all")

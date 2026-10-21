@@ -525,9 +525,11 @@ async function verifyStreamingNavigation(browser, containerName) {
     const payloads = prefetches;
     assert(payloads.length > 0, `Expected primary-route frame prefetch (${prefetches.length} responses observed).`);
     for (const payload of payloads) assert(!["Alex Rivera","populated-0@example.invalid","Gate Attendant","Night Watch"].some(value=>payload.body.includes(value)), `Private route data appeared in a ${payload.path} prefetch.`);
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox",{name:"Search commands"}).fill("go volunteers");
     runPsql(containerName, `update public.workspace_contact_grants set status = 'revoked', revoked_at = now() where workspace_id = ${workspaceIdSql("populated")};`);
     try {
-      await page.locator('nav[aria-label="Workspace navigation"] a[href="/admin/volunteers"]').click();
+      await page.getByRole("dialog",{name:"Command palette",exact:true}).getByRole("option",{name:/^Go to Volunteers/}).click();
       await page.getByText("Volunteer profiles are unavailable", {exact:true}).waitFor();
       assert.equal(await page.getByText("Alex Rivera", {exact:true}).count(), 0, "Prefetched navigation bypassed revoked access.");
     } finally {
@@ -678,7 +680,22 @@ try {
   seedData(containerName);
   const browser = await chromium.launch({ executablePath: browserExecutable, headless: true });
   try {
-    if (process.env.VERIFY_ADMIN_ROUTE_OWNERSHIP === "1") {
+    if (process.env.VERIFY_ADMIN_COMMANDS === "1") {
+      const { verifyAdminCommands } = await import("./admin-commands-browser-regression.mjs");
+      for (const [label,mobile] of [["populated",false],["populated",true],["partial",false]]) {
+        const result=await openOverview(browser,label,mobile?{width:390,height:844}:{width:1440,height:1000});
+        try { await verifyAdminCommands(result.page,{mobile,partial:label==="partial"}); assert.deepEqual(result.failures,[]); }
+        finally { await result.context.close(); }
+      }
+      const mac=await openOverview(browser,"populated",{width:1280,height:900},page=>page.addInitScript(()=>Object.defineProperty(navigator,"platform",{value:"MacIntel"})));
+      try {
+        assert(await mac.page.getByRole("button",{name:"Open command palette"}).filter({visible:true}).innerText().then(text=>text.includes("⌘ K")));
+        await mac.page.keyboard.press("Meta+k"); await mac.page.getByRole("dialog",{name:"Command palette",exact:true}).waitFor();
+        await mac.page.keyboard.press("Meta+k"); assert.equal(await mac.page.getByRole("dialog",{name:"Command palette",exact:true}).isVisible(),false);
+        assert.deepEqual(mac.failures,[]);
+      } finally { await mac.context.close(); }
+    }
+    else if (process.env.VERIFY_ADMIN_ROUTE_OWNERSHIP === "1") {
       for (const mobile of [false,true]) {
         const result=await openOverview(browser,"populated",mobile?{width:390,height:844}:{width:1440,height:1000});
         try { await verifyRouteOwnership(result.page,{mobile}); assert.deepEqual(result.failures,[]); }
