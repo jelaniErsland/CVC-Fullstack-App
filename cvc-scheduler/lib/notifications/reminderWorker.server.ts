@@ -1,6 +1,8 @@
 import 'server-only';
 import { timingSafeEqual } from 'node:crypto';
-import { sweepAssignmentReminders, type ReminderRpc } from './assignmentReminders.ts';
+import { sweepAssignmentReminders, type ReminderDelivery, type ReminderRpc } from './assignmentReminders.ts';
+import { readInitialAssignmentEmailConfiguration, type InitialAssignmentEmailConfiguration } from './initialAssignmentEmail.server.ts';
+import { sendSingleRecipientMessage } from './singleRecipientTransport.server.ts';
 
 export function authorizeReminderWorker(authorization: string | null, secret: string | undefined) {
   if (!secret || secret.length < 32 || secret.length > 256 || !authorization || authorization.length > 300) return false;
@@ -25,6 +27,34 @@ export function createReminderWorkerRpc(environment: NodeJS.ProcessEnv = process
     return response.json();
   };
 }
-export async function runDisabledReminderWorker() {
-  return sweepAssignmentReminders(createReminderWorkerRpc(), 'https://projectlocal.app');
+export function createReminderDelivery(configuration: InitialAssignmentEmailConfiguration, request: typeof fetch = fetch): ReminderDelivery | undefined {
+  if (!configuration.ok) return undefined;
+  return {
+    kind: 'provider',
+    send: (context, message) => sendSingleRecipientMessage(configuration, {
+      operationId: context.operationId, recipientId: context.recipientId, attempt: context.attempt,
+      email: context.email, ...message,
+    }, { fetch: request }),
+  };
+}
+
+export async function runReminderWorker(environment: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch) {
+  const configuration = readInitialAssignmentEmailConfiguration(environment);
+  const delivery = createReminderDelivery(configuration, request);
+  const stats = await sweepAssignmentReminders(createReminderWorkerRpc(environment, request), 'https://projectlocal.app', delivery);
+  return { ...stats, providerConfigured: configuration.ok };
+}
+
+export async function handleReminderWorker(request: Request, environment: NodeJS.ProcessEnv = process.env, requestProvider: typeof fetch = fetch) {
+  if (!authorizeReminderWorker(request.headers.get('authorization'), environment.REMINDER_WORKER_SECRET)) {
+    return new Response(null, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  }
+  try {
+    const stats = await runReminderWorker(environment, requestProvider);
+    console.info(JSON.stringify({ event: 'assignment_reminder_sweep', ...stats }));
+    return Response.json(stats, { headers: { 'Cache-Control': 'no-store' } });
+  } catch {
+    console.error(JSON.stringify({ event: 'assignment_reminder_sweep', failure: 'worker_unavailable', at: new Date().toISOString() }));
+    return Response.json({ error: 'Reminder sweep unavailable.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  }
 }

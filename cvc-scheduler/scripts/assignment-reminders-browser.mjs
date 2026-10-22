@@ -43,7 +43,7 @@ try {
   }
   const panel=page.getByRole('region',{name:'Automatic reminders',exact:true});await panel.waitFor();
   assert.equal(await panel.getByRole('heading',{name:'Preview reminders',exact:true}).isVisible(),false);
-  assert(await panel.getByText('Off',{exact:true}).isVisible());assert((await panel.innerText()).includes('not currently being sent'));
+  assert((await reminderTab.innerText()).includes('Off'));assert.equal(await panel.getByText('Off',{exact:true}).count(),0);assert.equal(await panel.getByRole('heading',{name:'Automatic reminders',exact:true}).count(),1);assert((await panel.innerText()).includes('not currently being sent'));
   const before=posts,ledgerBefore=value(`select count(*) from public.communication_recipients where workspace_id=${q(f.ws)}`);
   await screenshot('off');
   await panel.getByRole('button',{name:'Preview reminders',exact:true}).focus();await page.keyboard.press('Enter');
@@ -73,7 +73,7 @@ try {
   await page.unroute('**/admin/announcements*');await panel.getByRole('button',{name:'Retry preview',exact:true}).click();await panel.getByRole('button',{name:'Refresh preview',exact:true}).waitFor();
   // Local-only future On presentation and recorded outcome; no provider adapter.
   sql(`update public.assignment_reminder_activation set delivery_enabled=true,baseline_at=now();select public.sync_assignment_reminder(${q(id)},now());`);
-  await panel.getByRole('button',{name:'Refresh preview',exact:true}).click();await panel.getByRole('heading',{name:'Reminder schedule and history',exact:true}).waitFor();assert(await panel.getByText('On',{exact:true}).isVisible());
+  await panel.getByRole('button',{name:'Refresh preview',exact:true}).click();await panel.getByRole('heading',{name:'Reminder schedule and history',exact:true}).waitFor();assert((await reminderTab.innerText()).includes('On'));assert.equal(await panel.getByText('On',{exact:true}).count(),0);
   assert((await reminderTab.innerText()).includes('On'));await tabs.getByRole('tab',{name:'Delivery history',exact:true}).click();await reminderTab.click();assert((await reminderTab.innerText()).includes('On'));
   await screenshot('future-on');
   const occurrence=JSON.parse(value(`select jsonb_build_object('id',id,'due',due_at) from public.assignment_reminder_occurrences where assignment_id=${q(id)} and occurrence_key='shift:3'`));
