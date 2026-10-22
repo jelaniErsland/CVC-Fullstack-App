@@ -12,7 +12,7 @@ const titles: Record<Route, string> = { overview: "Overview", calendar: "Calenda
 export function AdminRouteLoading({ route, announce = true }: { route: Route; announce?: boolean }) {
   const title = titles[route];
   const controls = route === "calendar" ? ["Day", "Week", "Month", "List"]
-    : route === "announcements" ? ["Welcome emails", "Schedule deliveries", "Delivery history"]
+    : route === "announcements" ? ["Welcome emails", "Schedule deliveries", "Automatic reminders", "Delivery history"]
     : route === "needs-attention" ? ["General", "Food", "Security", "When", "Status"]
     : [];
   return (

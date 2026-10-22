@@ -17,7 +17,7 @@ export type CalendarViewPreference = Readonly<{
   view: "day" | "week" | "month" | "list" | null;
 }>;
 export type CommunicationsView = Readonly<{
-  tab: "welcome" | "schedule" | "history";
+  tab: "welcome" | "schedule" | "reminders" | "history";
   historyKind: "all" | "welcome" | "schedule";
   historyState: "all" | "sent" | "failed" | "pending";
   historyHorizon: "30" | "90" | "all";
@@ -70,7 +70,7 @@ export function validateAdminView<S extends AdminViewSurface>(surface: S, input:
     view: value.view === null || value.view === undefined ? null : oneOf(value.view, ["day", "week", "month", "list"], "month"),
   } as AdminViewMap[S];
   if (surface === "communications") return {
-    tab: oneOf(value.tab, ["welcome", "schedule", "history"], "welcome"),
+    tab: oneOf(value.tab, ["welcome", "schedule", "reminders", "history"], "welcome"),
     historyKind: oneOf(value.historyKind, ["all", "welcome", "schedule"], "all"),
     historyState: oneOf(value.historyState, ["all", "sent", "failed", "pending"], "all"),
     historyHorizon: oneOf(value.historyHorizon, ["30", "90", "all"], "30"),

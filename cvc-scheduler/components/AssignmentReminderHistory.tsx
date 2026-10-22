@@ -27,7 +27,7 @@ function RecordedDelivery({ row, timezone }: { row: RecordedReminder; timezone: 
   </details>;
 }
 
-export function AssignmentReminderHistory({ initialEnabled = false }: { initialEnabled?: boolean }) {
+export function AssignmentReminderHistory({ initialEnabled = false, onEnabledChange }: { initialEnabled?: boolean; onEnabledChange?: (enabled: boolean) => void }) {
   const [report, setReport] = useState<ReminderReport | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -44,7 +44,7 @@ export function AssignmentReminderHistory({ initialEnabled = false }: { initialE
       const result = await Promise.race([readReminderPreview(after), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 15000); })]);
       if (request.current !== id) return;
       if ('error' in result) setError('Reminders could not be loaded. Please try again.');
-      else { setReport(result.report); setCursor(after); }
+      else { setReport(result.report); setCursor(after); onEnabledChange?.(result.report.enabled); }
     } catch {
       if (request.current === id) setError('Reminders could not be loaded. Please try again.');
     } finally {

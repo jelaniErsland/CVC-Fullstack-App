@@ -32,6 +32,9 @@ writeAdminView(storage, scope, "calendar", { ...defaultAdminViews.calendar, task
 assert.equal(readAdminView(storage, scope, "calendar").volunteerId, contactB);
 writeAdminView(storage, scope, "communications", { ...defaultAdminViews.communications, tab: "history", historyState: "failed" });
 assert.equal(readAdminView(storage, scope, "communications").historyState, "failed");
+writeAdminView(storage, scope, "communications", { ...defaultAdminViews.communications, tab: "reminders" });
+assert.equal(readAdminView(storage, scope, "communications").tab, "reminders");
+assert.equal(readAdminView(storage, { ...scope, workspaceId: projectB }, "communications").tab, "welcome");
 writeAdminView(storage, scope, "assignment-picker", { congregation: "East", availability: "away" });
 assert.deepEqual(readAdminView(storage, scope, "assignment-picker"), { congregation: "East", availability: "away" });
 assert(!JSON.stringify([...contents.values()]).includes("selectedVolunteers"));
