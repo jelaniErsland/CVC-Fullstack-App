@@ -1,19 +1,40 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { readReminderPreview } from '@/lib/notifications/reminders.actions';
-import { reminderLabel, type ReminderReport } from '@/lib/notifications/assignmentReminders';
+import { reminderLabel, type ReminderReport, type ReminderRow } from '@/lib/notifications/assignmentReminders';
 
 function when(value: string, timezone: string) {
   return new Intl.DateTimeFormat('en-US', { timeZone: timezone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
 }
-const responseLabel = (value: string | null) => value === 'needs_response' ? 'Awaiting response' : value ?? 'Response unavailable';
+const responseLabel = (value: string | null) => ({ needs_response: 'Awaiting response', confirmed: 'Confirmed', declined: 'Declined' })[value ?? ''] ?? 'Response unavailable';
+const statusLabel = (value: string) => ({ sent: 'Sent', failed: 'Failed', unknown: 'Delivery status unknown', sending: 'Sending', ready: 'Waiting to send', active: 'Scheduled', superseded: 'Schedule changed', canceled: 'Canceled', invalid_destination: 'Delivery address unavailable', expired: 'Delivery window passed', excluded: 'No longer eligible' })[value] ?? value.replaceAll('_', ' ');
+const reasonLabel = (value: string) => ({
+  'No future pending reminder before assignment start': 'Assignment begins before another reminder would be due.',
+  'No remaining future confirmed threshold': 'No remaining reminder before this assignment.',
+  'No valid delivery destination': 'No valid email address is available.',
+  'No actionable response state': 'No response reminder is needed for the current response.',
+  'Volunteer is inactive or not ready': 'Volunteer is inactive or not ready to serve.',
+})[value] ?? value;
+type RecordedReminder = Pick<ReminderRow, 'id' | 'volunteer' | 'assignment' | 'occurrence_key' | 'due_at' | 'attempt' | 'finalized_at' | 'failure_code' | 'events'> & { state: string };
 
-export function AssignmentReminderHistory() {
+function RecordedDelivery({ row, timezone }: { row: RecordedReminder; timezone: string }) {
+  return <details className="rounded-xl border border-slate-200 p-3 text-sm">
+    <summary className="min-h-11 cursor-pointer break-words py-1 font-medium">{row.volunteer} · {row.assignment}<span className="mt-1 block font-normal text-slate-600">{reminderLabel(row.occurrence_key)} · {statusLabel(row.state)}</span></summary>
+    <dl className="mt-2 space-y-2 break-words"><div><dt className="font-medium">Scheduled for</dt><dd><time dateTime={row.due_at}>{when(row.due_at, timezone)}</time></dd></div>{row.finalized_at && <div><dt className="font-medium">{row.state === 'sent' ? 'Sent' : 'Last result'}</dt><dd><time dateTime={row.finalized_at}>{when(row.finalized_at, timezone)}</time></dd></div>}<div><dt className="inline font-medium">Delivery attempts: </dt><dd className="inline">{row.attempt ?? 0}</dd></div></dl>
+    {(row.state === 'unknown' || row.state === 'sending') && <p className="mt-3 text-amber-800">Delivery needs review. Automatic retry is paused until the outcome is known.</p>}
+    {row.failure_code && row.state === 'failed' && <p className="mt-3 text-rose-700">Delivery failed. Review the email address and delivery details.</p>}
+    {!!row.events.length && <details className="mt-3"><summary className="min-h-11 cursor-pointer py-3 text-slate-600">Delivery details</summary><ul className="space-y-2">{row.events.map(event => <li key={event.id}>{event.event === 'claimed' ? 'Processing started' : event.event === 'rescheduled' ? 'Rescheduled' : statusLabel(event.event)} · <time dateTime={event.happened_at}>{when(event.happened_at, timezone)}</time></li>)}</ul></details>}
+  </details>;
+}
+
+export function AssignmentReminderHistory({ initialEnabled = false }: { initialEnabled?: boolean }) {
   const [report, setReport] = useState<ReminderReport | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const request = useRef(0);
+  const panelId = useId();
   useEffect(() => () => { request.current++; }, []);
   async function load(after: string | null = null) {
     const id = ++request.current;
@@ -22,61 +43,52 @@ export function AssignmentReminderHistory() {
     try {
       const result = await Promise.race([readReminderPreview(after), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 15000); })]);
       if (request.current !== id) return;
-      if ('error' in result) setError(result.error);
+      if ('error' in result) setError('Reminders could not be loaded. Please try again.');
       else { setReport(result.report); setCursor(after); }
     } catch {
-      if (request.current === id) setError('Reminder preview could not be loaded. Try again.');
+      if (request.current === id) setError('Reminders could not be loaded. Please try again.');
     } finally {
       if (timer) clearTimeout(timer);
       if (request.current === id) setPending(false);
     }
   }
-  return <details aria-busy={pending} className="rounded-2xl border border-slate-200 bg-white p-4" onToggle={event => { if (event.currentTarget.open && !report && !pending && !error) void load(); }}>
-    <summary className="cursor-pointer py-2 font-semibold">Automatic reminders <span className="ml-2 text-xs font-normal text-slate-600">Delivery disabled · Phase A</span></summary>
-    <p className="mt-2 text-sm text-slate-600">Response reminders every 3 days; confirmed work at 30, 14, 7, 3 and 1 day. This preview does not schedule or send anything.</p>
-    <button type="button" disabled={pending} onClick={() => void load()} className="mt-3 min-h-11 rounded-xl border border-slate-200 px-3 text-sm font-semibold disabled:opacity-50">{pending ? 'Loading reminders…' : error ? 'Retry preview' : 'Refresh reminder preview'}</button>
-    {pending && <p role="status" className="mt-2 text-sm">Loading reminder history and preview…</p>}
-    {error && <p role="alert" className="mt-2 text-sm text-rose-700">{error}</p>}
-    {report && <div className="mt-4 space-y-3">
-      <h2 className="font-semibold">Preview if activated now</h2>
-      <p className="text-sm text-slate-600">Hypothetical planning at <time dateTime={report.prospective.at}>{when(report.prospective.at, report.prospective.timezone)}</time> ({report.prospective.timezone}). {report.baselineAt ? 'Existing enrollment and delivery records are shown as recorded.' : 'No activation baseline exists. These results are not enrolled.'}</p>
-      <p className="text-xs text-slate-600">{report.prospective.scope}. {report.prospective.inspected} assignments inspected on this page; up to {report.prospective.limit} per read. Each page uses fresh server time.</p>
-      {!report.prospective.rows.length && <p className="text-sm text-slate-600">No assignments in this preview page.</p>}
-      {(['would_enroll', 'existing', 'excluded'] as const).map(group => {
-        const rows = report.prospective.rows.filter(row => row.classification === group);
-        if (!rows.length) return null;
-        const label = group === 'would_enroll' ? 'Would enroll' : group === 'existing' ? 'Existing occurrences' : 'Excluded';
-        return <details key={group} open={group === 'would_enroll'} className="rounded-xl bg-slate-50 p-3 text-sm">
-          <summary className="cursor-pointer py-1 font-semibold">{label} · {rows.length}</summary>
-          <ul className="mt-3 space-y-3">{rows.map(row => <li key={row.assignment_id} className="break-words border-t border-slate-200 pt-3">
-            <p><strong>{row.volunteer}</strong> · {row.assignment}</p>
-            {row.start_at && <p className="mt-1 text-slate-600">Starts <time dateTime={row.start_at}>{when(row.start_at, report.prospective.timezone)}</time></p>}
-            <p className="mt-1 text-slate-600">{responseLabel(row.response)} · {row.destination}</p>
-            <p className="mt-1 text-slate-600">{row.reason}</p>
-            <ul className="mt-2 space-y-1">{row.reminders.map(reminder => <li key={reminder.occurrence_key}>
-              {reminder.source === 'hypothetical' ? <span>{reminderLabel(reminder.occurrence_key)} · <time dateTime={reminder.due_at}>{when(reminder.due_at, report.prospective.timezone)}</time> · Would enroll</span> : <details>
-                <summary className="cursor-pointer py-1">{reminderLabel(reminder.occurrence_key)} · <time dateTime={reminder.due_at}>{when(reminder.due_at, report.prospective.timezone)}</time> · Recorded: {reminder.state.replaceAll('_', ' ')}{reminder.scheduling_state !== reminder.state ? ` (${reminder.scheduling_state})` : ''}</summary>
-                <p className="mt-1 text-slate-600">Attempts: {reminder.attempt ?? 0}{reminder.finalized_at ? ` · Last outcome: ${when(reminder.finalized_at, report.prospective.timezone)}` : ''}</p>
-                {reminder.failure_code && <p className="mt-1 text-slate-600">{reminder.state === 'unknown' ? 'Automatic retry blocked; reconcile provider outcome.' : 'Review delivery destination and provider configuration.'}</p>}
-                <ul className="mt-2 space-y-1">{reminder.events?.map(event => <li key={event.id}>{event.event} · attempt {event.attempt} · <time dateTime={event.happened_at}>{when(event.happened_at, report.prospective.timezone)}</time></li>)}</ul>
-              </details>}
-            </li>)}</ul>
-          </li>)}</ul>
-        </details>;
-      })}
-      {(cursor || report.prospective.nextAfter) && <div className="flex flex-wrap gap-2">
-        {cursor && <button type="button" disabled={pending} onClick={() => void load()} className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm">First page</button>}
-        {report.prospective.nextAfter && <button type="button" disabled={pending} onClick={() => void load(report.prospective.nextAfter)} className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm">Next assignments</button>}
+  const enabled = report?.enabled ?? initialEnabled;
+  const planned = report?.prospective.rows ?? [];
+  const response = planned.filter(row => row.classification === 'would_enroll' && row.response === 'needs_response');
+  const confirmed = planned.filter(row => row.classification === 'would_enroll' && row.response === 'confirmed');
+  const excluded = planned.filter(row => row.classification === 'excluded');
+  const existing = planned.filter(row => row.classification === 'existing');
+  const groups = [['Response reminders', response], ['Upcoming assignment reminders', confirmed], ['Assignments with reminder history', existing], ['Excluded', excluded]] as const;
+  const history = new Map<string, RecordedReminder>();
+  for (const row of report?.rows ?? []) history.set(row.id, { ...row, state: row.state ?? row.scheduling_state });
+  for (const row of planned) for (const reminder of row.reminders) {
+    if (reminder.source === 'existing' && reminder.id) history.set(reminder.id, { ...reminder, id: reminder.id, volunteer: row.volunteer, assignment: row.assignment, attempt: reminder.attempt ?? null, finalized_at: reminder.finalized_at ?? null, failure_code: reminder.failure_code ?? null, events: reminder.events ?? [] });
+  }
+  return <section aria-label="Automatic reminders" className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="flex items-center justify-between gap-3"><h2 className="font-semibold text-slate-950">Automatic reminders</h2><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${enabled ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>{enabled ? 'On' : 'Off'}</span></div>
+    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{enabled ? 'Project Local automatically reminds volunteers who still need to respond and reminds confirmed volunteers as their assignments approach.' : 'Automatic reminders are not currently being sent. Preview which volunteers would receive reminders if you turned them on.'}</p>
+    <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => { setOpen(!open); if (!open && !report && !pending && !error) void load(); }} className="mt-3 min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{open ? enabled ? 'Close reminder schedule' : 'Close preview' : enabled ? 'View reminder schedule and history' : 'Preview reminders'}</button>
+    <div id={panelId} hidden={!open} aria-busy={pending} className="mt-5 border-t border-slate-200 pt-5">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{enabled ? 'Reminder schedule and history' : 'Preview reminders'}</h3><p className="mt-1 text-sm text-slate-600">{enabled ? 'Upcoming reminders and recorded deliveries.' : 'If reminders were turned on now'}</p></div><button type="button" disabled={pending} onClick={() => void load(cursor)} className="min-h-11 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium disabled:opacity-50">{pending ? 'Loading reminders…' : error ? 'Retry preview' : 'Refresh preview'}</button></div>
+      {!enabled && <p className="mt-3 text-sm text-slate-600">This preview does not schedule or send anything. It does not turn on reminders.</p>}
+      {pending && <p role="status" className="mt-3 text-sm text-slate-600">Loading reminder preview…</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}{report ? ' The previous preview is still shown below.' : ''}</p>}
+      {report && <div className="mt-4 space-y-4">
+        <p className="text-xs leading-relaxed text-slate-500">{report.prospective.inspected} assignments on this page · Times in {report.prospective.timezone}. Previewed <time dateTime={report.prospective.at}>{when(report.prospective.at, report.prospective.timezone)}</time>. Each page is checked separately.</p>
+        {!enabled && <div className="grid grid-cols-2 gap-3">{[['Still need to respond', response.length, 'assignments'], ['Confirmed assignments', confirmed.length, 'with upcoming reminders']].map(([title, count, text]) => <div key={title} className="rounded-xl bg-slate-50 p-3"><h4 className="text-sm font-medium text-slate-700">{title}</h4><p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{count}</p><p className="mt-1 text-xs text-slate-600">{text}</p></div>)}</div>}
+        {!planned.length && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No upcoming assignments to preview.</p>}
+        {groups.map(([title, rows]) => rows.length ? <details key={title} open={title === 'Response reminders'} className="rounded-xl border border-slate-200 p-3 text-sm"><summary className="min-h-11 cursor-pointer py-3 font-semibold">{title} · {rows.length}</summary><ul className="divide-y divide-slate-100">{rows.map(row => <li key={row.assignment_id} className="break-words py-4 first:pt-2">
+          <p className="font-semibold text-slate-950">{row.volunteer} <span className="font-normal text-slate-500">· {row.assignment}</span></p>
+          {row.start_at && <p className="mt-1 text-slate-600">Assignment: <time dateTime={row.start_at}>{when(row.start_at, report.prospective.timezone)}</time></p>}
+          <p className="mt-1 text-xs text-slate-500">{responseLabel(row.response)} · {row.destination}</p>
+          {row.classification === 'excluded' && <p className="mt-2 text-slate-600">{reasonLabel(row.reason)}</p>}
+          {!!row.reminders.filter(r => r.source === 'hypothetical').length && <div className="mt-3"><p className="text-xs font-medium text-slate-600">{row.response === 'needs_response' ? 'Would receive first response reminder' : 'Upcoming reminders'}</p><ul className="mt-1 space-y-1">{row.reminders.filter(r => r.source === 'hypothetical').map(reminder => <li key={reminder.occurrence_key}><time dateTime={reminder.due_at}>{when(reminder.due_at, report.prospective.timezone)}</time>{row.response === 'confirmed' && <span className="text-xs text-slate-500"> · {reminderLabel(reminder.occurrence_key)}</span>}</li>)}</ul></div>}
+          {row.reminders.some(r => r.source === 'existing') && <p className="mt-2 text-xs text-slate-500">Previously recorded reminders appear in Reminder history below.</p>}
+        </li>)}</ul></details> : null)}
+        {(cursor || report.prospective.nextAfter) && <div className="flex flex-wrap gap-2">{cursor && <button type="button" disabled={pending} onClick={() => void load()} className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm disabled:opacity-50">First page</button>}{report.prospective.nextAfter && <button type="button" disabled={pending} onClick={() => void load(report.prospective.nextAfter)} className="min-h-11 rounded-xl border border-slate-200 px-3 text-sm disabled:opacity-50">Next assignments</button>}</div>}
+        <details className="rounded-xl border border-slate-200 p-3 text-sm"><summary className="min-h-11 cursor-pointer py-3 font-semibold">Reminder history{history.size ? ` · ${history.size}` : ''}</summary>{!history.size ? <p className="pb-2 text-slate-600">No reminders have been sent yet.</p> : <div className="space-y-2">{[...history.values()].sort((a, b) => b.due_at.localeCompare(a.due_at) || a.id.localeCompare(b.id)).map(row => <RecordedDelivery key={row.id} row={row} timezone={report.prospective.timezone} />)}</div>}<p className="mt-2 text-xs text-slate-500">Recent deliveries for this project. Previously sent reminders are not sent again.</p></details>
+        <details className="text-sm text-slate-600"><summary className="min-h-11 cursor-pointer py-3 font-medium">Reminder timing</summary><dl className="space-y-3 pb-2"><div><dt className="font-medium text-slate-800">Response reminders</dt><dd className="mt-1">Every 3 days at 9:00 AM until the volunteer responds or the assignment begins.</dd></div><div><dt className="font-medium text-slate-800">Confirmed assignments</dt><dd className="mt-1">30 days, 2 weeks, 1 week and 3 days before at 9:00 AM, plus a final reminder at 5:00 PM the day before. All times use the project timezone.</dd></div></dl></details>
       </div>}
-      <details className="rounded-xl border border-slate-200 p-3 text-sm">
-        <summary className="cursor-pointer py-1 font-semibold">Recorded reminder history · {report.rows.length}</summary>
-        {!report.rows.length && <p className="mt-2 text-slate-600">No additional reminder history to show.</p>}
-        {report.rows.map(row => <details key={row.id} className="mt-3 rounded-xl bg-slate-50 p-3"><summary className="cursor-pointer break-words"><strong>{row.volunteer}</strong> · {row.assignment}<span className="mt-1 block text-slate-600">{reminderLabel(row.occurrence_key)} · {row.state ?? row.scheduling_state} · {row.reason}</span></summary>
-          <dl className="mt-3 space-y-1 break-words"><div><dt className="inline font-medium">Occurrence: </dt><dd className="inline">{row.occurrence_key}</dd></div><div><dt className="inline font-medium">Due: </dt><dd className="inline"><time dateTime={row.due_at}>{when(row.due_at, report.prospective.timezone)}</time></dd></div><div><dt className="inline font-medium">Response: </dt><dd className="inline">{responseLabel(row.response)}</dd></div><div><dt className="inline font-medium">Destination: </dt><dd className="inline">{row.destination}</dd></div><div><dt className="inline font-medium">Attempts: </dt><dd className="inline">{row.attempt ?? 0}</dd></div>{row.finalized_at && <div><dt className="inline font-medium">Last outcome: </dt><dd className="inline"><time dateTime={row.finalized_at}>{when(row.finalized_at, report.prospective.timezone)}</time></dd></div>}{row.failure_code && <div><dt className="inline font-medium">Failure: </dt><dd className="inline">{row.failure_code === 'provider_outcome_unknown' ? 'Automatic retry blocked; reconcile provider outcome.' : 'Review the delivery destination and provider configuration.'}</dd></div>}</dl>
-          <ul className="mt-3 space-y-1">{row.events.map(event => <li key={event.id}>{event.event} · attempt {event.attempt} · <time dateTime={event.happened_at}>{when(event.happened_at, report.prospective.timezone)}</time></li>)}</ul>
-        </details>)}
-        <p className="mt-3 text-xs text-slate-600">Up to 200 recent occurrences, excluding identities already shown above; 25 events per occurrence. No manual reminder send is available.</p>
-      </details>
-    </div>}
-  </details>;
+    </div>
+  </section>;
 }

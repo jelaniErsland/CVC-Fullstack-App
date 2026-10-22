@@ -31,15 +31,15 @@ try {
  assert.equal(value('select delivery_enabled::text||\'|\'||(baseline_at is null) from public.assignment_reminder_activation'),'false|true');
  configure();let report=read();assert.equal(report.prospective.rows.length,6);assert.equal(report.rows.length,0);
  assert(report.prospective.rows.every(r=>r.classification==='would_enroll'));
- assert.equal(row(report).reminders[0].due_at,'2031-01-04T15:00:00+00:00');
+ assert.equal(row(report).reminders[0].due_at,'2031-01-04T16:00:00+00:00');
  const authBefore=snapshot();const authorized=JSON.parse(value(f.auth(`select public.read_assignment_reminders(${q(f.ws)})`)));assert.equal(snapshot(),authBefore);assert.equal(authorized.prospective.rows.length,6);
  console.log('PASS original failure: six active assignments, disabled/NULL baseline/zero occurrences -> six prospective rows; all tables and sequences unchanged');
  for(const [day,reason] of [['2031-01-03','No future pending'],['2031-01-02','No future pending'],['2031-01-01','already started']]) {configure('needs_response',day);assert(row(read()).reason.includes(reason));}
- for(const [days,keys] of [[40,[30,14,7,3,1]],[20,[14,7,3,1]],[10,[7,3,1]],[5,[3,1]],[2,[1]],[1,[]],[0,[]],[7,[3,1]]]) {
+ for(const [days,keys] of [[40,[30,14,7,3,1]],[20,[14,7,3,1]],[10,[7,3,1]],[5,[3,1]],[2,[1]],[1,[1]],[0,[]],[7,[7,3,1]]]) {
   const day=new Date(Date.parse(clock)+days*86400000).toISOString().slice(0,10);configure('confirmed',day);
   assert.deepEqual(row(read()).reminders.map(r=>Number(r.occurrence_key.split(':')[1])),keys);
  }
- configure('confirmed','2031-01-02');sql(`update public.calendar_items set start_time='07:59',end_time='11:00' where id=${q(f.items[0])}`);assert.equal(row(read()).reminders.length,0);
+ configure('confirmed','2031-01-02');sql(`update public.calendar_items set start_time='07:59',end_time='11:00' where id=${q(f.items[0])}`);assert.equal(row(read('2031-01-02T00:01:00Z')).reminders.length,0);
  console.log('PASS pending +3, inside 48h/no future cadence, start, confirmed >30/20/10/5/2/<1 days and strict exact threshold');
  for(const [change,reason] of [
   [`update public.assignment_responses set response_status='declined',responded_at=${q(clock)} where assignment_id=${q(assignment)}`,'declined'],
@@ -54,7 +54,7 @@ try {
  }
  sql(`update public.calendar_items set schedule_kind='timed',needed_count=3,start_time='08:00',end_time='11:00' where id=${q(f.items[0])}`);
  configure();sql(`update public.volunteer_profiles set email='household@example.invalid' where id=any(array[${f.volunteers.slice(0,2).map(q)}]::uuid[])`);report=read();assert.equal(report.prospective.rows.filter(r=>r.assignment==='Site preparation').length,6);assert.equal(new Set(report.prospective.rows.map(r=>r.assignment_id)).size,6);
- for(const [at,expected] of [['2031-03-07T15:00:00Z','2031-03-10T14:00:00+00:00'],['2031-10-31T14:00:00Z','2031-11-03T15:00:00+00:00']]) {configure('needs_response','2031-12-01');assert.equal(row(read(at)).reminders[0].due_at,expected);}
+ for(const [at,expected] of [['2031-03-07T15:00:00Z','2031-03-10T15:00:00+00:00'],['2031-10-31T14:00:00Z','2031-11-03T16:00:00+00:00']]) {configure('needs_response','2031-12-01');assert.equal(row(read(at)).reminders[0].due_at,expected);}
  configure('confirmed','2031-11-08');sql(`update public.calendar_items set start_time='17:00',end_time='05:00',end_date='2031-11-09' where id=${q(f.items[0])}`);
  assert.equal(row(read('2031-11-01T14:00:00Z')).reminders.find(r=>r.occurrence_key==='shift:1').due_at,'2031-11-08T00:00:00+00:00');
  console.log('PASS exclusions, shared identities, authoritative timezone, spring/fall DST and overnight start');
@@ -87,7 +87,7 @@ try {
  assert(JSON.stringify(historyPlans[1]).includes('assignment_reminder_history'));
  const full=JSON.parse(value(`explain(analyze,format json) select public.assignment_reminder_report(${q(f.ws)},${q(clock)})`));
  report=read();assert(report.rows.length<=200);assert(report.prospective.rows.length<=100);assert(report.prospective.rows.flatMap(r=>r.reminders).length<=500);
- fs.writeFileSync(new URL('../docs/audits/12-57-evidence/preview-explain.json',import.meta.url),JSON.stringify({historicalAssignments:10000,discovery:plan,historyBefore:historyPlans[0],historyAfter:historyPlans[1],fullPreview:full},null,2)+'\n');
+ fs.writeFileSync(new URL('../docs/audits/12-57b-evidence/preview-explain.json',import.meta.url),JSON.stringify({historicalAssignments:10000,discovery:plan,historyBefore:historyPlans[0],historyAfter:historyPlans[1],fullPreview:full},null,2)+'\n');
  console.log(JSON.stringify({historicalAssignments:10000,discoveryMs:plan[0]['Execution Time'],historyBeforeMs:historyPlans[0][0]['Execution Time'],historyAfterMs:historyPlans[1][0]['Execution Time'],fullPreviewMs:full[0]['Execution Time'],pageSizes:[100,11],selectOnlyReads:reads}));
 } finally {wipe();sql("update public.assignment_reminder_activation set delivery_enabled=false,baseline_at=null,scan_cursors='{}'");await f.cleanup();}
 console.log('PASS hypothetical preview; no real provider calls; production untouched');

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:assignment-reminders:timing": "node --no-warnings --experimental-strip-types scripts/assignment-reminders-timing-regression.mjs",
     "test:assignment-reminders": "node --conditions=react-server --no-warnings --experimental-strip-types scripts/assignment-reminders-regression.mjs",
     "test:assignment-reminders-preview": "node --no-warnings --experimental-strip-types scripts/assignment-reminders-preview-regression.mjs",
     "dev": "next dev --webpack",

@@ -1,0 +1,286 @@
+{
+  "historicalAssignments": 10000,
+  "discovery": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 1094.07,
+        "Total Cost": 1094.32,
+        "Plan Rows": 101,
+        "Plan Width": 16,
+        "Actual Startup Time": 0.433,
+        "Actual Total Time": 0.44,
+        "Actual Rows": 101,
+        "Actual Loops": 1,
+        "Plans": [
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "InitPlan",
+            "Subplan Name": "CTE future_items",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "calendar_items_workspace_start_idx",
+            "Relation Name": "calendar_items",
+            "Alias": "calendar_items",
+            "Startup Cost": 0.29,
+            "Total Cost": 188.62,
+            "Plan Rows": 108,
+            "Plan Width": 16,
+            "Actual Startup Time": 0.018,
+            "Actual Total Time": 0.039,
+            "Actual Rows": 108,
+            "Actual Loops": 1,
+            "Index Cond": "((workspace_id = 'fa090347-9b5c-4d0d-b264-224a01be51a7'::uuid) AND (start_date >= '2031-01-01'::date))",
+            "Rows Removed by Index Recheck": 0
+          },
+          {
+            "Node Type": "Sort",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 905.45,
+            "Total Cost": 905.72,
+            "Plan Rows": 108,
+            "Plan Width": 16,
+            "Actual Startup Time": 0.433,
+            "Actual Total Time": 0.435,
+            "Actual Rows": 101,
+            "Actual Loops": 1,
+            "Sort Key": [
+              "calendar_assignments.id"
+            ],
+            "Sort Method": "quicksort",
+            "Sort Space Used": 25,
+            "Sort Space Type": "Memory",
+            "Plans": [
+              {
+                "Node Type": "Nested Loop",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Inner",
+                "Startup Cost": 8.31,
+                "Total Cost": 901.8,
+                "Plan Rows": 108,
+                "Plan Width": 16,
+                "Actual Startup Time": 0.039,
+                "Actual Total Time": 0.406,
+                "Actual Rows": 111,
+                "Actual Loops": 1,
+                "Inner Unique": false,
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "future_items",
+                    "Alias": "fi",
+                    "Startup Cost": 0,
+                    "Total Cost": 2.16,
+                    "Plan Rows": 108,
+                    "Plan Width": 16,
+                    "Actual Startup Time": 0.019,
+                    "Actual Total Time": 0.054,
+                    "Actual Rows": 108,
+                    "Actual Loops": 1
+                  },
+                  {
+                    "Node Type": "Limit",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 8.31,
+                    "Total Cost": 8.32,
+                    "Plan Rows": 1,
+                    "Plan Width": 16,
+                    "Actual Startup Time": 0.003,
+                    "Actual Total Time": 0.003,
+                    "Actual Rows": 1,
+                    "Actual Loops": 108,
+                    "Plans": [
+                      {
+                        "Node Type": "Sort",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 8.31,
+                        "Total Cost": 8.32,
+                        "Plan Rows": 1,
+                        "Plan Width": 16,
+                        "Actual Startup Time": 0.003,
+                        "Actual Total Time": 0.003,
+                        "Actual Rows": 1,
+                        "Actual Loops": 108,
+                        "Sort Key": [
+                          "calendar_assignments.id"
+                        ],
+                        "Sort Method": "quicksort",
+                        "Sort Space Used": 25,
+                        "Sort Space Type": "Memory",
+                        "Plans": [
+                          {
+                            "Node Type": "Index Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Scan Direction": "Forward",
+                            "Index Name": "calendar_assignments_workspace_item_idx",
+                            "Relation Name": "calendar_assignments",
+                            "Alias": "calendar_assignments",
+                            "Startup Cost": 0.29,
+                            "Total Cost": 8.3,
+                            "Plan Rows": 1,
+                            "Plan Width": 16,
+                            "Actual Startup Time": 0.003,
+                            "Actual Total Time": 0.003,
+                            "Actual Rows": 1,
+                            "Actual Loops": 108,
+                            "Index Cond": "((workspace_id = 'fa090347-9b5c-4d0d-b264-224a01be51a7'::uuid) AND (calendar_item_id = fi.id))",
+                            "Rows Removed by Index Recheck": 0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "Planning Time": 0.692,
+      "Triggers": [],
+      "Execution Time": 0.484
+    }
+  ],
+  "historyBefore": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 1002.19,
+        "Total Cost": 1002.69,
+        "Plan Rows": 200,
+        "Plan Width": 24,
+        "Actual Startup Time": 1.781,
+        "Actual Total Time": 1.792,
+        "Actual Rows": 200,
+        "Actual Loops": 1,
+        "Plans": [
+          {
+            "Node Type": "Sort",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 1002.19,
+            "Total Cost": 1027.19,
+            "Plan Rows": 10000,
+            "Plan Width": 24,
+            "Actual Startup Time": 1.78,
+            "Actual Total Time": 1.785,
+            "Actual Rows": 200,
+            "Actual Loops": 1,
+            "Sort Key": [
+              "due_at DESC",
+              "id"
+            ],
+            "Sort Method": "top-N heapsort",
+            "Sort Space Used": 48,
+            "Sort Space Type": "Memory",
+            "Plans": [
+              {
+                "Node Type": "Seq Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Relation Name": "assignment_reminder_occurrences",
+                "Alias": "assignment_reminder_occurrences",
+                "Startup Cost": 0,
+                "Total Cost": 570,
+                "Plan Rows": 10000,
+                "Plan Width": 24,
+                "Actual Startup Time": 0.142,
+                "Actual Total Time": 1.08,
+                "Actual Rows": 10000,
+                "Actual Loops": 1,
+                "Filter": "(workspace_id = 'fa090347-9b5c-4d0d-b264-224a01be51a7'::uuid)",
+                "Rows Removed by Filter": 0
+              }
+            ]
+          }
+        ]
+      },
+      "Planning Time": 0.184,
+      "Triggers": [],
+      "Execution Time": 1.808
+    }
+  ],
+  "historyAfter": [
+    {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.29,
+        "Total Cost": 30.32,
+        "Plan Rows": 200,
+        "Plan Width": 24,
+        "Actual Startup Time": 0.015,
+        "Actual Total Time": 0.093,
+        "Actual Rows": 200,
+        "Actual Loops": 1,
+        "Plans": [
+          {
+            "Node Type": "Index Only Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Forward",
+            "Index Name": "assignment_reminder_history",
+            "Relation Name": "assignment_reminder_occurrences",
+            "Alias": "assignment_reminder_occurrences",
+            "Startup Cost": 0.29,
+            "Total Cost": 1502.04,
+            "Plan Rows": 10000,
+            "Plan Width": 24,
+            "Actual Startup Time": 0.014,
+            "Actual Total Time": 0.085,
+            "Actual Rows": 200,
+            "Actual Loops": 1,
+            "Index Cond": "(workspace_id = 'fa090347-9b5c-4d0d-b264-224a01be51a7'::uuid)",
+            "Rows Removed by Index Recheck": 0,
+            "Heap Fetches": 200
+          }
+        ]
+      },
+      "Planning Time": 0.07,
+      "Triggers": [],
+      "Execution Time": 0.105
+    }
+  ],
+  "fullPreview": [
+    {
+      "Plan": {
+        "Node Type": "Result",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0,
+        "Total Cost": 0.26,
+        "Plan Rows": 1,
+        "Plan Width": 32,
+        "Actual Startup Time": 31.931,
+        "Actual Total Time": 31.932,
+        "Actual Rows": 1,
+        "Actual Loops": 1
+      },
+      "Planning Time": 0.02,
+      "Triggers": [],
+      "Execution Time": 31.97
+    }
+  ]
+}
