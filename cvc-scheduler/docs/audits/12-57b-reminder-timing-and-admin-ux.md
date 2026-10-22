@@ -36,8 +36,20 @@ Existing engine and preview regressions were updated for the intentional new clo
 
 Historical-heavy local fixture: preview discovery 0.484 ms; recent history 1.808 → 0.105 ms with the existing index; full preview 31.970 ms; pages 100 + 11 unique assignments; 30 SELECT-only reads. Engine discovery 0.196 ms, due queue 0.062 ms, claim 6.303 ms. These are local fixture measurements, not production latency claims. No query shape, additional fetch or N+1 behavior is introduced.
 
-Responsive/browser, static and guarded-build results are recorded after final validation. Screenshots/evidence are retained outside the repository at `C:\Users\mtfis\Documents\Codex\2026-10-21\project-local-12-57b-evidence`.
+## Final browser, security and build results
+
+The local production-mode browser matrix passed at **320, 390, 430, 768, 1280 and 1920 px** with browser timezone Pacific/Auckland and project timezone America/Denver. Screenshots were visually inspected for Off, preview, empty history, recorded unknown outcome, error/retry, empty assignments and the local-only future On fixture. No horizontal overflow, browser errors or external requests occurred. Keyboard Enter opens the preview and retains focus on its control; visible buttons meet 44-pixel targets. Initial render performs no preview read; opening performs one, close/reopen performs none. Forced failure retains the previous report and Retry recovers. Every width restores disabled/NULL/empty reminder state after fixtures. Full-page captures include the existing fixed mobile navigation; viewport captures verify its actual placement.
+
+Existing browser suites passed: Communications batches; volunteer schedule access and responses/cutoff; shared-household lookup; Quick View bearer access; normal-latency Calendar desktop/mobile including local assignment editing; volunteer profile management; Needs Attention; Overview; and command-palette/shortcut mode. All writes were disposable local fixtures, with no production response submission or provider send.
+
+Security/model suites passed: exact 102-function privilege policy/PUBLIC execute zero, table privileges, project grants, instruction redaction, Quick View privileges/bearer isolation, Communications transport/ledger/dispatch/batches, volunteer token access/responses, reminder worker restrictions, and admin commands. The instruction-security check runs against canonical Git contents to avoid the known Windows CRLF comparison issue; its assertion is retained.
+
+Final TypeScript, full ESLint and whitespace checks passed. Fresh lockfile installation and guarded **Next.js 16.2.7 Webpack and Turbopack builds** passed, with guarded-router verification before compilation. Compile measurements were 7.1 s and 3.2 s respectively; these are build durations, not navigation claims. The canonical export uses real node_modules to avoid the pre-existing external-junction Turbopack limitation. Dependency versions, lockfile and router guard are unchanged. No runtime source changed after these builds; final follow-up edits improve browser evidence and documentation only.
+
+Screenshots, individual test logs and source-safety results are retained outside the repository at `C:\Users\mtfis\Documents\Codex\2026-10-21\project-local-12-57b-evidence`; final viewport/full-page screenshots are in `screenshots-final/`.
 
 ## Release boundary
 
 Migration 54 and application deployment require separate release preparation and approval. Production remains untouched by this implementation. Sending stays disabled, baseline NULL, no enrollment or occurrences after local fixture cleanup. No Cron, Vault secret, worker credential, provider adapter or activation action is provisioned. **SEC-12.57-01 remains OPEN / SEPARATE**. Real provider calls/emails: ZERO.
+
+Remaining release work: prove migration 53 → 54 against the current production recovery baseline and prepare its backup-tooling contract during release prep; neither task configuration nor production state was touched here. The migration deliberately refuses pre-existing reminder activation/history rather than silently retiming it. The existing 15-minute dispatch window and bounded page-local preview counts remain unchanged. Future On presentation is tested locally and does not establish delivery readiness or authorize activation.
