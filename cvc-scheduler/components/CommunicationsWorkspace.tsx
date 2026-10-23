@@ -4,6 +4,7 @@ import { Mail, CalendarDays, Bell, History } from "lucide-react";
 import { buildCommunicationMessage, type CommunicationPlan, type CommunicationHistory, type CommunicationActionState } from "@/lib/notifications/communications";
 import { finishConfirmedCommunication } from "@/lib/notifications/communicationBatches";
 import { AssignmentReminderHistory } from "@/components/AssignmentReminderHistory";
+import type { ReminderDeliveryStatus } from "@/lib/notifications/assignmentReminders";
 import { useRememberedView } from "@/lib/adminViews/useRememberedView";
 import type { AdminViewScope, CommunicationsView } from "@/lib/adminViews/preferences";
 const field = "mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm";
@@ -19,10 +20,10 @@ const exclusionMessage: Record<string,string> = {
   already_delivered: "These assignments were already delivered. Choose an intentional resend if another message is needed.",
   existing_delivery_requires_review: "An earlier assignment delivery has an unresolved outcome. Review history before sending again.",
 };
-export function CommunicationsWorkspace({ action, history: initialHistory, historyRead, pendingWelcomeCount, transportEnabled, initialVolunteerId, initialKind = "welcome", initialTab, initialReminderEnabled = false, initialStartDate, initialEndDate, today, preferenceScope, explicitKind = false }: {
+export function CommunicationsWorkspace({ action, history: initialHistory, historyRead, pendingWelcomeCount, transportEnabled, initialVolunteerId, initialKind = "welcome", initialTab, initialReminderStatus, initialStartDate, initialEndDate, today, preferenceScope, explicitKind = false }: {
   action: (form: FormData) => Promise<CommunicationActionState>; history: CommunicationHistory[]; pendingWelcomeCount?: number;
   historyRead?: Promise<CommunicationHistory[] | null>;
-  transportEnabled: boolean; initialVolunteerId?: string; initialKind?: "welcome" | "schedule"; initialTab?: CommunicationsView["tab"]; initialReminderEnabled?: boolean; initialStartDate?: string; initialEndDate?: string; today: string; preferenceScope?: AdminViewScope; explicitKind?: boolean;
+  transportEnabled: boolean; initialVolunteerId?: string; initialKind?: "welcome" | "schedule"; initialTab?: CommunicationsView["tab"]; initialReminderStatus: ReminderDeliveryStatus; initialStartDate?: string; initialEndDate?: string; today: string; preferenceScope?: AdminViewScope; explicitKind?: boolean;
 }) {
   const [remembered, setRemembered, resetRemembered, preferenceHydrated] = useRememberedView("communications", preferenceScope ?? null);
   const restoredTab = preferenceHydrated && !explicitKind && !initialVolunteerId ? remembered.tab : initialVolunteerId ? initialKind : initialTab ?? initialKind;
@@ -31,7 +32,10 @@ export function CommunicationsWorkspace({ action, history: initialHistory, histo
   const [tabOverride, setTabOverride] = useState<CommunicationsView["tab"] | null>(null);
   const activeTab = tabOverride ?? restoredTab;
   const setActiveTab = (tab: CommunicationsView["tab"]) => { setTabOverride(tab); setRemembered(current => ({ ...current, tab })); };
-  const [reminderEnabled, setReminderEnabled] = useState(initialReminderEnabled);
+  const [reminderObservation, setReminderObservation] = useState<ReminderDeliveryStatus | null>(null);
+  // A fresh server observation supersedes any older preview/retry response.
+  const reminderEnabled = reminderObservation?.observedAt === initialReminderStatus.observedAt ? reminderObservation.enabled : initialReminderStatus.enabled;
+  const setReminderEnabled = (enabled: boolean | null) => setReminderObservation({ enabled, observedAt: initialReminderStatus.observedAt });
   const sectionId = useId();
   const [mode, setMode] = useState<CommunicationPlan["mode"]>(initialVolunteerId ? "resend" : "new");
   const [startDate, setStart] = useState(initialStartDate ?? today), [endDate, setEnd] = useState(() => { if (initialEndDate) return initialEndDate; const d = new Date(today + "T12:00Z"); d.setUTCDate(d.getUTCDate()+30); return d.toISOString().slice(0,10); });
@@ -123,10 +127,10 @@ export function CommunicationsWorkspace({ action, history: initialHistory, histo
     }}>
       <button id={`${sectionId}-welcome`} aria-controls={`${sectionId}-composer`} tabIndex={activeTab==='welcome'?0:-1} type="button" role="tab" aria-selected={activeTab==='welcome'} className={`${button} flex items-center gap-2 py-3 text-left ${activeTab==='welcome'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('welcome');setKind('welcome');setMode('new');setIds([]);setSelectionTouched(false);}}><Mail className="size-4 shrink-0 text-blue-600" /><span>Welcome emails<span className="block text-xs font-normal text-slate-600">{pendingWelcomeCount === undefined ? "Review new volunteers when ready" : `${pendingWelcomeCount} awaiting introduction`}</span></span></button>
       <button id={`${sectionId}-schedule`} aria-controls={`${sectionId}-composer`} tabIndex={activeTab==='schedule'?0:-1} type="button" role="tab" aria-selected={activeTab==='schedule'} className={`${button} flex items-center gap-2 py-3 text-left ${activeTab==='schedule'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>{setActiveTab('schedule');setKind('schedule');setMode('new');setIds([]);setSelectionTouched(false);}}><CalendarDays className="size-4 shrink-0 text-blue-600" /><span>Schedule deliveries</span></button>
-      <button id={`${sectionId}-reminders`} aria-controls={`${sectionId}-reminder-panel`} tabIndex={activeTab==='reminders'?0:-1} type="button" role="tab" aria-selected={activeTab==='reminders'} className={`${button} flex items-center gap-2 py-3 text-left ${activeTab==='reminders'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>setActiveTab('reminders')}><Bell className="size-4 shrink-0 text-blue-600" /><span className="min-w-0 flex-1">Automatic reminders</span><span className={`shrink-0 rounded-full px-2 py-1 text-xs ${reminderEnabled?'bg-emerald-50 text-emerald-800':'bg-slate-100 text-slate-600'}`}>{reminderEnabled?'On':'Off'}</span></button>
+      <button id={`${sectionId}-reminders`} aria-controls={`${sectionId}-reminder-panel`} tabIndex={activeTab==='reminders'?0:-1} type="button" role="tab" aria-selected={activeTab==='reminders'} className={`${button} flex items-center gap-2 py-3 text-left ${activeTab==='reminders'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>setActiveTab('reminders')}><Bell className="size-4 shrink-0 text-blue-600" /><span className="min-w-0 flex-1">Automatic reminders</span><span className={`shrink-0 rounded-full px-2 py-1 text-xs ${reminderEnabled === true?'bg-emerald-50 text-emerald-800':'bg-slate-100 text-slate-600'}`}>{reminderEnabled === null?'Unavailable':reminderEnabled?'On':'Off'}</span></button>
       <button id={`${sectionId}-history`} aria-controls={`${sectionId}-history-panel`} tabIndex={activeTab==='history'?0:-1} type="button" role="tab" data-admin-shortcut={activeTab !== 'history' ? 'filters' : undefined} aria-selected={activeTab==='history'} className={`${button} flex items-center gap-2 py-3 text-left ${activeTab==='history'?'border-blue-400 bg-blue-50':'bg-white'}`} onClick={()=>setActiveTab('history')}><History className="size-4 shrink-0 text-blue-600" />Delivery history</button>
     </div>
-    <div id={`${sectionId}-reminder-panel`} role="tabpanel" aria-labelledby={`${sectionId}-reminders`} hidden={activeTab!=='reminders'}><AssignmentReminderHistory initialEnabled={initialReminderEnabled} onEnabledChange={setReminderEnabled} /></div>
+    <div id={`${sectionId}-reminder-panel`} role="tabpanel" aria-labelledby={`${sectionId}-reminders`} hidden={activeTab!=='reminders'}><AssignmentReminderHistory enabled={reminderEnabled} onEnabledChange={setReminderEnabled} /></div>
     {activeTab!=='reminders' && historyStatus === "loading" && <p role="status" className="text-sm text-slate-600">Loading delivery history… You can choose a section while it loads.</p>}
     {activeTab!=='reminders' && historyStatus === "error" && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><p>Delivery history is temporarily unavailable. Refresh it before reviewing recipients or sending.</p><button type="button" className={`${button} mt-2`} disabled={pending} onClick={() => run("history")}>Retry delivery history</button></div>}
     {(activeTab==='welcome'||activeTab==='schedule') && <section id={`${sectionId}-composer`} role="tabpanel" aria-labelledby={`${sectionId}-${activeTab}`} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6"><h2 className="text-xl font-semibold">{kind==='welcome'?'Welcome volunteers':'Send schedules'}</h2>

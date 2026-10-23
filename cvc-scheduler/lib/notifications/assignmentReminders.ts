@@ -1,6 +1,7 @@
 import { formatScheduleClockRange, formatScheduleDate } from "../scheduleFormatting.ts";
 
 export const reminderLabel = (key: string) => ({ "shift:30": "1-month reminder", "shift:14": "2-week reminder", "shift:7": "1-week reminder", "shift:3": "3-day reminder", "shift:1": "1-day reminder" })[key] ?? "Response reminder";
+export type ReminderDeliveryStatus = { enabled: boolean | null; observedAt: string };
 export type ReminderContext = {
   name: string; email: string; project: string; title: string; date: string; endDate: string | null;
   startTime: string | null; endTime: string | null; timezone: string; kind: "response" | "shift";

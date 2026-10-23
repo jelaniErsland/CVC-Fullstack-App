@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
-import { readReminderPreview } from '@/lib/notifications/reminders.actions';
+import { readReminderPreview, readReminderStatus } from '@/lib/notifications/reminders.actions';
 import { reminderLabel, type ReminderReport, type ReminderRow } from '@/lib/notifications/assignmentReminders';
 
 function when(value: string, timezone: string) {
@@ -27,24 +27,43 @@ function RecordedDelivery({ row, timezone }: { row: RecordedReminder; timezone: 
   </details>;
 }
 
-export function AssignmentReminderHistory({ initialEnabled = false, onEnabledChange }: { initialEnabled?: boolean; onEnabledChange?: (enabled: boolean) => void }) {
+export function AssignmentReminderHistory({ enabled, onEnabledChange }: { enabled: boolean | null; onEnabledChange: (enabled: boolean | null) => void }) {
   const [report, setReport] = useState<ReminderReport | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [statusPending, setStatusPending] = useState(false);
   const request = useRef(0);
+  const statusRequest = useRef(0);
+  const statusObservation = useRef(0);
   const panelId = useId();
-  useEffect(() => () => { request.current++; }, []);
+  useEffect(() => () => { request.current++; statusRequest.current++; }, []);
+  async function retryStatus() {
+    const id = ++statusRequest.current;
+    const observation = ++statusObservation.current;
+    setStatusPending(true);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const result = await Promise.race([readReminderStatus(), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 15000); })]);
+      if (statusRequest.current === id && statusObservation.current === observation) onEnabledChange(result.enabled);
+    } catch {
+      if (statusRequest.current === id && statusObservation.current === observation) onEnabledChange(null);
+    } finally {
+      if (timer) clearTimeout(timer);
+      if (statusRequest.current === id) setStatusPending(false);
+    }
+  }
   async function load(after: string | null = null) {
     const id = ++request.current;
+    const observation = ++statusObservation.current;
     setPending(true); setError('');
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([readReminderPreview(after), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 15000); })]);
       if (request.current !== id) return;
       if ('error' in result) setError('Reminders could not be loaded. Please try again.');
-      else { setReport(result.report); setCursor(after); onEnabledChange?.(result.report.enabled); }
+      else { setReport(result.report); setCursor(after); if (statusObservation.current === observation) onEnabledChange(result.report.enabled); }
     } catch {
       if (request.current === id) setError('Reminders could not be loaded. Please try again.');
     } finally {
@@ -52,7 +71,6 @@ export function AssignmentReminderHistory({ initialEnabled = false, onEnabledCha
       if (request.current === id) setPending(false);
     }
   }
-  const enabled = report?.enabled ?? initialEnabled;
   const planned = report?.prospective.rows ?? [];
   const response = planned.filter(row => row.classification === 'would_enroll' && row.response === 'needs_response');
   const confirmed = planned.filter(row => row.classification === 'would_enroll' && row.response === 'confirmed');
@@ -66,16 +84,17 @@ export function AssignmentReminderHistory({ initialEnabled = false, onEnabledCha
   }
   return <section aria-label="Automatic reminders" className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
     <h2 className="sr-only">Automatic reminders</h2>
-    <p className="max-w-2xl text-sm leading-relaxed text-slate-600">{enabled ? 'Project Local automatically reminds volunteers who still need to respond and reminds confirmed volunteers as their assignments approach.' : 'Automatic reminders are not currently being sent. Preview which volunteers would receive reminders if you turned them on.'}</p>
-    <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => { setOpen(!open); if (!open && !report && !pending && !error) void load(); }} className="mt-3 min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{open ? enabled ? 'Close reminder schedule' : 'Close preview' : enabled ? 'View reminder schedule and history' : 'Preview reminders'}</button>
+    <p className="max-w-2xl text-sm leading-relaxed text-slate-600" role={enabled === null ? 'status' : undefined}>{enabled === null ? 'Reminder status unavailable. Try again to check whether automatic reminders are being sent.' : enabled ? 'Project Local automatically reminds volunteers who still need to respond and reminds confirmed volunteers as their assignments approach.' : 'Automatic reminders are not currently being sent. Preview which volunteers would receive reminders if you turned them on.'}</p>
+    {enabled === null && <button type="button" disabled={statusPending} onClick={() => void retryStatus()} className="mt-3 mr-2 min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:opacity-50">{statusPending ? 'Checking reminder status…' : 'Retry reminder status'}</button>}
+    <button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => { setOpen(!open); if (!open && !report && !pending && !error) void load(); }} className="mt-3 min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{enabled === null ? open ? 'Close reminder details' : 'View reminder details' : open ? enabled ? 'Close reminder schedule' : 'Close preview' : enabled ? 'View reminder schedule and history' : 'Preview reminders'}</button>
     <div id={panelId} hidden={!open} aria-busy={pending} className="mt-5 border-t border-slate-200 pt-5">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{enabled ? 'Reminder schedule and history' : 'Preview reminders'}</h3><p className="mt-1 text-sm text-slate-600">{enabled ? 'Upcoming reminders and recorded deliveries.' : 'If reminders were turned on now'}</p></div><button type="button" disabled={pending} onClick={() => void load(cursor)} className="min-h-11 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium disabled:opacity-50">{pending ? 'Loading reminders…' : error ? 'Retry preview' : 'Refresh preview'}</button></div>
-      {!enabled && <p className="mt-3 text-sm text-slate-600">This preview does not schedule or send anything. It does not turn on reminders.</p>}
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{enabled === null ? 'Reminder details' : enabled ? 'Reminder schedule and history' : 'Preview reminders'}</h3><p className="mt-1 text-sm text-slate-600">{enabled === null ? 'Check the latest reminder status and schedule.' : enabled ? 'Upcoming reminders and recorded deliveries.' : 'If reminders were turned on now'}</p></div><button type="button" disabled={pending} onClick={() => void load(cursor)} className="min-h-11 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium disabled:opacity-50">{pending ? 'Loading reminders…' : error ? 'Retry preview' : 'Refresh preview'}</button></div>
+      {enabled === false && <p className="mt-3 text-sm text-slate-600">This preview does not schedule or send anything. It does not turn on reminders.</p>}
       {pending && <p role="status" className="mt-3 text-sm text-slate-600">Loading reminder preview…</p>}
       {error && <p role="alert" className="mt-3 text-sm text-rose-700">{error}{report ? ' The previous preview is still shown below.' : ''}</p>}
       {report && <div className="mt-4 space-y-4">
         <p className="text-xs leading-relaxed text-slate-500">{report.prospective.inspected} assignments on this page · Times in {report.prospective.timezone}. Previewed <time dateTime={report.prospective.at}>{when(report.prospective.at, report.prospective.timezone)}</time>. Each page is checked separately.</p>
-        {!enabled && <div className="grid grid-cols-2 gap-3">{[['Still need to respond', response.length, 'assignments'], ['Confirmed assignments', confirmed.length, 'with upcoming reminders']].map(([title, count, text]) => <div key={title} className="rounded-xl bg-slate-50 p-3"><h4 className="text-sm font-medium text-slate-700">{title}</h4><p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{count}</p><p className="mt-1 text-xs text-slate-600">{text}</p></div>)}</div>}
+        {enabled === false && <div className="grid grid-cols-2 gap-3">{[['Still need to respond', response.length, 'assignments'], ['Confirmed assignments', confirmed.length, 'with upcoming reminders']].map(([title, count, text]) => <div key={title} className="rounded-xl bg-slate-50 p-3"><h4 className="text-sm font-medium text-slate-700">{title}</h4><p className="mt-1 text-2xl font-semibold tabular-nums text-slate-950">{count}</p><p className="mt-1 text-xs text-slate-600">{text}</p></div>)}</div>}
         {!planned.length && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No upcoming assignments to preview.</p>}
         {groups.map(([title, rows]) => rows.length ? <details key={title} open={title === 'Response reminders'} className="rounded-xl border border-slate-200 p-3 text-sm"><summary className="min-h-11 cursor-pointer py-3 font-semibold">{title} · {rows.length}</summary><ul className="divide-y divide-slate-100">{rows.map(row => <li key={row.assignment_id} className="break-words py-4 first:pt-2">
           <p className="font-semibold text-slate-950">{row.volunteer} <span className="font-normal text-slate-500">· {row.assignment}</span></p>

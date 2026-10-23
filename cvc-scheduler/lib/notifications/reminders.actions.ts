@@ -1,6 +1,14 @@
 'use server';
 import { readCommunicationsContext } from './communications.server';
 import type { ReminderReport } from './assignmentReminders';
+import { readReminderDeliveryStatus } from './reminderStatus.server';
+import { withReadTimeout } from '../readTimeout';
+export async function readReminderStatus() {
+  try {
+    if (await withReadTimeout(readCommunicationsContext(), 10_000)) return await readReminderDeliveryStatus();
+  } catch { /* No status or system read without an authorized context. */ }
+  return { enabled: null, observedAt: new Date().toISOString() };
+}
 export async function readReminderPreview(after: string | null = null): Promise<{ report: ReminderReport } | { error: string }> {
   try {
     if (after !== null && (typeof after !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(after))) return { error: 'Invalid preview page. Refresh the preview.' };
