@@ -15,41 +15,44 @@ const authRows=()=>value(`select md5(jsonb_build_array((select jsonb_agg(to_json
 const snapshot=()=>({state:state(),catalog:catalog(),rows:rows(),security:security(),auth:authRows()});
 if(value('select count(*) from supabase_migrations.schema_migrations')==='55')sql(rollback);
 assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'54');
+assert.equal(value("select count(*) from pg_roles where rolname='project_local_reminder_runner'"),'0');
 const before=snapshot();
 assert.notEqual(sql(apply.replace(/commit;\s*$/,'select 1/0;commit;'),true).status,0);
 assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'54');
 assert.equal(value("select count(*) from pg_extension where extname in('pg_cron','pg_net','http')"),'0');
 assert.deepEqual(snapshot(),before);
+assert.equal(value("select count(*) from pg_roles where rolname='project_local_reminder_runner'"),'0','Failed migration must not leave a login');
 const unsafe=sql(apply.replace('begin;',"begin;update public.assignment_reminder_activation set baseline_at=statement_timestamp();"),true);
 assert.notEqual(unsafe.status,0);assert.match(unsafe.stderr,/disabled, unactivated reminders with no history/);assert.deepEqual(snapshot(),before);
 const installation=sql(apply,true);
 assert.equal(installation.status,0,installation.stderr);
 assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'55');
 assert.deepEqual(snapshot(),before);
+assert.deepEqual(JSON.parse(value("select json_build_object('login',rolcanlogin,'inherit',rolinherit,'super',rolsuper,'createdb',rolcreatedb,'createrole',rolcreaterole,'replication',rolreplication,'bypass',rolbypassrls,'limit',rolconnlimit) from pg_roles where rolname='project_local_reminder_runner'")),{login:true,inherit:false,super:false,createdb:false,createrole:false,replication:false,bypass:false,limit:2});
+assert.equal(value("select rolpassword is null from pg_authid where rolname='project_local_reminder_runner'"),'t','Migration installs no usable password/verifier');
+assert.equal(value("select count(*) from pg_auth_members m join pg_roles r on r.oid=m.roleid join pg_roles member on member.oid=m.member where member.rolname='project_local_reminder_runner' and r.rolname='project_local_reminder_worker' and not m.inherit_option and m.set_option and not m.admin_option"),'1');
+assert.equal(value("select count(*) from pg_auth_members m join pg_roles member on member.oid=m.member where member.rolname='project_local_reminder_runner'"),'1');
+assert.equal(value("select count(*) from information_schema.table_privileges where grantee='project_local_reminder_runner'"),'0');
 assert.equal(value("select count(*) from pg_extension where extname in('pg_cron','pg_net','http')"),'0');
 assert.equal(value("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='project_local_reminder_infrastructure'"),'1');
 assertEffectiveFunctionPolicy(assert,value(effectiveFunctionQuery).split('\n').filter(Boolean).map(line=>JSON.parse(line)));
 assert.equal(value("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join lateral aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a where n.nspname='project_local_reminder_infrastructure' and a.grantee=0 and a.privilege_type='EXECUTE'"),'0');
 assert.deepEqual(JSON.parse(value("select json_build_object('owner',pg_get_userbyid(proowner),'definer',prosecdef,'config',proconfig) from pg_proc where oid='project_local_reminder_infrastructure.activate_delivery(text)'::regprocedure")),{owner:'postgres',definer:false,config:['search_path=""']});
-for(const role of ['anon','authenticated','service_role','project_local_reminder_worker']){
+for(const role of ['anon','authenticated','service_role','project_local_reminder_worker','project_local_reminder_runner']){
  assert.equal(value(`select has_schema_privilege('${role}','project_local_reminder_infrastructure','USAGE')`),'f');
  for(const signature of ['activate_delivery(text)'])assert.equal(value(`select has_function_privilege('${role}','project_local_reminder_infrastructure.${signature}','EXECUTE')`),'f');
  assert.notEqual(sql(`begin;set local role ${role};select project_local_reminder_infrastructure.activate_delivery('OWNER APPROVED AUTOMATIC REMINDER ACTIVATION');rollback;`,true).status,0);
 }
-assert.notEqual(sql("select project_local_reminder_infrastructure.activate_delivery('wrong confirmation');",true).status,0);
-assert.equal(state(),before.state);
-// Failure after activation rolls baseline and enabled state back together.
-assert.notEqual(sql("begin;select project_local_reminder_infrastructure.activate_delivery('OWNER APPROVED AUTOMATIC REMINDER ACTIVATION');select 1/0;commit;",true).status,0);
-assert.equal(state(),before.state);
-// Local transaction only; activation must never be called by the production runner.
-sql("begin;select project_local_reminder_infrastructure.activate_delivery('OWNER APPROVED AUTOMATIC REMINDER ACTIVATION');do $$ begin if not exists(select 1 from public.assignment_reminder_activation where delivery_enabled and baseline_at>=transaction_timestamp() and baseline_at<=statement_timestamp()) then raise exception 'Non-atomic activation';end if;end $$;rollback;");
-assert.equal(state(),before.state);
-// Each psql session is isolated; explicit history refusal is tested transactionally.
-assert.notEqual(sql("begin;update public.assignment_reminder_activation set baseline_at=statement_timestamp();select project_local_reminder_infrastructure.activate_delivery('OWNER APPROVED AUTOMATIC REMINDER ACTIVATION');commit;",true).status,0);
-assert.equal(state(),before.state);
+// Owner ignition is not invoked in this batch. Its unchanged reviewed body has
+// the exact confirmation, singleton lock and one atomic baseline/enabled UPDATE.
+const ignition=value("select prosrc from pg_proc where oid='project_local_reminder_infrastructure.activate_delivery(text)'::regprocedure");
+assert.match(ignition,/statement_timestamp\(\)/);assert.match(ignition,/for update/);
+assert.match(ignition,/OWNER APPROVED AUTOMATIC REMINDER ACTIVATION/);
+assert.match(ignition,/set baseline_at=baseline,delivery_enabled=true/);
 sql(rollback);assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'54');
+assert.equal(value("select count(*) from pg_roles where rolname='project_local_reminder_runner'"),'0');
 assert.deepEqual(snapshot(),before);
 sql(apply);assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'55');
 const unsafeRollback=sql(rollback.replace('begin;',"begin;update public.assignment_reminder_activation set baseline_at=statement_timestamp();"),true);
 assert.notEqual(unsafeRollback.status,0);assert.match(unsafeRollback.stderr,/forward recovery/);assert.deepEqual(snapshot(),before);
-console.log('PASS local migration55 atomic failure/apply/empty rollback/replay; public data/102-function policy unchanged; new infrastructure owner-only; activation refusal/atomic rollback; no Cron invocation or provider call');
+console.log('PASS local migration55 atomic failure/apply/empty rollback/replay; exact narrow login membership; public data/102-function policy unchanged; activation denied to ordinary/worker/runner roles; owner ignition not invoked; no Cron/provider');

@@ -1,57 +1,51 @@
-// Local production Next build + actual workerd + local PostgREST. No hosted traffic.
+// Compiled Next + actual workerd/pg/local Supavisor. All hosted traffic forbidden.
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn, spawnSync } from 'node:child_process';
-import { createHmac } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import { value } from './12-47-local-fixtures.mjs';
+import net from 'node:net';
+import {createRequire} from 'node:module';
+import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 
 if(process.argv.includes('--fixture-server')) {
- const originalFetch=globalThis.fetch;
- globalThis.fetch=async(url,options)=>{
-  const target=new URL(typeof url==='string'||url instanceof URL?url:url.url);
-  if(target.hostname!=='127.0.0.1'||target.port!=='54321'||target.pathname!=='/rest/v1/rpc/run_assignment_reminder_worker'||JSON.parse(options?.body??'{}').p_command!=='status') {
-   console.log('LOCAL_FORBIDDEN_NETWORK');throw new Error('Local test network denied');
+ globalThis.fetch=async()=>{console.log('LOCAL_FORBIDDEN_NETWORK');throw new Error('No child HTTP/provider traffic');};
+ const connect=net.Socket.prototype.connect;
+ net.Socket.prototype.connect=function(...args){const normalized=Array.isArray(args[0])?args[0]:args;const cfg=typeof normalized[0]==='object'?normalized[0]:{port:normalized[0],host:normalized[1]};assert.equal(cfg.host,'127.0.0.1','No hosted TCP traffic');assert.equal(Number(cfg.port),56543);return connect.apply(this,args);};
+ // Fixture-only termination seam: assert production TLS/user settings, then
+ // route the REAL driver to the isolated plaintext loopback transaction pooler.
+ const pg=createRequire(import.meta.url)('pg'),RealPool=pg.Pool;
+ pg.Pool=class extends RealPool {
+  constructor(config){
+   assert.equal(config.host,'aws-1-us-west-2.pooler.supabase.com');assert.equal(config.port,6543);assert.equal(config.user,'project_local_reminder_runner.wdlaauzknfggoqldolmx');assert.equal(config.ssl.rejectUnauthorized,true);assert.equal(config.max,1);
+   console.log('LOCAL_POOL_CONFIGURATION_VERIFIED');
+   super({...config,host:'127.0.0.1',port:56543,user:'project_local_reminder_runner.local-reminder-fixture',ssl:false});
+   this.on('connect',client=>{const query=client.query.bind(client);client.query=(text,values)=>{if(text==='BEGIN')console.log('LOCAL_DATABASE_TRANSACTION');if(text.startsWith('SELECT public.')){assert.equal(values[0],'status');console.log('LOCAL_STATUS_READ');}return query(text,values);};});
   }
-  console.log('LOCAL_STATUS_READ');return originalFetch(url,options);
  };
- const next=(await import('next')).default;
- // Model TLS termination/canonical origin without binding a public hostname/port.
- const app=next({dev:false,hostname:'projectlocal.app',port:443});await app.prepare();
- const server=http.createServer(app.getRequestHandler());
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));console.log('LOCAL_READY:'+server.address().port);
+ const next=(await import('next')).default,app=next({dev:false,hostname:'projectlocal.app',port:443});await app.prepare();
+ const server=http.createServer(app.getRequestHandler());await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));console.log('LOCAL_READY:'+server.address().port);
  process.stdin.once('data',()=>{server.closeAllConnections();server.close(async()=>{await app.close();process.exit(0);});});
-} else {
+}else{
+ const {withLocalReminderRunner}=await import('./reminder-database-local-fixture.mjs');
+ const {withLocalSupavisor}=await import('./reminder-supavisor-local-fixture.mjs');
  const {Miniflare,convertV4MiniflareOptions}=await import('../workers/reminder-clock/node_modules/miniflare/dist/src/index.js');
- const status=spawnSync('C:\\Users\\mtfis\\scoop\\shims\\supabase.exe',['status','--output','json'],{encoding:'utf8',windowsHide:true});assert.equal(status.status,0);
- const local=JSON.parse(status.stdout.slice(status.stdout.indexOf('{')));assert.equal(new URL(local.API_URL).hostname,'127.0.0.1');assert(local.JWT_SECRET);
- const claims=[{alg:'HS256',typ:'JWT'},{role:'project_local_reminder_worker',iss:'supabase',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+604800}].map(v=>Buffer.from(JSON.stringify(v)).toString('base64url')).join('.');
- const jwt=claims+'.'+createHmac('sha256',local.JWT_SECRET).update(claims).digest('base64url'),secret='5'.repeat(64);
- const env={...process.env,NODE_ENV:'production',NEXT_PUBLIC_SUPABASE_URL:local.API_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY:local.ANON_KEY,REMINDER_DATABASE_JWT:jwt,REMINDER_SCHEDULER_HMAC_SECRET:secret};
- const fingerprint=()=>value(`select md5(string_agg(schemaname||'.'||tablename||':'||(xpath('/row/hash/text()',query_to_xml(format('select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,''[]'')) hash from %I.%I t',schemaname,tablename),false,true,'')))[1]::text,'|' order by schemaname,tablename)) from pg_tables where schemaname='public' or (schemaname='auth' and tablename in('users','identities','sessions','refresh_tokens'))`);
- assert.equal(value('select delivery_enabled from public.assignment_reminder_activation'),'f');const before=fingerprint();
- const server=spawn(process.execPath,[fileURLToPath(import.meta.url),'--fixture-server'],{env,windowsHide:true,stdio:['pipe','pipe','pipe']});
- let output='',errors='';server.stdout.on('data',data=>output+=data);server.stderr.on('data',data=>errors+=data);
- let runtime;
- try {
-  const port=await new Promise((resolve,reject)=>{
-   const timer=setTimeout(()=>reject(new Error('Local fixture server readiness timed out')),20000);
-   server.stdout.on('data',()=>{const match=output.match(/LOCAL_READY:(\d+)/);if(match){clearTimeout(timer);resolve(Number(match[1]));}});
-   server.once('exit',()=>{clearTimeout(timer);reject(new Error('Local fixture server stopped before ready'));});
+ await withLocalReminderRunner(async({environment})=>{
+  await withLocalSupavisor(async()=>{
+   const server=spawn(process.execPath,[fileURLToPath(import.meta.url),'--fixture-server'],{env:{...process.env,...environment,NODE_ENV:'production'},windowsHide:true,stdio:['pipe','pipe','pipe']});
+   let output='',errors='',runtime;server.stdout.on('data',data=>output+=data);server.stderr.on('data',data=>errors+=data);
+   try {
+    const port=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Local compiled server timed out')),20000);server.stdout.on('data',()=>{const m=output.match(/LOCAL_READY:(\d+)/);if(m){clearTimeout(timer);resolve(Number(m[1]));}});server.once('exit',()=>{clearTimeout(timer);reject(new Error('Local compiled server stopped'));});});
+    let outbound=0;
+    const options=convertV4MiniflareOptions({name:'compiled-local-clock',modules:true,scriptPath:fileURLToPath(new URL('../workers/reminder-clock/dist/index.js',import.meta.url)),compatibilityDate:'2026-10-22',cf:false,bindings:{REMINDER_SCHEDULER_HMAC_SECRET:environment.REMINDER_SCHEDULER_HMAC_SECRET},outboundService:async request=>{
+     outbound++;assert.equal(request.url,'https://projectlocal.app/internal/reminders');const headers=new Headers([...request.headers]);headers.set('host','projectlocal.app');headers.set('x-forwarded-proto','https');
+     const response=await fetch(`http://127.0.0.1:${port}/internal/reminders`,{method:'POST',headers,redirect:'manual'});assert.equal(response.status,200,'Compiled endpoint must authenticate');const data=await response.json();assert.equal(data.phase,'disabled');assert.equal(data.sent,0);return Response.json(data);
+    }});
+    runtime=new Miniflare({...options,telemetry:{enabled:false}});await(await runtime.getWorker()).scheduled({scheduledTime:Date.now(),cron:'*/5 * * * *'});
+    assert.equal(outbound,1);for(const receipt of ['LOCAL_POOL_CONFIGURATION_VERIFIED','LOCAL_DATABASE_TRANSACTION','LOCAL_STATUS_READ'])assert.equal((output.match(new RegExp(receipt,'g'))??[]).length,1,receipt+' / '+output+' / '+errors);
+    const denied=await fetch(`http://127.0.0.1:${port}/internal/reminders`,{method:'POST',headers:{host:'projectlocal.app','x-forwarded-proto':'https',authorization:'Bearer synthetic-admin',cookie:'volunteer_token=synthetic'}});assert.equal(denied.status,401);assert.equal((output.match(/LOCAL_STATUS_READ/g)??[]).length,1);assert(!output.includes('LOCAL_FORBIDDEN_NETWORK'));assert(!errors.includes('Error'),errors);
+    console.log('PASS workerd -> compiled Next canonical endpoint -> real pg -> LOCAL Supavisor -> narrow LOGIN / transaction-local worker: one request, one transaction, one Off status read, zero provider traffic. Invalid HMAC before DB; production TLS configuration asserted; loopback termination fixture, not a hosted Vercel connectivity claim.');
+   }finally{
+    if(runtime)await runtime.dispose();server.stdin.end('stop');await new Promise(resolve=>{const timer=setTimeout(()=>{server.kill();resolve();},5000);server.once('exit',()=>{clearTimeout(timer);resolve();});});
+   }
   });
-  let outbound=0;
-  const options=convertV4MiniflareOptions({name:'compiled-local-clock',modules:true,scriptPath:fileURLToPath(new URL('../workers/reminder-clock/dist/index.js',import.meta.url)),compatibilityDate:'2026-10-22',cf:false,bindings:{REMINDER_SCHEDULER_HMAC_SECRET:secret},outboundService:async request=>{
-   outbound++;assert.equal(request.url,'https://projectlocal.app/internal/reminders');
-   const headers=new Headers([...request.headers]);headers.set('host','projectlocal.app');headers.set('x-forwarded-proto','https');
-   const response=await fetch(`http://127.0.0.1:${port}/internal/reminders`,{method:'POST',headers,redirect:'manual'});
-   assert.equal(response.status,200,'Compiled canonical endpoint must authenticate');const data=await response.json();assert.equal(data.phase,'disabled');assert.equal(data.sent,0);return Response.json(data);
-  }});
-  runtime=new Miniflare({...options,telemetry:{enabled:false}});const worker=await runtime.getWorker();await worker.scheduled({scheduledTime:Date.now(),cron:'*/5 * * * *'});
-  assert.equal(outbound,1);assert.equal((output.match(/LOCAL_STATUS_READ/g)??[]).length,1);assert(!output.includes('LOCAL_FORBIDDEN_NETWORK'));
-  const denied=await fetch(`http://127.0.0.1:${port}/internal/reminders`,{method:'POST',headers:{host:'projectlocal.app','x-forwarded-proto':'https',authorization:'Bearer synthetic-admin',cookie:'volunteer_token=synthetic'}});assert.equal(denied.status,401);
-  assert.equal((output.match(/LOCAL_STATUS_READ/g)??[]).length,1);assert.equal(fingerprint(),before);assert(!errors.includes('Error'));
-  console.log('PASS actual workerd -> loopback HTTP/TLS-termination fixture -> compiled production Next route -> real local restricted JWT status RPC: one request / one read / disabled; unsigned bearer+cookie denied before DB; zero forbidden/provider network and exact public/Auth fingerprints.');
- } finally {
-  if(runtime)await runtime.dispose();server.stdin.end('stop');await new Promise(resolve=>{const timer=setTimeout(()=>{server.kill();resolve();},5000);server.once('exit',()=>{clearTimeout(timer);resolve();});});
- }
+ });
 }

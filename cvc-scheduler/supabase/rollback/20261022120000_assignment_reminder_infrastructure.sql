@@ -14,5 +14,8 @@ do $$ begin
 end $$;
 drop function project_local_reminder_infrastructure.activate_delivery(text);
 drop schema project_local_reminder_infrastructure;
+-- No CASCADE: unexpected ownership/dependencies must fail the whole rollback.
+revoke project_local_reminder_worker from project_local_reminder_runner;
+drop role project_local_reminder_runner;
 delete from supabase_migrations.schema_migrations where version='20261022120000';
 commit;

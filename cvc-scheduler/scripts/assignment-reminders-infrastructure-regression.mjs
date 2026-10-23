@@ -1,46 +1,32 @@
-// Local injected transport only. Never reads a production secret or calls a provider.
+// Injected database transport/provider only. No production connection or send.
 import assert from 'node:assert/strict';
-import { signSchedulerRequest, TIMESTAMP_HEADER, SIGNATURE_HEADER } from '../workers/reminder-clock/src/protocol.mjs';
-import { handleReminderWorker, createReminderDelivery } from '../lib/notifications/reminderWorker.server.ts';
-import { sweepAssignmentReminders } from '../lib/notifications/assignmentReminders.ts';
-const workspace='11111111-1111-4111-8111-111111111111';
-const secret='1'.repeat(64);
-const timestamp=String(Math.floor(Date.now()/1000));
-const signature=await signSchedulerRequest(secret,timestamp);
-const credential=(role='project_local_reminder_worker',exp=4102444800)=>'e30.'+Buffer.from(JSON.stringify({role,exp})).toString('base64url')+'.local-mocked-signature';
-const environment={NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321',NEXT_PUBLIC_SUPABASE_ANON_KEY:'local-placeholder',REMINDER_SCHEDULER_HMAC_SECRET:secret,REMINDER_DATABASE_JWT:credential(),ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT:'resend',ASSIGNMENT_NOTIFICATION_FROM:'Local test <test@example.invalid>',ASSIGNMENT_NOTIFICATION_BASE_URL:'https://projectlocal.app',RESEND_API_KEY:'re_local_fixture_only'};
-const request=(authorization, cookie)=>new Request('https://projectlocal.app/internal/reminders',{method:'POST',headers:{...(authorization===signature?{[TIMESTAMP_HEADER]:timestamp,[SIGNATURE_HEADER]:signature}:authorization?{authorization}:{}),...(cookie?{cookie}:{})}});
-let providerCalls=0;const commands=[];
-const disabledFetch=async(url,options)=>{
- assert.ok(String(url).startsWith('http://127.0.0.1:54321/rest/v1/rpc/'),'No real network permitted');
- const body=JSON.parse(options.body);commands.push(body.p_command);
- assert.equal(body.p_command,'status','Disabled execution must never sync, claim or materialize');
- return Response.json({enabled:false,workspaces:[workspace]});
-};
-for(const auth of [null,'Bearer invalid',`Bearer ${credential('authenticated')}`,`Bearer ${credential('anon')}`,`Bearer ${credential('service_role')}`]){
- const response=await handleReminderWorker(request(auth,'admin_session=local; volunteer_token=local; quick_view_token=local'),environment,disabledFetch);
- assert.equal(response.status,401);
-}
-assert.equal(commands.length,0);
-let configurationReads=0;
-Object.defineProperty(environment,'RESEND_API_KEY',{configurable:true,get(){configurationReads++;throw new Error('Off must not initialize provider');}});
-const disabled=await handleReminderWorker(request(signature),environment,disabledFetch);
-assert.equal(disabled.status,200);const result=await disabled.json();
-assert.equal(result.phase,'disabled');
-assert.equal(configurationReads,0);
-delete environment.RESEND_API_KEY;
-const onWithoutProvider=[];
-assert.equal((await handleReminderWorker(request(signature),{...environment,ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT:'disabled'},async(_url,options)=>{
- const command=JSON.parse(options.body).p_command;onWithoutProvider.push(command);assert.equal(command,'status');return Response.json({enabled:true,workspaces:[workspace]});
-})).status,503);
-assert.deepEqual(onWithoutProvider,['status'],'Enabled but misconfigured delivery fails before writes');
-assert.equal(result.sent,0);assert.equal(result.claimed,0);assert.deepEqual(commands,['status']);
-for(const token of [credential('service_role'),credential('authenticated'),credential('project_local_reminder_worker',1)]){
- const n=commands.length;assert.equal((await handleReminderWorker(request(signature),{...environment,REMINDER_DATABASE_JWT:token},disabledFetch)).status,503);assert.equal(commands.length,n);
-}
-for(const failure of [async()=>{throw new Error('mock unreachable');},async()=>new Response('',{status:401}),async()=>new Response('',{status:500}),async()=>new Response('invalid-json'),async()=>Response.json({unexpected:true})]){
- assert.equal((await handleReminderWorker(request(signature),environment,failure)).status,503);
-}
+import {signSchedulerRequest,TIMESTAMP_HEADER,SIGNATURE_HEADER} from '../workers/reminder-clock/src/protocol.mjs';
+import {handleReminderWorker,createReminderDelivery} from '../lib/notifications/reminderWorker.server.ts';
+import {createReminderWorkerRpc,reminderDatabaseConfiguration} from '../lib/notifications/reminderDatabase.server.ts';
+import {sweepAssignmentReminders} from '../lib/notifications/assignmentReminders.ts';
+const workspace='11111111-1111-4111-8111-111111111111',secret='1'.repeat(64);
+const timestamp=String(Math.floor(Date.now()/1000)),signature=await signSchedulerRequest(secret,timestamp);
+const databaseUrl=new URL('postgresql://aws-1-us-west-2.pooler.supabase.com:6543/postgres');databaseUrl.username='project_local_reminder_runner.wdlaauzknfggoqldolmx';databaseUrl.password='synthetic-local-only';
+const environment={REMINDER_SCHEDULER_HMAC_SECRET:secret,REMINDER_DATABASE_URL:databaseUrl.toString(),ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT:'resend',ASSIGNMENT_NOTIFICATION_FROM:'Local test <test@example.invalid>',ASSIGNMENT_NOTIFICATION_BASE_URL:'https://projectlocal.app'};
+const request=auth=>new Request('https://projectlocal.app/internal/reminders',{method:'POST',headers:auth===signature?{[TIMESTAMP_HEADER]:timestamp,[SIGNATURE_HEADER]:signature}:{authorization:auth??'',cookie:'synthetic-session'}});
+let providerCalls=0,configurationReads=0,factoryCalls=0,connections=0;
+const commands=[],queries=[],releases=[];
+let dbResult={enabled:false,workspaces:[workspace]},failQuery=false;
+const pool={connect:async()=>{connections++;return {query:async(text,values)=>{queries.push(text);if(text.startsWith('SELECT public.')){commands.push(values[0]);if(failQuery)throw new Error('synthetic db failure');return {rows:[{result:dbResult}]};}return {rows:[]};},release:discard=>releases.push(discard)};}};
+const factory=env=>{factoryCalls++;return createReminderWorkerRpc(env,pool);};
+const noProvider=async()=>{providerCalls++;throw new Error('No provider network allowed');};
+Object.defineProperty(environment,'RESEND_API_KEY',{configurable:true,get(){configurationReads++;throw new Error('Off must not read provider configuration');}});
+for(const auth of [null,'Bearer invalid','Bearer authenticated','Bearer service_role'])assert.equal((await handleReminderWorker(request(auth),environment,noProvider,factory)).status,401);
+assert.equal(factoryCalls,0);assert.equal(connections,0);
+const disabled=await handleReminderWorker(request(signature),environment,noProvider,factory),result=await disabled.json();
+assert.equal(disabled.status,200);assert.equal(result.phase,'disabled');assert.deepEqual(commands,['status']);assert.equal(connections,1);assert.equal(configurationReads,0);assert.equal(providerCalls,0);
+assert.equal(queries[0],'BEGIN');assert.equal(queries[1],'SET LOCAL ROLE project_local_reminder_worker');assert.equal(queries.at(-1),'COMMIT');assert.deepEqual(releases,[false]);
+const cfg=reminderDatabaseConfiguration(environment);assert.equal(cfg.max,1);assert.equal(cfg.ssl.rejectUnauthorized,true);assert.equal(cfg.connectionTimeoutMillis,5000);assert.equal(cfg.query_timeout,10000);assert(!cfg.connectionString);assert(!queries.some(q=>/PREPARE|SET ROLE/.test(q)));
+for(const url of [undefined,environment.REMINDER_DATABASE_URL.replace('project_local_reminder_runner.','postgres.'),environment.REMINDER_DATABASE_URL.replace(':6543',':5432'),environment.REMINDER_DATABASE_URL+'?sslmode=disable',environment.REMINDER_DATABASE_URL.replace('aws-1-us-west-2.pooler.supabase.com','example.invalid')])assert.throws(()=>reminderDatabaseConfiguration({...environment,REMINDER_DATABASE_URL:url}));
+failQuery=true;assert.equal((await handleReminderWorker(request(signature),environment,noProvider,factory)).status,503);assert.equal(queries.at(-1),'ROLLBACK');assert.equal(releases.at(-1),true);failQuery=false;
+for(const invalid of [null,{unexpected:true},{enabled:false,workspaces:'invalid'}]){dbResult=invalid;assert.equal((await handleReminderWorker(request(signature),environment,noProvider,factory)).status,503);}
+delete environment.RESEND_API_KEY;dbResult={enabled:true,workspaces:[workspace]};const start=commands.length;
+assert.equal((await handleReminderWorker(request(signature),{...environment,ASSIGNMENT_NOTIFICATION_EMAIL_TRANSPORT:'disabled'},noProvider,factory)).status,503);assert.deepEqual(commands.slice(start),['status']);
 // Production-shaped adapter exists, but database false makes even an eligible
 // fixture unreachable before any write or provider operation.
 const config={ok:true,transport:'resend',origin:'https://projectlocal.app',from:'Local test <test@example.invalid>',apiKey:'re_local_fixture_only'};
@@ -66,4 +52,4 @@ await Promise.all([sweepAssignmentReminders(concurrentRpc,'https://projectlocal.
 assert.equal(concurrentSends,1);
 const changedRpc=async command=>command==='status'?{enabled:true,workspaces:[workspace]}:command==='sync'?{evaluated:1,after:null}:command==='due'?[context.occurrenceId]:command==='claim'?context:null;
 await sweepAssignmentReminders(changedRpc,'https://projectlocal.app',createReminderDelivery(config,async()=>{throw new Error('Changed eligibility must not send');}));
-console.log('PASS Phase B1: endpoint denial, finite worker credentials, disabled SELECT-only hard gate, lazy provider initialization denied while Off, failure/unknown mapping, idempotency, overlapping claims, changed eligibility; all network injected, zero real provider calls');
+console.log('PASS Phase B1: endpoint denial, narrow SQL configuration/transaction/release, disabled SELECT-only hard gate, lazy provider initialization denied while Off, failure/unknown mapping, idempotency, overlapping claims, changed eligibility; all network injected, zero real provider calls');

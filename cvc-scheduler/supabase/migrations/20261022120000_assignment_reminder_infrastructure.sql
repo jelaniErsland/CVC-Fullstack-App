@@ -1,5 +1,5 @@
 -- 12.57C: external Cloudflare clock. Owner ignition support ONLY.
--- No extension, scheduler, secret, credential, enrollment or provider installation.
+-- No password, extension, scheduler, JWT, enrollment or provider installation.
 begin;
 do $$ begin
  if current_user<>'postgres' then raise exception 'Owner-only infrastructure installation' using errcode='42501';end if;
@@ -15,8 +15,16 @@ do $$ begin
   raise exception 'Reminder infrastructure requires disabled, unactivated reminders with no history';
  end if;
 end $$;
+-- A passwordless login is inert until separate owner-controlled provisioning.
+-- Refuse an unexpected existing identity rather than adopting its privileges.
+create role project_local_reminder_runner login noinherit nosuperuser nocreatedb
+ nocreaterole noreplication nobypassrls connection limit 2 password null;
+grant project_local_reminder_worker to project_local_reminder_runner
+ with inherit false, set true, admin false;
+-- No direct business-table/function grants. PUBLIC catalogue visibility and
+-- session-local temporary objects are explicit owner-approved PG exceptions.
 create schema project_local_reminder_infrastructure authorization postgres;
-revoke all on schema project_local_reminder_infrastructure from public,anon,authenticated,service_role,project_local_reminder_worker;
+revoke all on schema project_local_reminder_infrastructure from public,anon,authenticated,service_role,project_local_reminder_worker,project_local_reminder_runner;
 -- FUTURE OWNER IGNITION ONLY. No application/system worker role can execute it.
 -- Installation does not call it. Server time and the one-time state change are atomic.
 create function project_local_reminder_infrastructure.activate_delivery(p_owner_confirmation text) returns timestamptz
@@ -37,5 +45,5 @@ begin
  update public.assignment_reminder_activation set baseline_at=baseline,delivery_enabled=true where singleton;
  return baseline;
 end $$;
-revoke all on all functions in schema project_local_reminder_infrastructure from public,anon,authenticated,service_role,project_local_reminder_worker;
+revoke all on all functions in schema project_local_reminder_infrastructure from public,anon,authenticated,service_role,project_local_reminder_worker,project_local_reminder_runner;
 commit;
