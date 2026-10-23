@@ -1,14 +1,9 @@
 import 'server-only';
-import { timingSafeEqual } from 'node:crypto';
+import { verifySchedulerRequest } from '../../workers/reminder-clock/src/protocol.mjs';
 import { sweepAssignmentReminders, type ReminderDelivery, type ReminderRpc } from './assignmentReminders.ts';
 import { readInitialAssignmentEmailConfiguration, type InitialAssignmentEmailConfiguration } from './initialAssignmentEmail.server.ts';
 import { sendSingleRecipientMessage } from './singleRecipientTransport.server.ts';
 
-export function authorizeReminderWorker(authorization: string | null, secret: string | undefined) {
-  if (!secret || secret.length < 32 || secret.length > 256 || !authorization || authorization.length > 300) return false;
-  const expected = Buffer.from(`Bearer ${secret}`), actual = Buffer.from(authorization);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
-}
 export function createReminderWorkerRpc(environment: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch): ReminderRpc {
   const root = environment.NEXT_PUBLIC_SUPABASE_URL;
   const credential = environment.REMINDER_DATABASE_JWT;
@@ -39,14 +34,15 @@ export function createReminderDelivery(configuration: InitialAssignmentEmailConf
 }
 
 export async function runReminderWorker(environment: NodeJS.ProcessEnv = process.env, request: typeof fetch = fetch) {
-  const configuration = readInitialAssignmentEmailConfiguration(environment);
-  const delivery = createReminderDelivery(configuration, request);
-  const stats = await sweepAssignmentReminders(createReminderWorkerRpc(environment, request), 'https://projectlocal.app', delivery);
-  return { ...stats, providerConfigured: configuration.ok };
+  return sweepAssignmentReminders(createReminderWorkerRpc(environment, request), 'https://projectlocal.app', () => {
+    const delivery = createReminderDelivery(readInitialAssignmentEmailConfiguration(environment), request);
+    if (!delivery) throw new Error('Reminder provider configuration unavailable');
+    return delivery;
+  });
 }
 
 export async function handleReminderWorker(request: Request, environment: NodeJS.ProcessEnv = process.env, requestProvider: typeof fetch = fetch) {
-  if (!authorizeReminderWorker(request.headers.get('authorization'), environment.REMINDER_WORKER_SECRET)) {
+  if (!await verifySchedulerRequest(request, environment.REMINDER_SCHEDULER_HMAC_SECRET)) {
     return new Response(null, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   }
   try {

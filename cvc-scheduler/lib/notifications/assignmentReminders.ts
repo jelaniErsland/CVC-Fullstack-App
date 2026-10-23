@@ -56,7 +56,7 @@ export type ReminderRpc = (command: string, payload?: Record<string, unknown>) =
 type Outcome = { status: "accepted"; providerMessageId: string } | { status: "rejected" } | { status: "unknown" };
 export type ReminderDelivery = { kind: 'simulated' | 'provider'; send: (context: ReminderContext, message: ReturnType<typeof buildReminderMessage>) => Promise<Outcome> };
 export type ReminderSimulator = ReminderDelivery & { kind: 'simulated' };
-export async function sweepAssignmentReminders(rpc: ReminderRpc, origin: string, delivery?: ReminderDelivery) {
+export async function sweepAssignmentReminders(rpc: ReminderRpc, origin: string, deliverySource?: ReminderDelivery | (() => ReminderDelivery | undefined)) {
   const stats = { startedAt: new Date().toISOString(), endedAt: '', phase: 'disabled', evaluated: 0, eligible: 0, claimed: 0, sent: 0, definiteFailures: 0, unknown: 0, skipped: { disabled: 0, changed: 0, claimedElsewhere: 0 }, continuation: false };
   const status = await rpc('status') as { enabled: boolean; workspaces: string[] };
   if (!status || typeof status.enabled !== 'boolean' || !Array.isArray(status.workspaces)
@@ -65,11 +65,19 @@ export async function sweepAssignmentReminders(rpc: ReminderRpc, origin: string,
   }
   // Disabled runs are SELECT-only: do not sync cursors, enroll, claim or resolve
   // recipients. A configured transport never overrides this database decision.
-  if (status.enabled !== true || !delivery) {
+  if (status.enabled !== true) {
     stats.skipped.disabled = 1;
     stats.endedAt = new Date().toISOString();
     return stats;
   }
+  // Neither provider configuration nor adapter initialization is reachable while Off.
+  const delivery = typeof deliverySource === 'function' ? deliverySource() : deliverySource;
+  if (!delivery) {
+    stats.skipped.disabled = 1;
+    stats.endedAt = new Date().toISOString();
+    return stats;
+  }
+  stats.phase = delivery.kind === 'simulated' ? 'simulation' : 'delivery';
   for (const workspaceId of status.workspaces.slice(0, 20)) {
     // Sync only schedules. Preview itself is a separate read-only RPC and never calls sync.
     let after: string | null = null;
@@ -81,7 +89,6 @@ export async function sweepAssignmentReminders(rpc: ReminderRpc, origin: string,
     }
     const due = await rpc('due', { workspaceId }) as string[];
     stats.eligible += due.length;
-    stats.phase = delivery.kind === 'simulated' ? 'simulation' : 'delivery';
     for (const occurrenceId of due.slice(0, 20)) {
       const claim = await rpc('claim', { occurrenceId }) as ReminderContext | null;
       if (!claim) { stats.skipped.claimedElsewhere++; continue; }

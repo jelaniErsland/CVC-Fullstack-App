@@ -60,6 +60,9 @@ try {
  let c=claim(pending[0].id,'2031-01-04T16:00:00Z');assert(c);assert(revalidate(c,'2031-01-04T16:00:01Z'));finalize(c,'sent','2031-01-04T16:00:02Z');assert.equal(claim(pending[0].id,'2031-01-04T16:01:00Z'),null);
  sync('2031-01-07T15:59:59Z');assert(occurrences().some(o=>o.key==='pending:2'));const p2=occurrences().find(o=>o.key==='pending:2');assert(claim(p2.id,'2031-01-07T16:00:00Z'));
  console.log('PASS pending anchor, <3d, exact 3d, later ordinal, disabled gate and rerun');
+ configure();sync();const stoppedClaim=claim(occurrences()[0].id,'2031-01-04T16:00:00Z');assert(stoppedClaim);
+ sql('update public.assignment_reminder_activation set delivery_enabled=false');assert.equal(revalidate(stoppedClaim,'2031-01-04T16:00:01Z'),null);
+ console.log('PASS emergency Off rejects and invalidates an already-claimed provider dispatch');
  configure('needs_response','2031-01-06');sync();c=claim(occurrences()[0].id,'2031-01-04T16:00:00Z');assert.equal(revalidate(c,'2031-01-04T16:00:01Z').insideCutoff,true);
  assert.equal(revalidate(c,'2031-01-06T15:00:00Z'),null);
  configure('needs_response','2031-01-06');sync();assert.equal(claim(occurrences()[0].id,'2031-01-06T15:00:00Z'),null);
@@ -101,7 +104,7 @@ try {
    const ctx={...claims[0],kind:key.startsWith('shift')?'shift':'response',occurrenceKey:key,insideCutoff:inside};const m=buildReminderMessage(ctx,'https://projectlocal.app');assert(m.text.includes('8:00 AM'));assert(!/08:00|:00:00|\/v\/access\/|PRIVATE|Fellow worker/.test(m.text));if(ctx.kind==='shift')assert(!m.text.includes("choose Confirm"));
  }
  console.log('PASS names-only-safe minimal payload, lookup-only links, templates, shared identities and read-only preview authorization');
- const events=fs.readFileSync(new URL('../supabase/scheduler/assignment-reminders.sql.example',import.meta.url),'utf8');assert(events.includes("'*/5 * * * *'"));assert(events.includes('vault.decrypted_secrets'));assert(!migration.includes('cron.schedule('));
+ const clock=JSON.parse(fs.readFileSync(new URL('../workers/reminder-clock/wrangler.jsonc',import.meta.url),'utf8'));assert.deepEqual(clock.triggers.crons,[]);assert.deepEqual(clock.env.production.triggers.crons,['*/5 * * * *']);assert(!migration.includes('cron.schedule('));
  // Engine tests inject only local RPC/provider fakes. No real fetch available to simulator.
  let sends=0;const base={...claims[0],insideCutoff:false};let claimed=false;
  const fakeRpc=async(command)=>command==='status'?{enabled:true,workspaces:[f.ws]}:command==='sync'?{evaluated:1,after:null}:command==='due'?['occurrence']:command==='claim'?(claimed?null:(claimed=true,base)):command==='revalidate'?base:'sent';

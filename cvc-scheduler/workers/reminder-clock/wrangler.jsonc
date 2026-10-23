@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "project-local-reminder-clock",
+  "main": "src/index.mjs",
+  "compatibility_date": "2026-10-22",
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": [] },
+  "observability": { "enabled": false },
+  "env": {
+    "production": {
+      "name": "project-local-reminder-clock",
+      "triggers": { "crons": ["*/5 * * * *"] }
+    }
+  }
+}

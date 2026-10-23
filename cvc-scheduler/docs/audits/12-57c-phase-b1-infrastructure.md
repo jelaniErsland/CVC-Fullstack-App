@@ -1,84 +1,65 @@
-# 12.57C Phase B1 — stopped before production provisioning
+# 12.57C revised Phase B1 — external Cloudflare clock
 
-Production remains application `fb4a54a974d9124dd92143ae6545146b6168afc1`, database 54 / `20261021130000`. No production migration, application deployment, Cron, secret, worker credential, provider wiring, activation or operational mutation was performed. Real reminder emails/provider calls: ZERO.
+Implementation only. Production remains application fb4a54a974d9124dd92143ae6545146b6168afc1 / DB54 (20261021130000), delivery Off, baseline NULL. No production Worker, Cron, secret, JWT, provider wiring, migration or deployment is authorized by this document.
 
-## Fresh hosted inspection
+## Final architecture
 
-Read-only production inspection verified the expected application Production/Ready, all ten retained catalogue/security fingerprints, exact 102-public-function policy, PUBLIC execute zero, four reminder tables RLS/FORCE RLS, disabled delivery, NULL baseline and zero reminder enrollment/occurrence/event/Communication records. The independent backup task remains Enabled/Ready/idle, migration54 lock and daily03:15 with its full definition unchanged.
+Cloudflare Workers Free scheduled() -> one canonical HTTPS POST with HMAC-SHA256 -> Vercel server-only handler -> restricted finite worker JWT -> existing narrow status RPC -> disabled immediate return. Cloudflare owns no eligibility, recipient, timezone, claim or provider logic.
 
-Actual hosted capabilities: pg_cron 1.6.4 and pg_net 0.20.4 are available, neither installed; Vault 0.3.1 is installed. Both modules are preloaded and listed in the hosted privileged-extension configuration. No billing/plan change was made. The normal production postgres identity is not superuser and cannot SET ROLE supabase_admin. Ordinary anon/authenticated/worker roles cannot read Vault's decrypted view. The pre-existing privileged service_role has Vault read access; no secret was placed there by this work.
+The shared Web Crypto protocol, bounded Worker, independent Wrangler package and exact provisioning/rotation/kill-switch runbook are in [workers/reminder-clock/README.md](../../workers/reminder-clock/README.md). Both rejected database HTTP architectures are removed from the migration and installation path. The historical pg_net candidate79b008d is not deployable.
 
-The owner restored dashboard sign-in. Metadata shows current ECC/P-256 signing and a previous still-accepted HS256 legacy key. The legacy secret was never revealed, copied or persisted. The reviewed finite custom-role JWT could use that existing accepted signing key without a project-wide key rotation. No token was issued.
+## Scope and state
 
-## Blocking security finding
+- Migration55 now creates ONE private schema and ONE owner-only, SECURITY INVOKER activation function with empty search_path. No extensions, diagnostics tables, scheduler, Vault state or delivery backfill. It refuses anything except exact54 and disabled/NULL/empty reminder history.
+- Existing read/write table grants, RLS, public functions, worker role and narrow RPC remain unchanged; contracted public function policy remains102 with PUBLIC EXECUTE0. New private function has no PUBLIC/application/worker EXECUTE and no application schema USAGE.
+- True activation atomicity cannot be supplied by two independent PostgREST writes: the private SQL function locks the singleton, validates explicit owner confirmation and empty history, and writes statement_timestamp baseline + true in one transaction. It sends/enrolls nothing. It is never called in production by B1.
+- Worker scheduled requests have no body and contain no shared secret value. v1 signature binds timestamp, method, canonical hostname and path. Exact HTTPS origin/path/method and no query string are required. ±120s clock skew allowed; older/further-future signatures rejected. Same valid signature may be replayed within this window; durable database/provider idempotency remains authoritative.
+- All 301/302/303/307/308 are rejected with redirect:manual. One invocation <=one request, no retries, 10-second deadline including body consumption, <=4096-byte response, no public HTTP trigger. Logs are strictly operational metadata.
+- Provider configuration/adapter initialization is lazy AFTER authoritative status. Off performs only status; On without valid provider config returns honest503 before writes. Existing provider abstraction and accepted/rejected/unknown/stable-key behavior retained.
+- Small Communications duplicate-heading cleanup retained: visible tab owns heading/Off badge; card retains accessible sr-only heading and normal human copy. No activation control or infrastructure jargon.
 
-**Do not install the proposed migration with the ordinary postgres release connection.**
+## Account/platform review
 
-An isolated local test with the same available extension versions and Supabase extension-management hooks reproduced extension objects owned by supabase_admin. After installation, net.http_request_queue and net._http_response were SELECT-accessible to PUBLIC/application roles, and net schema/function grants were broader than the required worker boundary. A queued HTTP request contains its Authorization header, so the reviewed reusable Vault request bearer must not be provisioned into that queue while these grants remain.
+Read-only authenticated Cloudflare dashboard inspection: Workers Free is Current plan; no Workers/projects exist; requests today0/100000. Account's displayed Free limits:100 Workers,5 Cron Triggers,50 subrequests per invocation,10ms CPU. No upgrade/payment details requested during inspection, and no Create/Deploy action performed. One Worker/Cron,288 polls/day fits documented limits. Hosted CPU/account deployment acceptance must be confirmed during the later approved release; stop if a paid-plan/payment requirement appears. No paid subscription was accepted.
 
-The ordinary postgres role's REVOKEs produced warnings without removing owner-issued grants. Testing effective privileges caught this; checking only SQL success would have missed it. The migration now explicitly checks effective schema/table privileges and extension PUBLIC EXECUTE and raises a clear security-review error inside the migration transaction. A test proved that this refusal leaves ledger54, public data/functions, reminder state and extension installation unchanged.
+Current canonical production route responds405 to HEAD without redirect (no Location). Current unsigned POST must fail authentication; the revised signed path is tested locally before later production setup.
 
-This is a local reproduction of an unsafe managed-extension default, **not** a claim that absent production net tables already expose credentials. Hosted metadata confirms the normal release connection cannot assume the managed object-owner role. The remaining requirement is a supported, reviewed way to establish the required hosted extension ACLs before secrets are provisioned. Production extensions were not installed experimentally.
+## Test evidence
 
-### Concrete architecture review needed
+- Standard HMAC compared with an independent Node crypto result; wrong signature/secret/method/host/path/query/protocol, malformed timestamp and ±120s boundaries fail correctly. No cookie/admin/volunteer/Quick View/bearer substitute. No raw scheduler secret transmitted.
+- Real loopback redirect matrix: exactly1 source request each; second origin receives0. Stalled HTTP body terminates around10002ms, no retry. DNS/connection failure,401/403/404/429/500, malformed/oversized JSON tested with injected/local transports only.
+- Wrangler4.152.0 dry build: ~3.7KiB source/~1.6KiB gzip. Actual local workerd scheduled handler verifies the same redirect matrix. First disabled event: one outbound intercepted canonical request, one REAL local restricted-role PostgREST status read,0 provider initialization/writes. Public/Auth and sequence fingerprints match exactly. Two overlapping disabled events likewise remain read-only.
+- Existing local reminder suite passes cadence/local09:00/day-before17:00/future-only/DST/overnight/shared household/privacy/reschedule/retry/backoff/unknown outcome/15min windows. Simultaneous DB workers obtain one claim/provider opportunity. Added emergency-Off test rejects and invalidates a claimed dispatch.
+- Migration54->55 forced failure, clean apply, empty rollback/replay, unsafe baseline/history refusal, owner/ACL/search_path, public/Auth/RLS/policy/default grants unchanged, exact102-function policy pass. Activation tests execute only inside disposable LOCAL transactions that roll back; no baseline persists. No HTTP/Cron extensions installed even locally.
+- TypeScript/full ESLint/whitespace pass. Main guarded Webpack passes with Next16.2.7 verification receipt before compile. Canonical Turbopack, canonical instruction-privacy and final build receipts are recorded in the final release-prep evidence/report.
 
-The preferred path retains Supabase Cron → pg_net → private worker and the existing narrow JWT role. It requires a Supabase-supported managed-owner operation that:
+## Separate tooling
 
-1. Installs the reviewed extension versions under the controlled migration/recovery protocol.
-2. Removes PUBLIC/anon/authenticated/service_role/worker access to Cron/network schemas, functions, tables and sequences, including request headers/responses; grants only the required execution/diagnostic rights to the owner scheduler identity.
-3. Verifies effective privileges rather than accepting REVOKE warnings.
-4. Does not give the app, worker or ordinary coordinator supabase_admin/superuser privileges.
-5. Preserves existing Vault and application security boundaries.
+Backup contract candidate eda22abad6f92f63db0af0ab9fda9434b01afcb4 adds exact54->55 and retains51->52/52->53/53->54. Fixture tests deny skipped/reverse/unknown/no-op/wrong identity/current/target/runtime/Enabled/Running/Queued/Duplicate states. NOT installed. Active permanent task remains Enabled/Ready at54,03:15; never triggered.
 
-If a managed installation has to precede the normal ledger transaction, that platform step and migration55's reviewed-preinstalled-extension checks need separate explicit review; the current draft deliberately rejects unexpected preinstalled extensions. Do not bypass its guard. If Supabase cannot provide a supported grant-hardening path, an alternate invocation architecture must be approved before implementation. No fallback, extra privileged credential or project-wide signing-key change was silently substituted.
+## Later production B1 and ignition boundary
 
-## Local implementation prepared (not deployed)
+Follow the README dependency order: fresh54 checkpoint + exact restore; approved independent backup tooling; disable idle backup, apply55 once, postflight/lock55; deploy inert Worker with explicit empty Cron; provision matching HMAC and Vercel-only finite JWT through reviewed handling; deploy exact application with hosted guard; verify disabled; enable exact five-minute Cron; restore backup Enabled55; observe >=3 NATURAL disabled runs with unchanged reminder fingerprints; STOP for owner ignition approval. No activation during B1.
 
-The runtime uses the existing server-only single-recipient transport and stable operation/recipient/attempt idempotency key. No independent provider stack is introduced. Database status false makes the engine return after a single SELECT-only status RPC, before sync/cursor writes, enrollment, due reads, claim, revalidation or provider dispatch. When enabled later, existing atomic claim and fresh database revalidation still precede provider invocation. Definite rejection and unknown/timeout/malformed acceptance retain existing outcome semantics.
+Primary emergency stop: database delivery=false, preserving baseline/history. Independent stop: Cloudflare Cron deletion or SAME Worker deployment using wrangler.disabled.jsonc (explicit crons=[]; merely omitting the property does not remove triggers). In-flight/accepted provider requests cannot be recalled; unknown outcomes must be reconciled without blind resend.
 
-The proposed migration55 `20261022120000_assignment_reminder_infrastructure.sql` installs extensions only if the effective grant gate can pass; adds one owner-only technical invocation relation and two owner-only functions in a separate, unexposed application infrastructure schema. That schema is included by the existing backup's non-managed-schema dump contract. No public function signature, table grant or existing RLS policy changes. The new relation uses RLS/FORCE RLS, stores only request ID/server time, has no sequence and bounds diagnostics retention to seven days. It contains no volunteer data or credentials.
+## Limitations
 
-`invoke_worker()` is owner-only SECURITY INVOKER with empty search_path. It reads one specifically named Vault request secret, targets the fixed HTTPS production endpoint, queues a 10-second HTTP POST and records only request ID/time. The source-controlled scheduler installer, not the migration, installs exactly one `*/5 * * * *` job after the healthy authenticated disabled-worker gate. Cron contains only the owner-only function call, no credential or volunteer data. Neither function nor installer was invoked in production.
+- No production Cloudflare request or credential has been provisioned; three natural hosted runs and actual hosted CPU measurements belong to the approved release.
+- Current hosted signing metadata has an active ECC key and accepted previous HS256 key; no secret revealed. Accepted finite custom-role token issuance must be reconfirmed during provisioning. New broad Supabase secret keys are not a substitute. Rotation>=48h before7-day expiry requires an operational owner; no new credential automation was authorized.
+- Local workerd outbound interception models TLS/network routing; the HMAC handler and database RPC are real. A compiled production-mode endpoint check is recorded separately. Local results are not hosted latency claims.
+- SEC-12.57-01 remains OPEN / SEPARATE and unchanged.
 
-### Future activation contract — not called in production
+Real provider calls: ZERO. Production mutations: NONE. Delivery remains OFF; baseline remains NULL.
 
-`project_local_reminder_infrastructure.activate_delivery(text)` is owner-only SECURITY INVOKER, empty search_path, inaccessible to anon/authenticated/service_role/worker. It requires the exact explicit owner-confirmation phrase, locks the singleton activation row, refuses an existing baseline/enrollment/occurrence/event/reminder-operation history and writes statement_timestamp() plus delivery=true atomically. It accepts no caller-supplied clock. A raised error rolls both fields back. No enrollment/send happens inside the activation function; the next bounded scheduled sweep performs prospective synchronization.
+## Final implementation verification
 
-Existing pending assignments then anchor at the activation local date with first reminder +3 days at09:00. Confirmed assignments enroll only strictly future 30/14/7/3-day09:00 thresholds and previous-day17:00 final threshold. Existing sent/unknown history is not reset. Repeated activation refuses rather than changing the baseline. Only disposable local transactions tested activation; all were rolled back.
+- Clean canonical Git export + locked install: guarded Next16.2.7 Turbopack and Webpack both PASS; successful guarded-router receipt occurs before compilation. Root application package/lockfile versions unchanged; the standalone Wrangler package has its own intentional lockfile.
+- Actual workerd -> local HTTP/TLS-termination fixture -> COMPILED production Next route -> actual local restricted JWT PostgREST status: PASS. Exactly1 request/1 status read on a valid disabled run; unsigned bearer/cookie denied before DB; public/Auth fingerprints exact; no forbidden/provider network. Direct handler test also verifies real PostgREST rejection of a forged JWT, with zero provider initialization/writes.
+- Component SSR Off/On fixtures: PASS, accessible hidden heading, no duplicate visible card heading/badge, human copy, no activation/infrastructure controls, preview initially closed and no initial action/read. Optional live visual browser spot-check was blocked by another Chrome extension panel; NOT reported as passed. Disposable local fixture removed and loopback server stopped. Repeat that visual spot-check during release prep.
+- Quick View privilege hardening, assigned-contact authorization/privacy, table/default privileges, project/grant isolation and canonical instruction-security regression: PASS. No client-bundle occurrence of the server-only reminder credential environment names.
+- TypeScript, full ESLint, whitespace and credential scan: PASS (670 tracked text files at scan time;20 inherited fixture-pattern findings,0 new findings; JSONC included).
+- Final read-only production comparison: all10 catalogue/security categories, exact102-function policy and sequences unchanged.31/33 public/Auth relation fingerprints match; volunteer_lookup_attempts changed at the same row count and volunteer_schedule_access_tokens increased567->569. These are access bookkeeping changes consistent with normal volunteer use, not caused by these local tests. Assignment/response/Communications/reminder state fingerprints match. No production volunteer lookup or response submission was performed by this batch.
+- Production still fb4a54a974d9124dd92143ae6545146b6168afc1, Vercel Production/READY, DB54/20261021130000. Unsigned canonical POST returns401 without redirect; no HMAC/JWT production env configured. No production Cron/Vault/Worker created. Permanent backup remains Enabled/Ready/idle/lock54/daily03:15 with all other definition fields unchanged.
 
-### Credential/storage plan — unprovisioned
-
-Planned credentials are a dedicated 256-bit opaque request secret in Vault and server-only Vercel Secret, plus a finite custom-role JWT held only in a server-only Vercel Secret. The app would not hold a broad service-role credential or JWT signing key. Proposed JWT lifetime is seven days; record issue/expiry metadata only, rotate at least48hours before expiry using the same restricted role, deploy updated server secret, verify disabled/authenticated execution, then retire the old token. Do not rotate project-wide signing keys to rotate this token. Final TTL/operational rotation ownership remains for review; no actual expiration exists because no token was issued.
-
-## Verification at the stop
-
-- Fresh hosted preflight and unchanged security/function/backup state: PASS.
-- Existing live unauthenticated worker POST:401, no dispatcher/provider call.
-- Local private-endpoint requests without the dedicated secret, including admin/volunteer/Quick View cookie shapes and wrong-role bearer shapes: denied before RPC.
-- Wrong-role/expired server worker JWT, unreachable RPC,401/5xx RPC, malformed JSON/status: fail closed with generic finite failure.
-- Database false plus a production-shaped adapter and eligible fixture: only status called; zero provider calls.
-- Accepted/rejected/unknown/timeout/malformed provider outcomes, stable provider key, overlapping claim ownership and changed eligibility: injected tests PASS, no external network/provider.
-- Existing full reminder SQL regression (cadence, cutoff, thresholds, concurrency, retry, reschedule, privacy, DST and bounded plans): PASS locally; generated older EXPLAIN artifacts were restored rather than added to this diff.
-- Normal-role migration installation: expected fail-closed grant blocker; atomic rollback PASS.
-- Separate explicitly privileged local fixture: forced failure, clean apply, empty rollback/replay, owner-only infrastructure grants, unchanged public102-function policy/data, activation denial/atomic rollback: PASS. Local postgres privilege restored and local database returned to migration54 afterward. This privileged fixture does not represent an available production release credential.
-
-The small UI draft retains the semantic Automatic reminders heading as screen-reader-only and removes the duplicate visible title/status inside the selected tab's card. The tab remains the visible status source. It is not deployed; final desktop/mobile review and production smoke are deferred at the security stop. No infrastructure terminology is added to normal admin UI.
-
-## Remaining release steps — not performed
-
-Managed grant-hardening architecture approval/proof; reviewed backup transition54→55; fresh encrypted54 checkpoint/exact isolated restore; controlled task-disable/migration/postflight/lock/deployment/re-enable; scoped secret/JWT provisioning; private endpoint authorized disabled proof; actual provider-configuration-only validation; scheduler installation and at least three genuine five-minute Cron runs; live preview/SELECT-only reconciliation and full production smoke. None may be represented as completed.
-
-SEC-12.57-01 stays OPEN / SEPARATE. No bulk Communications household bearer-link behavior changed. Reminders still use public lookup links.
-
-## Proposed final ignition checklist (future separate approval)
-
-1. Refresh and review all live preview counts and project-local times.
-2. Verify three healthy scheduled disabled executions, effective grants, valid/not-near-expiry worker credential and initialized production transport (no test mail).
-3. Verify delivery=false, baseline=NULL, zero reminder state; capture fingerprints.
-4. Obtain explicit owner approval for activation and real delivery.
-5. Call the single owner-only activation operation once; verify its server baseline and delivery=true atomically.
-6. Observe the next scheduled sweep, reconcile eligibility/claims/provider outcomes and durable history; stop on anomaly.
-
-Steps4–6 are not authorized or performed in Phase B1. No manual reminder send is proposed.
-
-**STOPPED BEFORE IGNITION**
+Candidate is for revised B1 RELEASE PREP only, not deployment or ignition approval. Hosted CPU/three natural Cron runs, finite credential issuance/rotation ownership and the optional browser visual check remain explicit release-prep/setup checks. Real provider calls ZERO; production mutations NONE; delivery OFF and baseline NULL.

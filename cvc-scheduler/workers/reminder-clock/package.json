@@ -1,0 +1,10 @@
+{
+  "name": "project-local-reminder-clock",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "wrangler deploy --dry-run --env production --outdir dist",
+    "test": "node ../../scripts/reminder-clock-regression.mjs"
+  },
+  "devDependencies": { "wrangler": "4.152.0" }
+}
