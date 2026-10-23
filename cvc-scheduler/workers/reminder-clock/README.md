@@ -24,7 +24,7 @@ The endpoint requires the exact HTTPS origin/path/method and no query parameters
 
 One scheduled event makes at most one POST, with `redirect: manual`, a 10-second signal covering fetch/body consumption, and a maximum 4096-byte response. Every 3xx is failure and is never followed. There is no Worker-side retry. A timeout is an **unknown server outcome**, not proof the sweep did not execute. Public HTTP invocation returns 404 and never starts work. Logs contain only event/time/status class/duration/classification, never credentials, signatures, bodies, names, or assignments.
 
-The authenticated Vercel handler reads authoritative activation status before provider configuration or initialization. Off means exactly one read and no synchronization, enrollment, occurrence, event, claim, or provider operation. Cloudflare receives only aggregate results; never the database JWT or volunteer data.
+The authenticated Vercel handler reads authoritative activation status before provider configuration or initialization. Off means exactly one read and no synchronization, enrollment, occurrence, event, claim, or provider operation. Cloudflare receives only aggregate results; never a database credential or volunteer data.
 
 ## Local checks (no Cloudflare login or hosted provisioning)
 
@@ -35,7 +35,7 @@ node ../../scripts/reminder-clock-regression.mjs
 node --conditions=react-server --experimental-strip-types ../../scripts/reminder-clock-local-e2e.mjs
 ```
 
-The E2E requires the named local Supabase stack and a Wrangler dry-run bundle in `dist/`. It uses actual local workerd, intercepts ALL outbound traffic to the exact application handler, and accesses only local PostgREST with the passwordless-at-install runner provisioned only in local fixture memory. No real provider is available. The Node loopback test separately exercises real redirects and a stalled response. Set `WRANGLER_SEND_METRICS=false` for local tooling.
+The E2E requires the named local Supabase stack and a Wrangler dry-run bundle in `dist/`. It uses actual local workerd, intercepts ALL outbound traffic to the exact application handler, and accesses only actual local Supavisor through the PostgreSQL driver, with the passwordless-at-install runner provisioned only in local fixture memory. No real provider is available. The Node loopback test separately exercises real redirects and a stalled response. Set `WRANGLER_SEND_METRICS=false` for local tooling.
 
 ## Restricted database transport (replaces the rejected JWT plan)
 
