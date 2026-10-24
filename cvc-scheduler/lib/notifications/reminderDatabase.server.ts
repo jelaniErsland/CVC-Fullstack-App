@@ -2,6 +2,7 @@ import 'server-only';
 import { Pool, type PoolConfig } from 'pg';
 import type { ReminderRpc } from './assignmentReminders.ts';
 import { SUPABASE_POOLER_CA } from './supabasePoolerCA.server.ts';
+import { ReminderStageFailure, type ReminderStage } from './reminderDiagnostics.server.ts';
 
 // Copied from the owner's hosted Connect / shared transaction-pooler panel.
 // This transport is a system capability, never an admin/user database connection.
@@ -43,25 +44,32 @@ function databasePool(environment: NodeJS.ProcessEnv): Pool {
 
 export function createReminderWorkerRpc(environment: NodeJS.ProcessEnv = process.env, injectedPool?: Pick<Pool, 'connect'>): ReminderRpc {
   // Validate even when a test injects a local pool. No connection occurs here.
-  reminderDatabaseConfiguration(environment);
+  try { reminderDatabaseConfiguration(environment); }
+  catch (error) { throw new ReminderStageFailure('database_config_failed', error); }
   return async (command, payload = {}) => {
-    const client = await (injectedPool ?? databasePool(environment)).connect();
+    const client = await (injectedPool ?? databasePool(environment)).connect()
+      .catch(error => { throw new ReminderStageFailure('connection_failed', error); });
     let discard = false;
+    let stage: ReminderStage = 'transaction_begin_failed';
     try {
       await client.query('BEGIN');
+      stage = 'role_assumption_failed';
       await client.query('SET LOCAL ROLE project_local_reminder_worker');
+      stage = 'transaction_settings_failed';
       await client.query("SET LOCAL statement_timeout = '8s'");
       await client.query("SET LOCAL lock_timeout = '3s'");
       await client.query("SET LOCAL idle_in_transaction_session_timeout = '5s'");
       // Unnamed, parameterized query: no transaction-pooler prepared statements.
+      stage = 'worker_command_failed';
       const result = await client.query('SELECT public.run_assignment_reminder_worker($1::text, $2::jsonb) AS result', [command, JSON.stringify(payload)]);
+      stage = 'transaction_commit_failed';
       await client.query('COMMIT');
       return result.rows[0]?.result;
-    } catch {
+    } catch (error) {
       discard = true;
       try { await client.query('ROLLBACK'); } catch { /* Destroy the socket below. */ }
       // Never retry a command whose commit outcome might be unknown.
-      throw new Error('Reminder database operation unavailable');
+      throw new ReminderStageFailure(stage, error);
     } finally {
       client.release(discard);
     }
