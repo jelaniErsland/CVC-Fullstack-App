@@ -82,7 +82,8 @@ if (process.argv.includes('--fixture-server')) {
       for(const enabled of [false,true]) {
         sql(`update public.assignment_reminder_activation set delivery_enabled=${enabled},baseline_at=${enabled?'now()':'null'}`);
         await page.goto('http://localhost:3000/admin/announcements?kind=reminders',{waitUntil:'networkidle'});
-        assert((await tab.innerText()).endsWith(enabled?'On':'Off'));
+        assert.equal((await tab.innerText()).trim(),'Automatic reminders','Navigation stays a stable label; real status belongs in the panel');
+        assert.equal((await panel.getByRole('status').first().innerText()).trim(),enabled?'On':'Off');
         await panel.getByRole('heading',{name:/Next reminder batch/}).waitFor();
         assert((await panel.innerText()).includes('reminders scheduled'));assert((await panel.innerText()).includes('No reminder processing or delivery activity'));
         assert(!/Preview|Phase A|baseline|enrollment|worker|scheduler|occurrence/i.test(await panel.innerText()));
@@ -129,8 +130,8 @@ if (process.argv.includes('--fixture-server')) {
         await panel.getByRole('button',{name:'Retry reminders',exact:true}).click();await panel.getByRole('button',{name:'Refresh list',exact:true}).waitFor();
       }
       await page.route('**/admin/announcements*',route=>route.request().method()==='POST'?route.abort():route.continue());
-      await panel.getByRole('button',{name:'Refresh summary',exact:true}).click();await panel.getByRole('button',{name:'Retry reminder status',exact:true}).waitFor();assert((await tab.innerText()).includes('Unavailable'));
-      await page.unroute('**/admin/announcements*');await panel.getByRole('button',{name:'Retry reminder status',exact:true}).click();await panel.getByRole('button',{name:'Refresh summary',exact:true}).waitFor();assert((await tab.innerText()).endsWith('On'));
+      await panel.getByRole('button',{name:'Refresh summary',exact:true}).click();await panel.getByRole('button',{name:'Retry reminder status',exact:true}).waitFor();assert((await panel.getByRole('status').first().innerText()).includes('Status unavailable'));
+      await page.unroute('**/admin/announcements*');await panel.getByRole('button',{name:'Retry reminder status',exact:true}).click();await panel.getByRole('button',{name:'Refresh summary',exact:true}).waitFor();assert.equal((await panel.getByRole('status').first().innerText()).trim(),'On');
       await panel.getByRole('searchbox',{name:'Volunteer or assignment'}).fill('');await panel.getByRole('button',{name:'Search',exact:true}).click();
       await panel.getByRole('button',{name:'Upcoming',exact:true}).click();await panel.getByRole('button',{name:'History',exact:true}).click();await panel.getByText('Unknown — needs review',{exact:true}).waitFor();
       await page.waitForTimeout(500);assert(await panel.getByRole('heading',{name:'Reminder history',exact:true}).isVisible());

@@ -1,0 +1,49 @@
+{
+  "Builds": [
+    {
+      "Compiler": "webpack",
+      "Next": "16.2.7",
+      "GuardBeforeCompilation": true,
+      "Compiled": true,
+      "TypeScript": true
+    },
+    {
+      "Compiler": "turbopack",
+      "Next": "16.2.7",
+      "GuardBeforeCompilation": true,
+      "Compiled": true,
+      "TypeScript": true
+    }
+  ],
+  "Static": [
+    "TypeScript",
+    "full ESLint",
+    "git diff --check",
+    "source/client credential scans"
+  ],
+  "VisualWidths": [
+    320,
+    390,
+    430,
+    768,
+    1280,
+    1440,
+    1920,
+    2560
+  ],
+  "ScopedAxeAudits": 48,
+  "AxeViolations": 0,
+  "NoHorizontalShift": true,
+  "MockedCommunicationTransport": true,
+  "ExistingCommunicationsWorkflowBrowser": true,
+  "ExistingReminderReadOnlyBrowser": true,
+  "CommunicationLedgerPermission": true,
+  "CommunicationDispatchMockProvider": true,
+  "AuthoritativeReminderStatus": true,
+  "ExactFunctionPolicy": 103,
+  "PublicExecute": 0,
+  "RealProviderCalls": 0,
+  "ProductionMutations": 0,
+  "MigrationAdded": false,
+  "EngineChanged": false
+}

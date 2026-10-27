@@ -1,0 +1,82 @@
+[
+  {
+    "Width": 320,
+    "BeforeWelcome": 288.0,
+    "BeforeReminders": 288.0,
+    "AfterWelcome": 273.0,
+    "AfterReminders": 273.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 390,
+    "BeforeWelcome": 358.0,
+    "BeforeReminders": 358.0,
+    "AfterWelcome": 343.0,
+    "AfterReminders": 343.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 430,
+    "BeforeWelcome": 398.0,
+    "BeforeReminders": 398.0,
+    "AfterWelcome": 383.0,
+    "AfterReminders": 383.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 768,
+    "BeforeWelcome": 720.0,
+    "BeforeReminders": 720.0,
+    "AfterWelcome": 705.0,
+    "AfterReminders": 705.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 1280,
+    "BeforeWelcome": 992.0,
+    "BeforeReminders": 896.0,
+    "AfterWelcome": 977.0,
+    "AfterReminders": 977.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 1440,
+    "BeforeWelcome": 1152.0,
+    "BeforeReminders": 896.0,
+    "AfterWelcome": 1137.0,
+    "AfterReminders": 1137.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 1920,
+    "BeforeWelcome": 1632.0,
+    "BeforeReminders": 896.0,
+    "AfterWelcome": 1280.0,
+    "AfterReminders": 1280.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  },
+  {
+    "Width": 2560,
+    "BeforeWelcome": 2272.0,
+    "BeforeReminders": 896.0,
+    "AfterWelcome": 1280.0,
+    "AfterReminders": 1280.0,
+    "AfterHorizontalShift": 0.0,
+    "AxeViolations": 0.0,
+    "NoWrites": true
+  }
+]
