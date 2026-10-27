@@ -232,6 +232,7 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
 
   return (
     <VolunteerDirectory
+      key={state.workspaceKey}
       canEdit={state.canEdit}
       canCommunicate={state.canCommunicate}
       canViewSchedule={state.canViewSchedule}
@@ -281,6 +282,7 @@ export default async function AdminVolunteersPage({
 
   return (
     <AdminShell active="volunteers" workspaceName={isReadyState ? state.workspaceName : undefined} destinations={isReadyState ? state.navigationDestinations : ["overview"]} calendarWorkspaceKey={isReadyState ? state.workspaceKey : null}>
+      <div className="mx-auto w-full min-w-0 max-w-[1280px]">
       <PageHeader title="Volunteers" secondaryActions={<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-[var(--pl-muted)]">
           {stats.map((stat) => (
             <span key={stat.label}>
@@ -293,6 +295,7 @@ export default async function AdminVolunteersPage({
       <section className="mt-5">
         <VolunteerContent state={state} />
       </section>
+      </div>
     </AdminShell>
   );
 }

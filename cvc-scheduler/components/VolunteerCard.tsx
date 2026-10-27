@@ -1,12 +1,17 @@
 import { StatusPill } from "./StatusPill";
 import { ClipboardList, Mail, MessageCircle, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
+import { prioritizedSkills } from "@/lib/volunteers/directoryFilters";
+import filterStyles from "./VolunteerFilters.module.css";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
   onView: () => void;
   onEdit?: () => void;
+  skills?: readonly string[];
+  skillQuery?: string;
+  selectedSkills?: readonly string[];
 };
 
 function lifecycleLabel(lifecycle: VolunteerProfile["lifecycle"]) {
@@ -28,7 +33,11 @@ export function VolunteerCard({ onView,
   volunteer,
   canEdit,
   onEdit,
+  skills = [],
+  skillQuery = "",
+  selectedSkills = [],
 }: VolunteerCardProps) {
+  const orderedSkills = prioritizedSkills(skills, skillQuery, selectedSkills);
   const sourceLabel =
     volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
   const initials = volunteer.fullName
@@ -45,10 +54,11 @@ export function VolunteerCard({ onView,
             {initials}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button className="max-w-full truncate rounded text-left text-[var(--pl-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button">{volunteer.fullName}</button></h2>
+            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button className="inline-flex min-h-11 max-w-full items-center truncate rounded text-left text-[var(--pl-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button">{volunteer.fullName}</button></h2>
             <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
               {volunteer.congregation ?? "No congregation listed"}
             </p>
+            {orderedSkills.length > 0 && <div className={filterStyles.skillContext} aria-label="Recorded skills">{orderedSkills.slice(0, 3).map(skill => <span className={filterStyles.skillTag} data-matched={selectedSkills.includes(skill) || (!!skillQuery.trim() && skill.toLowerCase().includes(skillQuery.trim().toLowerCase()))} key={skill}>{skill}</span>)}{orderedSkills.length > 3 && <span className="text-xs text-slate-600">+{orderedSkills.length - 3}</span>}</div>}
           </div>
         </div>
 
@@ -83,7 +93,7 @@ export function VolunteerCard({ onView,
             {readinessLabel(volunteer.readinessStatus)}
           </span>
           <StatusPill status={lifecycleLabel(volunteer.lifecycle)} />
-          {canEdit ? <button aria-label={`Edit ${volunteer.fullName}`} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onEdit} type="button"><Pencil aria-hidden="true" className="size-3.5" /> Edit</button> : null}
+          {canEdit ? <button aria-label={`Edit ${volunteer.fullName}`} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[var(--pl-blue)] hover:bg-[var(--pl-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onEdit} type="button"><Pencil aria-hidden="true" className="size-3.5" /> Edit</button> : null}
         </div>
       </div>
 

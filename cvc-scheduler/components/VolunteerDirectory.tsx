@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, SearchX, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
@@ -12,6 +12,9 @@ import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { VolunteerProfileView } from "./VolunteerProfileView";
 import { VolunteerEditForm } from "./VolunteerEditForm";
+import { VolunteerFilters } from "./VolunteerFilters";
+import { emptyDirectoryFilters, filterDirectory, indexDirectory, type DirectoryFilters } from "@/lib/volunteers/directoryFilters";
+import filterStyles from "./VolunteerFilters.module.css";
 import type { VolunteerScheduleResult } from "@/lib/volunteers/schedule.server";
 import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
 
@@ -29,13 +32,6 @@ type VolunteerDirectoryProps = {
   updateAction?: (formData: FormData) => Promise<VolunteerUpdateResult>;
 };
 
-const lifecycles: Array<VolunteerProfile["lifecycle"] | "all"> = [
-  "all",
-  "active",
-  "inactive",
-  "archived",
-];
-
 export function VolunteerDirectory({
   canEdit,
   canCommunicate = false,
@@ -50,12 +46,7 @@ export function VolunteerDirectory({
   congregations,
 }: VolunteerDirectoryProps) {
   const [query, setQuery] = useState("");
-  const [congregation, setCongregation] = useState("all");
-  const [lifecycle, setLifecycle] = useState<VolunteerProfile["lifecycle"] | "all">("all");
-  const [availableDay, setAvailableDay] = useState("all");
-  const [security, setSecurity] = useState("all");
-  const [housing, setHousing] = useState("all");
-  const [twoPlusDays, setTwoPlusDays] = useState("all");
+  const [filters, setFilters] = useState<DirectoryFilters>(emptyDirectoryFilters);
   const [desktopAddOpen, setDesktopAddOpen] = useState(false);
   const [mobileEditor, setMobileEditor] = useState<
     { kind: "add" } | { kind: "view" | "edit"; volunteer: VolunteerProfile } | null
@@ -134,43 +125,15 @@ export function VolunteerDirectory({
     };
   }, [deleteCandidate]);
 
-  const filteredVolunteers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    return volunteers.filter((volunteer) => {
-      const matchesCongregation =
-        congregation === "all" || volunteer.congregation === congregation;
-      const matchesLifecycle = lifecycle === "all" || volunteer.lifecycle === lifecycle;
-      const searchableText = [
-        volunteer.fullName,
-        volunteer.email,
-        volunteer.phone,
-        volunteer.congregation,
-        volunteer.lifecycle,
-        volunteer.readinessStatus,
-        volunteer.profileNotes,
-        volunteer.skillsExperience,
-        volunteer.otherSupport,
-      ]
-        .join(" ")
-        .toLowerCase();
-      const matchesQuery =
-        normalizedQuery.length === 0 || searchableText.includes(normalizedQuery);
-
-      const matchesAdvanced =
-        (availableDay === "all" || volunteer.availableWorkDays.includes(availableDay as never)) &&
-        (security === "all" || volunteer.afterHoursSecurityAvailability === security) &&
-        (housing === "all" || volunteer.housingOption === housing) &&
-        (twoPlusDays === "all" || volunteer.availableTwoPlusDays === twoPlusDays);
-
-      return matchesCongregation && matchesLifecycle && matchesQuery && matchesAdvanced;
-    });
-  }, [availableDay, congregation, housing, lifecycle, query, security, twoPlusDays, volunteers]);
+  const directoryIndex = useMemo(() => indexDirectory(volunteers), [volunteers]);
+  const skillOptions = useMemo(() => [...new Set(directoryIndex.flatMap(entry => entry.skills))].sort((a, b) => a.localeCompare(b)), [directoryIndex]);
+  const filteredEntries = useMemo(() => filterDirectory(directoryIndex, query, filters), [directoryIndex, query, filters]);
+  const filteredVolunteers = useMemo(() => filteredEntries.map(entry => entry.volunteer), [filteredEntries]);
 
   const addForm = canEdit && createAction ? (
     <>
       <button
-        className="m-3 inline-flex min-h-[42px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)] sm:hidden"
+        className="m-3 inline-flex min-h-[44px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)] sm:hidden"
         onClick={() => setMobileEditor({ kind: "add" })}
         type="button"
       >
@@ -179,7 +142,7 @@ export function VolunteerDirectory({
       <div className="hidden border-b border-[var(--pl-border)] bg-white sm:block">
         <button
           aria-expanded={desktopAddOpen}
-          className="m-4 inline-flex min-h-[42px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)]"
+          className="m-4 inline-flex min-h-[44px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)]"
           onClick={() => setDesktopAddOpen((open) => !open)}
           type="button"
         >
@@ -210,92 +173,18 @@ export function VolunteerDirectory({
 
   return (
     <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
+      <VolunteerFilters query={query} onQueryChange={setQuery} filters={filters} onChange={setFilters} congregations={congregations} skills={skillOptions} resultCount={filteredVolunteers.length} total={volunteers.length} />
       {addForm}
       <VolunteerCsvTools canEdit={canEdit} filteredIds={filteredVolunteers.map(v => v.id)} />
-      <div className="border-b border-[var(--pl-border)] bg-white p-3 sm:p-4">
-      <div className="grid gap-2 md:grid-cols-[minmax(240px,1fr)_190px_160px]">
-        <label className="block">
-          <span className="sr-only">Search</span>
-          <input
-            className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search volunteers"
-            data-admin-shortcut="search"
-            type="search"
-            value={query}
-          />
-        </label>
-
-        <label className="block">
-          <span className="sr-only">Congregation</span>
-          <select
-            data-admin-shortcut="filters"
-            className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-medium text-[var(--pl-text)] outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-            onChange={(event) => setCongregation(event.target.value)}
-            value={congregation}
-          >
-            <option value="all">All congregations</option>
-            {congregations.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="sr-only">Status</span>
-          <select
-            className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-medium text-[var(--pl-text)] outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-            onChange={(event) =>
-              setLifecycle(event.target.value as VolunteerProfile["lifecycle"] | "all")
-            }
-            value={lifecycle}
-          >
-            {lifecycles.map((item) => (
-              <option key={item} value={item}>
-                {item === "all" ? "All statuses" : item}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--pl-muted)]">
-        <p>
-          {filteredVolunteers.length} of {volunteers.length} volunteers
-        </p>
-        {(query || congregation !== "all" || lifecycle !== "all" || availableDay !== "all" || security !== "all" || housing !== "all" || twoPlusDays !== "all") && (
-          <button
-            className="rounded-lg px-2.5 py-1.5 font-semibold text-[var(--pl-blue)] transition hover:bg-[var(--pl-blue-soft)]"
-            onClick={() => {
-              setQuery("");
-              setCongregation("all");
-              setLifecycle("all");
-              setAvailableDay("all"); setSecurity("all"); setHousing("all"); setTwoPlusDays("all");
-            }}
-            type="button"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-      <details className="mt-2">
-        <summary className="cursor-pointer text-xs font-semibold text-[var(--pl-blue)]">Advanced filters</summary>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <FilterSelect label="Available weekday" onChange={setAvailableDay} value={availableDay} options={["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]} />
-          <FilterSelect label="After-hours security" onChange={setSecurity} value={security} options={["yes","no","unknown"]} />
-          <FilterSelect label="Housing" onChange={setHousing} value={housing} options={["yes","no","unknown"]} />
-          <FilterSelect label="2+ days/week" onChange={setTwoPlusDays} value={twoPlusDays} options={["yes","no","unknown"]} />
-        </div>
-      </details>
-      </div>
 
       {filteredVolunteers.length > 0 ? (
         <section className="divide-y divide-[var(--pl-border)]">
-          {filteredVolunteers.map((volunteer) => (
+          {filteredEntries.map(({ volunteer, skills }) => (
             <VolunteerCard
               canEdit={canEdit}
+              skills={skills}
+              skillQuery={query}
+              selectedSkills={filters.skills}
               key={volunteer.id}
               onEdit={() => openVolunteer(volunteer, "edit")}
               onView={() => openVolunteer(volunteer, "view")}
@@ -305,14 +194,16 @@ export function VolunteerDirectory({
         </section>
       ) : (
         <div>
+          {volunteers.length > 0 ? <section className={filterStyles.empty} aria-label="No matching volunteers"><span className={`${filterStyles.well} mx-auto mb-3`} aria-hidden="true"><SearchX /></span><h3>No volunteers match these filters</h3><p className="mx-auto max-w-md text-sm leading-6">Try another search, remove a skill, or choose another congregation. Skills match only what is recorded in Project Local.</p><button className={`${filterStyles.button} ${filterStyles.primary} mt-5`} type="button" onClick={() => { setQuery(""); setFilters(emptyDirectoryFilters()); }}>Clear filters</button></section> : <>
           <EmptyState
-            title={volunteers.length === 0 ? "No volunteers yet" : "No search results"}
+            title={volunteers.length === 0 ? "No volunteers yet" : "No volunteers match these filters"}
             message={
               volunteers.length === 0
                 ? "Add a manual volunteer profile when a Bozeman helper is ready to be scheduled."
-                : "Try a different name, congregation, lifecycle, phone number, or note."
+                : "Try another search, remove a skill, or choose another congregation. Skills match only what is recorded in Project Local."
             }
           />
+          </>}
         </div>
       )}
 
@@ -397,8 +288,4 @@ export function VolunteerDirectory({
       ) : null}
     </div>
   );
-}
-
-function FilterSelect({ label, onChange, options, value }: { label: string; onChange: (value: string) => void; options: string[]; value: string }) {
-  return <label className="block"><span className="sr-only">{label}</span><select aria-label={label} className="min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3 text-sm font-medium text-[var(--pl-text)] outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100" onChange={(event) => onChange(event.target.value)} value={value}><option value="all">Any {label.toLowerCase()}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>;
 }

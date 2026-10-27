@@ -328,18 +328,10 @@ export async function readVolunteerProfilesWithClient(
   supabase: AppSupabaseClient,
   workspaceId: string,
 ): Promise<readonly VolunteerProfile[]> {
-  const normalizedWorkspaceId = normalizeWorkspaceReference({ id: workspaceId }).value;
-  const { data, error } = await supabase
-    .from("volunteer_profiles")
-    .select(volunteerProfileColumns)
-    .eq("workspace_id", normalizedWorkspaceId)
-    .order("full_name");
-
-  if (error) {
-    throw new Error("Volunteer profiles could not be read.", { cause: error });
-  }
-
-  return (data ?? []).map(parseVolunteerProfile);
+  // Reuse the existing bounded, workspace-scoped page reader. A result count
+  // must never silently describe only PostgREST's first 1,000 profiles.
+  const profiles = await readCsvVolunteerProfilesWithClient(supabase, workspaceId);
+  return [...profiles].sort((a, b) => a.fullName.localeCompare(b.fullName) || a.id.localeCompare(b.id));
 }
 
 export async function readCurrentContactVolunteerProfiles(workspaceId: string) {
