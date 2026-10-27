@@ -1591,6 +1591,7 @@ export type Database = {
       }
       archive_task_preset: { Args: { p_preset_id: string }; Returns: string }
       read_assignment_reminders: { Args: { p_workspace_id: string; p_after?: string }; Returns: Json }
+      read_assignment_reminder_workspace: { Args: { p_workspace_id: string; p_view?: string; p_search?: string; p_cursor?: Json; p_limit?: number }; Returns: Json }
       run_assignment_reminder_worker: { Args: { p_command: string; p_payload?: Json }; Returns: Json }
       calendar_assignment_response_start_at: {
         Args: {

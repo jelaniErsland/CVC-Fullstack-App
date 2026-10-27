@@ -1,0 +1,44 @@
+[
+  {
+    "width": 320,
+    "upcomingPageHeight": 4546,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  },
+  {
+    "width": 390,
+    "upcomingPageHeight": 4458,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  },
+  {
+    "width": 430,
+    "upcomingPageHeight": 4338,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  },
+  {
+    "width": 768,
+    "upcomingPageHeight": 4218,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  },
+  {
+    "width": 1280,
+    "upcomingPageHeight": 4055,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  },
+  {
+    "width": 1920,
+    "upcomingPageHeight": 4055,
+    "rowsPerPage": 25,
+    "totalScheduled": 368,
+    "actionReads": 22
+  }
+]

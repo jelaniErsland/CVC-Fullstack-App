@@ -1,5 +1,18 @@
 # Project Local function EXECUTE policy
 
+## 12.58 additive reminder workspace read
+
+`read_assignment_reminder_workspace(uuid,text,text,jsonb,integer)` is an additional
+authenticated/service-role admin read. PostgreSQL owns it; it is STABLE SECURITY
+DEFINER with empty search_path. `communication_actor(workspace)` runs before
+private reads and requires the existing active Communications capability set.
+PUBLIC, anon, worker and reminder runner cannot execute it. No direct table grant,
+RLS policy, role membership or engine function changes.
+
+The current exact inventory is **103**: 10 shared anonymous, 1 anonymous-only,
+60 authenticated, 31 internal and 1 system-only. All previous 102 classifications
+are unchanged; the inventories below describe their historical release scopes.
+
 ## 12.57 reminder-only system boundary (Phase A, local candidate)
 
 `run_assignment_reminder_worker(text,jsonb)` is the sole system-only signature.

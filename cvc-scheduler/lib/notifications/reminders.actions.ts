@@ -3,6 +3,16 @@ import { readCommunicationsContext } from './communications.server';
 import type { ReminderReport } from './assignmentReminders';
 import { readReminderDeliveryStatus } from './reminderStatus.server';
 import { withReadTimeout } from '../readTimeout';
+import { readReminderWorkspaceResult } from './reminderWorkspace.server';
+import type { ReminderCursor, ReminderWorkspaceView, ReminderWorkspaceResult } from './reminderWorkspace';
+export async function readReminderWorkspace(view: ReminderWorkspaceView, search: string | null = null, cursor: ReminderCursor | null = null): Promise<{ data: ReminderWorkspaceResult } | { error: string }> {
+  try {
+    if (!['summary', 'upcoming', 'history', 'why_not'].includes(view) || (search !== null && (typeof search !== 'string' || search.length > 100))) throw new Error('Invalid reminder read');
+    const context = await withReadTimeout(readCommunicationsContext(), 10_000);
+    if (!context) return { error: 'Reminders unavailable for this account.' };
+    return { data: await readReminderWorkspaceResult(context.supabase, context.workspace.id, view, search?.trim() || null, cursor) };
+  } catch { return { error: 'Reminders could not be loaded. Please try again.' }; }
+}
 export async function readReminderStatus() {
   try {
     if (await withReadTimeout(readCommunicationsContext(), 10_000)) return await readReminderDeliveryStatus();

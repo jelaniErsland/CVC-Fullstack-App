@@ -18,6 +18,7 @@ export const anonymousOnlyFunctions = Object.freeze([
   "read_project_quick_view_assigned_contact(text,uuid,date)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "read_assignment_reminder_workspace(uuid,text,text,jsonb,integer)",
   "read_assignment_reminders(uuid,uuid)",
   "read_authorized_calendar_items(uuid,date,date)",
   "read_authorized_task_presets(uuid)",
