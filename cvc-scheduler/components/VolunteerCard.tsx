@@ -2,6 +2,7 @@ import { StatusPill } from "./StatusPill";
 import { ClipboardList, Mail, MessageCircle, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
 import { prioritizedSkills } from "@/lib/volunteers/directoryFilters";
+import { experienceSearchExplanation } from "@/lib/volunteers/directoryPresentation";
 import filterStyles from "./VolunteerFilters.module.css";
 
 type VolunteerCardProps = {
@@ -38,6 +39,7 @@ export function VolunteerCard({ onView,
   selectedSkills = [],
 }: VolunteerCardProps) {
   const orderedSkills = prioritizedSkills(skills, skillQuery, selectedSkills);
+  const experienceMatch = experienceSearchExplanation(volunteer, skillQuery, skills);
   const sourceLabel =
     volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
   const initials = volunteer.fullName
@@ -59,6 +61,7 @@ export function VolunteerCard({ onView,
               {volunteer.congregation ?? "No congregation listed"}
             </p>
             {orderedSkills.length > 0 && <div className={filterStyles.skillContext} aria-label="Recorded skills">{orderedSkills.slice(0, 3).map(skill => <span className={filterStyles.skillTag} data-matched={selectedSkills.includes(skill) || (!!skillQuery.trim() && skill.toLowerCase().includes(skillQuery.trim().toLowerCase()))} key={skill}>{skill}</span>)}{orderedSkills.length > 3 && <span className="text-xs text-slate-600">+{orderedSkills.length - 3}</span>}</div>}
+            {experienceMatch && <p className={filterStyles.experienceMatch}>{experienceMatch}</p>}
           </div>
         </div>
 

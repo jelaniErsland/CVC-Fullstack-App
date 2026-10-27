@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { directoryResultCopy, experienceSearchExplanation } from '../lib/volunteers/directoryPresentation.ts';
+
+assert.equal(directoryResultCopy('electric',0).countContext,'your search');
+assert.equal(directoryResultCopy('electric',0).emptyTitle,'No volunteers match “electric”');
+assert.equal(directoryResultCopy('electric',0).resetLabel,'Clear search');
+assert.equal(directoryResultCopy('',2).countContext,'your filters');
+assert.equal(directoryResultCopy('',2).emptyTitle,'No volunteers match these filters');
+assert.equal(directoryResultCopy('',2).resetLabel,'Clear filters');
+assert.equal(directoryResultCopy('electric',2).countContext,'your search and filters');
+assert.equal(directoryResultCopy('electric',2).resetLabel,'Reset search and filters');
+assert.equal(directoryResultCopy(' ',0).countContext,'');
+const v={fullName:'Jordan Smith',email:'household@example.invalid',phone:null,congregation:'Belgrade',lifecycle:'active',readinessStatus:'ready',profileNotes:'',otherSupport:null,skillsExperience:'I have forklift experience. PRIVATE PERSONAL DETAIL.'};
+assert.equal(experienceSearchExplanation(v,'FORKLIFT',[]),'Experience note matches “FORKLIFT”');
+assert.equal(experienceSearchExplanation(v,'fork',[]),'Experience note matches “fork”');
+assert.equal(experienceSearchExplanation({...v,skillsExperience:'No forklift experience'},'forklift',[]),'Experience note matches “forklift”','A text match never asserts a qualification or interprets prose');
+assert.equal(experienceSearchExplanation(v,'',[]),null);
+assert.equal(experienceSearchExplanation({...v,skillsExperience:'Electrical experience'},'elec',['Electrical assist']),null,'Structured query match has priority over prose');
+assert.equal(experienceSearchExplanation({...v,fullName:'Forklift Jordan'},'forklift',[]),null,'No duplicate explanation for identity matches');
+assert.equal(experienceSearchExplanation({...v,skillsExperience:null},'forklift',[]),null);
+assert(!experienceSearchExplanation(v,'forklift',[]).includes('PRIVATE PERSONAL DETAIL'),'Never return note contents');
+const protectedPaths=['lib/volunteers/directoryFilters.ts','lib/volunteers/server.ts','lib/volunteers/profile.ts','lib/questionnaires/schedulerFacets.ts','components/VolunteerCsvTools.tsx','supabase','lib/auth','lib/notifications','lib/security','lib/supabase','app/internal','workers','package.json','package-lock.json'];
+const diff=spawnSync('git',['diff','9ed8ba704e6d1161c6bfede0bcae6bc248e3a347','--',...protectedPaths],{encoding:'utf8',windowsHide:true});assert.equal(diff.status,0);assert.equal(diff.stdout,'','Amendment preserves approved semantics, read/write authority, APIs, CSV workflow, schema, infrastructure and dependencies');
+console.log('PASS contextual copy, blank search, experience-only labels without private prose, structured priority and exact approved architecture boundary.');

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, SearchX, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Pencil, SearchX, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./Button";
 import { EmptyState } from "./EmptyState";
@@ -13,7 +13,8 @@ import { useFocusContainment } from "@/hooks/useFocusContainment";
 import { VolunteerProfileView } from "./VolunteerProfileView";
 import { VolunteerEditForm } from "./VolunteerEditForm";
 import { VolunteerFilters } from "./VolunteerFilters";
-import { emptyDirectoryFilters, filterDirectory, indexDirectory, type DirectoryFilters } from "@/lib/volunteers/directoryFilters";
+import { directoryCategoryCount, emptyDirectoryFilters, filterDirectory, indexDirectory, type DirectoryFilters } from "@/lib/volunteers/directoryFilters";
+import { directoryResultCopy } from "@/lib/volunteers/directoryPresentation";
 import filterStyles from "./VolunteerFilters.module.css";
 import type { VolunteerScheduleResult } from "@/lib/volunteers/schedule.server";
 import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
@@ -59,6 +60,8 @@ export function VolunteerDirectory({
   const scheduleRequestRef = useRef(0);
   const [deleteCandidate, setDeleteCandidate] = useState<VolunteerProfile | null>(null);
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const dataMenuRef = useRef<HTMLDetailsElement>(null);
+  const dataMenuTriggerRef = useRef<HTMLElement>(null);
 
   useBodyScrollLock(deleteCandidate !== null);
   useBodyScrollLock(mobileEditor !== null, "(min-width: 640px)");
@@ -125,57 +128,55 @@ export function VolunteerDirectory({
     };
   }, [deleteCandidate]);
 
+  useEffect(() => {
+    const outside = (event: PointerEvent) => {
+      const menu = dataMenuRef.current;
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+    };
+    const escape = (event: KeyboardEvent) => {
+      const menu = dataMenuRef.current;
+      if (event.key === "Escape" && menu?.open && !menu.querySelector("dialog[open]")) {
+        event.preventDefault();
+        menu.open = false;
+        dataMenuTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, []);
+
   const directoryIndex = useMemo(() => indexDirectory(volunteers), [volunteers]);
   const skillOptions = useMemo(() => [...new Set(directoryIndex.flatMap(entry => entry.skills))].sort((a, b) => a.localeCompare(b)), [directoryIndex]);
   const filteredEntries = useMemo(() => filterDirectory(directoryIndex, query, filters), [directoryIndex, query, filters]);
   const filteredVolunteers = useMemo(() => filteredEntries.map(entry => entry.volunteer), [filteredEntries]);
 
-  const addForm = canEdit && createAction ? (
-    <>
-      <button
-        className="m-3 inline-flex min-h-[44px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)] sm:hidden"
-        onClick={() => setMobileEditor({ kind: "add" })}
-        type="button"
-      >
-        + Add volunteer
-      </button>
-      <div className="hidden border-b border-[var(--pl-border)] bg-white sm:block">
-        <button
-          aria-expanded={desktopAddOpen}
-          className="m-4 inline-flex min-h-[44px] items-center rounded-[var(--pl-radius-control)] bg-[var(--pl-blue)] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(23,105,255,0.18)] hover:bg-[var(--pl-blue-deep)]"
-          onClick={() => setDesktopAddOpen((open) => !open)}
-          type="button"
-        >
-          + Add volunteer
-        </button>
-        {desktopAddOpen ? <div className="border-t border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5">
-          <p className="max-w-2xl text-sm leading-6 text-[var(--pl-text)]">
-            Saving does not send a message.
-          </p>
-          <form
-            action={createAction}
-            className="mt-4 grid gap-4"
-            onSubmit={() => setDesktopAddOpen(false)}
-          >
-            <VolunteerFields />
-            <Button className="mt-1 w-full sm:w-auto" type="submit">
-              Save volunteer
-            </Button>
-          </form>
-        </div> : null}
-      </div>
-    </>
-  ) : (
-    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-900">
-      Volunteer profile editing is unavailable for this signed-in contact.
-    </div>
-  );
+  const resultCopy = directoryResultCopy(query, directoryCategoryCount(filters));
+  const addForm = canEdit && createAction && desktopAddOpen ? (
+    <section className="mb-4 rounded-xl border border-[var(--pl-border)] bg-[var(--pl-surface-subtle)] p-5" aria-label="Add volunteer form">
+      <p className="max-w-2xl text-sm leading-6 text-[var(--pl-text)]">Saving does not send a message.</p>
+      <form action={createAction} className="mt-4 grid gap-4" onSubmit={() => setDesktopAddOpen(false)}>
+        <VolunteerFields />
+        <Button className="mt-1 w-full sm:w-auto" type="submit">Save volunteer</Button>
+      </form>
+    </section>
+  ) : null;
 
   return (
+    <>
+      <div className={filterStyles.managementActions} role="group" aria-label="Volunteer actions">
+        {canEdit && createAction ? <>
+          <button className={`${filterStyles.button} ${filterStyles.primary} ${filterStyles.mobileAdd}`} type="button" onClick={() => setMobileEditor({ kind: "add" })}>+ Add volunteer</button>
+          <button className={`${filterStyles.button} ${filterStyles.primary} ${filterStyles.desktopAdd}`} type="button" aria-expanded={desktopAddOpen} onClick={() => setDesktopAddOpen(open => !open)}>+ Add volunteer</button>
+        </> : <p className="mr-auto text-xs text-amber-900">Volunteer profile editing is unavailable for this signed-in contact.</p>}
+        <details ref={dataMenuRef} className={filterStyles.dataMenu}>
+          <summary ref={dataMenuTriggerRef} className={`${filterStyles.button} ${filterStyles.quiet}`} aria-label="More volunteer data actions"><MoreHorizontal aria-hidden="true" />More</summary>
+          <div className={filterStyles.dataPopup}><VolunteerCsvTools canEdit={canEdit} filteredIds={filteredVolunteers.map(v => v.id)} /></div>
+        </details>
+      </div>
+      {addForm}
     <div className="overflow-hidden rounded-[var(--pl-radius-panel)] border border-[var(--pl-border)] bg-white shadow-[var(--pl-shadow-panel)]">
       <VolunteerFilters query={query} onQueryChange={setQuery} filters={filters} onChange={setFilters} congregations={congregations} skills={skillOptions} resultCount={filteredVolunteers.length} total={volunteers.length} />
-      {addForm}
-      <VolunteerCsvTools canEdit={canEdit} filteredIds={filteredVolunteers.map(v => v.id)} />
 
       {filteredVolunteers.length > 0 ? (
         <section className="divide-y divide-[var(--pl-border)]">
@@ -194,7 +195,7 @@ export function VolunteerDirectory({
         </section>
       ) : (
         <div>
-          {volunteers.length > 0 ? <section className={filterStyles.empty} aria-label="No matching volunteers"><span className={`${filterStyles.well} mx-auto mb-3`} aria-hidden="true"><SearchX /></span><h3>No volunteers match these filters</h3><p className="mx-auto max-w-md text-sm leading-6">Try another search, remove a skill, or choose another congregation. Skills match only what is recorded in Project Local.</p><button className={`${filterStyles.button} ${filterStyles.primary} mt-5`} type="button" onClick={() => { setQuery(""); setFilters(emptyDirectoryFilters()); }}>Clear filters</button></section> : <>
+          {volunteers.length > 0 ? <section className={filterStyles.empty} aria-label="No matching volunteers"><span className={`${filterStyles.well} mx-auto mb-3`} aria-hidden="true"><SearchX /></span><h3>{resultCopy.emptyTitle}</h3><p className="mx-auto max-w-md text-sm leading-6">{resultCopy.explanation}</p><button className={`${filterStyles.button} ${filterStyles.primary} mt-5`} type="button" onClick={() => { setQuery(""); setFilters(emptyDirectoryFilters()); }}>{resultCopy.resetLabel}</button></section> : <>
           <EmptyState
             title={volunteers.length === 0 ? "No volunteers yet" : "No volunteers match these filters"}
             message={
@@ -287,5 +288,6 @@ export function VolunteerDirectory({
         </div>
       ) : null}
     </div>
+    </>
   );
 }

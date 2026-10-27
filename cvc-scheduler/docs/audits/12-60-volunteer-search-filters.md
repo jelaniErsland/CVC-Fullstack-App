@@ -1,5 +1,7 @@
 # 12.60 — Volunteer search and filters
 
+The approved initial candidate is refined by [the final polish amendment](12-60-final-polish.md), with updated action placement, contextual copy, experience-match explanations and review evidence. This document retains the original architecture and design-review record.
+
 Local candidate based on production `551d786b07476bf3b132b5ee4ba85ef4457b43eb` (12.59). App-only. No deployment, production access/mutation, messages, reminder changes or migration.
 
 ## Architecture and approval gate
