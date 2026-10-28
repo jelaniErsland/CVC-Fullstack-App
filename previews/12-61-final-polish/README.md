@@ -1,3 +1,5 @@
+> HISTORICAL / SUPERSEDED: The owner abandoned the unshipped structured-skills model. This evidence describes an earlier local candidate, not the current release contract. Do not apply migration58. The current app-only direction is documented in `12-61-app-only.md` and `previews/12-61-app-only/README.md`.
+
 # 12.61 final polish evidence
 
 All screenshots use synthetic local fixtures in a production-mode build. No production access or provider calls.

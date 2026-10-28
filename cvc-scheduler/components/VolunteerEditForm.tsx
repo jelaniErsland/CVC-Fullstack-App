@@ -67,7 +67,7 @@ export function VolunteerEditForm({ volunteer, updateAction, secondaryAction, on
     <input name="profileId" type="hidden" value={volunteer.id} />
     <div className={styles.formFields} data-sheet-scroll="volunteer editor">
     <fieldset className="grid min-w-0 gap-4" disabled={pending}>
-      <VolunteerFields volunteer={volunteer} onValueChange={() => setFailure(null)} />
+      <VolunteerFields volunteer={volunteer} />
     </fieldset>
     {secondaryAction}
     </div>

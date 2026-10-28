@@ -1,0 +1,109 @@
+{
+  "compatibility": "57 / 20261026120000",
+  "newMigrations": 0,
+  "publicExecute": 0,
+  "exactFunctionCount": 103,
+  "browserWidths": [
+    320,
+    390,
+    430,
+    768,
+    1280,
+    1440,
+    1920,
+    2560
+  ],
+  "axeAudits": 153,
+  "axeViolations": 0,
+  "builds": {
+    "webpack": {
+      "pass": true,
+      "next": "16.2.7",
+      "guardBeforeCompilation": true,
+      "credentialScan": {
+        "sourceFilesScanned": 38,
+        "sourceFindings": [],
+        "compiledClientFiles": 90,
+        "compiledClientFindings": []
+      }
+    },
+    "turbopack": {
+      "pass": true,
+      "next": "16.2.7",
+      "guardBeforeCompilation": true,
+      "credentialScan": {
+        "sourceFilesScanned": 38,
+        "sourceFindings": [],
+        "compiledClientFiles": 43,
+        "compiledClientFindings": []
+      }
+    }
+  },
+  "regressionsPassed": [
+    "12-61-db57-contract-regression.mjs",
+    "12-60-volunteer-directory-read-regression.mjs",
+    "volunteer-persistence-regression.mjs",
+    "volunteer-profile-management-regression.mjs",
+    "volunteer-csv-regression.mjs",
+    "project-day-persistence-regression.mjs",
+    "project-local-table-privileges-regression.mjs",
+    "project-quick-view-privilege-regression.mjs",
+    "project-quick-view-share-access-regression.mjs",
+    "12-53-assigned-contact-regression.mjs",
+    "volunteer-schedule-access-regression.mjs",
+    "function-privilege-regression.mjs",
+    "standard-add-edit-browser",
+    "instruction-security-canonical",
+    "12-61-experience-regression",
+    "12-61-directory-regression",
+    "12-60-volunteer-filters-regression",
+    "12-61-form-state-regression",
+    "12-60-volunteer-polish-regression",
+    "operational-data-foundation-regression"
+  ],
+  "performance": [
+    {
+      "size": 100,
+      "indexMs": 0.6945999999999941,
+      "filterSortMedianMs": 0.033999999999991815,
+      "extraRequests": 0
+    },
+    {
+      "size": 309,
+      "indexMs": 0.5428999999999888,
+      "filterSortMedianMs": 0.0771000000000015,
+      "extraRequests": 0
+    },
+    {
+      "size": 1000,
+      "indexMs": 1.1788000000000096,
+      "filterSortMedianMs": 0.39109999999999445,
+      "extraRequests": 0
+    },
+    {
+      "size": 5000,
+      "indexMs": 4.322000000000003,
+      "filterSortMedianMs": 1.4855000000000018,
+      "extraRequests": 0
+    }
+  ],
+  "providerCalls": 0,
+  "productionAccess": false,
+  "productionMutations": 0,
+  "logsLocation": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-27\\project-local-12-61-app-only",
+  "deepDirectory": [
+    {
+      "width": 390,
+      "before": 13379,
+      "after": 13379,
+      "focusReturned": true
+    },
+    {
+      "width": 1440,
+      "before": 3550,
+      "after": 3550,
+      "focusReturned": true
+    }
+  ],
+  "canonicalExportCleanup": "Blocked by automatic approval review; retained source only, no .env files"
+}

@@ -1,6 +1,6 @@
 // Presentation equality only: validation and writes remain server-authoritative.
-const metadata = new Set(["profileId", "expectedUpdatedAt", "structuredSkillsPresent"]);
-const sets = new Set(["availableWorkDays", "structuredSkills"]);
+const metadata = new Set(["profileId", "expectedUpdatedAt"]);
+const sets = new Set(["availableWorkDays"]);
 export function volunteerFormFingerprint(entries: Iterable<readonly [string, string]>) {
   const fields = new Map<string, string[]>();
   for (const [name, raw] of entries) {

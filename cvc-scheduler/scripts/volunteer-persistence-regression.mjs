@@ -179,7 +179,6 @@ const parsedProfile = parseVolunteerProfile({
   preferred_contact_method: "Text",
   availability_snapshot: { weekdays: ["Monday"] },
   skills_help_snapshot: { skillsExperience: { categories: ["Painting"] } },
-  structured_skill_categories: ["Framing"],
   profile_notes: "",
   date_of_birth: null,
   emergency_contact_name: null,
@@ -196,7 +195,6 @@ const parsedProfile = parseVolunteerProfile({
   updated_at: "2026-07-01T12:00:00.000Z",
 });
 assert.equal(parsedProfile.fullName, "Alex Rivera");
-assert.deepEqual(parsedProfile.structuredSkills,["Framing"]);
 assert.equal(parsedProfile.profileSource, "questionnaire");
 assert.equal(parsedProfile.emergencyContactName, null);
 assert.throws(() =>

@@ -1,3 +1,5 @@
+> HISTORICAL / SUPERSEDED: The owner abandoned the unshipped structured-skills model. This evidence describes an earlier local candidate, not the current release contract. Do not apply migration58. The current app-only direction is documented in `12-61-app-only.md` and `previews/12-61-app-only/README.md`.
+
 # 12.61 — Structured skills management
 
 Implemented locally from approved production application `87df898725e6ce909810c263d67ac732909bafd6`, production database57 / `20261026120000`. No production access, migration, deployment, volunteer mutation, communication, reminder/Cron or backup action performed.

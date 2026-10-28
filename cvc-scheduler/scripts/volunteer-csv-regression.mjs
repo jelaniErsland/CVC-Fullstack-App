@@ -36,7 +36,6 @@ try {
   const request=randomUUID(); const created=JSON.parse(val(importSql([row],request)));
   assert.equal(created.created,1);assert.deepEqual(JSON.parse(val(importSql([row],request))),created,'Replay is idempotent');
   const id=created.profileIds[0];
-  sql(`update public.volunteer_profiles set structured_skill_categories=array['Painting'] where id=${q(id)}`);
   const version=()=>val(`select updated_at from public.volunteer_profiles where id=${q(id)}`);
   const original=version();
   const patch={profileId:id,expectedUpdatedAt:original,patch:{congregation:'Reviewed field'}};
@@ -63,7 +62,6 @@ try {
   assert.notEqual(sql(importSql([{patch:{fullName:'Synthetic Household A',email:'shared@example.invalid'}}]),true).status,0,'Repeat without an internal ID requires review');
   const householdVersion=val(`select updated_at from public.volunteer_profiles where id=${q(household.profileIds[0])}`);
   assert.equal(JSON.parse(val(importSql([{profileId:household.profileIds[0],expectedUpdatedAt:householdVersion,patch:{congregation:'Reviewed household member'}}]))).updated,1);
-  assert.equal(val(`select structured_skill_categories::text from public.volunteer_profiles where id=${q(id)}`),'{Painting}','CSV omission preserves current skills');
   assert.equal(val(`select count(*) from public.communication_operations where workspace_id=${q(ws)}`),'0','No automatic email');
   assert.notEqual(sql(`set role anon; select public.import_volunteer_profiles(${q(ws)},${q(randomUUID())},'[]');`,true).status,0);
   sql(`update public.workspace_contact_grants set capabilities=array['workspace.read','volunteers.view'] where workspace_id=${q(ws)};`);

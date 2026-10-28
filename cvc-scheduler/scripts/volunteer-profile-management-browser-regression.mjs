@@ -330,8 +330,8 @@ async function run() {
     await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Phone",{exact:true}).fill("406-555-9090");
     await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Congregation",{exact:true}).fill(reviewValues.congregation);
     await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Preferred contact").selectOption("Email");
-    await page.getByRole("group",{name:"Structured skills"}).getByRole("button",{name:"Electrical assist",exact:true}).click();
-    await page.getByRole("group",{name:"Structured skills"}).getByRole("button",{name:"Framing",exact:true}).click();
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByText("Experience & other support",{exact:true}).click();
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Skills and experience",{exact:true}).fill("Local free-text electrical and framing experience.");
     await Promise.all([
       page.waitForURL(/notice=created/),
       page.getByRole("button", { name: "Save volunteer" }).click(),

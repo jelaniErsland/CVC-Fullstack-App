@@ -1,5 +1,3 @@
-import { validateStructuredSkills, type StructuredSkill } from "./skills.ts";
-
 export const volunteerWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
 export type VolunteerWeekday = (typeof volunteerWeekdays)[number];
 export type VolunteerTriState = "yes" | "no" | "unknown";
@@ -19,7 +17,6 @@ export type VolunteerProfile = Readonly<{
   congregation: string | null;
   preferredContactMethod: "Text" | "Phone" | "Email" | null;
   availabilitySnapshot: Readonly<Record<string, unknown>>;
-  structuredSkills: readonly StructuredSkill[];
   skillsHelpSnapshot: Readonly<Record<string, unknown>>;
   profileNotes: string;
   dateOfBirth: string | null;
@@ -148,7 +145,6 @@ export function parseVolunteerProfile(value: unknown): VolunteerProfile {
     preferredContactMethod,
     availabilitySnapshot: snapshot(value, "availability_snapshot"),
     skillsHelpSnapshot: snapshot(value, "skills_help_snapshot"),
-    structuredSkills: validateStructuredSkills(value.structured_skill_categories),
     profileNotes: requiredStringOrEmpty(value, "profile_notes"),
     dateOfBirth: nullableString(value, "date_of_birth"),
     emergencyContactName: nullableString(value, "emergency_contact_name"),

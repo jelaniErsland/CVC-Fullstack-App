@@ -1,20 +1,16 @@
 import { useId } from "react";
-import { VolunteerSkillsEditor } from "./VolunteerSkillsEditor";
 import { StatusPill } from "./StatusPill";
 import { ClipboardList, Mail, MessageCircle, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
-import { prioritizedSkills } from "@/lib/volunteers/directoryFilters";
-import { experienceSearchExplanation } from "@/lib/volunteers/directoryPresentation";
-import filterStyles from "./VolunteerFilters.module.css";
+import type { ExperienceMatch } from "@/lib/volunteers/experience";
+import { VolunteerExperienceMatch } from "./VolunteerExperienceMatch";
 
 type VolunteerCardProps = {
   volunteer: VolunteerProfile;
   canEdit: boolean;
   onView: () => void;
   onEdit?: () => void;
-  skills?: readonly string[];
-  skillQuery?: string;
-  selectedSkills?: readonly string[];
+  experienceMatches?: readonly ExperienceMatch[];
 };
 
 function lifecycleLabel(lifecycle: VolunteerProfile["lifecycle"]) {
@@ -36,13 +32,9 @@ export function VolunteerCard({ onView,
   volunteer,
   canEdit,
   onEdit,
-  skills = [],
-  skillQuery = "",
-  selectedSkills = [],
+  experienceMatches = [],
 }: VolunteerCardProps) {
   const congregationId = useId();
-  const orderedSkills = prioritizedSkills(skills, skillQuery, selectedSkills);
-  const experienceMatch = experienceSearchExplanation(volunteer, skillQuery, skills);
   const sourceLabel =
     volunteer.profileSource === "manual" ? "Added directly" : "From questionnaire";
   const initials = volunteer.fullName
@@ -60,8 +52,7 @@ export function VolunteerCard({ onView,
           </span>
           <div className="min-w-0">
             <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button aria-label={volunteer.fullName} aria-describedby={congregationId} className="flex min-h-11 max-w-full flex-col justify-center gap-1 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button"><span className="max-w-full truncate text-[var(--pl-blue)] hover:underline">{volunteer.fullName}</span><span id={congregationId} className="max-w-full truncate text-xs font-normal text-[var(--pl-muted)]">{volunteer.congregation ?? "No congregation listed"}</span></button></h2>
-            {orderedSkills.length > 0 && <div className={filterStyles.skillContext} aria-label="Recorded skills">{orderedSkills.slice(0, 3).map(skill => <span className={filterStyles.skillTag} data-matched={selectedSkills.includes(skill) || (!!skillQuery.trim() && skill.toLowerCase().includes(skillQuery.trim().toLowerCase()))} key={skill}>{skill}</span>)}{orderedSkills.length > 3 && <span className="text-xs text-slate-600">+{orderedSkills.length - 3}</span>}</div>}
-            {experienceMatch && <p className={filterStyles.experienceMatch}>{experienceMatch}</p>}
+
           </div>
         </div>
 
@@ -100,6 +91,7 @@ export function VolunteerCard({ onView,
         </div>
       </div>
 
+      {experienceMatches.length > 0 && <VolunteerExperienceMatch matches={experienceMatches} />}
       {!canEdit ? (
         <p className="border-t border-[var(--pl-border)] px-4 py-2.5 text-xs font-medium text-[var(--pl-muted)] lg:px-5">
           Editing is unavailable for this signed-in contact.
@@ -109,7 +101,7 @@ export function VolunteerCard({ onView,
   );
 }
 
-export function VolunteerFields({ volunteer, onValueChange }: { volunteer?: VolunteerProfile; onValueChange?: () => void }) {
+export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile }) {
   const fieldClassName = "mt-1.5 min-h-11 w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:ring-2 focus:ring-blue-100";
   const selectClassName = `${fieldClassName} font-medium`;
 
@@ -161,7 +153,6 @@ export function VolunteerFields({ volunteer, onValueChange }: { volunteer?: Volu
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.afterHoursSecurityAvailability ?? "unknown"} label="Available for after-hours security" name="afterHoursSecurityAvailability" />
         </div>
       </details>
-      <VolunteerSkillsEditor initialSkills={volunteer?.structuredSkills} onValueChange={onValueChange} />
       <details className="rounded-lg border border-[var(--pl-border)] bg-white">
         <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Experience &amp; other support</summary>
         <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">

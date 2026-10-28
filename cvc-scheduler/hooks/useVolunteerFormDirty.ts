@@ -29,7 +29,7 @@ export function useVolunteerFormDirty(onDirty: (dirty: boolean) => void) {
     const compare = () => notify(fingerprint(form) !== initial);
     form.addEventListener("input", compare);
     form.addEventListener("change", compare);
-    // Custom Skills controls update successful hidden inputs after React commits.
+    // Compare successful controls after any conditional form content commits.
     const observer = new MutationObserver(compare);
     observer.observe(form, { childList: true, subtree: true, attributes: true, attributeFilter: ["value", "checked", "selected"] });
     compare();

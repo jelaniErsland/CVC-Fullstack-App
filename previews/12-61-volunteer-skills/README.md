@@ -1,3 +1,5 @@
+> HISTORICAL / SUPERSEDED: The owner abandoned the unshipped structured-skills model. This evidence describes an earlier local candidate, not the current release contract. Do not apply migration58. The current app-only direction is documented in `12-61-app-only.md` and `previews/12-61-app-only/README.md`.
+
 # 12.61 — Volunteer Skills and side sheets
 
 Synthetic local production-mode fixtures only. No production data, sends or provider calls.

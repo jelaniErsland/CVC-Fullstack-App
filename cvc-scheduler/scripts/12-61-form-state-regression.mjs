@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { volunteerFormFingerprint as state } from '../lib/volunteers/formState.ts';
-const original=[['fullName','Alex Morgan'],['email','alex@example.invalid'],['profileNotes','First\nSecond'],['structuredSkills','Framing'],['structuredSkills','Electrical assist'],['availableWorkDays','Monday']];
+const original=[['fullName','Alex Morgan'],['email','alex@example.invalid'],['profileNotes','First\nSecond'],['availableWorkDays','Wednesday'],['availableWorkDays','Monday']];
 assert.equal(state(original),state([...original].reverse()),'Field and set order is presentation only');
 assert.equal(state(original),state(original.map(([k,v])=>[k,k==='fullName'?' Alex   Morgan ':k==='profileNotes'?' First\r\nSecond ':v])),'Normalize names, boundary whitespace, and textarea line endings');
-for(const name of ['profileId','expectedUpdatedAt','structuredSkillsPresent'])assert.equal(state(original),state([...original,[name,'metadata']]));
-assert.notEqual(state(original),state([...original,['structuredSkills','Framing']]),'Invalid duplicates remain different');
-assert.notEqual(state(original),state(original.filter(([,v])=>v!=='Framing')),'Skill removal matters');
-assert.notEqual(state(original),state([...original,['structuredSkills','Painting']]),'Skill addition matters');
+for(const name of ['profileId','expectedUpdatedAt'])assert.equal(state(original),state([...original,[name,'metadata']]));
+assert.notEqual(state(original),state([...original,['availableWorkDays','Monday']]),'Invalid duplicates remain different');
+assert.notEqual(state(original),state(original.filter(([,v])=>v!=='Wednesday')),'Weekday removal matters');
+assert.notEqual(state(original),state([...original,['availableWorkDays','Friday']]),'Weekday addition matters');
 assert.notEqual(state(original),state(original.map(([k,v])=>[k,k==='profileNotes'?'Changed':v])),'Genuine note changes matter');
 assert.notEqual(state(original),state(original.map(([k,v])=>[k,k==='email'?'other@example.invalid':v])),'Contacts are independent');
 console.log('PASS normalized form equality: order, whitespace, CRLF, metadata, additions, removals, invalid duplicates, notes, contacts');

@@ -1414,7 +1414,6 @@ export type Database = {
           skills_experience: string | null
           skills_help_snapshot: Json
           source_submission_id: string | null
-          structured_skill_categories: string[]
           updated_at: string
           workspace_id: string
         }
@@ -1446,7 +1445,6 @@ export type Database = {
           skills_experience?: string | null
           skills_help_snapshot: Json
           source_submission_id?: string | null
-          structured_skill_categories?: string[]
           updated_at?: string
           workspace_id: string
         }
@@ -1478,7 +1476,6 @@ export type Database = {
           skills_experience?: string | null
           skills_help_snapshot?: Json
           source_submission_id?: string | null
-          structured_skill_categories?: string[]
           updated_at?: string
           workspace_id?: string
         }

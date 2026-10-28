@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useId, useLayoutEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { containVolunteerSheetFocus } from "@/lib/volunteers/sheetFocus";
 import styles from "./VolunteerSideSheet.module.css";
 
 const subscribe = () => () => {};
@@ -35,8 +36,13 @@ export function VolunteerSideSheet({ open, title, description, label, icon, acti
       else document.querySelector<HTMLElement>('main [data-admin-shortcut="search"]')?.focus({ preventScroll: true });
     };
   }, [open, mounted]);
+  useLayoutEffect(() => {
+    const node = dialog.current;
+    if (open && node?.open && !node.contains(document.activeElement)) node.querySelector<HTMLButtonElement>("[data-sheet-close]")?.focus();
+  }, [open, label, mounted]);
   if (!mounted) return null;
   return createPortal(<dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} aria-label={label}
+    onKeyDown={containVolunteerSheetFocus}
     onCancel={event => { event.preventDefault(); event.stopPropagation(); onRequestClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onRequestClose(); }}>
     <section className={styles.panel} data-wide={wide || undefined}>

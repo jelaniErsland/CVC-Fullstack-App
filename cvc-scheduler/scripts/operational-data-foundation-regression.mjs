@@ -210,7 +210,6 @@ const facets = projectSchedulerFacetsFromProfile({
     preferredTimes: ["Morning"],
     notes: "private availability note",
   },
-  structuredSkills: ["Electrical assist", "Food service"],
   skillsHelpSnapshot: {
     skillsExperience: {
       categories: ["Electrical assist", "Food service"],
@@ -234,8 +233,7 @@ assert.deepEqual(projectSchedulerFacetsFromProfile({
   volunteerProfileId: "40000000-0000-4000-8000-000000000002",
   congregation: null,
   availabilitySnapshot: { weekdays: ["Sunday"], preferredTimes: "Morning" },
-  structuredSkills: [],
-  skillsHelpSnapshot: { skillsExperience: { categories: ["Unapproved historical skill"] } },
+  skillsHelpSnapshot: { skillsExperience: { categories: ["Unapproved skill"] } },
 }), {
   volunteerProfileId: "40000000-0000-4000-8000-000000000002",
   congregation: null,
