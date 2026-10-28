@@ -242,7 +242,7 @@ async function assertVolunteerEditorContract(page, dialog) {
     { body: "hidden", root: "hidden" },
     "Volunteer editor must lock background scrolling.",
   );
-  const scroll = dialog.locator('[data-overlay-scroll="volunteer editor"]');
+  const scroll = dialog.locator('[data-sheet-scroll="volunteer editor"]');
   assert.equal(await scroll.count(), 1);
   assert.equal(
     await scroll.evaluate((element) => element.scrollHeight > element.clientHeight),
@@ -325,11 +325,13 @@ async function run() {
     const { page, failures } = await openVolunteersPage(context);
     await page.getByText("No volunteers yet").waitFor();
     await page.getByRole("button", { name: /Add volunteer/ }).click();
-    await page.getByLabel("Full name").first().fill(reviewValues.createdVolunteerName);
-    await page.getByLabel("Email").first().fill(reviewValues.volunteerEmail);
-    await page.getByLabel("Phone").first().fill("406-555-9090");
-    await page.getByLabel("Congregation").first().fill(reviewValues.congregation);
-    await page.getByLabel("Preferred contact").first().selectOption("Email");
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Full name",{exact:true}).fill(reviewValues.createdVolunteerName);
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Email",{exact:true}).fill(reviewValues.volunteerEmail);
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Phone",{exact:true}).fill("406-555-9090");
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Congregation",{exact:true}).fill(reviewValues.congregation);
+    await page.getByRole("dialog",{name:"Add volunteer",exact:true}).getByLabel("Preferred contact").selectOption("Email");
+    await page.getByRole("group",{name:"Structured skills"}).getByRole("button",{name:"Electrical assist",exact:true}).click();
+    await page.getByRole("group",{name:"Structured skills"}).getByRole("button",{name:"Framing",exact:true}).click();
     await Promise.all([
       page.waitForURL(/notice=created/),
       page.getByRole("button", { name: "Save volunteer" }).click(),
@@ -340,13 +342,14 @@ async function run() {
     await page.getByText(reviewValues.createdVolunteerName).waitFor();
     const createdRow = page.locator("article").filter({ hasText: reviewValues.createdVolunteerName }).first();
     await createdRow.getByRole("button", { name: `Edit ${reviewValues.createdVolunteerName}`, exact: true }).click();
-    const editDetails = page.locator('aside[aria-label^="Editing volunteer"]');
+    const editDetails = page.locator('dialog[open]').filter({has:page.getByRole('button',{name:'Close volunteer editor',exact:true})});
     await editDetails.getByLabel("Full name").fill(reviewValues.volunteerName);
     await Promise.all([
-      page.waitForURL(/notice=updated/),
+      page.getByRole("button",{name:"Edit",exact:true}).waitFor(),
       editDetails.getByRole("button", { name: "Save changes" }).click(),
     ]);
-    await page.getByText(reviewValues.volunteerName).waitFor();
+    await page.getByRole("button",{name:"Close volunteer profile",exact:true}).click();
+    await page.getByRole("button",{name:reviewValues.volunteerName,exact:true}).waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.getByText(reviewValues.volunteerName).waitFor();
     if (!writeNamedReview) {
@@ -372,10 +375,7 @@ async function run() {
       name: /Add volunteer/,
     });
     await addTrigger.click();
-    const editorDialog = mobileEditorPage.getByRole("dialog", {
-      name: "volunteer editor",
-      exact: true,
-    });
+    const editorDialog = mobileEditorPage.locator("dialog[open]").filter({has:mobileEditorPage.getByRole("button",{name:"Close volunteer editor",exact:true})});
     await editorDialog.waitFor();
     await assertVolunteerEditorContract(mobileEditorPage, editorDialog);
     await editorDialog.getByRole("button", { name: "Close volunteer editor" }).click();
@@ -403,9 +403,7 @@ async function run() {
         fullPage: false,
       });
     }
-    await mobileEditorPage.getByRole("button", {
-      name: "Close volunteer editor backdrop",
-    }).click({ position: { x: 8, y: 8 } });
+    await mobileEditorPage.mouse.click(2,2);
     await editorDialog.waitFor({ state: "hidden" });
     assert.deepEqual(mobileEditorFailures, []);
     await mobileEditorContext.close();

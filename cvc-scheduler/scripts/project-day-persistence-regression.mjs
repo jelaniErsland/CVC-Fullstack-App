@@ -190,16 +190,16 @@ try {
       (${sqlUuid(calendarItemIds[2])}, ${sqlUuid(workspaceIds[0])}, 'Restricted security detail', 'security', 'timed', '2026-09-14', '14:00', '15:00', 'America/Denver', 2, 'restricted post detail', 'published', now(), ${sqlUuid(contactIds[0])}),
       (${sqlUuid(calendarItemIds[3])}, ${sqlUuid(workspaceIds[0])}, 'Published lunch', 'food', 'date_based', '2026-09-14', null, null, 'America/Denver', 4, 'private food note', 'published', now(), ${sqlUuid(contactIds[0])});
     insert into public.volunteer_profiles
-      (id, workspace_id, lifecycle, readiness_status, full_name, email, congregation, availability_snapshot, skills_help_snapshot, profile_notes, profile_source, manual_created_at, manual_created_by_project_contact_id)
+      (id, workspace_id, lifecycle, readiness_status, full_name, email, congregation, availability_snapshot, skills_help_snapshot, structured_skill_categories, profile_notes, profile_source, manual_created_at, manual_created_by_project_contact_id)
     values
       (${sqlUuid(volunteerProfileIds[0])}, ${sqlUuid(workspaceIds[0])}, 'active', 'ready', 'Safe Facet Volunteer', 'facet-owner@example.invalid', 'Bozeman North',
         '{"weekdays":["Monday","Saturday"],"preferredTimes":["Morning"],"notes":"private availability note"}'::jsonb,
         '{"skillsExperience":{"categories":["Electrical assist","Food service"],"details":"private skills detail","physicalWorkNotes":"private physical note"},"otherWaysToHelp":{"selected":{"medicalSupport":true}}}'::jsonb,
-        'private profile note', 'manual', now(), ${sqlUuid(contactIds[0])}),
+        array['Electrical assist','Food service'], 'private profile note', 'manual', now(), ${sqlUuid(contactIds[0])}),
       (${sqlUuid(volunteerProfileIds[1])}, ${sqlUuid(workspaceIds[1])}, 'active', 'ready', 'Other Workspace Volunteer', 'facet-other@example.invalid', 'Other',
         '{"weekdays":["Tuesday"],"preferredTimes":["Evening"]}'::jsonb,
         '{"skillsExperience":{"categories":["Security"]}}'::jsonb,
-        'cross-workspace private note', 'manual', now(), ${sqlUuid(contactIds[1])});
+        array['Security'], 'cross-workspace private note', 'manual', now(), ${sqlUuid(contactIds[1])});
   `);
 
   const ownerContext = {

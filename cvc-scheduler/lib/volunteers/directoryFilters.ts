@@ -1,4 +1,4 @@
-import { projectSchedulerFacetsFromProfile } from "../questionnaires/schedulerFacets.ts";
+import { validateStructuredSkills } from "./skills.ts";
 import type { VolunteerProfile, VolunteerWeekday } from "./profile.ts";
 
 export type DirectoryFilters = {
@@ -12,10 +12,10 @@ export type DirectoryFilters = {
 };
 export const emptyDirectoryFilters = (): DirectoryFilters => ({ statuses: [], congregations: [], days: [], skills: [], security: "all", housing: "all", twoPlusDays: "all" });
 
-// Only the existing, validated questionnaire choices are skill tags. Free prose
+// Only explicitly recorded current profile categories are skill tags. Free prose
 // remains searchable, but never becomes an inferred qualification or a chip.
 export function recordedVolunteerSkills(volunteer: VolunteerProfile): readonly string[] {
-  return projectSchedulerFacetsFromProfile({ volunteerProfileId: volunteer.id, congregation: volunteer.congregation, availabilitySnapshot: volunteer.availabilitySnapshot, skillsHelpSnapshot: volunteer.skillsHelpSnapshot }).skillTags;
+  return validateStructuredSkills(volunteer.structuredSkills);
 }
 
 export function indexDirectory(volunteers: readonly VolunteerProfile[]) {

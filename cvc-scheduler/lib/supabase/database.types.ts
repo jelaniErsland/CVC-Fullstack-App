@@ -207,6 +207,183 @@ export type Database = {
           },
         ]
       }
+      assignment_reminder_activation: {
+        Row: {
+          baseline_at: string | null
+          delivery_enabled: boolean
+          scan_cursors: Json
+          singleton: boolean
+        }
+        Insert: {
+          baseline_at?: string | null
+          delivery_enabled?: boolean
+          scan_cursors?: Json
+          singleton?: boolean
+        }
+        Update: {
+          baseline_at?: string | null
+          delivery_enabled?: boolean
+          scan_cursors?: Json
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      assignment_reminder_enrollments: {
+        Row: {
+          assignment_id: string
+          pending_anchor: string | null
+          response_baseline: string
+          response_status: string
+          start_at: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Insert: {
+          assignment_id: string
+          pending_anchor?: string | null
+          response_baseline: string
+          response_status: string
+          start_at: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Update: {
+          assignment_id?: string
+          pending_anchor?: string | null
+          response_baseline?: string
+          response_status?: string
+          start_at?: string
+          volunteer_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_reminder_enrollments_workspace_id_assignment_id_fkey"
+            columns: ["workspace_id", "assignment_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_assignments"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_reminder_enrollments_workspace_id_volunteer_id_fkey"
+            columns: ["workspace_id", "volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_profiles"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      assignment_reminder_events: {
+        Row: {
+          attempt: number
+          due_at: string
+          event: string
+          happened_at: string
+          id: number
+          occurrence_id: string
+          recipient_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          attempt?: number
+          due_at: string
+          event: string
+          happened_at: string
+          id?: never
+          occurrence_id: string
+          recipient_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          attempt?: number
+          due_at?: string
+          event?: string
+          happened_at?: string
+          id?: never
+          occurrence_id?: string
+          recipient_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_reminder_events_workspace_id_occurrence_id_fkey"
+            columns: ["workspace_id", "occurrence_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_reminder_occurrences"
+            referencedColumns: ["workspace_id", "id"]
+          },
+          {
+            foreignKeyName: "assignment_reminder_events_workspace_id_recipient_id_fkey"
+            columns: ["workspace_id", "recipient_id"]
+            isOneToOne: false
+            referencedRelation: "communication_recipients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
+      assignment_reminder_occurrences: {
+        Row: {
+          assignment_id: string
+          due_at: string
+          enrolled_at: string
+          id: string
+          kind: string
+          next_attempt_at: string | null
+          occurrence_key: string
+          policy_version: string
+          recipient_id: string | null
+          scheduling_state: string
+          start_at: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Insert: {
+          assignment_id: string
+          due_at: string
+          enrolled_at: string
+          id?: string
+          kind: string
+          next_attempt_at?: string | null
+          occurrence_key: string
+          policy_version?: string
+          recipient_id?: string | null
+          scheduling_state?: string
+          start_at: string
+          volunteer_id: string
+          workspace_id: string
+        }
+        Update: {
+          assignment_id?: string
+          due_at?: string
+          enrolled_at?: string
+          id?: string
+          kind?: string
+          next_attempt_at?: string | null
+          occurrence_key?: string
+          policy_version?: string
+          recipient_id?: string | null
+          scheduling_state?: string
+          start_at?: string
+          volunteer_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_reminder_occurrenc_workspace_id_assignment_id_v_fkey"
+            columns: ["workspace_id", "assignment_id", "volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "assignment_reminder_enrollments"
+            referencedColumns: ["workspace_id", "assignment_id", "volunteer_id"]
+          },
+          {
+            foreignKeyName: "assignment_reminder_occurrences_workspace_id_recipient_id_fkey"
+            columns: ["workspace_id", "recipient_id"]
+            isOneToOne: false
+            referencedRelation: "communication_recipients"
+            referencedColumns: ["workspace_id", "id"]
+          },
+        ]
+      }
       assignment_response_link_reveal_events: {
         Row: {
           action: string
@@ -495,6 +672,7 @@ export type Database = {
           custom_values: Json
           end_date: string | null
           end_time: string | null
+          explicit_draft: boolean
           follow_up_project_contact_id: string | null
           id: string
           instruction_preset_updated_at: string | null
@@ -526,6 +704,7 @@ export type Database = {
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
+          explicit_draft?: boolean
           follow_up_project_contact_id?: string | null
           id?: string
           instruction_preset_updated_at?: string | null
@@ -557,6 +736,7 @@ export type Database = {
           custom_values?: Json
           end_date?: string | null
           end_time?: string | null
+          explicit_draft?: boolean
           follow_up_project_contact_id?: string | null
           id?: string
           instruction_preset_updated_at?: string | null
@@ -700,7 +880,7 @@ export type Database = {
       }
       communication_operations: {
         Row: {
-          actor_id: string
+          actor_id: string | null
           created_at: string
           id: string
           kind: string
@@ -709,7 +889,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
-          actor_id: string
+          actor_id?: string | null
           created_at?: string
           id: string
           kind: string
@@ -718,7 +898,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
-          actor_id?: string
+          actor_id?: string | null
           created_at?: string
           id?: string
           kind?: string
@@ -1234,6 +1414,7 @@ export type Database = {
           skills_experience: string | null
           skills_help_snapshot: Json
           source_submission_id: string | null
+          structured_skill_categories: string[]
           updated_at: string
           workspace_id: string
         }
@@ -1265,6 +1446,7 @@ export type Database = {
           skills_experience?: string | null
           skills_help_snapshot: Json
           source_submission_id?: string | null
+          structured_skill_categories?: string[]
           updated_at?: string
           workspace_id: string
         }
@@ -1296,6 +1478,7 @@ export type Database = {
           skills_experience?: string | null
           skills_help_snapshot?: Json
           source_submission_id?: string | null
+          structured_skill_categories?: string[]
           updated_at?: string
           workspace_id?: string
         }
@@ -1577,6 +1760,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_calendar_item: {
+        Args: { p_calendar_item_id: string }
+        Returns: string
+      }
       apply_task_preset_instructions: {
         Args: {
           p_expected_preset_updated_at: string
@@ -1590,9 +1777,22 @@ export type Database = {
         Returns: string
       }
       archive_task_preset: { Args: { p_preset_id: string }; Returns: string }
-      read_assignment_reminders: { Args: { p_workspace_id: string; p_after?: string }; Returns: Json }
-      read_assignment_reminder_workspace: { Args: { p_workspace_id: string; p_view?: string; p_search?: string; p_cursor?: Json; p_limit?: number }; Returns: Json }
-      run_assignment_reminder_worker: { Args: { p_command: string; p_payload?: Json }; Returns: Json }
+      assignment_reminder_context: {
+        Args: { p_assignment: string; p_now: string }
+        Returns: Json
+      }
+      assignment_reminder_dispatch_context: {
+        Args: { p_claim: string; p_now: string; p_recipient: string }
+        Returns: Json
+      }
+      assignment_reminder_local_offset: {
+        Args: { p_days: number; p_instant: string; p_zone: string }
+        Returns: string
+      }
+      assignment_reminder_report: {
+        Args: { p_after?: string; p_now: string; p_workspace: string }
+        Returns: Json
+      }
       calendar_assignment_response_start_at: {
         Args: {
           p_schedule_kind: string
@@ -1617,6 +1817,10 @@ export type Database = {
       cancel_calendar_assignment: {
         Args: { p_assignment_id: string }
         Returns: string
+      }
+      claim_assignment_reminder: {
+        Args: { p_now: string; p_occurrence: string }
+        Returns: Json
       }
       claim_communication_recipient: {
         Args: { p_recipient_id: string; p_retry: boolean }
@@ -1709,10 +1913,22 @@ export type Database = {
         Returns: string
       }
       create_calendar_item_draft: {
-        Args: Database["public"]["Functions"]["create_calendar_item"]["Args"]
+        Args: {
+          p_custom_values: Json
+          p_end_date: string
+          p_end_time: string
+          p_needed_count: number
+          p_one_off_task_type: string
+          p_one_off_title: string
+          p_schedule_kind: string
+          p_schedule_notes: string
+          p_start_date: string
+          p_start_time: string
+          p_task_preset_id: string
+          p_workspace_id: string
+        }
         Returns: string
       }
-      activate_calendar_item: { Args: { p_calendar_item_id: string }; Returns: string }
       create_current_workspace_repeated_calendar_items:
         | {
             Args: {
@@ -1786,6 +2002,16 @@ export type Database = {
           p_end_time?: string
           p_start_time?: string
           p_target_date: string
+        }
+        Returns: string
+      }
+      finalize_assignment_reminder: {
+        Args: {
+          p_claim: string
+          p_now: string
+          p_outcome: string
+          p_provider: string
+          p_recipient: string
         }
         Returns: string
       }
@@ -1909,16 +2135,30 @@ export type Database = {
       }
       read_assignment_picker_away_periods: {
         Args: {
-          p_workspace_id: string
-          p_volunteer_ids: string[]
           p_from: string
           p_through: string
+          p_volunteer_ids: string[]
+          p_workspace_id: string
         }
         Returns: {
-          volunteer_profile_id: string
-          starts_on: string
           ends_on: string
+          starts_on: string
+          volunteer_profile_id: string
         }[]
+      }
+      read_assignment_reminder_workspace: {
+        Args: {
+          p_cursor?: Json
+          p_limit?: number
+          p_search?: string
+          p_view?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
+      read_assignment_reminders: {
+        Args: { p_after?: string; p_workspace_id: string }
+        Returns: Json
       }
       read_assignment_response_by_token: {
         Args: { p_bearer_token: string }
@@ -1947,6 +2187,7 @@ export type Database = {
           custom_values: Json
           end_date: string | null
           end_time: string | null
+          explicit_draft: boolean
           follow_up_project_contact_id: string | null
           id: string
           instruction_preset_updated_at: string | null
@@ -2074,10 +2315,10 @@ export type Database = {
           declined_count: number
           end_date: string
           end_time: string
+          fellow_worker_names: string[]
           follow_up_contact_display_name: string
           follow_up_contact_email: string
           follow_up_contact_phone: string
-          fellow_worker_names: string[]
           meal_details: Json
           needed_count: number
           response_lock_reason: string
@@ -2169,6 +2410,10 @@ export type Database = {
         Args: { p_token_id: string }
         Returns: string
       }
+      run_assignment_reminder_worker: {
+        Args: { p_command: string; p_payload?: Json }
+        Returns: Json
+      }
       save_calendar_meal: {
         Args: {
           p_calendar_item_id: string
@@ -2237,6 +2482,10 @@ export type Database = {
           response_note: string
           response_recorded_at: string
         }[]
+      }
+      sync_assignment_reminder: {
+        Args: { p_assignment: string; p_now: string }
+        Returns: undefined
       }
       task_custom_field_definitions_are_valid: {
         Args: { p_fields: Json }

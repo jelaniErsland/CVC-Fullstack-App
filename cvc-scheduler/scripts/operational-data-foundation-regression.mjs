@@ -174,8 +174,10 @@ assert.deepEqual(Object.keys(quickView.publishedSchedule[0]).sort(), [
   "title",
 ]);
 assert.deepEqual(Object.keys(quickView.publishedSchedule[0].schedule).sort(), [
+  "endDate",
   "endTime",
   "kind",
+  "startDate",
   "startTime",
 ]);
 const serializedQuickView = JSON.stringify(quickView);
@@ -208,6 +210,7 @@ const facets = projectSchedulerFacetsFromProfile({
     preferredTimes: ["Morning"],
     notes: "private availability note",
   },
+  structuredSkills: ["Electrical assist", "Food service"],
   skillsHelpSnapshot: {
     skillsExperience: {
       categories: ["Electrical assist", "Food service"],
@@ -231,7 +234,8 @@ assert.deepEqual(projectSchedulerFacetsFromProfile({
   volunteerProfileId: "40000000-0000-4000-8000-000000000002",
   congregation: null,
   availabilitySnapshot: { weekdays: ["Sunday"], preferredTimes: "Morning" },
-  skillsHelpSnapshot: { skillsExperience: { categories: ["Unapproved skill"] } },
+  structuredSkills: [],
+  skillsHelpSnapshot: { skillsExperience: { categories: ["Unapproved historical skill"] } },
 }), {
   volunteerProfileId: "40000000-0000-4000-8000-000000000002",
   congregation: null,
@@ -247,7 +251,8 @@ assert.equal(schedulerFacetContract.extensionSeams.authorizationArchitectureChan
 assert.match(projectDayServer, /^import "server-only";/);
 assert.match(quickViewServer, /^import "server-only";/);
 assert.match(facetsServer, /^import "server-only";/);
-assert.deepEqual([...quickViewServer.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]), ["project_days", "calendar_items"]);
+assert.deepEqual([...quickViewServer.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]), ["project_days"]);
+assert.match(quickViewServer,/rpc\("read_authorized_calendar_items"/);
 assert.deepEqual([...facetsServer.matchAll(/\.from\("([^"]+)"\)/g)].map((match) => match[1]), ["volunteer_profiles"]);
 for (const source of [projectDayServer, quickViewServer, facetsServer]) {
   assert.doesNotMatch(source, /service_role|SUPABASE_SERVICE_ROLE_KEY/i);

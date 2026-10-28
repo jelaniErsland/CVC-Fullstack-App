@@ -8,7 +8,7 @@ import {
 } from "./schedulerFacets.ts";
 
 const schedulerFacetColumns =
-  "id,workspace_id,congregation,availability_snapshot,skills_help_snapshot,lifecycle";
+  "id,workspace_id,congregation,availability_snapshot,structured_skill_categories,lifecycle";
 
 function parseSchedulerFacetProfileSource(value: unknown): SchedulerFacetProfileSource {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -21,9 +21,7 @@ function parseSchedulerFacetProfileSource(value: unknown): SchedulerFacetProfile
     typeof row.availability_snapshot !== "object" ||
     row.availability_snapshot === null ||
     Array.isArray(row.availability_snapshot) ||
-    typeof row.skills_help_snapshot !== "object" ||
-    row.skills_help_snapshot === null ||
-    Array.isArray(row.skills_help_snapshot)
+    !Array.isArray(row.structured_skill_categories)
   ) {
     throw new Error("Scheduler facet source is invalid.");
   }
@@ -31,7 +29,7 @@ function parseSchedulerFacetProfileSource(value: unknown): SchedulerFacetProfile
     volunteerProfileId: row.id,
     congregation: row.congregation as string | null,
     availabilitySnapshot: row.availability_snapshot,
-    skillsHelpSnapshot: row.skills_help_snapshot,
+    structuredSkills: row.structured_skill_categories,
   };
 }
 

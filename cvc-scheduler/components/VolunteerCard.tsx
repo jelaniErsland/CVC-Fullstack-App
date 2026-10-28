@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { VolunteerSkillsEditor } from "./VolunteerSkillsEditor";
 import { StatusPill } from "./StatusPill";
 import { ClipboardList, Mail, MessageCircle, Pencil, Phone } from "lucide-react";
 import { volunteerAge, volunteerWeekdays, type VolunteerProfile } from "@/lib/volunteers/profile";
@@ -38,6 +40,7 @@ export function VolunteerCard({ onView,
   skillQuery = "",
   selectedSkills = [],
 }: VolunteerCardProps) {
+  const congregationId = useId();
   const orderedSkills = prioritizedSkills(skills, skillQuery, selectedSkills);
   const experienceMatch = experienceSearchExplanation(volunteer, skillQuery, skills);
   const sourceLabel =
@@ -50,16 +53,13 @@ export function VolunteerCard({ onView,
 
   return (
     <article className="bg-white transition hover:bg-blue-50/20">
-      <div className="grid min-w-0 gap-3 px-4 py-3.5 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:grid-cols-[minmax(210px,1.3fr)_minmax(190px,1fr)_minmax(150px,.8fr)_auto] lg:items-center lg:px-5">
+      <div className="grid min-w-0 gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:grid-cols-[minmax(210px,1.3fr)_minmax(190px,1fr)_minmax(150px,.8fr)_auto] lg:items-center lg:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--pl-blue-soft)] text-xs font-bold text-[var(--pl-blue)] ring-1 ring-blue-100">
             {initials}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button className="inline-flex min-h-11 max-w-full items-center truncate rounded text-left text-[var(--pl-blue)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button">{volunteer.fullName}</button></h2>
-            <p className="mt-0.5 truncate text-xs text-[var(--pl-muted)]">
-              {volunteer.congregation ?? "No congregation listed"}
-            </p>
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--pl-ink)]"><button aria-label={volunteer.fullName} aria-describedby={congregationId} className="flex min-h-11 max-w-full flex-col justify-center gap-1 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" onClick={onView} type="button"><span className="max-w-full truncate text-[var(--pl-blue)] hover:underline">{volunteer.fullName}</span><span id={congregationId} className="max-w-full truncate text-xs font-normal text-[var(--pl-muted)]">{volunteer.congregation ?? "No congregation listed"}</span></button></h2>
             {orderedSkills.length > 0 && <div className={filterStyles.skillContext} aria-label="Recorded skills">{orderedSkills.slice(0, 3).map(skill => <span className={filterStyles.skillTag} data-matched={selectedSkills.includes(skill) || (!!skillQuery.trim() && skill.toLowerCase().includes(skillQuery.trim().toLowerCase()))} key={skill}>{skill}</span>)}{orderedSkills.length > 3 && <span className="text-xs text-slate-600">+{orderedSkills.length - 3}</span>}</div>}
             {experienceMatch && <p className={filterStyles.experienceMatch}>{experienceMatch}</p>}
           </div>
@@ -109,8 +109,8 @@ export function VolunteerCard({ onView,
   );
 }
 
-export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile }) {
-  const fieldClassName = "mt-1.5 min-h-[42px] w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:ring-2 focus:ring-blue-100";
+export function VolunteerFields({ volunteer, onDirty }: { volunteer?: VolunteerProfile; onDirty?: () => void }) {
+  const fieldClassName = "mt-1.5 min-h-11 w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:ring-2 focus:ring-blue-100";
   const selectClassName = `${fieldClassName} font-medium`;
 
   return (
@@ -155,18 +155,19 @@ export function VolunteerFields({ volunteer }: { volunteer?: VolunteerProfile })
         <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Availability</summary>
         <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">
           <fieldset><legend className="text-sm font-medium text-slate-600">Available work days</legend><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {volunteerWeekdays.map((day) => <label className="flex min-h-10 items-center gap-2 rounded border border-[var(--pl-border)] px-2 text-xs" key={day}><input defaultChecked={volunteer?.availableWorkDays.includes(day)} name="availableWorkDays" type="checkbox" value={day} />{day}</label>)}
+            {volunteerWeekdays.map((day) => <label className="flex min-h-11 items-center gap-2 rounded border border-[var(--pl-border)] px-2 text-xs" key={day}><input defaultChecked={volunteer?.availableWorkDays.includes(day)} name="availableWorkDays" type="checkbox" value={day} />{day}</label>)}
           </div></fieldset>
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.availableTwoPlusDays ?? "unknown"} label="Available 2+ days/week" name="availableTwoPlusDays" />
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.afterHoursSecurityAvailability ?? "unknown"} label="Available for after-hours security" name="afterHoursSecurityAvailability" />
         </div>
       </details>
+      <VolunteerSkillsEditor initialSkills={volunteer?.structuredSkills} onDirty={onDirty} />
       <details className="rounded-lg border border-[var(--pl-border)] bg-white">
-        <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Skills &amp; support</summary>
+        <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Experience &amp; other support</summary>
         <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.housingOption ?? "unknown"} label="Housing possible" name="housingOption" />
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.builderAssistantCommunication ?? "unknown"} label="Builder Assistant communication" name="builderAssistantCommunication" />
-          <label className="block"><span className="text-sm font-medium text-slate-600">Skills / experience</span><textarea className={`${fieldClassName} min-h-24 py-3`} defaultValue={volunteer?.skillsExperience ?? ""} maxLength={4000} name="skillsExperience" /></label>
+          <label className="block"><span className="text-sm font-medium text-slate-600">Skills and experience</span><textarea className={`${fieldClassName} min-h-24 py-3`} defaultValue={volunteer?.skillsExperience ?? ""} maxLength={4000} name="skillsExperience" /></label>
           <label className="block"><span className="text-sm font-medium text-slate-600">Other support</span><textarea className={`${fieldClassName} min-h-24 py-3`} defaultValue={volunteer?.otherSupport ?? ""} maxLength={4000} name="otherSupport" /></label>
         </div>
       </details>

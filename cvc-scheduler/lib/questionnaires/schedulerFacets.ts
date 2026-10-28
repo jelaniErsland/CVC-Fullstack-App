@@ -1,3 +1,5 @@
+import { structuredSkillOptions, validateStructuredSkills } from "../volunteers/skills.ts";
+
 export const schedulerFacetDefinitions = [
   {
     key: "availability_weekdays",
@@ -15,31 +17,20 @@ export const schedulerFacetDefinitions = [
   },
   {
     key: "skill_categories",
-    sourceSnapshot: "skills_help_snapshot",
-    sourcePath: ["skillsExperience", "categories"],
+    sourceSnapshot: "structured_skill_categories",
+    sourcePath: [],
     valueType: "choice_list",
-    allowedValues: [
-      "Painting",
-      "Demo",
-      "Framing",
-      "Finish work",
-      "Electrical assist",
-      "Plumbing assist",
-      "General cleanup",
-      "Check-in desk",
-      "Food service",
-      "Security",
-    ],
+    allowedValues: structuredSkillOptions,
   },
 ] as const;
 
 export const schedulerFacetContract = {
-  metadataVersion: 1,
-  metadataOwner: "explicit_code_registry_for_fixed_questionnaire_v1_snapshots",
+  metadataVersion: 2,
+  metadataOwner: "explicit_code_registry_for_current_profile_skills_and_availability_snapshots",
   rawQuestionnaireReadAllowed: false,
   sourceTable: "volunteer_profiles",
   sourceAuthority:
-    "persisted_approved_volunteer_profile_snapshots_copied_during_explicit_questionnaire_v1_conversion_or_empty_for_manual_profiles",
+    "current_structured_skill_categories_and_approved_availability_snapshots",
   prototypeOrMockSourceAllowed: false,
   explicitlySupported: [
     "profile_congregation",
@@ -84,7 +75,7 @@ export type SchedulerFacetProfileSource = Readonly<{
   volunteerProfileId: string;
   congregation: string | null;
   availabilitySnapshot: unknown;
-  skillsHelpSnapshot: unknown;
+  structuredSkills: unknown;
 }>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,7 +113,6 @@ export function projectSchedulerFacetsFromProfile(
 ): SchedulerFacetProjection {
   const weekdayDefinition = schedulerFacetDefinitions[0];
   const timeDefinition = schedulerFacetDefinitions[1];
-  const skillDefinition = schedulerFacetDefinitions[2];
   const weekdays = explicitChoiceList(
     source.availabilitySnapshot,
     weekdayDefinition.sourcePath,
@@ -133,11 +123,7 @@ export function projectSchedulerFacetsFromProfile(
     timeDefinition.sourcePath,
     timeDefinition.allowedValues,
   );
-  const skillTags = explicitChoiceList(
-    source.skillsHelpSnapshot,
-    skillDefinition.sourcePath,
-    skillDefinition.allowedValues,
-  );
+  const skillTags = validateStructuredSkills(source.structuredSkills);
   return {
     volunteerProfileId: source.volunteerProfileId,
     congregation: source.congregation,
@@ -154,9 +140,9 @@ export function schedulerFacetDefinitionIsSupported(value: unknown) {
   const structurallyValid =
     value.valueType === "choice_list" &&
     (value.sourceSnapshot === "availability_snapshot" ||
-      value.sourceSnapshot === "skills_help_snapshot") &&
+      value.sourceSnapshot === "structured_skill_categories") &&
     Array.isArray(value.sourcePath) &&
-    value.sourcePath.length > 0 &&
+    (value.sourcePath.length > 0 || value.sourceSnapshot === "structured_skill_categories") &&
     value.sourcePath.length <= 4 &&
     value.sourcePath.every(
       (segment) => typeof segment === "string" && /^[a-z][a-zA-Z0-9]*$/.test(segment),

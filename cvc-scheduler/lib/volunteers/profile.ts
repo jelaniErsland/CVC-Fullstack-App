@@ -1,3 +1,5 @@
+import { validateStructuredSkills, type StructuredSkill } from "./skills.ts";
+
 export const volunteerWeekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
 export type VolunteerWeekday = (typeof volunteerWeekdays)[number];
 export type VolunteerTriState = "yes" | "no" | "unknown";
@@ -17,6 +19,7 @@ export type VolunteerProfile = Readonly<{
   congregation: string | null;
   preferredContactMethod: "Text" | "Phone" | "Email" | null;
   availabilitySnapshot: Readonly<Record<string, unknown>>;
+  structuredSkills: readonly StructuredSkill[];
   skillsHelpSnapshot: Readonly<Record<string, unknown>>;
   profileNotes: string;
   dateOfBirth: string | null;
@@ -145,6 +148,7 @@ export function parseVolunteerProfile(value: unknown): VolunteerProfile {
     preferredContactMethod,
     availabilitySnapshot: snapshot(value, "availability_snapshot"),
     skillsHelpSnapshot: snapshot(value, "skills_help_snapshot"),
+    structuredSkills: validateStructuredSkills(value.structured_skill_categories),
     profileNotes: requiredStringOrEmpty(value, "profile_notes"),
     dateOfBirth: nullableString(value, "date_of_birth"),
     emergencyContactName: nullableString(value, "emergency_contact_name"),
@@ -187,4 +191,10 @@ function requiredStringOrEmpty(record: Record<string, unknown>, field: string) {
     throw new Error(`Volunteer profile has an invalid ${field}.`);
   }
   return value;
+}
+
+// PostgreSQL profile versions retain microseconds; Date.parse alone loses them.
+export function newerVolunteerProfile(profile: VolunteerProfile, saved?: VolunteerProfile): VolunteerProfile {
+  const version = (value: string) => `${new Date(value).toISOString().slice(0, 19)}.${(value.match(/\.(\d+)/)?.[1] ?? "").padEnd(6, "0")}`;
+  return saved && version(saved.updatedAt) >= version(profile.updatedAt) ? saved : profile;
 }

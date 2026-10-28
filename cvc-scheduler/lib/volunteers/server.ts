@@ -1,4 +1,5 @@
 import "server-only";
+import { validateStructuredSkills, type StructuredSkill } from "./skills.ts";
 
 import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 import { parseVolunteerProfile, type VolunteerProfile } from "./profile.ts";
@@ -24,6 +25,7 @@ const volunteerProfileColumns = [
   "preferred_contact_method",
   "availability_snapshot",
   "skills_help_snapshot",
+  "structured_skill_categories",
   "profile_notes",
   "date_of_birth",
   "emergency_contact_name",
@@ -41,6 +43,7 @@ const volunteerProfileColumns = [
 ].join(",");
 
 const editableKeys = new Set([
+  "structuredSkills",
   "fullName",
   "email",
   "phone",
@@ -55,6 +58,7 @@ const editableKeys = new Set([
 ]);
 
 export type ManualVolunteerProfileInput = Readonly<{
+  structuredSkills?: StructuredSkill[];
   fullName: string;
   email: string | null;
   phone: string | null;
@@ -224,6 +228,7 @@ export function normalizeManualVolunteerProfileInput(
   if ((skillsExperience?.length ?? 0) > 4000 || (otherSupport?.length ?? 0) > 4000) throw new Error("Volunteer support details are too long.");
 
   return {
+    ...(Object.hasOwn(value, "structuredSkills") ? { structuredSkills: validateStructuredSkills(value.structuredSkills) } : {}),
     fullName,
     email,
     phone,
@@ -240,6 +245,7 @@ export function normalizeManualVolunteerProfileInput(
 
 export function manualVolunteerInputFromFormData(formData: FormData) {
   return normalizeManualVolunteerProfileInput({
+    ...(formData.has("structuredSkillsPresent") ? { structuredSkills: formData.getAll("structuredSkills") } : {}),
     fullName: formData.get("fullName"),
     email: formData.get("email"),
     phone: formData.get("phone"),
@@ -354,4 +360,12 @@ export async function readCsvVolunteerProfilesWithClient(supabase: AppSupabaseCl
     if (!data || data.length < 500) return profiles;
   }
   throw new Error("Workspace exceeds the supported CSV limit.");
+}
+
+export async function readVolunteerProfileWithClient(supabase: AppSupabaseClient, workspaceId: string, profileId: string): Promise<VolunteerProfile> {
+  const { data, error } = await supabase.from("volunteer_profiles").select(volunteerProfileColumns)
+    .eq("workspace_id", normalizeWorkspaceReference({ id: workspaceId }).value)
+    .eq("id", normalizeWorkspaceReference({ id: profileId }).value).single();
+  if (error || !data) throw new Error("The saved volunteer could not be reloaded. Refresh the directory before retrying.", { cause: error });
+  return parseVolunteerProfile(data);
 }

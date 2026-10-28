@@ -14,6 +14,7 @@ import {
   deleteHistoryFreeVolunteerProfileWithClient,
   manualVolunteerInputFromFormData,
   updateVolunteerProfileManualFieldsWithClient,
+  readVolunteerProfileWithClient,
 } from "@/lib/volunteers/server";
 import {
   readVolunteerManagementRouteContext,
@@ -128,6 +129,7 @@ async function updateVolunteerProfileAction(formData: FormData): Promise<Volunte
   "use server";
 
   let notice: "unavailable" | "validation" | "error" | "updated" | "conflict" = "error";
+  let savedVolunteer;
   try {
     const routeContext = await readVolunteerManagementRouteContext();
     const profileId = formData.get("profileId");
@@ -143,6 +145,7 @@ async function updateVolunteerProfileAction(formData: FormData): Promise<Volunte
         input,
         String(formData.get("expectedUpdatedAt") ?? ""),
       );
+      savedVolunteer = await readVolunteerProfileWithClient(routeContext.supabase, routeContext.workspace.id, normalizedProfileId);
       notice = "updated";
     }
   } catch (error) {
@@ -153,9 +156,9 @@ async function updateVolunteerProfileAction(formData: FormData): Promise<Volunte
     );
   }
 
-  if (notice !== "updated") return { kind: "rejected", reason: notice };
+  if (notice !== "updated" || !savedVolunteer) return { kind: "rejected", reason: notice === "updated" ? "error" : notice };
   revalidatePath("/admin/volunteers");
-  return { kind: "updated" };
+  return { kind: "updated", volunteer: savedVolunteer };
 }
 
 function Notice({ notice }: { notice: string | null }) {

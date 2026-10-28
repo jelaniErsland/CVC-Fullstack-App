@@ -336,7 +336,7 @@ function questionnaireAnswers(label) {
       afterHoursSecurityAvailability: "yes",
     },
     skillsExperience: {
-      categories: ["General"],
+      categories: ["General cleanup"],
       maintenanceTaskCards: false,
     },
     emergencyContact: {
