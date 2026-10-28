@@ -1,0 +1,123 @@
+{
+  "baseline": true,
+  "results": [
+    {
+      "width": 1440,
+      "forward": [
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=80fbbb40-97f8-49ed-9316-596dc47f7d7e&section=details"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "fixture-7fd14852-6a3c-4fa5-9500-f29dfe9b1366-0@example.invalid",
+          "href": "mailto:fixture-7fd14852-6a3c-4fa5-9500-f29dfe9b1366-0@example.invalid"
+        },
+        {
+          "tag": "A",
+          "label": "+12025550100",
+          "href": "tel:+12025550100"
+        }
+      ],
+      "reverse": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=80fbbb40-97f8-49ed-9316-596dc47f7d7e&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 5, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-05&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=8695ee75-70dd-4197-a16b-784397d78d66&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 4, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-04&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=b109c8ba-460b-49b6-b69c-4f8bdcdcbc9e&section=details"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Past",
+          "href": null
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "forward": [
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=80fbbb40-97f8-49ed-9316-596dc47f7d7e&section=details"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "fixture-7fd14852-6a3c-4fa5-9500-f29dfe9b1366-0@example.invalid",
+          "href": "mailto:fixture-7fd14852-6a3c-4fa5-9500-f29dfe9b1366-0@example.invalid"
+        },
+        {
+          "tag": "A",
+          "label": "+12025550100",
+          "href": "tel:+12025550100"
+        }
+      ],
+      "reverse": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=80fbbb40-97f8-49ed-9316-596dc47f7d7e&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 5, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-05&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=8695ee75-70dd-4197-a16b-784397d78d66&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 4, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-04&project=qa-1247-7fd14852-6a3c-4fa5-9500-f29dfe9b1366&item=b109c8ba-460b-49b6-b69c-4f8bdcdcbc9e&section=details"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Past",
+          "href": null
+        }
+      ]
+    }
+  ],
+  "audits": [],
+  "db": "57 / 20261026120000",
+  "providerCalls": 0,
+  "productionMutations": 0
+}
