@@ -1,0 +1,21 @@
+{
+  "originalClaim": 147,
+  "evidence": [
+    {
+      "file": "prior-skills-browser-results.json",
+      "original": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-15\\project-local-12-54c\\work\\app\\previews\\12-61-volunteer-skills\\browser-results.json",
+      "sha256": "58d5ff847da69f26e92ba0de20f3d5b1704deb14888684940055606ba0583ef6",
+      "audits": 83,
+      "violations": 0
+    },
+    {
+      "file": "prior-filter-browser-results.json",
+      "original": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-27\\project-local-12-61-verification\\full-filter-browser\\browser-results.json",
+      "sha256": "7ce1d2afb6014569b8f1caf1f923671c4ce6d90b9005795f9062fe9a6118fb82",
+      "audits": 64,
+      "violations": 0
+    }
+  ],
+  "total": 147,
+  "newAmendmentAudits": "Separate in browser-results.json; not part of the historical 147."
+}

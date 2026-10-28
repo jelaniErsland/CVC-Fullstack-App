@@ -1,0 +1,43 @@
+{
+  "webpack": {
+    "pass": true,
+    "nextVersion": "16.2.7",
+    "guardBeforeCompilation": true,
+    "credentials": {
+      "sourceFilesScanned": 16,
+      "sourceFindings": [],
+      "compiledClientFiles": 91,
+      "compiledClientFindings": []
+    }
+  },
+  "turbopack": {
+    "pass": true,
+    "nextVersion": "16.2.7",
+    "guardBeforeCompilation": true,
+    "credentials": {
+      "sourceFilesScanned": 20,
+      "sourceFindings": [],
+      "compiledClientFiles": 43,
+      "compiledClientFindings": []
+    }
+  },
+  "typescript": "PASS",
+  "eslint": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "functionPolicy": {
+    "exactFunctions": 103,
+    "publicExecute": 0,
+    "pass": true
+  },
+  "standardAddEditBrowser": "PASS persisted Add/Edit/reload, skills, view-only, mobile",
+  "migration58": {
+    "unchangedBytes": true,
+    "sha256": "e22566bfb41f3f5518dff70a9e6658fd40149bea422e904a32f9e5159a6937c1"
+  },
+  "nextVersion": "16.2.7",
+  "providerCalls": 0,
+  "productionAccess": false,
+  "logsLocation": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-27\\project-local-12-61-final-polish"
+}

@@ -1,0 +1,207 @@
+{
+  "approvedParent": "8d38b085c093f2473fa7d380078ac2fc9e0b8500",
+  "historicalAccessibility": {
+    "originalClaim": 147,
+    "evidence": [
+      {
+        "file": "prior-skills-browser-results.json",
+        "original": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-15\\project-local-12-54c\\work\\app\\previews\\12-61-volunteer-skills\\browser-results.json",
+        "sha256": "58d5ff847da69f26e92ba0de20f3d5b1704deb14888684940055606ba0583ef6",
+        "audits": 83,
+        "violations": 0
+      },
+      {
+        "file": "prior-filter-browser-results.json",
+        "original": "C:\\Users\\mtfis\\Documents\\Codex\\2026-10-27\\project-local-12-61-verification\\full-filter-browser\\browser-results.json",
+        "sha256": "7ce1d2afb6014569b8f1caf1f923671c4ce6d90b9005795f9062fe9a6118fb82",
+        "audits": 64,
+        "violations": 0
+      }
+    ],
+    "total": 147,
+    "newAmendmentAudits": "Separate in browser-results.json; not part of the historical 147."
+  },
+  "amendmentAccessibility": {
+    "file": "browser-results.json",
+    "sha256": "f0293b185febec56af3752e5e197f5c4a8ac42bc8edea74d2b3ccd83e2ce0d85",
+    "audits": 70,
+    "violations": 0
+  },
+  "screenshots": [
+    {
+      "file": "add-bottom-1440.png",
+      "sha256": "bb854e2b5fba4e864fcd96762109fd1f75b789ded5aa456bb382363c54e7600b"
+    },
+    {
+      "file": "add-bottom-320.png",
+      "sha256": "42684be422cd98a14f3d64af31f9a574c9db91579725c49d68c0aae506b4bfb5"
+    },
+    {
+      "file": "add-bottom-390.png",
+      "sha256": "c5339d096dd37d97ae1d4e3f478c1a2a9a054a18065e7069d7b05f857518b175"
+    },
+    {
+      "file": "add-bottom-430.png",
+      "sha256": "d1710876e91598a72cd2de10c09bb326022cc8211793889d143cdbb6be2dab3d"
+    },
+    {
+      "file": "add-bottom-768.png",
+      "sha256": "26706e2f460d4e870ed9d587a58b50e18456502a57dc7c4e8d90aa0bebc96d41"
+    },
+    {
+      "file": "add-skills-1440.png",
+      "sha256": "d958c213bb07ac7d20729b2d2a87a6b1c6f46d831201042f1a13c172c6f117c4"
+    },
+    {
+      "file": "add-skills-320.png",
+      "sha256": "cbfd514566d09ad7bf8de6f554881ec39c12124b3b5df2049cd528185747b651"
+    },
+    {
+      "file": "add-skills-390.png",
+      "sha256": "7bb1d9fcbd807f0f41d74958d210d57f7c14e3980f0869e3447f45f307b0891c"
+    },
+    {
+      "file": "add-skills-430.png",
+      "sha256": "4ab382a6ca678ebb309aa9359e96bf2c578d065e3ca7d47c744278dced1bb9a4"
+    },
+    {
+      "file": "add-skills-768.png",
+      "sha256": "db8aed7692e8b796cc7b96dedfa8a3d149bc181be45cf131919490662e6d085c"
+    },
+    {
+      "file": "dirty-discard-1440.png",
+      "sha256": "08a404175f6290b4f2a91bf1510936c65145eb7ae269b1ee3f4561d8abe5d6a6"
+    },
+    {
+      "file": "dirty-discard-390.png",
+      "sha256": "742dc71f6682f66a1d39c0b1490eb7137e52500f8b1be92479c06b9c74432eea"
+    },
+    {
+      "file": "edit-bottom-1440.png",
+      "sha256": "6e97b4d924e827592261701682f74ccd7e45fe83d0d8e96ea53ceb772750d9d1"
+    },
+    {
+      "file": "edit-bottom-320.png",
+      "sha256": "14e12526e23292b6e41aa98e4a5b44b97a9361d3ad0c2844b1b3a124ab2b2ae0"
+    },
+    {
+      "file": "edit-bottom-390.png",
+      "sha256": "5041196c7b174c27d132beb1c0f70ae3afa0a0348a3ef0f4f0b9df04f0752806"
+    },
+    {
+      "file": "edit-bottom-430.png",
+      "sha256": "5af7feddede9916cc3523db321000e63c48afe6ba50c6bd50a0aac23fba3ee15"
+    },
+    {
+      "file": "edit-bottom-768.png",
+      "sha256": "00b3720b6376618966cbac4d9000a45eee68dc602ffe955841ffec88c9598067"
+    },
+    {
+      "file": "edit-no-skills-1440.png",
+      "sha256": "c1ac70326fbcd923fd3e97c9dce9d04748a4c50cdb2cb6ecb4ea4243483c6e10"
+    },
+    {
+      "file": "edit-no-skills-320.png",
+      "sha256": "03a0c6a3202e8304d259e72781849c427e535034e6428345847f9ee81db62b65"
+    },
+    {
+      "file": "edit-no-skills-390.png",
+      "sha256": "bb54818409a72bd7332235be067cf16b64175f861ba660c793a315f8b92a8732"
+    },
+    {
+      "file": "edit-no-skills-430.png",
+      "sha256": "409260f43c2d9643d9761caad861099f72652ac1235f7d1e8e00e89cd24aa6c4"
+    },
+    {
+      "file": "edit-no-skills-768.png",
+      "sha256": "0189d97321104222d24b3c6964a9c37cec6122c093ad65c8dedc378470ea3a04"
+    },
+    {
+      "file": "edit-selected-skills-1440.png",
+      "sha256": "5cc43298dcb6b6b91bc04b7cc851b7c42dd23e3414acf6a6c747edca6c7828aa"
+    },
+    {
+      "file": "edit-selected-skills-320.png",
+      "sha256": "af06fc2cceb608e9d48eaf32086c5d37010a8873f630c0056c0fa1be7e2de2df"
+    },
+    {
+      "file": "edit-selected-skills-390.png",
+      "sha256": "3d1081f1007909cde466e1b91c3b4982d7385b766118f01d82488056c7cd80f5"
+    },
+    {
+      "file": "edit-selected-skills-430.png",
+      "sha256": "7779b4f5ead394d79884122a1ee916c2392041e195cfd75505a6ebf32f738bd3"
+    },
+    {
+      "file": "edit-selected-skills-768.png",
+      "sha256": "c8aaa265fbc1f0e5d054c2dd6f2f193b573cd16e5ac799e47a9e0a65aeafd82a"
+    },
+    {
+      "file": "filtered-saved-skills-1440.png",
+      "sha256": "f71093b4ba7d55af90c2ede4fde497cde3ef1907b1633d03dbdd45f4943281fd"
+    },
+    {
+      "file": "filtered-saved-skills-320.png",
+      "sha256": "a0bf46414c6a6ccb6ff0a6c866da2f00c442c7d9f11e653d12d43e29b321d910"
+    },
+    {
+      "file": "filtered-saved-skills-390.png",
+      "sha256": "b815284d450f45874d2ce5eb43ba12c14b54fb367f245b71a4267339ce3074f7"
+    },
+    {
+      "file": "filtered-saved-skills-430.png",
+      "sha256": "513a85bc99ec3c1703cab60830dbdf031b7af88641359d51b7175d919abe1a5e"
+    },
+    {
+      "file": "filtered-saved-skills-768.png",
+      "sha256": "597bc1a6262e9e3c7d2ecb8279ec134b63198a0a0c0c65f00e482414869b4d8d"
+    },
+    {
+      "file": "pristine-edit-before-backdrop-1440.png",
+      "sha256": "056d1688bb3790f8880b620d5194f4ba19b86e6cba1ab768bef4879b21d8f8a5"
+    },
+    {
+      "file": "pristine-edit-before-backdrop-390.png",
+      "sha256": "1165743c02617d482339fb02e568cf276bb2af3c7eb4d5ef0b07654cbdcb519f"
+    },
+    {
+      "file": "profile-backdrop-1440.png",
+      "sha256": "b5df2a81f9940c3fefc20b63988ac96ce15b2d31648f4a6d429983b3ceb00385"
+    },
+    {
+      "file": "profile-backdrop-390.png",
+      "sha256": "f4f31fbdccf07234c74796e6c063ce7612a02ee550815c4ef36ca4f07eb5ddc0"
+    },
+    {
+      "file": "profile-saved-skills-1440.png",
+      "sha256": "57c96bbdcb6e233458a942b0d6e68aca167303e13e0aa5e3a153fd00d779329d"
+    },
+    {
+      "file": "profile-saved-skills-320.png",
+      "sha256": "72e0c2c8a2acbe505ae202738de35fbec042e8e79d956e646dbe90cf963adbf4"
+    },
+    {
+      "file": "profile-saved-skills-390.png",
+      "sha256": "d3f69c0f9ca33e922545c3470c5f315260a9ab6ef943ee7f7ed86b5d233c5595"
+    },
+    {
+      "file": "profile-saved-skills-430.png",
+      "sha256": "8a9d5446d04c6aa486bee5dd2bbd4591d56c0f0de1fc14ee38a326ec5221c970"
+    },
+    {
+      "file": "profile-saved-skills-768.png",
+      "sha256": "fedaad129323b33bfeadf758abfa22a723f26b973d6233d405e253f65109403b"
+    },
+    {
+      "file": "sort-options-1440.png",
+      "sha256": "b3bcfc60c1b6cfe445fa8ddc3b1f9687f4c2b72dab2e391decbed1403d8b095e"
+    },
+    {
+      "file": "sort-options-390.png",
+      "sha256": "a0e01557dbdc43c29e7ffb0aeec261442226f8d94129e133226d05be49b5f9ea"
+    }
+  ],
+  "migration58Sha256": "e22566bfb41f3f5518dff70a9e6658fd40149bea422e904a32f9e5159a6937c1",
+  "productionAccess": false,
+  "providerCalls": 0
+}

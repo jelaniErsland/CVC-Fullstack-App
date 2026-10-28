@@ -12,9 +12,9 @@ const serverSnapshot = () => false;
 
 // Deliberately scoped to volunteer surfaces. Native modal semantics make the
 // background inert and contain focus, including a nested discard confirmation.
-export function VolunteerSideSheet({ open, title, description, label, icon, action, footer, wide = false, onRequestClose, children }: {
+export function VolunteerSideSheet({ open, title, description, label, icon, action, footer, wide = false, formBody = false, onRequestClose, children }: {
   open: boolean; title: string; description?: string; label: string; icon?: ReactNode;
-  action?: ReactNode; footer?: ReactNode; wide?: boolean; children: ReactNode;
+  action?: ReactNode; footer?: ReactNode; wide?: boolean; formBody?: boolean; children: ReactNode;
   onRequestClose: () => void;
 }) {
   const mounted = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
@@ -46,7 +46,7 @@ export function VolunteerSideSheet({ open, title, description, label, icon, acti
         {action}
         <button data-sheet-close aria-label={`Close ${label}`} className={styles.close} onClick={onRequestClose} type="button"><X aria-hidden="true" /></button>
       </header>
-      <div className={styles.body} data-sheet-scroll={label}>{children}</div>
+      <div className={formBody ? styles.formBody : styles.body} data-sheet-scroll={formBody ? undefined : label}>{children}</div>
       {footer && <footer className={styles.footer}>{footer}</footer>}
     </section>
   </dialog>, document.body);

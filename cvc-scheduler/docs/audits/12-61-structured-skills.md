@@ -40,7 +40,7 @@ Filters, Details and Edit now use VolunteerSideSheet. It uses a native modal dia
 
 The portal preserves direct structural adjacency between the filter summary and results; a closed dialog never interrupts discovery flow. Closing a read-only profile by backdrop, Escape or X works, while interior interaction does not dismiss it. Focus returns without scrolling; if its row has ceased to exist, search is the fallback.
 
-All Edit close paths share the same pristine/dirty/pending guard. Dirty requests show a concise accessible Keep editing / Discard changes confirmation. Profile→Edit→Cancel returns to that profile; Save returns to its updated profile. Existing beforeunload protection remains. Save is primary blue, Cancel quiet, and Delete separated below the form.
+All Edit close paths share the same pristine/dirty/pending guard. Dirty requests show a concise accessible Keep editing / Discard changes confirmation. Profile→Edit→Cancel returns to that profile; Save returns to its updated profile. Existing beforeunload protection remains. The final polish amendment replaces touched-only state with normalized initial/current equality and separates scrolling controls from the opaque fixed action row. Save is primary blue, Cancel quiet, and Delete remains a separate quiet action in the scrolling body. See `12-61-final-polish.md` for the amendment and reconciled evidence.
 
 Profile hierarchy is contact, current Skills plus separately labelled experience, availability, upcoming/past schedule, then other authorized details. Dividers and restrained icon cues replace nested-card clutter. Contact actions and sheet controls have adequate targets; long text wraps. Existing exact Calendar Day/item assignment links and explicit Edit behavior remain.
 

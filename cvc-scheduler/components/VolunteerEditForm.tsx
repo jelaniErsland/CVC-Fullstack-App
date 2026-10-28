@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { VolunteerProfile } from "@/lib/volunteers/profile";
 import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
+import { useVolunteerFormDirty } from "@/hooks/useVolunteerFormDirty";
+import styles from "./VolunteerSideSheet.module.css";
 import { Button } from "./Button";
 import { VolunteerFields } from "./VolunteerCard";
 
@@ -14,16 +16,17 @@ const rejectionCopy: Record<Extract<VolunteerUpdateResult, { kind: "rejected" }>
   error: "We couldn’t confirm this change. Your edits are still here. Review the latest profile before retrying.",
 };
 
-export function VolunteerEditForm({ volunteer, updateAction, mobile, onCancel, onDirty, onSaved, onPending }: {
+export function VolunteerEditForm({ volunteer, updateAction, secondaryAction, onCancel, onDirty, onSaved, onPending }: {
   volunteer: VolunteerProfile;
   updateAction: (formData: FormData) => Promise<VolunteerUpdateResult>;
-  mobile: boolean;
+  secondaryAction?: ReactNode;
   onCancel: () => void;
-  onDirty: () => void;
+  onDirty: (dirty: boolean) => void;
   onSaved: (volunteer: VolunteerProfile) => void;
   onPending?: (pending: boolean) => void;
 }) {
   const router = useRouter();
+  const formRef = useVolunteerFormDirty(onDirty);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Exclude<VolunteerUpdateResult, { kind: "updated" }>["reason"] | null>(null);
   const activeRef = useRef(true);
@@ -60,12 +63,15 @@ export function VolunteerEditForm({ volunteer, updateAction, mobile, onCancel, o
     router.refresh();
   }
 
-  return <form className={mobile ? "grid gap-4" : "grid gap-4"} onChange={() => { onDirty(); setFailure(null); }} onSubmit={submit}>
+  return <form ref={formRef} className={styles.form} onChange={() => setFailure(null)} onSubmit={submit}>
     <input name="profileId" type="hidden" value={volunteer.id} />
+    <div className={styles.formFields} data-sheet-scroll="volunteer editor">
     <fieldset className="grid min-w-0 gap-4" disabled={pending}>
-      <VolunteerFields volunteer={volunteer} onDirty={onDirty} />
+      <VolunteerFields volunteer={volunteer} onValueChange={() => setFailure(null)} />
     </fieldset>
-    <div className={mobile ? "sticky bottom-0 z-10 -mx-4 border-t border-[var(--pl-border)] bg-white px-4 py-3 shadow-[0_-10px_24px_rgba(15,23,42,.06)]" : "sticky bottom-0 border-t border-[var(--pl-border)] bg-[#fffdfa] px-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}>
+    {secondaryAction}
+    </div>
+    <div className={styles.formFooter}>
       {failure ? <p className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800" role="alert">{rejectionCopy[failure]}</p> : null}
       <div className="flex gap-3">
         <button className="min-h-11 rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] px-4 text-sm font-semibold text-[var(--pl-text)]" onClick={onCancel} type="button">Cancel</button>

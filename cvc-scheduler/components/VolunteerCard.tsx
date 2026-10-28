@@ -109,7 +109,7 @@ export function VolunteerCard({ onView,
   );
 }
 
-export function VolunteerFields({ volunteer, onDirty }: { volunteer?: VolunteerProfile; onDirty?: () => void }) {
+export function VolunteerFields({ volunteer, onValueChange }: { volunteer?: VolunteerProfile; onValueChange?: () => void }) {
   const fieldClassName = "mt-1.5 min-h-11 w-full rounded-[var(--pl-radius-control)] border border-[var(--pl-border)] bg-white px-3.5 text-sm text-[var(--pl-ink)] outline-none transition placeholder:text-[var(--pl-muted)] focus:border-blue-300 focus:ring-2 focus:ring-blue-100";
   const selectClassName = `${fieldClassName} font-medium`;
 
@@ -161,7 +161,7 @@ export function VolunteerFields({ volunteer, onDirty }: { volunteer?: VolunteerP
           <TriStateSelect className={selectClassName} defaultValue={volunteer?.afterHoursSecurityAvailability ?? "unknown"} label="Available for after-hours security" name="afterHoursSecurityAvailability" />
         </div>
       </details>
-      <VolunteerSkillsEditor initialSkills={volunteer?.structuredSkills} onDirty={onDirty} />
+      <VolunteerSkillsEditor initialSkills={volunteer?.structuredSkills} onValueChange={onValueChange} />
       <details className="rounded-lg border border-[var(--pl-border)] bg-white">
         <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-[var(--pl-ink)]">Experience &amp; other support</summary>
         <div className="grid gap-3 border-t border-[var(--pl-border)] p-3.5">
