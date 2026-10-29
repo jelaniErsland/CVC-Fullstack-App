@@ -49,11 +49,11 @@ const wipe=()=>sql(`delete from public.assignment_reminder_events where workspac
 const configure=(status='needs_response',date='2031-02-15',activation=baseline)=>{wipe();sql(`update public.assignment_reminder_activation set delivery_enabled=true,baseline_at=${q(activation)};update public.calendar_assignments set created_at='2030-12-01T15:00:00Z' where id=${q(assignment)};update public.calendar_items set start_date=${q(date)},start_time='08:00',end_time='11:00',end_date=null where id=${q(f.items[0])};update public.assignment_responses set response_status=${q(status)},responded_at=${status==='needs_response'?'null':q(activation)} where assignment_id=${q(assignment)};`);};
 try {
  configure();sync();let pending=occurrences();assert.equal(pending[0].due,'2031-01-04T16:00:00+00:00');
- const enrolledCatalogue=catalogue(),enrolledData=dataFingerprint();
+ const enrolledCatalogue=catalogue(),enrolledData=dataFingerprint(),enrolledLedger=value('select count(*)||chr(124)||max(version) from supabase_migrations.schema_migrations');
  const refusedRollback=sql(fs.readFileSync(new URL('../supabase/rollback/20261021120000_assignment_reminders_phase_a.sql',import.meta.url),'utf8'),true);
  assert.notEqual(refusedRollback.status,0);assert.match(refusedRollback.stderr,/destructive rollback refused/);
  assert.equal(catalogue(),enrolledCatalogue);assert.equal(dataFingerprint(),enrolledData);assert.deepEqual(occurrences(),pending);
- assert.equal(value('select count(*) from supabase_migrations.schema_migrations'),'54');
+ assert.equal(value('select count(*)||chr(124)||max(version) from supabase_migrations.schema_migrations'),enrolledLedger);
  console.log('PASS history-bearing rollback refuses destruction and preserves ledger/data/functions');
  assert.equal(claim(pending[0].id,'2031-01-04T15:59:59Z'),null);
  sql('update public.assignment_reminder_activation set delivery_enabled=false');assert.equal(claim(pending[0].id,'2031-01-04T16:00:00Z'),null);sql('update public.assignment_reminder_activation set delivery_enabled=true');

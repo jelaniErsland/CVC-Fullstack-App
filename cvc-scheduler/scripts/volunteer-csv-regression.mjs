@@ -24,6 +24,8 @@ assert.throws(()=>exportVolunteerCsv([fixture],true,false));
 const round=parseVolunteerCsv(exportVolunteerCsv([fixture],true,true));
 assert.equal(normalizeCsvRow(round.rows[0],round.mapping).dateOfBirth,'1980-01-01');
 assert.equal(matchVolunteerCsv([['Doe, Alex','new@example.invalid']],['fullName','email'],[fixture])[0].kind,'ambiguous');
+assert.equal(matchVolunteerCsv([[fixture.id.toUpperCase()]],['id'],[fixture])[0].profileId,fixture.id,'UUID spelling does not change current identity');
+assert.equal(matchVolunteerCsv([[fixture.id.toUpperCase(),'Deleted fixture','returned@example.invalid']],['id','fullName','email'],[],new Set([fixture.id]))[0].kind,'previously_deleted','Explicit uppercase deleted UUID still requires new-profile review');
 assert.equal(matchVolunteerCsv([['alex@example.invalid']],['email'],[fixture])[0].kind,'invalid','Contact alone cannot identify a volunteer');
 assert.equal(matchVolunteerCsv([['New','new@example.invalid'],['New','new@example.invalid']],['fullName','email'],[])[1].kind,'ambiguous');
 try {

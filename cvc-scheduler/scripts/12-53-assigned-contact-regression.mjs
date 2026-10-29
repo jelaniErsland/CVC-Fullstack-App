@@ -15,7 +15,7 @@ const rows = {
     { id: assignmentId, workspace_id: workspace, lifecycle: "active", calendar_item_id: itemId, volunteer_profile_id: profileId },
     { id: nextAssignmentId, workspace_id: workspace, lifecycle: "active", calendar_item_id: nextItemId, volunteer_profile_id: profileId },
   ],
-  volunteer_profiles: [{ id: profileId, workspace_id: workspace, full_name: "Fixture Volunteer", phone: "406-555-0100", email: "fixture@example.invalid", congregation: "North", ...privateFields }],
+  volunteer_profiles: [{ id: profileId, workspace_id: workspace, deleted_at: null, full_name: "Fixture Volunteer", phone: "406-555-0100", email: "fixture@example.invalid", congregation: "North", ...privateFields }],
   assignment_responses: [{ assignment_id: assignmentId, workspace_id: workspace, response_status: "confirmed" }],
   read_authorized_calendar_items: [
     { id: itemId, workspace_id: workspace, lifecycle: "active", publication_state: "published", start_date: "2026-10-09", end_date: null, title_snapshot: "Gate Attendant", start_time: "09:00", end_time: "12:00", timezone: "America/Denver" },
@@ -31,6 +31,7 @@ function clientFor(overrides = {}) {
     const builder = {
       select(fields) { reads.push({ table, fields }); return builder; },
       eq(field, value) { filters.push([field, value]); return builder; },
+      is(field, value) { filters.push([field, value]); return builder; },
       in(field, values) { filters.push([field, values]); return builder; },
       limit() { return builder; },
       order() { return builder; },
@@ -85,3 +86,6 @@ assert.doesNotMatch(surface, /emergency|birth|profileNotes|Edit volunteer/i);
 assert.match(action, /selection\.canViewVolunteers/);
 assert.match(action, /readVerifiedAdminContext/);
 console.log("Assigned contact authorization, privacy, and UI wiring regression passed.");
+
+const deleted = clientFor({ volunteer_profiles: [{ ...rows.volunteer_profiles[0], deleted_at: "2030-01-01" }] });
+assert.deepEqual(await readAssignedContactWithClient({ client: deleted.client, workspaceId: workspace, assignmentId, quickView: false }), { kind: "unavailable" });

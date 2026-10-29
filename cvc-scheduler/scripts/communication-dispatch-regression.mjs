@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { fixture,q,sql,value } from './12-47-local-fixtures.mjs';
 import { dispatchCommunicationRecipients } from '../lib/notifications/communicationDispatch.server.ts';
 const f=await fixture();
-let loseFinalization=false;const outbound=[];
+let loseFinalization=false, beforeRevalidation=null;const outbound=[];
 const client={rpc:async(name,args)=>{
+  if(name==='revalidate_volunteer_dispatch' && beforeRevalidation){const act=beforeRevalidation;beforeRevalidation=null;await act();}
   if(loseFinalization&&name==='finalize_communication_recipient')return {data:null,error:{code:'fixture_lost_ack'}};
   const call=`public.${name}(${Object.entries(args).map(([key,v])=>`${key}=>${v==null?'null':typeof v==='boolean'?String(v):q(typeof v==='object'?JSON.stringify(v):v)}`).join(',')})`;
   const query=name==='issue_volunteer_schedule_access'?`select coalesce(jsonb_agg(to_jsonb(t)),'[]') from ${call} t`:`select to_jsonb(${call})`;
@@ -57,5 +58,15 @@ try {
   }
   assert.equal(Number(value(`select count(*) from public.volunteer_schedule_access_tokens where workspace_id=${q(f.ws)}`)),accessBefore+2,'Shared-address sends issue separate scoped credentials.');
   const before=outbound.length;await assert.rejects(()=>dispatchCommunicationRecipients(client,f.ws,[],false,{ok:false,reason:'transport_disabled'},runtime));assert.equal(outbound.length,before);
+  const removeProfile=id=>{const review=JSON.parse(value(f.auth(`select public.review_volunteer_deletion(${q(f.ws)},${q(id)})`)));return value(f.auth(`select public.delete_volunteer_profile(${q(f.ws)},${q(id)},${q(review.version)},${q(review.fingerprint)})`));};
+  const blocked=value(f.auth(`select public.create_manual_volunteer_profile(${q(f.ws)},'{"fullName":"Deletion before dispatch","email":"blocked@example.invalid"}')`));
+  const blockedIds=queue([blocked],'welcome');beforeRevalidation=()=>removeProfile(blocked);
+  const sendsBefore=outbound.length;await dispatchCommunicationRecipients(client,f.ws,blockedIds,false,configuration,runtime);assert.equal(outbound.length,sendsBefore,'Deletion committed before final authorization: zero provider calls');
+  const accepted=value(f.auth(`select public.create_manual_volunteer_profile(${q(f.ws)},'{"fullName":"Authorized before deletion","email":"authorized@example.invalid"}')`));
+  const acceptedIds=queue([accepted],'welcome');
+  await dispatchCommunicationRecipients(client,f.ws,acceptedIds,false,configuration,{fetch:async(...args)=>{removeProfile(accepted);return runtime.fetch(...args);}});
+  assert.equal(outbound.length,sendsBefore+1,'Already-authorized provider request may complete truthfully');
+  assert.equal(value(`select state||'|'||(email is null) from public.communication_recipients where id=${q(acceptedIds[0])}`),'sent|true');
+  console.log('PASS deletion dispatch fence: zero new provider calls after committed deletion; already-authorized mock acceptance finalized without restoring contact');
   console.log('PASS: real local ledger/credential dispatcher with stubbed provider, one message per recipient, consolidated work, scoped links/privacy, accepted deduplication, lost-finalization token preservation, explicit failed-only retry, welcome template, disabled transport. Real sends 0.');
 } finally {await f.cleanup();}

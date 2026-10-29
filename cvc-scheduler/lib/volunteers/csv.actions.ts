@@ -17,8 +17,18 @@ export async function volunteerCsvAction(form: FormData): Promise<CsvActionState
     const parsed=parseVolunteerCsv(text), mapping:unknown=JSON.parse(rawMapping);
     if(!Array.isArray(mapping)||mapping.length!==parsed.headers.length||mapping.some(f=>f!==''&&!csvFields.includes(f)))throw new Error('Invalid mapping');
     const profiles=await readCsvVolunteerProfilesWithClient(context.supabase,context.workspace.id);
-    const rows=matchVolunteerCsv(parsed.rows,mapping as (CsvField|'')[],profiles);
-    const fingerprint=createHash('sha256').update(JSON.stringify({text,mapping,rows:rows.map(r=>({row:r.row,kind:r.kind,profileId:r.profileId,version:r.version}))})).digest('hex');
+    // Look up only explicit imported IDs. Never recognize a deleted person by
+    // name or a retained contact hash; ID-less rows use normal live matching.
+    const idIndex = mapping.indexOf("id");
+    const explicitIds = [...new Set(idIndex < 0 ? [] : parsed.rows.map(row => row[idIndex]?.trim()).filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))];
+    const deletedIds = new Set<string>();
+    if (explicitIds.length) {
+      const deleted = await context.supabase.from("volunteer_profiles").select("id").eq("workspace_id", context.workspace.id).not("deleted_at", "is", null).in("id", explicitIds);
+      if (deleted.error) throw new Error("Identity review unavailable");
+      for (const row of deleted.data ?? []) deletedIds.add(row.id);
+    }
+    const rows=matchVolunteerCsv(parsed.rows,mapping as (CsvField|'')[],profiles,deletedIds);
+    const fingerprint=createHash('sha256').update(JSON.stringify({text,mapping,rows:rows.map(r=>({row:r.row,kind:r.kind,profileId:r.profileId,previouslyDeletedId:r.previouslyDeletedId,version:r.version}))})).digest('hex');
     if(form.get('command')==='preview')return {kind:'preview',fingerprint,rows:rows.map(({patch,...row})=>({...row,values:Object.fromEntries(Object.entries(patch).filter(([field])=>field!=='id'&&!privateCsvFields.includes(field as typeof privateCsvFields[number])))}))};
     if(form.get('command')!=='save'||form.get('fingerprint')!==fingerprint)return {kind:'error',message:'Matching profiles changed. Review the import again.'};
     const choicesRaw=form.get('choices'), requestId=form.get('requestId');
@@ -29,9 +39,9 @@ export async function volunteerCsvAction(form: FormData): Promise<CsvActionState
     const patches=choices.map(choice=>{
       if(!choice||typeof choice!=='object'||!('row' in choice)||typeof choice.row!=='number'||seen.has(choice.row)||!('fields' in choice)||!Array.isArray(choice.fields))throw new Error('Invalid choice');
       seen.add(choice.row);const row=rows.find(r=>r.row===choice.row);
-      if(!row||!['new','matched'].includes(row.kind)||!choice.fields.length||choice.fields.some((f: unknown)=>typeof f!=='string'||!row.fields.includes(f as CsvField)))throw new Error('Review fields first');
-      const selected=row.kind==='new'?row.fields:choice.fields;
-      return {profileId:row.profileId??null,expectedUpdatedAt:row.version??null,patch:Object.fromEntries(selected.map((f:CsvField)=>[f,row.patch[f]]))};
+      if(!row||!['new','matched','previously_deleted'].includes(row.kind)||!choice.fields.length||choice.fields.some((f: unknown)=>typeof f!=='string'||!row.fields.includes(f as CsvField)))throw new Error('Review fields first');
+      const selected=row.kind==='matched'?choice.fields:row.fields;
+      return {profileId:row.profileId??null,...(row.previouslyDeletedId ? {previouslyDeletedId:row.previouslyDeletedId} : {}),expectedUpdatedAt:row.version??null,patch:Object.fromEntries(selected.map((f:CsvField)=>[f,row.patch[f]]))};
     });
     const saved=await context.supabase.rpc('import_volunteer_profiles',{p_workspace_id:context.workspace.id,p_request_id:requestId,p_rows:patches as Json});
     if(saved.error)return {kind:'error',message:saved.error.code==='40001'?'Profiles changed. Review the import again.':'Import could not be confirmed. Refresh the directory and check the result before retrying.'};

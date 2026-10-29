@@ -33,6 +33,14 @@ export async function dispatchCommunicationRecipients(client: AppSupabaseClient,
       url = buildVolunteerScheduleAccessUrl({ origin: configuration.origin, token: token.bearer_token });
     }
     const message = buildCommunicationMessage({ kind: c.kind, workspaceName: c.workspaceName, name: c.name, assignments: c.assignments as CommunicationAssignment[], url });
+    // Final live authorization is a distinct DB transaction immediately before HTTP.
+    // Deletion can fence later dispatches; it cannot recall an already authorized request.
+    const authorized = await client.rpc("revalidate_volunteer_dispatch", { p_source: "communication", p_delivery_id: id, p_claim_id: c.claimId });
+    if (authorized.error || authorized.data !== true) {
+      if (tokenId) await client.rpc("revoke_volunteer_schedule_access", { p_token_id: tokenId });
+      if (authorized.error) throw new Error("Delivery authorization unavailable. Review history before retrying.");
+      continue;
+    }
     const outcome = await sendSingleRecipientMessage(configuration, { ...message, operationId: c.operationId, recipientId: id, attempt: c.attempt, email: c.email }, runtime);
     if (outcome.status === "rejected" && tokenId) await client.rpc("revoke_volunteer_schedule_access", { p_token_id: tokenId });
     const finalized = await client.rpc("finalize_communication_recipient", {

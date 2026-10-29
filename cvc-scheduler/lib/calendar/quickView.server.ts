@@ -45,7 +45,7 @@ export function sharedCalendarState(value: unknown, params?: Record<string, stri
         if (typeof assignment.assignmentId !== "string" || assignment.calendarItemId !== item.id || typeof assignment.volunteerProfileId !== "string" || typeof assignment.volunteerDisplayName !== "string" || !["needs_response", "confirmed", "declined"].includes(String(assignment.responseStatus))) throw new Error("Invalid assignment projection");
         return {
           assignmentId: assignment.assignmentId, calendarItemId: item.id,
-          volunteerProfileId: assignment.volunteerProfileId, volunteerDisplayName: assignment.volunteerDisplayName,
+          volunteerProfileId: assignment.volunteerProfileId, volunteerDisplayName: assignment.volunteerDisplayName, volunteerDeleted: assignment.volunteerDeleted === true,
           volunteerCongregation: null, volunteerLifecycle: "active", volunteerReadinessStatus: "ready",
           volunteerEmailAvailable: false, volunteerPhoneAvailable: false,
           volunteerPreferredContactMethod: null, volunteerProfileNotes: null,

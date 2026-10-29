@@ -333,6 +333,12 @@ export async function sendInitialAssignmentNotificationsForItemWithClient(
         origin: configuration.origin,
         token: issued.token,
       });
+      const authorized = await supabase.rpc("revalidate_volunteer_dispatch", { p_source: "initial_assignment", p_delivery_id: claim.deliveryId });
+      if (authorized.error || authorized.data !== true) {
+        await revokeVolunteerScheduleAccessForNotification(supabase, issued.tokenId);
+        skippedCount += 1;
+        continue;
+      }
       failureStage = "provider";
       const sendResult = await sendInitialAssignmentEmail(
         configuration,

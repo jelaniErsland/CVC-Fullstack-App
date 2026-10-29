@@ -34,7 +34,7 @@ export async function fixture(browser=false){
       delete from public.volunteer_csv_import_operations where workspace_id=${q(ws)};delete from public.volunteer_away_periods where workspace_id=${q(ws)};delete from public.workspace_project_photos where workspace_id=${q(ws)};
       delete from public.volunteer_schedule_access_tokens where workspace_id=${q(ws)};delete from public.assignment_responses where workspace_id=${q(ws)};delete from public.calendar_assignments where workspace_id=${q(ws)};
       delete from public.calendar_repeat_creation_requests where workspace_id=${q(ws)};delete from public.calendar_bulk_assignment_operations where workspace_id=${q(ws)};
-      delete from public.calendar_items where workspace_id=${q(ws)};delete from public.volunteer_profiles where workspace_id=${q(ws)};delete from public.task_presets where workspace_id=${q(ws)};
+      delete from public.calendar_items where workspace_id=${q(ws)};delete from public.volunteer_profiles where workspace_id=${q(ws)};delete from public.questionnaire_submissions where workspace_id=${q(ws)};delete from public.task_presets where workspace_id=${q(ws)};
       delete from public.workspace_contact_grants where workspace_id=${q(ws)};delete from public.project_contacts where id=${q(contact)};delete from public.workspaces where id=${q(ws)};delete from auth.users where id=${q(user)};`);
   }
   return {admin,ws,user,contact,volunteers,items,preset,day,dayAt,auth,token:access.bearer_token,tokenId:access.token_id,cleanup};

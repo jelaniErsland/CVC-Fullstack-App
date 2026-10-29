@@ -124,6 +124,7 @@ type CalendarClientAssignment = {
   calendarItemId: string;
   volunteerProfileId: string;
   volunteerDisplayName: string;
+  volunteerDeleted?: boolean;
   volunteerCongregation: string | null;
   volunteerLifecycle: string;
   volunteerReadinessStatus: string;
@@ -567,6 +568,7 @@ function mapAssignmentToClientAssignment(
     calendarItemId: assignment.calendarItemId,
     volunteerProfileId: assignment.volunteerProfileId,
     volunteerDisplayName: assignment.volunteerDisplayName,
+    volunteerDeleted: assignment.volunteerDeleted,
     volunteerCongregation: assignment.volunteerCongregation,
     volunteerLifecycle: assignment.volunteerLifecycle,
     volunteerReadinessStatus: assignment.volunteerReadinessStatus,

@@ -18,6 +18,9 @@ export const anonymousOnlyFunctions = Object.freeze([
   "read_project_quick_view_assigned_contact(text,uuid,date)"
 ]);
 export const authenticatedFunctions = Object.freeze([
+  "review_volunteer_deletion(uuid,uuid)",
+  "delete_volunteer_profile(uuid,uuid,timestamp with time zone,text)",
+  "revalidate_volunteer_dispatch(text,uuid,uuid)",
   "read_assignment_reminder_workspace(uuid,text,text,jsonb,integer)",
   "read_assignment_reminders(uuid,uuid)",
   "read_authorized_calendar_items(uuid,date,date)",
@@ -80,6 +83,10 @@ export const authenticatedFunctions = Object.freeze([
   "update_volunteer_profile_manual_fields(uuid,jsonb)"
 ]);
 export const internalFunctions = Object.freeze([
+  "lock_live_volunteer_profile(uuid,uuid)",
+  "guard_live_volunteer_reference()",
+  "volunteer_assignment_end_at(uuid)",
+  "volunteer_deletion_impact(uuid,uuid,timestamp with time zone)",
   "assignment_reminder_context(uuid,timestamp with time zone)",
   "assignment_reminder_local_offset(timestamp with time zone,text,integer)",
   "sync_assignment_reminder(uuid,timestamp with time zone)",
@@ -115,6 +122,8 @@ export const internalFunctions = Object.freeze([
 // These exact trigger-only helpers need owner rights to maintain private history
 // and snapshot provenance. No application role can execute them directly.
 export const internalDefinerFunctions = Object.freeze([
+  "lock_live_volunteer_profile(uuid,uuid)",
+  "guard_live_volunteer_reference()",
   "calendar_item_operational_insert()",
   "guard_explicit_draft_assignment()",
   "publish_draft_on_assignment()",

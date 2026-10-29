@@ -27,7 +27,7 @@ export async function readVolunteerScheduleWithClient(input: {
   try {
     const workspaceId = normalizeWorkspaceReference({ id: input.workspaceId }).value;
     const profileId = normalizeWorkspaceReference({ id: input.profileId }).value;
-    const profile = await input.client.from("volunteer_profiles").select("id").eq("workspace_id", workspaceId).eq("id", profileId).single();
+    const profile = await input.client.from("volunteer_profiles").select("id").eq("workspace_id", workspaceId).eq("id", profileId).is("deleted_at", null).single();
     if (profile.error || !profile.data) return { kind: "unavailable" };
 
     const assignments = await input.client.from("calendar_assignments")

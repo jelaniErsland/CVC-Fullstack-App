@@ -1,0 +1,1105 @@
+{
+  "baseline": false,
+  "results": [
+    {
+      "width": 1440,
+      "forward": [
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        }
+      ],
+      "reverse": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=dc269dc8-b9e8-4bc8-8e0b-dae8cf82ae42&section=details"
+        }
+      ],
+      "profileOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "fixture-ed4bf949-83fe-47e4-9549-2a7371a0ae14-0@example.invalid",
+          "href": "mailto:fixture-ed4bf949-83fe-47e4-9549-2a7371a0ae14-0@example.invalid"
+        },
+        {
+          "tag": "A",
+          "label": "+12025550100",
+          "href": "tel:+12025550100"
+        },
+        {
+          "tag": "A",
+          "label": "Resend schedule",
+          "href": "/admin/announcements?kind=schedule&volunteer=1b61bfcc-1169-4303-babf-a12e2014f17f"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Upcoming",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Past",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 5, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-05&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=83ef1d22-81a8-4b29-bdb8-bf0b9fc54f75&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=dc269dc8-b9e8-4bc8-8e0b-dae8cf82ae42&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        }
+      ],
+      "editOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer editor",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "fullName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "email",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "phone",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Availability",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "availableTwoPlusDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "afterHoursSecurityAvailability",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Experience & other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Private info",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "congregation",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "preferredContactMethod",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "lifecycle",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "readinessStatus",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "profileNotes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Delete volunteer",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Cancel",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Save changes",
+          "href": null
+        }
+      ],
+      "expandedEditOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer editor",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "fullName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "email",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "phone",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Availability",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "availableTwoPlusDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "afterHoursSecurityAvailability",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Experience & other support",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "housingOption",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "builderAssistantCommunication",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "skillsExperience",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "otherSupport",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Private info",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "dateOfBirth",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactPhone",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactRelationship",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "congregation",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "preferredContactMethod",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "lifecycle",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "readinessStatus",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "profileNotes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Delete volunteer",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Cancel",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Save changes",
+          "href": null
+        }
+      ],
+      "filterOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer filters",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Active",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Inactive",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Archived",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Monday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Tuesday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Wednesday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Thursday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Friday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Saturday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Sunday",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Clear all",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Show 1 volunteer",
+          "href": null
+        }
+      ],
+      "errors": [],
+      "external": 0
+    },
+    {
+      "width": 390,
+      "forward": [
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        }
+      ],
+      "reverse": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=dc269dc8-b9e8-4bc8-8e0b-dae8cf82ae42&section=details"
+        }
+      ],
+      "profileOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Edit",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer profile",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "fixture-ed4bf949-83fe-47e4-9549-2a7371a0ae14-0@example.invalid",
+          "href": "mailto:fixture-ed4bf949-83fe-47e4-9549-2a7371a0ae14-0@example.invalid"
+        },
+        {
+          "tag": "A",
+          "label": "+12025550100",
+          "href": "tel:+12025550100"
+        },
+        {
+          "tag": "A",
+          "label": "Resend schedule",
+          "href": "/admin/announcements?kind=schedule&volunteer=1b61bfcc-1169-4303-babf-a12e2014f17f"
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Upcoming",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Past",
+          "href": null
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 5, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-05&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=83ef1d22-81a8-4b29-bdb8-bf0b9fc54f75&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 6, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-06&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=dc269dc8-b9e8-4bc8-8e0b-dae8cf82ae42&section=details"
+        },
+        {
+          "tag": "A",
+          "label": "Site preparationNov 7, 2026 · 8:00 AM – 11:00 AMAwaiting reply",
+          "href": "/admin/calendar?view=day&date=2026-11-07&project=qa-1247-ed4bf949-83fe-47e4-9549-2a7371a0ae14&item=56ac604d-53cd-400c-8c33-62b11d2f5caa&section=details"
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Other profile details",
+          "href": null
+        }
+      ],
+      "editOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer editor",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "fullName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "email",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "phone",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Availability",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "availableTwoPlusDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "afterHoursSecurityAvailability",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Experience & other support",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Private info",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "congregation",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "preferredContactMethod",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "lifecycle",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "readinessStatus",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "profileNotes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Delete volunteer",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Cancel",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Save changes",
+          "href": null
+        }
+      ],
+      "expandedEditOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer editor",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "fullName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "email",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "phone",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Availability",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "availableWorkDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "availableTwoPlusDays",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "afterHoursSecurityAvailability",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Experience & other support",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "housingOption",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "builderAssistantCommunication",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "skillsExperience",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "otherSupport",
+          "href": null
+        },
+        {
+          "tag": "SUMMARY",
+          "label": "Private info",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "dateOfBirth",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactName",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactPhone",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "emergencyContactRelationship",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "congregation",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "preferredContactMethod",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "lifecycle",
+          "href": null
+        },
+        {
+          "tag": "SELECT",
+          "label": "readinessStatus",
+          "href": null
+        },
+        {
+          "tag": "TEXTAREA",
+          "label": "profileNotes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Delete volunteer",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Cancel",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Save changes",
+          "href": null
+        }
+      ],
+      "filterOrder": [
+        {
+          "tag": "BUTTON",
+          "label": "Close volunteer filters",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Active",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Inactive",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Archived",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Monday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Tuesday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Wednesday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Thursday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Friday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Saturday",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Sunday",
+          "href": null
+        },
+        {
+          "tag": "INPUT",
+          "label": "",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Yes",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "No",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Not recorded",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Clear all",
+          "href": null
+        },
+        {
+          "tag": "BUTTON",
+          "label": "Show 1 volunteer",
+          "href": null
+        }
+      ],
+      "errors": [],
+      "external": 0
+    }
+  ],
+  "audits": [
+    {
+      "width": 1440,
+      "name": "Profile",
+      "violations": []
+    },
+    {
+      "width": 1440,
+      "name": "Expanded Edit",
+      "violations": []
+    },
+    {
+      "width": 1440,
+      "name": "Discard",
+      "violations": []
+    },
+    {
+      "width": 1440,
+      "name": "Filters",
+      "violations": []
+    },
+    {
+      "width": 390,
+      "name": "Profile",
+      "violations": []
+    },
+    {
+      "width": 390,
+      "name": "Expanded Edit",
+      "violations": []
+    },
+    {
+      "width": 390,
+      "name": "Discard",
+      "violations": []
+    },
+    {
+      "width": 390,
+      "name": "Filters",
+      "violations": []
+    }
+  ],
+  "boundaryFixtures": true,
+  "db": "58 / 20261028120000",
+  "providerCalls": 0,
+  "productionMutations": 0
+}

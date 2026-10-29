@@ -39,7 +39,7 @@ async function readIssueVolunteerSearch(client: AppSupabaseClient, workspaceId: 
     const assignments = assignmentResults.flatMap(result => result.data ?? []);
     const volunteerIds = [...new Set(assignments.map(row => row.volunteer_profile_id).filter((id): id is string => typeof id === "string"))];
     const volunteerResults = await Promise.all(chunks(volunteerIds, 100).map(ids => client.from("volunteer_profiles")
-      .select("id,full_name,congregation").eq("workspace_id", workspaceId).in("id", ids)));
+      .select("id,full_name,congregation").is("deleted_at", null).eq("workspace_id", workspaceId).in("id", ids)));
     if (volunteerResults.some(result => result.error)) return { searchByItem, peopleByAssignment, available: false };
     const volunteers = new Map(volunteerResults.flatMap(result => result.data ?? []).map(row => [row.id, { name: row.full_name, congregation: row.congregation }]));
     for (const row of assignments) {

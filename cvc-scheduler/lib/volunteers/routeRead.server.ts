@@ -40,7 +40,6 @@ export type VolunteerManagementNotice =
   | "updated"
   | "conflict"
   | "deleted"
-  | "has_history"
   | "validation"
   | "permission"
   | "duplicate"
@@ -164,7 +163,6 @@ export function normalizeVolunteerManagementNotice(
     notice === "updated" ||
     notice === "conflict" ||
     notice === "deleted" ||
-    notice === "has_history" ||
     notice === "validation" ||
     notice === "permission" ||
     notice === "duplicate" ||

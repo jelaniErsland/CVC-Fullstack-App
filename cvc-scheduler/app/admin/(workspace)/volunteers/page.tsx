@@ -11,7 +11,6 @@ import {
 } from "@/lib/observability/server";
 import {
   createManualVolunteerProfileWithClient,
-  deleteHistoryFreeVolunteerProfileWithClient,
   manualVolunteerInputFromFormData,
   updateVolunteerProfileManualFieldsWithClient,
   readVolunteerProfileWithClient,
@@ -27,6 +26,8 @@ import { readVolunteerScheduleWithClient, type VolunteerScheduleResult } from "@
 import type { VolunteerUpdateResult } from "@/lib/volunteers/updateResult";
 import { classifyVolunteerCreatePersistenceFailure } from "@/lib/volunteers/createFailure";
 
+import type { VolunteerDeletionReviewResult, VolunteerDeletionInput, VolunteerDeletionOutcome } from "@/lib/volunteers/deletion";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
@@ -34,6 +35,15 @@ export const fetchCache = "force-no-store";
 type AdminVolunteersPageProps = Readonly<{
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }>;
+
+async function readVolunteerProfileAction(profileId: string) {
+  "use server";
+  try {
+    const context = await readVolunteerManagementRouteContext();
+    if (!context) return null;
+    return await withReadTimeout(readVolunteerProfileWithClient(context.supabase, context.workspace.id, profileId));
+  } catch { return null; }
+}
 
 async function readVolunteerScheduleAction(profileId: string): Promise<VolunteerScheduleResult> {
   "use server";
@@ -60,28 +70,36 @@ function observeVolunteerMutationFailure(
   });
 }
 
-async function deleteVolunteerProfileAction(formData: FormData) {
+async function reviewVolunteerDeletionAction(profileId: string): Promise<VolunteerDeletionReviewResult> {
   "use server";
-
-  let notice: "deleted" | "has_history" | "unavailable" | "error" = "error";
   try {
-    const routeContext = await readVolunteerManagementRouteContext();
-    const profileId = formData.get("profileId");
-    if (!routeContext || !routeContext.canEdit || typeof profileId !== "string") {
-      notice = "unavailable";
-    } else {
-      const result = await deleteHistoryFreeVolunteerProfileWithClient(
-        routeContext.supabase,
-        profileId,
-      );
-      notice = result;
-    }
-  } catch {
-    notice = "error";
-  }
+    const context = await readVolunteerManagementRouteContext();
+    if (!context?.canEdit) return { kind: "unavailable" };
+    const { data, error } = await withReadTimeout(context.supabase.rpc("review_volunteer_deletion", {
+      p_workspace_id: context.workspace.id, p_profile_id: normalizeWorkspaceReference({ id: profileId }).value,
+    }));
+    if (error || !data || typeof data !== "object" || Array.isArray(data)) return { kind: "error" };
+    if (data.kind === "already_deleted") return { kind: "already_deleted" };
+    if (data.kind !== "review" || typeof data.version !== "string" || typeof data.fingerprint !== "string" || typeof data.affectedCount !== "number") return { kind: "error" };
+    return data as unknown as VolunteerDeletionReviewResult;
+  } catch { return { kind: "error" }; }
+}
 
-  revalidatePath("/admin/volunteers");
-  redirect(`/admin/volunteers?notice=${notice}`);
+async function deleteVolunteerProfileAction(input: VolunteerDeletionInput): Promise<VolunteerDeletionOutcome> {
+  "use server";
+  try {
+    const context = await readVolunteerManagementRouteContext();
+    if (!context?.canEdit) return { kind: "rejected", reason: "permission" };
+    if (!input || typeof input.version !== "string" || !Number.isFinite(Date.parse(input.version)) || typeof input.fingerprint !== "string" || !/^[a-f0-9]{32}$/.test(input.fingerprint)) return { kind: "rejected", reason: "error" };
+    const { data, error } = await context.supabase.rpc("delete_volunteer_profile", {
+      p_workspace_id: context.workspace.id, p_profile_id: normalizeWorkspaceReference({ id: input.profileId }).value,
+      p_expected_updated_at: input.version, p_expected_impact: input.fingerprint,
+    });
+    if (error) return { kind: "rejected", reason: error.code === "40001" ? "changed" : error.code === "42501" ? "permission" : "error" };
+    if (!data || typeof data !== "object" || Array.isArray(data) || (data.kind !== "deleted" && data.kind !== "already_deleted")) return { kind: "rejected", reason: "error" };
+    for (const path of ["/admin/volunteers", "/admin/calendar", "/admin/needs-attention", "/admin/announcements", "/admin"]) revalidatePath(path);
+    return { kind: data.kind };
+  } catch { return { kind: "rejected", reason: "error" }; }
 }
 
 async function createManualVolunteerAction(formData: FormData) {
@@ -175,11 +193,7 @@ function Notice({ notice }: { notice: string | null }) {
     conflict: { title: "Profile changed", message: "This profile changed while you were editing it. Review the latest version." },
     deleted: {
       title: "Volunteer deleted",
-      message: "This history-free volunteer was removed from the project.",
-    },
-    has_history: {
-      title: "Volunteer kept",
-      message: "This volunteer has scheduling history and can't be permanently deleted. Mark them inactive instead.",
+      message: "This volunteer was removed from the project.",
     },
     validation: {
       title: "Check the volunteer details",
@@ -250,8 +264,10 @@ function VolunteerContent({ state }: { state: VolunteerManagementRouteState }) {
       ].sort((a, b) => a.localeCompare(b))}
       createAction={createManualVolunteerAction}
       deleteAction={deleteVolunteerProfileAction}
+      reviewDeletionAction={reviewVolunteerDeletionAction}
       updateAction={updateVolunteerProfileAction}
       readScheduleAction={readVolunteerScheduleAction}
+      readProfileAction={readVolunteerProfileAction}
       volunteers={state.profiles}
     />
   );

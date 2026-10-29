@@ -107,6 +107,7 @@ export type Database = {
           notification_kind: string
           provider_message_id: string | null
           recipient_email_snapshot: string | null
+          recipient_redacted_at: string | null
           safe_failure_code: string | null
           sending_expires_at: string | null
           sending_started_at: string | null
@@ -130,6 +131,7 @@ export type Database = {
           notification_kind?: string
           provider_message_id?: string | null
           recipient_email_snapshot?: string | null
+          recipient_redacted_at?: string | null
           safe_failure_code?: string | null
           sending_expires_at?: string | null
           sending_started_at?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           notification_kind?: string
           provider_message_id?: string | null
           recipient_email_snapshot?: string | null
+          recipient_redacted_at?: string | null
           safe_failure_code?: string | null
           sending_expires_at?: string | null
           sending_started_at?: string | null
@@ -573,6 +576,7 @@ export type Database = {
           created_by_auth_user_id: string | null
           id: string
           lifecycle: string
+          removal_reason: string | null
           updated_at: string
           volunteer_profile_id: string
           workspace_id: string
@@ -584,6 +588,7 @@ export type Database = {
           created_by_auth_user_id?: string | null
           id?: string
           lifecycle?: string
+          removal_reason?: string | null
           updated_at?: string
           volunteer_profile_id: string
           workspace_id: string
@@ -595,6 +600,7 @@ export type Database = {
           created_by_auth_user_id?: string | null
           id?: string
           lifecycle?: string
+          removal_reason?: string | null
           updated_at?: string
           volunteer_profile_id?: string
           workspace_id?: string
@@ -929,12 +935,13 @@ export type Database = {
           claim_id: string | null
           claimed_at: string | null
           claimed_by: string | null
-          email: string
+          email: string | null
           failure_code: string | null
           finalized_at: string | null
           id: string
           operation_id: string
           provider_message_id: string | null
+          recipient_redacted_at: string | null
           snapshot: Json
           state: string
           volunteer_id: string
@@ -945,12 +952,13 @@ export type Database = {
           claim_id?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
-          email: string
+          email?: string | null
           failure_code?: string | null
           finalized_at?: string | null
           id?: string
           operation_id: string
           provider_message_id?: string | null
+          recipient_redacted_at?: string | null
           snapshot: Json
           state?: string
           volunteer_id: string
@@ -961,12 +969,13 @@ export type Database = {
           claim_id?: string | null
           claimed_at?: string | null
           claimed_by?: string | null
-          email?: string
+          email?: string | null
           failure_code?: string | null
           finalized_at?: string | null
           id?: string
           operation_id?: string
           provider_message_id?: string | null
+          recipient_redacted_at?: string | null
           snapshot?: Json
           state?: string
           volunteer_id?: string
@@ -1182,6 +1191,7 @@ export type Database = {
           answers: Json
           created_at: string
           id: string
+          personal_data_redacted_at: string | null
           questionnaire_version: number
           source: string
           status: string
@@ -1192,6 +1202,7 @@ export type Database = {
           answers: Json
           created_at?: string
           id?: string
+          personal_data_redacted_at?: string | null
           questionnaire_version?: number
           source?: string
           status?: string
@@ -1202,6 +1213,7 @@ export type Database = {
           answers?: Json
           created_at?: string
           id?: string
+          personal_data_redacted_at?: string | null
           questionnaire_version?: number
           source?: string
           status?: string
@@ -1395,6 +1407,8 @@ export type Database = {
           congregation: string | null
           created_at: string
           date_of_birth: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
@@ -1426,6 +1440,8 @@ export type Database = {
           congregation?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -1457,6 +1473,8 @@ export type Database = {
           congregation?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
@@ -1480,6 +1498,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "volunteer_profiles_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "project_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "volunteer_profiles_manual_created_by_project_contact_id_fkey"
             columns: ["manual_created_by_project_contact_id"]
@@ -1573,24 +1598,27 @@ export type Database = {
       volunteer_welcome_deliveries: {
         Row: {
           campaign: string
-          email: string
+          email: string | null
           recipient_id: string
+          recipient_redacted_at: string | null
           sent_at: string
           volunteer_id: string
           workspace_id: string
         }
         Insert: {
           campaign: string
-          email: string
+          email?: string | null
           recipient_id: string
+          recipient_redacted_at?: string | null
           sent_at?: string
           volunteer_id: string
           workspace_id: string
         }
         Update: {
           campaign?: string
-          email?: string
+          email?: string | null
           recipient_id?: string
+          recipient_redacted_at?: string | null
           sent_at?: string
           volunteer_id?: string
           workspace_id?: string
@@ -1993,6 +2021,15 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: string
       }
+      delete_volunteer_profile: {
+        Args: {
+          p_expected_impact: string
+          p_expected_updated_at: string
+          p_profile_id: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       duplicate_calendar_item: {
         Args: {
           p_calendar_item_id: string
@@ -2066,6 +2103,10 @@ export type Database = {
           token_expires_at: string
           token_id: string
         }[]
+      }
+      lock_live_volunteer_profile: {
+        Args: { p_profile: string; p_workspace: string }
+        Returns: boolean
       }
       manage_volunteer_away: {
         Args: {
@@ -2375,6 +2416,10 @@ export type Database = {
         Args: { p_metadata: Json }
         Returns: boolean
       }
+      revalidate_volunteer_dispatch: {
+        Args: { p_claim_id?: string; p_delivery_id: string; p_source: string }
+        Returns: boolean
+      }
       reveal_assignment_response_link: {
         Args: {
           p_assignment_id: string
@@ -2393,6 +2438,10 @@ export type Database = {
       }
       review_communications: {
         Args: { p_plan: Json; p_workspace_id: string }
+        Returns: Json
+      }
+      review_volunteer_deletion: {
+        Args: { p_profile_id: string; p_workspace_id: string }
         Returns: Json
       }
       revoke_assignment_response_token: {
@@ -2598,6 +2647,11 @@ export type Database = {
           p_full_name: string
           p_project_choice?: string
         }
+        Returns: Json
+      }
+      volunteer_assignment_end_at: { Args: { p_item: string }; Returns: string }
+      volunteer_deletion_impact: {
+        Args: { p_now: string; p_profile: string; p_workspace: string }
         Returns: Json
       }
       volunteer_home_identity: {

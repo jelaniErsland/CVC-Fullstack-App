@@ -35,9 +35,9 @@ export async function readAssignedContactWithClient(input: {
   const itemStartDate = item.data.start_date;
 
   const profile = await client.from("volunteer_profiles")
-    .select("full_name,phone,email,congregation")
+    .select("full_name,phone,email,congregation,deleted_at")
     .eq("workspace_id", workspaceId).eq("id", assignment.data.volunteer_profile_id).maybeSingle();
-  if (profile.error || !profile.data) return { kind: "unavailable" };
+  if (profile.error || !profile.data || profile.data.deleted_at) return { kind: "unavailable" };
   const contact: AssignedContact = {
     name: profile.data.full_name,
     phone: profile.data.phone,

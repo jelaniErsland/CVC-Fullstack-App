@@ -347,7 +347,7 @@ export async function readCsvVolunteerProfilesWithClient(supabase: AppSupabaseCl
   const profiles: VolunteerProfile[] = [];
   for (let offset = 0; offset <= 5000; offset += 500) {
     const { data, error } = await supabase.from("volunteer_profiles").select(volunteerProfileColumns)
-      .eq("workspace_id", id).order("id").range(offset, offset + 499);
+      .eq("workspace_id", id).is("deleted_at", null).order("id").range(offset, offset + 499);
     if (error) throw new Error("Volunteer CSV directory unavailable.");
     profiles.push(...(data ?? []).map(parseVolunteerProfile));
     if (profiles.length > 5000) throw new Error("Workspace exceeds the supported CSV limit.");
@@ -359,7 +359,7 @@ export async function readCsvVolunteerProfilesWithClient(supabase: AppSupabaseCl
 export async function readVolunteerProfileWithClient(supabase: AppSupabaseClient, workspaceId: string, profileId: string): Promise<VolunteerProfile> {
   const { data, error } = await supabase.from("volunteer_profiles").select(volunteerProfileColumns)
     .eq("workspace_id", normalizeWorkspaceReference({ id: workspaceId }).value)
-    .eq("id", normalizeWorkspaceReference({ id: profileId }).value).single();
+    .eq("id", normalizeWorkspaceReference({ id: profileId }).value).is("deleted_at", null).single();
   if (error || !data) throw new Error("The saved volunteer could not be reloaded. Refresh the directory before retrying.", { cause: error });
   return parseVolunteerProfile(data);
 }

@@ -49,6 +49,7 @@ export function normalizeCsvRow(row: string[], mapping: (CsvField | "")[]): CsvP
     if(value.startsWith("'") && /^[=+@-]/.test(value.slice(1)))value=value.slice(1);
     if(/^[=+@-]/.test(value) && !(["phone","emergencyContactPhone"].includes(field)&&/^\+?[\d ().-]+$/.test(value)))throw new Error("Formula-like CSV values are not accepted.");
     if(field==='id' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value))throw new Error("Volunteer ID is invalid.");
+    if(field==='id')value=value.toLowerCase();
     if(field==='email'){value=value.toLowerCase();if(value.length>254||! /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))throw new Error("Email is invalid.");}
     if(field==='phone'||field==='emergencyContactPhone')value=phone(value);
     if(tri.has(field)) {
@@ -70,8 +71,8 @@ export function normalizeCsvRow(row: string[], mapping: (CsvField | "")[]): CsvP
   }
   return result;
 }
-export type CsvMatch = { row: number; kind: "new"|"matched"|"invalid"|"ambiguous"; profileId?: string; version?: string; name: string; fields: CsvField[]; patch: CsvProfilePatch; reason?: string };
-export function matchVolunteerCsv(rows: string[][],mapping:(CsvField|"")[],profiles:readonly VolunteerProfile[]): CsvMatch[] {
+export type CsvMatch = { row: number; kind: "new"|"matched"|"invalid"|"ambiguous"|"previously_deleted"; previouslyDeletedId?: string; profileId?: string; version?: string; name: string; fields: CsvField[]; patch: CsvProfilePatch; reason?: string };
+export function matchVolunteerCsv(rows: string[][],mapping:(CsvField|"")[],profiles:readonly VolunteerProfile[], deletedIds:ReadonlySet<string> = new Set()): CsvMatch[] {
   const seen=new Set<string>();
   const seenNewNames=new Set<string>();
   const normalizedName=(value:string)=>value.trim().replace(/\s+/g,' ').toLowerCase();
@@ -89,6 +90,11 @@ export function matchVolunteerCsv(rows: string[][],mapping:(CsvField|"")[],profi
       const base={row:index+2,name:typeof patch.fullName==='string'?patch.fullName:identified?.fullName??'Unnamed row',fields:Object.keys(patch).filter(k=>k!=='id') as CsvField[],patch};
       if(duplicate)return {...base,kind:'ambiguous',reason:'Duplicate volunteer row in this CSV.'};
       if(identified)return {...base,kind:'matched',profileId:identified.id,version:identified.updatedAt};
+      if(typeof patch.id==='string' && deletedIds.has(patch.id)){
+        if(!patch.fullName || (!email&&!tel))return {...base,kind:'invalid',reason:'This ID belongs to a deleted volunteer. Creating a new profile needs a name and email or phone.'};
+        if(profiles.some(p=>normalizedName(p.fullName)===name))return {...base,kind:'ambiguous',reason:'This ID belongs to a deleted volunteer, and a current profile shares this name. Review the current directory and use its exported ID; the deleted identity cannot be restored.'};
+        return {...base,kind:'previously_deleted',previouslyDeletedId:patch.id,reason:'This exported ID belongs to a deleted project identity. It cannot be restored. Choose Create as new volunteer to create a separate profile.'};
+      }
       if(possible.length)return {...base,kind:'ambiguous',reason:'A possible existing volunteer shares this name and contact. Use the exported internal ID to update.'};
       if(!patch.fullName || (!email&&!tel))return {...base,kind:'invalid',reason:'New volunteers need a name and email or phone.'};
       if(profiles.some(p=>normalizedName(p.fullName)===name))return {...base,kind:'ambiguous',reason:'Name matches an existing volunteer without an authoritative internal ID.'};

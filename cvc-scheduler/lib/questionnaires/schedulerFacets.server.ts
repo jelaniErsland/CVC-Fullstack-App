@@ -53,7 +53,7 @@ export async function readSchedulerFacetProjectionsWithVerifiedContext(
     .from("volunteer_profiles")
     .select(schedulerFacetColumns)
     .eq("workspace_id", selection.workspace.id)
-    .eq("lifecycle", "active")
+    .eq("lifecycle", "active").is("deleted_at", null)
     .order("id");
   if (error) throw new Error("Scheduler facets could not be read.", { cause: error });
   return (data ?? [])

@@ -1,4 +1,4 @@
-// Real production-mode sheets, disposable local DB57 fixtures, no hosted/provider traffic.
+// Real production-mode sheets, disposable local DB58 fixtures, no hosted/provider traffic.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,7 +11,7 @@ import {resolvePreviewBrowserExecutable} from './preview-config.mjs';
 
 nextEnv.loadEnvConfig(process.cwd());
 assert.equal(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,'127.0.0.1');
-assert.equal(value('select count(*)||\'|\'||max(version) from supabase_migrations.schema_migrations'),'57|20261026120000');
+assert.equal(value('select count(*)||\'|\'||max(version) from supabase_migrations.schema_migrations'),'58|20261028120000');
 const baseline=process.argv.includes('--baseline');
 const output=path.resolve('../previews/12-61-1-focus');fs.mkdirSync(output,{recursive:true});
 const f=await fixture(true),results=[],audits=[];let server,browser,log='';
@@ -57,6 +57,7 @@ try {
   const search=page.getByPlaceholder('Search volunteers or skills…');await search.fill('Alex');
   const row=page.getByRole('button',{name:'Alex Morgan',exact:true});await row.click();
   const profile=page.getByRole('dialog',{name:'Alex Morgan',exact:true});await profile.waitFor();
+  await profile.getByRole('button',{name:'Edit',exact:true}).waitFor();
   await profile.getByText('Loading schedule…').waitFor({state:'hidden'});
   const assignments=profile.locator('a[href*="/admin/calendar?"]');assert.equal(await assignments.count(),3);
   const support=profile.locator('summary').filter({hasText:'Other support'}),details=profile.locator('summary').filter({hasText:'Other profile details'});
@@ -132,7 +133,7 @@ try {
   await summary.focus();await page.keyboard.press('Enter');assert.deepEqual((await walk(page,dialog,'Reclosed outer disclosure')).map(n=>n.label),['First','Disclosure','Custom control','Last']);
   await context.close();
  }
- fs.writeFileSync(path.join(output,baseline?'before.json':'after.json'),JSON.stringify({baseline,results,audits,boundaryFixtures:!baseline,db:'57 / 20261026120000',providerCalls:0,productionMutations:0},null,2));
+ fs.writeFileSync(path.join(output,baseline?'before.json':'after.json'),JSON.stringify({baseline,results,audits,boundaryFixtures:!baseline,db:'58 / 20261028120000',providerCalls:0,productionMutations:0},null,2));
  console.log(JSON.stringify({baseline,widths:results.length,audits:audits.length,output}));
 } catch(error){fs.writeFileSync(path.join(output,'failure-server.log'),log);throw error;}
 finally {await browser?.close();if(server){const exited=new Promise(resolve=>server.once('exit',resolve));server.stdin.end('stop');await exited;}await f.cleanup();}
