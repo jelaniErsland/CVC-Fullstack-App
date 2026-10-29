@@ -24,7 +24,7 @@ if (process.argv.includes('--fixture-server')) {
   };
   const next=(await import('next')).default;
   const port=Number(process.env.REMINDER_LOCAL_PORT??3000);
-  const app=next({dev:false,hostname:'localhost',port});await app.prepare();
+  const app=next({dir:process.env.REMINDER_FIXTURE_APP_DIR??process.cwd(),dev:false,hostname:'localhost',port});await app.prepare();
   assert(['localhost','127.0.0.1'].includes(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname));
   const server=http.createServer(app.getRequestHandler());await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
   console.log('REMINDER_UI_READY');

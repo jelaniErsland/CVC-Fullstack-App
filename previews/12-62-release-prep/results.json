@@ -1,0 +1,50 @@
+[
+  {
+    "width": 320,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  },
+  {
+    "width": 390,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  },
+  {
+    "width": 430,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  },
+  {
+    "width": 768,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  },
+  {
+    "width": 1440,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  },
+  {
+    "width": 1920,
+    "axeViolations": 0,
+    "overflow": false,
+    "externalRequests": 0,
+    "dirtyProtection": true,
+    "reviewRetry": true
+  }
+]

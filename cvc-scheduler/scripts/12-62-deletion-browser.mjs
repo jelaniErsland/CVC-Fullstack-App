@@ -8,7 +8,7 @@ import nextEnv from '@next/env';
 import {fixture,sql,value,q} from './12-47-local-fixtures.mjs';
 import {resolvePreviewBrowserExecutable} from './preview-config.mjs';
 nextEnv.loadEnvConfig(process.cwd());assert.equal(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,'127.0.0.1');
-const output=path.resolve('../previews/12-62-deletion');fs.mkdirSync(output,{recursive:true});
+const output=path.resolve(process.env.DELETION_BROWSER_OUTPUT || '../previews/12-62-deletion');fs.mkdirSync(output,{recursive:true});
 const f=await fixture(true);let browser,server,log='';const results=[];
 const historicDay=value("select ((now() at time zone 'America/Denver')::date-2)::text"),historicItem=value(f.auth(`select public.create_calendar_item(${q(f.ws)},${q(f.preset)},null,null,'timed',${q(historicDay)},null,'08:00','11:00',3,'Past work instructions','{}')`));
 value(f.auth(`select public.publish_calendar_item(${q(historicItem)})`));value(f.auth(`select public.create_calendar_assignments_batch(${q(historicItem)},array[${q(f.volunteers[0])},${q(f.volunteers[1])}]::uuid[],null)`));sql(`update public.workspaces set starts_on=${q(historicDay)}::date-1 where id=${q(f.ws)}`);
@@ -18,11 +18,27 @@ try {
  await new Promise((resolve,reject)=>{const poll=setInterval(()=>{if(log.includes('REMINDER_UI_READY')){clearInterval(poll);resolve();}else if(server.exitCode!==null){clearInterval(poll);reject(Error(log.slice(-2000)));}},50);setTimeout(()=>{clearInterval(poll);reject(Error('Fixture server deadline'));},30000).unref();});
  browser=await chromium.launch({executablePath:resolvePreviewBrowserExecutable(),headless:true});
  for(const width of process.argv.includes('--history-only')?[1920]:[320,390,430,768,1440,1920]){
-  const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});let external=0;const errors=[];
+  const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce',timezoneId:'Pacific/Auckland'});let external=0;const errors=[];
   await context.route('**/*',route=>['127.0.0.1','localhost'].includes(new URL(route.request().url()).hostname)?route.continue():(external++,route.abort()));
   await context.addCookies([...f.admin.jar.values()].map(c=>({name:c.name,value:c.value,domain:'localhost',path:'/',sameSite:'Lax'})));
+  // Date/time are authoritative project wall values, even in a distant browser timezone.
+  const nearestDay=width===768?historicDay:f.day, nearestClock=width===430||width===768?'5:00 PM':'8:00 AM';
+  sql(`update public.calendar_items set start_date=${q(nearestDay)},end_date=${width===430?q(f.dayAt(1)):width===768?q(f.dayAt(1)):'null'},start_time=${q(width===430||width===768?'17:00':'08:00')},end_time=${q(width===430||width===768?'05:00':'11:00')} where id=${q(f.items[0])}`);
+  const nearestLabel=new Intl.DateTimeFormat('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(nearestDay+'T12:00:00Z'));
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://localhost:3000/admin/volunteers',{waitUntil:'networkidle'});
+  if(width===320){
+   await page.getByRole('button',{name:'Riley Chen',exact:true}).click();
+   const emptyProfile=page.getByRole('dialog',{name:'Riley Chen',exact:true});
+   await emptyProfile.getByRole('button',{name:'Edit',exact:true}).click();await emptyProfile.getByRole('button',{name:'Save changes',exact:true}).waitFor();
+   await emptyProfile.getByRole('button',{name:'Delete volunteer',exact:true}).click();
+   const emptyConfirmation=page.getByRole('dialog',{name:'Delete Riley Chen?',exact:true});
+   await emptyConfirmation.getByText('No current or upcoming assignments will be removed.',{exact:true}).waitFor();
+   assert.equal(await emptyConfirmation.getByText(/Nearest:/).count(),0);
+   await page.screenshot({path:path.join(output,'zero-assignments-320.png')});
+   await emptyConfirmation.getByRole('button',{name:'Cancel',exact:true}).click();
+   await page.keyboard.press('Escape');await emptyProfile.waitFor({state:'hidden'});
+  }
   const search=page.getByPlaceholder('Search volunteers or skills…');await search.fill('Alex');
   await page.getByRole('button',{name:/^Sort:/}).click();await page.getByRole('menuitemradio',{name:'Name Z–A',exact:true}).click();
   await page.getByRole('button',{name:'Alex Morgan',exact:true}).click();
@@ -36,7 +52,9 @@ try {
   await discard.getByRole('button',{name:'Keep editing',exact:true}).click();assert.equal(await notes.inputValue(),'Unsaved local edit must not be saved by deletion');
   await edit.getByRole('button',{name:'Delete volunteer',exact:true}).click();await discard.getByRole('button',{name:'Discard changes',exact:true}).click();
   const confirmation=page.getByRole('dialog',{name:'Delete Alex Morgan?',exact:true});await confirmation.waitFor();
-  await confirmation.getByText('3 current/upcoming assignments will be removed.',{exact:true}).waitFor();
+  await confirmation.getByText('Alex Morgan will be removed from 3 current/upcoming assignments.',{exact:true}).waitFor();
+  await confirmation.getByText(`Nearest: Site preparation · ${nearestLabel} at ${nearestClock}`,{exact:true}).waitFor();
+  await confirmation.getByText('Those staffing positions will become open.',{exact:true}).waitFor();
   assert(await confirmation.getByRole('button',{name:'Cancel',exact:true}).evaluate(node=>node===document.activeElement),'Safe initial focus');
   await confirmation.getByRole('button',{name:'Delete volunteer',exact:true}).focus();await page.keyboard.press('Tab');assert(await confirmation.evaluate(node=>node.contains(document.activeElement)));
   await page.keyboard.press('Shift+Tab');assert(await confirmation.evaluate(node=>node.contains(document.activeElement)));
@@ -47,7 +65,7 @@ try {
   await page.screenshot({path:path.join(output,`confirmation-${width}.png`)});
   await page.keyboard.press('Escape');await confirmation.waitFor({state:'hidden'});await profile.waitFor();
   assert.equal(await search.inputValue(),'Alex');assert.equal(await page.getByRole('button',{name:'Sort: Name Z–A',exact:true}).count(),1);
-  await profile.getByRole('button',{name:'Edit',exact:true}).click();await profile.getByRole('button',{name:'Delete volunteer',exact:true}).click();await confirmation.getByText('3 current/upcoming assignments will be removed.',{exact:true}).waitFor();
+  await profile.getByRole('button',{name:'Edit',exact:true}).click();await profile.getByRole('button',{name:'Delete volunteer',exact:true}).click();await confirmation.getByText('Alex Morgan will be removed from 3 current/upcoming assignments.',{exact:true}).waitFor();
   // Review failure is finite, retry works, and cannot silently delete.
   await confirmation.getByRole('button',{name:'Cancel',exact:true}).click();
   await profile.getByRole('button',{name:'Edit',exact:true}).click();

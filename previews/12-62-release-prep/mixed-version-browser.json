@@ -1,0 +1,21 @@
+{
+  "app": "19fe6a29d5b59941bb0612cf9e18fe85a080f474",
+  "db": 58,
+  "passed": [
+    "/admin/dashboard",
+    "/admin/volunteers",
+    "search/filter/sort/profile/edit-save/add-save",
+    "CSV export",
+    "CSV preview/import",
+    "/admin/calendar?view=day&date=2026-11-05",
+    "/admin/announcements",
+    "/admin/quick-view?view=day&date=2026-11-05",
+    "/admin/dashboard",
+    "authorized workspace context (legacy /admin/projects remains beta-contained)",
+    "volunteer lookup/schedule",
+    "anonymous login redirect"
+  ],
+  "externalRequests": 0,
+  "providerCalls": 0,
+  "productionMutations": 0
+}

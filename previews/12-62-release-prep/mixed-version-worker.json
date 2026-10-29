@@ -1,0 +1,24 @@
+{
+  "app": "19fe6a29d5b59941bb0612cf9e18fe85a080f474",
+  "db": 58,
+  "first": {
+    "startedAt": "2026-10-29T17:26:56.742Z",
+    "endedAt": "2026-10-29T17:26:56.772Z",
+    "phase": "delivery",
+    "evaluated": 6,
+    "eligible": 0,
+    "claimed": 0,
+    "sent": 0,
+    "definiteFailures": 0,
+    "unknown": 0,
+    "skipped": {
+      "disabled": 0,
+      "changed": 0,
+      "claimedElsewhere": 0
+    },
+    "continuation": false
+  },
+  "repeatExact": true,
+  "concurrentExact": true,
+  "providerCalls": 0
+}
