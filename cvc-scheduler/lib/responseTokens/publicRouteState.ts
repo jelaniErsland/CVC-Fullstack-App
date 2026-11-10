@@ -1,3 +1,5 @@
+
+import { isConflictCode } from "../conflict.ts";
 import { ResponseTokenValidationError } from "@/lib/responseTokens/token";
 
 export type PublicAssignmentResponseSubmissionState =
@@ -36,7 +38,7 @@ export function classifyPublicAssignmentResponseSubmissionError(
   if (error instanceof ResponseTokenValidationError) return "unavailable";
 
   const sqlState = findSqlState(error);
-  if (sqlState === "40001") return "changed";
+  if (isConflictCode(sqlState)) return "changed";
   if (sqlState === "42501") return "unavailable";
   return "error";
 }

@@ -10,11 +10,22 @@ export const REMINDER_POOLER_HOST = 'aws-1-us-west-2.pooler.supabase.com';
 export const REMINDER_DATABASE_USER = 'project_local_reminder_runner.wdlaauzknfggoqldolmx';
 
 export function reminderDatabaseConfiguration(environment: NodeJS.ProcessEnv): PoolConfig {
+  const projectUrl = environment.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, '');
+  const recovery = projectUrl === 'https://lprregckczjgciryvhpy.supabase.co';
+  if (projectUrl && !recovery && projectUrl !== 'https://wdlaauzknfggoqldolmx.supabase.co') {
+    throw new Error('Invalid reminder project configuration');
+  }
+  const allowedHosts = recovery
+    ? ['aws-0-us-east-2.pooler.supabase.com', 'aws-1-us-east-2.pooler.supabase.com']
+    : [REMINDER_POOLER_HOST];
+  const expectedUser = recovery
+    ? 'project_local_reminder_runner.lprregckczjgciryvhpy'
+    : REMINDER_DATABASE_USER;
   let url: URL;
   try { url = new URL(environment.REMINDER_DATABASE_URL ?? ''); }
   catch { throw new Error('Reminder database configuration unavailable'); }
-  if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.hostname !== REMINDER_POOLER_HOST
-    || url.port !== '6543' || decodeURIComponent(url.username) !== REMINDER_DATABASE_USER
+  if (!['postgres:', 'postgresql:'].includes(url.protocol) || !allowedHosts.includes(url.hostname)
+    || url.port !== '6543' || decodeURIComponent(url.username) !== expectedUser
     || !url.password || url.pathname !== '/postgres' || url.search || url.hash) {
     throw new Error('Invalid restricted reminder database configuration');
   }
@@ -23,7 +34,7 @@ export function reminderDatabaseConfiguration(environment: NodeJS.ProcessEnv): P
   return {
     host: url.hostname, port: 6543, user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password), database: 'postgres',
-    ssl: { rejectUnauthorized: true, servername: REMINDER_POOLER_HOST, ca: SUPABASE_POOLER_CA },
+    ssl: { rejectUnauthorized: true, servername: url.hostname, ca: SUPABASE_POOLER_CA },
     max: 1, connectionTimeoutMillis: 5000, query_timeout: 10000,
     idleTimeoutMillis: 1000, maxLifetimeSeconds: 60, allowExitOnIdle: true,
     application_name: 'project-local-reminder-runner',

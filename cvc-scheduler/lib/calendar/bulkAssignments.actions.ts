@@ -1,4 +1,6 @@
 "use server";
+
+import { isConflictCode } from "../conflict.ts";
 import { revalidatePath } from "next/cache";
 import { readCalendarAssignmentMutationRouteContext } from "./routeRead.server";
 import { validateBulkAssignmentPlan, type BulkAssignmentActionState, type BulkAssignmentPreview } from "./bulkAssignments";
@@ -16,7 +18,7 @@ export async function planCalendarAssignmentsAction(form: FormData): Promise<Bul
       p_workspace_id: context.workspace.id, p_request_id: requestId,
       p_plan: plan as Json, p_expected_preview: fingerprint as string,
     });
-    if (error) return { kind: "error", message: error.code === "40001"
+    if (error) return { kind: "error", message: isConflictCode(error.code)
       ? "This item changed while you were editing it. Review the latest version."
       : "Save could not be confirmed. Refresh Calendar and check the result before trying again." };
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Unavailable");

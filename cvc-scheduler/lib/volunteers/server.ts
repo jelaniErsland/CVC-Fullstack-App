@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isConflictCode } from "../conflict.ts";
+
 import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 import { parseVolunteerProfile, type VolunteerProfile } from "./profile.ts";
 import { normalizeWorkspaceReference } from "../workspaces/identity.ts";
@@ -293,7 +295,7 @@ export async function updateVolunteerProfileManualFieldsWithClient(
   });
 
   if (error || typeof data !== "string") {
-    if (error?.code === "40001") throw new Error("volunteer_edit_conflict");
+    if (isConflictCode(error?.code)) throw new Error("volunteer_edit_conflict");
     throw new Error("Volunteer profile could not be updated.", { cause: error });
   }
 

@@ -1,0 +1,20 @@
+[
+  "apply_task_preset_instructions(uuid,timestamp with time zone,jsonb)",
+  "confirm_communication_operation(uuid,uuid,jsonb,text)",
+  "delete_volunteer_profile(uuid,uuid,timestamp with time zone,text)",
+  "import_volunteer_profiles(uuid,uuid,jsonb)",
+  "manage_volunteer_away(text,text,uuid,date,date,text)",
+  "plan_calendar_assignments(uuid,uuid,jsonb,text)",
+  "save_calendar_meal(uuid,uuid,text,date,time without time zone,time without time zone,text,text,text,integer,text,timestamp with time zone)",
+  "save_workspace_project_photo(uuid,uuid,jsonb,bigint)",
+  "submit_assignment_response_by_token(text,text,text)",
+  "submit_volunteer_schedule_assignment_response(text,uuid,text,text)",
+  "update_assignment_response(uuid,text,text)",
+  "update_calendar_item_one_off_timed(uuid,text,text,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_calendar_item_one_off_timed(uuid,text,text,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_calendar_item_preset_timed(uuid,date,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_calendar_item_preset_timed(uuid,date,time without time zone,time without time zone,integer,text,jsonb,timestamp with time zone)",
+  "update_task_preset_color(uuid,text,timestamp with time zone)",
+  "update_task_preset_description(uuid,text,timestamp with time zone)",
+  "update_volunteer_profile_manual_fields(uuid,jsonb)"
+]

@@ -1,4 +1,6 @@
 "use server";
+
+import { isConflictCode } from "../conflict.ts";
 import { revalidatePath } from "next/cache";
 import { createHash } from "node:crypto";
 import { readVolunteerManagementRouteContext } from "./routeRead.server";
@@ -44,7 +46,7 @@ export async function volunteerCsvAction(form: FormData): Promise<CsvActionState
       return {profileId:row.profileId??null,...(row.previouslyDeletedId ? {previouslyDeletedId:row.previouslyDeletedId} : {}),expectedUpdatedAt:row.version??null,patch:Object.fromEntries(selected.map((f:CsvField)=>[f,row.patch[f]]))};
     });
     const saved=await context.supabase.rpc('import_volunteer_profiles',{p_workspace_id:context.workspace.id,p_request_id:requestId,p_rows:patches as Json});
-    if(saved.error)return {kind:'error',message:saved.error.code==='40001'?'Profiles changed. Review the import again.':'Import could not be confirmed. Refresh the directory and check the result before retrying.'};
+    if(saved.error)return {kind:'error',message:isConflictCode(saved.error.code)?'Profiles changed. Review the import again.':'Import could not be confirmed. Refresh the directory and check the result before retrying.'};
     if(!saved.data||typeof saved.data!=='object'||Array.isArray(saved.data)||typeof saved.data.created!=='number'||typeof saved.data.updated!=='number')throw new Error('Unknown result');
     try{revalidatePath('/admin/volunteers');revalidatePath('/admin/announcements');}catch{/* Imported records remain saved. */}
     return {kind:'saved',created:saved.data.created,updated:saved.data.updated};

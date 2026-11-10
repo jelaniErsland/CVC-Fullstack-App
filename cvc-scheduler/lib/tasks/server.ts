@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isConflictCode } from "../conflict.ts";
+
 import type { AppSupabaseClient, PublicRpcArgs } from "../supabase/types.ts";
 import {
   parseTaskPreset,
@@ -22,7 +24,7 @@ export class TaskPresetEditConflictError extends Error {
 
 function isTaskPresetEditConflict(error: unknown) {
   return typeof error === "object" && error !== null &&
-    "code" in error && error.code === "40001" &&
+    "code" in error && isConflictCode(error.code) &&
     "details" in error && error.details === "task_preset_edit_conflict";
 }
 
@@ -274,7 +276,7 @@ export async function readFuturePresetInstructionCandidatesWithClient(
 
 export function selectedInstructionTargetsFromFormData(formData: FormData) {
   const selected = formData.getAll("selectedOccurrence");
-  if (selected.length < 1 || selected.length > 100) throw new TaskPresetValidationError(["Select 1–100 future occurrences."]);
+  if (selected.length < 1 || selected.length > 100) throw new TaskPresetValidationError(["Select 1-100 future occurrences."]);
   const seen = new Set<string>();
   return selected.map((value) => {
     if (typeof value !== "string") throw new TaskPresetValidationError(["Invalid occurrence selection."]);
@@ -310,7 +312,7 @@ export async function applyTaskPresetInstructionsWithClient(
 
 function isCalendarItemEditConflict(error: unknown) {
   return typeof error === "object" && error !== null &&
-    "code" in error && error.code === "40001" &&
+    "code" in error && isConflictCode(error.code) &&
     "details" in error && error.details === "calendar_item_edit_conflict";
 }
 

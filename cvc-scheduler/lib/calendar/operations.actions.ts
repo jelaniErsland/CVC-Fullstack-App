@@ -1,5 +1,7 @@
 "use server";
 
+import { isConflictCode } from "../conflict.ts";
+
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { readCalendarMutationRouteContext } from "./routeRead.server";
@@ -13,7 +15,7 @@ function field(form: FormData, name: string) {
 
 function isCalendarItemEditConflict(error: unknown) {
   return typeof error === "object" && error !== null &&
-    "code" in error && error.code === "40001" &&
+    "code" in error && isConflictCode(error.code) &&
     "details" in error && error.details === "calendar_item_edit_conflict";
 }
 
